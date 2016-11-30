@@ -74,7 +74,7 @@ def LOGEXCEPTION(message):
 # get the current module's path
 
 modpath = os.path.abspath(os.path.dirname(__file__))
-CONF_FILE = os.path.join(modpath,'lcdb.conf')
+CONF_FILE = os.path.join(modpath,'astrobase.conf')
 try:
 
     CONF = ConfigParser.ConfigParser()
