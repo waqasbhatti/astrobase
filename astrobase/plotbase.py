@@ -87,12 +87,12 @@ def LOGEXCEPTION(message):
 ## LOCAL IMPORTS ##
 ###################
 
-from lcmath import phase_magseries, phase_magseries_with_errs, \
+from .lcmath import phase_magseries, phase_magseries_with_errs, \
     phase_bin_magseries, phase_bin_magseries_with_errs, \
     time_bin_magseries, time_bin_magseries_with_errs, sigclip_magseries, \
     normalize_magseries
 
-from varbase import spline_fit_magseries
+from .varbase import spline_fit_magseries
 
 #########################
 ## SIMPLE LIGHT CURVES ##
