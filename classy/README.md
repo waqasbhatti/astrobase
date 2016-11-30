@@ -1,4 +1,4 @@
-== varclass ==
+=== CLASSY: a variable star classifier interface
 
 Expected features:
 
