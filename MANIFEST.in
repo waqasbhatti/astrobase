@@ -1,4 +1,5 @@
 recursive-include classy/static *
 recursive-include astrobase/data *
+recursive-include sql *
 include astrobase/lcdb.conf.template
 include classy/classy.conf.template
