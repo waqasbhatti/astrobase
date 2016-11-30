@@ -24,8 +24,6 @@ def recv_sigint(signum, stack):
     handler function to receive and process a SIGINT
 
     '''
-
-    LOGGER.info('received SIGINT.')
     raise KeyboardInterrupt
 
 # register the signal callback
