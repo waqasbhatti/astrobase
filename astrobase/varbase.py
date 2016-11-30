@@ -49,7 +49,7 @@ import matplotlib.pyplot as plt
 ## LOCAL IMPORTS ##
 ###################
 
-from periodbase import pgen_lsp
+from .periodbase import pgen_lsp
 
 
 #############

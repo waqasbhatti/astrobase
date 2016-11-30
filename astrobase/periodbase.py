@@ -83,10 +83,10 @@ def LOGEXCEPTION(message):
 ## LOCAL IMPORTS ##
 ###################
 
-from lcmath import phase_magseries, sigclip_magseries, time_bin_magseries, \
+from .lcmath import phase_magseries, sigclip_magseries, time_bin_magseries, \
     phase_bin_magseries
 
-from glsp import generalized_lsp_value as glspval, \
+from .glsp import generalized_lsp_value as glspval, \
     generalized_lsp_value_notau as glspvalnt
 
 
