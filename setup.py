@@ -29,7 +29,7 @@ setup(
     keywords='astronomy',
     url='http://github.com/waqasbhatti/astrobase',
     author='Waqas Bhatti',
-    author_email='waqas.afzal.bhatti@gmaXil.com',
+    author_email='waqas.afzal.bhatti@gmail.com',
     license='MIT',
     packages=['astrobase','classy'],
     install_requires=[
