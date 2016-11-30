@@ -24,6 +24,8 @@ docs/users.txt
 *.bz2
 .emailsettings
 .lcdbsettings
+.cookiekey
+.classyprojects
 */bin*
 *GITREV*
 *.o
