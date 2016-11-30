@@ -41,6 +41,11 @@ setup(
         'tornado',
         'jplephem',
     ],
+    entry_points={
+        'console_scripts':[
+            'classy-server=classy.classyserver:main',
+        ],
+    },
     include_package_data=True,
     zip_safe=False
 )
