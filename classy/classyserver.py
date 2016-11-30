@@ -72,9 +72,7 @@ define('debugmode',
 ### MAIN ###
 ############
 
-# run the server
-if __name__ == '__main__':
-
+def main():
     # parse the command line
     tornado.options.parse_command_line()
 
@@ -144,3 +142,8 @@ if __name__ == '__main__':
 
     except KeyboardInterrupt:
         LOGGER.info('received Ctrl-C: shutting down...')
+
+
+# run the server
+if __name__ == '__main__':
+    main()
