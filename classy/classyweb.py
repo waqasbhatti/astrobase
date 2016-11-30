@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-'''classyserver.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jul 2014
+'''classyweb.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Nov 2016
 
-This is the Tornado web-server for astroph-classy. It uses URL handlers defined
+This is the Tornado web-server for classy-web. It uses URL handlers defined
 in classyhandlers.py.
 
 '''
@@ -80,7 +80,7 @@ def main():
     DEBUG = True if options.debugmode == 1 else False
 
     # get a logger
-    LOGGER = logging.getLogger('classyserver')
+    LOGGER = logging.getLogger('classyweb')
     if DEBUG:
         LOGGER.setLevel(logging.DEBUG)
     else:
@@ -112,7 +112,7 @@ def main():
     # this is the path to the Tornado template files
     TEMPLATEPATH = os.path.join(STATICPATH,'templates')
 
-    # this is the directory classyserver.py was executed from. used to figure
+    # this is the directory classyweb.py was executed from. used to figure
     # out light curve and LSP locations
     CURRENTDIR = os.getcwd()
 
