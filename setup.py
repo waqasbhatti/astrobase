@@ -27,7 +27,7 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
     keywords='astronomy',
-    url='http://github.com/waqasbhatti/astrobase',
+    url='https://github.com/waqasbhatti/astrobase',
     author='Waqas Bhatti',
     author_email='waqas.afzal.bhatti@gmail.com',
     license='MIT',
