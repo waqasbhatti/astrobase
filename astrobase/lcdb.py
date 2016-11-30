@@ -12,6 +12,7 @@ project.
 import logging
 import ConfigParser
 import os
+import stat
 import os.path
 import hashlib
 from datetime import datetime
@@ -78,21 +79,51 @@ CONF_FILE = os.path.join(modpath,'astrobase.conf')
 
 try:
 
+    HAVECONF = False
+
     CONF = ConfigParser.ConfigParser()
     CONF.read(CONF_FILE)
 
-    LOGINFO('using database config in conf: %s' % os.path.abspath(CONF_FILE))
+    LOGINFO('using database config in %s' % os.path.abspath(CONF_FILE))
 
     # database config
-    DBUSER = CONF.get('database','user')
-    DBPASS = CONF.get('database','password')
-    DBDATA = CONF.get('database','database')
-    DBHOST = CONF.get('database','host')
+    DBCREDENTIALS = os.path.join(modpath, CONF.get('lcdb','credentials'))
 
-    HAVECONF = True
+    # see if this file exists, read it in and get credentials
+    if os.path.exists(DBCREDENTIALS):
+
+        # check if this file is readable/writeable by user only
+        fileperm = oct(os.stat(DBCREDENTIALS)[stat.ST_MODE])
+
+        if fileperm == '0100600':
+
+            with open(DBCREDENTIALS) as infd:
+                creds = infd.read().strip('\n')
+            DBHOST, DBPORT, DBDATA, DBUSER, DBPASS = creds.split(':')
+            HAVECONF = True
+
+        else:
+            LOGWARNING('the lcdb settings file %s has bad permissions '
+                       '(you need to chmod 600 this file) and is insecure, '
+                       'not reading...' % DBCREDENTIALS)
+            HAVECONF = False
+
+    else:
+
+        DBHOST = CONF.get('lcdb','host')
+        DBPORT = CONF.get('lcdb','port')
+        DBDATA = CONF.get('lcdb','database')
+        DBUSER = CONF.get('lcdb','user')
+        DBPASS = CONF.get('lcdb','password')
+
+    if DBHOST and DBPORT and DBDATA and DBUSER and DBPASS:
+        HAVECONF = True
+    else:
+        HAVECONF = False
 
 except:
-    LOGWARNING("no configuration file lcdb.conf "
+
+    LOGEXCEPTION("no configuration file "
                "found for this module in %s, "
                "the LCDB object's open_default() function won't work" %
                modpath)
