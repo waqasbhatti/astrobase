@@ -38,8 +38,15 @@ import subprocess
 
 ## EMAIL SETTINGS ##
 
+# get config from the astrobase.conf file
+import ConfigParser
+modpath = os.path.abspath(os.path.dirname(__file__))
+CONF_FILE = os.path.join(modpath,'astrobase.conf')
+CONF = ConfigParser.ConfigParser()
+CONF.read(CONF_FILE)
+
 # first, check if the .emailsettings file exists and has permissions 0600
-SETTINGSFILE = os.path.join(os.path.dirname(__file__), '.emailsettings')
+SETTINGSFILE = os.path.join(modpath, CONF.get('email','credentials'))
 
 if os.path.exists(SETTINGSFILE):
 
@@ -54,10 +61,11 @@ if os.path.exists(SETTINGSFILE):
 
     else:
         raise OSError('the email settings file %s has bad permissions '
-              '(chmod 600 this file) and is insecure, not reading...'
-              % SETTINGSFILE)
+                      '(you need to chmod 600 this file) and '
+                      'is insecure, not reading...'
+                      % SETTINGSFILE)
 else:
-    raise IOError('the email settings file (.emailsettings) does not exist!')
+    raise IOError('the email settings file (%s does not exist!' % SETTINGSFILE)
 
 
 EMAIL_TEMPLATE = '''\

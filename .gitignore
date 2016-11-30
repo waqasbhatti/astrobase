@@ -23,6 +23,7 @@ docs/users.txt
 *.gz
 *.bz2
 .emailsettings
+.lcdbsettings
 */bin*
 *GITREV*
 *.o
