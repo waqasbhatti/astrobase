@@ -6,18 +6,17 @@ Stolen from http://python-packaging.readthedocs.io/en/latest/everything.html and
 modified by me.
 
 '''
+__VERSION__ = 0.1.0
 
 from setuptools import setup
-
 
 def readme():
     with open('README.md') as f:
         return f.read()
 
-
 setup(
     name='astrobase',
-    version='0.1',
+    version=__VERSION__,
     description=('A bunch of Python modules and scripts '
                  'useful for variable star work in astronomy.'),
     long_description=readme(),
