@@ -35,5 +35,4 @@ utils/*.c
 utils/*.html
 utils/*.so
 __pycache__/
-*.conf
 *.bsp
