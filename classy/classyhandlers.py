@@ -16,6 +16,8 @@ LOGGER = logging.getLogger(__name__)
 import tornado.web, tornado.websocket
 from tornado.escape import xhtml_escape, xhtml_unescape, url_unescape
 
+import zmq
+
 
 
 ##################
@@ -89,7 +91,7 @@ class WebsockHandler (tornado.websocket.WebSocketHandler):
 
     '''
 
-    def initialize(self):
+    def initialize(self, currentdir):
         '''
         This does initialization stuff using ZMQ.
 
