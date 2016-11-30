@@ -6,7 +6,7 @@ Stolen from http://python-packaging.readthedocs.io/en/latest/everything.html and
 modified by me.
 
 '''
-__VERSION__ = 0.1.0
+__version__ = 0.1.0
 
 from setuptools import setup
 
@@ -16,7 +16,7 @@ def readme():
 
 setup(
     name='astrobase',
-    version=__VERSION__,
+    version=__version__,
     description=('A bunch of Python modules and scripts '
                  'useful for variable star work in astronomy.'),
     long_description=readme(),
