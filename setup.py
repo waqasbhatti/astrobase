@@ -44,7 +44,7 @@ setup(
     ],
     entry_points={
         'console_scripts':[
-            'classy-server=classy.classyserver:main',
+            'classy-web=classy.classyserver:main',
         ],
     },
     include_package_data=True,
