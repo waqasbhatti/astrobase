@@ -116,13 +116,31 @@ def main():
     # out light curve and LSP locations
     CURRENTDIR = os.getcwd()
 
+    ############################
+    ## SET UP ZMQ and WEBSOCK ##
+    ############################
+
+    ZMQCTX = zmq.Context()
+
+    WEBSOCKURL = 'wss://localhost:%s' % options.port
+
+
     ##################
     ## URL HANDLERS ##
     ##################
 
     HANDLERS = [
-        (r'/',classyhandlers.IndexHandler, {'currentdir':CURRENTDIR}),
-        (r'/websock',classyhandlers.WebsockHandler, {'currentdir':CURRENTDIR}),
+        # index page
+        (r'/',
+         classyhandlers.IndexHandler,
+         {'currentdir':CURRENTDIR,
+          'websockurl':WEBSOCKURL}),
+        # websocket
+        (r'/websock',
+         classyhandlers.WebsockHandler,
+         {'currentdir':CURRENTDIR,
+          'context':ZMQCTX}),
+        # about page
         (r'/about',classyhandlers.AboutHandler, {'currentdir':CURRENTDIR}),
         (r'/about/',classyhandlers.AboutHandler, {'currentdir':CURRENTDIR}),
     ]
