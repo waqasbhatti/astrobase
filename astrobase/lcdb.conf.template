@@ -1,0 +1,8 @@
+# postgres database settings
+# you must fill these in for the lcdb.LCDB.open_default() function to work
+[database]
+
+user =
+password =
+database =
+host =
