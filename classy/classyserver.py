@@ -52,6 +52,9 @@ import classyhandlers
 ### APPLICATION SETUP BELOW ###
 ###############################
 
+modpath = os.path.abspath(os.path.dirname(__file__))
+CONF_FILE = os.path.join(modpath,'classy.conf')
+
 # define our commandline options
 define('port',
        default=5005,
@@ -90,15 +93,27 @@ def main():
 
     # read the conf files
     CONF = ConfigParser.ConfigParser()
-    CONF.read(os.path.join(os.path.dirname(__file__),'classy.conf'))
+    CONF.read(CONF_FILE)
 
     # get the web config vars
-    SESSIONSECRET = CONF.get('keys','secret')
+
+    # the session secret file
+    # FIXME: this should check if the permissions are 0600
+    SECRETF = os.path.join(modpath,CONF.get('web','secret'))
+
+    # get the session secret
+    SESSIONSECRET = open(SECRETF).read().strip('\n')
+
+    # get the path used for static files such as css, js, and images
     STATICPATH = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), CONF.get('paths','static'))
+        os.path.join(modpath, CONF.get('web','static'))
     )
+
+    # this is the path to the Tornado template files
     TEMPLATEPATH = os.path.join(STATICPATH,'templates')
 
+    # this is the directory classyserver.py was executed from. used to figure
+    # out light curve and LSP locations
     CURRENTDIR = os.getcwd()
 
     ##################
