@@ -40,6 +40,8 @@ setup(
         'Pillow',
         'tornado',
         'jplephem',
+        'simplejson',
+        'psycopg2',
     ],
     entry_points={
         'console_scripts':[
