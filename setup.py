@@ -30,22 +30,21 @@ setup(
     author='Waqas Bhatti',
     author_email='waqas.afzal.bhatti@gmail.com',
     license='MIT',
-    packages=['astrobase','classy'],
+    packages=['astrobase'],
     install_requires=[
         'numpy',
         'scipy',
         'astropy',
         'matplotlib',
         'Pillow',
-        'tornado',
         'jplephem',
         'simplejson',
         'psycopg2',
     ],
-    entry_points={
-        'console_scripts':[
-            'classy-web=classy.classyserver:main',
-        ],
+    # entry_points={
+    #     'console_scripts':[
+    #         'classy-web=classy.classyserver:main',
+    #     ],
     },
     include_package_data=True,
     zip_safe=False
