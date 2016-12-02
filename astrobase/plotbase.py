@@ -35,6 +35,8 @@ import logging
 from datetime import datetime
 from traceback import format_exc
 
+from urllib import urlretrieve
+
 
 #############
 ## LOGGING ##
@@ -522,12 +524,36 @@ def plot_phased_mag_series(times,
         return period, epoch, os.path.abspath(outfile)
 
 
+#########################################
+## OBJECT STAMPS FROM HATA DATA SERVER ##
+#########################################
+
+def get_dss_stamp(ra, decl, outfile, stampsize=5.0):
+    '''This gets a DSS stamp from the HAT data server.
+
+    These are a bit nicer than the DSS stamps from STScI because they have
+    crosshairs and annotations.
+
+    '''
+
+    stampsurl = (
+        "https://hatsurveys.org/lightcurves/stamps/direct?coords={ra},{decl}"
+        "&stampsize={stampsize}"
+        ).format(ra=ra,
+                 decl=decl,
+                 stampsize=stampsize)
+
+    downloaded, msg = urlretrieve(stampsurl, outfile)
+
+    return downloaded
+
 
 ##################
 ## PERIODOGRAMS ##
 ##################
 
 def plot_periodbase_lsp(lspinfo, outfile=None):
+
     '''Makes a plot of the L-S periodogram obtained from periodbase functions.
 
     If lspinfo is a dictionary, uses the information directly. If it's a
@@ -607,10 +633,11 @@ def make_lsp_phasedlc_checkplot(lspinfo,
                                 times,
                                 mags,
                                 errs,
+                                objectinfo=None,
                                 normto='globalmedian',
                                 normmingap=4.0,
                                 outfile=None,
-                                sigclip=15.0,
+                                sigclip=5.0,
                                 varepoch='min',
                                 phasewrap=True,
                                 phasesort=True,
@@ -648,6 +675,38 @@ def make_lsp_phasedlc_checkplot(lspinfo,
                      0.055126754408175715,
                      0.023441268126990749,
                      0.023239128705778048]}
+
+    If a dict is passed to objectinfo, this function will use it to figure out
+    where in the sky the checkplotted object is, and put the finding chart plus
+    some basic info into the checkplot. The objectinfo dict should look like one
+    produced for HAT light curves using the reader functions in the
+    astrobase.hatlc module:
+
+    {'bmag': 17.669,
+     'decl': -63.933598,
+     'hatid': 'HAT-786-0021445',
+     'hmag': 13.414,
+     'jmag': 14.086,
+     'kmag': 13.255,
+     'ndet': 10850,
+     'network': 'HS',
+     'pmdecl': -19.4,
+     'pmdecl_err': 5.1,
+     'pmra': 29.3,
+     'pmra_err': 4.1,
+     'ra': 23.172678,
+     'sdssg': 17.093,
+     'sdssi': 15.382,
+     'sdssr': 15.956,
+     'stations': 'HS02,HS04,HS06',
+     'twomassid': '01324144-6356009 ',
+     'ucac4id': '12566701',
+     'vmag': 16.368}
+
+    At a minimum, you must have the following fields: 'objectid', 'ra',
+    'decl'. If 'jmag', 'kmag', 'vmag', 'sdssg', 'sdssr', and 'sdssi' are
+    present, the following quantities will be calculated as well: J-K and i-J.
+
     '''
 
     if not outfile and isinstance(lspinfo,str):
@@ -667,7 +726,6 @@ def make_lsp_phasedlc_checkplot(lspinfo,
             lspinfo = pickle.load(infd)
 
     # get the things to plot out of the data
-
     if ('periods' in lspinfo and
         'lspvals' in lspinfo and
         'bestperiod' in lspinfo):
@@ -719,15 +777,13 @@ def make_lsp_phasedlc_checkplot(lspinfo,
     plottitle = '%.6f d' % bestperiod
     axes[0].set_title(plottitle)
 
-
-
     # show the best five peaks on the plot
     for bestperiod, bestpeak in zip(nbestperiods,
                                     nbestlspvals):
         axes[0].annotate('%.6f' % bestperiod,
                          xy=(bestperiod, bestpeak), xycoords='data',
                          xytext=(0.0,25.0), textcoords='offset points',
-                         arrowprops=dict(arrowstyle="->"),fontsize='x-small')
+                         arrowprops=dict(arrowstyle="->"),fontsize='14.0')
 
     # make a grid
     axes[0].grid(color='#a9a9a9',
@@ -735,6 +791,88 @@ def make_lsp_phasedlc_checkplot(lspinfo,
                  zorder=0,
                  linewidth=1.0,
                  linestyle=':')
+
+
+    # if objectinfo is present, get things from it
+    if (objectinfo and isinstance(objectinfo, dict) and
+        ('objectid' in objectinfo or 'hatid' in objectinfo)
+        and 'ra' in objectinfo and 'decl' in objectinfo and
+        objectinfo['ra'] and objectinfo['decl']):
+
+        if 'objectid' not in objectinfo:
+            objectid = objectinfo['hatid']
+        else:
+            objectid = objectinfo['objectid']
+
+        if not outfile:
+            dsspath = 'dss-stamp-%s.jpg' % objectid
+        else:
+            dsspath = 'dss-stamp-%s.jpg' % outfile.rstrip('.png')
+
+
+        LOGINFO('adding in object information for %s' % objectid)
+
+        # calculate colors
+        if ('bmag' in objectinfo and 'vmag' in objectinfo and
+            'jmag' in objectinfo and 'kmag' in objectinfo and
+            'sdssg' in objectinfo and
+            objectinfo['bmag'] and objectinfo['vmag'] and
+            objectinfo['jmag'] and objectinfo['kmag'] and
+            objectinfo['sdssg']):
+            bvcolor = objectinfo['bmag'] - objectinfo['vmag']
+            jkcolor = objectinfo['jmag'] - objectinfo['kmag']
+            gjcolor = objectinfo['sdssg'] - objectinfo['jmag']
+        else:
+            bvcolor = None
+            jkcolor = None
+            gjcolor = None
+
+        # bump the ylim of the LSP plot so that the overplotted finder and
+        # objectinfo can fit in this axes plot
+        lspylim = axes[0].get_ylim()
+        axes[0].set_ylim(lspylim[0], lspylim[1]+0.75*lspylim[1])
+
+        # get the stamp
+        try:
+            dss = get_dss_stamp(objectinfo['ra'],objectinfo['decl'], dsspath)
+            stamp = plt.imread(dsspath)
+
+            # inset plot it on the current axes
+            from mpl_toolkits.axes_grid.inset_locator import inset_axes
+            inset = inset_axes(axes[0], width="40%", height="40%", loc=1)
+            inset.imshow(stamp)
+            inset.set_xticks([])
+            inset.set_yticks([])
+        except Exception as e:
+            LOGWARNING('could not fetch a DSS stamp for this '
+                       'object %s using coords (%.3f,%.3f)' %
+                       (objectid, objectinfo['ra'], objectinfo['decl']))
+
+        # annotate with objectinfo
+        axes[0].text(0.05,0.95,'%s' % objectid,
+                     ha='left',va='center',transform=axes[0].transAxes,
+                     fontsize=18.0)
+        if bvcolor:
+            axes[0].text(0.05,0.91,'$B - V$ = %.3f' % bvcolor,
+                         ha='left',va='center',transform=axes[0].transAxes,
+                         fontsize=18.0)
+        if gjcolor:
+            axes[0].text(0.05,0.87,'$g - J$ = %.3f' % gjcolor,
+                         ha='left',va='center',transform=axes[0].transAxes,
+                         fontsize=18.0)
+        if jkcolor:
+            axes[0].text(0.05,0.83,'$J - K$ = %.3f' % jkcolor,
+                         ha='left',va='center',transform=axes[0].transAxes,
+                         fontsize=18.0)
+        if objectinfo['sdssr']:
+            axes[0].text(0.05,0.79,'SDSS $r$ mag = %.3f' % objectinfo['sdssr'],
+                         ha='left',va='center',transform=axes[0].transAxes,
+                         fontsize=18.0)
+        if objectinfo['vmag']:
+            axes[0].text(0.05,0.75,'$V$ mag = %.3f' % objectinfo['vmag'],
+                         ha='left',va='center',transform=axes[0].transAxes,
+                         fontsize=18.0)
+
 
 
     ######################################
@@ -934,8 +1072,28 @@ def make_lsp_phasedlc_checkplot(lspinfo,
             ].get_xaxis().get_major_formatter().set_useOffset(False)
 
             # make the plot title
-            plottitle = 'period %.6f d - epoch %.5f' % (varperiod,
-                                                        varepoch)
+            if periodind == 0:
+                plottitle = 'best period -> %.6f d - epoch %.5f' % (
+                    varperiod,
+                    varepoch
+                )
+            elif periodind == 1:
+                plottitle = 'best period x 0.5 -> %.6f d - epoch %.5f' % (
+                    varperiod,
+                    varepoch
+                )
+            elif periodind == 2:
+                plottitle = 'best period x 2 ->  %.6f d - epoch %.5f' % (
+                    varperiod,
+                    varepoch
+                )
+            else:
+                plottitle = 'LSP peak %s -> %.6f d - epoch %.5f' % (
+                    periodind-1,
+                    varperiod,
+                    varepoch
+                )
+
             axes[periodind+2].set_title(plottitle)
 
         # end of plotting for each ax
