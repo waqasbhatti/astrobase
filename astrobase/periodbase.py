@@ -90,6 +90,43 @@ from .glsp import generalized_lsp_value as glspval, \
     generalized_lsp_value_notau as glspvalnt
 
 
+#######################
+## UTILITY FUNCTIONS ##
+#######################
+
+def get_frequency_grid(times,
+                       samplesperpeak=5,
+                       nyquistfactor=5,
+                       minfreq=None,
+                       maxfreq=None):
+    '''This calculates a frequency grid for the period finding functions in this
+    module.
+
+    Based on the autofrequency function in astropy.stats.lombscargle.
+
+    http://docs.astropy.org/en/stable/_modules/astropy/stats/lombscargle/core.html#LombScargle.autofrequency
+
+    '''
+
+    baseline = times.max() - times.min()
+    nsamples = times.size
+
+    df = 1. / baseline / samplesperpeak
+
+    if minfreq is not None:
+        f0 = minfreq
+    else:
+        f0 = 0.5 * df
+
+    if maxfreq is not None:
+        Nf = int(npceil((maxfreq - f0) / df))
+    else:
+        Nf = int(0.5 * samplesperpeak * nyquistfactor * nsamples)
+
+    return f0 + df * nparange(Nf)
+
+
+
 ####################################
 ## BINNED DWORETSKY STRING LENGTH ##
 ####################################
@@ -103,7 +140,7 @@ def dworetsky_period_find(time,
                           verbose=False):
     '''
 
-    This is the super-slow naive version.
+    This is the super-slow naive version taken from my thesis work.
 
     Uses the string length method in Dworetsky 1983 to calculate the period of a
     time-series of magnitude measurements and associated magnitude
@@ -296,8 +333,9 @@ def pdw_worker(task):
 def pdw_period_find(times,
                     mags,
                     errs,
-                    init_p,
-                    end_p,
+                    autofreq=True,
+                    init_p=None,
+                    end_p=None,
                     f_step=1.0e-4,
                     phasebinsize=None,
                     nworkers=4,
@@ -308,8 +346,7 @@ def pdw_period_find(times,
 
     Uses the string length method in Dworetsky 1983 to calculate the period of a
     time-series of magnitude measurements and associated magnitude
-    errors. Searches in linear frequency space (which obviously doesn't
-    correspond to a linear period space).
+    errors.
 
     PARAMETERS:
 
@@ -335,11 +372,35 @@ def pdw_period_find(times,
 
     mod_mags = (fmags - npmin(fmags))/(2.0*(npmax(fmags) - npmin(fmags))) - 0.25
 
-    init_f = 1.0/end_p
-    end_f = 1.0/init_p
-    frequencies = np.arange(init_f, end_f, f_step)
-    LOGINFO('searching %s frequencies between %s and %s days^-1...' %
-            (len(frequencies),init_f,end_f))
+
+    # get the frequencies to use
+    if init_p:
+        endf = 1.0/init_p
+    else:
+        # default start period is 0.1 day
+        endf = 1.0/0.1
+
+    if end_p:
+        startf = 1.0/end_p
+    else:
+        # default end period is length of time series divided by 2
+        startf = 1.0/((stimes.max() - stimes.min())/0.5)
+
+    # if we're not using autofreq, then use the provided frequencies
+    if not autofreq:
+        frequencies = np.arange(startf, endf, stepsize)
+        LOGINFO(
+            'using %s frequency points, start P = %.3f, end P = %.3f' %
+            (frequencies.size, 1.0/endf, 1.0/startf)
+        )
+    else:
+        frequencies = get_frequency_grid(stimes)
+        LOGINFO(
+            'using autofreq with %s frequency points, '
+            'start P = %.3f, end P = %.3f' %
+            (frequencies, 1.0/frequencies.max(), 1.0/frequencies.min())
+        )
+
 
     # set up some internal stuff
     fold_time = npmin(ftimes) # fold at the first time element
@@ -432,39 +493,6 @@ def glsp_worker_notau(task):
         return glspvalnt(*task)
     except Exception as e:
         return npnan
-
-
-
-def get_frequency_grid(times,
-                       samplesperpeak=5,
-                       nyquistfactor=5,
-                       minfreq=None,
-                       maxfreq=None):
-    '''
-    This calculates a frequency grid for the Lomb Scargle function below.
-
-    Based on the autofrequency function in astropy.stats.lombscargle.
-
-    http://docs.astropy.org/en/stable/_modules/astropy/stats/lombscargle/core.html#LombScargle.autofrequency
-
-    '''
-
-    baseline = times.max() - times.min()
-    nsamples = times.size
-
-    df = 1. / baseline / samplesperpeak
-
-    if minfreq is not None:
-        f0 = minfreq
-    else:
-        f0 = 0.5 * df
-
-    if maxfreq is not None:
-        Nf = int(npceil((maxfreq - f0) / df))
-    else:
-        Nf = int(0.5 * samplesperpeak * nyquistfactor * nsamples)
-
-    return f0 + df * nparange(Nf)
 
 
 
