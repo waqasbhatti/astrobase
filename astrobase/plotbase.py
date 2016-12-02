@@ -963,7 +963,7 @@ def make_lsp_phasedlc_checkplot(lspinfo,
         ###########################
 
         # make the plot for each best period
-        lspbestperiods = nbestperiods
+        lspbestperiods = nbestperiods[::]
 
         lspperiodone = lspbestperiods[0]
         lspbestperiods.insert(1,lspperiodone*2.0)
