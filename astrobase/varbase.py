@@ -37,9 +37,13 @@ from scipy.interpolate import LSQUnivariateSpline
 from scipy.signal import savgol_filter
 
 import os
-if 'DISPLAY' not in os.environ:
+# check the DISPLAY variable to see if we can plot stuff interactively
+try:
+    dispok = os.environ['DISPLAY']
+except KeyError:
     import matplotlib
     matplotlib.use('Agg')
+    dispok = False
 
 import matplotlib.pyplot as plt
 
@@ -868,7 +872,9 @@ def whiten_magseries(times, mags, errs,
 
 
 
-def lsp_whiten(times, mags, errs, startp, endp,
+def lsp_whiten(times, mags, errs,
+               startp=None, endp=None,
+               autofreq=True,
                sigclip=30.0,
                stepsize=1.0e-4,
                initfparams=[0.6,0.2,0.2,0.1,0.1,0.1], # 3rd order series
@@ -913,7 +919,9 @@ def lsp_whiten(times, mags, errs, startp, endp,
         serrs = ferrs
 
     # now start the cycle by doing an LSP on the initial timeseries
-    lsp = pgen_lsp(stimes, smags, serrs, startp, endp,
+    lsp = pgen_lsp(stimes, smags, serrs,
+                   startp=startp, endp=endp,
+                   autofreq=autofreq,
                    sigclip=sigclip,
                    stepsize=stepsize,
                    nworkers=nworkers)
@@ -967,7 +975,9 @@ def lsp_whiten(times, mags, errs, startp, endp,
                                 wseries['wmags'],
                                 wseries['werrs'])
 
-        wlsp = pgen_lsp(wtimes, wmags, werrs, startp, endp,
+        wlsp = pgen_lsp(wtimes, wmags, werrs,
+                        startp=startp, endp=endp,
+                        autofreq=autofreq,
                         sigclip=sigclip,
                         stepsize=stepsize,
                         nworkers=nworkers)
