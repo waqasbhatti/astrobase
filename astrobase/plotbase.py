@@ -704,8 +704,8 @@ def make_lsp_phasedlc_checkplot(lspinfo,
      'vmag': 16.368}
 
     At a minimum, you must have the following fields: 'objectid', 'ra',
-    'decl'. If 'jmag', 'kmag', 'vmag', 'sdssg', 'sdssr', and 'sdssi' are
-    present, the following quantities will be calculated as well: J-K and i-J.
+    'decl'. If 'jmag', 'kmag', 'bmag', 'vmag', 'sdssr', and 'sdssi' are present,
+    the following quantities will be calculated as well: B-V, J-K, and i-J.
 
     '''
 
@@ -815,17 +815,17 @@ def make_lsp_phasedlc_checkplot(lspinfo,
         # calculate colors
         if ('bmag' in objectinfo and 'vmag' in objectinfo and
             'jmag' in objectinfo and 'kmag' in objectinfo and
-            'sdssg' in objectinfo and
+            'sdssi' in objectinfo and
             objectinfo['bmag'] and objectinfo['vmag'] and
             objectinfo['jmag'] and objectinfo['kmag'] and
             objectinfo['sdssg']):
             bvcolor = objectinfo['bmag'] - objectinfo['vmag']
             jkcolor = objectinfo['jmag'] - objectinfo['kmag']
-            gjcolor = objectinfo['sdssg'] - objectinfo['jmag']
+            ijcolor = objectinfo['sdssi'] - objectinfo['jmag']
         else:
             bvcolor = None
             jkcolor = None
-            gjcolor = None
+            ijcolor = None
 
         # bump the ylim of the LSP plot so that the overplotted finder and
         # objectinfo can fit in this axes plot
@@ -856,8 +856,8 @@ def make_lsp_phasedlc_checkplot(lspinfo,
             axes[0].text(0.05,0.91,'$B - V$ = %.3f' % bvcolor,
                          ha='left',va='center',transform=axes[0].transAxes,
                          fontsize=18.0)
-        if gjcolor:
-            axes[0].text(0.05,0.87,'$g - J$ = %.3f' % gjcolor,
+        if ijcolor:
+            axes[0].text(0.05,0.87,'$i - J$ = %.3f' % ijcolor,
                          ha='left',va='center',transform=axes[0].transAxes,
                          fontsize=18.0)
         if jkcolor:
