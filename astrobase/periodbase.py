@@ -434,12 +434,47 @@ def glsp_worker_notau(task):
         return npnan
 
 
+
+def get_frequency_grid(times,
+                       samplesperpeak=5,
+                       nyquistfactor=5,
+                       minfreq=None,
+                       maxfreq=None):
+    '''
+    This calculates a frequency grid for the Lomb Scargle function below.
+
+    Based on the autofrequency function in astropy.stats.lombscargle.
+
+    http://docs.astropy.org/en/stable/_modules/astropy/stats/lombscargle/core.html#LombScargle.autofrequency
+
+    '''
+
+    baseline = times.max() - times.min()
+    nsamples = times.size
+
+    df = 1. / baseline / samplesperpeak
+
+    if minfreq is not None:
+        f0 = minfreq
+    else:
+        f0 = 0.5 * df
+
+    if maxfreq is not None:
+        Nf = int(npceil((maxfreq - f0) / df))
+    else:
+        Nf = int(0.5 * samplesperpeak * nyquistfactor * nsamples)
+
+    return f0 + df * nparange(Nf)
+
+
+
 def pgen_lsp(
         times,
         mags,
         errs,
-        startp,
-        endp,
+        startp=None,
+        endp=None,
+        autofreq=True,
         nbestpeaks=5,
         periodepsilon=0.1, # 0.1
         stepsize=1.0e-4,
@@ -447,9 +482,12 @@ def pgen_lsp(
         sigclip=30.0,
         glspfunc=glsp_worker,
 ):
-    '''
-    This calculates the generalized LSP value for a single frequency omega given
-    times, mags, errors. Uses the algorithm from Zechmeister and Kurster (2009).
+    '''This calculates the generalized LSP given times, mags, errors.
+
+    Uses the algorithm from Zechmeister and Kurster (2009). By default, this
+    calculates a frequency grid to use automatically, based on the autofrequency
+    function from astropy.stats.lombscargle. If startp and endp are provided,
+    will generate a frequency grid based on these instead.
 
     '''
 
@@ -484,12 +522,37 @@ def pgen_lsp(
             smags = fmags
             serrs = ferrs
 
+        # make sure there are enough points to calculate a spectrum
         if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
 
             # get the frequencies to use
-            startf = 1.0/endp
-            endf = 1.0/startp
-            omegas = 2*np.pi*np.arange(startf, endf, stepsize)
+            if startp:
+                endf = 1.0/startp
+            else:
+                # default start period is 0.1 day
+                endf = 1.0/0.1
+
+            if endp:
+                startf = 1.0/endp
+            else:
+                # default end period is length of time series divided by 2
+                startf = 1.0/((stimes.max() - stimes.min())/0.5)
+
+            # if we're not using autofreq, then use the provided frequencies
+            if not autofreq:
+                omegas = 2*np.pi*np.arange(startf, endf, stepsize)
+                LOGINFO(
+                    'using %s frequency points, start P = %.3f, end P = %.3f' %
+                    (omegas.size, 1.0/endf, 1.0/startf)
+                )
+            else:
+                freqs = get_frequency_grid(stimes)
+                omegas = 2*np.pi*freqs
+                LOGINFO(
+                    'using autofreq with %s frequency points, '
+                    'start P = %.3f, end P = %.3f' %
+                    (omegas.size, 1.0/freqs.max(), 1.0/freqs.min())
+                )
 
             # map to parallel workers
             pool = Pool(nworkers)
