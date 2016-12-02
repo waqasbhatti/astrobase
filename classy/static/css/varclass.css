@@ -1,6 +1,0 @@
-/* This is the CLASSY CSS file to override Bootstrap defaults */
-
-/* needed so the fixed top bar doesn't eat content */
-body {
-    padding-top: 5rem;
-}
