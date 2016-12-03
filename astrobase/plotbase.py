@@ -680,8 +680,8 @@ def make_lsp_phasedlc_checkplot(lspinfo,
 
     A checkplot is a 3 x 3 grid of plots like so:
 
-    [     LSP plot        ] [     unphased LC     ] [ period 1 phased LC ]
-    [period 1 phased LC x2] [period 1 phased LC /2] [ period 2 phased LC ]
+    [LSP plot + objectinfo] [     unphased LC     ] [ period 1 phased LC ]
+    [period 1 phased LC /2] [period 1 phased LC x2] [ period 2 phased LC ]
     [ period 3 phased LC  ] [period 4 phased LC   ] [ period 5 phased LC ]
 
     This is used to sanity check the five best periods obtained from an LSP
@@ -711,13 +711,14 @@ def make_lsp_phasedlc_checkplot(lspinfo,
 
     If a dict is passed to objectinfo, this function will use it to figure out
     where in the sky the checkplotted object is, and put the finding chart plus
-    some basic info into the checkplot. The objectinfo dict should look like one
-    produced for HAT light curves using the reader functions in the
-    astrobase.hatlc module:
+    some basic info into the checkplot. The objectinfo dict should look
+    something like those produced for HAT light curves using the reader
+    functions in the astrobase.hatlc module, e.g.:
 
     {'bmag': 17.669,
      'decl': -63.933598,
      'hatid': 'HAT-786-0021445',
+     'objectid': 'HAT-786-0021445',
      'hmag': 13.414,
      'jmag': 14.086,
      'kmag': 13.255,
@@ -737,8 +738,10 @@ def make_lsp_phasedlc_checkplot(lspinfo,
      'vmag': 16.368}
 
     At a minimum, you must have the following fields: 'objectid', 'ra',
-    'decl'. If 'jmag', 'kmag', 'bmag', 'vmag', 'sdssr', and 'sdssi' are present,
-    the following quantities will be calculated as well: B-V, J-K, and i-J.
+    'decl'. If 'jmag', 'kmag', 'bmag', 'vmag', 'sdssr', and 'sdssi' are also
+    present, the following quantities will be calculated: B-V, J-K, and i-J. If
+    'pmra' and 'pmdecl' are present as well, the total proper motion and reduced
+    J magnitude proper motion will be calculated.
 
     findercmap sets the matplotlib colormap of the downloaded finder chart:
 
