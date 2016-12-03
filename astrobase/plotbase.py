@@ -98,6 +98,8 @@ from .lcmath import phase_magseries, phase_magseries_with_errs, \
 
 from .varbase import spline_fit_magseries
 
+from .coordutils import total_proper_motion, reduced_proper_motion
+
 #########################
 ## SIMPLE LIGHT CURVES ##
 #########################
@@ -881,8 +883,9 @@ def make_lsp_phasedlc_checkplot(lspinfo,
             inset.set_yticks([])
             inset.set_frame_on(False)
 
-            inset.axvline(x=150,ymin=0.1,ymax=0.4,linewidth=2.0,color='white')
-            inset.axhline(y=150,xmin=0.1,xmax=0.4,linewidth=2.0,color='white')
+            # grid lines pointing to the center of the frame
+            inset.axvline(x=151,ymin=0.2,ymax=0.4,linewidth=2.0,color='k')
+            inset.axhline(y=151,xmin=0.2,xmax=0.4,linewidth=2.0,color='k')
 
         except Exception as e:
             LOGEXCEPTION('could not fetch a DSS stamp for this '
@@ -916,6 +919,26 @@ def make_lsp_phasedlc_checkplot(lspinfo,
             axes[0].text(0.05,0.75,'$V$ mag = %.3f' % objectinfo['vmag'],
                          ha='left',va='center',transform=axes[0].transAxes,
                          fontsize=18.0)
+
+        # add in proper motion stuff if available in objectinfo
+        if ('pmra' in objectinfo and objectinfo['pmra'] and
+            'pmdecl' in objectinfo and objectinfo['pmdecl']):
+
+            pm = total_proper_motion(objectinfo['pmra'],
+                                     objectinfo['pmdecl'],
+                                     objectinfo['decl'])
+
+            axes[0].text(0.05,0.75,'$\mu$ = %.2f mas/yr' % pm,
+                         ha='left',va='center',transform=axes[0].transAxes,
+                         fontsize=18.0)
+
+            if 'jmag' in objectinfo and objectinfo['jmag']:
+
+                rpm = reduced_proper_motion(pm,objectinfo['jmag'])
+                axes[0].text(0.05,0.75,'$H_J$ = %.2f' % pm,
+                             ha='left',va='center',transform=axes[0].transAxes,
+                             fontsize=18.0)
+
 
         # once done with adding objectinfo, delete the downloaded stamp
         if os.path.exists(dsspath):
