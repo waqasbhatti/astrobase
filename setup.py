@@ -26,7 +26,7 @@ setup(
         'Programming Language :: Python :: 2.7',
     ],
     keywords='astronomy',
-    url='https://github.com/waqasbhatti/astrobase',
+    url='https://wbhatti.org/code/astrobase',
     author='Waqas Bhatti',
     author_email='waqas.afzal.bhatti@gmail.com',
     license='MIT',
@@ -39,12 +39,14 @@ setup(
         'Pillow',
         'jplephem',
         'simplejson',
-        'psycopg2',
         'astroquery',
     ],
+    extras_require={
+        'LCDB':['psycopg2'],
+    },
     # entry_points={
     #     'console_scripts':[
-    #         'classy-web=classy.classyserver:main',
+    #         'fitshdr.py=astrobase.imageutils:fitshdr',
     #     ],
     #},
     include_package_data=True,
