@@ -411,8 +411,8 @@ def pdw_period_find(times,
             if end_p:
                 startf = 1.0/end_p
             else:
-                # default end period is length of time series divided by 2
-                startf = 1.0/((stimes.max() - stimes.min())/0.5)
+                # default end period is length of time series
+                startf = 1.0/(stimes.max() - stimes.min())
 
             # if we're not using autofreq, then use the provided frequencies
             if not autofreq:
@@ -620,7 +620,7 @@ def pgen_lsp(
                 startf = 1.0/endp
             else:
                 # default end period is length of time series divided by 2
-                startf = 1.0/((stimes.max() - stimes.min())/0.5)
+                startf = 1.0/(stimes.max() - stimes.min())
 
             # if we're not using autofreq, then use the provided frequencies
             if not autofreq:
