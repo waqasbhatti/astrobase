@@ -37,6 +37,8 @@ from traceback import format_exc
 
 from urllib import urlretrieve
 
+# for downloading DSS frames
+from astroquery.skyview import SkyView
 
 #############
 ## LOGGING ##
@@ -524,9 +526,29 @@ def plot_phased_mag_series(times,
         return period, epoch, os.path.abspath(outfile)
 
 
-#########################################
-## OBJECT STAMPS FROM HATA DATA SERVER ##
-#########################################
+###################
+## OBJECT STAMPS ##
+###################
+
+def astroquery_skyview_stamp(ra, decl, survey='DSS2 Red'):
+    '''
+    This uses astroquery's SkyView connector to get stamps.
+
+    '''
+
+    position = '{ra:.3f}d{decl:+.3f}d'.format(ra=ra,decl=decl)
+
+    imglist = SkyView.get_images(position=position,
+                                 survey=[survey],
+                                 coordinates='J2000')
+
+    frame = imglist[0][0].data
+    for x in imglist:
+        x.close()
+
+    return frame
+
+
 
 def get_dss_stamp(ra, decl, outfile, stampsize=5.0):
     '''This gets a DSS stamp from the HAT data server.
@@ -835,8 +857,8 @@ def make_lsp_phasedlc_checkplot(lspinfo,
 
         # get the stamp
         try:
-            dss = get_dss_stamp(objectinfo['ra'],objectinfo['decl'], dsspath)
-            stamp = plt.imread(dsspath)
+            dss = astroquery_skyview_stamp(objectinfo['ra'],objectinfo['decl'])
+            stamp = dss
 
             # inset plot it on the current axes
             from mpl_toolkits.axes_grid.inset_locator import inset_axes
@@ -844,10 +866,15 @@ def make_lsp_phasedlc_checkplot(lspinfo,
             inset.imshow(stamp)
             inset.set_xticks([])
             inset.set_yticks([])
+            inset.set_frame_on(False)
+
+            inset.axvline(x=150,ymin=0.1,ymax=0.4,linewidth=2.0,color='white')
+            inset.axhline(y=150,xmin=0.1,xmax=0.4,linewidth=2.0,color='white')
+
         except Exception as e:
-            LOGWARNING('could not fetch a DSS stamp for this '
-                       'object %s using coords (%.3f,%.3f)' %
-                       (objectid, objectinfo['ra'], objectinfo['decl']))
+            LOGEXCEPTION('could not fetch a DSS stamp for this '
+                         'object %s using coords (%.3f,%.3f)' %
+                         (objectid, objectinfo['ra'], objectinfo['decl']))
 
         # annotate with objectinfo
         axes[0].text(0.05,0.95,'%s' % objectid,

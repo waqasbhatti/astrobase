@@ -40,6 +40,7 @@ setup(
         'jplephem',
         'simplejson',
         'psycopg2',
+        'astroquery',
     ],
     # entry_points={
     #     'console_scripts':[
