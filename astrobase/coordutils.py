@@ -376,3 +376,30 @@ def xmatch_neighbors(ra1, dec1, ra2, dec2, match_radius=60.0,
 
     else:
         return (False,)
+
+
+###################
+## PROPER MOTION ##
+###################
+
+def total_proper_motion(pmra, pmdecl, decl):
+    '''
+    This calculates the total proper motion of an object.
+
+    '''
+
+    pm = np.sqrt( pmdecl*pmdecl + pmra*pmra*np.cos(np.radians(decl)) *
+                  np.cos(np.radians(decl)) )
+    return pm
+
+
+def reduced_proper_motion(jmag, propermotion):
+    '''
+    This calculates the reduced proper motion using the J magnitude.
+
+    This is an effective measure of the absolute magnitude in the J band.
+
+    '''
+
+    rpm = jmag + 5.0*np.log10(propermotion/1000.0)
+    return rpm
