@@ -804,6 +804,7 @@ def make_lsp_phasedlc_checkplot(lspinfo,
         else:
             objectid = objectinfo['objectid']
 
+        # figure out dss stamp output path
         if not outfile:
             dsspath = 'dss-stamp-%s.jpg' % objectid
         else:
@@ -873,7 +874,11 @@ def make_lsp_phasedlc_checkplot(lspinfo,
                          ha='left',va='center',transform=axes[0].transAxes,
                          fontsize=18.0)
 
+        # once done with adding objectinfo, delete the downloaded stamp
+        if os.path.exists(dsspath):
+            os.remove(dsspath)
 
+    # end of adding in objectinfo
 
     ######################################
     ## NOW MAKE THE PHASED LIGHT CURVES ##
