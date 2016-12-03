@@ -18,9 +18,6 @@ import hashlib
 from datetime import datetime
 from traceback import format_exc
 
-import psycopg2 as pg
-import psycopg2.extras
-
 #############
 ## LOGGING ##
 #############
@@ -65,6 +62,24 @@ def LOGEXCEPTION(message):
                 message, format_exc()
                 )
             )
+
+#############################
+## SEE IF WE HAVE PSYCOPG2 ##
+#############################
+try:
+
+    import psycopg2 as pg
+    import psycopg2.extras
+
+except:
+
+    LOGEXCEPTION('psycopg2 is not available for import. '
+                 'Please install it to use this module.\n'
+                 'You may have to get development packages for libpq '
+                 '(lipgq-dev, postgresql-devel, etc.) to compile '
+                 'psycopg2 successfully.')
+    raise
+
 
 ############
 ## CONFIG ##
