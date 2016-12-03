@@ -533,16 +533,11 @@ def plot_phased_mag_series(times,
 ###################
 
 def astroquery_skyview_stamp(ra, decl, survey='DSS2 Red',
-                             flip=True,
-                             colormap='gray_r'):
+                             flip=True):
     '''
     This uses astroquery's SkyView connector to get stamps.
 
     flip = True will flip the image top to bottom.
-
-    colormap = '...' will set the colormap to a matplotlib colormap:
-
-    http://matplotlib.org/examples/color/colormaps_reference.html
 
     '''
 
@@ -671,6 +666,7 @@ def make_lsp_phasedlc_checkplot(lspinfo,
                                 mags,
                                 errs,
                                 objectinfo=None,
+                                findercmap='gray_r',
                                 normto='globalmedian',
                                 normmingap=4.0,
                                 outfile=None,
@@ -743,6 +739,10 @@ def make_lsp_phasedlc_checkplot(lspinfo,
     At a minimum, you must have the following fields: 'objectid', 'ra',
     'decl'. If 'jmag', 'kmag', 'bmag', 'vmag', 'sdssr', and 'sdssi' are present,
     the following quantities will be calculated as well: B-V, J-K, and i-J.
+
+    findercmap sets the matplotlib colormap of the downloaded finder chart:
+
+    http://matplotlib.org/examples/color/colormaps_reference.html
 
     '''
 
@@ -878,14 +878,14 @@ def make_lsp_phasedlc_checkplot(lspinfo,
             # inset plot it on the current axes
             from mpl_toolkits.axes_grid.inset_locator import inset_axes
             inset = inset_axes(axes[0], width="40%", height="40%", loc=1)
-            inset.imshow(stamp)
+            inset.imshow(stamp,cmap=findercmap)
             inset.set_xticks([])
             inset.set_yticks([])
             inset.set_frame_on(False)
 
             # grid lines pointing to the center of the frame
-            inset.axvline(x=151,ymin=0.2,ymax=0.4,linewidth=2.0,color='k')
-            inset.axhline(y=151,xmin=0.2,xmax=0.4,linewidth=2.0,color='k')
+            inset.axvline(x=150,ymin=0.2,ymax=0.4,linewidth=2.0,color='k')
+            inset.axhline(y=150,xmin=0.2,xmax=0.4,linewidth=2.0,color='k')
 
         except Exception as e:
             LOGEXCEPTION('could not fetch a DSS stamp for this '
@@ -895,28 +895,38 @@ def make_lsp_phasedlc_checkplot(lspinfo,
         # annotate with objectinfo
         axes[0].text(
             0.05,0.95,
-            '%s (%.3f, %.3f)' % (objectid, objectinfo['ra'],objectinfo['decl']),
+            '%s' % objectid,
             ha='left',va='center',transform=axes[0].transAxes,
             fontsize=18.0
         )
+
+        axes[0].text(
+            0.05,0.91,
+            'RA = %.3f, DEC = %.3f' % (objectinfo['ra'], objectinfo['decl']),
+            ha='left',va='center',transform=axes[0].transAxes,
+            fontsize=18.0
+        )
+
         if bvcolor:
-            axes[0].text(0.05,0.91,'$B - V$ = %.3f' % bvcolor,
+            axes[0].text(0.05,0.87,
+                         '$B - V$ = %.3f, $V$ = %.3f' % (bvcolor,
+                                                         objectinfo['vmag']),
                          ha='left',va='center',transform=axes[0].transAxes,
                          fontsize=18.0)
         if ijcolor:
-            axes[0].text(0.05,0.87,'$i - J$ = %.3f' % ijcolor,
+            axes[0].text(0.05,0.83,
+                         '$i - J$ = %.3f, $J$ = %.3f' % (ijcolor,
+                                                         objectinfo['jmag']),
                          ha='left',va='center',transform=axes[0].transAxes,
                          fontsize=18.0)
         if jkcolor:
-            axes[0].text(0.05,0.83,'$J - K$ = %.3f' % jkcolor,
+            axes[0].text(0.05,0.79,
+                         '$J - K$ = %.3f, $K$ = %.3f' % (jkcolor,
+                                                         objectinfo['kmag']),
                          ha='left',va='center',transform=axes[0].transAxes,
                          fontsize=18.0)
         if objectinfo['sdssr']:
-            axes[0].text(0.05,0.79,'SDSS $r$ mag = %.3f' % objectinfo['sdssr'],
-                         ha='left',va='center',transform=axes[0].transAxes,
-                         fontsize=18.0)
-        if objectinfo['vmag']:
-            axes[0].text(0.05,0.75,'$V$ mag = %.3f' % objectinfo['vmag'],
+            axes[0].text(0.05,0.75,'SDSS $r$ = %.3f' % objectinfo['sdssr'],
                          ha='left',va='center',transform=axes[0].transAxes,
                          fontsize=18.0)
 
@@ -928,14 +938,14 @@ def make_lsp_phasedlc_checkplot(lspinfo,
                                      objectinfo['pmdecl'],
                                      objectinfo['decl'])
 
-            axes[0].text(0.05,0.75,'$\mu$ = %.2f mas/yr' % pm,
+            axes[0].text(0.05,0.67,'$\mu$ = %.2f mas yr$^{-1}$' % pm,
                          ha='left',va='center',transform=axes[0].transAxes,
                          fontsize=18.0)
 
             if 'jmag' in objectinfo and objectinfo['jmag']:
 
-                rpm = reduced_proper_motion(pm,objectinfo['jmag'])
-                axes[0].text(0.05,0.75,'$H_J$ = %.2f' % pm,
+                rpm = reduced_proper_motion(objectinfo['jmag'],pm)
+                axes[0].text(0.05,0.63,'$H_J$ = %.2f' % rpm,
                              ha='left',va='center',transform=axes[0].transAxes,
                              fontsize=18.0)
 
