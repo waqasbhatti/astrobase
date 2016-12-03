@@ -530,9 +530,17 @@ def plot_phased_mag_series(times,
 ## OBJECT STAMPS ##
 ###################
 
-def astroquery_skyview_stamp(ra, decl, survey='DSS2 Red', flip=True):
+def astroquery_skyview_stamp(ra, decl, survey='DSS2 Red',
+                             flip=True,
+                             colormap='gray_r'):
     '''
     This uses astroquery's SkyView connector to get stamps.
+
+    flip = True will flip the image top to bottom.
+
+    colormap = '...' will set the colormap to a matplotlib colormap:
+
+    http://matplotlib.org/examples/color/colormaps_reference.html
 
     '''
 
