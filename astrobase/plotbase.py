@@ -661,22 +661,22 @@ def plot_periodbase_lsp(lspinfo, outfile=None):
 
 
 
-def make_lsp_phasedlc_checkplot(lspinfo,
-                                times,
-                                mags,
-                                errs,
-                                objectinfo=None,
-                                findercmap='gray_r',
-                                normto='globalmedian',
-                                normmingap=4.0,
-                                outfile=None,
-                                sigclip=5.0,
-                                varepoch='min',
-                                phasewrap=True,
-                                phasesort=True,
-                                phasebin=0.002,
-                                plotxlim=[-0.8,0.8]):
-    '''This makes a phased LC checkplot for a single LSP info dict.
+def make_checkplot(lspinfo,
+                   times,
+                   mags,
+                   errs,
+                   objectinfo=None,
+                   findercmap='gray_r',
+                   normto='globalmedian',
+                   normmingap=4.0,
+                   outfile=None,
+                   sigclip=5.0,
+                   varepoch='min',
+                   phasewrap=True,
+                   phasesort=True,
+                   phasebin=0.002,
+                   plotxlim=[-0.8,0.8]):
+    '''This makes a checkplot for an info dict from a period-finding routine.
 
     A checkplot is a 3 x 3 grid of plots like so:
 
