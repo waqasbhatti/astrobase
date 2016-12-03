@@ -530,7 +530,7 @@ def plot_phased_mag_series(times,
 ## OBJECT STAMPS ##
 ###################
 
-def astroquery_skyview_stamp(ra, decl, survey='DSS2 Red'):
+def astroquery_skyview_stamp(ra, decl, survey='DSS2 Red', flip=True):
     '''
     This uses astroquery's SkyView connector to get stamps.
 
@@ -542,7 +542,12 @@ def astroquery_skyview_stamp(ra, decl, survey='DSS2 Red'):
                                  survey=[survey],
                                  coordinates='J2000')
 
+    # this frame is usually upside down (at least for DSS), flip it if asked for
     frame = imglist[0][0].data
+
+    if flip:
+        frame = np.flipud(frame)
+
     for x in imglist:
         x.close()
 
@@ -877,9 +882,12 @@ def make_lsp_phasedlc_checkplot(lspinfo,
                          (objectid, objectinfo['ra'], objectinfo['decl']))
 
         # annotate with objectinfo
-        axes[0].text(0.05,0.95,'%s' % objectid,
-                     ha='left',va='center',transform=axes[0].transAxes,
-                     fontsize=18.0)
+        axes[0].text(
+            0.05,0.95,
+            '%s (%.3f, %.3f)' % (objectid, objectinfo['ra'],objectinfo['decl']),
+            ha='left',va='center',transform=axes[0].transAxes,
+            fontsize=18.0
+        )
         if bvcolor:
             axes[0].text(0.05,0.91,'$B - V$ = %.3f' % bvcolor,
                          ha='left',va='center',transform=axes[0].transAxes,
