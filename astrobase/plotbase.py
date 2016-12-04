@@ -37,8 +37,11 @@ from traceback import format_exc
 
 from urllib import urlretrieve
 
-# for downloading DSS frames
+# for downloading DSS stamps from NASA GSFC SkyView
 from astroquery.skyview import SkyView
+
+# for convolving DSS stamps to simulate seeing effects
+import astropy.convolution as aconv
 
 #############
 ## LOGGING ##
@@ -533,11 +536,22 @@ def plot_phased_mag_series(times,
 ###################
 
 def astroquery_skyview_stamp(ra, decl, survey='DSS2 Red',
-                             flip=True):
-    '''
-    This uses astroquery's SkyView connector to get stamps.
+                             flip=True,
+                             convolvewith=None
+):
+    '''This uses astroquery's SkyView connector to get stamps.
 
     flip = True will flip the image top to bottom.
+
+    if convolvwith is an astropy.convolution kernel:
+
+    http://docs.astropy.org/en/stable/convolution/kernels.html
+
+    this will return the stamp convolved with that kernel. This can be useful to
+    see effects of wide-field telescopes (like the HATNet and HATSouth lenses)
+    degrading the nominal 1 arcsec/px of DSS, causing blending of targets and
+    any variability.
+
 
     '''
 
@@ -556,7 +570,12 @@ def astroquery_skyview_stamp(ra, decl, survey='DSS2 Red',
     for x in imglist:
         x.close()
 
-    return frame
+    if convolvewith:
+        convolved = aconv.convolve(frame, convolvewith)
+        return frame
+
+    else:
+        return frame
 
 
 
