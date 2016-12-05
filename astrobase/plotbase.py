@@ -892,7 +892,7 @@ def make_checkplot(lspinfo,
         # bump the ylim of the LSP plot so that the overplotted finder and
         # objectinfo can fit in this axes plot
         lspylim = axes[0].get_ylim()
-        axes[0].set_ylim(lspylim[0], lspylim[1]+0.75*lspylim[1])
+        axes[0].set_ylim(lspylim[0], lspylim[1]+0.75*(lspylim[1]-lspylim[0]))
 
         # get the stamp
         try:
