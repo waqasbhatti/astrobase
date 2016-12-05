@@ -583,7 +583,7 @@ def stellingwerf_pdm_worker(task):
 
 def stellingwerf_pdm(times,
                      mags,
-                     errrs,
+                     errs,
                      autofreq=True,
                      startp=None,
                      endp=None,
