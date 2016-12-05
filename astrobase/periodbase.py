@@ -130,6 +130,7 @@ def get_frequency_grid(times,
 
 ###############################################
 ## DWORETSKY STRING LENGTH (Dworetsky+ 1983) ##
+##     (don't use this -- it's very slow)    ##
 ###############################################
 
 def dworetsky_period_find(time,
@@ -601,6 +602,7 @@ def stellingwerf_pdm(times,
                      autofreq=True,
                      startp=None,
                      endp=None,
+                     normalize=False,
                      stepsize=1.0e-4,
                      phasebinsize=0.05,
                      mindetperbin=9,
@@ -608,9 +610,7 @@ def stellingwerf_pdm(times,
                      periodepsilon=0.1, # 0.1
                      sigclip=10.0,
                      nworkers=4):
-    '''
-
-    This runs a parallel Stellingwerf PDM period search.
+    '''This runs a parallel Stellingwerf PDM period search.
 
     '''
 
@@ -686,9 +686,12 @@ def stellingwerf_pdm(times,
 
             # renormalize the working mags to zero and scale them so that the
             # variance = 1 for use with our LSP functions
-            # nmags = (smags - npmedian(smags))/npstd(smags)
+            if normalize:
+                nmags = (smags - npmedian(smags))/npstd(smags)
+            else:
+                nmags = smags
 
-            tasks = [(stimes, smags, serrs, x, phasebinsize, mindetperbin)
+            tasks = [(stimes, nmags, serrs, x, phasebinsize, mindetperbin)
                      for x in frequencies]
 
             lsp = pool.map(stellingwerf_pdm_worker, tasks)
@@ -888,6 +891,7 @@ def aov_periodfind(times,
                    autofreq=True,
                    startp=None,
                    endp=None,
+                   normalize=True,
                    stepsize=1.0e-4,
                    phasebinsize=0.05,
                    mindetperbin=9,
@@ -895,9 +899,10 @@ def aov_periodfind(times,
                    periodepsilon=0.1, # 0.1
                    sigclip=10.0,
                    nworkers=4):
-    '''
+    '''This runs a parallel AoV period search.
 
-    This runs a parallel AoV period search.
+    NOTE: normalize = True here as recommended by Schwarzenberg-Cerny 1996,
+    i.e. mags will be normalized to zero and rescaled so their variance = 1.0
 
     '''
 
@@ -973,9 +978,12 @@ def aov_periodfind(times,
 
             # renormalize the working mags to zero and scale them so that the
             # variance = 1 for use with our LSP functions
-            # nmags = (smags - npmedian(smags))/npstd(smags)
+            if normalize:
+                nmags = (smags - npmedian(smags))/npstd(smags)
+            else:
+                nmags = smags
 
-            tasks = [(stimes, smags, serrs, x, phasebinsize, mindetperbin)
+            tasks = [(stimes, nmags, serrs, x, phasebinsize, mindetperbin)
                      for x in frequencies]
 
             lsp = pool.map(aov_worker, tasks)
@@ -1058,6 +1066,7 @@ def aov_periodfind(times,
                 'nbestperiods':None,
                 'lspvals':None,
                 'periods':None}
+
 
 
 ##############################
