@@ -127,9 +127,9 @@ def get_frequency_grid(times,
 
 
 
-####################################
-## BINNED DWORETSKY STRING LENGTH ##
-####################################
+#############################
+## DWORETSKY STRING LENGTH ##
+#############################
 
 def dworetsky_period_find(time,
                           mag,
@@ -341,13 +341,11 @@ def pdw_period_find(times,
                     sigclip=10.0,
                     nworkers=4,
                     verbose=False):
-    '''
-
-    This is the parallel version of the function above.
+    '''This is the parallel version of the function above.
 
     Uses the string length method in Dworetsky 1983 to calculate the period of a
-    time-series of magnitude measurements and associated magnitude
-    errors.
+    time-series of magnitude measurements and associated magnitude errors. This
+    can optionally bin in phase to try to speed up the calculation.
 
     PARAMETERS:
 
@@ -515,6 +513,246 @@ def pdw_period_find(times,
 ##################################################
 ## PHASE DISPERSION MINIMIZATION (Stellingwerf) ##
 ##################################################
+
+def stellingwerf_pdm_theta(times, mags, errs, frequency,
+                           binsize=0.002, minbin=9):
+    '''
+    This calculates the Stellingwerf PDM theta value at a test frequency.
+
+    '''
+
+    period = 1.0/frequency
+    fold_time = times[0]
+
+    phased = phase_magseries(times,
+                             mags,
+                             period,
+                             fold_time,
+                             wrap=False,
+                             sort=True)
+
+    bins = np.arange(0.0, 1.0, binsize)
+    binnedphaseinds = npdigitize(phases, bins)
+
+    for x in npunique(binnedphaseinds):
+
+        thisbin_inds = binnedphaseinds == x
+        thisbin_phases = phases[thisbin_inds]
+        thisbin_mags = mags[thisbin_inds]
+
+        binvariances = []
+
+        if thisbin_inds.size > minbin:
+            binvariances.append(npvar(thisbin_mags))
+
+
+    # now calculate theta
+    theta = npsum(nparray(binvariances))/npvar(mags)
+
+    return theta
+
+
+
+def stellingwerf_pdm_worker(task):
+    '''
+    This is a parallel worker for the function below.
+
+    task[0] = frequency
+    task[1] = times
+    task[2] = mags
+    task[3] = errs
+    task[4] = binsize
+    task[5] = minbin
+
+    '''
+
+    frequency, times, mags, errs, binsize, minbin = task
+
+    try:
+
+        theta = stellingwerf_pdm_theta(times, mags, errs, frequency,
+                                       binsize=binsize, minbin=minbin)
+
+        return theta
+
+    except Exception as e:
+
+        return npnan
+
+
+
+def stellingwerf_pdm(times,
+                     mags,
+                     errrs,
+                     autofreq=True,
+                     startp=None,
+                     endp=None,
+                     stepsize=1.0e-4,
+                     phasebinsize=0.002,
+                     mindetperbin=9,
+                     sigclip=10.0,
+                     nworkers=4):
+    '''
+
+    This runs a parallel Stellingwerf PDM period search.
+
+    '''
+
+    # get rid of nans first
+    find = np.isfinite(times) & np.isfinite(mags) & np.isfinite(errs)
+    ftimes = times[find]
+    fmags = mags[find]
+    ferrs = errs[find]
+
+    if len(ftimes) > 9 and len(fmags) > 9 and len(ferrs) > 9:
+
+        # get the median and stdev = 1.483 x MAD
+        median_mag = np.median(fmags)
+        stddev_mag = (np.median(np.abs(fmags - median_mag))) * 1.483
+
+        # sigclip next
+        if sigclip:
+
+            sigind = (np.abs(fmags - median_mag)) < (sigclip * stddev_mag)
+
+            stimes = ftimes[sigind]
+            smags = fmags[sigind]
+            serrs = ferrs[sigind]
+
+            LOGINFO('sigclip = %s: before = %s observations, '
+                    'after = %s observations' %
+                    (sigclip, len(times), len(stimes)))
+
+        else:
+
+            stimes = ftimes
+            smags = fmags
+            serrs = ferrs
+
+        # make sure there are enough points to calculate a spectrum
+        if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
+
+            # get the frequencies to use
+            if startp:
+                endf = 1.0/startp
+            else:
+                # default start period is 0.1 day
+                endf = 1.0/0.1
+
+            if endp:
+                startf = 1.0/endp
+            else:
+                # default end period is length of time series divided by 2
+                startf = 1.0/(stimes.max() - stimes.min())
+
+            # if we're not using autofreq, then use the provided frequencies
+            if not autofreq:
+                frequencies = np.arange(startf, endf, stepsize)
+                LOGINFO(
+                    'using %s frequency points, start P = %.3f, end P = %.3f' %
+                    (frequencies.size, 1.0/endf, 1.0/startf)
+                )
+            else:
+                # this gets an automatic grid of frequencies to use
+                frequencies = get_frequency_grid(stimes,
+                                                 minfreq=startf,
+                                                 maxfreq=endf)
+                LOGINFO(
+                    'using autofreq with %s frequency points, '
+                    'start P = %.3f, end P = %.3f' %
+                    (frequencies.size, 1.0/freqs.max(), 1.0/freqs.min())
+                )
+
+            # map to parallel workers
+            pool = Pool(nworkers)
+
+            tasks = [(stimes, smags, serrs, x, phasebinsize, mindetperbin)
+                     for x in frequencies]
+
+            lsp = pool.map(stellingwerf_pdm_worker, tasks)
+
+            pool.close()
+            pool.join()
+            del pool
+
+            lsp = nparray(lsp)
+            periods = 1.0/frequencies
+
+            # find the nbestpeaks for the periodogram: 1. sort the lsp array by
+            # highest value first 2. go down the values until we find five
+            # values that are separated by at least periodepsilon in period
+            bestperiodind = npnanargmax(lsp)
+
+            sortedlspind = np.argsort(lsp)[::-1]
+            sortedlspperiods = periods[sortedlspind]
+            sortedlspvals = lsp[sortedlspind]
+
+            prevbestlspval = sortedlspvals[0]
+            # now get the nbestpeaks
+            nbestperiods, nbestlspvals, peakcount = (
+                [periods[bestperiodind]],
+                [lsp[bestperiodind]],
+                1
+            )
+            prevperiod = sortedlspperiods[0]
+
+            # find the best nbestpeaks in the lsp and their periods
+            for period, lspval in zip(sortedlspperiods, sortedlspvals):
+
+                if peakcount == nbestpeaks:
+                    break
+                perioddiff = abs(period - prevperiod)
+                bestperiodsdiff = [abs(period - x) for x in nbestperiods]
+
+                # print('prevperiod = %s, thisperiod = %s, '
+                #       'perioddiff = %s, peakcount = %s' %
+                #       (prevperiod, period, perioddiff, peakcount))
+
+                # this ensures that this period is different from the last
+                # period and from all the other existing best periods by
+                # periodepsilon to make sure we jump to an entire different peak
+                # in the periodogram
+                if (perioddiff > periodepsilon and
+                    all(x > periodepsilon for x in bestperiodsdiff)):
+                    nbestperiods.append(period)
+                    nbestlspvals.append(lspval)
+                    peakcount = peakcount + 1
+
+                prevperiod = period
+
+
+            return {'bestperiod':periods[bestperiodind],
+                    'bestlspval':lsp[bestperiodind],
+                    'nbestpeaks':nbestpeaks,
+                    'nbestlspvals':nbestlspvals,
+                    'nbestperiods':nbestperiods,
+                    'lspvals':lsp,
+                    'omegas':omegas,
+                    'periods':periods}
+
+        else:
+
+            LOGERROR('no good detections for these times and mags, skipping...')
+            return {'bestperiod':npnan,
+                    'bestlspval':npnan,
+                    'nbestpeaks':nbestpeaks,
+                    'nbestlspvals':None,
+                    'nbestperiods':None,
+                    'lspvals':None,
+                    'omegas':None,
+                    'periods':None}
+    else:
+
+        LOGERROR('no good detections for these times and mags, skipping...')
+        return {'bestperiod':npnan,
+                'bestlspval':npnan,
+                'nbestpeaks':nbestpeaks,
+                'nbestlspvals':None,
+                'nbestperiods':None,
+                'lspvals':None,
+                'omegas':None,
+                'periods':None}
+
 
 
 ################################################
