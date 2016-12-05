@@ -870,7 +870,9 @@ def make_checkplot(lspinfo,
             dsspath = 'dss-stamp-%s.jpg' % outfile.rstrip('.png')
 
 
-        LOGINFO('adding in object information for %s' % objectid)
+        LOGINFO('adding in object information and '
+                'finder chart for %s at RA: %.3f, DEC: %.3f' %
+                (objectid, objectinfo['ra'], objectinfo['decl']))
 
         # calculate colors
         if ('bmag' in objectinfo and 'vmag' in objectinfo and
