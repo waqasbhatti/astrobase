@@ -689,7 +689,7 @@ def make_checkplot(lspinfo,
                    normto='globalmedian',
                    normmingap=4.0,
                    outfile=None,
-                   sigclip=5.0,
+                   sigclip=4.0,
                    varepoch='min',
                    phasewrap=True,
                    phasesort=True,
@@ -935,19 +935,37 @@ def make_checkplot(lspinfo,
                                                          objectinfo['vmag']),
                          ha='left',va='center',transform=axes[0].transAxes,
                          fontsize=18.0)
+        elif 'vmag' in objectinfo and objectinfo['vmag']:
+            axes[0].text(0.05,0.87,
+                         '$V$ = %.3f' % (objectinfo['vmag'],),
+                         ha='left',va='center',transform=axes[0].transAxes,
+                         fontsize=18.0)
+
         if ijcolor:
             axes[0].text(0.05,0.83,
                          '$i - J$ = %.3f, $J$ = %.3f' % (ijcolor,
                                                          objectinfo['jmag']),
                          ha='left',va='center',transform=axes[0].transAxes,
                          fontsize=18.0)
+        elif 'jmag' in objectinfo and objectinfo['jmag']:
+            axes[0].text(0.05,0.83,
+                         '$J$ = %.3f' % (objectinfo['jmag'],),
+                         ha='left',va='center',transform=axes[0].transAxes,
+                         fontsize=18.0)
+
         if jkcolor:
             axes[0].text(0.05,0.79,
                          '$J - K$ = %.3f, $K$ = %.3f' % (jkcolor,
                                                          objectinfo['kmag']),
                          ha='left',va='center',transform=axes[0].transAxes,
                          fontsize=18.0)
-        if objectinfo['sdssr']:
+        elif 'kmag' in objectinfo and objectinfo['kmag']:
+            axes[0].text(0.05,0.79,
+                         '$K$ = %.3f' % (objectinfo['kmag'],),
+                         ha='left',va='center',transform=axes[0].transAxes,
+                         fontsize=18.0)
+
+        if 'sdssr' in objectinfo and objectinfo['sdssr']:
             axes[0].text(0.05,0.75,'SDSS $r$ = %.3f' % objectinfo['sdssr'],
                          ha='left',va='center',transform=axes[0].transAxes,
                          fontsize=18.0)
