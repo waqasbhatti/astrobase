@@ -27,8 +27,9 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
     where as npwhere, linspace as nplinspace, \
     zeros_like as npzeros_like, full_like as npfull_like, \
-    arctan as nparctan, nanargmax as npnanargmax, empty as npempty, \
-    ceil as npceil, mean as npmean, digitize as npdigitize, unique as npunique
+    arctan as nparctan, nanargmax as npnanargmax, nanargmin as npnanargmin, \
+    empty as npempty, ceil as npceil, mean as npmean, \
+    digitize as npdigitize, unique as npunique
 
 from scipy.signal import lombscargle
 
@@ -515,7 +516,7 @@ def pdw_period_find(times,
 ##################################################
 
 def stellingwerf_pdm_theta(times, mags, errs, frequency,
-                           binsize=0.002, minbin=9):
+                           binsize=0.05, minbin=9):
     '''
     This calculates the Stellingwerf PDM theta value at a test frequency.
 
@@ -531,23 +532,36 @@ def stellingwerf_pdm_theta(times, mags, errs, frequency,
                              wrap=False,
                              sort=True)
 
+    phases = phased['phase']
+    pmags = phased['mags']
     bins = np.arange(0.0, 1.0, binsize)
+    nbins = bins.size
+
     binnedphaseinds = npdigitize(phases, bins)
+
+    binvariances = []
+    binndets = []
+    goodbins = 0
 
     for x in npunique(binnedphaseinds):
 
         thisbin_inds = binnedphaseinds == x
         thisbin_phases = phases[thisbin_inds]
-        thisbin_mags = mags[thisbin_inds]
+        thisbin_mags = pmags[thisbin_inds]
 
-        binvariances = []
-
-        if thisbin_inds.size > minbin:
-            binvariances.append(npvar(thisbin_mags))
-
+        if thisbin_mags.size > minbin:
+            thisbin_variance = npvar(thisbin_mags)
+            binvariances.append(thisbin_variance)
+            binndets.append(thisbin_mags.size)
+            goodbins = goodbins + 1
 
     # now calculate theta
-    theta = npsum(nparray(binvariances))/npvar(mags)
+    binvariances = nparray(binvariances)
+    binndets = nparray(binndets)
+
+    theta_top = npsum(binvariances*(binndets - 1)) / (npsum(binndets) - goodbins)
+    theta_bot = npvar(pmags)
+    theta = theta_top/theta_bot
 
     return theta
 
@@ -557,16 +571,16 @@ def stellingwerf_pdm_worker(task):
     '''
     This is a parallel worker for the function below.
 
-    task[0] = frequency
-    task[1] = times
-    task[2] = mags
-    task[3] = errs
+    task[0] = times
+    task[1] = mags
+    task[2] = errs
+    task[3] = frequency
     task[4] = binsize
     task[5] = minbin
 
     '''
 
-    frequency, times, mags, errs, binsize, minbin = task
+    times, mags, errs, frequency, binsize, minbin = task
 
     try:
 
@@ -588,8 +602,10 @@ def stellingwerf_pdm(times,
                      startp=None,
                      endp=None,
                      stepsize=1.0e-4,
-                     phasebinsize=0.002,
+                     phasebinsize=0.05,
                      mindetperbin=9,
+                     nbestpeaks=5,
+                     periodepsilon=0.1, # 0.1
                      sigclip=10.0,
                      nworkers=4):
     '''
@@ -660,11 +676,17 @@ def stellingwerf_pdm(times,
                 LOGINFO(
                     'using autofreq with %s frequency points, '
                     'start P = %.3f, end P = %.3f' %
-                    (frequencies.size, 1.0/freqs.max(), 1.0/freqs.min())
+                    (frequencies.size,
+                     1.0/frequencies.max(),
+                     1.0/frequencies.min())
                 )
 
             # map to parallel workers
             pool = Pool(nworkers)
+
+            # renormalize the working mags to zero and scale them so that the
+            # variance = 1 for use with our LSP functions
+            # nmags = (smags - npmedian(smags))/npstd(smags)
 
             tasks = [(stimes, smags, serrs, x, phasebinsize, mindetperbin)
                      for x in frequencies]
@@ -679,11 +701,11 @@ def stellingwerf_pdm(times,
             periods = 1.0/frequencies
 
             # find the nbestpeaks for the periodogram: 1. sort the lsp array by
-            # highest value first 2. go down the values until we find five
-            # values that are separated by at least periodepsilon in period
-            bestperiodind = npnanargmax(lsp)
+            # lowest value first 2. go down the values until we find five values
+            # that are separated by at least periodepsilon in period
+            bestperiodind = npnanargmin(lsp)
 
-            sortedlspind = np.argsort(lsp)[::-1]
+            sortedlspind = np.argsort(lsp)
             sortedlspperiods = periods[sortedlspind]
             sortedlspvals = lsp[sortedlspind]
 
@@ -727,7 +749,6 @@ def stellingwerf_pdm(times,
                     'nbestlspvals':nbestlspvals,
                     'nbestperiods':nbestperiods,
                     'lspvals':lsp,
-                    'omegas':omegas,
                     'periods':periods}
 
         else:
@@ -739,7 +760,6 @@ def stellingwerf_pdm(times,
                     'nbestlspvals':None,
                     'nbestperiods':None,
                     'lspvals':None,
-                    'omegas':None,
                     'periods':None}
     else:
 
@@ -750,7 +770,6 @@ def stellingwerf_pdm(times,
                 'nbestlspvals':None,
                 'nbestperiods':None,
                 'lspvals':None,
-                'omegas':None,
                 'periods':None}
 
 
