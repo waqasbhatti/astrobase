@@ -1,0 +1,30 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module _bls ! in 
+    interface  ! in :_bls
+        subroutine eebls(n,t,x,u,v,nf,fmin,df,nb,qmi,qma,p,bper,bpow,depth,qtran,in1,in2) ! in :_bls:eebls.f
+            integer, optional,intent(in),check(len(t)>=n),depend(t) :: n=len(t)
+            real*8 dimension(n),intent(in) :: t
+            real*8 dimension(n),intent(in),depend(n) :: x
+            real*8 dimension(n),intent(inout),depend(n) :: u
+            real*8 dimension(n),intent(inout),depend(n) :: v
+            integer intent(in) :: nf
+            real*8 intent(in) :: fmin
+            real*8 intent(in) :: df
+            integer intent(in) :: nb
+            real*8 intent(in) :: qmi
+            real*8 intent(in) :: qma
+            real*8 dimension(nf),intent(out),depend(nf) :: p
+            real*8 intent(out) :: bper
+            real*8 intent(out) :: bpow
+            real*8 intent(out) :: depth
+            real*8 intent(out) :: qtran
+            integer intent(out) :: in1
+            integer intent(out) :: in2
+        end subroutine eebls
+    end interface 
+end python module _bls
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/

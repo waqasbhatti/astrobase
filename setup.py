@@ -8,7 +8,28 @@ modified by me.
 '''
 __version__ = '0.1.0'
 
+import sys, os.path
+
 from setuptools import setup
+
+# for f2py extension building
+from numpy.distutils.core import Extension
+
+# taken from github:dfm/python-bls.git/setup.py
+# First, make sure that the f2py interfaces exist.
+interface_exists = os.path.exists("bls/bls.pyf")
+if "interface" in sys.argv or not interface_exists:
+    # Generate the Fortran signature/interface.
+    cmd = "cd bls;"
+    cmd += "f2py eebls.f -m _bls -h bls.pyf"
+    cmd += " --overwrite-signature"
+    os.system(cmd)
+    if "interface" in sys.argv:
+        sys.exit(0)
+
+# Define the Fortran extension.
+bls = Extension("bls._bls", ["bls/bls.pyf", "bls/eebls.f"])
+
 
 def readme():
     with open('README.md') as f:
@@ -23,14 +44,16 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 2.7',
+        "Intended Audience :: Science/Research",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
     ],
     keywords='astronomy',
-    url='https://wbhatti.org/code/astrobase',
+    url='https://github.com/waqasbhatti/astrobase',
     author='Waqas Bhatti',
     author_email='waqas.afzal.bhatti@gmail.com',
     license='MIT',
-    packages=['astrobase'],
+    packages=['astrobase','bls'],
     install_requires=[
         'numpy',
         'scipy',
@@ -50,5 +73,5 @@ setup(
     #     ],
     #},
     include_package_data=True,
-    zip_safe=False
+    zip_safe=False,
 )
