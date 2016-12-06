@@ -9,7 +9,7 @@ Contains various useful tools for period finding.
 '''
 
 
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 import ctypes
 import logging
 from datetime import datetime
@@ -90,6 +90,15 @@ from .lcmath import phase_magseries, sigclip_magseries, time_bin_magseries, \
 from .glsp import generalized_lsp_value as glspval, \
     generalized_lsp_value_notau as glspvalnt
 
+from bls import eebls
+
+
+############
+## CONFIG ##
+############
+
+NCPUS = cpu_count()
+
 
 #######################
 ## UTILITY FUNCTIONS ##
@@ -99,7 +108,8 @@ def get_frequency_grid(times,
                        samplesperpeak=5,
                        nyquistfactor=5,
                        minfreq=None,
-                       maxfreq=None):
+                       maxfreq=None,
+                       returnf0dfnf=False):
     '''This calculates a frequency grid for the period finding functions in this
     module.
 
@@ -124,7 +134,11 @@ def get_frequency_grid(times,
     else:
         Nf = int(0.5 * samplesperpeak * nyquistfactor * nsamples)
 
-    return f0 + df * nparange(Nf)
+
+    if returnf0dfnf:
+        return f0, df, Nf, f0 + df * nparange(Nf)
+    else:
+        return f0 + df * nparange(Nf)
 
 
 
@@ -457,6 +471,8 @@ def pdw_period_find(times,
                       phasebinsize) for x in frequencies]
 
             # fire up the pool and farm out the tasks
+            if (nworkers > NCPUS) or (not nworkers):
+                nworkers = NCPUS
             pool = Pool(nworkers)
             strlen_results = pool.map(pdw_worker, tasks)
             pool.close()
@@ -682,6 +698,8 @@ def stellingwerf_pdm(times,
                 )
 
             # map to parallel workers
+            if (nworkers > NCPUS) or (not nworkers):
+                nworkers = NCPUS
             pool = Pool(nworkers)
 
             # renormalize the working mags to zero and scale them so that the
@@ -974,6 +992,8 @@ def aov_periodfind(times,
                 )
 
             # map to parallel workers
+            if (nworkers > NCPUS) or (not nworkers):
+                nworkers = NCPUS
             pool = Pool(nworkers)
 
             # renormalize the working mags to zero and scale them so that the
@@ -1189,6 +1209,8 @@ def pgen_lsp(
                 )
 
             # map to parallel workers
+            if (nworkers > NCPUS) or (not nworkers):
+                nworkers = NCPUS
             pool = Pool(nworkers)
 
             tasks = [(stimes, smags, serrs, x) for x in omegas]
@@ -1358,6 +1380,8 @@ def parallel_townsend_lsp(times, mags, startp, endp,
     omegas = 2*np.pi*np.arange(startf, endf, stepsize)
 
     # parallel map the lsp calculations
+    if (nworkers > NCPUS) or (not nworkers):
+        nworkers = NCPUS
     pool = Pool(nworkers)
 
     tasks = [(ftimes, nmags, x) for x in omegas]
@@ -1458,6 +1482,8 @@ def scipylsp_parallel(times,
                  for x in range(nworkers)]
 
         # map to parallel workers
+        if (nworkers > NCPUS) or (not nworkers):
+            nworkers = NCPUS
         pool = Pool(nworkers)
 
         tasks = [(worktimes, normmags, x) for x in tasks]
@@ -1530,3 +1556,148 @@ def scipylsp_parallel(times,
                 'nbestperiods':None,
                 'lspvals':None,
                 'periods':None}
+
+
+
+#################
+## BLS (Kovac) ##
+#################
+
+
+def _bls_runner(times,
+                mags,
+                nfreq,
+                freqmin,
+                stepsize,
+                nbins,
+                minduration,
+                maxduration):
+    '''
+    This runs the bls.eebls function using the given inputs.
+
+    '''
+
+    workarr_u = np.ones(times.size)
+    workarr_v = np.ones(times.size)
+
+    blsresult = eebls(times, mags,
+                      workarr_u, workarr_v,
+                      nfreq, freqmin, stepsize,
+                      minduration, maxduration)
+
+    return blsresult
+
+
+
+def bls_worker(task):
+    '''
+    This wraps _bls_runner for the parallel function below.
+
+    task[0] = times
+    task[1] = mags
+    task[2] = nfreq
+    task[3] = freqmin
+    task[4] = stepsize
+    task[5] = nbins
+    task[6] = minduration
+    task[7] = maxduration
+
+    '''
+
+    try:
+        return _bls_runner(*task)
+    except Exception as e:
+        return None
+
+
+
+def bls_period_find(times, mags, errs,
+                    startp=0.1, # search from 0.1 d to...
+                    endp=100.0, # ... 100.0 d -- don't search full timebase
+                    stepsize=1.0e-4,
+                    mintransitduration=0.01, # minimum transit length in phase
+                    maxtransitduration=0.8,  # maximum transit length in phase
+                    autofreq=True, # figure out f0, nf, and df automatically
+                    nbestpeaks=5,
+                    periodepsilon=0.1, # 0.1
+                    nworkers=4,
+                    sigclip=10.0):
+    '''Runs the Box Least Squares Fitting Search for transit-shaped signals.
+
+    Based on eebls.f from Kovacs et al. 2002 and python-bls from Foreman-Mackey
+    et al. 2015. Breaks up the full frequency space into chunks and passes them
+    to parallel BLS workers.
+
+    '''
+
+    # get rid of nans first
+    find = np.isfinite(times) & np.isfinite(mags) & np.isfinite(errs)
+    ftimes = times[find]
+    fmags = mags[find]
+    ferrs = errs[find]
+
+    if len(ftimes) > 9 and len(fmags) > 9 and len(ferrs) > 9:
+
+        # get the median and stdev = 1.483 x MAD
+        median_mag = np.median(fmags)
+        stddev_mag = (np.median(np.abs(fmags - median_mag))) * 1.483
+
+        # sigclip next
+        if sigclip:
+
+            sigind = (np.abs(fmags - median_mag)) < (sigclip * stddev_mag)
+
+            stimes = ftimes[sigind]
+            smags = fmags[sigind]
+            serrs = ferrs[sigind]
+
+            LOGINFO('sigclip = %s: before = %s observations, '
+                    'after = %s observations' %
+                    (sigclip, len(times), len(stimes)))
+
+        else:
+
+            stimes = ftimes
+            smags = fmags
+            serrs = ferrs
+
+        # make sure there are enough points to calculate a spectrum
+        if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
+
+            # get the frequencies to use
+            if startp:
+                endf = 1.0/startp
+            else:
+                # default start period is 0.1 day
+                endf = 1.0/0.1
+
+            if endp:
+                startf = 1.0/endp
+            else:
+                # default end period is length of time series divided by 2
+                startf = 1.0/(stimes.max() - stimes.min())
+
+            # if we're not using autofreq, then use the provided frequencies
+            if not autofreq:
+                frequencies = np.arange(startf, endf, stepsize)
+                LOGINFO(
+                    'using %s frequency points, start P = %.3f, end P = %.3f' %
+                    (frequencies.size, 1.0/endf, 1.0/startf)
+                )
+            else:
+                # this gets an automatic grid of frequencies to use
+                frequencies = get_frequency_grid(stimes,
+                                                 minfreq=startf,
+                                                 maxfreq=endf)
+                LOGINFO(
+                    'using autofreq with %s frequency points, '
+                    'start P = %.3f, end P = %.3f' %
+                    (frequencies.size,
+                     1.0/frequencies.max(),
+                     1.0/frequencies.min())
+                )
+
+            # map to parallel workers
+            if (nworkers > NCPUS) or (not nworkers):
+                nworkers = NCPUS
+            pool = Pool(nworkers)
