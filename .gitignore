@@ -28,8 +28,7 @@ docs/users.txt
 .classyprojects
 */bin*
 *GITREV*
-*.o
-*.a
+*.[oa]
 *.log
 *.status
 leaflet-data*
@@ -39,3 +38,5 @@ utils/*.html
 utils/*.so
 __pycache__/
 *.bsp
+*.so
+_*.c
