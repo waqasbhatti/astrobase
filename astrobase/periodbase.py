@@ -1732,7 +1732,7 @@ def bls_serial_pfind(times, mags, errs,
 
             if nfreq > 5.0e5:
 
-                LOGWARNING('more than 5.0e4 frequencies to go through; '
+                LOGWARNING('more than 5.0e5 frequencies to go through; '
                            'this will take a while. '
                            'you might want to use the '
                            'periodbase.bls_parallel_pfind function instead')
