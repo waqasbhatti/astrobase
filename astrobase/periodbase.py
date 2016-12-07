@@ -1859,7 +1859,7 @@ def bls_serial_pfind(times, mags, errs,
 
 def bls_parallel_pfind(
         times, mags, errs,
-        startp=0.1, # search from 0.1 d to...
+        startp=0.1, # by default, search from 0.1 d to...
         endp=100.0, # ... 100.0 d -- don't search full timebase
         stepsize=1.0e-4,
         mintransitduration=0.01, # minimum transit length in phase
