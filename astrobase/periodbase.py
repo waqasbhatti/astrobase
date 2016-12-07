@@ -1879,6 +1879,15 @@ def bls_parallel_pfind(
     et al. 2015. Breaks up the full frequency space into chunks and passes them
     to parallel BLS workers.
 
+    NOTE: the combined BLS spectrum produced by this function is not identical
+    to that produced by running BLS in one shot for the entire frequency
+    space. There are differences on the order of 1.0e-3 or so in the respective
+    peak values, but peaks appear at the same frequencies for both methods. This
+    is likely due to different aliasing caused by smaller chunks of the
+    frequency space used by the parallel workers in this function. When in
+    doubt, confirm results for this parallel implementation with the those of
+    the serial implementation above.
+
     '''
 
     # get rid of nans first
