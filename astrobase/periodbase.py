@@ -1606,7 +1606,7 @@ def _bls_runner(times,
 
 
 
-def bls_worker(task):
+def parallel_bls_worker(task):
     '''
     This wraps _bls_runner for the parallel function below.
 
@@ -1624,7 +1624,15 @@ def bls_worker(task):
     try:
         return _bls_runner(*task)
     except Exception as e:
-        return None
+        LOGEXCEPTION('BLS failed for task %s' % repr(task[2:]))
+    return {'power':np.array([npnan for x in range(nfreq)]),
+            'bestperiod':npnan,
+            'bestpower':npnan,
+            'transdepth':npnan,
+            'transduration':npnan,
+            'transingressbin':npnan,
+            'transegressbin':npnan}
+
 
 
 
@@ -1929,7 +1937,8 @@ def bls_parallel_pfind(
                         'min transit duration: %s, max transit duration: %s' %
                         (stepsize, startp, endp, nfreq, nphasebins,
                          mintransitduration, maxtransitduration))
-                LOGINFO('autofreq: minfreq: %s, maxfreq: %s' % (minfreq,maxfreq))
+                LOGINFO('autofreq: minfreq: %s, maxfreq: %s' % (minfreq,
+                                                                maxfreq))
 
             else:
 
@@ -1958,10 +1967,97 @@ def bls_parallel_pfind(
 
             # break up the tasks into chunks
             frequencies = minfreq + nparange(nfreq)*stepsize
-            chunksize = int(float(len(omegas))/nworkers) + 1
-            minfreqs = [frequencies[x*chunksize] for x in range(nworkers)]
+            chunksize = int(float(len(frequencies))/nworkers) + 1
+            chunk_minfreqs = [frequencies[x*chunksize] for x in range(nworkers)]
+            chunk_nfreqs = [frequencies[x*chunksize:x*chunksize+chunksize].size
+                            for x in range(nworkers)]
 
-            # figure out nfreqs next
+
+            # populate the tasks list
+            tasks = [(stimes, smags,
+                      chunk_minf, chunk_nf,
+                      stepsize, nphasebins,
+                      mintransitduration, maxtransitduration)
+                     for (chunk_nf, chunk_minf)
+                     in zip(chunk_minfreqs, chunk_nfreqs)]
+
+            for ind, task in enumerate(tasks):
+                LOGINFO('worker %s: minfreq = %.3f, nfreqs= %s' %
+                        (ind+1, task[2], task[3]))
+            LOGINFO('running...')
+
+            # return tasks
+
+            # start the pool
+            pool = Pool(nworkers)
+            results = pool.map(parallel_bls_worker, tasks)
+
+            pool.close()
+            pool.join()
+            del pool
+
+            # now concatenate the output lsp arrays
+            lsp = np.concatenate([x['power'] for x in results])
+            periods = 1.0/frequencies
+
+            # find the nbestpeaks for the periodogram: 1. sort the lsp array
+            # by highest value first 2. go down the values until we find
+            # five values that are separated by at least periodepsilon in
+            # period
+            bestperiodind = npnanargmax(lsp)
+
+            sortedlspind = np.argsort(lsp)[::-1]
+            sortedlspperiods = periods[sortedlspind]
+            sortedlspvals = lsp[sortedlspind]
+
+            prevbestlspval = sortedlspvals[0]
+            # now get the nbestpeaks
+            nbestperiods, nbestlspvals, peakcount = (
+                [periods[bestperiodind]],
+                [lsp[bestperiodind]],
+                1
+            )
+            prevperiod = sortedlspperiods[0]
+
+            # find the best nbestpeaks in the lsp and their periods
+            for period, lspval in zip(sortedlspperiods, sortedlspvals):
+
+                if peakcount == nbestpeaks:
+                    break
+                perioddiff = abs(period - prevperiod)
+                bestperiodsdiff = [abs(period - x) for x in nbestperiods]
+
+                # print('prevperiod = %s, thisperiod = %s, '
+                #       'perioddiff = %s, peakcount = %s' %
+                #       (prevperiod, period, perioddiff, peakcount))
+
+                # this ensures that this period is different from the last
+                # period and from all the other existing best periods by
+                # periodepsilon to make sure we jump to an entire different
+                # peak in the periodogram
+                if (perioddiff > periodepsilon and
+                    all(x > periodepsilon for x in bestperiodsdiff)):
+                    nbestperiods.append(period)
+                    nbestlspvals.append(lspval)
+                    peakcount = peakcount + 1
+
+                prevperiod = period
+
+
+            # generate the return dict
+            resultdict = {
+                'bestperiod':periods[bestperiodind],
+                'bestlspval':lsp[bestperiodind],
+                'nbestpeaks':nbestpeaks,
+                'nbestlspvals':nbestlspvals,
+                'nbestperiods':nbestperiods,
+                'lspvals':lsp,
+                'frequencies':frequencies,
+                'periods':periods,
+                'blsresult':results
+            }
+
+            return resultdict
 
         else:
 
