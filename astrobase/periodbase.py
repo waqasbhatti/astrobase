@@ -1857,8 +1857,6 @@ def bls_serial_pfind(times, mags, errs,
 
 
 
-
-
 def bls_parallel_pfind(
         times, mags, errs,
         startp=0.1, # search from 0.1 d to...
