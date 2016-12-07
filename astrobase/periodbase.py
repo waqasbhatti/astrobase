@@ -1982,7 +1982,7 @@ def bls_parallel_pfind(
                      in zip(chunk_minfreqs, chunk_nfreqs)]
 
             for ind, task in enumerate(tasks):
-                LOGINFO('worker %s: minfreq = %.3f, nfreqs= %s' %
+                LOGINFO('worker %s: minfreq = %.3f, nfreqs = %s' %
                         (ind+1, task[3], task[2]))
             LOGINFO('running...')
 
