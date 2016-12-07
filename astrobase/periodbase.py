@@ -31,7 +31,7 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     empty as npempty, ceil as npceil, mean as npmean, \
     digitize as npdigitize, unique as npunique
 
-from scipy.signal import lombscargle
+from scipy.signal import lombscargle, find_peaks_cwt
 
 
 #############
@@ -355,7 +355,7 @@ def pdw_period_find(times,
                     f_step=1.0e-4,
                     phasebinsize=None,
                     sigclip=10.0,
-                    nworkers=4,
+                    nworkers=None,
                     verbose=False):
     '''This is the parallel version of the function above.
 
@@ -473,6 +473,8 @@ def pdw_period_find(times,
             # fire up the pool and farm out the tasks
             if (nworkers > NCPUS) or (not nworkers):
                 nworkers = NCPUS
+                LOGINFO('using %s workers...' % nworkers)
+
             pool = Pool(nworkers)
             strlen_results = pool.map(pdw_worker, tasks)
             pool.close()
@@ -625,7 +627,7 @@ def stellingwerf_pdm(times,
                      nbestpeaks=5,
                      periodepsilon=0.1, # 0.1
                      sigclip=10.0,
-                     nworkers=4):
+                     nworkers=None):
     '''This runs a parallel Stellingwerf PDM period search.
 
     '''
@@ -700,6 +702,8 @@ def stellingwerf_pdm(times,
             # map to parallel workers
             if (nworkers > NCPUS) or (not nworkers):
                 nworkers = NCPUS
+                LOGINFO('using %s workers...' % nworkers)
+
             pool = Pool(nworkers)
 
             # renormalize the working mags to zero and scale them so that the
@@ -916,7 +920,7 @@ def aov_periodfind(times,
                    nbestpeaks=5,
                    periodepsilon=0.1, # 0.1
                    sigclip=10.0,
-                   nworkers=4):
+                   nworkers=None):
     '''This runs a parallel AoV period search.
 
     NOTE: normalize = True here as recommended by Schwarzenberg-Cerny 1996,
@@ -994,6 +998,8 @@ def aov_periodfind(times,
             # map to parallel workers
             if (nworkers > NCPUS) or (not nworkers):
                 nworkers = NCPUS
+                LOGINFO('using %s workers...' % nworkers)
+
             pool = Pool(nworkers)
 
             # renormalize the working mags to zero and scale them so that the
@@ -1129,7 +1135,7 @@ def pgen_lsp(
         nbestpeaks=5,
         periodepsilon=0.1, # 0.1
         stepsize=1.0e-4,
-        nworkers=4,
+        nworkers=None,
         sigclip=10.0,
         glspfunc=glsp_worker,
 ):
@@ -1211,6 +1217,8 @@ def pgen_lsp(
             # map to parallel workers
             if (nworkers > NCPUS) or (not nworkers):
                 nworkers = NCPUS
+                LOGINFO('using %s workers...' % nworkers)
+
             pool = Pool(nworkers)
 
             tasks = [(stimes, smags, serrs, x) for x in omegas]
@@ -1382,6 +1390,8 @@ def parallel_townsend_lsp(times, mags, startp, endp,
     # parallel map the lsp calculations
     if (nworkers > NCPUS) or (not nworkers):
         nworkers = NCPUS
+        LOGINFO('using %s workers...' % nworkers)
+
     pool = Pool(nworkers)
 
     tasks = [(ftimes, nmags, x) for x in omegas]
@@ -1484,6 +1494,8 @@ def scipylsp_parallel(times,
         # map to parallel workers
         if (nworkers > NCPUS) or (not nworkers):
             nworkers = NCPUS
+            LOGINFO('using %s workers...' % nworkers)
+
         pool = Pool(nworkers)
 
         tasks = [(worktimes, normmags, x) for x in tasks]
@@ -1583,9 +1595,15 @@ def _bls_runner(times,
     blsresult = eebls(times, mags,
                       workarr_u, workarr_v,
                       nfreq, freqmin, stepsize,
-                      minduration, maxduration)
+                      nbins, minduration, maxduration)
 
-    return blsresult
+    return {'power':blsresult[0],
+            'bestperiod':blsresult[1],
+            'bestpower':blsresult[2],
+            'transdepth':blsresult[3],
+            'transduration':blsresult[4],
+            'transingressbin':blsresult[5],
+            'transegressbin':blsresult[6]}
 
 
 
@@ -1611,17 +1629,243 @@ def bls_worker(task):
 
 
 
-def bls_period_find(times, mags, errs,
-                    startp=0.1, # search from 0.1 d to...
-                    endp=100.0, # ... 100.0 d -- don't search full timebase
-                    stepsize=1.0e-4,
-                    mintransitduration=0.01, # minimum transit length in phase
-                    maxtransitduration=0.8,  # maximum transit length in phase
-                    autofreq=True, # figure out f0, nf, and df automatically
-                    nbestpeaks=5,
-                    periodepsilon=0.1, # 0.1
-                    nworkers=4,
-                    sigclip=10.0):
+def bls_serial_pfind(times, mags, errs,
+                     startp=0.1, # search from 0.1 d to...
+                     endp=100.0, # ... 100.0 d -- don't search full timebase
+                     stepsize=5.0e-4,
+                     mintransitduration=0.01, # minimum transit length in phase
+                     maxtransitduration=0.8,  # maximum transit length in phase
+                     nphasebins=200,
+                     autofreq=True, # figure out f0, nf, and df automatically
+                     periodepsilon=0.1,
+                     nbestpeaks=5,
+                     sigclip=10.0):
+    '''Runs the Box Least Squares Fitting Search for transit-shaped signals.
+
+    Based on eebls.f from Kovacs et al. 2002 and python-bls from Foreman-Mackey
+    et al. 2015. This is the serial version (which is good enough in most cases
+    because BLS in Fortran is fairly fast). If nfreq > 5e4, this will take a
+    while.
+
+    '''
+
+    # get rid of nans first
+    find = np.isfinite(times) & np.isfinite(mags) & np.isfinite(errs)
+    ftimes = times[find]
+    fmags = mags[find]
+    ferrs = errs[find]
+
+    if len(ftimes) > 9 and len(fmags) > 9 and len(ferrs) > 9:
+
+        # get the median and stdev = 1.483 x MAD
+        median_mag = np.median(fmags)
+        stddev_mag = (np.median(np.abs(fmags - median_mag))) * 1.483
+
+        # sigclip next
+        if sigclip:
+
+            sigind = (np.abs(fmags - median_mag)) < (sigclip * stddev_mag)
+
+            stimes = ftimes[sigind]
+            smags = fmags[sigind]
+            serrs = ferrs[sigind]
+
+            LOGINFO('sigclip = %s: before = %s observations, '
+                    'after = %s observations' %
+                    (sigclip, len(times), len(stimes)))
+
+        else:
+
+            stimes = ftimes
+            smags = fmags
+            serrs = ferrs
+
+        # make sure there are enough points to calculate a spectrum
+        if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
+
+            # if we're setting up everything automatically
+            if autofreq:
+
+                # use heuristic to figure out best timestep
+                # see http://www.astro.princeton.edu/~jhartman/vartools.html
+                stepsize = 0.25*mintransitduration/(times[-1]-times[0])
+
+                # now figure out the frequencies to use
+                minfreq = 1.0/endp
+                maxfreq = 1.0/startp
+                nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
+
+                # figure out the best number of phasebins to use
+                nphasebins = int(np.ceil(2.0/mintransitduration))
+
+                # say what we're using
+                LOGINFO('autofreq: using stepsize: %s, min P: %s, '
+                        'max P: %s, nfreq: %s, nphasebins: %s, '
+                        'min transit duration: %s, max transit duration: %s' %
+                        (stepsize, startp, endp, nfreq, nphasebins,
+                         mintransitduration, maxtransitduration))
+                LOGINFO('autofreq: minfreq: %s, maxfreq: %s' % (minfreq,
+                                                                maxfreq))
+
+            else:
+
+                minfreq = 1.0/endp
+                maxfreq = 1.0/startp
+                nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
+
+                # say what we're using
+                LOGINFO('manualfreq: using stepsize: %s, min P: %s, '
+                        'max P: %s, nfreq: %s, nphasebins: %s, '
+                        'min transit duration: %s, max transit duration: %s' %
+                        (stepsize, startp, endp, nfreq, nphasebins,
+                         mintransitduration, maxtransitduration))
+                LOGINFO('manualfreq: minfreq: %s, maxfreq: %s' %
+                        (minfreq,maxfreq))
+
+
+            if nfreq > 5.0e5:
+
+                LOGWARNING('more than 5.0e4 frequencies to go through; '
+                           'this will take a while. '
+                           'you might want to use the '
+                           'periodbase.bls_parallel_pfind function instead')
+
+            # run BLS
+            try:
+
+                blsresult = _bls_runner(ftimes,
+                                        fmags,
+                                        nfreq,
+                                        minfreq,
+                                        stepsize,
+                                        nphasebins,
+                                        mintransitduration,
+                                        maxtransitduration)
+
+                # find the peaks in the BLS. this uses wavelet transforms to
+                # smooth the spectrum and find peaks. a similar thing would be
+                # to do a convolution with a gaussian kernel or a tophat
+                # function, calculate d/dx(result), then get indices where this
+                # is zero
+                # blspeakinds = find_peaks_cwt(blsresults['power'],
+                #                              nparray([2.0,3.0,4.0,5.0]))
+
+
+
+                frequencies = minfreq + nparange(nfreq)*stepsize
+                periods = 1.0/frequencies
+                lsp = blsresult['power']
+
+                # find the nbestpeaks for the periodogram: 1. sort the lsp array
+                # by highest value first 2. go down the values until we find
+                # five values that are separated by at least periodepsilon in
+                # period
+                bestperiodind = npnanargmax(lsp)
+
+                sortedlspind = np.argsort(lsp)[::-1]
+                sortedlspperiods = periods[sortedlspind]
+                sortedlspvals = lsp[sortedlspind]
+
+                prevbestlspval = sortedlspvals[0]
+                # now get the nbestpeaks
+                nbestperiods, nbestlspvals, peakcount = (
+                    [periods[bestperiodind]],
+                    [lsp[bestperiodind]],
+                    1
+                )
+                prevperiod = sortedlspperiods[0]
+
+                # find the best nbestpeaks in the lsp and their periods
+                for period, lspval in zip(sortedlspperiods, sortedlspvals):
+
+                    if peakcount == nbestpeaks:
+                        break
+                    perioddiff = abs(period - prevperiod)
+                    bestperiodsdiff = [abs(period - x) for x in nbestperiods]
+
+                    # print('prevperiod = %s, thisperiod = %s, '
+                    #       'perioddiff = %s, peakcount = %s' %
+                    #       (prevperiod, period, perioddiff, peakcount))
+
+                    # this ensures that this period is different from the last
+                    # period and from all the other existing best periods by
+                    # periodepsilon to make sure we jump to an entire different
+                    # peak in the periodogram
+                    if (perioddiff > periodepsilon and
+                        all(x > periodepsilon for x in bestperiodsdiff)):
+                        nbestperiods.append(period)
+                        nbestlspvals.append(lspval)
+                        peakcount = peakcount + 1
+
+                    prevperiod = period
+
+
+                # generate the return dict
+                resultdict = {
+                    'bestperiod':periods[bestperiodind],
+                    'bestlspval':lsp[bestperiodind],
+                    'nbestpeaks':nbestpeaks,
+                    'nbestlspvals':nbestlspvals,
+                    'nbestperiods':nbestperiods,
+                    'lspvals':lsp,
+                    'frequencies':frequencies,
+                    'periods':periods,
+                    'blsresult':blsresult
+                }
+
+                return resultdict
+
+            except Exception as e:
+
+                LOGEXCEPTION('BLS failed!')
+                return {'bestperiod':npnan,
+                        'bestlspval':npnan,
+                        'nbestpeaks':nbestpeaks,
+                        'nbestlspvals':None,
+                        'nbestperiods':None,
+                        'lspvals':None,
+                        'periods':None}
+
+
+        else:
+
+            LOGERROR('no good detections for these times and mags, skipping...')
+            return {'bestperiod':npnan,
+                    'bestlspval':npnan,
+                    'nbestpeaks':nbestpeaks,
+                    'nbestlspvals':None,
+                    'nbestperiods':None,
+                    'lspvals':None,
+                    'periods':None}
+    else:
+
+        LOGERROR('no good detections for these times and mags, skipping...')
+        return {'bestperiod':npnan,
+                'bestlspval':npnan,
+                'nbestpeaks':nbestpeaks,
+                'nbestlspvals':None,
+                'nbestperiods':None,
+                'lspvals':None,
+                'periods':None}
+
+
+
+
+
+def bls_parallel_pfind(
+        times, mags, errs,
+        startp=0.1, # search from 0.1 d to...
+        endp=100.0, # ... 100.0 d -- don't search full timebase
+        stepsize=1.0e-4,
+        mintransitduration=0.01, # minimum transit length in phase
+        maxtransitduration=0.8,  # maximum transit length in phase
+        nphasebins=200,
+        autofreq=True, # figure out f0, nf, and df automatically
+        nbestpeaks=5,
+        periodepsilon=0.1, # 0.1
+        nworkers=None,
+        sigclip=10.0
+):
     '''Runs the Box Least Squares Fitting Search for transit-shaped signals.
 
     Based on eebls.f from Kovacs et al. 2002 and python-bls from Foreman-Mackey
@@ -1664,40 +1908,79 @@ def bls_period_find(times, mags, errs,
         # make sure there are enough points to calculate a spectrum
         if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
 
-            # get the frequencies to use
-            if startp:
-                endf = 1.0/startp
-            else:
-                # default start period is 0.1 day
-                endf = 1.0/0.1
+            # if we're setting up everything automatically
+            if autofreq:
 
-            if endp:
-                startf = 1.0/endp
-            else:
-                # default end period is length of time series divided by 2
-                startf = 1.0/(stimes.max() - stimes.min())
+                # use heuristic to figure out best timestep
+                # see http://www.astro.princeton.edu/~jhartman/vartools.html
+                stepsize = 0.25*mintransitduration/(times[-1]-times[0])
 
-            # if we're not using autofreq, then use the provided frequencies
-            if not autofreq:
-                frequencies = np.arange(startf, endf, stepsize)
-                LOGINFO(
-                    'using %s frequency points, start P = %.3f, end P = %.3f' %
-                    (frequencies.size, 1.0/endf, 1.0/startf)
-                )
-            else:
-                # this gets an automatic grid of frequencies to use
-                frequencies = get_frequency_grid(stimes,
-                                                 minfreq=startf,
-                                                 maxfreq=endf)
-                LOGINFO(
-                    'using autofreq with %s frequency points, '
-                    'start P = %.3f, end P = %.3f' %
-                    (frequencies.size,
-                     1.0/frequencies.max(),
-                     1.0/frequencies.min())
-                )
+                # now figure out the frequencies to use
+                minfreq = 1.0/endp
+                maxfreq = 1.0/startp
+                nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
 
-            # map to parallel workers
-            if (nworkers > NCPUS) or (not nworkers):
+                # figure out the best number of phasebins to use
+                # see http://www.astro.princeton.edu/~jhartman/vartools.html
+                nphasebins = int(np.ceil(2.0/mintransitduration))
+
+                # say what we're using
+                LOGINFO('autofreq: using stepsize: %s, min P: %s, '
+                        'max P: %s, nfreq: %s, nphasebins: %s, '
+                        'min transit duration: %s, max transit duration: %s' %
+                        (stepsize, startp, endp, nfreq, nphasebins,
+                         mintransitduration, maxtransitduration))
+                LOGINFO('autofreq: minfreq: %s, maxfreq: %s' % (minfreq,maxfreq))
+
+            else:
+
+                minfreq = 1.0/endp
+                maxfreq = 1.0/startp
+                nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
+
+                # say what we're using
+                LOGINFO('manualfreq: using stepsize: %s, min P: %s, '
+                        'max P: %s, nfreq: %s, nphasebins: %s, '
+                        'min transit duration: %s, max transit duration: %s' %
+                        (stepsize, startp, endp, nfreq, nphasebins,
+                         mintransitduration, maxtransitduration))
+                LOGINFO('manualfreq: minfreq: %s, maxfreq: %s' %
+                        (minfreq,maxfreq))
+
+
+            #############################
+            ## NOW RUN BLS IN PARALLEL ##
+            #############################
+
+            # fix number of CPUs if needed
+            if nworkers > NCPUS or not nworkers:
                 nworkers = NCPUS
-            pool = Pool(nworkers)
+                LOGINFO('using %s workers...' % nworkers)
+
+            # break up the tasks into chunks
+            frequencies = minfreq + nparange(nfreq)*stepsize
+            chunksize = int(float(len(omegas))/nworkers) + 1
+            minfreqs = [frequencies[x*chunksize] for x in range(nworkers)]
+
+            # figure out nfreqs next
+
+        else:
+
+            LOGERROR('no good detections for these times and mags, skipping...')
+            return {'bestperiod':npnan,
+                    'bestlspval':npnan,
+                    'nbestpeaks':nbestpeaks,
+                    'nbestlspvals':None,
+                    'nbestperiods':None,
+                    'lspvals':None,
+                    'periods':None}
+    else:
+
+        LOGERROR('no good detections for these times and mags, skipping...')
+        return {'bestperiod':npnan,
+                'bestlspval':npnan,
+                'nbestpeaks':nbestpeaks,
+                'nbestlspvals':None,
+                'nbestperiods':None,
+                'lspvals':None,
+                'periods':None}
