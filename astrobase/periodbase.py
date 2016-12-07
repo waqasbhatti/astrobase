@@ -1571,10 +1571,9 @@ def scipylsp_parallel(times,
 
 
 
-#################
-## BLS (Kovac) ##
-#################
-
+#####################################
+## BLS (Kovac, Zucker, Mazeh 2002) ##
+#####################################
 
 def _bls_runner(times,
                 mags,
