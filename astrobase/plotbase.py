@@ -1237,8 +1237,7 @@ def make_checkplot(lspinfo,
 
             axes[periodind+2].text(
                 0.5,0.5,
-                ('no best aperture %s light curve available' %
-                 ylabelcol[0].upper()),
+                ('no best aperture light curve available'),
                 horizontalalignment='center',
                 verticalalignment='center',
                 transform=axes[periodind+2].transAxes
