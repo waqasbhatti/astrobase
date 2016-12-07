@@ -1883,8 +1883,8 @@ def bls_parallel_pfind(
     peak values, but peaks appear at the same frequencies for both methods. This
     is likely due to different aliasing caused by smaller chunks of the
     frequency space used by the parallel workers in this function. When in
-    doubt, confirm results for this parallel implementation with the those of
-    the serial implementation above.
+    doubt, confirm results for this parallel implementation by comparing to
+    those from the serial implementation above.
 
     '''
 
