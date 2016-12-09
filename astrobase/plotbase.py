@@ -10,6 +10,7 @@ Contains various useful functions for plotting light curves and associated data.
 '''
 import os
 import os.path
+import gzip
 
 try:
     import cPickle as pickle
@@ -781,8 +782,13 @@ def make_checkplot(lspinfo,
     # get the lspinfo from a pickle file transparently
     if isinstance(lspinfo,str) and os.path.exists(lspinfo):
         LOGINFO('loading LSP info from pickle %s' % lspinfo)
-        with open(lspinfo,'rb') as infd:
-            lspinfo = pickle.load(infd)
+
+        if '.gz' in lspinfo:
+            with gzip.open(lspinfo,'rb') as infd:
+                lspinfo = pickle.load(infd)
+        else:
+            with open(lspinfo,'rb') as infd:
+                lspinfo = pickle.load(infd)
 
     # get the things to plot out of the data
     if ('periods' in lspinfo and
