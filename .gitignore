@@ -40,3 +40,4 @@ __pycache__/
 *.bsp
 *.so
 _*.c
+.ipynb_checkpoints
