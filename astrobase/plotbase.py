@@ -771,8 +771,11 @@ def make_checkplot(lspinfo,
 
     if not outfile and isinstance(lspinfo,str):
         # generate the plot filename
-        plotfpath = 'phasedlc-checkplot-%s.png' % (
-            lspinfo,
+        plotfpath = os.path.join(
+            os.path.dirname(lspinfo),
+            'phasedlc-checkplot-%s.png' % (
+                os.path.basename(lspinfo),
+            )
         )
     elif outfile:
         plotfpath = outfile
