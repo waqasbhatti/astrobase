@@ -1651,7 +1651,7 @@ def bls_serial_pfind(times, mags, errs,
 
     Based on eebls.f from Kovacs et al. 2002 and python-bls from Foreman-Mackey
     et al. 2015. This is the serial version (which is good enough in most cases
-    because BLS in Fortran is fairly fast). If nfreq > 5e4, this will take a
+    because BLS in Fortran is fairly fast). If nfreq > 5e5, this will take a
     while.
 
     '''
