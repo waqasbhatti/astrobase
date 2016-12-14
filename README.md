@@ -31,7 +31,7 @@ $ python setup.py install # or use pip install -e . to get requirements as well
 
 # License
 
-**astrobase** uses the MIT License. See the LICENSE file for the full text.
+`astrobase` uses the MIT License. See the LICENSE file for the full text.
 
 
 # Modules
@@ -107,9 +107,9 @@ tweaked for your purposes.
 
 ## bls
 
-This wraps **eebls.f** from Geza Kovacs. Extracted from
+This wraps `eebls.f` from Geza Kovacs. Extracted from
 [python-bls](http://github.com/dfm/python-bls) by Daniel Foreman-Mackey, Ruth
-Angus, and others. Used as the BLS implementation by **astrobase.periodbase**
+Angus, and others. Used as the BLS implementation by `astrobase.periodbase`
 functions.
 
 ## notebooks
