@@ -16,7 +16,9 @@ This package requires the following other packages:
 - simplejson
 - astroquery
 
-For `lcdb` to work, you'll also need:
+You might need to install `openssl-devel` or a similar RPM/DEB package for the
+`python-cryptography` module that gets pulled in as a dependency for
+`astroquery`. For `astrobase.lcdb` to work, you'll also need:
 
 - psycopg2
 
@@ -25,7 +27,9 @@ To install:
 ```bash
 $ git clone https://github.com/waqasbhatti/astrobase
 $ cd astrobase
-$ python setup.py install # or use pip install -e . to get requirements as well
+$ python setup.py install
+$ # or use pip install . to install requirements automatically
+$ # or use pip install -e . to install in develop mode along with requirements
 ```
 
 
@@ -62,7 +66,7 @@ tweaked for your purposes.
 
 - **[glsp](astrobase/glsp.py)**: simple implementation of the Generalized
   Lomb-Scargle periodogram from Zechmeister and Kurster (2008); use the more
-  optimized functions in **periodbase** for actual work
+  optimized functions in `periodbase` for actual work
 
 - **[hatlc](astrobase/hatlc.py)**: functions to read, filter, and normalize
   new generation light curves from the HAT data server; the format is described
@@ -73,7 +77,7 @@ tweaked for your purposes.
   and checking for warps
 
 - **[lcdb](astrobase/lcdb.py)**: a lightweight wrapper around the
-  **psycopg2** library to talk to PostgreSQL database servers
+  `psycopg2` library to talk to PostgreSQL database servers
 
 - **[lcmath](astrobase/lcmath.py)**: functions for light curve operations such
   as phasing, normalization, binning, sigma-clipping ,etc.
@@ -110,7 +114,7 @@ tweaked for your purposes.
 This wraps `eebls.f` from Geza Kovacs. Extracted from
 [python-bls](http://github.com/dfm/python-bls) by Daniel Foreman-Mackey, Ruth
 Angus, and others. Used as the BLS implementation by `astrobase.periodbase`
-functions.
+functions. See its [README](bls/README.md) for details.
 
 ## notebooks
 
