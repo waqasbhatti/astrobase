@@ -9,9 +9,9 @@ Foreman-Mackey's python-bls implementation.
 
 ## python-bls
 
-- Foreman-Mackey, D., Angus, R., et al. 2015
+- Foreman-Mackey, D., Angus, R., et al. 2012
 - https://github.com/dfm/python-bls.git
 
 The license for the Python files is the MIT License. eebls.f is provided by
 G. Kovacs; it appears to be re-distributable, but please make sure to cite
-Kovacs, et al. 2012 if you use this implementation.
+Kovacs, et al. 2002 if you use this implementation.
