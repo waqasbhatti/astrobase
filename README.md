@@ -25,6 +25,11 @@ You might need to install `openssl-devel` or a similar RPM/DEB package for the
 To install:
 
 ```bash
+##      make sure numpy is installed first!         ##
+## this is required for the bls module installation ##
+$ pip install numpy
+
+# next, install astrobase
 $ git clone https://github.com/waqasbhatti/astrobase
 $ cd astrobase
 $ python setup.py install
