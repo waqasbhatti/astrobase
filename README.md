@@ -93,12 +93,12 @@ tweaked for your purposes.
   http://hatsouth.org); the format is described here:
   http://hatnet.org/planets/discovery-hatlcs.html#lightcurve-schema
 
-- **[periodbase](astrobase/periodbase.py)**: parellized functions to run
-  period searches on light curves, including: the generalized Lomb-Scargle
-  algorithm from Zechmeister & Kurster (2008), the string length algorithm from
-  Dworetsky (1983), the phase dispersion minimization algorithm from
-  Stellingwerf (1978, 2011), the AoV algorithm from Schwarzenberg-Cerny (1989),
-  and the BLS algorithm from Kovacs et al. (2002)
+- **[periodbase](astrobase/periodbase.py)**: parallelized functions (using
+  `multiprocessing.map`) to run fast period searches on light curves, including:
+  the generalized Lomb-Scargle algorithm from Zechmeister & Kurster (2008), the
+  string length algorithm from Dworetsky (1983), the phase dispersion
+  minimization algorithm from Stellingwerf (1978, 2011), the AoV algorithm from
+  Schwarzenberg-Cerny (1989), and the BLS algorithm from Kovacs et al. (2002)
 
 - **[plotbase](astrobase/plotbase.py)**: functions to plot light curves,
   phased light curves, and make checkplots (a 3 x 3 grid of plots used to
