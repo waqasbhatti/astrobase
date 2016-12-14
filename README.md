@@ -35,7 +35,8 @@ $ # or use pip install -e . to install in develop mode along with requirements
 
 # License
 
-`astrobase` uses the MIT License. See the LICENSE file for the full text.
+`astrobase` is provided under the MIT License. See the LICENSE file for the full
+text.
 
 
 # Modules
