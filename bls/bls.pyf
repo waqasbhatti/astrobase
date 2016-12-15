@@ -1,7 +1,7 @@
 !    -*- f90 -*-
 ! Note: the context of this file is case sensitive.
 
-python module _bls ! in 
+python module _bls ! in
     interface  ! in :_bls
         subroutine eebls(n,t,x,u,v,nf,fmin,df,nb,qmi,qma,p,bper,bpow,depth,qtran,in1,in2) ! in :_bls:eebls.f
             integer, optional,intent(in),check(len(t)>=n),depend(t) :: n=len(t)
@@ -22,8 +22,9 @@ python module _bls ! in
             real*8 intent(out) :: qtran
             integer intent(out) :: in1
             integer intent(out) :: in2
+            !f2py threadsafe
         end subroutine eebls
-    end interface 
+    end interface
 end python module _bls
 
 ! This file was auto-generated with f2py (version:2).
