@@ -25,9 +25,13 @@ You might need to install `openssl-devel` or a similar RPM/DEB package for the
 To install:
 
 ```bash
-##      make sure numpy is installed first!         ##
+## make sure numpy is installed first!              ##
 ## this is required for the bls module installation ##
 $ pip install numpy
+
+## you'll need a Fortran compiler for the bls module! ##
+## on Linux: yum or apt install gcc gfortran          ##
+## on OSX (using homebrew): brew install gcc          ##
 
 # next, install astrobase
 $ git clone https://github.com/waqasbhatti/astrobase
