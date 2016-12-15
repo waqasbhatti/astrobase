@@ -62,7 +62,11 @@ except Exception as e:
     )
 
     print('JPL kernel de430.bsp not found. Downloading from:\n\n%s\n' % spkurl)
-    from urllib import urlretrieve
+    try:
+        from urllib import urlretrieve
+    except:
+        from urllib.request import urlretrieve
+
     localf, headerr = urlretrieve(
         spkurl,planetdatafile,reporthook=on_download_chunk
     )
@@ -82,7 +86,7 @@ except Exception as e:
 # read in the tai-utc.dat file and find the latest correction
 with open(leapsecondfile,'rb') as infd:
     leapline = infd.readlines()[-1]
-    leapstart = leapline.find('TAI-UTC')
+    leapstart = leapline.find(b'TAI-UTC')
     leapinfo = leapline[leapstart+8:leapstart+21]
 
 LEAPSECONDCORRECTION = float(leapinfo)
