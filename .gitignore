@@ -38,6 +38,6 @@ utils/*.html
 utils/*.so
 __pycache__/
 *.bsp
-*.so
+*.so*
 _*.c
 .ipynb_checkpoints
