@@ -36,7 +36,10 @@ import logging
 from datetime import datetime
 from traceback import format_exc
 
-from urllib import urlretrieve
+try:
+    from urllib import urlretrieve
+except:
+    from urllib.request import urlretrieve
 
 # for downloading DSS stamps from NASA GSFC SkyView
 from astroquery.skyview import SkyView
