@@ -10,7 +10,11 @@ Contains various useful tools for dealing with time in astronomical contexts.
 '''
 
 import logging
-import ConfigParser
+try:
+    import ConfigParser
+except:
+    import configparser as ConfigParser
+
 import time
 import os.path
 import os

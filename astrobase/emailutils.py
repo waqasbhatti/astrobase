@@ -39,7 +39,11 @@ import subprocess
 ## EMAIL SETTINGS ##
 
 # get config from the astrobase.conf file
-import ConfigParser
+try:
+    import ConfigParser
+except:
+    import configparser as ConfigParser
+
 modpath = os.path.abspath(os.path.dirname(__file__))
 CONF_FILE = os.path.join(modpath,'astrobase.conf')
 CONF = ConfigParser.ConfigParser()

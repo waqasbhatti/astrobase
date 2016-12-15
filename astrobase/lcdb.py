@@ -10,7 +10,10 @@ project.
 '''
 
 import logging
-import ConfigParser
+try:
+    import ConfigParser
+except:
+    import configparser as ConfigParser
 import os
 import stat
 import os.path
