@@ -33,6 +33,13 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
 
 from scipy.signal import lombscargle, find_peaks_cwt
 
+# experimental numba speedup stuff
+try:
+    from numba import jit
+    HAVENUMBA = True
+except:
+    HAVENUMBA = False
+
 
 #############
 ## LOGGING ##
