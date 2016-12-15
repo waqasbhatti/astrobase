@@ -587,7 +587,7 @@ def read_and_filter_sqlitecurve(lcfile,
 
         if lightcurve and len(lightcurve) > 0:
 
-            lightcurve = zip(*lightcurve)
+            lightcurve = list(zip(*lightcurve))
             lcdict.update({x:y for (x,y) in zip(lcdict['columns'],
                                                 lightcurve)})
             lcok = True
