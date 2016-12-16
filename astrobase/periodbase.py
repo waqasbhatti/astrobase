@@ -1975,7 +1975,7 @@ def bls_parallel_pfind(
             #############################
 
             # fix number of CPUs if needed
-            if nworkers > NCPUS or not nworkers:
+            if not nworkers or nworkers > NCPUS:
                 nworkers = NCPUS
                 LOGINFO('using %s workers...' % nworkers)
 
