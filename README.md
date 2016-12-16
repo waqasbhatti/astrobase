@@ -25,8 +25,8 @@ You might need to install `openssl-devel` or a similar RPM/DEB package for the
 To install:
 
 ```bash
-## make sure numpy is installed first!              ##
-## this is required for the bls module installation ##
+## make sure numpy is installed first!                ##
+## this is required for the bls module installation   ##
 $ pip install numpy
 
 ## you'll need a Fortran compiler for the bls module! ##
