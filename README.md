@@ -30,7 +30,7 @@ To install:
 $ pip install numpy
 
 ## you'll need a Fortran compiler for the bls module! ##
-## on Linux: yum or apt install gcc gfortran          ##
+## on Linux: dnf/yum/apt install gcc gcc-gfortran     ##
 ## on OSX (using homebrew): brew install gcc          ##
 
 # next, install astrobase
