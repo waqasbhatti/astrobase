@@ -478,7 +478,7 @@ def pdw_period_find(times,
                       phasebinsize) for x in frequencies]
 
             # fire up the pool and farm out the tasks
-            if (nworkers > NCPUS) or (not nworkers):
+            if (not nworkers) or (nworkers > NCPUS):
                 nworkers = NCPUS
                 LOGINFO('using %s workers...' % nworkers)
 
@@ -707,7 +707,7 @@ def stellingwerf_pdm(times,
                 )
 
             # map to parallel workers
-            if (nworkers > NCPUS) or (not nworkers):
+            if (not nworkers) or (nworkers > NCPUS):
                 nworkers = NCPUS
                 LOGINFO('using %s workers...' % nworkers)
 
@@ -1003,7 +1003,7 @@ def aov_periodfind(times,
                 )
 
             # map to parallel workers
-            if (nworkers > NCPUS) or (not nworkers):
+            if (not nworkers) or (nworkers > NCPUS):
                 nworkers = NCPUS
                 LOGINFO('using %s workers...' % nworkers)
 
@@ -1222,7 +1222,7 @@ def pgen_lsp(
                 )
 
             # map to parallel workers
-            if (nworkers > NCPUS) or (not nworkers):
+            if (not nworkers) or (nworkers > NCPUS):
                 nworkers = NCPUS
                 LOGINFO('using %s workers...' % nworkers)
 
@@ -1395,7 +1395,7 @@ def parallel_townsend_lsp(times, mags, startp, endp,
     omegas = 2*np.pi*np.arange(startf, endf, stepsize)
 
     # parallel map the lsp calculations
-    if (nworkers > NCPUS) or (not nworkers):
+    if (not nworkers) or (nworkers > NCPUS):
         nworkers = NCPUS
         LOGINFO('using %s workers...' % nworkers)
 
@@ -1499,7 +1499,7 @@ def scipylsp_parallel(times,
                  for x in range(nworkers)]
 
         # map to parallel workers
-        if (nworkers > NCPUS) or (not nworkers):
+        if (not nworkers) or (nworkers > NCPUS):
             nworkers = NCPUS
             LOGINFO('using %s workers...' % nworkers)
 
