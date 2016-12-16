@@ -19,51 +19,9 @@ def readme():
     with open('README.md') as f:
         return f.read()
 
-setup(
-    name='astrobase',
-    version=__version__,
-    description=('A bunch of Python modules and scripts '
-                 'useful for variable star work in astronomy.'),
-    long_description=readme(),
-    classifiers=[
-        'Development Status :: 4 - Beta',
-        'License :: OSI Approved :: MIT License',
-        "Intended Audience :: Science/Research",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python",
-    ],
-    keywords='astronomy',
-    url='https://github.com/waqasbhatti/astrobase',
-    author='Waqas Bhatti',
-    author_email='waqas.afzal.bhatti@gmail.com',
-    license='MIT',
-    packages=['astrobase'],
-    install_requires=[
-        'numpy',
-        'scipy',
-        'astropy',
-        'matplotlib',
-        'Pillow',
-        'jplephem',
-        'simplejson',
-        'astroquery',
-    ],
-    extras_require={
-        'LCDB':['psycopg2'],
-    },
-    # entry_points={
-    #     'console_scripts':[
-    #         'fitshdr.py=astrobase.imageutils:fitshdr',
-    #     ],
-    #},
-    include_package_data=True,
-    zip_safe=False,
-)
-
-
-############################
-## NOW DO THE FORTRAN BIT ##
-############################
+########################
+## DO THE FORTRAN BIT ##
+########################
 
 # taken from github:dfm/python-bls.git/setup.py
 # First, make sure that the f2py interfaces exist.
@@ -103,4 +61,50 @@ npsetup(
     install_requires=[
         'numpy',
     ],
+)
+
+
+#############################
+## RUN SETUP FOR ASTROBASE ##
+#############################
+
+setup(
+    name='astrobase',
+    version=__version__,
+    description=('A bunch of Python modules and scripts '
+                 'useful for variable star work in astronomy.'),
+    long_description=readme(),
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'License :: OSI Approved :: MIT License',
+        "Intended Audience :: Science/Research",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+    ],
+    keywords='astronomy',
+    url='https://github.com/waqasbhatti/astrobase',
+    author='Waqas Bhatti',
+    author_email='waqas.afzal.bhatti@gmail.com',
+    license='MIT',
+    packages=['astrobase'],
+    install_requires=[
+        'numpy',
+        'scipy',
+        'astropy',
+        'matplotlib',
+        'Pillow',
+        'jplephem',
+        'simplejson',
+        'astroquery',
+    ],
+    extras_require={
+        'LCDB':['psycopg2'],
+    },
+    # entry_points={
+    #     'console_scripts':[
+    #         'fitshdr.py=astrobase.imageutils:fitshdr',
+    #     ],
+    #},
+    include_package_data=True,
+    zip_safe=False,
 )
