@@ -38,37 +38,37 @@ if "interface" in sys.argv or not interface_exists:
 # Define the Fortran extension.
 bls = Extension("bls._bls", ["bls/bls.pyf", "bls/eebls.f"])
 
-npsetup(
-    name='bls',
-    version=__version__,
-    description=('Python f2py extension wrapping '
-                 'eebls.f by Kovacs et al. 2002.'),
-    long_description=readme(),
-    classifiers=[
-        'Development Status :: 4 - Beta',
-        'License :: OSI Approved :: MIT License',
-        "Intended Audience :: Science/Research",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python",
-    ],
-    keywords='astronomy',
-    url='https://github.com/waqasbhatti/astrobase',
-    author='Waqas Bhatti',
-    author_email='waqas.afzal.bhatti@gmail.com',
-    license='MIT',
-    packages=["bls"],
-    ext_modules=[bls,],
-    install_requires=[
-        'numpy',
-        'scipy',
-        'astropy',
-        'matplotlib',
-        'Pillow',
-        'jplephem',
-        'simplejson',
-        'astroquery',
-    ],
-)
+# npsetup(
+#     name='bls',
+#     version=__version__,
+#     description=('Python f2py extension wrapping '
+#                  'eebls.f by Kovacs et al. 2002.'),
+#     long_description=readme(),
+#     classifiers=[
+#         'Development Status :: 4 - Beta',
+#         'License :: OSI Approved :: MIT License',
+#         "Intended Audience :: Science/Research",
+#         "Operating System :: OS Independent",
+#         "Programming Language :: Python",
+#     ],
+#     keywords='astronomy',
+#     url='https://github.com/waqasbhatti/astrobase',
+#     author='Waqas Bhatti',
+#     author_email='waqas.afzal.bhatti@gmail.com',
+#     license='MIT',
+#     packages=["bls"],
+#     ext_modules=[bls,],
+#     install_requires=[
+#         'numpy',
+#         'scipy',
+#         'astropy',
+#         'matplotlib',
+#         'Pillow',
+#         'jplephem',
+#         'simplejson',
+#         'astroquery',
+#     ],
+# )
 
 
 #############################
@@ -93,7 +93,8 @@ setup(
     author='Waqas Bhatti',
     author_email='waqas.afzal.bhatti@gmail.com',
     license='MIT',
-    packages=['astrobase'],
+    packages=['astrobase','bls'],
+    ext_modules=[bls,],
     install_requires=[
         'numpy',
         'scipy',
