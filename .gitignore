@@ -20,8 +20,6 @@ dist/
 docs/users.txt
 *bundled*
 *tmp*
-*.gz
-*.bz2
 .emailsettings
 .lcdbsettings
 .cookiekey
