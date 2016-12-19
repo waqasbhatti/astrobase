@@ -24,16 +24,6 @@ def readme():
 ########################
 
 # taken from github:dfm/python-bls.git/setup.py
-# First, make sure that the f2py interfaces exist.
-interface_exists = os.path.exists("bls/bls.pyf")
-if "interface" in sys.argv or not interface_exists:
-    # Generate the Fortran signature/interface.
-    cmd = "cd bls;"
-    cmd += "f2py eebls.f -m _bls -h bls.pyf"
-    cmd += " --overwrite-signature"
-    os.system(cmd)
-    if "interface" in sys.argv:
-        sys.exit(0)
 
 # Define the Fortran extension.
 bls = Extension("bls._bls", ["bls/bls.pyf", "bls/eebls.f"])
