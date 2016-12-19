@@ -18,7 +18,7 @@ try:
 except:
     print('\nyou need to have numpy installed before running setup.py,\n'
           'because we need its Extension functionality to make a\n'
-          'Fortran extension for BLS\n')
+          'compiled Fortran extension for BLS!\n')
     raise
 
 
