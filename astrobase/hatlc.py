@@ -677,7 +677,6 @@ CAMFILTERS
 
 {filterdefs}
 
-
 PHOTAPERTURES
 -------------
 
