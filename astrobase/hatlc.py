@@ -69,7 +69,7 @@ COLUMNDEFS = {
            '%.7f',
            float),
     'bjd':(('time of observation in Baryocentric Julian date '
-            '(note: this is BJD_UTC, not BJD_TDB)'),
+            '(note: this is BJD_TDB)'),
            '%.7f',
            float),
     # FRAME METADATA
@@ -690,7 +690,7 @@ LIGHT CURVE COLUMNS
 '''
 
 
-def describe(lcdict):
+def describe(lcdict, returndesc=False):
     '''
     This describes the light curve object and columns present.
 
@@ -707,7 +707,7 @@ def describe(lcdict):
         else:
             coldesc = COLUMNDEFS[column][0]
 
-        columndefstr = '# %03i - %s - %s' % (colind,
+        columndefstr = '%03i - %s - %s' % (colind,
                                              column,
                                              coldesc)
         columndefs.append(columndefstr)
@@ -720,7 +720,7 @@ def describe(lcdict):
     for row in lcdict['filters']:
 
         filterid, filtername, filterdesc = row
-        filterdefstr = '# %s - %s - %s' % (filterid,
+        filterdefstr = '%s - %s - %s' % (filterid,
                                            filtername,
                                            filterdesc)
         filterdefs.append(filterdefstr)
@@ -731,7 +731,7 @@ def describe(lcdict):
     # figure out the apertures
     aperturedefs = []
     for key in sorted(lcdict['lcapertures'].keys()):
-        aperturedefstr = '# %s - %.2f px' % (key, lcdict['lcapertures'][key])
+        aperturedefstr = '%s - %.2f px' % (key, lcdict['lcapertures'][key])
         aperturedefs.append(aperturedefstr)
 
     aperturedefs = '\n'.join(aperturedefs)
@@ -774,9 +774,8 @@ def describe(lcdict):
 
     print(description)
 
-    return description
-
-
+    if returndesc:
+        return description
 
 
 #####################################
