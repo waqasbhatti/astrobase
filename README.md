@@ -41,6 +41,9 @@ $ # or use pip install . to install requirements automatically
 $ # or use pip install -e . to install in develop mode along with requirements
 ```
 
+This package isn't yet available from PyPI, but will be as soon as it becomes
+more stable.
+
 
 # License
 
