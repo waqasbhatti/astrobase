@@ -95,6 +95,7 @@ setup(
     license='MIT',
     packages=['astrobase'],
     install_requires=[
+        'bls',
         'numpy',
         'scipy',
         'astropy',
