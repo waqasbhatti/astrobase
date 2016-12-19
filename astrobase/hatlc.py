@@ -642,6 +642,143 @@ def read_and_filter_sqlitecurve(lcfile,
     return returnval
 
 
+############################
+## DESCRIBING THE COLUMNS ##
+############################
+
+DESCTEMPLATE = '''\
+OBJECT
+------
+
+objectid = {objectid}
+hatid = {hatid}; twomassid = {twomassid}
+network = {network}; stations = {stations}; ndet = {ndet}
+
+ra = {ra}; decl = {decl}
+pmra = {pmra}; pmra_err = {pmra_err}
+pmdecl = {pmdecl}; pmdecl_err = {pmdecl_err}
+
+jmag = {jmag}; hmag = {hmag}; kmag = {kmag}; bmag = {bmag}; vmag = {vmag}
+sdssg = {sdssg}; sdssr = {sdssr}; sdssi = {sdssi}
+
+METADATA
+--------
+
+datarelease = {datarelease}; lcversion = {lcversion}
+lastupdated = {lastupdated:.3f}; lcserver = {lcserver}
+comment = {comment}
+lcbestaperture = {lcbestaperture}
+lcsortcol = {lcsortcol}
+lcfiltersql = {lcfiltersql}
+lcnormcols = {lcnormcols}
+
+CAMFILTERS
+----------
+
+{filterdefs}
+
+
+PHOTAPERTURES
+-------------
+
+{aperturedefs}
+
+LIGHT CURVE COLUMNS
+-------------------
+
+{columndefs}
+'''
+
+
+def describe(lcdict):
+    '''
+    This describes the light curve object and columns present.
+
+    '''
+
+    # figure out the columndefs part of the header string
+    columndefs = []
+
+    for colind, column in enumerate(lcdict['columns']):
+
+        if '_' in column:
+            colkey, colap = column.split('_')
+            coldesc = COLUMNDEFS[colkey][0] % colap
+        else:
+            coldesc = COLUMNDEFS[column][0]
+
+        columndefstr = '# %03i - %s - %s' % (colind,
+                                             column,
+                                             coldesc)
+        columndefs.append(columndefstr)
+
+    columndefs = '\n'.join(columndefs)
+
+    # figure out the filterdefs
+    filterdefs = []
+
+    for row in lcdict['filters']:
+
+        filterid, filtername, filterdesc = row
+        filterdefstr = '# %s - %s - %s' % (filterid,
+                                           filtername,
+                                           filterdesc)
+        filterdefs.append(filterdefstr)
+
+    filterdefs = '\n'.join(filterdefs)
+
+
+    # figure out the apertures
+    aperturedefs = []
+    for key in sorted(lcdict['lcapertures'].keys()):
+        aperturedefstr = '# %s - %.2f px' % (key, lcdict['lcapertures'][key])
+        aperturedefs.append(aperturedefstr)
+
+    aperturedefs = '\n'.join(aperturedefs)
+
+    # now fill in the description
+    description = DESCTEMPLATE.format(
+        objectid=lcdict['objectid'],
+        hatid=lcdict['objectinfo']['hatid'],
+        twomassid=lcdict['objectinfo']['twomassid'].strip(),
+        ra=lcdict['objectinfo']['ra'],
+        decl=lcdict['objectinfo']['decl'],
+        pmra=lcdict['objectinfo']['pmra'],
+        pmra_err=lcdict['objectinfo']['pmra_err'],
+        pmdecl=lcdict['objectinfo']['pmdecl'],
+        pmdecl_err=lcdict['objectinfo']['pmdecl_err'],
+        jmag=lcdict['objectinfo']['jmag'],
+        hmag=lcdict['objectinfo']['hmag'],
+        kmag=lcdict['objectinfo']['kmag'],
+        bmag=lcdict['objectinfo']['bmag'],
+        vmag=lcdict['objectinfo']['vmag'],
+        sdssg=lcdict['objectinfo']['sdssg'],
+        sdssr=lcdict['objectinfo']['sdssr'],
+        sdssi=lcdict['objectinfo']['sdssi'],
+        ndet=lcdict['objectinfo']['ndet'],
+        lcsortcol=lcdict['lcsortcol'],
+        lcbestaperture=json.dumps(lcdict['lcbestaperture'],ensure_ascii=True),
+        network=lcdict['objectinfo']['network'],
+        stations=lcdict['objectinfo']['stations'],
+        lastupdated=lcdict['lastupdated'],
+        datarelease=lcdict['datarelease'],
+        lcversion=lcdict['lcversion'],
+        lcserver=lcdict['lcserver'],
+        comment=lcdict['comment'],
+        lcfiltersql=(lcdict['lcfiltersql'] if 'lcfiltersql' in lcdict else ''),
+        lcnormcols=(lcdict['lcnormcols'] if 'lcnormcols' in lcdict else ''),
+        filterdefs=filterdefs,
+        columndefs=columndefs,
+        aperturedefs=aperturedefs
+        )
+
+    print(description)
+
+    return description
+
+
+
+
 #####################################
 ## NORMALIZING SQLITECURVE LCDICTS ##
 #####################################
