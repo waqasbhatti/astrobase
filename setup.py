@@ -60,6 +60,13 @@ npsetup(
     ext_modules=[bls,],
     install_requires=[
         'numpy',
+        'scipy',
+        'astropy',
+        'matplotlib',
+        'Pillow',
+        'jplephem',
+        'simplejson',
+        'astroquery',
     ],
 )
 
