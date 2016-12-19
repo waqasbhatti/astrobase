@@ -13,7 +13,14 @@ import sys, os.path
 from setuptools import setup
 
 # for f2py extension building
-from numpy.distutils.core import Extension, setup as npsetup
+try:
+    from numpy.distutils.core import Extension, setup as npsetup
+except:
+    print('\nyou need to have numpy installed before running setup.py,\n'
+          'because we need its Extension functionality to make a\n'
+          'Fortran extension for BLS\n')
+    raise
+
 
 def readme():
     with open('README.md') as f:
