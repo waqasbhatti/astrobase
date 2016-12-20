@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet"
+          href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css"
+          integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi"
+          crossorigin="anonymous">
+  </head>
+  <body>
+
+
+    <div class="container-fluid">
+
+      <div class="row">
+        <div class="col-sm-12">
+          <h1>Checkplot Quickview</h1>
+        </div>
+      </div>
+
+      <div class="row">
+
+        <div class="col-sm-3">
+
+          <h3>File list</h3>
+          <ul id="pnglist" class="list-unstyled">
+          </ul>
+
+        </div>
+
+        <div class="col-sm-9">
+
+          <div class="row">
+            <div class="col-sm-12">
+              <h3><a href="#" class="checkplot-prev">&lt;&lt; previous</a>
+                | <span id="checkplot-current"></span> |
+                <a href="#" class="checkplot-next">next &gt;&gt;</a></h3>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-sm-12">
+              <canvas id="checkplot" width="1000" height="800">
+              </canvas>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Bootstrap JS. -->
+    <script
+      src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"
+      integrity="sha384-3ceskX3iaEnIogmQchP8opvBy3Mi7Ce34nWjpBIwVTHfGYWQS9jwHDVRnpKKHJg7"
+      crossorigin="anonymous"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.3.7/js/tether.min.js"
+      integrity="sha384-XTs3FgkjiBgo8qjEjBk0tGmf3wPrWtA6coPfQDfFEY8AnYJwjalXCiosYRBIBZX8"
+      crossorigin="anonymous"></script>
+    <script
+      src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/js/bootstrap.min.js"
+      integrity="sha384-BLiI7JTZm+JWlgKa0M0kGRpJbF2J8q+qreVrKBC47e3K6BW78kGLrCkeRX6I9RoK"
+      crossorigin="anonymous"></script>
+
+    <script src="checkplot-viewer.js"></script>
+
+    <script>
+      // set up the controls
+      checkplot.action_setup();
+
+      // load the filelist and the first checkplot
+      checkplot.get_file_list(
+        'checkplot-filelist.json'
+      );
+
+
+    </script>
+
+  </body>
+</html>
