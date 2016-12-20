@@ -58,9 +58,9 @@ def LOGEXCEPTION(message):
                 )
             )
 
-###############
-## FUNCTIONS ##
-###############
+#######################
+## ANGLE CONVERSIONS ##
+#######################
 
 def angle_wrap(angle,radians=False):
     '''
@@ -403,3 +403,114 @@ def reduced_proper_motion(jmag, propermotion):
 
     rpm = jmag + 5.0*np.log10(propermotion/1000.0)
     return rpm
+
+
+########################
+## XI-ETA PROJECTIONS ##
+########################
+
+def xieta_from_radecl(inra, indecl, incenterra, incenterdecl, deg=True):
+    '''This returns the image-plane projected xi-eta coords for inra, indecl.
+
+    If deg = True, the input angles are assumed to be in degrees and the output
+    is in degrees as well. A center RA and DEC are required.
+
+    '''
+
+    if deg:
+
+        ra = np.radians(inra)
+        decl = np.radians(indecl)
+        centerra = np.radians(incenterra)
+        centerdecl = np.radians(incenterdecl)
+
+    else:
+
+        ra = inra
+        decl = indecl
+        centerra = incenterra
+        centerdecl = incenterdecl
+
+    cdecc = np.cos(centerdecl)
+    sdecc = np.sin(centerdecl)
+    crac = np.cos(centerra)
+    srac = np.sin(centerra)
+
+    uu = np.cos(decl)*np.cos(ra)
+    vv = np.cos(decl)*np.sin(ra)
+    ww = np.sin(decl)
+
+    uun = uu*cdecc*crac + vv*cdecc*srac + ww*sdecc
+    vvn = -uu*srac + vv*crac
+    wwn = -uu*sdecc*crac - vv*sdecc*srac + ww*cdecc
+    denom = vvn*vnn + wwn*wwn
+
+    aunn = np.zeros_like(uun)
+    auun[uun >= 1.0] = 0.0
+    auun[uun < 1.0] = np.acos(uun)
+
+    xi, eta = np.zeros_like(auun), np.zeros_like(auun)
+
+    xi[(auun <= 0.0) | (denom <= 0.0)] = 0.0
+    eta[(auun <= 0.0) | (denom <= 0.0)] = 0.0
+
+    sdenom = np.sqrt(denom)
+
+    xi[(auun > 0.0) | (denom > 0.0)] = auun*vvn/sdenom
+    eta[(auun > 0.0) | (denom > 0.0)] = auun*wwn/sdenom
+
+    if deg:
+        return np.degrees(xi), np.degrees(eta)
+    else:
+        return xi, eta
+
+
+# FIXME: convert this to Python
+# /* inverse arc projection (input output in radians) */
+# void  astr_iarc(real xi, real eta, real rac, real decc, real *ra, real *dec)
+# {
+#   real  dist  = sqrt(xi*xi + eta*eta);
+
+#   if(dist < FLT_EPSILON)
+#   {
+#     *ra  = rac;
+#     *dec = decc;
+#   }
+#   else
+#   {
+#     real  uu    = cos(dist);
+#     real  vv    = xi *sin(dist)/dist;
+#     real  ww    = eta*sin(dist)/dist;
+
+#     real  cdecc = cos(decc);
+#     real  sdecc = sin(decc);
+#     real  crac  = cos(rac);
+#     real  srac  = sin(rac);
+
+#     real  uun   = uu*cdecc*crac - vv*srac - ww*sdecc*crac;
+#     real  vvn   = uu*cdecc*srac + vv*crac - ww*sdecc*srac;
+#     real  wwn   = uu*sdecc + ww*cdecc;
+
+#     *dec = asin(wwn);
+
+#     if(ABS(uun) < FLT_EPSILON)
+#       *ra = SIGN(xi)*PI_2;
+#     else
+#     {
+#       *ra = atan(vvn/uun);
+
+#       if(ABS(decc + eta) > PI_2)
+#         *ra += 2.0*(PI - ABS(*ra - rac));
+#       if(ABS(cos(*dec)) > FLT_EPSILON &&
+# 	 rac + xi/cos(*dec) > PI_2 && rac + xi/cos(*dec) < PI3_2)
+#         *ra += PI;
+
+#       if(*ra < 0.0)
+#         *ra += PI2;
+#       else if(*ra > PI2)
+# 	*ra -= PI2;
+#     }
+#   }
+
+#   return;
+# }  /* endof astr_iarc() */
