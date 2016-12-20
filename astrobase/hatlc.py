@@ -12,6 +12,7 @@ read_csvlc(lcfile):
 
     lcfile is the HAT gzipped CSV LC (with a .hatlc.csv.gz extension)
 
+
 read_and_filter_sqlitecurve(lcfile, columns=None, sqlfilters=None,
                             raiseonfail=False):
     This reads the sqlitecurve and optionally filters it, returns an lcdict.
