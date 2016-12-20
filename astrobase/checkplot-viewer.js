@@ -67,7 +67,6 @@ var checkplot = {
             console.log('populating sidebar file list')
             checkplot.populate_web_filelist();
         }).done(function () {
-            console.log('making checkplot with ' + checkplot.filelist);
             checkplot.load_checkplot(checkplot.filelist[0]);
         });
 
@@ -102,12 +101,13 @@ var checkplot = {
 
         });
 
-        $('.checkplot-load').on('click', function (evt) {
+        $('#pnglist').on('click', '.checkplot-load', function (evt) {
 
             evt.preventDefault();
 
-            var filetoload = $(this).attr('data-fname').text();
+            var filetoload = $(this).attr('data-fname');
             console.log('file to load: ' + filetoload);
+
             if (checkplot.filelist.indexOf(filetoload) != -1) {
                 checkplot.load_checkplot(filetoload);
             }
