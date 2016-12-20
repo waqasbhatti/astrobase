@@ -24,7 +24,9 @@ var checkplot = {
         };
 
         imageobject.src = filename;
-        plottitle.text(filename);
+        var filelink = '<a href="' + filename + '" target="_blank">' +
+            filename + '</a>';
+        plottitle.html(filelink);
         checkplot.currfile = filename;
     },
 
@@ -113,6 +115,7 @@ var checkplot = {
             }
 
         });
+
 
     }
 
