@@ -50,6 +50,7 @@ import re
 
 import numpy as np
 from numpy import nan
+from astropy.io import ascii
 
 import sqlite3 as sql
 
@@ -913,6 +914,7 @@ def normalize_lcdict(lcdict,
                              iepcols + atfcols +
                              (['pstf'] if 'pstf' in lcdict else []) +
                              itfcols)
+
     else:
         cols_to_normalize = magcols.split(',')
         cols_to_normalize = [x.strip() for x in cols_to_normalize]
@@ -1201,3 +1203,63 @@ def read_csvlc(lcfile):
             continue
 
     return lcdict
+
+def read_text_lc(lcpath):
+    '''
+    Read .epdlc, and .tfalc light curves and return a corresponding labelled
+    dict (if LC from <2012) or astropy table (if >=2012). Each has different
+    keys that can be accessed via .keys()
+    
+    Input:
+    lcpath: path (string) to light curve data, which is a textfile with HAT
+    LC data.
+    
+    Example:
+    dat = read_text_lc('HAT-115-0003266.epdlc')
+    '''
+
+    LOGINFO('reading HATLC: {:s}'.format(lcpath))
+    
+    N_lines_to_parse_comments = 50
+    with open(lcpath, 'rb') as file:
+        head = [next(file) for ind in range(N_lines_to_parse_comments)]
+
+    N_comment_lines = len([l for l in head if l.decode('UTF-8')[0]=='#'])
+    assert N_comment_lines < N_lines_to_parse_comments, \
+        'LC file has too many comment lines'
+
+    first_data_line = list(filter(None, \
+        head[N_comment_lines].decode('UTF-8').split(' ')))
+    N_cols = len(first_data_line)
+
+    # There are different col_names depending on when HAT pipeline was run
+    pre_2012_format = True if N_cols == 17 else False
+
+    if pre_2012_format:
+        LOGINFO('Using 17 column names (format appropriate for data)')
+        
+        # TODO: are these correctly labelled? (fiastrom.sh source needed) Is ID always 8 chars?
+        col_names = ['SOME_ID','BJDc','MRAW0','MRAWERR0','PHOTFLAG0','MRAW1',
+            'MRAWERR1','PHOTFLAG1','MRAW2','MRAWERR2','PHOTFLAG2','MFIT0',
+            'MFIT1','MFIT2','MEPD0','MEPD1','MEPD2']
+        col_dtypes = ['U8',float,float,float,'U1',float,float,'U1',float,float,
+            'U1',float,float,float,float,float,float]
+        dtype_pairs = [el for el in zip(col_names, col_dtypes)]
+        data = np.genfromtxt(lcpath, names=col_names, dtype=col_dtypes,
+            skip_header=N_comment_lines, delimiter=None)
+        out = {}
+        for ix in range(len(data.dtype.names)):
+            out[data.dtype.names[ix]] = data[data.dtype.names[ix]]
+    
+    if not pre_2012_format:
+        LOGINFO('Date after ~2012, using appropriate cols')
+        
+        col_names = ['KEY', 'SOME_ID', 'OFIELD', 'BJDc', 'MRAW0', 'MRAWERR0', 'PHOTFLAG0',
+            'MRAW1', 'MRAWERR1', 'PHOTFLAG1', 'MRAW2', 'MRAWERR2',
+            'PHOTFLAG2', 'MFIT0', 'MFIT1', 'MFIT2', 'MEPD0', 'MEPD1',
+            'MEPD2', 'MTFA0', 'MTFA1', 'MTFA2', 'X', 'Y', 'BG',
+            'BGERR', 'S', 'D', 'K', 'HA', 'Z', 'JDc']
+
+        out = ascii.read(lcpath, names=col_names, comment='#')
+    
+    return out
