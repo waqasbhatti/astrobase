@@ -2,13 +2,55 @@
 // License: MIT. See LICENSE for the full text.
 //
 // This contains the JS to drive the checkplot quickviewer.
+//
+// To run the example, run python -m SimpleHTTPServer (or python3 -m
+// http.server) from the terminal in this directory, then browse to
+// http://localhost:8000.
 
+// For an actual deployment, you'll want to first copy over the files:
+
+// - makecplist.py
+// - checkplot-viewer.hmtl
+// - checkplot-viewer.js
+
+// to the directory you plan to serve all your checkplots from. The directory
+// structure should be something like:
+
+// checkplotmakeflist.py
+// checkplot-viewer.js
+// checkplot-viewer.html
+// checkplots/
+//   checkplot-1.png
+//   checkplot-2.png
+//   ...
+
+// Then in that directory, do:
+
+// $ python makecplist.py checkplots
+
+// This will generate a checkplot-filelist.json file that the webapp will use to
+// load all the checkplot images. Then, just navigate to the directory using a
+// web browser. NOTE: you'll need an actual web server to serve this directory;
+// using a file:/// URL won't work in Chrome, for example. In a pinch, you can
+// just use Python's built-in web server run from the directory, then navigate
+// to http://localhost:8000.
+
+// For Python 2.7: use python -m SimpleHTTPServer
+// For Python 3+: use python3 -m http.server
+
+
+//////////////
+// JS BELOW //
+//////////////
+
+// this is the checkplot object
 var checkplot = {
 
     filelist: [],
     nfiles: 0,
     currfile: '',
 
+    // this loads a checkplot from an image file into an HTML canvas object
     load_checkplot: function (filename) {
 
         console.log('loading ' + filename);
@@ -30,7 +72,7 @@ var checkplot = {
         checkplot.currfile = filename;
     },
 
-
+    // this populates the sidebar's file list
     populate_web_filelist: function () {
 
         var outelem = $('#pnglist');
@@ -44,8 +86,10 @@ var checkplot = {
 
                 outelem.append('<li>' +
                                '<a class="checkplot-load" ' +
-                               'href="#" data-fname="' + checkplot.filelist[ind] +
-                               '">' + checkplot.filelist[ind] + '</a></li>');
+                               'href="#" data-fname="' +
+                               checkplot.filelist[ind] +
+                               '">' + checkplot.filelist[ind] +
+                               '</a></li>');
 
             }
 
@@ -60,6 +104,8 @@ var checkplot = {
     },
 
 
+    // this loads the file list from the checkplot-filelist.json file, then
+    // updates the sidebar, and loads the first checkplot
     get_file_list:  function (url) {
 
         $.getJSON(url, function (data) {
@@ -74,9 +120,10 @@ var checkplot = {
 
     },
 
-
+    // this binds actions to the web-app controls
     action_setup: function () {
 
+        // the previous checkplot link
         $('.checkplot-previous').on('click',function (evt) {
 
             evt.preventDefault();
@@ -90,6 +137,7 @@ var checkplot = {
 
         });
 
+        // the next checkplot link
         $('.checkplot-next').on('click',function (evt) {
 
             evt.preventDefault();
@@ -103,6 +151,7 @@ var checkplot = {
 
         });
 
+        // clicking on a checkplot file in the sidebar
         $('#pnglist').on('click', '.checkplot-load', function (evt) {
 
             evt.preventDefault();
@@ -115,7 +164,6 @@ var checkplot = {
             }
 
         });
-
 
     }
 

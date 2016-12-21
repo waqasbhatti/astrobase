@@ -1,16 +1,16 @@
 <!-- checkplot-viewer - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2016 -->
 <!-- Licence: MIT. See LICENSE for full text. -->
 
-<!-- This is a small JS application to view all checkplots that are listed in the -->
-<!-- checkplot-filelist.json JSON file. To run this, do python -m SimpleHTTPServer in -->
-<!-- this directory, then browse to http://localhost:8000. To make a JSON filelist, -->
-<!-- run python checkplotmakeflist.py /path/to/checkplot/directory. To serve the -->
-<!-- checkplot viewer, copy over the generated checkplot-filelist.json, checkplot-viewer.html, and -->
-<!-- checkplot-viewer.js to an appropriate web server directory, then just navigate -->
-<!-- to it via the web browser.-->
-<!-- NOTE: you'll need an actual web browser to serve this, using a file:/// URL -->
-<!-- won't work in Chrome. -->
+<!-- This is a small JS application to view all checkplots that -->
+<!-- are listed in the checkplot-filelist.json JSON file. See the notes -->
+<!-- at the top of the checkplot-viewer.js file for instructions on how -->
+<!-- to use this. -->
 
+<!-- NOTE: this requires Internet connectivity, since all the CSS and some JS -->
+<!-- is loaded from CDNs. -->
+
+<!-- the base template below was taken from: -->
+<!-- https://v4-alpha.getbootstrap.com/getting-started/introduction/#starter-template -->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -59,7 +59,7 @@
 
           <div class="row">
             <div class="col-sm-12">
-              <canvas id="checkplot" width="1000" height="800">
+              <canvas id="checkplot" width="960" height="768">
               </canvas>
             </div>
           </div>
