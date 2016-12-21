@@ -132,7 +132,7 @@ tweaked for your purposes.
 
 - **[plotbase](astrobase/plotbase.py)**: functions to plot light curves, phased
   light curves, and make checkplots (a 3 x 3 grid of plots used to quickly
-  decide if a period search was successful; [for example](astrobase/data/checkplot-example.png?raw=true))
+  decide if a period search was successful; [see an example](astrobase/data/checkplot-example.png?raw=true))
 
   If you make lots of checkplots, there's a tiny checkplot-viewer webapp
   available to go through these and pick out interesting variable stars. An
