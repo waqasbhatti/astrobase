@@ -62,7 +62,7 @@ if __name__ == '__main__':
 
         with open(outjson,'wb') as outfd:
 
-            outdict = {'filelist':sorted(searchresults),
+            outdict = {'checkplots':sorted(searchresults),
                        'nfiles':len(searchresults)}
             json.dump(outdict,outfd)
 

@@ -55,21 +55,28 @@ var checkplot = {
 
         console.log('loading ' + filename);
 
-        var canvas = document.getElementById('checkplot');
-        var context = canvas.getContext('2d');
+        var imelem = $('#checkplot');
         var plottitle = $('#checkplot-current');
 
         // load image from data url
-        var imageobject = new Image();
-        imageobject.onload = function() {
-          context.drawImage(this, 0, 0);
-        };
+        imelem.attr('src',filename);
 
-        imageobject.src = filename;
+        // build the title for this current file
         var filelink = '<a href="' + filename + '" target="_blank">' +
             filename + '</a>';
         plottitle.html(filelink);
+
+        // highlight the file in the sidebar list
+        $("a[data-fname='" + filename + "']").wrap('<strong></strong>')
+
+        if (checkplot.currfile.length > 0) {
+            // un-highlight the previous file in side bar
+            $("a[data-fname='" + checkplot.currfile + "']").unwrap();
+        }
+
+        // update the current file tracker
         checkplot.currfile = filename;
+
     },
 
     // this populates the sidebar's file list
@@ -81,15 +88,18 @@ var checkplot = {
 
             var flen = checkplot.nfiles;
             var ind = 0;
+            var basefname = '';
 
             for (ind; ind < flen; ind++) {
+
+                basefname = checkplot.filelist[ind].split('/');
+                basefname = basefname[basefname.length - 1];
 
                 outelem.append('<li>' +
                                '<a class="checkplot-load" ' +
                                'href="#" data-fname="' +
                                checkplot.filelist[ind] +
-                               '">' + checkplot.filelist[ind] +
-                               '</a></li>');
+                               '">' + basefname + '</a></li>');
 
             }
 
@@ -124,7 +134,7 @@ var checkplot = {
     action_setup: function () {
 
         // the previous checkplot link
-        $('.checkplot-previous').on('click',function (evt) {
+        $('.checkplot-prev').on('click',function (evt) {
 
             evt.preventDefault();
 
