@@ -69,13 +69,6 @@ package. Also contains other useful notes-to-self.
     [ipyparallel](http://ipyparallel.readthedocs.io/en/stable/) cluster to speed
     up light curve processing
 
-## bls
-
-This wraps `eebls.f` from Geza Kovacs. Extracted from
-[python-bls](http://github.com/dfm/python-bls) by Daniel Foreman-Mackey, Ruth
-Angus, and others. Used as the BLS implementation by `astrobase.periodbase`
-functions. See its [README](bls/README.md) for details.
-
 ## astrobase
 
 Most of the modules with useful external functions live in here. The
@@ -149,3 +142,10 @@ tweaked for your purposes.
 - **[varbase](astrobase/varbase.py)**: functions for calculating variability
   indices for light curves, fitting and obtaining Fourier coefficients for use
   in classifications, and other variability features
+
+## bls
+
+This wraps `eebls.f` from Geza Kovacs. Extracted from
+[python-bls](http://github.com/dfm/python-bls) by Daniel Foreman-Mackey, Ruth
+Angus, and others. Used as the BLS implementation by `astrobase.periodbase`
+functions. See its [README](bls/README.md) for details.
