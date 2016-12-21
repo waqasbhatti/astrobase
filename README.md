@@ -65,6 +65,16 @@ functions. See its [README](bls/README.md) for details.
 This contains notebooks that demonstrate various functions from this
 package. Also contains other useful notes-to-self.
 
+- **[lightcurve-work](notebooks/lightcurve-work.ipynb)**: demonstrates
+    usage of the [hatlc](astrobase/hatlc.py),
+    [periodbase](astrobase/periodbase.py), and [plotbase](astrobase/plotbase.py)
+    modules for reading HAT light curves, finding periods, and plotting phased
+    light curves
+
+- **[parallel-ipython](notebooks/parallel-ipython.ipynb)**: shows examples of
+    how to map `astrobase` functions across an ipyparallel cluster to speed up
+    light curve processing
+
 ## astrobase
 
 Most of the modules with useful external functions live in here. The
