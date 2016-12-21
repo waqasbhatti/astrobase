@@ -10,13 +10,13 @@
 // For an actual deployment, you'll want to first copy over the files:
 
 // - makecplist.py
-// - checkplot-viewer.hmtl
+// - checkplot-viewer.html
 // - checkplot-viewer.js
 
 // to the directory you plan to serve all your checkplots from. The directory
 // structure should be something like:
 
-// checkplotmakeflist.py
+// makecplist.py
 // checkplot-viewer.js
 // checkplot-viewer.html
 // checkplots/
