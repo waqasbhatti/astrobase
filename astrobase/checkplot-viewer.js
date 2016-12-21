@@ -5,7 +5,7 @@
 //
 // To run the example, run python -m SimpleHTTPServer (or python3 -m
 // http.server) from the terminal in this directory, then browse to
-// http://localhost:8000.
+// http://localhost:8000/checkplot-viewer.html.
 
 // For an actual deployment, you'll want to first copy over the files:
 
@@ -29,11 +29,12 @@
 // $ python makecplist.py checkplots
 
 // This will generate a checkplot-filelist.json file that the webapp will use to
-// load all the checkplot images. Then, just navigate to the directory using a
-// web browser. NOTE: you'll need an actual web server to serve this directory;
-// using a file:/// URL won't work in Chrome, for example. In a pinch, you can
-// just use Python's built-in web server run from the directory, then navigate
-// to http://localhost:8000.
+// load all the checkplot images. Then, just navigate to the
+// directory/checkplot-viewer.html page using a web browser. NOTE: you'll need
+// an actual web server to serve this directory; using a file:/// URL won't work
+// in Chrome, for example. In a pinch, you can just use Python's built-in web
+// server run from the directory, then navigate to
+// http://localhost:8000/checkplot-viewer.html.
 
 // For Python 2.7: use python -m SimpleHTTPServer
 // For Python 3+: use python3 -m http.server

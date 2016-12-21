@@ -17,12 +17,12 @@ this base directory to browse through all the checkplots:
 $ python -m SimpleHTTPServer # Python 2
 $ python3 -m http.server     # Python 3
 
-then browse to http://localhost:8000.
+then browse to http://localhost:8000/checkplot-viewer.html.
 
 If this directory is already in a path served by a web server, then you can just
-browse there normally. Note that a file:/// URL provided to the browser won't
-necessarily work in some browsers (especially Google Chrome) because of security
-precautions.
+browse to the checkplot-viewer.html file normally. Note that a file:/// URL
+provided to the browser won't necessarily work in some browsers (especially
+Google Chrome) because of security precautions.
 
 '''
 
