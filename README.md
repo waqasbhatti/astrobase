@@ -53,16 +53,9 @@ text.
 
 # Contents
 
-## bls
-
-This wraps `eebls.f` from Geza Kovacs. Extracted from
-[python-bls](http://github.com/dfm/python-bls) by Daniel Foreman-Mackey, Ruth
-Angus, and others. Used as the BLS implementation by `astrobase.periodbase`
-functions. See its [README](bls/README.md) for details.
-
 ## notebooks
 
-This contains notebooks that demonstrate various functions from this
+This contains Jupyter notebooks that demonstrate various functions from this
 package. Also contains other useful notes-to-self.
 
 - **[lightcurve-work](notebooks/lightcurve-work.ipynb)**: demonstrates
@@ -72,8 +65,16 @@ package. Also contains other useful notes-to-self.
     light curves
 
 - **[parallel-ipython](notebooks/parallel-ipython.ipynb)**: shows examples of
-    how to map `astrobase` functions across an ipyparallel cluster to speed up
-    light curve processing
+    how to map `astrobase` functions across an
+    [ipyparallel](http://ipyparallel.readthedocs.io/en/stable/) cluster to speed
+    up light curve processing
+
+## bls
+
+This wraps `eebls.f` from Geza Kovacs. Extracted from
+[python-bls](http://github.com/dfm/python-bls) by Daniel Foreman-Mackey, Ruth
+Angus, and others. Used as the BLS implementation by `astrobase.periodbase`
+functions. See its [README](bls/README.md) for details.
 
 ## astrobase
 
