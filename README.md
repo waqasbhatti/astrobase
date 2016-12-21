@@ -111,7 +111,14 @@ tweaked for your purposes.
   phased light curves, and make checkplots (a 3 x 3 grid of plots used to
   quickly decide if a period search was successful; see example below)
 
-  ![Voting mode image](astrobase/data/checkplot-example.png?raw=true)
+  ![Checkplot image](astrobase/data/checkplot-example.png?raw=true)
+
+  If you make lots of checkplots, there's a tiny checkplot-viewer webapp
+  available to go through these and pick out interesting variable stars. An
+  example of using this is shown below. See the
+  [checkplot-viewer.js](astrobase/checkplot-viewer.js) file for instructions.
+
+  ![Checkplot viewer](astrobase/data/checkplot-viewer.png?raw=true)
 
 - **[timeutils](astrobase/timeutils.py)**: functions for converting from
   Julian dates to Baryocentric Julian dates, and precessing coordinates between
