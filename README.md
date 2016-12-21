@@ -130,11 +130,9 @@ tweaked for your purposes.
   minimization algorithm from Stellingwerf (1978, 2011), the AoV algorithm from
   Schwarzenberg-Cerny (1989), and the BLS algorithm from Kovacs et al. (2002)
 
-- **[plotbase](astrobase/plotbase.py)**: functions to plot light curves,
-  phased light curves, and make checkplots (a 3 x 3 grid of plots used to
-  quickly decide if a period search was successful; see example below)
-
-  ![Checkplot image](astrobase/data/checkplot-example.png?raw=true)
+- **[plotbase](astrobase/plotbase.py)**: functions to plot light curves, phased
+  light curves, and make checkplots (a 3 x 3 grid of plots used to quickly
+  decide if a period search was successful; [for example](astrobase/data/checkplot-example.png?raw=true))
 
   If you make lots of checkplots, there's a tiny checkplot-viewer webapp
   available to go through these and pick out interesting variable stars. An
