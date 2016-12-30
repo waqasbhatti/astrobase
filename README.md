@@ -139,7 +139,7 @@ tweaked for your purposes.
     HAT pipeline, are most useful for internal HAT work, and may not contain all
     measurements from overlapping observations or any object metadata. Using the
     public HAT data server light curves (-hatlc.sqlite.gz, -hatlc.csv.gz) and
-    reading these using [hatlc](astrobase/hatlc.py) is recommended instead.
+    reading these using **[hatlc](astrobase/hatlc.py)** is recommended instead.
 
 - **[timeutils](astrobase/timeutils.py)**: functions for converting from
   Julian dates to Baryocentric Julian dates, and precessing coordinates between
