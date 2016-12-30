@@ -30,7 +30,7 @@ from astropy.io import ascii as astascii
 LOGGER = None
 
 def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.hatlc' % parent_name)
+    globals()['LOGGER'] = logging.getLogger('%s.texthatlc' % parent_name)
 
 def LOGDEBUG(message):
     if LOGGER:

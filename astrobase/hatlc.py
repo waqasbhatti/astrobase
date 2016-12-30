@@ -912,7 +912,6 @@ def normalize_lcdict(lcdict,
                              iepcols + atfcols +
                              (['pstf'] if 'pstf' in lcdict else []) +
                              itfcols)
-
     else:
         cols_to_normalize = magcols.split(',')
         cols_to_normalize = [x.strip() for x in cols_to_normalize]
