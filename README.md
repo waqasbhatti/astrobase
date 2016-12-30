@@ -134,6 +134,13 @@ tweaked for your purposes.
 
   ![Checkplot viewer](astrobase/data/checkplot-viewer.png?raw=true)
 
+- **[texthatlc](astrobase/texthatlc.py)**: contains a function to read some
+    original HAT text light curves (.epdlc, .tfalc). These are produced by the
+    HAT pipeline, are most useful for internal HAT work, and may not contain all
+    measurements from overlapping observations or any object metadata. Using the
+    public HAT data server light curves (-hatlc.sqlite.gz, -hatlc.csv.gz) and
+    reading these using [hatlc](astrobase/hatlc.py) is recommended instead.
+
 - **[timeutils](astrobase/timeutils.py)**: functions for converting from
   Julian dates to Baryocentric Julian dates, and precessing coordinates between
   equinoxes and due to proper motion; this will automatically download and save
