@@ -1165,7 +1165,7 @@ def read_csvlc(lcfile):
         LOGINFO('reading HATLC: %s' % lcfile)
         infd = open(lcfile,'rb')
 
-    lctext = infd.read()
+    lctext = infd.read().decode() # argh Python 3
     infd.close()
 
     # figure out the header and get the LC columns
@@ -1179,7 +1179,7 @@ def read_csvlc(lcfile):
 
     # tranpose the LC rows into columns
     lccolumns = [x.split(',') for x in lccolumns]
-    lccolumns = zip(*lccolumns)
+    lccolumns = list(zip(*lccolumns)) # argh more Python 3
 
     # write the columns to the dict
     for colind, col in enumerate(lcdict['columns']):
