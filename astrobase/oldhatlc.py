@@ -224,7 +224,7 @@ def read_hatlc(hatlc):
 
     elif '.csv' in lcfname or '.hatlc' in lcfname:
 
-        lcflines = lcf.readlines()
+        lcflines = lcf.read().decode().split('\n') # argh Python 3
         lcf.close()
 
         # now process the read-in LC
@@ -238,7 +238,7 @@ def read_hatlc(hatlc):
             objectlc = [x.split() for x in objectlc]
 
         # transpose split rows to get columns
-        objectlc = zip(*objectlc)
+        objectlc = list(zip(*objectlc)) # argh Python 3
 
         # read the header to figure out the object's info and column names
         objectdata = [x.strip('#') for x in objectdata]
