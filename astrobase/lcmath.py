@@ -9,10 +9,7 @@ lightcurves (like phasing, sigma-clipping, etc.)
 '''
 
 import logging
-
-
 import multiprocessing as mp
-
 
 import numpy as np
 

@@ -86,10 +86,6 @@ tweaked for your purposes.
   function suitable for use in long-running scripts and the like; this uses the
   provided credentials and server to send messages
 
-- **[epd](astrobase/epd.py)**: a simple implementation of External Parameter
-  Decorrelation (Bakos et al. 2010:
-  http://adsabs.harvard.edu/abs/2010ApJ...710.1724B) for magnitude time series
-
 - **[fortney2k7](astrobase/fortney2k7.py)**: giant planet models from Fortney
   et al. 2007, ApJ, 2659, 1661 made importable as Python dicts
 
@@ -109,7 +105,8 @@ tweaked for your purposes.
   `psycopg2` library to talk to PostgreSQL database servers
 
 - **[lcmath](astrobase/lcmath.py)**: functions for light curve operations such
-  as phasing, normalization, binning, sigma-clipping ,etc.
+  as phasing, normalization, binning (in time and phase), sigma-clipping,
+  external parameter decorrelation (EPD), etc.
 
 - **[oldhatlc](astrobase/oldhatlc.py)**: functions to read light curves in the
   older HAT light curve format (i.e. those from http://hatnet.org and
