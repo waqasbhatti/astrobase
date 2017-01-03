@@ -113,7 +113,7 @@ try:
         # check if this file is readable/writeable by user only
         fileperm = oct(os.stat(DBCREDENTIALS)[stat.ST_MODE])
 
-        if fileperm == '0100600':
+        if fileperm == '0100600' or '0o100600':
 
             with open(DBCREDENTIALS) as infd:
                 creds = infd.read().strip('\n')
