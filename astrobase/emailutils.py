@@ -58,7 +58,7 @@ if os.path.exists(SETTINGSFILE):
     fileperm = oct(os.stat(SETTINGSFILE)[stat.ST_MODE])
 
     # if we're good, read the settings
-    if fileperm == '0100600' or '0o100600':
+    if fileperm == '0100600' or fileperm == '0o100600':
         EMAIL_USER, EMAIL_PASSWORD, EMAIL_SERVER = open(
             SETTINGSFILE
         ).read().strip('\n').split('|')
