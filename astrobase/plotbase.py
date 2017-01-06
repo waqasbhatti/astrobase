@@ -311,7 +311,8 @@ def plot_phased_mag_series(times,
                            phasebin=None,
                            plotphaselim=[-0.8,0.8],
                            fitknotfrac=0.01,
-                           yrange=None):
+                           yrange=None,
+                           out_dpi=None):
     '''This plots a phased magnitude time series using the period provided.
 
     If epoch is None, uses the min(times) as the epoch.
@@ -515,7 +516,12 @@ def plot_phased_mag_series(times,
     # make the figure
     if outfile and isinstance(outfile, str):
 
-        plt.savefig(outfile,bbox_inches='tight')
+        if outfile[-4] == '.png':
+            if out_dpi == None:
+                out_dpi = 100 # default
+            plt.savefig(outfile,bbox_inches='tight',dpi=out_dpi)
+        else:
+            plt.savefig(outfile,bbox_inches='tight')
         plt.close()
         return period, epoch, os.path.abspath(outfile)
 
