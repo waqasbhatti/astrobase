@@ -119,7 +119,8 @@ def plot_mag_series(times,
                     normto='globalmedian',
                     normmingap=4.0,
                     timebin=None,
-                    yrange=None):
+                    yrange=None,
+                    plotdpi=100):
     '''This plots a magnitude time series.
 
     If outfile is none, then plots to matplotlib interactive window. If outfile
@@ -136,6 +137,8 @@ def plot_mag_series(times,
     normto is either 'globalmedian', 'zero' or a float to normalize the mags
     to. If it's False, no normalization will be done on the magnitude time
     series.
+
+    plotdpi sets the DPI for PNG plots (default = 100).
 
     '''
 
@@ -272,7 +275,10 @@ def plot_mag_series(times,
 
     if outfile and isinstance(outfile, str):
 
-        plt.savefig(outfile,bbox_inches='tight')
+        if outfile.endswith('.png'):
+            plt.savefig(outfile,bbox_inches='tight',dpi=outdpi)
+        else:
+            plt.savefig(outfile,bbox_inches='tight')
         plt.close()
         return os.path.abspath(outfile)
 
@@ -287,7 +293,7 @@ def plot_mag_series(times,
         LOGWARNING('no output file specified and no $DISPLAY set, '
                    'saving to magseries-plot.png in current directory')
         outfile = 'magseries-plot.png'
-        plt.savefig(outfile,bbox_inches='tight')
+        plt.savefig(outfile,bbox_inches='tight',dpi=plotdpi)
         plt.close()
         return os.path.abspath(outfile)
 
@@ -312,7 +318,7 @@ def plot_phased_mag_series(times,
                            plotphaselim=[-0.8,0.8],
                            fitknotfrac=0.01,
                            yrange=None,
-                           out_dpi=None):
+                           plotdpi=100):
     '''This plots a phased magnitude time series using the period provided.
 
     If epoch is None, uses the min(times) as the epoch.
@@ -326,6 +332,8 @@ def plot_phased_mag_series(times,
 
     If outfile is none, then plots to matplotlib interactive window. If outfile
     is a string denoting a filename, uses that to write a png/eps/pdf figure.
+
+    plotdpi sets the DPI for PNG plots.
 
     '''
 
@@ -516,10 +524,8 @@ def plot_phased_mag_series(times,
     # make the figure
     if outfile and isinstance(outfile, str):
 
-        if outfile[-4] == '.png':
-            if out_dpi == None:
-                out_dpi = 100 # default
-            plt.savefig(outfile,bbox_inches='tight',dpi=out_dpi)
+        if outfile.endswith('.png'):
+            plt.savefig(outfile,bbox_inches='tight',dpi=plotdpi)
         else:
             plt.savefig(outfile,bbox_inches='tight')
         plt.close()
@@ -536,9 +542,10 @@ def plot_phased_mag_series(times,
         LOGWARNING('no output file specified and no $DISPLAY set, '
                    'saving to magseries-phased-plot.png in current directory')
         outfile = 'magseries-phased-plot.png'
-        plt.savefig(outfile,bbox_inches='tight')
+        plt.savefig(outfile,bbox_inches='tight',dpi=plotdpi)
         plt.close()
         return period, epoch, os.path.abspath(outfile)
+
 
 
 ###################
@@ -613,7 +620,7 @@ def get_dss_stamp(ra, decl, outfile, stampsize=5.0):
 ## PERIODOGRAMS ##
 ##################
 
-def plot_periodbase_lsp(lspinfo, outfile=None):
+def plot_periodbase_lsp(lspinfo, outfile=None, plotdpi=100):
 
     '''Makes a plot of the L-S periodogram obtained from periodbase functions.
 
@@ -664,7 +671,11 @@ def plot_periodbase_lsp(lspinfo, outfile=None):
         # make the figure
         if outfile and isinstance(outfile, str):
 
-            plt.savefig(outfile,bbox_inches='tight')
+            if outfile.endswith('.png'):
+                plt.savefig(outfile,bbox_inches='tight',dpi=plotdpi)
+            else:
+                plt.savefig(outfile,bbox_inches='tight')
+
             plt.close()
             return os.path.abspath(outfile)
 
@@ -679,7 +690,7 @@ def plot_periodbase_lsp(lspinfo, outfile=None):
             LOGWARNING('no output file specified and no $DISPLAY set, '
                        'saving to lsp-plot.png in current directory')
             outfile = 'lsp-plot.png'
-            plt.savefig(outfile,bbox_inches='tight')
+            plt.savefig(outfile,bbox_inches='tight',dpi=plotdpi)
             plt.close()
             return os.path.abspath(outfile)
 
@@ -704,7 +715,8 @@ def make_checkplot(lspinfo,
                    phasewrap=True,
                    phasesort=True,
                    phasebin=0.002,
-                   plotxlim=[-0.8,0.8]):
+                   plotxlim=[-0.8,0.8],
+                   plotdpi=100):
     '''This makes a checkplot for an info dict from a period-finding routine.
 
     A checkplot is a 3 x 3 grid of plots like so:
@@ -1240,7 +1252,10 @@ def make_checkplot(lspinfo,
         # end of plotting for each ax
         # save the plot to disk
         fig.set_tight_layout(True)
-        fig.savefig(plotfpath)
+        if plotfpath.endswith('.png'):
+            fig.savefig(plotfpath,dpi=plotdpi)
+        else:
+            fig.savefig(plotfpath)
         plt.close()
 
         LOGINFO('checkplot done -> %s' % plotfpath)
