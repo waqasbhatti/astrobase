@@ -276,7 +276,7 @@ def plot_mag_series(times,
     if outfile and isinstance(outfile, str):
 
         if outfile.endswith('.png'):
-            plt.savefig(outfile,bbox_inches='tight',dpi=outdpi)
+            plt.savefig(outfile,bbox_inches='tight',dpi=plotdpi)
         else:
             plt.savefig(outfile,bbox_inches='tight')
         plt.close()
