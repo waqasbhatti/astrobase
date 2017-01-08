@@ -1,7 +1,7 @@
 This is a bunch of Python modules I wrote for my astronomy work with the HAT
 surveys, mostly focused on variable stars. Full documentation is still a work in
 progress (as soon as I figure out how Sphinx works), but the docstrings are
-fairly good and an overview is provided below.
+fairly good and an [overview](#contents) is provided below.
 
 # Installation
 
