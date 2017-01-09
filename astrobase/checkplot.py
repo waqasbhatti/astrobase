@@ -130,6 +130,11 @@ from .plotbase import astroquery_skyview_stamp
 ## CONFIG ##
 ############
 
+PLOTYLABELS = {'gls':'Generalized Lomb-Scargle normalized power',
+               'pdm':'Stellingwerf PDM $\theta$',
+               'aov':'Schwarzenberg-Cerny AoV $\theta$',
+               'bls':'Box Least-squared Search SR',
+               'sls':'Lomb-Scargle normalized power'}
 
 
 #######################
@@ -172,7 +177,7 @@ def checkplot_png(lspinfo,
     lspinfo is either a dict or a Python pickle filename containing a dict that
     should look something like the dict below, containing the output from your
     period search routine. The key 'lspvals' is the spectral power or SNR
-    obtained from Lomb-Scargle or BLS. The keys 'nbestperiods' and
+    obtained from Lomb-Scargle, PDM, AoV, or BLS. The keys 'nbestperiods' and
     'nbestlspvals' contain the best five periods and their respective peaks
     chosen by your period search routine (usually the highest SNR or highest
     power peaks in the spectrum).
@@ -189,7 +194,18 @@ def checkplot_png(lspinfo,
                      0.055157963469682415,
                      0.055126754408175715,
                      0.023441268126990749,
-                     0.023239128705778048]}
+                     0.023239128705778048],
+     'method':'gls'}
+
+    The 'method' key-val pair decides what kind of period finding method was
+    run. This is used to label the periodogram plot correctly. The following
+    values are recognized.
+
+    'gls' -> generalized Lomb-Scargle (e.g., from periodbase.pgen_lsp)
+    'pdm' -> Stellingwerf PDM (e.g., from periodbase.stellingwerf_pdm)
+    'aov' -> Schwarzenberg-Cerny AoV (e.g., from periodbase.aov_periodfind)
+    'bls' -> Box Least-squared Search (e.g., from periodbase.bls_parallel_pfind)
+    'sls' -> Lomb-Scargle from Scipy (e.g., from periodbase.scipylsp_parallel)
 
     If a dict is passed to objectinfo, this function will use it to figure out
     where in the sky the checkplotted object is, and put the finding chart plus
@@ -265,16 +281,7 @@ def checkplot_png(lspinfo,
         bestperiod = lspinfo['bestperiod']
         nbestperiods = lspinfo['nbestperiods']
         nbestlspvals = lspinfo['nbestlspvals']
-
-    elif ('periods' in lspinfo and
-          'strlens' in lspinfo and
-          'bestperiod' in lspinfo):
-
-        periods = lspinfo['periods']
-        lspvals = lspinfo['strlens']
-        bestperiod = lspinfo['bestperiod']
-        nbestperiods = lspinfo['nbestperiods'].tolist()
-        nbestlspvals = lspinfo['nbeststrlens'].tolist()
+        lspmethod = lspinfo['method']
 
     else:
 
@@ -298,12 +305,15 @@ def checkplot_png(lspinfo,
     ## PLOT 1 is the LSP ##
     #######################
 
+    # get the appropriate plot ylabel
+    pgramylabel = PLOTYLABEL[lspmethod]
+
     # make the LSP plot on the first subplot
     axes[0].plot(periods,lspvals)
 
     axes[0].set_xscale('log',basex=10)
     axes[0].set_xlabel('Period [days]')
-    axes[0].set_ylabel('LSP power')
+    axes[0].set_ylabel(pgramylabel)
     plottitle = '%.6f d' % bestperiod
     axes[0].set_title(plottitle)
 
