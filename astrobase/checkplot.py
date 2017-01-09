@@ -4,7 +4,36 @@
 License: MIT.
 
 Contains functions to make checkplots: quick views for determining periodic
-variability for light curves.
+variability for light curves and sanity-check results from period-finding
+functions (e.g., from periodbase).
+
+The checkplot_png function makes the following 3 x 3 grid and writes to a PNG:
+
+    [LSP plot + objectinfo] [     unphased LC     ] [ period 1 phased LC ]
+    [period 1 phased LC /2] [period 1 phased LC x2] [ period 2 phased LC ]
+    [ period 3 phased LC  ] [period 4 phased LC   ] [ period 5 phased LC ]
+
+
+FIXME:
+
+I'm actually working towards turning the one-huge-PNG output of make_checkplot
+into a zip of JSONs (see the github PR#3), which contain the plot info, so they
+can be regenerated on the fly using the checkplot-viewer.js webapp. We can then
+have multiple "tile layouts" suitable for different purposes, as well as hooks
+to call functions to replot, redo period-finding, and write variability type,
+period, epoch, and object tags back to the JSON zip for completeness.
+
+Said JSON file will contain:
+
+    objectinfo
+    period-search info (LSP peaks, best periods, etc.)
+    base64 or binary representations of the LSP and LC plots
+
+This is so a future version of checkplot-viewer can read these JSON files and
+generate an interactive webpage instead of just showing the checkplot PNG. The
+webpage should have options to mark objects as interesting, etc. and output
+these selections and extra metadata into another JSON file (or perhaps just use
+the browser localstorage).
 
 '''
 import os
@@ -113,22 +142,22 @@ from .plotbase import astroquery_skyview_stamp
 ## CHECKPLOT FUNCTIONS ##
 #########################
 
-def make_checkplot(lspinfo,
-                   times,
-                   mags,
-                   errs,
-                   objectinfo=None,
-                   findercmap='gray_r',
-                   normto='globalmedian',
-                   normmingap=4.0,
-                   outfile=None,
-                   sigclip=4.0,
-                   varepoch='min',
-                   phasewrap=True,
-                   phasesort=True,
-                   phasebin=0.002,
-                   plotxlim=[-0.8,0.8],
-                   plotdpi=100):
+def checkplot_png(lspinfo,
+                  times,
+                  mags,
+                  errs,
+                  objectinfo=None,
+                  findercmap='gray_r',
+                  normto='globalmedian',
+                  normmingap=4.0,
+                  outfile=None,
+                  sigclip=4.0,
+                  varepoch='min',
+                  phasewrap=True,
+                  phasesort=True,
+                  phasebin=0.002,
+                  plotxlim=[-0.8,0.8],
+                  plotdpi=100):
     '''This makes a checkplot for an info dict from a period-finding routine.
 
     A checkplot is a 3 x 3 grid of plots like so:
