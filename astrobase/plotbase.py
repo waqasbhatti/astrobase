@@ -1378,7 +1378,7 @@ def plot_periodogram(fig, ax, \
             'sdssi' in objectinfo and
             objectinfo['bmag'] and objectinfo['vmag'] and
             objectinfo['jmag'] and objectinfo['kmag'] and
-            objectinfo['sdssg']):
+            objectinfo['sdssi']):
             bvcolor = objectinfo['bmag'] - objectinfo['vmag']
             jkcolor = objectinfo['jmag'] - objectinfo['kmag']
             ijcolor = objectinfo['sdssi'] - objectinfo['jmag']
@@ -1608,6 +1608,9 @@ def plot_phased_wrapper(fig, axes, times, mags, errs,
 
             # flip y axis for mags
             plot_ylim = axes[periodind].get_ylim()
+            if abs(plot_ylim[1]-plot_ylim[0])>1.5:
+                plot_ylim[0] = median_mag - 0.3                                                                                                                                                                      
+                plot_ylim[1] = median_mag + 1.2 
             axes[periodind].set_ylim((plot_ylim[1], plot_ylim[0]))
 
             # set the x axis limit
