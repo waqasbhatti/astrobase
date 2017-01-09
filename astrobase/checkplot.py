@@ -141,6 +141,25 @@ PLOTYLABELS = {'gls':'Generalized Lomb-Scargle normalized power',
 ## UTILITY FUNCTIONS ##
 #######################
 
+def _make_periodogram(fig, lspinfo, objectinfo):
+    '''
+    makes the periodogram tile.
+
+    '''
+
+def _make_magseries_plot(fig, times, mags, errs, **kwargs):
+    '''
+    makes the magseries plot tile
+
+    '''
+
+def _make_phased_magseries_plot(fig, periodserial,
+                                times, mags, period, epoch, **kwargs):
+    '''
+    makes the phased magseries plot tile.
+
+    '''
+
 
 
 #########################
