@@ -1774,17 +1774,22 @@ def bls_serial_pfind(times, mags, errs,
                 # by highest value first 2. go down the values until we find
                 # five values that are separated by at least periodepsilon in
                 # period
-                bestperiodind = npnanargmax(lsp)
+                # make sure to get only the finite peaks in the periodogram
+                # this is needed because BLS may produce infs for some peaks
+                finitepeakind = npisfinite(lsp)
+                finlsp = lsp[finitepeakind]
+                finperiods = periods[finitepeakind]
 
-                sortedlspind = np.argsort(lsp)[::-1]
-                sortedlspperiods = periods[sortedlspind]
-                sortedlspvals = lsp[sortedlspind]
+                bestperiodind = np.argmax(finlsp)
+                sortedlspind = np.argsort(finlsp)[::-1]
+                sortedlspperiods = finperiods[sortedlspind]
+                sortedlspvals = finlsp[sortedlspind]
 
                 prevbestlspval = sortedlspvals[0]
                 # now get the nbestpeaks
                 nbestperiods, nbestlspvals, peakcount = (
-                    [periods[bestperiodind]],
-                    [lsp[bestperiodind]],
+                    [finperiods[bestperiodind]],
+                    [finlsp[bestperiodind]],
                     1
                 )
                 prevperiod = sortedlspperiods[0]
@@ -1816,8 +1821,8 @@ def bls_serial_pfind(times, mags, errs,
 
                 # generate the return dict
                 resultdict = {
-                    'bestperiod':periods[bestperiodind],
-                    'bestlspval':lsp[bestperiodind],
+                    'bestperiod':finperiods[bestperiodind],
+                    'bestlspval':finlsp[bestperiodind],
                     'nbestpeaks':nbestpeaks,
                     'nbestlspvals':nbestlspvals,
                     'nbestperiods':nbestperiods,
@@ -2018,17 +2023,23 @@ def bls_parallel_pfind(
             # by highest value first 2. go down the values until we find
             # five values that are separated by at least periodepsilon in
             # period
-            bestperiodind = npnanargmax(lsp)
 
-            sortedlspind = np.argsort(lsp)[::-1]
-            sortedlspperiods = periods[sortedlspind]
-            sortedlspvals = lsp[sortedlspind]
+            # make sure to get only the finite peaks in the periodogram
+            # this is needed because BLS may produce infs for some peaks
+            finitepeakind = npisfinite(lsp)
+            finlsp = lsp[finitepeakind]
+            finperiods = periods[finitepeakind]
+
+            bestperiodind = np.argmax(finlsp)
+            sortedlspind = np.argsort(finlsp)[::-1]
+            sortedlspperiods = finperiods[sortedlspind]
+            sortedlspvals = finlsp[sortedlspind]
 
             prevbestlspval = sortedlspvals[0]
             # now get the nbestpeaks
             nbestperiods, nbestlspvals, peakcount = (
-                [periods[bestperiodind]],
-                [lsp[bestperiodind]],
+                [finperiods[bestperiodind]],
+                [finlsp[bestperiodind]],
                 1
             )
             prevperiod = sortedlspperiods[0]
@@ -2060,8 +2071,8 @@ def bls_parallel_pfind(
 
             # generate the return dict
             resultdict = {
-                'bestperiod':periods[bestperiodind],
-                'bestlspval':lsp[bestperiodind],
+                'bestperiod':finperiods[bestperiodind],
+                'bestlspval':finlsp[bestperiodind],
                 'nbestpeaks':nbestpeaks,
                 'nbestlspvals':nbestlspvals,
                 'nbestperiods':nbestperiods,
