@@ -585,7 +585,8 @@ def stellingwerf_pdm_theta(times, mags, errs, frequency,
     binvariances = nparray(binvariances)
     binndets = nparray(binndets)
 
-    theta_top = npsum(binvariances*(binndets - 1)) / (npsum(binndets) - goodbins)
+    theta_top = npsum(binvariances*(binndets - 1)) / (npsum(binndets) -
+                                                      goodbins)
     theta_bot = npvar(pmags,ddof=1)
     theta = theta_top/theta_bot
 
@@ -735,17 +736,24 @@ def stellingwerf_pdm(times,
             # find the nbestpeaks for the periodogram: 1. sort the lsp array by
             # lowest value first 2. go down the values until we find five values
             # that are separated by at least periodepsilon in period
-            bestperiodind = npnanargmin(lsp)
 
-            sortedlspind = np.argsort(lsp)
-            sortedlspperiods = periods[sortedlspind]
-            sortedlspvals = lsp[sortedlspind]
+            # make sure to filter out the non-finite values of lsp
+            finitepeakind = npisfinite(lsp)
+            finlsp = lsp[finitepeakind]
+            finperiods = periods[finitepeakind]
+
+
+            bestperiodind = npargmin(finlsp)
+
+            sortedlspind = np.argsort(finlsp)
+            sortedlspperiods = finperiods[sortedlspind]
+            sortedlspvals = finlsp[sortedlspind]
 
             prevbestlspval = sortedlspvals[0]
             # now get the nbestpeaks
             nbestperiods, nbestlspvals, peakcount = (
-                [periods[bestperiodind]],
-                [lsp[bestperiodind]],
+                [finperiods[bestperiodind]],
+                [finlsp[bestperiodind]],
                 1
             )
             prevperiod = sortedlspperiods[0]
@@ -775,13 +783,14 @@ def stellingwerf_pdm(times,
                 prevperiod = period
 
 
-            return {'bestperiod':periods[bestperiodind],
-                    'bestlspval':lsp[bestperiodind],
+            return {'bestperiod':finperiods[bestperiodind],
+                    'bestlspval':finlsp[bestperiodind],
                     'nbestpeaks':nbestpeaks,
                     'nbestlspvals':nbestlspvals,
                     'nbestperiods':nbestperiods,
                     'lspvals':lsp,
-                    'periods':periods}
+                    'periods':periods,
+                    'method':'pdm'}
 
         else:
 
@@ -792,7 +801,8 @@ def stellingwerf_pdm(times,
                     'nbestlspvals':None,
                     'nbestperiods':None,
                     'lspvals':None,
-                    'periods':None}
+                    'periods':None,
+                    'method':'pdm'}
     else:
 
         LOGERROR('no good detections for these times and mags, skipping...')
@@ -802,7 +812,8 @@ def stellingwerf_pdm(times,
                 'nbestlspvals':None,
                 'nbestperiods':None,
                 'lspvals':None,
-                'periods':None}
+                'periods':None,
+                'method':'pdm'}
 
 
 
@@ -1031,17 +1042,23 @@ def aov_periodfind(times,
             # find the nbestpeaks for the periodogram: 1. sort the lsp array by
             # highest value first 2. go down the values until we find five
             # values that are separated by at least periodepsilon in period
-            bestperiodind = npnanargmax(lsp)
 
-            sortedlspind = np.argsort(lsp)[::-1]
-            sortedlspperiods = periods[sortedlspind]
-            sortedlspvals = lsp[sortedlspind]
+            # make sure to filter out non-finite values
+            finitepeakind = npisfinite(lsp)
+            finlsp = lsp[finitepeakind]
+            finperiods = periods[finitepeakind]
+
+            bestperiodind = npargmax(lsp)
+
+            sortedlspind = np.argsort(finlsp)[::-1]
+            sortedlspperiods = finperiods[sortedlspind]
+            sortedlspvals = finlsp[sortedlspind]
 
             prevbestlspval = sortedlspvals[0]
             # now get the nbestpeaks
             nbestperiods, nbestlspvals, peakcount = (
-                [periods[bestperiodind]],
-                [lsp[bestperiodind]],
+                [finperiods[bestperiodind]],
+                [finlsp[bestperiodind]],
                 1
             )
             prevperiod = sortedlspperiods[0]
@@ -1071,13 +1088,14 @@ def aov_periodfind(times,
                 prevperiod = period
 
 
-            return {'bestperiod':periods[bestperiodind],
-                    'bestlspval':lsp[bestperiodind],
+            return {'bestperiod':finperiods[bestperiodind],
+                    'bestlspval':finlsp[bestperiodind],
                     'nbestpeaks':nbestpeaks,
                     'nbestlspvals':nbestlspvals,
                     'nbestperiods':nbestperiods,
                     'lspvals':lsp,
-                    'periods':periods}
+                    'periods':periods,
+                    'method':'aov'}
 
         else:
 
@@ -1088,7 +1106,8 @@ def aov_periodfind(times,
                     'nbestlspvals':None,
                     'nbestperiods':None,
                     'lspvals':None,
-                    'periods':None}
+                    'periods':None,
+                    'method':'aov'}
     else:
 
         LOGERROR('no good detections for these times and mags, skipping...')
@@ -1098,7 +1117,8 @@ def aov_periodfind(times,
                 'nbestlspvals':None,
                 'nbestperiods':None,
                 'lspvals':None,
-                'periods':None}
+                'periods':None,
+                'method':'aov'}
 
 
 
@@ -1107,8 +1127,8 @@ def aov_periodfind(times,
 ##############################
 
 def glsp_worker(task):
-    '''
-    This is a worker to wrap the scipy lombscargle function.
+    '''This is a worker to wrap the generalized Lomb-Scargle single-frequency
+    function.
 
     '''
 
@@ -1120,8 +1140,9 @@ def glsp_worker(task):
 
 
 def glsp_worker_notau(task):
-    '''
-    This is a worker to wrap the scipy lombscargle function.
+    '''This is a worker to wrap the generalized Lomb-Scargle single-freq func.
+
+    This version doesn't use tau.
 
     '''
 
@@ -1241,17 +1262,24 @@ def pgen_lsp(
             # find the nbestpeaks for the periodogram: 1. sort the lsp array by
             # highest value first 2. go down the values until we find five
             # values that are separated by at least periodepsilon in period
-            bestperiodind = npnanargmax(lsp)
 
-            sortedlspind = np.argsort(lsp)[::-1]
-            sortedlspperiods = periods[sortedlspind]
-            sortedlspvals = lsp[sortedlspind]
+            # make sure to filter out non-finite values of lsp
+
+            finitepeakind = npisfinite(lsp)
+            finlsp = lsp[finitepeakind]
+            finperiods = periods[finitepeakind]
+
+            bestperiodind = npargmax(finlsp)
+
+            sortedlspind = np.argsort(finlsp)[::-1]
+            sortedlspperiods = finperiods[sortedlspind]
+            sortedlspvals = finlsp[sortedlspind]
 
             prevbestlspval = sortedlspvals[0]
             # now get the nbestpeaks
             nbestperiods, nbestlspvals, peakcount = (
-                [periods[bestperiodind]],
-                [lsp[bestperiodind]],
+                [finperiods[bestperiodind]],
+                [finlsp[bestperiodind]],
                 1
             )
             prevperiod = sortedlspperiods[0]
@@ -1281,14 +1309,15 @@ def pgen_lsp(
                 prevperiod = period
 
 
-            return {'bestperiod':periods[bestperiodind],
-                    'bestlspval':lsp[bestperiodind],
+            return {'bestperiod':finperiods[bestperiodind],
+                    'bestlspval':finlsp[bestperiodind],
                     'nbestpeaks':nbestpeaks,
                     'nbestlspvals':nbestlspvals,
                     'nbestperiods':nbestperiods,
                     'lspvals':lsp,
                     'omegas':omegas,
-                    'periods':periods}
+                    'periods':periods,
+                    'method':'gls'}
 
         else:
 
@@ -1300,7 +1329,8 @@ def pgen_lsp(
                     'nbestperiods':None,
                     'lspvals':None,
                     'omegas':None,
-                    'periods':None}
+                    'periods':None,
+                    'method':'gls'}
     else:
 
         LOGERROR('no good detections for these times and mags, skipping...')
@@ -1311,13 +1341,15 @@ def pgen_lsp(
                 'nbestperiods':None,
                 'lspvals':None,
                 'omegas':None,
-                'periods':None}
+                'periods':None,
+                'method':'gls'}
 
 
 
-##############################
-## LOMB-SCARGLE PERIODOGRAM ##
-##############################
+##################################
+## TOWNSEND LSP (Townsend 2010) ##
+## don't use this! - incomplete ##
+##################################
 
 def townsend_lombscargle_value(times, mags, omega):
     '''
@@ -1421,11 +1453,14 @@ def parallel_townsend_lsp_sharedarray(times, mags, startp, endp,
     TODO: we'll need to pass a single argument to the worker so make a 2D array
     and wrap the worker function with partial?
 
+    FIXME: implement this later.
+
     '''
 
-########################
-## SCIPY LOMB-SCARGLE ##
-########################
+############################################################
+## SCIPY LOMB-SCARGLE (basically Townsend 2010 in Cython) ##
+##     don't use this either - not fully implemented!     ##
+############################################################
 
 def parallel_scipylsp_worker(task):
     '''
@@ -1517,17 +1552,23 @@ def scipylsp_parallel(times,
         # find the nbestpeaks for the periodogram: 1. sort the lsp array by
         # highest value first 2. go down the values until we find five values
         # that are separated by at least periodepsilon in period
-        bestperiodind = npnanargmax(lsp)
 
-        sortedlspind = np.argsort(lsp)[::-1]
-        sortedlspperiods = periods[sortedlspind]
-        sortedlspvals = lsp[sortedlspind]
+        # make sure we only get finite lsp values
+        finitepeakind = npisfinite(lsp)
+        finlsp = lsp[finitepeakind]
+        finperiods = periods[finitepeakind]
+
+        bestperiodind = npargmax(finlsp)
+
+        sortedlspind = np.argsort(finlsp)[::-1]
+        sortedlspperiods = finperiods[sortedlspind]
+        sortedlspvals = finlsp[sortedlspind]
 
         prevbestlspval = sortedlspvals[0]
         # now get the nbestpeaks
         nbestperiods, nbestlspvals, peakcount = (
-            [periods[bestperiodind]],
-            [lsp[bestperiodind]],
+            [finperiods[bestperiodind]],
+            [finlsp[bestperiodind]],
             1
         )
         prevperiod = sortedlspperiods[0]
@@ -1556,14 +1597,15 @@ def scipylsp_parallel(times,
             prevperiod = period
 
 
-        return {'bestperiod':periods[bestperiodind],
-                'bestlspval':lsp[bestperiodind],
+        return {'bestperiod':finperiods[bestperiodind],
+                'bestlspval':finlsp[bestperiodind],
                 'nbestpeaks':nbestpeaks,
                 'nbestlspvals':nbestlspvals,
                 'nbestperiods':nbestperiods,
                 'lspvals':lsp,
                 'omegas':omegas,
-                'periods':periods}
+                'periods':periods,
+                'method':'sls'}
 
     else:
 
@@ -1574,7 +1616,8 @@ def scipylsp_parallel(times,
                 'nbestlspvals':None,
                 'nbestperiods':None,
                 'lspvals':None,
-                'periods':None}
+                'periods':None,
+                'method':'sls'}
 
 
 
@@ -1829,7 +1872,8 @@ def bls_serial_pfind(times, mags, errs,
                     'lspvals':lsp,
                     'frequencies':frequencies,
                     'periods':periods,
-                    'blsresult':blsresult
+                    'blsresult':blsresult,
+                    'method':'bls',
                 }
 
                 return resultdict
@@ -1843,7 +1887,8 @@ def bls_serial_pfind(times, mags, errs,
                         'nbestlspvals':None,
                         'nbestperiods':None,
                         'lspvals':None,
-                        'periods':None}
+                        'periods':None,
+                        'method':'bls'}
 
 
         else:
@@ -1855,7 +1900,8 @@ def bls_serial_pfind(times, mags, errs,
                     'nbestlspvals':None,
                     'nbestperiods':None,
                     'lspvals':None,
-                    'periods':None}
+                    'periods':None,
+                    'method':'bls'}
     else:
 
         LOGERROR('no good detections for these times and mags, skipping...')
@@ -1865,7 +1911,8 @@ def bls_serial_pfind(times, mags, errs,
                 'nbestlspvals':None,
                 'nbestperiods':None,
                 'lspvals':None,
-                'periods':None}
+                'periods':None,
+                'method':'bls'}
 
 
 
@@ -2079,7 +2126,8 @@ def bls_parallel_pfind(
                 'lspvals':lsp,
                 'frequencies':frequencies,
                 'periods':periods,
-                'blsresult':results
+                'blsresult':results,
+                'method':'bls',
             }
 
             return resultdict
@@ -2093,7 +2141,8 @@ def bls_parallel_pfind(
                     'nbestlspvals':None,
                     'nbestperiods':None,
                     'lspvals':None,
-                    'periods':None}
+                    'periods':None,
+                    'method':'bls'}
     else:
 
         LOGERROR('no good detections for these times and mags, skipping...')
@@ -2103,4 +2152,5 @@ def bls_parallel_pfind(
                 'nbestlspvals':None,
                 'nbestperiods':None,
                 'lspvals':None,
-                'periods':None}
+                'periods':None,
+                'method':'bls'}
