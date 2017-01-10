@@ -324,7 +324,10 @@ def _make_periodogram(axes,
 
 
 
-def _make_magseries_plot(axes, stimes, smags, serrs):
+def _make_magseries_plot(axes,
+                         stimes,
+                         smags,
+                         serrs):
     '''
     makes the magseries plot tile.
 
@@ -333,10 +336,10 @@ def _make_magseries_plot(axes, stimes, smags, serrs):
     scaledplottime = stimes - npmin(stimes)
 
     axes.scatter(scaledplottime,
-                    smags,
-                    marker='o',
-                    s=2,
-                    color='green')
+                 smags,
+                 marker='o',
+                 s=2,
+                 color='green')
 
     # flip y axis for mags
     plot_ylim = axes.get_ylim()

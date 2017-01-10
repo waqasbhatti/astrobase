@@ -101,7 +101,7 @@ def LOGEXCEPTION(message):
 from .lcmath import phase_magseries, phase_magseries_with_errs, \
     phase_bin_magseries, phase_bin_magseries_with_errs, \
     time_bin_magseries, time_bin_magseries_with_errs, sigclip_magseries, \
-    normalize_magseries
+    normalize_magseries, find_lc_timegroups
 
 from .varbase import spline_fit_magseries
 
@@ -120,6 +120,7 @@ def plot_mag_series(times,
                     normmingap=4.0,
                     timebin=None,
                     yrange=None,
+                    segmentmingap=100.0,
                     plotdpi=100):
     '''This plots a magnitude time series.
 
@@ -136,7 +137,16 @@ def plot_mag_series(times,
 
     normto is either 'globalmedian', 'zero' or a float to normalize the mags
     to. If it's False, no normalization will be done on the magnitude time
-    series.
+    series. normmingap controls the minimum gap required to find possible
+    groupings in the light curve that may belong to a different instrument (so
+    may be displaced vertically)
+
+    segmentmingap controls the minimum length of time (in days) required to
+    consider a timegroup in the light curve as a separate segment. This is
+    useful when the light curve consists of measurements taken over several
+    seasons, so there's lots of dead space in the plot that can be cut out to
+    zoom in on the interesting stuff. If segmentmingap is not None, the
+    magseries plot will be cut in this way.
 
     plotdpi sets the DPI for PNG plots (default = 100).
 
@@ -241,38 +251,147 @@ def plot_mag_series(times,
                                             normto=normto,
                                             mingap=normmingap)
 
-    # finally, proceed with plotting
-    fig = plt.figure()
-    fig.set_size_inches(7.5,4.8)
+    btimeorigin = btimes.min()
+    btimes = btimes - btimeorigin
 
-    plt.errorbar(btimes, bmags, fmt='go', yerr=berrs,
-                 markersize=2.0, markeredgewidth=0.0, ecolor='grey',
-                 capsize=0)
+    ##################################
+    ## FINALLY PLOT THE LIGHT CURVE ##
+    ##################################
 
-    # make a grid
-    plt.grid(color='#a9a9a9',
-             alpha=0.9,
-             zorder=0,
-             linewidth=1.0,
-             linestyle=':')
+    ntimegroups, timegroups = find_lc_timegroups(btimes,
+                                                 mingap=segmentmingap)
 
-    # fix the ticks to use no offsets
-    plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
-    plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
-
-    # get the yrange
+    # get the yrange for all the plots if it's given
     if yrange and isinstance(yrange,list) and len(yrange) == 2:
         ymin, ymax = yrange
+
+    # if it's not given, figure it out
     else:
-        ymin, ymax = plt.ylim()
-    plt.ylim(ymax,ymin)
+        ycoverage = bmags.max() - bmags.min()
+        ymin, ymax = (bmags.min() - 0.05,
+                      bmags.max() + 0.05)
 
-    plt.xlim(npmin(btimes) - 0.001*npmin(btimes),
-             npmax(btimes) + 0.001*npmin(btimes))
+    # if we're supposed to make the plot segment-aware (i.e. gaps longer than
+    # segmentmingap will be cut out)
+    if segmentmingap and ntimegroups > 1:
 
-    plt.xlabel('time [JD]')
-    plt.ylabel('magnitude')
 
+        LOGINFO('%s time groups found' % ntimegroups)
+
+        # our figure is now a multiple axis plot
+        fig, axes = plt.subplots(1,ntimegroups,sharey=True)
+        fig.set_size_inches(7.5,4.8)
+        axes = np.ravel(axes)
+
+        # now go through each axis and make the plots for each timegroup
+        for timegroup, ax, axind in zip(timegroups, axes, range(len(axes))):
+
+            tgtimes = btimes[timegroup]
+            tgmags = bmags[timegroup]
+
+            if berrs:
+                tgerrs = berrs[timegroup]
+            else:
+                tgerrs = None
+
+            LOGINFO('axes: %s, timegroup %s: JD %.3f to %.3f' % (
+                axind,
+                axind+1,
+                btimeorigin + tgtimes.min(),
+                btimeorigin + tgtimes.max())
+            )
+
+            ax.errorbar(tgtimes, tgmags, fmt='go', yerr=tgerrs,
+                         markersize=2.0, markeredgewidth=0.0, ecolor='grey',
+                         capsize=0)
+
+            # don't use offsets on any xaxis
+            ax.get_xaxis().get_major_formatter().set_useOffset(False)
+
+            # fix the ticks to use no yoffsets and remove right spines for first
+            # axes instance
+            if axind == 0:
+                ax.get_yaxis().get_major_formatter().set_useOffset(False)
+                ax.spines['right'].set_visible(False)
+                ax.yaxis.tick_left()
+            # remove the right and left spines for the other axes instances
+            elif 0 < axind < (len(axes)-1):
+                ax.spines['right'].set_visible(False)
+                ax.spines['left'].set_visible(False)
+                ax.tick_params(right='off', labelright='off',
+                               left='off',labelleft='off')
+            # make the left spines invisible for the last axes instance
+            elif axind == (len(axes)-1):
+                ax.spines['left'].set_visible(False)
+                ax.spines['right'].set_visible(True)
+                ax.yaxis.tick_right()
+
+            # set the yaxis limits
+            ax.set_ylim(ymax, ymin)
+
+            # now figure out the xaxis ticklabels and ranges
+            tgrange = tgtimes.max() - tgtimes.min()
+
+            if tgrange < 10:
+                ticklocations = [tgrange/2.0]
+                ax.set_xlim(npmin(tgtimes) - 0.5, npmax(tgtimes) + 0.5)
+            elif 10.0 < tgrange < 30.0:
+                ticklocations = np.linspace(tgtimes.min()+5.0,
+                                            tgtimes.max()-5.0,
+                                            num=3)
+                ax.set_xlim(npmin(tgtimes) - 2.0, npmax(tgtimes) + 2.0)
+
+            elif 30.0 < tgrange < 100.0:
+                ticklocations = np.linspace(tgtimes.min()+10.0,
+                                            tgtimes.max()-10.0,
+                                            num=4)
+                ax.set_xlim(npmin(tgtimes) - 2.5, npmax(tgtimes) + 2.5)
+            else:
+                ticklocations = np.linspace(tgtimes.min()+20.0,
+                                            tgtimes.max()-20.0,
+                                            num=4)
+                ax.set_xlim(npmin(tgtimes) - 3.0, npmax(tgtimes) + 3.0)
+
+            ax.xaxis.set_ticks([int(x) for x in ticklocations])
+
+        # done with plotting all the sub axes
+
+        # make the distance between sub plots smaller
+        plt.subplots_adjust(wspace=0.1)
+
+        # make the overall x and y labels
+        fig.text(0.5, 0.00, 'JD - %.3f (not showing gaps)' % btimeorigin,
+                 ha='center')
+        fig.text(0.02, 0.5, 'magnitude', va='center', rotation='vertical')
+
+    # make normal figure otherwise
+    else:
+
+        fig = plt.figure()
+        fig.set_size_inches(7.5,4.8)
+
+        plt.errorbar(btimes, bmags, fmt='go', yerr=berrs,
+                     markersize=2.0, markeredgewidth=0.0, ecolor='grey',
+                     capsize=0)
+
+        # make a grid
+        plt.grid(color='#a9a9a9',
+                 alpha=0.9,
+                 zorder=0,
+                 linewidth=1.0,
+                 linestyle=':')
+
+        # fix the ticks to use no offsets
+        plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
+        plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
+
+        plt.xlabel('JD - %.3f' % btimeorigin)
+        plt.ylabel('magnitude')
+
+        # set the yaxis limits
+        plt.ylim(ymax, ymin)
+
+    # write the plot out to a file if requested
     if outfile and isinstance(outfile, str):
 
         if outfile.endswith('.png'):
