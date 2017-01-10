@@ -275,7 +275,6 @@ def plot_mag_series(times,
     # segmentmingap will be cut out)
     if segmentmingap and ntimegroups > 1:
 
-
         LOGINFO('%s time groups found' % ntimegroups)
 
         # our figure is now a multiple axis plot
