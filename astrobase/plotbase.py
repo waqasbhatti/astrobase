@@ -738,9 +738,28 @@ def get_dss_stamp(ra, decl, outfile, stampsize=5.0):
 ## PERIODOGRAMS ##
 ##################
 
+PLOTYLABELS = {'gls':'Generalized Lomb-Scargle normalized power',
+               'pdm':'Stellingwerf PDM $\Theta$',
+               'aov':'Schwarzenberg-Cerny AoV $\Theta$',
+               'bls':'Box Least-squared Search SR',
+               'sls':'Lomb-Scargle normalized power'}
+
+METHODLABELS = {'gls':'Generalized Lomb-Scargle periodogram',
+                'pdm':'Stellingwerf phase-dispersion minization',
+                'aov':'Schwarzenberg-Cerny analysis of variance',
+                'bls':'Box Least-squared Search',
+                'sls':'Lomb-Scargle periodogram (Scipy)'}
+
+METHODSHORTLABELS = {'gls':'Generalized L-S',
+                     'pdm':'Stellingwerf PDM',
+                     'aov':'Schwarzenberg-Cerny AoV',
+                     'bls':'BLS',
+                     'sls':'L-S (Scipy)'}
+
+
 def plot_periodbase_lsp(lspinfo, outfile=None, plotdpi=100):
 
-    '''Makes a plot of the L-S periodogram obtained from periodbase functions.
+    '''Makes a plot of periodograms obtained from periodbase functions.
 
     If lspinfo is a dictionary, uses the information directly. If it's a
     filename string ending with .pkl, then this assumes it's a periodbase LSP
@@ -760,14 +779,16 @@ def plot_periodbase_lsp(lspinfo, outfile=None, plotdpi=100):
         periods = lspinfo['periods']
         lspvals = lspinfo['lspvals']
         bestperiod = lspinfo['bestperiod']
+        lspmethod = lspinfo['method']
 
         # make the LSP plot on the first subplot
         plt.plot(periods,lspvals)
 
         plt.xscale('log',basex=10)
         plt.xlabel('Period [days]')
-        plt.ylabel('LSP power')
-        plottitle = 'best period = %.6f d' % bestperiod
+        plt.ylabel(PLOTYLABELS[lspmethod])
+        plottitle = '%s best period: %.6f d' % (METHODSHORTLABELS[lspmethod],
+                                                bestperiod)
         plt.title(plottitle)
 
         # show the best five peaks on the plot
