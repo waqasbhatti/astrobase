@@ -560,7 +560,7 @@ def astroquery_skyview_stamp(ra, decl, survey='DSS2 Red',
 
     flip = True will flip the image top to bottom.
 
-    if convolvwith is an astropy.convolution kernel:
+    if convolvewith is an astropy.convolution kernel:
 
     http://docs.astropy.org/en/stable/convolution/kernels.html
 
