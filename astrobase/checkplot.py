@@ -319,7 +319,7 @@ def checkplot_png(lspinfo,
     #######################
 
     # get the appropriate plot ylabel
-    pgramylabel = PLOTYLABEL[lspmethod]
+    pgramylabel = PLOTYLABELS[lspmethod]
 
     # make the LSP plot on the first subplot
     axes[0].plot(periods,lspvals)
