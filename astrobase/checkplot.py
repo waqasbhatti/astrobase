@@ -13,27 +13,20 @@ The checkplot_png function makes the following 3 x 3 grid and writes to a PNG:
     [period 1 phased LC /2] [period 1 phased LC x2] [ period 2 phased LC ]
     [ period 3 phased LC  ] [period 4 phased LC   ] [ period 5 phased LC ]
 
+The twolsp_checkplot_png function makes a similar plot for two independent
+period-finding routines and writes to a PNG:
 
-FIXME and WIP - copied from various emails and the Github issue:
+    [ pgram1 + objectinfo ] [ pgram2 + objectinfo ] [     unphased LC     ]
+    [ pgram1 P1 phased LC ] [ pgram1 P2 phased LC ] [ pgram1 P3 phased LC ]
+    [ pgram2 P1 phased LC ] [ pgram2 P2 phased LC ] [ pgram2 P3 phased LC ]
 
-I'm actually working towards turning the one-huge-PNG output of make_checkplot
-into a zip of JSONs (see the github PR#3), which contain the plot info, so they
-can be regenerated on the fly using the checkplot-viewer.js webapp. We can then
-have multiple "tile layouts" suitable for different purposes, as well as hooks
-to call functions to replot, redo period-finding, and write variability type,
-period, epoch, and object tags back to the JSON zip for completeness.
+    where:
 
-Said JSON file will contain:
+    pgram1 is the plot for the periodogram in the lspinfo1 dict
+    pgram1 P1, P2, and P3 are the best three periods from lspinfo1
+    pgram2 is the plot for the periodogram in the lspinfo2 dict
+    pgram2 P1, P2, and P3 are the best three periods from lspinfo2
 
-    objectinfo
-    period-search info (LSP peaks, best periods, etc.)
-    base64 or binary representations of the LSP and LC plots
-
-This is so a future version of checkplot-viewer can read these JSON files and
-generate an interactive webpage instead of just showing the checkplot PNG. The
-webpage should have options to mark objects as interesting, etc. and output
-these selections and extra metadata into another JSON file (or perhaps just use
-the browser localstorage).
 
 '''
 import os
