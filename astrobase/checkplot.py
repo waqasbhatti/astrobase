@@ -112,29 +112,14 @@ def LOGEXCEPTION(message):
 from .lcmath import phase_magseries, phase_bin_magseries, normalize_magseries
 from .varbase import spline_fit_magseries
 from .coordutils import total_proper_motion, reduced_proper_motion
-from .plotbase import astroquery_skyview_stamp
+from .plotbase import astroquery_skyview_stamp, \
+    PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
 
 ############
 ## CONFIG ##
 ############
 
-PLOTYLABELS = {'gls':'Generalized Lomb-Scargle normalized power',
-               'pdm':'Stellingwerf PDM $\Theta$',
-               'aov':'Schwarzenberg-Cerny AoV $\Theta$',
-               'bls':'Box Least-squared Search SR',
-               'sls':'Lomb-Scargle normalized power'}
 
-METHODLABELS = {'gls':'Generalized Lomb-Scargle periodogram',
-                'pdm':'Stellingwerf phase-dispersion minization',
-                'aov':'Schwarzenberg-Cerny analysis of variance',
-                'bls':'Box Least-squared Search',
-                'sls':'Lomb-Scargle periodogram (Scipy)'}
-
-METHODSHORTLABELS = {'gls':'Generalized L-S',
-                     'pdm':'Stellingwerf PDM',
-                     'aov':'Schwarzenberg-Cerny AoV',
-                     'bls':'BLS',
-                     'sls':'L-S (Scipy)'}
 
 #######################
 ## UTILITY FUNCTIONS ##
