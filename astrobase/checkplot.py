@@ -16,7 +16,7 @@ The checkplot_png function makes the following 3 x 3 grid and writes to a PNG:
 The twolsp_checkplot_png function makes a similar plot for two independent
 period-finding routines and writes to a PNG:
 
-    [ pgram1 + objectinfo ] [ pgram2 + objectinfo ] [     unphased LC     ]
+    [ pgram1 + objectinfo ] [        pgram2       ] [     unphased LC     ]
     [ pgram1 P1 phased LC ] [ pgram1 P2 phased LC ] [ pgram1 P3 phased LC ]
     [ pgram2 P1 phased LC ] [ pgram2 P2 phased LC ] [ pgram2 P3 phased LC ]
 
@@ -828,7 +828,7 @@ def twolsp_checkplot_png(lspinfo1,
 
     The checkplot layout in this case is:
 
-    [ pgram1 + objectinfo ] [ pgram2 + objectinfo ] [     unphased LC     ]
+    [ pgram1 + objectinfo ] [        pgram2       ] [     unphased LC     ]
     [ pgram1 P1 phased LC ] [ pgram1 P2 phased LC ] [ pgram1 P3 phased LC ]
     [ pgram2 P1 phased LC ] [ pgram2 P2 phased LC ] [ pgram2 P3 phased LC ]
 
