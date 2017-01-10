@@ -79,6 +79,17 @@ tweaked for your purposes.
   Kepler light curves (reading and converting) and some basic operations
   (converting fluxes to mags, decorrelation of light curves, etc.)
 
+- **[checkplot](astrobase/checkplot.py)**: contains functions to make checkplots
+  (a 3 x 3 grid of plots used to quickly decide if a period search was
+  successful; [see an example](astrobase/data/checkplot-example.png?raw=true))
+
+  If you make lots of checkplots, there's a tiny checkplot-viewer webapp
+  available to go through these and pick out interesting variable stars. An
+  example of using this is shown below. See the
+  [checkplot-viewer.js](astrobase/checkplot-viewer.js) file for instructions.
+
+  ![Checkplot viewer](astrobase/data/checkplot-viewer.png?raw=true)
+
 - **[coordutils](astrobase/coordutils.py)**: functions for dealing with
   coordinates (conversions, distances, proper motion)
 
@@ -121,15 +132,8 @@ tweaked for your purposes.
   Schwarzenberg-Cerny (1989), and the BLS algorithm from Kovacs et al. (2002)
 
 - **[plotbase](astrobase/plotbase.py)**: functions to plot light curves, phased
-  light curves, and make checkplots (a 3 x 3 grid of plots used to quickly
-  decide if a period search was successful; [see an example](astrobase/data/checkplot-example.png?raw=true))
-
-  If you make lots of checkplots, there's a tiny checkplot-viewer webapp
-  available to go through these and pick out interesting variable stars. An
-  example of using this is shown below. See the
-  [checkplot-viewer.js](astrobase/checkplot-viewer.js) file for instructions.
-
-  ![Checkplot viewer](astrobase/data/checkplot-viewer.png?raw=true)
+  light curves, periodograms, and download cutouts using `astroquery` and the
+  NASA SkyView service.
 
 - **[texthatlc](astrobase/texthatlc.py)**: contains a function to read some
     original HAT text light curves (.epdlc, .tfalc). These are produced by the
