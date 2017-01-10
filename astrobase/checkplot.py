@@ -59,6 +59,7 @@ except KeyError:
     dispok = False
 
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid.inset_locator import inset_axes
 
 import logging
 from datetime import datetime
@@ -125,34 +126,373 @@ from .plotbase import astroquery_skyview_stamp
 ############
 
 PLOTYLABELS = {'gls':'Generalized Lomb-Scargle normalized power',
-               'pdm':'Stellingwerf PDM $\theta$',
-               'aov':'Schwarzenberg-Cerny AoV $\theta$',
+               'pdm':'Stellingwerf PDM $\Theta$',
+               'aov':'Schwarzenberg-Cerny AoV $\Theta$',
                'bls':'Box Least-squared Search SR',
                'sls':'Lomb-Scargle normalized power'}
 
+METHODLABELS = {'gls':'Generalized Lomb-Scargle periodogram',
+                'pdm':'Stellingwerf phase-dispersion minization',
+                'aov':'Schwarzenberg-Cerny analysis of variance',
+                'bls':'Box Least-squared Search',
+                'sls':'Lomb-Scargle periodogram (Scipy)'}
+
+METHODSHORTLABELS = {'gls':'Generalized L-S',
+                     'pdm':'Stellingwerf PDM',
+                     'aov':'Schwarzenberg-Cerny AoV',
+                     'bls':'BLS',
+                     'sls':'L-S (Scipy)'}
 
 #######################
 ## UTILITY FUNCTIONS ##
 #######################
 
-def _make_periodogram(fig, lspinfo, objectinfo):
+def _make_periodogram(axes, lspinfo, objectinfo, outfile,
+                      findercmap, finderconvolve):
     '''
-    makes the periodogram tile.
+    makes the periodogram, objectinfo, and finder tile.
 
     '''
 
-def _make_magseries_plot(fig, times, mags, errs, **kwargs):
+    # get the appropriate plot ylabel
+    pgramylabel = PLOTYLABELS[lspinfo['method']]
+
+    # get the periods and lspvals from lspinfo
+    periods = lspinfo['periods']
+    lspvals = lspinfo['lspvals']
+    bestperiod = lspinfo['bestperiod']
+    nbestperiods = lspinfo['nbestperiods']
+    nbestlspvals = lspinfo['nbestlspvals']
+
+    # make the LSP plot on the first subplot
+    axes.plot(periods,lspvals)
+
+    axes.set_xscale('log',basex=10)
+    axes.set_xlabel('Period [days]')
+    axes.set_ylabel(pgramylabel)
+    plottitle = '%s - %.6f d' % (METHODLABELS[lspinfo['method']],
+                                              bestperiod)
+    axes.set_title(plottitle)
+
+    # show the best five peaks on the plot
+    for bestperiod, bestpeak in zip(nbestperiods,
+                                    nbestlspvals):
+        axes.annotate('%.6f' % bestperiod,
+                      xy=(bestperiod, bestpeak), xycoords='data',
+                      xytext=(0.0,25.0), textcoords='offset points',
+                      arrowprops=dict(arrowstyle="->"),fontsize='14.0')
+
+    # make a grid
+    axes.grid(color='#a9a9a9',
+              alpha=0.9,
+              zorder=0,
+              linewidth=1.0,
+              linestyle=':')
+
+
+    # if objectinfo is present, get things from it
+    if (objectinfo and isinstance(objectinfo, dict) and
+        ('objectid' in objectinfo or 'hatid' in objectinfo)
+        and 'ra' in objectinfo and 'decl' in objectinfo and
+        objectinfo['ra'] and objectinfo['decl']):
+
+        if 'objectid' not in objectinfo:
+            objectid = objectinfo['hatid']
+        else:
+            objectid = objectinfo['objectid']
+
+        # figure out dss stamp output path
+        if not outfile:
+            dsspath = 'dss-stamp-%s.jpg' % objectid
+        else:
+            dsspath = 'dss-stamp-%s.jpg' % outfile.rstrip('.png')
+
+
+        LOGINFO('adding in object information and '
+                'finder chart for %s at RA: %.3f, DEC: %.3f' %
+                (objectid, objectinfo['ra'], objectinfo['decl']))
+
+        # calculate colors
+        if ('bmag' in objectinfo and 'vmag' in objectinfo and
+            'jmag' in objectinfo and 'kmag' in objectinfo and
+            'sdssi' in objectinfo and
+            objectinfo['bmag'] and objectinfo['vmag'] and
+            objectinfo['jmag'] and objectinfo['kmag'] and
+            objectinfo['sdssg']):
+            bvcolor = objectinfo['bmag'] - objectinfo['vmag']
+            jkcolor = objectinfo['jmag'] - objectinfo['kmag']
+            ijcolor = objectinfo['sdssi'] - objectinfo['jmag']
+        else:
+            bvcolor = None
+            jkcolor = None
+            ijcolor = None
+
+        # bump the ylim of the LSP plot so that the overplotted finder and
+        # objectinfo can fit in this axes plot
+        lspylim = axes.get_ylim()
+        axes.set_ylim(lspylim[0], lspylim[1]+0.75*(lspylim[1]-lspylim[0]))
+
+        # get the stamp
+        try:
+            dss = astroquery_skyview_stamp(objectinfo['ra'],objectinfo['decl'])
+            stamp = dss
+
+            # inset plot it on the current axes
+            inset = inset_axes(axes, width="40%", height="40%", loc=1)
+            inset.imshow(stamp,cmap=findercmap)
+            inset.set_xticks([])
+            inset.set_yticks([])
+            inset.set_frame_on(False)
+
+            # grid lines pointing to the center of the frame
+            inset.axvline(x=150,ymin=0.2,ymax=0.4,linewidth=2.0,color='k')
+            inset.axhline(y=150,xmin=0.2,xmax=0.4,linewidth=2.0,color='k')
+
+        except Exception as e:
+            LOGEXCEPTION('could not fetch a DSS stamp for this '
+                         'object %s using coords (%.3f,%.3f)' %
+                         (objectid, objectinfo['ra'], objectinfo['decl']))
+
+        # annotate with objectinfo
+        axes.text(
+            0.05,0.95,
+            '%s' % objectid,
+            ha='left',va='center',transform=axes.transAxes,
+            fontsize=18.0
+        )
+
+        axes.text(
+            0.05,0.91,
+            'RA = %.3f, DEC = %.3f' % (objectinfo['ra'], objectinfo['decl']),
+            ha='left',va='center',transform=axes.transAxes,
+            fontsize=18.0
+        )
+
+        if bvcolor:
+            axes.text(0.05,0.87,
+                         '$B - V$ = %.3f, $V$ = %.3f' % (bvcolor,
+                                                         objectinfo['vmag']),
+                         ha='left',va='center',transform=axes.transAxes,
+                         fontsize=18.0)
+        elif 'vmag' in objectinfo and objectinfo['vmag']:
+            axes.text(0.05,0.87,
+                         '$V$ = %.3f' % (objectinfo['vmag'],),
+                         ha='left',va='center',transform=axes.transAxes,
+                         fontsize=18.0)
+
+        if ijcolor:
+            axes.text(0.05,0.83,
+                         '$i - J$ = %.3f, $J$ = %.3f' % (ijcolor,
+                                                         objectinfo['jmag']),
+                         ha='left',va='center',transform=axes.transAxes,
+                         fontsize=18.0)
+        elif 'jmag' in objectinfo and objectinfo['jmag']:
+            axes.text(0.05,0.83,
+                         '$J$ = %.3f' % (objectinfo['jmag'],),
+                         ha='left',va='center',transform=axes.transAxes,
+                         fontsize=18.0)
+
+        if jkcolor:
+            axes.text(0.05,0.79,
+                         '$J - K$ = %.3f, $K$ = %.3f' % (jkcolor,
+                                                         objectinfo['kmag']),
+                         ha='left',va='center',transform=axes.transAxes,
+                         fontsize=18.0)
+        elif 'kmag' in objectinfo and objectinfo['kmag']:
+            axes.text(0.05,0.79,
+                         '$K$ = %.3f' % (objectinfo['kmag'],),
+                         ha='left',va='center',transform=axes.transAxes,
+                         fontsize=18.0)
+
+        if 'sdssr' in objectinfo and objectinfo['sdssr']:
+            axes.text(0.05,0.75,'SDSS $r$ = %.3f' % objectinfo['sdssr'],
+                         ha='left',va='center',transform=axes.transAxes,
+                         fontsize=18.0)
+
+        # add in proper motion stuff if available in objectinfo
+        if ('pmra' in objectinfo and objectinfo['pmra'] and
+            'pmdecl' in objectinfo and objectinfo['pmdecl']):
+
+            pm = total_proper_motion(objectinfo['pmra'],
+                                     objectinfo['pmdecl'],
+                                     objectinfo['decl'])
+
+            axes.text(0.05,0.67,'$\mu$ = %.2f mas yr$^{-1}$' % pm,
+                         ha='left',va='center',transform=axes.transAxes,
+                         fontsize=18.0)
+
+            if 'jmag' in objectinfo and objectinfo['jmag']:
+
+                rpm = reduced_proper_motion(objectinfo['jmag'],pm)
+                axes.text(0.05,0.63,'$H_J$ = %.2f' % rpm,
+                             ha='left',va='center',transform=axes.transAxes,
+                             fontsize=18.0)
+
+
+        # once done with adding objectinfo, delete the downloaded stamp
+        if os.path.exists(dsspath):
+            os.remove(dsspath)
+
+
+
+def _make_magseries_plot(axes, stimes, smags, serrs):
     '''
-    makes the magseries plot tile
+    makes the magseries plot tile.
 
     '''
 
-def _make_phased_magseries_plot(fig, periodserial,
-                                times, mags, period, epoch, **kwargs):
+    scaledplottime = stimes - npmin(stimes)
+
+    axes.scatter(scaledplottime,
+                    smags,
+                    marker='o',
+                    s=2,
+                    color='green')
+
+    # flip y axis for mags
+    plot_ylim = axes.get_ylim()
+    axes.set_ylim((plot_ylim[1], plot_ylim[0]))
+
+    # set the x axis limit
+    plot_xlim = axes.get_xlim()
+    axes.set_xlim((npmin(scaledplottime)-1.0,
+                   npmax(scaledplottime)+1.0))
+
+    # make a grid
+    axes.grid(color='#a9a9a9',
+              alpha=0.9,
+              zorder=0,
+              linewidth=1.0,
+              linestyle=':')
+
+   # make the x and y axis labels
+    plot_xlabel = 'JD - %.3f' % npmin(stimes)
+    plot_ylabel = 'magnitude'
+
+    axes.set_xlabel(plot_xlabel)
+    axes.set_ylabel(plot_ylabel)
+
+    # fix the yaxis ticks (turns off offset and uses the full
+    # value of the yaxis tick)
+    axes.get_yaxis().get_major_formatter().set_useOffset(False)
+    axes.get_xaxis().get_major_formatter().set_useOffset(False)
+
+
+
+def _make_phased_magseries_plot(axes,
+                                periodind,
+                                stimes, smags,
+                                varperiod, varepoch,
+                                phasewrap, phasesort, phasebin,
+                                plotxlim,
+                                lspmethod,
+                                twolspmode=False):
     '''
     makes the phased magseries plot tile.
 
     '''
+
+    # phase the magseries
+    phasedlc = phase_magseries(stimes,
+                               smags,
+                               varperiod,
+                               varepoch,
+                               wrap=phasewrap,
+                               sort=phasesort)
+    plotphase = phasedlc['phase']
+    plotmags = phasedlc['mags']
+
+    # if we're supposed to bin the phases, do so
+    if phasebin:
+
+        binphasedlc = phase_bin_magseries(plotphase,
+                                          plotmags,
+                                          binsize=phasebin)
+        binplotphase = binphasedlc['binnedphases']
+        binplotmags = binphasedlc['binnedmags']
+
+
+    # finally, make the phased LC plot
+    axes.scatter(plotphase,
+                 plotmags,
+                 marker='o',
+                 s=2,
+                 color='gray')
+
+    # overlay the binned phased LC plot if we're making one
+    if phasebin:
+        axes.scatter(binplotphase,
+                     binplotmags,
+                     marker='o',
+                     s=20,
+                     color='blue')
+
+    # flip y axis for mags
+    plot_ylim = axes.get_ylim()
+    axes.set_ylim((plot_ylim[1], plot_ylim[0]))
+
+    # set the x axis limit
+    if not plotxlim:
+        plot_xlim = axes.get_xlim()
+        axes.set_xlim((npmin(plotphase)-0.1,
+                       npmax(plotphase)+0.1))
+    else:
+        axes.set_xlim((plotxlim[0],plotxlim[1]))
+
+    # make a grid
+    axes.grid(color='#a9a9a9',
+              alpha=0.9,
+              zorder=0,
+              linewidth=1.0,
+              linestyle=':')
+
+   # make the x and y axis labels
+    plot_xlabel = 'phase'
+    plot_ylabel = 'magnitude'
+
+    axes.set_xlabel(plot_xlabel)
+    axes.set_ylabel(plot_ylabel)
+
+    # fix the yaxis ticks (turns off offset and uses the full
+    # value of the yaxis tick)
+    axes.get_yaxis().get_major_formatter().set_useOffset(False)
+    axes.get_xaxis().get_major_formatter().set_useOffset(False)
+
+    # make the plot title
+    if periodind == 0:
+        plottitle = '%s best period: %.6f d - epoch: %.5f' % (
+            METHODSHORTLABELS[lspmethod],
+            varperiod,
+            varepoch
+        )
+    elif periodind == 1 and not twolspmode:
+        plottitle = '%s best period x 0.5: %.6f d - epoch: %.5f' % (
+            METHODSHORTLABELS[lspmethod],
+            varperiod,
+            varepoch
+        )
+    elif periodind == 2 and not twolspmode:
+        plottitle = '%s best period x 2: %.6f d - epoch: %.5f' % (
+            METHODSHORTLABELS[lspmethod],
+            varperiod,
+            varepoch
+        )
+    elif periodind > 2 and not twolspmode:
+        plottitle = '%s peak %s: %.6f d - epoch: %.5f' % (
+            METHODSHORTLABELS[lspmethod],
+            periodind-1,
+            varperiod,
+            varepoch
+        )
+    elif periodind > 0:
+        plottitle = '%s peak %s: %.6f d - epoch: %.5f' % (
+            METHODSHORTLABELS[lspmethod],
+            periodind+1,
+            varperiod,
+            varepoch
+        )
+
+    axes.set_title(plottitle)
 
 
 
@@ -166,6 +506,7 @@ def checkplot_png(lspinfo,
                   errs,
                   objectinfo=None,
                   findercmap='gray_r',
+                  finderconvolve=None,
                   normto='globalmedian',
                   normmingap=4.0,
                   outfile=None,
@@ -258,13 +599,21 @@ def checkplot_png(lspinfo,
 
     http://matplotlib.org/examples/color/colormaps_reference.html
 
+    finderconvolve convolves the finder FITS image with the given
+    astropy.convolution kernel:
+
+    http://docs.astropy.org/en/stable/convolution/kernels.html
+
+    This can be useful to see effects of wide-field telescopes with large pixel
+    sizes (like HAT) on the blending of sources.
+
     '''
 
     if not outfile and isinstance(lspinfo,str):
         # generate the plot filename
         plotfpath = os.path.join(
             os.path.dirname(lspinfo),
-            'phasedlc-checkplot-%s.png' % (
+            'checkplot-%s.png' % (
                 os.path.basename(lspinfo),
             )
         )
@@ -318,179 +667,8 @@ def checkplot_png(lspinfo,
     ## PLOT 1 is the LSP ##
     #######################
 
-    # get the appropriate plot ylabel
-    pgramylabel = PLOTYLABELS[lspmethod]
-
-    # make the LSP plot on the first subplot
-    axes[0].plot(periods,lspvals)
-
-    axes[0].set_xscale('log',basex=10)
-    axes[0].set_xlabel('Period [days]')
-    axes[0].set_ylabel(pgramylabel)
-    plottitle = '%.6f d' % bestperiod
-    axes[0].set_title(plottitle)
-
-    # show the best five peaks on the plot
-    for bestperiod, bestpeak in zip(nbestperiods,
-                                    nbestlspvals):
-        axes[0].annotate('%.6f' % bestperiod,
-                         xy=(bestperiod, bestpeak), xycoords='data',
-                         xytext=(0.0,25.0), textcoords='offset points',
-                         arrowprops=dict(arrowstyle="->"),fontsize='14.0')
-
-    # make a grid
-    axes[0].grid(color='#a9a9a9',
-                 alpha=0.9,
-                 zorder=0,
-                 linewidth=1.0,
-                 linestyle=':')
-
-
-    # if objectinfo is present, get things from it
-    if (objectinfo and isinstance(objectinfo, dict) and
-        ('objectid' in objectinfo or 'hatid' in objectinfo)
-        and 'ra' in objectinfo and 'decl' in objectinfo and
-        objectinfo['ra'] and objectinfo['decl']):
-
-        if 'objectid' not in objectinfo:
-            objectid = objectinfo['hatid']
-        else:
-            objectid = objectinfo['objectid']
-
-        # figure out dss stamp output path
-        if not outfile:
-            dsspath = 'dss-stamp-%s.jpg' % objectid
-        else:
-            dsspath = 'dss-stamp-%s.jpg' % outfile.rstrip('.png')
-
-
-        LOGINFO('adding in object information and '
-                'finder chart for %s at RA: %.3f, DEC: %.3f' %
-                (objectid, objectinfo['ra'], objectinfo['decl']))
-
-        # calculate colors
-        if ('bmag' in objectinfo and 'vmag' in objectinfo and
-            'jmag' in objectinfo and 'kmag' in objectinfo and
-            'sdssi' in objectinfo and
-            objectinfo['bmag'] and objectinfo['vmag'] and
-            objectinfo['jmag'] and objectinfo['kmag'] and
-            objectinfo['sdssg']):
-            bvcolor = objectinfo['bmag'] - objectinfo['vmag']
-            jkcolor = objectinfo['jmag'] - objectinfo['kmag']
-            ijcolor = objectinfo['sdssi'] - objectinfo['jmag']
-        else:
-            bvcolor = None
-            jkcolor = None
-            ijcolor = None
-
-        # bump the ylim of the LSP plot so that the overplotted finder and
-        # objectinfo can fit in this axes plot
-        lspylim = axes[0].get_ylim()
-        axes[0].set_ylim(lspylim[0], lspylim[1]+0.75*(lspylim[1]-lspylim[0]))
-
-        # get the stamp
-        try:
-            dss = astroquery_skyview_stamp(objectinfo['ra'],objectinfo['decl'])
-            stamp = dss
-
-            # inset plot it on the current axes
-            from mpl_toolkits.axes_grid.inset_locator import inset_axes
-            inset = inset_axes(axes[0], width="40%", height="40%", loc=1)
-            inset.imshow(stamp,cmap=findercmap)
-            inset.set_xticks([])
-            inset.set_yticks([])
-            inset.set_frame_on(False)
-
-            # grid lines pointing to the center of the frame
-            inset.axvline(x=150,ymin=0.2,ymax=0.4,linewidth=2.0,color='k')
-            inset.axhline(y=150,xmin=0.2,xmax=0.4,linewidth=2.0,color='k')
-
-        except Exception as e:
-            LOGEXCEPTION('could not fetch a DSS stamp for this '
-                         'object %s using coords (%.3f,%.3f)' %
-                         (objectid, objectinfo['ra'], objectinfo['decl']))
-
-        # annotate with objectinfo
-        axes[0].text(
-            0.05,0.95,
-            '%s' % objectid,
-            ha='left',va='center',transform=axes[0].transAxes,
-            fontsize=18.0
-        )
-
-        axes[0].text(
-            0.05,0.91,
-            'RA = %.3f, DEC = %.3f' % (objectinfo['ra'], objectinfo['decl']),
-            ha='left',va='center',transform=axes[0].transAxes,
-            fontsize=18.0
-        )
-
-        if bvcolor:
-            axes[0].text(0.05,0.87,
-                         '$B - V$ = %.3f, $V$ = %.3f' % (bvcolor,
-                                                         objectinfo['vmag']),
-                         ha='left',va='center',transform=axes[0].transAxes,
-                         fontsize=18.0)
-        elif 'vmag' in objectinfo and objectinfo['vmag']:
-            axes[0].text(0.05,0.87,
-                         '$V$ = %.3f' % (objectinfo['vmag'],),
-                         ha='left',va='center',transform=axes[0].transAxes,
-                         fontsize=18.0)
-
-        if ijcolor:
-            axes[0].text(0.05,0.83,
-                         '$i - J$ = %.3f, $J$ = %.3f' % (ijcolor,
-                                                         objectinfo['jmag']),
-                         ha='left',va='center',transform=axes[0].transAxes,
-                         fontsize=18.0)
-        elif 'jmag' in objectinfo and objectinfo['jmag']:
-            axes[0].text(0.05,0.83,
-                         '$J$ = %.3f' % (objectinfo['jmag'],),
-                         ha='left',va='center',transform=axes[0].transAxes,
-                         fontsize=18.0)
-
-        if jkcolor:
-            axes[0].text(0.05,0.79,
-                         '$J - K$ = %.3f, $K$ = %.3f' % (jkcolor,
-                                                         objectinfo['kmag']),
-                         ha='left',va='center',transform=axes[0].transAxes,
-                         fontsize=18.0)
-        elif 'kmag' in objectinfo and objectinfo['kmag']:
-            axes[0].text(0.05,0.79,
-                         '$K$ = %.3f' % (objectinfo['kmag'],),
-                         ha='left',va='center',transform=axes[0].transAxes,
-                         fontsize=18.0)
-
-        if 'sdssr' in objectinfo and objectinfo['sdssr']:
-            axes[0].text(0.05,0.75,'SDSS $r$ = %.3f' % objectinfo['sdssr'],
-                         ha='left',va='center',transform=axes[0].transAxes,
-                         fontsize=18.0)
-
-        # add in proper motion stuff if available in objectinfo
-        if ('pmra' in objectinfo and objectinfo['pmra'] and
-            'pmdecl' in objectinfo and objectinfo['pmdecl']):
-
-            pm = total_proper_motion(objectinfo['pmra'],
-                                     objectinfo['pmdecl'],
-                                     objectinfo['decl'])
-
-            axes[0].text(0.05,0.67,'$\mu$ = %.2f mas yr$^{-1}$' % pm,
-                         ha='left',va='center',transform=axes[0].transAxes,
-                         fontsize=18.0)
-
-            if 'jmag' in objectinfo and objectinfo['jmag']:
-
-                rpm = reduced_proper_motion(objectinfo['jmag'],pm)
-                axes[0].text(0.05,0.63,'$H_J$ = %.2f' % rpm,
-                             ha='left',va='center',transform=axes[0].transAxes,
-                             fontsize=18.0)
-
-
-        # once done with adding objectinfo, delete the downloaded stamp
-        if os.path.exists(dsspath):
-            os.remove(dsspath)
-
-    # end of adding in objectinfo
+    _make_periodogram(axes[0],lspinfo,objectinfo, outfile,
+                      findercmap, finderconvolve)
 
     ######################################
     ## NOW MAKE THE PHASED LIGHT CURVES ##
@@ -538,41 +716,7 @@ def checkplot_png(lspinfo,
         ## PLOT 2 is an unphased LC ##
         ##############################
 
-        scaledplottime = stimes - npmin(stimes)
-
-        axes[1].scatter(scaledplottime,
-                        smags,
-                        marker='o',
-                        s=2,
-                        color='green')
-
-        # flip y axis for mags
-        plot_ylim = axes[1].get_ylim()
-        axes[1].set_ylim((plot_ylim[1], plot_ylim[0]))
-
-        # set the x axis limit
-        plot_xlim = axes[1].get_xlim()
-        axes[1].set_xlim((npmin(scaledplottime)-1.0,
-                          npmax(scaledplottime)+1.0))
-
-        # make a grid
-        axes[1].grid(color='#a9a9a9',
-                     alpha=0.9,
-                     zorder=0,
-                     linewidth=1.0,
-                     linestyle=':')
-
-       # make the x and y axis labels
-        plot_xlabel = 'JD - %.3f' % npmin(stimes)
-        plot_ylabel = 'magnitude'
-
-        axes[1].set_xlabel(plot_xlabel)
-        axes[1].set_ylabel(plot_ylabel)
-
-        # fix the yaxis ticks (turns off offset and uses the full
-        # value of the yaxis tick)
-        axes[1].get_yaxis().get_major_formatter().set_useOffset(False)
-        axes[1].get_xaxis().get_major_formatter().set_useOffset(False)
+        _make_magseries_plot(axes[1], stimes, smags, serrs)
 
 
         ###########################
@@ -590,7 +734,6 @@ def checkplot_png(lspinfo,
 
             # figure out the epoch, if it's None, use the min of the time
             if varepoch is None:
-
                 varepoch = npmin(stimes)
 
             # if the varepoch is 'min', then fit a spline to the light curve
@@ -599,7 +742,8 @@ def checkplot_png(lspinfo,
             elif isinstance(varepoch,str) and varepoch == 'min':
 
                 try:
-                    spfit = spline_fit_magseries(stimes, smags, serrs, varperiod)
+                    spfit = spline_fit_magseries(stimes, smags, serrs,
+                                                 varperiod)
                     varepoch = spfit['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
@@ -610,110 +754,19 @@ def checkplot_png(lspinfo,
             LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
                     (varperiod, varepoch))
 
-            #########################################
-            ## PLOT 3 is the best-period phased LC ##
-            #########################################
-
             # make sure the best period phased LC plot stands out
             if periodind == 0:
                 axes[periodind+2].set_axis_bgcolor('#adff2f')
 
-            # phase the magseries
-            phasedlc = phase_magseries(stimes,
-                                       smags,
-                                       varperiod,
-                                       varepoch,
-                                       wrap=phasewrap,
-                                       sort=phasesort)
-            plotphase = phasedlc['phase']
-            plotmags = phasedlc['mags']
-
-            # if we're supposed to bin the phases, do so
-            if phasebin:
-
-                binphasedlc = phase_bin_magseries(plotphase,
-                                                  plotmags,
-                                                  binsize=phasebin)
-                binplotphase = binphasedlc['binnedphases']
-                binplotmags = binphasedlc['binnedmags']
-
-
-            # finally, make the phased LC plot
-            axes[periodind+2].scatter(plotphase,
-                                      plotmags,
-                                      marker='o',
-                                      s=2,
-                                      color='gray')
-
-            # overlay the binned phased LC plot if we're making one
-            if phasebin:
-                axes[periodind+2].scatter(binplotphase,
-                                          binplotmags,
-                                          marker='o',
-                                          s=20,
-                                          color='blue')
-
-            # flip y axis for mags
-            plot_ylim = axes[periodind+2].get_ylim()
-            axes[periodind+2].set_ylim((plot_ylim[1], plot_ylim[0]))
-
-            # set the x axis limit
-            if not plotxlim:
-                plot_xlim = axes[periodind+2].get_xlim()
-                axes[periodind+2].set_xlim((npmin(plotphase)-0.1,
-                                            npmax(plotphase)+0.1))
-            else:
-                axes[periodind+2].set_xlim((plotxlim[0],plotxlim[1]))
-
-            # make a grid
-            axes[periodind+2].grid(color='#a9a9a9',
-                                   alpha=0.9,
-                                   zorder=0,
-                                   linewidth=1.0,
-                                   linestyle=':')
-
-           # make the x and y axis labels
-            plot_xlabel = 'phase'
-            plot_ylabel = 'magnitude'
-
-            axes[periodind+2].set_xlabel(plot_xlabel)
-            axes[periodind+2].set_ylabel(plot_ylabel)
-
-            # fix the yaxis ticks (turns off offset and uses the full
-            # value of the yaxis tick)
-            axes[
-                periodind+2
-            ].get_yaxis().get_major_formatter().set_useOffset(False)
-            axes[
-                periodind+2
-            ].get_xaxis().get_major_formatter().set_useOffset(False)
-
-            # make the plot title
-            if periodind == 0:
-                plottitle = 'best period -> %.6f d - epoch %.5f' % (
-                    varperiod,
-                    varepoch
-                )
-            elif periodind == 1:
-                plottitle = 'best period x 0.5 -> %.6f d - epoch %.5f' % (
-                    varperiod,
-                    varepoch
-                )
-            elif periodind == 2:
-                plottitle = 'best period x 2 ->  %.6f d - epoch %.5f' % (
-                    varperiod,
-                    varepoch
-                )
-            else:
-                plottitle = 'LSP peak %s -> %.6f d - epoch %.5f' % (
-                    periodind-1,
-                    varperiod,
-                    varepoch
-                )
-
-            axes[periodind+2].set_title(plottitle)
+            _make_phased_magseries_plot(axes[periodind+2],
+                                        periodind,
+                                        stimes, smags,
+                                        varperiod, varepoch,
+                                        phasewrap, phasesort, phasebin,
+                                        plotxlim, lspmethod)
 
         # end of plotting for each ax
+
         # save the plot to disk
         fig.set_tight_layout(True)
         if plotfpath.endswith('.png'):
@@ -741,7 +794,323 @@ def checkplot_png(lspinfo,
             )
 
         fig.set_tight_layout(True)
-        fig.savefig(plotfpath)
+
+        if plotfpath.endswith('.png'):
+            fig.savefig(plotfpath, dpi=plotdpi)
+        else:
+            fig.savefig(plotfpath)
+
+        plt.close()
+
+        LOGINFO('checkplot done -> %s' % plotfpath)
+        return plotfpath
+
+
+
+def twolsp_checkplot_png(lspinfo1,
+                         lspinfo2,
+                         times,
+                         mags,
+                         errs,
+                         objectinfo=None,
+                         findercmap='gray_r',
+                         finderconvolve=None,
+                         normto='globalmedian',
+                         normmingap=4.0,
+                         outfile=None,
+                         sigclip=4.0,
+                         varepoch='min',
+                         phasewrap=True,
+                         phasesort=True,
+                         phasebin=0.002,
+                         plotxlim=[-0.8,0.8],
+                         plotdpi=100):
+    '''This makes a checkplot using results from two independent period-finders.
+
+    Adapted from Luke Bouma's implementation of the same. This makes a special
+    checkplot that uses two lspinfo dictionaries, from two independent
+    period-finding methods. For EBs, it's probably best to use Stellingwerf PDM
+    or Schwarzenberg-Cerny AoV as one of these, and the Box Least-squared Search
+    method as the other one.
+
+    The checkplot layout in this case is:
+
+    [ pgram1 + objectinfo ] [ pgram2 + objectinfo ] [     unphased LC     ]
+    [ pgram1 P1 phased LC ] [ pgram1 P2 phased LC ] [ pgram1 P3 phased LC ]
+    [ pgram2 P1 phased LC ] [ pgram2 P2 phased LC ] [ pgram2 P3 phased LC ]
+
+    where:
+
+    pgram1 is the plot for the periodogram in the lspinfo1 dict
+    pgram1 P1, P2, and P3 are the best three periods from lspinfo1
+    pgram2 is the plot for the periodogram in the lspinfo2 dict
+    pgram2 P1, P2, and P3 are the best three periods from lspinfo2
+
+    All other args and kwargs are the same as checkplot_png. Note that we take
+    the output file name from lspinfo1 if lspinfo1 is a string filename pointing
+    to a (gzipped) pickle containing the results dict from a period-finding
+    routine similar to those in periodbase.
+
+    '''
+
+    # generate the plot filename
+    if not outfile and isinstance(lspinfo1,str):
+        plotfpath = os.path.join(
+            os.path.dirname(lspinfo),
+            'twolsp-checkplot-%s.png' % (
+                os.path.basename(lspinfo),
+            )
+        )
+    elif outfile:
+        plotfpath = outfile
+    else:
+        plotfpath = 'twolsp-checkplot.png'
+
+    # get the first LSP from a pickle file transparently
+    if isinstance(lspinfo1,str) and os.path.exists(lspinfo1):
+        LOGINFO('loading LSP info from pickle %s' % lspinfo1)
+
+        if '.gz' in lspinfo1:
+            with gzip.open(lspinfo1,'rb') as infd:
+                lspinfo1 = pickle.load(infd)
+        else:
+            with open(lspinfo1,'rb') as infd:
+                lspinfo1 = pickle.load(infd)
+
+
+    # get the second LSP from a pickle file transparently
+    if isinstance(lspinfo2,str) and os.path.exists(lspinfo2):
+        LOGINFO('loading LSP info from pickle %s' % lspinfo2)
+
+        if '.gz' in lspinfo2:
+            with gzip.open(lspinfo2,'rb') as infd:
+                lspinfo2 = pickle.load(infd)
+        else:
+            with open(lspinfo2,'rb') as infd:
+                lspinfo2 = pickle.load(infd)
+
+
+    # get the things to plot out of the data
+    if ('periods' in lspinfo1 and 'periods' in lspinfo2 and
+        'lspvals' in lspinfo1 and 'lspvals' in lspinfo2 and
+        'bestperiod' in lspinfo1 and 'bestperiod' in lspinfo2):
+
+        periods1 = lspinfo1['periods']
+        lspvals1 = lspinfo1['lspvals']
+        bestperiod1 = lspinfo1['bestperiod']
+        nbestperiods1 = lspinfo1['nbestperiods']
+        nbestlspvals1 = lspinfo1['nbestlspvals']
+        lspmethod1 = lspinfo1['method']
+
+        periods2 = lspinfo2['periods']
+        lspvals2 = lspinfo2['lspvals']
+        bestperiod2 = lspinfo2['bestperiod']
+        nbestperiods2 = lspinfo2['nbestperiods']
+        nbestlspvals2 = lspinfo2['nbestlspvals']
+        lspmethod2 = lspinfo2['method']
+
+    else:
+
+        LOGERROR('could not understand lspinfo1 or lspinfo2 '
+                 'for this object, skipping...')
+        return None
+
+
+    if (not npisfinite(bestperiod1)) or (not npisfinite(bestperiod2)):
+
+        LOGWARNING('no best period found for this object, skipping...')
+        return None
+
+    # initialize the plot
+    fig, axes = plt.subplots(3,3)
+    axes = npravel(axes)
+
+    # this is a full page plot
+    fig.set_size_inches(30,24)
+
+    ######################################################################
+    ## PLOT 1 is the LSP from lspinfo1, including objectinfo and finder ##
+    ######################################################################
+
+    _make_periodogram(axes[0], lspinfo1, objectinfo, outfile,
+                      findercmap, finderconvolve)
+
+    #####################################
+    ## PLOT 2 is the LSP from lspinfo2 ##
+    #####################################
+
+    _make_periodogram(axes[1], lspinfo2, None, outfile,
+                      findercmap, finderconvolve)
+
+    ##########################################
+    ## FIX UP THE MAGS AND REMOVE BAD STUFF ##
+    ##########################################
+
+    # remove nans
+    find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
+    ftimes, fmags, ferrs = times[find], mags[find], errs[find]
+
+    # get the median and stdev = 1.483 x MAD
+    median_mag = npmedian(fmags)
+    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
+
+    # sigclip next
+    if sigclip:
+
+        sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
+
+        stimes = ftimes[sigind]
+        smags = fmags[sigind]
+        serrs = ferrs[sigind]
+
+        LOGINFO('sigclip = %s: before = %s observations, '
+                'after = %s observations' %
+                (sigclip, len(times), len(stimes)))
+
+    else:
+
+        stimes = ftimes
+        smags = fmags
+        serrs = ferrs
+
+
+    # take care of the normalization
+    if normto is not False:
+        stimes, smags = normalize_magseries(stimes, smags,
+                                            normto=normto,
+                                            mingap=normmingap)
+
+
+    # make sure we have some lightcurve points to plot after sigclip
+    if len(stimes) >= 50:
+
+        ##############################
+        ## PLOT 3 is an unphased LC ##
+        ##############################
+
+        _make_magseries_plot(axes[2], stimes, smags, serrs)
+
+        # make the plot for each best period
+        lspbestperiods1 = nbestperiods1[::]
+        lspbestperiods2 = nbestperiods2[::]
+
+        ##########################################################
+        ### NOW PLOT PHASED LCS FOR 3 BEST PERIODS IN LSPINFO1 ###
+        ##########################################################
+        for periodind, varperiod, plotaxes in zip([0,1,2],
+                                                  lspbestperiods1[:3],
+                                                  [axes[3], axes[4], axes[5]]):
+
+            # figure out the epoch, if it's None, use the min of the time
+            if varepoch is None:
+                varepoch = npmin(stimes)
+
+            # if the varepoch is 'min', then fit a spline to the light curve
+            # phased using the min of the time, find the fit mag minimum and use
+            # the time for that as the varepoch
+            elif isinstance(varepoch,str) and varepoch == 'min':
+
+                try:
+                    spfit = spline_fit_magseries(stimes, smags, serrs,
+                                                 varperiod)
+                    varepoch = spfit['fitepoch']
+                    if len(varepoch) != 1:
+                        varepoch = varepoch[0]
+                except Exception as e:
+                    LOGEXCEPTION('spline fit failed, using min(times) as epoch')
+                    varepoch = npmin(stimes)
+
+            LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
+                    (varperiod, varepoch))
+
+            # make sure the best period phased LC plot stands out
+            if periodind == 0:
+                plotaxes.set_axis_bgcolor('#adff2f')
+
+            _make_phased_magseries_plot(plotaxes,
+                                        periodind,
+                                        stimes, smags,
+                                        varperiod, varepoch,
+                                        phasewrap, phasesort, phasebin,
+                                        plotxlim, lspmethod1,
+                                        twolspmode=True)
+
+        ##########################################################
+        ### NOW PLOT PHASED LCS FOR 3 BEST PERIODS IN LSPINFO2 ###
+        ##########################################################
+        for periodind, varperiod, plotaxes in zip([0,1,2],
+                                                  lspbestperiods2[:3],
+                                                  [axes[6], axes[7], axes[8]]):
+
+            # figure out the epoch, if it's None, use the min of the time
+            if varepoch is None:
+                varepoch = npmin(stimes)
+
+            # if the varepoch is 'min', then fit a spline to the light curve
+            # phased using the min of the time, find the fit mag minimum and use
+            # the time for that as the varepoch
+            elif isinstance(varepoch,str) and varepoch == 'min':
+
+                try:
+                    spfit = spline_fit_magseries(stimes, smags, serrs,
+                                                 varperiod)
+                    varepoch = spfit['fitepoch']
+                    if len(varepoch) != 1:
+                        varepoch = varepoch[0]
+                except Exception as e:
+                    LOGEXCEPTION('spline fit failed, using min(times) as epoch')
+                    varepoch = npmin(stimes)
+
+            LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
+                    (varperiod, varepoch))
+
+            # make sure the best period phased LC plot stands out
+            if periodind == 0:
+                plotaxes.set_axis_bgcolor('#adff2f')
+
+            _make_phased_magseries_plot(plotaxes,
+                                        periodind,
+                                        stimes, smags,
+                                        varperiod, varepoch,
+                                        phasewrap, phasesort, phasebin,
+                                        plotxlim, lspmethod2,
+                                        twolspmode=True)
+
+        # end of plotting for each ax
+
+        # save the plot to disk
+        fig.set_tight_layout(True)
+        if plotfpath.endswith('.png'):
+            fig.savefig(plotfpath,dpi=plotdpi)
+        else:
+            fig.savefig(plotfpath)
+        plt.close()
+
+        LOGINFO('checkplot done -> %s' % plotfpath)
+        return plotfpath
+
+    # otherwise, there's no valid data for this plot
+    else:
+
+        LOGWARNING('no good data')
+
+        for periodind in range(5):
+
+            axes[periodind+2].text(
+                0.5,0.5,
+                ('no best aperture light curve available'),
+                horizontalalignment='center',
+                verticalalignment='center',
+                transform=axes[periodind+2].transAxes
+            )
+
+        fig.set_tight_layout(True)
+
+        if plotfpath.endswith('.png'):
+            fig.savefig(plotfpath, dpi=plotdpi)
+        else:
+            fig.savefig(plotfpath)
+
         plt.close()
 
         LOGINFO('checkplot done -> %s' % plotfpath)

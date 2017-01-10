@@ -78,9 +78,9 @@ tweaked for your purposes.
   Kepler light curves (reading and converting) and some basic operations
   (converting fluxes to mags, decorrelation of light curves, etc.)
 
-- **[checkplot](astrobase/checkplot.py)**: contains functions to make checkplots
-  (a 3 x 3 grid of plots used to quickly decide if a period search was
-  successful; see the example below.
+- **[checkplot](astrobase/checkplot.py)**: contains functions to make
+  checkplots: a 3 x 3 grid of plots used to quickly decide if a period search
+  was successful; see the example below.
 
   If you make lots of checkplots, there's a tiny checkplot-viewer webapp
   available to go through these and pick out interesting variable stars. An
