@@ -4,7 +4,7 @@
 License: MIT.
 
 Contains functions to make checkplots: quick views for determining periodic
-variability for light curves and sanity-check results from period-finding
+variability for light curves and sanity-checking results from period-finding
 functions (e.g., from periodbase).
 
 The checkplot_png function makes the following 3 x 3 grid and writes to a PNG:
@@ -115,15 +115,9 @@ def LOGEXCEPTION(message):
 ## LOCAL IMPORTS ##
 ###################
 
-from .lcmath import phase_magseries, phase_magseries_with_errs, \
-    phase_bin_magseries, phase_bin_magseries_with_errs, \
-    time_bin_magseries, time_bin_magseries_with_errs, sigclip_magseries, \
-    normalize_magseries
-
+from .lcmath import phase_magseries,  phase_bin_magseries, normalize_magseries
 from .varbase import spline_fit_magseries
-
 from .coordutils import total_proper_motion, reduced_proper_motion
-
 from .plotbase import astroquery_skyview_stamp
 
 ############
