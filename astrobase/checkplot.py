@@ -140,8 +140,11 @@ METHODSHORTLABELS = {'gls':'Generalized L-S',
 ## UTILITY FUNCTIONS ##
 #######################
 
-def _make_periodogram(axes, lspinfo, objectinfo, outfile,
-                      findercmap, finderconvolve):
+def _make_periodogram(axes,
+                      lspinfo,
+                      objectinfo,
+                      findercmap,
+                      finderconvolve):
     '''
     makes the periodogram, objectinfo, and finder tile.
 
@@ -193,13 +196,6 @@ def _make_periodogram(axes, lspinfo, objectinfo, outfile,
             objectid = objectinfo['hatid']
         else:
             objectid = objectinfo['objectid']
-
-        # figure out dss stamp output path
-        if not outfile:
-            dsspath = 'dss-stamp-%s.jpg' % objectid
-        else:
-            dsspath = 'dss-stamp-%s.jpg' % outfile.rstrip('.png')
-
 
         LOGINFO('adding in object information and '
                 'finder chart for %s at RA: %.3f, DEC: %.3f' %
@@ -660,7 +656,7 @@ def checkplot_png(lspinfo,
     ## PLOT 1 is the LSP ##
     #######################
 
-    _make_periodogram(axes[0],lspinfo,objectinfo, outfile,
+    _make_periodogram(axes[0],lspinfo,objectinfo,
                       findercmap, finderconvolve)
 
     ######################################
@@ -925,14 +921,14 @@ def twolsp_checkplot_png(lspinfo1,
     ## PLOT 1 is the LSP from lspinfo1, including objectinfo and finder ##
     ######################################################################
 
-    _make_periodogram(axes[0], lspinfo1, objectinfo, outfile,
+    _make_periodogram(axes[0], lspinfo1, objectinfo,
                       findercmap, finderconvolve)
 
     #####################################
     ## PLOT 2 is the LSP from lspinfo2 ##
     #####################################
 
-    _make_periodogram(axes[1], lspinfo2, None, outfile,
+    _make_periodogram(axes[1], lspinfo2, None,
                       findercmap, finderconvolve)
 
     ##########################################
