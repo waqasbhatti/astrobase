@@ -14,7 +14,7 @@ The checkplot_png function makes the following 3 x 3 grid and writes to a PNG:
     [ period 3 phased LC  ] [period 4 phased LC   ] [ period 5 phased LC ]
 
 
-FIXME:
+FIXME and WIP - copied from various emails and the Github issue:
 
 I'm actually working towards turning the one-huge-PNG output of make_checkplot
 into a zip of JSONs (see the github PR#3), which contain the plot info, so they
