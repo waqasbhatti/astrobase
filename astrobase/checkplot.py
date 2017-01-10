@@ -303,11 +303,6 @@ def _make_periodogram(axes,
                              fontsize=18.0)
 
 
-        # once done with adding objectinfo, delete the downloaded stamp
-        if os.path.exists(dsspath):
-            os.remove(dsspath)
-
-
 
 def _make_magseries_plot(axes,
                          stimes,
