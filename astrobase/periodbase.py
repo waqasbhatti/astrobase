@@ -29,7 +29,8 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     zeros_like as npzeros_like, full_like as npfull_like, \
     arctan as nparctan, nanargmax as npnanargmax, nanargmin as npnanargmin, \
     empty as npempty, ceil as npceil, mean as npmean, \
-    digitize as npdigitize, unique as npunique
+    digitize as npdigitize, unique as npunique, \
+    argmax as npargmax, argmin as npargmin
 
 from scipy.signal import lombscargle, find_peaks_cwt
 
