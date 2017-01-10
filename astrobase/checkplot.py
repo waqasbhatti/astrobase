@@ -218,7 +218,7 @@ def _make_periodogram(axes, lspinfo, objectinfo, outfile,
             'sdssi' in objectinfo and
             objectinfo['bmag'] and objectinfo['vmag'] and
             objectinfo['jmag'] and objectinfo['kmag'] and
-            objectinfo['sdssg']):
+            objectinfo['sdssi']):
             bvcolor = objectinfo['bmag'] - objectinfo['vmag']
             jkcolor = objectinfo['jmag'] - objectinfo['kmag']
             ijcolor = objectinfo['sdssi'] - objectinfo['jmag']
