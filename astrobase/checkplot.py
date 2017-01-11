@@ -1137,8 +1137,9 @@ def multilsp_checkplot_pickle(lspinfolist,
     checkplot_pickle_to_png function below.
 
     All other options are the same as for checkplot_png. This function can take
-    input from multiple lspinfo dicts (e.g. a list of output dicts from BLS,
-    PDM, AoV, GLS period-finders in periodbase).
+    input from multiple lspinfo dicts (e.g. a list of output dicts or gzipped
+    pickles of dicts from the BLS, PDM, AoV, or GLS period-finders in
+    periodbase).
 
     '''
 
