@@ -101,6 +101,7 @@ setup(
         'jplephem',
         'simplejson',
         'astroquery',
+        'tornado',
     ],
     extras_require={
         'LCDB':['psycopg2'],
