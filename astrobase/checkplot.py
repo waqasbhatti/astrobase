@@ -129,9 +129,15 @@ def _make_periodogram(axes,
                       lspinfo,
                       objectinfo,
                       findercmap,
-                      finderconvolve):
-    '''
-    makes the periodogram, objectinfo, and finder tile.
+                      finderconvolve,
+                      pickleoutput=False,
+                      plotdpi=100):
+    '''makes the periodogram, objectinfo, and finder tile.
+
+    If pickleoutput is True, will disregard the input axes, and write the
+    periodogram plot tile to a base64 string representation which will be put
+    into a dict along with associated objectinfo dict, lspinfo dict, and the
+    finder chart as an ndarray, and returned.
 
     '''
 
@@ -307,9 +313,15 @@ def _make_periodogram(axes,
 def _make_magseries_plot(axes,
                          stimes,
                          smags,
-                         serrs):
-    '''
-    makes the magseries plot tile.
+                         serrs,
+                         pickleoutput=False,
+                         plotdpi=100):
+    '''makes the magseries plot tile.
+
+    If pickleoutput is True, will disregard the input axes, and write the
+    magseries plot tile to a base64 string representation, which will be put
+    into a dict along with associated stimes, smags, and serrs as ndarrays, and
+    returned.
 
     '''
 
@@ -358,9 +370,15 @@ def _make_phased_magseries_plot(axes,
                                 phasewrap, phasesort, phasebin,
                                 plotxlim,
                                 lspmethod,
-                                twolspmode=False):
-    '''
-    makes the phased magseries plot tile.
+                                twolspmode=False,
+                                pickleoutput=False,
+                                plotdpi=100):
+    '''makes the phased magseries plot tile.
+
+    If pickleoutput is True, will disregard the input axes, and write the phased
+    magseries plot tile to a base64 string representation, which will be put
+    into a dict along with associated varperiod, varepoch, and phases, mags as
+    ndarrays, and returned.
 
     '''
 
@@ -468,9 +486,9 @@ def _make_phased_magseries_plot(axes,
 
 
 
-#########################
-## CHECKPLOT FUNCTIONS ##
-#########################
+############################################
+## CHECKPLOT FUNCTIONS THAT WRITE TO PNGS ##
+############################################
 
 def checkplot_png(lspinfo,
                   times,
@@ -1087,3 +1105,73 @@ def twolsp_checkplot_png(lspinfo1,
 
         LOGINFO('checkplot done -> %s' % plotfpath)
         return plotfpath
+
+
+################################################
+## CHECKPLOT FUNCTIONS THAT WORK WITH PICKLES ##
+################################################
+
+def multilsp_checkplot_pickle(lspinfolist,
+                              times,
+                              mags,
+                              errs,
+                              objectinfo=None,
+                              findercmap='gray_r',
+                              finderconvolve=None,
+                              normto='globalmedian',
+                              normmingap=4.0,
+                              outfile=None,
+                              sigclip=4.0,
+                              varepoch='min',
+                              phasewrap=True,
+                              phasesort=True,
+                              phasebin=0.002,
+                              plotxlim=[-0.8,0.8],
+                              plotdpi=100):
+    '''This writes a multiple lspinfo checkplot to a gzipped pickle file.
+
+    The gzipped pickle file contains all the plots (magseries and phased
+    magseries), periodograms, object information, variability information, light
+    curves, and phased light curves. This is intended to be used with an
+    external viewer app (e.g. checkplotviewer.py), or by using the
+    checkplot_pickle_to_png function below.
+
+    All other options are the same as for checkplot_png. This function can take
+    input from multiple lspinfo dicts (e.g. a list of output dicts from BLS,
+    PDM, AoV, GLS period-finders in periodbase).
+
+    '''
+
+
+def checkplot_pickle_update(current, updated,
+                            outfile=None):
+    '''This updates the current checkplot dict with updated values provided.
+
+    Writes out the new checkplot gzipped pickle file to outfile. Mostly only
+    useful for checkplotviewer.py.
+
+    '''
+
+
+
+
+
+def checkplot_pickle_to_png(checkplotpickle):
+    '''This reads the pickle provided, and writes out a PNG.
+
+    The PNG has 4 x N tiles, as below:
+
+    [ finderchart  ] [ objectinfo   ] [ variableinfo ] [ unphased LC  ]
+    [ periodogram1 ] [ phased LC P1 ] [ phased LC P2 ] [ phased LC P3 ]
+    [ periodogram2 ] [ phased LC P1 ] [ phased LC P2 ] [ phased LC P3 ]
+                                     .
+                                     .
+    [ periodogramN ] [ phased LC P1 ] [ phased LC P2 ] [ phased LC P3 ]
+
+    for N independent period-finding methods producing:
+
+    - periodogram1,2,3...N: the periodograms from each method
+    - phased LC P1,P2,P3: the phased lightcurves using the best 3 peaks in each
+                          periodogram
+
+    '''
