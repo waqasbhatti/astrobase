@@ -1133,7 +1133,7 @@ def multilsp_checkplot_pickle(lspinfolist,
     The gzipped pickle file contains all the plots (magseries and phased
     magseries), periodograms, object information, variability information, light
     curves, and phased light curves. This is intended to be used with an
-    external viewer app (e.g. checkplotviewer.py), or by using the
+    external viewer app (e.g. checkplotserver.py), or by using the
     checkplot_pickle_to_png function below.
 
     All other options are the same as for checkplot_png. This function can take
@@ -1148,7 +1148,7 @@ def checkplot_pickle_update(current, updated,
     '''This updates the current checkplot dict with updated values provided.
 
     Writes out the new checkplot gzipped pickle file to outfile. Mostly only
-    useful for checkplotviewer.py.
+    useful for checkplotserver.py.
 
     '''
 
