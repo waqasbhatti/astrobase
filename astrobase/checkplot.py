@@ -46,13 +46,9 @@ from numpy import nan as npnan, median as npmedian, \
     isfinite as npisfinite, min as npmin, max as npmax, abs as npabs, \
     ravel as npravel
 
-# check the DISPLAY variable to see if we can plot stuff interactively
-try:
-    dispok = os.environ['DISPLAY']
-except KeyError:
-    import matplotlib
-    matplotlib.use('Agg')
-    dispok = False
+# we're going to plot using Agg only
+import matplotlib
+matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid.inset_locator import inset_axes
@@ -1089,9 +1085,9 @@ def twolsp_checkplot_png(lspinfo1,
         return plotfpath
 
 
-################################################
-## CHECKPLOT FUNCTIONS THAT WORK WITH PICKLES ##
-################################################
+#########################################
+## PICKLE CHECKPLOT UTILITY FUNCTIONS  ##
+#########################################
 
 def _base64_to_file(b64str, outfpath):
     '''
@@ -1119,7 +1115,16 @@ def _base64_to_file(b64str, outfpath):
 
 
 
-def _pkl_finder_objectinfo(objectinfo, findercmap, finderconvolve,
+def _pkl_finder_objectinfo(objectinfo,
+                           varinfo,
+                           lcinfo,
+                           candinfo,
+                           externinfo,
+                           findercmap,
+                           finderconvolve,
+                           sigclip,
+                           normto,
+                           normmingap,
                            plotdpi=100):
     '''This returns the finder chart and object information as a dict.
 
@@ -1215,14 +1220,33 @@ def _pkl_finder_objectinfo(objectinfo, findercmap, finderconvolve,
         else:
             objectinfo['reducedpropermotion'] = None
 
-
         # put together the initial checkplot pickle dictionary
         # this will be updated by the functions below as appropriate
         # and will written out as a gzipped pickle at the end of processing
         checkplotdict = {'objectid':objectid,
                          'objectinfo':objectinfo,
-                         'finderchart':finderb64}
+                         'finderchart':finderb64,
+                         'sigclip':sigclip,
+                         'normto':normto,
+                         'normmingap':normmingap}
 
+
+        # add extra things to the checkplotdict
+
+        # add the objecttags key to objectinfo
+        checkplot['objectinfo']['objecttags'] = None
+
+        # add the varinfo dict
+        if isinstance(varinfo, dict):
+            checkplotdict['varinfo'] = varinfo
+        else:
+            checkplotdict['varinfo'] = {
+                'objectisvar':None,
+                'vartags':None,
+                'varisperiodic':None,
+                'varperiod':None,
+                'varepoch':None,
+            }
 
         return checkplotdict
 
@@ -1305,22 +1329,240 @@ def _pkl_magseries_plot(stimes, smags, serrs, plotdpi=100):
 
     '''
 
+    scaledplottime = stimes - npmin(stimes)
+
+    # open the figure instance
+    magseriesfig = plt.figure(figsize=(7.5,4.8),dpi=plotdpi)
+
+    plt.scatter(scaledplottime,
+                 smags,
+                 marker='o',
+                 s=2,
+                 color='green')
+
+    # flip y axis for mags
+    plot_ylim = plt.ylim()
+    plt.ylim((plot_ylim[1], plot_ylim[0]))
+
+    # set the x axis limit
+    plot_xlim = plt.xlim()
+    plt.xlim((npmin(scaledplottime)-1.0,
+              npmax(scaledplottime)+1.0))
+
+    # make a grid
+    plt.grid(color='#a9a9a9',
+             alpha=0.9,
+             zorder=0,
+             linewidth=1.0,
+             linestyle=':')
+
+   # make the x and y axis labels
+    plot_xlabel = 'JD - %.3f' % npmin(stimes)
+    plot_ylabel = 'magnitude'
+
+    plt.xlabel(plot_xlabel)
+    plt.ylabel(plot_ylabel)
+
+    # fix the yaxis ticks (turns off offset and uses the full
+    # value of the yaxis tick)
+    plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
+    plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
+
+    # this is the output instance
+    magseriespng = strio()
+    magseriesfig.savefig(magseriespng, bbox_inches='tight',
+                         pad_inches=0.0, format='png')
+    plt.close()
+
+    # encode the finderpng instance to base64
+    magseriespng.seek(0)
+    magseriesb64 = base64.b64encode(magseriespng.read())
+
+    # close the stringio buffer
+    magseriespng.close()
+
+    checkplotdict = {
+        'magseries':{
+            'plot':magseriesb64,
+            'times':stimes,
+            'mags':smags,
+            'errs':serrs
+        }
+    }
+
+    return checkplotdict
 
 
-def _pkl_phased_magseries_plot(periodind, stimes, smags,
+
+def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
+                               stimes, smags,
                                varperiod, varepoch,
                                phasewrap, phasesort, phasebin,
-                               plotxlim, lspmethod, plotdpi=100):
+                               plotxlim, plotdpi=100):
     '''This returns the phased magseries plot PNG as base64 plus info as a dict.
 
     '''
+    # figure out the epoch, if it's None, use the min of the time
+    if varepoch is None:
+        varepoch = npmin(stimes)
 
+    # if the varepoch is 'min', then fit a spline to the light curve
+    # phased using the min of the time, find the fit mag minimum and use
+    # the time for that as the varepoch
+    elif isinstance(varepoch,str) and varepoch == 'min':
+
+        try:
+            spfit = spline_fit_magseries(stimes, smags, serrs,
+                                         varperiod)
+            varepoch = spfit['fitepoch']
+            if len(varepoch) != 1:
+                varepoch = varepoch[0]
+        except Exception as e:
+            LOGEXCEPTION('spline fit failed, using min(times) as epoch')
+            varepoch = npmin(stimes)
+
+    LOGINFO('plotting %s phased LC with period %s: %.6f, epoch: %.5f' %
+            (lspmethod, periodind, varperiod, varepoch))
+
+    # make sure the best period phased LC plot stands out
+    if periodind == 0:
+        plotaxes.set_axis_bgcolor('#adff2f')
+
+    # open the figure instance
+    phasedseriesfig = plt.figure(figsize=(7.5,4.8),dpi=plotdpi)
+
+    # make the plot title based on the lspmethod
+    if periodind == 0:
+        plottitle = '%s best period: %.6f d - epoch: %.5f' % (
+            METHODSHORTLABELS[lspmethod],
+            varperiod,
+            varepoch
+        )
+    elif periodind > 0:
+        plottitle = '%s peak %s: %.6f d - epoch: %.5f' % (
+            METHODSHORTLABELS[lspmethod],
+            periodind+1,
+            varperiod,
+            varepoch
+        )
+
+
+    # phase the magseries
+    phasedlc = phase_magseries(stimes,
+                               smags,
+                               varperiod,
+                               varepoch,
+                               wrap=phasewrap,
+                               sort=phasesort)
+    plotphase = phasedlc['phase']
+    plotmags = phasedlc['mags']
+
+    # if we're supposed to bin the phases, do so
+    if phasebin:
+
+        binphasedlc = phase_bin_magseries(plotphase,
+                                          plotmags,
+                                          binsize=phasebin)
+        binplotphase = binphasedlc['binnedphases']
+        binplotmags = binphasedlc['binnedmags']
+
+    else:
+        binplotphase = None
+        binplotmags = None
+
+
+    # finally, make the phased LC plot
+    plt.scatter(plotphase,
+                 plotmags,
+                 marker='o',
+                 s=2,
+                 color='gray')
+
+    # overlay the binned phased LC plot if we're making one
+    if phasebin:
+        plt.scatter(binplotphase,
+                     binplotmags,
+                     marker='o',
+                     s=20,
+                     color='blue')
+
+    # flip y axis for mags
+    plot_ylim = plt.ylim()
+    plt.ylim((plot_ylim[1], plot_ylim[0]))
+
+    # set the x axis limit
+    if not plotxlim:
+        plot_xlim = plt.xlim()
+        plt.xlim((npmin(plotphase)-0.1,
+                       npmax(plotphase)+0.1))
+    else:
+        plt.xlim((plotxlim[0],plotxlim[1]))
+
+    # make a grid
+    plt.grid(color='#a9a9a9',
+              alpha=0.9,
+              zorder=0,
+              linewidth=1.0,
+              linestyle=':')
+
+   # make the x and y axis labels
+    plot_xlabel = 'phase'
+    plot_ylabel = 'magnitude'
+
+    plt.xlabel(plot_xlabel)
+    plt.ylabel(plot_ylabel)
+
+    # fix the yaxis ticks (turns off offset and uses the full
+    # value of the yaxis tick)
+    plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
+    plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
+
+    # set the plot title
+    plt.title(plottitle)
+
+    # this is the output instance
+    phasedseriespng = strio()
+    phasedseriesfig.savefig(phasedseriespng, bbox_inches='tight',
+                            pad_inches=0.0, format='png')
+    plt.close()
+
+    # encode the finderpng instance to base64
+    phasedseriespng.seek(0)
+    phasedseriesb64 = base64.b64encode(phasedseriespng.read())
+
+    # close the stringio buffer
+    phasedseriespng.close()
+
+    # this requires the checkplotdict to be present already, we'll just update
+    # it at the appropriate lspmethod and periodind
+    checkplotdict[lspmethod][periodind] = {
+        'plot':phasedseriesb64,
+        'period':varperiod,
+        'epoch':varepoch,
+        'phase':plotphase,
+        'phasedmags':plotmags,
+        'binphase':binplotphase,
+        'binphasedmags':binplotmags,
+        'phasewrap':phasewrap,
+        'phasesort':phasesort,
+        'phasebin':phasebin,
+        'plotxlim':plotxlim
+    }
+
+    return checkplotdict
+
+
+
+###################################################
+## PICKLE CHECKPLOT WRITE/READ/UPDATE FUNCTIONS  ##
+###################################################
 
 def multilsp_checkplot_pickle(lspinfolist,
                               times,
                               mags,
                               errs,
                               objectinfo=None,
+                              varinfo=None,
                               findercmap='gray_r',
                               finderconvolve=None,
                               normto='globalmedian',
@@ -1341,6 +1583,18 @@ def multilsp_checkplot_pickle(lspinfolist,
     curves, and phased light curves. This is intended to be used with an
     external viewer app (e.g. checkplotserver.py), or by using the
     checkplot_pickle_to_png function below.
+
+    varinfo is a dictionary with the following keys:
+
+      {'objectisvar': True if object is time-variable,
+       'vartags': CSV list of variable type tags (strings),
+       'varisperiodic': True if object is periodic variable,
+       'varperiod': variability period of the object,
+       'varepoch': epoch of variability in JD}
+
+    if varinfo is None, an initial empty dictionary of this form will be created
+    and written to the output pickle. This can be later updated using
+    checkplotviewer.py, etc.
 
     All other options are the same as for checkplot_png. This function can take
     input from multiple lspinfo dicts (e.g. a list of output dicts or gzipped
