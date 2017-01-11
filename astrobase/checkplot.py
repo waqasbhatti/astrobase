@@ -1117,9 +1117,6 @@ def _base64_to_file(b64str, outfpath):
 
 def _pkl_finder_objectinfo(objectinfo,
                            varinfo,
-                           lcinfo,
-                           candinfo,
-                           externinfo,
                            findercmap,
                            finderconvolve,
                            sigclip,
@@ -1234,7 +1231,7 @@ def _pkl_finder_objectinfo(objectinfo,
         # add extra things to the checkplotdict
 
         # add the objecttags key to objectinfo
-        checkplot['objectinfo']['objecttags'] = None
+        checkplotdict['objectinfo']['objecttags'] = None
 
         # add the varinfo dict
         if isinstance(varinfo, dict):
@@ -1281,10 +1278,10 @@ def _pkl_periodogram(lspinfo, plotdpi=100):
     plt.title(plottitle)
 
     # show the best five peaks on the plot
-    for bestperiod, bestpeak in zip(nbestperiods,
-                                    nbestlspvals):
-        plt.annotate('%.6f' % bestperiod,
-                      xy=(bestperiod, bestpeak), xycoords='data',
+    for xbestperiod, xbestpeak in zip(nbestperiods,
+                                      nbestlspvals):
+        plt.annotate('%.6f' % xbestperiod,
+                      xy=(xbestperiod, xbestpeak), xycoords='data',
                       xytext=(0.0,25.0), textcoords='offset points',
                       arrowprops=dict(arrowstyle="->"),fontsize='14.0')
 
@@ -1346,8 +1343,8 @@ def _pkl_magseries_plot(stimes, smags, serrs, plotdpi=100):
 
     # set the x axis limit
     plot_xlim = plt.xlim()
-    plt.xlim((npmin(scaledplottime)-1.0,
-              npmax(scaledplottime)+1.0))
+    plt.xlim((npmin(scaledplottime)-2.0,
+              npmax(scaledplottime)+2.0))
 
     # make a grid
     plt.grid(color='#a9a9a9',
@@ -1371,7 +1368,7 @@ def _pkl_magseries_plot(stimes, smags, serrs, plotdpi=100):
     # this is the output instance
     magseriespng = strio()
     magseriesfig.savefig(magseriespng, bbox_inches='tight',
-                         pad_inches=0.0, format='png')
+                         pad_inches=0.05, format='png')
     plt.close()
 
     # encode the finderpng instance to base64
@@ -1395,13 +1392,16 @@ def _pkl_magseries_plot(stimes, smags, serrs, plotdpi=100):
 
 
 def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
-                               stimes, smags,
+                               stimes, smags, serrs,
                                varperiod, varepoch,
                                phasewrap, phasesort, phasebin,
                                plotxlim, plotdpi=100):
     '''This returns the phased magseries plot PNG as base64 plus info as a dict.
 
     '''
+    # open the figure instance
+    phasedseriesfig = plt.figure(figsize=(8.4,4.8),dpi=plotdpi)
+
     # figure out the epoch, if it's None, use the min of the time
     if varepoch is None:
         varepoch = npmin(stimes)
@@ -1423,13 +1423,6 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
 
     LOGINFO('plotting %s phased LC with period %s: %.6f, epoch: %.5f' %
             (lspmethod, periodind, varperiod, varepoch))
-
-    # make sure the best period phased LC plot stands out
-    if periodind == 0:
-        plotaxes.set_axis_bgcolor('#adff2f')
-
-    # open the figure instance
-    phasedseriesfig = plt.figure(figsize=(7.5,4.8),dpi=plotdpi)
 
     # make the plot title based on the lspmethod
     if periodind == 0:
@@ -1473,18 +1466,18 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
 
     # finally, make the phased LC plot
     plt.scatter(plotphase,
-                 plotmags,
-                 marker='o',
-                 s=2,
-                 color='gray')
+                plotmags,
+                marker='o',
+                s=2,
+                color='gray')
 
     # overlay the binned phased LC plot if we're making one
     if phasebin:
         plt.scatter(binplotphase,
-                     binplotmags,
-                     marker='o',
-                     s=20,
-                     color='blue')
+                    binplotmags,
+                    marker='o',
+                    s=10,
+                    color='blue')
 
     # flip y axis for mags
     plot_ylim = plt.ylim()
@@ -1520,6 +1513,10 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
     # set the plot title
     plt.title(plottitle)
 
+    # make sure the best period phased LC plot stands out
+    if periodind == 0:
+        plt.gca().set_axis_bgcolor('#adff2f')
+
     # this is the output instance
     phasedseriespng = strio()
     phasedseriesfig.savefig(phasedseriespng, bbox_inches='tight',
@@ -1553,30 +1550,57 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
 
 
 
+def _write_picklefile(checkplotdict, outfile=None):
+    '''This writes the checkplotdict to a gzipped pickle file.
+
+    If outfile is None, writes a gzipped pickle file of the form:
+
+    checkplot-{objectid}.pkl.gz
+
+    to the current directory.
+
+    '''
+
+    if not outfile:
+
+        outfile = (
+            'checkplot-{objectid}.pkl.gz'.format(checkplotdict['objectid'])
+        )
+
+    with gzip.open(outfile,'wb') as outfd:
+        pickle.dump(checkplotdict,outfd,pickle.HIGHEST_PROTOCOL)
+
+    return os.path.abspath(outfile)
+
+
 ###################################################
 ## PICKLE CHECKPLOT WRITE/READ/UPDATE FUNCTIONS  ##
 ###################################################
 
-def multilsp_checkplot_pickle(lspinfolist,
-                              times,
-                              mags,
-                              errs,
-                              objectinfo=None,
-                              varinfo=None,
-                              findercmap='gray_r',
-                              finderconvolve=None,
-                              normto='globalmedian',
-                              normmingap=4.0,
-                              outfile=None,
-                              sigclip=4.0,
-                              varepoch='min',
-                              phasewrap=True,
-                              phasesort=True,
-                              phasebin=0.002,
-                              plotxlim=[-0.8,0.8],
-                              plotdpi=100):
+def checkplot_pickle(lspinfolist,
+                     times,
+                     mags,
+                     errs,
+                     objectinfo=None,
+                     varinfo=None,
+                     findercmap='gray_r',
+                     finderconvolve=None,
+                     normto='globalmedian',
+                     normmingap=4.0,
+                     outfile=None,
+                     sigclip=4.0,
+                     varepoch='min',
+                     phasewrap=True,
+                     phasesort=True,
+                     phasebin=0.002,
+                     plotxlim=[-0.8,0.8],
+                     plotdpi=100):
 
     '''This writes a multiple lspinfo checkplot to a gzipped pickle file.
+
+    This function can take input from multiple lspinfo dicts (e.g. a list of
+    output dicts or gzipped pickles of dicts from the BLS, PDM, AoV, or GLS
+    period-finders in periodbase).
 
     The gzipped pickle file contains all the plots (magseries and phased
     magseries), periodograms, object information, variability information, light
@@ -1596,29 +1620,41 @@ def multilsp_checkplot_pickle(lspinfolist,
     and written to the output pickle. This can be later updated using
     checkplotviewer.py, etc.
 
-    All other options are the same as for checkplot_png. This function can take
-    input from multiple lspinfo dicts (e.g. a list of output dicts or gzipped
-    pickles of dicts from the BLS, PDM, AoV, or GLS period-finders in
-    periodbase).
+    All other options are the same as for checkplot_png.
 
     '''
 
 
 
-def checkplot_pickle_to_dict(checkplotpickle):
-    '''
-    This reads the checkplot gzipped pickle into a dict.
+def read_checkplot_picklefile(checkplotpickle):
+    '''This reads a checkplot gzipped pickle file back into a dict.
 
     '''
 
 
+def checkplot_pickle_update(current, updated, outfile=None):
+    '''This updates the current checkplot dict with updated values provided.
 
-def checkplot_pickle_to_png(checkplotpickle):
+    current is either a checkplot dict produced by checkplot_pickle above or a
+    gzipped pickle file produced by the same function.
+
+    Writes out the new checkplot gzipped pickle file to outfile. If current is a
+    file, updates it in place if outfile is None. Mostly only useful for
+    checkplotserver.py.
+
+    '''
+
+
+
+def checkplot_pickle_to_png(checkplotpickle, outfpath):
     '''This reads the pickle provided, and writes out a PNG.
+
+    checkplotpickle is either a checkplot dict produced by checkplot_pickle
+    above or a gzipped pickle file produced by the same function.
 
     The PNG has 4 x N tiles, as below:
 
-    [ finderchart  ] [ objectinfo   ] [ variableinfo ] [ unphased LC  ]
+    [    finder    ] [  objectinfo  ] [ variableinfo ] [ unphased LC  ]
     [ periodogram1 ] [ phased LC P1 ] [ phased LC P2 ] [ phased LC P3 ]
     [ periodogram2 ] [ phased LC P1 ] [ phased LC P2 ] [ phased LC P3 ]
                                      .
@@ -1630,16 +1666,5 @@ def checkplot_pickle_to_png(checkplotpickle):
     - periodogram1,2,3...N: the periodograms from each method
     - phased LC P1,P2,P3: the phased lightcurves using the best 3 peaks in each
                           periodogram
-
-    '''
-
-
-
-def checkplot_pickle_update(current, updated,
-                            outfile=None):
-    '''This updates the current checkplot dict with updated values provided.
-
-    Writes out the new checkplot gzipped pickle file to outfile. Mostly only
-    useful for checkplotserver.py.
 
     '''
