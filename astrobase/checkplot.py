@@ -32,11 +32,14 @@ period-finding routines and writes to a PNG:
 import os
 import os.path
 import gzip
+import base64
 
 try:
     import cPickle as pickle
+    from cStringIO import StringIO as strio
 except:
     import pickle
+    from io import BytesIO as strio
 
 import numpy as np
 from numpy import nan as npnan, median as npmedian, \
@@ -129,15 +132,8 @@ def _make_periodogram(axes,
                       lspinfo,
                       objectinfo,
                       findercmap,
-                      finderconvolve,
-                      pickleoutput=False,
-                      plotdpi=100):
+                      finderconvolve):
     '''makes the periodogram, objectinfo, and finder tile.
-
-    If pickleoutput is True, will disregard the input axes, and write the
-    periodogram plot tile to a base64 string representation which will be put
-    into a dict along with associated objectinfo dict, lspinfo dict, and the
-    finder chart as an ndarray, and returned.
 
     '''
 
@@ -313,15 +309,8 @@ def _make_periodogram(axes,
 def _make_magseries_plot(axes,
                          stimes,
                          smags,
-                         serrs,
-                         pickleoutput=False,
-                         plotdpi=100):
+                         serrs):
     '''makes the magseries plot tile.
-
-    If pickleoutput is True, will disregard the input axes, and write the
-    magseries plot tile to a base64 string representation, which will be put
-    into a dict along with associated stimes, smags, and serrs as ndarrays, and
-    returned.
 
     '''
 
@@ -370,15 +359,8 @@ def _make_phased_magseries_plot(axes,
                                 phasewrap, phasesort, phasebin,
                                 plotxlim,
                                 lspmethod,
-                                twolspmode=False,
-                                pickleoutput=False,
-                                plotdpi=100):
+                                twolspmode=False):
     '''makes the phased magseries plot tile.
-
-    If pickleoutput is True, will disregard the input axes, and write the phased
-    magseries plot tile to a base64 string representation, which will be put
-    into a dict along with associated varperiod, varepoch, and phases, mags as
-    ndarrays, and returned.
 
     '''
 
@@ -1111,6 +1093,229 @@ def twolsp_checkplot_png(lspinfo1,
 ## CHECKPLOT FUNCTIONS THAT WORK WITH PICKLES ##
 ################################################
 
+def _base64_to_file(b64str, outfpath):
+    '''
+    This converts the base64 encoded string to a file.
+
+    '''
+
+    try:
+
+        filebytes = base64.b64decode(b64str)
+        with open(outfpath,'wb') as outfd:
+            outfd.write(filebytes)
+
+        if os.path.exists(outfpath):
+            return outfpath
+        else:
+            LOGERROR('could not write output file: %s' % outfpath)
+            return None
+
+    except Exception as e:
+
+        LOGEXCEPTION('failed while trying to convert '
+                     'b64 string to file %s' % outfpath)
+        return None
+
+
+
+def _pkl_finder_objectinfo(objectinfo, findercmap, finderconvolve,
+                           plotdpi=100):
+    '''This returns the finder chart and object information as a dict.
+
+    '''
+
+    if (isinstance(objectinfo, dict) and
+        ('objectid' in objectinfo or 'hatid' in objectinfo) and
+        'ra' in objectinfo and 'decl' in objectinfo and
+        objectinfo['ra'] and objectinfo['decl']):
+
+        if 'objectid' not in objectinfo:
+            objectid = objectinfo['hatid']
+        else:
+            objectid = objectinfo['objectid']
+
+        LOGINFO('adding in object information and '
+                'finder chart for %s at RA: %.3f, DEC: %.3f' %
+                (objectid, objectinfo['ra'], objectinfo['decl']))
+
+        # get the finder chart
+        try:
+            finder = astroquery_skyview_stamp(objectinfo['ra'],
+                                              objectinfo['decl'],
+                                              convolvewith=finderconvolve)
+            finderfig = plt.figure(figsize=(3,3),dpi=plotdpi,frameon=False)
+            plt.imshow(finder, cmap=findercmap)
+            plt.xticks([])
+            plt.yticks([])
+            # grid lines pointing to the center of the frame
+            plt.axvline(x=150,ymin=0.2,ymax=0.4,linewidth=2.0,color='k')
+            plt.axhline(y=149,xmin=0.2,xmax=0.4,linewidth=2.0,color='k')
+            plt.gca().set_frame_on(False)
+            # this is the output instance
+            finderpng = strio()
+            finderfig.savefig(finderpng, bbox_inches='tight',
+                              pad_inches=0.0, format='png')
+            plt.close()
+
+            # encode the finderpng instance to base64
+            finderpng.seek(0)
+            finderb64 = base64.b64encode(finderpng.read())
+
+            # close the stringio buffer
+            finderpng.close()
+
+        except Exception as e:
+
+            LOGEXCEPTION('could not fetch a DSS stamp for this '
+                         'object %s using coords (%.3f,%.3f)' %
+                         (objectid, objectinfo['ra'], objectinfo['decl']))
+            finderb64 = None
+
+        # now that we have the finder chart, get the rest of the object
+        # information
+
+        if ('bmag' in objectinfo and objectinfo['bmag'] is not None and
+            'vmag' in objectinfo and objectinfo['vmag'] is not None):
+            objectinfo['bvcolor'] = objectinfo['bmag'] - objectinfo['vmag']
+        else:
+            objectinfo['bvcolor'] = None
+
+        if ('sdssi' in objectinfo and objectinfo['sdssi'] is not None and
+            'jmag' in objectinfo and objectinfo['jmag'] is not None):
+            objectinfo['ijcolor'] = objectinfo['sdssi'] - objectinfo['jmag']
+        else:
+            objectinfo['ijcolor'] = None
+
+        if ('jmag' in objectinfo and objectinfo['jmag'] is not None and
+            'kmag' in objectinfo and objectinfo['kmag'] is not None):
+            objectinfo['jkcolor'] = objectinfo['jmag'] - objectinfo['kmag']
+        else:
+            objectinfo['jkcolor'] = None
+
+        # add in proper motion stuff if available in objectinfo
+        if ('pmra' in objectinfo and objectinfo['pmra'] and
+            'pmdecl' in objectinfo and objectinfo['pmdecl']):
+
+            objectinfo['propermotion'] = total_proper_motion(
+                objectinfo['pmra'],
+                objectinfo['pmdecl'],
+                objectinfo['decl']
+            )
+        else:
+            objectinfo['propermotion'] = None
+
+        if ('jmag' in objectinfo and objectinfo['jmag'] and
+            objectinfo['propermotion']):
+
+            objectinfo['reducedpropermotion'] = reduced_proper_motion(
+                objectinfo['jmag'],
+                objectinfo['propermotion']
+            )
+        else:
+            objectinfo['reducedpropermotion'] = None
+
+
+        # put together the initial checkplot pickle dictionary
+        # this will be updated by the functions below as appropriate
+        # and will written out as a gzipped pickle at the end of processing
+        checkplotdict = {'objectid':objectid,
+                         'objectinfo':objectinfo,
+                         'finderchart':finderb64}
+
+
+        return checkplotdict
+
+
+
+def _pkl_periodogram(lspinfo, plotdpi=100):
+    '''This returns the periodogram plot PNG as base64, plus info as a dict.
+
+    '''
+
+    # get the appropriate plot ylabel
+    pgramylabel = PLOTYLABELS[lspinfo['method']]
+
+    # get the periods and lspvals from lspinfo
+    periods = lspinfo['periods']
+    lspvals = lspinfo['lspvals']
+    bestperiod = lspinfo['bestperiod']
+    nbestperiods = lspinfo['nbestperiods']
+    nbestlspvals = lspinfo['nbestlspvals']
+
+    # open the figure instance
+    pgramfig = plt.figure(figsize=(7.5,4.8),dpi=plotdpi)
+
+    # make the plot
+    plt.plot(periods,lspvals)
+
+    plt.xscale('log',basex=10)
+    plt.xlabel('Period [days]')
+    plt.ylabel(pgramylabel)
+    plottitle = '%s - %.6f d' % (METHODLABELS[lspinfo['method']],
+                                 bestperiod)
+    plt.title(plottitle)
+
+    # show the best five peaks on the plot
+    for bestperiod, bestpeak in zip(nbestperiods,
+                                    nbestlspvals):
+        plt.annotate('%.6f' % bestperiod,
+                      xy=(bestperiod, bestpeak), xycoords='data',
+                      xytext=(0.0,25.0), textcoords='offset points',
+                      arrowprops=dict(arrowstyle="->"),fontsize='14.0')
+
+    # make a grid
+    plt.grid(color='#a9a9a9',
+              alpha=0.9,
+              zorder=0,
+              linewidth=1.0,
+              linestyle=':')
+
+    # this is the output instance
+    pgrampng = strio()
+    pgramfig.savefig(pgrampng, bbox_inches='tight',
+                     pad_inches=0.0, format='png')
+    plt.close()
+
+    # encode the finderpng instance to base64
+    pgrampng.seek(0)
+    pgramb64 = base64.b64encode(pgrampng.read())
+
+    # close the stringio buffer
+    pgrampng.close()
+
+    # this is the dict to return
+    checkplotdict = {
+        lspinfo['method']:{
+            'periods':periods,
+            'lspvals':lspvals,
+            'bestperiod':bestperiod,
+            'nbestperiods':nbestperiods,
+            'nbestlspvals':nbestlspvals,
+            'periodogram':pgramb64,
+        }
+    }
+
+    return checkplotdict
+
+
+
+def _pkl_magseries_plot(stimes, smags, serrs, plotdpi=100):
+    '''This returns the magseries plot PNG as base64, plus arrays as dict.
+
+    '''
+
+
+
+def _pkl_phased_magseries_plot(periodind, stimes, smags,
+                               varperiod, varepoch,
+                               phasewrap, phasesort, phasebin,
+                               plotxlim, lspmethod, plotdpi=100):
+    '''This returns the phased magseries plot PNG as base64 plus info as a dict.
+
+    '''
+
+
 def multilsp_checkplot_pickle(lspinfolist,
                               times,
                               mags,
@@ -1128,6 +1333,7 @@ def multilsp_checkplot_pickle(lspinfolist,
                               phasebin=0.002,
                               plotxlim=[-0.8,0.8],
                               plotdpi=100):
+
     '''This writes a multiple lspinfo checkplot to a gzipped pickle file.
 
     The gzipped pickle file contains all the plots (magseries and phased
@@ -1144,16 +1350,12 @@ def multilsp_checkplot_pickle(lspinfolist,
     '''
 
 
-def checkplot_pickle_update(current, updated,
-                            outfile=None):
-    '''This updates the current checkplot dict with updated values provided.
 
-    Writes out the new checkplot gzipped pickle file to outfile. Mostly only
-    useful for checkplotserver.py.
+def checkplot_pickle_to_dict(checkplotpickle):
+    '''
+    This reads the checkplot gzipped pickle into a dict.
 
     '''
-
-
 
 
 
@@ -1174,5 +1376,16 @@ def checkplot_pickle_to_png(checkplotpickle):
     - periodogram1,2,3...N: the periodograms from each method
     - phased LC P1,P2,P3: the phased lightcurves using the best 3 peaks in each
                           periodogram
+
+    '''
+
+
+
+def checkplot_pickle_update(current, updated,
+                            outfile=None):
+    '''This updates the current checkplot dict with updated values provided.
+
+    Writes out the new checkplot gzipped pickle file to outfile. Mostly only
+    useful for checkplotserver.py.
 
     '''
