@@ -178,7 +178,7 @@ def main():
           'allprojects':ALLPROJECTS,
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile}),
-        (r'/cp/(checkplotfname)',
+        (r'/cp/?(.*)',
          cphandlers.CheckplotHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,

@@ -8,92 +8,135 @@
 // JS BELOW //
 //////////////
 
+// this contains utility functions
+var cputils = {
+
+    // this encodes a string to base64
+    // https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding
+    b64_encode: function (str) {
+        return btoa(
+            encodeURIComponent(str)
+                .replace(/%([0-9A-F]{2})/g,
+                         function(match, p1) {
+                             return String.fromCharCode('0x' + p1);
+                         }));
+    },
+
+    // this turns a base64 string into an image by updating its source
+    b64_to_image: function (str, targetelem) {
+
+        var datauri = 'data:image/png;base64,' + str;
+        $(targetelem).attr('src',datauri);
+
+    }
+
+};
+
+
 // this is the checkplot object
-var checkplot = {
+var cpv = {
 
     filelist: [],
     nfiles: 0,
     currfile: '',
+    currcp:'',
 
     // this loads a checkplot from an image file into an HTML canvas object
     load_checkplot: function (filename) {
 
         console.log('loading ' + filename);
 
-        var imelem = $('#checkplot');
-        var plottitle = $('#checkplot-current');
-
-        // load image from data url
-        imelem.attr('src',filename);
-
         // build the title for this current file
-        var filelink = '<a href="' + filename + '" target="_blank">' +
-            filename + '</a>';
+        var plottitle = $('#checkplot-current');
+        var filelink = filename;
+        var objectidelem = $('#objectid');
+        var twomassidelem = $('#twomassid');
+
         plottitle.html(filelink);
 
-        // highlight the file in the sidebar list
-        $("a[data-fname='" + filename + "']").wrap('<strong></strong>')
-
-        if (checkplot.currfile.length > 0) {
+        if (cpv.currfile.length > 0) {
             // un-highlight the previous file in side bar
-            $("a[data-fname='" + checkplot.currfile + "']").unwrap();
+            $("a[data-fname='" + cpv.currfile + "']").unwrap();
         }
 
-        // update the current file tracker
-        checkplot.currfile = filename;
+        // do the AJAX call to get this checkplot
+        var ajaxurl = '/cp/' + cputils.b64_encode(filename);
 
-    },
+        $.getJSON(ajaxurl, function (data) {
 
-    // this populates the sidebar's file list
-    populate_web_filelist: function () {
+            cpv.currcp = data.result;
+            console.log('received cp for ' + cpv.currcp.objectid);
 
-        var outelem = $('#pnglist');
+            /////////////////////////////////////////////////
+            // update the UI with elems for this checkplot //
+            /////////////////////////////////////////////////
 
-        if (checkplot.nfiles > 0) {
+            // update the objectid header
+            objectidelem.html(cpv.currcp.objectid);
+            // update the twomassid header
+            twomassidelem.html('2MASS J' + cpv.currcp.objectinfo.twomassid);
 
-            var flen = checkplot.nfiles;
-            var ind = 0;
-            var basefname = '';
+            // update the finder chart
+            cputils.b64_to_image(cpv.currcp.finderchart,
+                                 '#finderchart');
 
-            for (ind; ind < flen; ind++) {
+            // update the objectinfo
+            var hatinfo = '<strong>' +
+                (cpv.currcp.objectinfo.stations.split(',')).join(', ') +
+                '</strong><br>' +
+                '<strong>LC points:</strong> ' +
+                cpv.currcp.objectinfo.ndet;
+            $('#hatinfo').html(hatinfo);
 
-                basefname = checkplot.filelist[ind].split('/');
-                basefname = basefname[basefname.length - 1];
+            var coordspm =
+                '<strong>RA, Dec:</strong> ' +
+                math.format(cpv.currcp.objectinfo.ra,6) + ', ' +
+                math.format(cpv.currcp.objectinfo.decl,6) + '<br>' +
+                '<strong>Total PM:</strong> ' +
+                math.format(cpv.currcp.objectinfo.propermotion,5) +
+                ' mas/yr<br>' +
+                '<strong>Reduced PM:</strong> ' +
+                math.format(cpv.currcp.objectinfo.reducedpropermotion,4);
+            $('#coordspm').html(coordspm);
 
-                outelem.append('<li>' +
-                               '<a class="checkplot-load" ' +
-                               'href="#" data-fname="' +
-                               checkplot.filelist[ind] +
-                               '">' + basefname + '</a></li>');
+            var mags = '<strong><em>g, r, i</em>:</strong> ' +
+                math.format(cpv.currcp.objectinfo.sdssg,4) + ', ' +
+                math.format(cpv.currcp.objectinfo.sdssr,4) + ', ' +
+                math.format(cpv.currcp.objectinfo.sdssi,4) + '<br>' +
+                '<strong><em>J, H, K</em>:</strong> ' +
+                math.format(cpv.currcp.objectinfo.jmag,4) + ', ' +
+                math.format(cpv.currcp.objectinfo.hmag,4) + ', ' +
+                math.format(cpv.currcp.objectinfo.kmag,4) + '<br>' +
+                '<strong><em>B, V</em>:</strong> ' +
+                math.format(cpv.currcp.objectinfo.bmag,4) + ', ' +
+                math.format(cpv.currcp.objectinfo.vmag,4);
+            $('#mags').html(mags);
 
-            }
+            // update the varinfo
 
-        }
-
-        else {
-
-            outelem.append('<li>Sorry, no valid checkplots found.</li>');
-
-        }
-
-    },
+            // update the phased magseries
+            cputils.b64_to_image(cpv.currcp.magseries,
+                                '#magseriesplot');
 
 
-    // this loads the file list from the checkplot-filelist.json file, then
-    // updates the sidebar, and loads the first checkplot
-    get_file_list:  function (url) {
-
-        $.getJSON(url, function (data) {
-            checkplot.filelist = data.checkplots;
-            checkplot.nfiles = data.nfiles;
         }).done(function () {
-            console.log('populating sidebar file list')
-            checkplot.populate_web_filelist();
-        }).done(function () {
-            checkplot.load_checkplot(checkplot.filelist[0]);
+
+            console.log('done with cp');
+
+            // update the current file tracker
+            cpv.currfile = filename;
+            // highlight the file in the sidebar list
+            $("a[data-fname='" + filename + "']").wrap('<strong></strong>')
+
+        }).fail (function (xhr) {
+
+            console.log('cp loading failed from ' + ajaxurl);
+
         });
 
+
     },
+
 
     // this binds actions to the web-app controls
     action_setup: function () {
@@ -104,10 +147,10 @@ var checkplot = {
             evt.preventDefault();
 
             // find the current index
-            var currindex = checkplot.filelist.indexOf(checkplot.currfile);
-            var prevfile = checkplot.filelist[currindex-1];
+            var currindex = cpv.filelist.indexOf(cpv.currfile);
+            var prevfile = cpv.filelist[currindex-1];
             if (prevfile != undefined) {
-                checkplot.load_checkplot(prevfile);
+                cpv.load_checkplot(prevfile);
             }
 
         });
@@ -118,10 +161,10 @@ var checkplot = {
             evt.preventDefault();
 
             // find the current index
-            var currindex = checkplot.filelist.indexOf(checkplot.currfile);
-            var nextfile = checkplot.filelist[currindex+1];
+            var currindex = cpv.filelist.indexOf(cpv.currfile);
+            var nextfile = cpv.filelist[currindex+1];
             if (nextfile != undefined) {
-                checkplot.load_checkplot(nextfile);
+                cpv.load_checkplot(nextfile);
             }
 
         });
@@ -134,8 +177,8 @@ var checkplot = {
             var filetoload = $(this).attr('data-fname');
             console.log('file to load: ' + filetoload);
 
-            if (checkplot.filelist.indexOf(filetoload) != -1) {
-                checkplot.load_checkplot(filetoload);
+            if (cpv.filelist.indexOf(filetoload) != -1) {
+                cpv.load_checkplot(filetoload);
             }
 
         });
