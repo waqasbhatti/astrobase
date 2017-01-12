@@ -99,24 +99,35 @@ var cpv = {
                 math.format(cpv.currcp.objectinfo.reducedpropermotion,4);
             $('#coordspm').html(coordspm);
 
-            var mags = '<strong><em>g, r, i</em>:</strong> ' +
-                math.format(cpv.currcp.objectinfo.sdssg,4) + ', ' +
-                math.format(cpv.currcp.objectinfo.sdssr,4) + ', ' +
-                math.format(cpv.currcp.objectinfo.sdssi,4) + '<br>' +
-                '<strong><em>J, H, K</em>:</strong> ' +
-                math.format(cpv.currcp.objectinfo.jmag,4) + ', ' +
-                math.format(cpv.currcp.objectinfo.hmag,4) + ', ' +
-                math.format(cpv.currcp.objectinfo.kmag,4) + '<br>' +
-                '<strong><em>B, V</em>:</strong> ' +
-                math.format(cpv.currcp.objectinfo.bmag,4) + ', ' +
-                math.format(cpv.currcp.objectinfo.vmag,4);
+            var mags = '<strong><em>gri</em>:</strong> ' +
+                math.format(cpv.currcp.objectinfo.sdssg,5) + ', ' +
+                math.format(cpv.currcp.objectinfo.sdssr,5) + ', ' +
+                math.format(cpv.currcp.objectinfo.sdssi,5) + '<br>' +
+                '<strong><em>JHK</em>:</strong> ' +
+                math.format(cpv.currcp.objectinfo.jmag,5) + ', ' +
+                math.format(cpv.currcp.objectinfo.hmag,5) + ', ' +
+                math.format(cpv.currcp.objectinfo.kmag,5) + '<br>' +
+                '<strong><em>BV</em>:</strong> ' +
+                math.format(cpv.currcp.objectinfo.bmag,5) + ', ' +
+                math.format(cpv.currcp.objectinfo.vmag,5);
             $('#mags').html(mags);
+
+            var colors = '<strong><em>B - V</em>:</strong> ' +
+                math.format(cpv.currcp.objectinfo.bvcolor,4) + '<br>' +
+                '<strong><em>i - J</em>:</strong> ' +
+                math.format(cpv.currcp.objectinfo.ijcolor,4) + '<br>' +
+                '<strong><em>J - K</em>:</strong> ' +
+                math.format(cpv.currcp.objectinfo.jkcolor,4);
+            $('#colors').html(colors);
+
+            // update the magseries plot
+            cputils.b64_to_image(cpv.currcp.magseries,
+                                '#magseriesplot');
 
             // update the varinfo
 
-            // update the phased magseries
-            cputils.b64_to_image(cpv.currcp.magseries,
-                                '#magseriesplot');
+            // update the phased light curves
+
 
 
         }).done(function () {
