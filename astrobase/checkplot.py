@@ -1631,6 +1631,7 @@ def checkplot_pickle(lspinfolist,
                      times,
                      mags,
                      errs,
+                     nperiodstouse=3,
                      objectinfo=None,
                      varinfo=None,
                      findercmap='gray_r',
@@ -1644,25 +1645,37 @@ def checkplot_pickle(lspinfolist,
                      phasesort=True,
                      phasebin=0.002,
                      plotxlim=[-0.8,0.8],
-                     plotdpi=100):
+                     plotdpi=100,
+                     returndict=False):
 
     '''This writes a multiple lspinfo checkplot to a gzipped pickle file.
 
     This function can take input from multiple lspinfo dicts (e.g. a list of
-    output dicts or gzipped pickles of dicts from the BLS, PDM, AoV, or GLS
-    period-finders in periodbase).
+    output dicts or gzipped pickles of dicts from independent runs of BLS, PDM,
+    AoV, or GLS period-finders in periodbase).
 
-    The gzipped pickle file contains all the plots (magseries and phased
+    NOTE: if lspinfolist contains more than one lspinfo object with the same
+    lspmethod ('pdm','gls','sls','aov','bls'), the latest one in the list will
+    overwrite the earlier ones.
+
+    The output gzipped pickle file contains all the plots (magseries and phased
     magseries), periodograms, object information, variability information, light
     curves, and phased light curves. This is intended to be used with an
     external viewer app (e.g. checkplotserver.py), or by using the
     checkplot_pickle_to_png function below.
 
+    All kwargs are the same as for checkplot_png, except for the following:
+
+    nperiodstouse controls how many 'best' periods to make phased LC plots
+    for. By default, this is the 3 best. If this is set to None, all 'best'
+    periods present in each lspinfo dict's 'nbestperiods' key will be plotted
+    (this is 5 according to periodbase functions' defaults).
+
     varinfo is a dictionary with the following keys:
 
       {'objectisvar': True if object is time-variable,
-       'vartags': CSV list of variable type tags (strings),
-       'varisperiodic': True if object is periodic variable,
+       'vartags': list of variable type tags (strings),
+       'varisperiodic': True if object is a periodic variable,
        'varperiod': variability period of the object,
        'varepoch': epoch of variability in JD}
 
@@ -1670,7 +1683,9 @@ def checkplot_pickle(lspinfolist,
     and written to the output pickle. This can be later updated using
     checkplotviewer.py, etc.
 
-    All other options are the same as for checkplot_png.
+    if returndict is True, will return the checkplotdict created and the path to
+    the output checkplot pickle file as a tuple. if returndict is False, will
+    only return the path to the output checkplot pickle.
 
     '''
     # generate the outfile filename
@@ -1689,16 +1704,135 @@ def checkplot_pickle(lspinfolist,
         plotfpath = 'checkplot.pkl.gz'
 
     # first, get the objectinfo and finder chart
+    # and initialize the checkplotdict
+    checkplotdict = _pkl_finder_objectinfo(objectinfo,
+                                           varinfo,
+                                           findercmap,
+                                           finderconvolve,
+                                           sigclip,
+                                           normto,
+                                           normmingap,
+                                           plotdpi=plotdpi)
 
-    # next, get the mag series plot
+    # filter the input times, mags, errs; do sigclipping and normalization
+    find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
+    ftimes, fmags, ferrs = times[find], mags[find], errs[find]
 
-    # next, for each lspinfo in lspinfolist, read it in (from pkl or pkl.gz if
-    # necessary), make the periodogram, make the phased mag series plots for
-    # each of the nbestperiods in each lspinfo dict
+    # get the median and stdev = 1.483 x MAD
+    median_mag = npmedian(fmags)
+    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
 
-    # write the completed checkplot to a gzipped pickle
+    # sigclip next
+    if sigclip:
 
-    # at the end, return it as well
+        sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
+
+        stimes = ftimes[sigind]
+        smags = fmags[sigind]
+        serrs = ferrs[sigind]
+
+        LOGINFO('sigclip = %s: before = %s observations, '
+                'after = %s observations' %
+                (sigclip, len(times), len(stimes)))
+
+    else:
+
+        stimes = ftimes
+        smags = fmags
+        serrs = ferrs
+
+    # take care of the normalization
+    if normto is not False:
+        stimes, smags = normalize_magseries(stimes, smags,
+                                            normto=normto,
+                                            mingap=normmingap)
+
+
+    # make sure we have some lightcurve points to plot after sigclip
+    if len(stimes) > 49:
+
+        # next, get the mag series plot using these filtered stimes, smags,
+        # serrs
+        magseriesdict = _pkl_magseries_plot(stimes, smags, serrs,
+                                            plotdpi=plotdpi)
+
+        # update the checkplotdict
+        checkplotdict.update(magseriesdict)
+
+        # next, for each lspinfo in lspinfolist, read it in (from pkl or pkl.gz
+        # if necessary), make the periodogram, make the phased mag series plots
+        # for each of the nbestperiods in each lspinfo dict
+        for lspinfo in lspinfolist:
+
+            # get the LSP from a pickle file transparently
+            if isinstance(lspinfo,str) and os.path.exists(lspinfo):
+                LOGINFO('loading LSP info from pickle %s' % lspinfo)
+
+                if '.gz' in lspinfo:
+                    with gzip.open(lspinfo,'rb') as infd:
+                        lspinfo = pickle.load(infd)
+                else:
+                    with open(lspinfo,'rb') as infd:
+                        lspinfo = pickle.load(infd)
+
+            # make the periodogram first
+            periodogramdict = _pkl_periodogram(lspinfo,plotdpi=plotdpi)
+
+            # update the checkplotdict.
+
+            # NOTE: periodograms and phased light curves are indexed by
+            # lspmethod. this means if you have multiple lspinfo objects of the
+            # same lspmethod, the latest one will always overwrite the earlier
+            # ones.
+            checkplotdict.update(periodogramdict)
+
+            # now, make the phased light curve plots for each of the
+            # nbestperiods from this periodogram
+            for nbpind, nbperiod in enumerate(
+                    lspinfo['nbestperiods'][:nperiodstouse]
+                    ):
+
+                # this updates things as it runs
+                checkplotdict = _pkl_phased_magseries_plot(
+                    checkplotdict,
+                    lspinfo['method'],
+                    nbpind,
+                    stimes, smags, serrs,
+                    nbperiod, varepoch,
+                    phasewrap, phasesort, phasebin,
+                    plotxlim, plotdpi=plotdpi
+                )
+
+        # the checkplotdict now contains everything we need
+        LOGINFO('checkplot dict complete for %s' % checkplotdict['objectid'])
+        contents = sorted(list(checkplotdict.keys()))
+        LOGINFO('checkplot dict contents: %s' % contents)
+        checkplotdict['status'] = 'ok: contents are %s' % contents
+
+    # otherwise, we don't have enough LC points, return nothing
+    else:
+
+        LOGERROR('not enough light curve points for %s' %
+                 checkplotdict['objectid'])
+        checkplotdict['magseries'] = None
+        checkplotdict['status'] = 'failed: not enough LC points'
+
+    # write the completed checkplotdict to a gzipped pickle
+    picklefname = _write_checkplot_picklefile(checkplotdict,
+                                              outfile=plotfpath)
+
+
+    # at the end, return the dict and filename if asked for
+    if returndict:
+        LOGINFO('checkplot done -> %s' % picklefname)
+        return checkplotdict, picklefname
+
+    # otherwise, just return the filename
+    else:
+        # just to make sure: free up space
+        del checkplotdict
+        LOGINFO('checkplot done -> %s' % picklefname)
+        return picklefname
 
 
 
@@ -1706,8 +1840,8 @@ def checkplot_pickle_update(current, updated, outfile=None):
     '''This updates the current checkplot dict with updated values provided.
 
     current is either a checkplot dict produced by checkplot_pickle above or a
-    gzipped pickle file produced by the same function. updated is a dict with
-    the same format as current.
+    gzipped pickle file produced by the same function. updated is a dict or
+    pickle file with the same format as current.
 
     Writes out the new checkplot gzipped pickle file to outfile. If current is a
     file, updates it in place if outfile is None. Mostly only useful for
