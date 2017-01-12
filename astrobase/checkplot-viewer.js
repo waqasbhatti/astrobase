@@ -9,14 +9,14 @@
 
 // For an actual deployment, you'll want to first copy over the files:
 
-// - makecplist.py
+// - checkplotlist.py
 // - checkplot-viewer.html
 // - checkplot-viewer.js
 
 // to the directory you plan to serve all your checkplots from. The directory
 // structure should be something like:
 
-// makecplist.py
+// checkplotlist.py
 // checkplot-viewer.js
 // checkplot-viewer.html
 // checkplots/
@@ -26,7 +26,7 @@
 
 // Then in that directory, do:
 
-// $ python makecplist.py checkplots
+// $ python checkplotlist.py png subdir/containing/checkplots/pngs
 
 // This will generate a checkplot-filelist.json file that the webapp will use to
 // load all the checkplot images. Then, just navigate to the
