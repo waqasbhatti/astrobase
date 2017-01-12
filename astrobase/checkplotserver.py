@@ -128,6 +128,8 @@ def main():
         with open(projectlistf,'r') as infd:
             ALLPROJECTS = json.load(infd)
 
+        LOGGER.info('using project database: %s' % projectlistf)
+
     # if it doesn't exist, make one
     except Exception as e:
 
@@ -137,7 +139,7 @@ def main():
         projectdict = {
             'nprojects':1,
             'sampleproject':{
-                'checkplotlist':'checkplot-filelist.json',
+                'checkplotlist':'checkplot-pickle-flist.json',
                 'ncheckplots':1,
             }
         }
@@ -151,11 +153,14 @@ def main():
     cplistfile = options.checkplotlist
 
     if cplistfile and os.path.exists(cplistfile):
+
         with open(cplistfile,'r') as infd:
             CHECKPLOTLIST = json.load(infd)
         LOGGER.info('using checkplot list file %s' % cplistfile)
 
     else:
+        LOGGER.warning('could not find checkplotlist %s' %
+                       os.path.abspath(cplistfile))
         CHECKPLOTLIST = None
 
 
