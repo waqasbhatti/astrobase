@@ -27,6 +27,29 @@ period-finding routines and writes to a PNG:
     pgram2 is the plot for the periodogram in the lspinfo2 dict
     pgram2 P1, P2, and P3 are the best three periods from lspinfo2
 
+The checkplot_pickle function takes, for a single object, an arbitrary number of
+results from independent period-finding functions (e.g. BLS, PDM, AoV, GLS) in
+periodbase, and generates a gzipped pickle file that contains object and
+variability information, finder chart, mag series plot, and for each
+period-finding result: a periodogram and phased mag series plots for up to
+arbitrary number of 'best periods'. This is intended for use with an external
+checkplot viewer: the Tornado webapp checkplotserver.py, but you can also use
+the checkplot_pickle_to_png function to render this to a PNG similar to those
+above. In this case, the PNG will look something like:
+
+    [    finder    ] [  objectinfo  ] [ variableinfo ] [ unphased LC  ]
+    [ periodogram1 ] [ phased LC P1 ] [ phased LC P2 ] [ phased LC P3 ]
+    [ periodogram2 ] [ phased LC P1 ] [ phased LC P2 ] [ phased LC P3 ]
+                                     .
+                                     .
+    [ periodogramN ] [ phased LC P1 ] [ phased LC P2 ] [ phased LC P3 ]
+
+    for N independent period-finding methods producing:
+
+    - periodogram1,2,3...N: the periodograms from each method
+    - phased LC P1,P2,P3: the phased lightcurves using the best 3 peaks in each
+                          periodogram
+
 
 '''
 import os
