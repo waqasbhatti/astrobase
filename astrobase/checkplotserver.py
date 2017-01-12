@@ -52,53 +52,11 @@ import tornado.options
 from tornado.options import define, options
 
 
-###################
-## LOCAL IMPORTS ##
-###################
-
-from .checkplot import checkplot_pickle_to_dict, checkplot_pickle_update, \
-    checkplot_pickle_to_png, _make_phased_magseries_plot
-
-
 ###########################
 ## DEFINING URL HANDLERS ##
 ###########################
 
-class CheckplotHandler(tornado.web.RequestHandler):
-    '''
-    This handles everything to do with loading and serving checkplots.
-
-    '''
-
-    def initialize(self, currentdir):
-        '''
-        handles initial setup.
-
-        '''
-
-        self.currentdir = currentdir
-        LOGGER.info('working in directory %s' % self.currentdir)
-
-        # search for a checkplot-filelist.json file in this directory
-        # load it, and then make everything ready for plotting, etc.
-
-
-    def get(self):
-        '''
-        This handles GET requests to the index page.
-
-        '''
-
-        self.render('index.html',websock_url=self.websockurl)
-
-    def post(self):
-        '''
-        This handles GET requests to the index page.
-
-        '''
-
-        self.render('index.html',websock_url=self.websockurl)
-
+import checkplotserver_handlers as cphandlers
 
 
 ###############################
@@ -153,6 +111,8 @@ def main():
     # out checkplot locations
     CURRENTDIR = os.getcwd()
 
+    # FIXME: load the checkplot directory in the {ASSETPATH}/cps-allcps.json
+
     ##################
     ## URL HANDLERS ##
     ##################
@@ -160,8 +120,20 @@ def main():
     HANDLERS = [
         # index page
         (r'/',
-         CheckplotHandler,
-         {'currentdir':CURRENTDIR}),
+         cphandlers.IndexHandler,
+         {'currentdir':CURRENTDIR,
+          'assetpath':ASSETPATH,
+          'allcps':ALLCPS}),
+        (r'/cp/(checkplotfname)',
+         cphandlers.CheckPlotHandler,
+         {'currentdir':CURRENTDIR,
+          'assetpath':ASSETPATH,
+          'allcps':ALLCPS}),
+        (r'/op',
+         cphandlers.OperationsHandler,
+         {'currentdir':CURRENTDIR,
+          'assetpath':ASSETPATH,
+          'allcps':ALLCPS}),
     ]
 
     #######################
