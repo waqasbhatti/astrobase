@@ -106,11 +106,11 @@ setup(
     extras_require={
         'LCDB':['psycopg2'],
     },
-    # entry_points={
-    #     'console_scripts':[
-    #         'fitshdr.py=astrobase.imageutils:fitshdr',
-    #     ],
-    #},
+    entry_points={
+        'console_scripts':[
+            'checkplotserver=astrobase.checkplotserver:main',
+        ],
+    },
     include_package_data=True,
     zip_safe=False,
 )
