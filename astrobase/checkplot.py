@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 '''checkplot.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 License: MIT.
 
@@ -52,6 +51,7 @@ above. In this case, the PNG will look something like:
 
 
 '''
+
 import os
 import os.path
 import gzip
@@ -136,6 +136,7 @@ from .varbase import spline_fit_magseries
 from .coordutils import total_proper_motion, reduced_proper_motion
 from .plotbase import astroquery_skyview_stamp, \
     PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
+
 
 ############
 ## CONFIG ##
