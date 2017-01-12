@@ -144,6 +144,113 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
         '''
 
+        LOGGER.info('provided checkplotfname = %s' % checkplotfname)
+
+        if checkplotfname:
+
+            # do the usual safing
+            self.checkplotfname = xhtml_escape(
+                base64.b64decode(checkplotfname)
+            )
+
+            LOGGER.info('actual checkplot filename: %s' % self.checkplotfname)
+
+            # see if this plot is in the current project
+            if self.checkplotfname in self.currentproject['checkplots']:
+
+                LOGGER.info('found %s in current list' % self.checkplotfname)
+
+                # make sure this file exists
+                cpfpath = os.path.join(
+                    os.path.abspath(os.path.dirname(self.cplistfile)),
+                    self.checkplotfname
+                )
+
+                LOGGER.info('trying to load %s' % cpfpath)
+
+                if not os.path.exists(cpfpath):
+
+                    msg = "couldn't find checkplot %s" % cpfpath
+                    LOGGER.error(msg)
+                    resultdict = {'status':'error',
+                                  'message':msg,
+                                  'result':None}
+                    self.write(resultdict)
+
+
+                # load it if it does exist
+                LOGGER.info('reading %s' % cpfpath)
+                cpdict = _read_checkplot_picklefile(cpfpath)
+
+                # break out the initial info
+                objectid = cpdict['objectid']
+                objectinfo = cpdict['objectinfo']
+                varinfo = cpdict['varinfo']
+
+                # these are base64 which can be provided directly to JS to
+                # generate images (neat!)
+                finderchart = cpdict['finderchart'].decode()
+                magseries = cpdict['magseries']['plot'].decode()
+
+                cpstatus = cpdict['status']
+
+                resultdict = {
+                    'status':'ok',
+                    'message':'found checkplot %s' % self.checkplotfname,
+                    'result':{'objectid':objectid,
+                              'objectinfo':objectinfo,
+                              'varinfo':varinfo,
+                              'finderchart':finderchart,
+                              'magseries':magseries,
+                              'cpstatus':cpstatus}
+                }
+
+                # now get the other stuff
+                for key in ('pdm','aov','bls','gls','sls'):
+
+                    if key in cpdict:
+                        resultdict['result'][key] = {
+                            'nbestperiods':cpdict[key]['nbestperiods'],
+                            'periodogram':cpdict[key]['periodogram'].decode(),
+                            'bestperiod':cpdict[key]['bestperiod'],
+                            'phasedlc0':{
+                                'plot':cpdict[key][0]['plot'].decode(),
+                                'period':float(cpdict[key][0]['period']),
+                                'epoch':float(cpdict[key][0]['epoch'])
+                            },
+                            'phasedlc1':{
+                                'plot':cpdict[key][1]['plot'].decode(),
+                                'period':float(cpdict[key][1]['period']),
+                                'epoch':float(cpdict[key][1]['epoch'])
+                            },
+                            'phasedlc2':{
+                                'plot':cpdict[key][2]['plot'].decode(),
+                                'period':float(cpdict[key][2]['period']),
+                                'epoch':float(cpdict[key][2]['epoch'])
+                            },
+                        }
+
+                # return this via JSON
+                self.write(resultdict)
+
+            else:
+
+                LOGGER.error('could not find %s' % self.checkplotfname)
+
+                resultdict = {'status':'error',
+                              'message':"This checkplot doesn't exist.",
+                              'result':None}
+                self.write(resultdict)
+
+
+        else:
+
+            resultdict = {'status':'error',
+                          'message':'No checkplot provided to load.',
+                          'result':None}
+
+            self.write(resultdict)
+
 
 
     def post(self):
