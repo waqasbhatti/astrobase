@@ -1678,7 +1678,9 @@ def checkplot_pickle(lspinfolist,
         plotfpath = os.path.join(
             os.path.dirname(lspinfolist[0]),
             'checkplot-%s.pkl.gz' % (
-                os.path.basename(lspinfolist[0]),
+                os.path.basename(
+                    lspinfolist[0].replace('.pkl','').replace('.gz','')
+                )
             )
         )
     elif outfile:
@@ -1686,15 +1688,15 @@ def checkplot_pickle(lspinfolist,
     else:
         plotfpath = 'checkplot.pkl.gz'
 
-
     # first, get the objectinfo and finder chart
 
     # next, get the mag series plot
 
-    # next, for each lspinfo dict in lspinfodict, get the phased mag series
-    # plots for each of the nbestperiods in each lspinfo dict
+    # next, for each lspinfo in lspinfolist, read it in (from pkl or pkl.gz if
+    # necessary), make the periodogram, make the phased mag series plots for
+    # each of the nbestperiods in each lspinfo dict
 
-    # write the checkplot to a gzipped pickle
+    # write the completed checkplot to a gzipped pickle
 
     # at the end, return it as well
 
@@ -1704,13 +1706,44 @@ def checkplot_pickle_update(current, updated, outfile=None):
     '''This updates the current checkplot dict with updated values provided.
 
     current is either a checkplot dict produced by checkplot_pickle above or a
-    gzipped pickle file produced by the same function.
+    gzipped pickle file produced by the same function. updated is a dict with
+    the same format as current.
 
     Writes out the new checkplot gzipped pickle file to outfile. If current is a
     file, updates it in place if outfile is None. Mostly only useful for
     checkplotserver.py.
 
     '''
+
+    # generate the outfile filename
+    if not outfile and isinstance(current,str):
+        plotfpath = current
+    elif outfile:
+        plotfpath = outfile
+    elif isinstance(current,dict) and current['objectid']:
+        plotfpath = 'checkplot-%s.pkl.gz' % current['objectid']
+    else:
+        # we'll get this later below
+        plotfpath = None
+
+    # get the current checkplotdict
+    if isinstance(current,str) and os.path.exists(current):
+        current = _read_checkplot_picklefile(current)
+
+    if isinstance(updated,str) and os.path.exists(updated):
+        updated = _read_checkplot_picklefile(updated)
+
+    # do the update using python's dict update mechanism
+    # this requires updated to be in the same checkplotdict format as current
+    # all keys in current will now be from updated
+    current.update(updated)
+
+    # figure out the plotfpath if we haven't by now
+    if not plotfpath:
+        plotfpath = 'checkplot-%s.pkl.gz' % current['objectid']
+
+    # write the new checkplotdict
+    return _write_checkplot_picklefile(current,outfile=plotfpath)
 
 
 
