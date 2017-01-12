@@ -1227,25 +1227,62 @@ def _pkl_finder_objectinfo(objectinfo,
                          'normto':normto,
                          'normmingap':normmingap}
 
-
-        # add extra things to the checkplotdict
-
         # add the objecttags key to objectinfo
         checkplotdict['objectinfo']['objecttags'] = None
 
-        # add the varinfo dict
-        if isinstance(varinfo, dict):
-            checkplotdict['varinfo'] = varinfo
-        else:
-            checkplotdict['varinfo'] = {
-                'objectisvar':None,
-                'vartags':None,
-                'varisperiodic':None,
-                'varperiod':None,
-                'varepoch':None,
-            }
+    # if there's no objectinfo, we can't do anything
+    else:
 
-        return checkplotdict
+        # put together the initial checkplot pickle dictionary
+        # this will be updated by the functions below as appropriate
+        # and will written out as a gzipped pickle at the end of processing
+        checkplotdict = {'objectid':None,
+                         'objectinfo':{'bmag':None,
+                                       'bvcolor':None,
+                                       'decl':None,
+                                       'hatid':None,
+                                       'hmag':None,
+                                       'ijcolor':None,
+                                       'jkcolor':None,
+                                       'jmag':None,
+                                       'kmag':None,
+                                       'ndet':None,
+                                       'network':None,
+                                       'objecttags':None,
+                                       'pmdecl':None,
+                                       'pmdecl_err':None,
+                                       'pmra':None,
+                                       'pmra_err':None,
+                                       'propermotion':None,
+                                       'ra':None,
+                                       'reducedpropermotion':None,
+                                       'sdssg':None,
+                                       'sdssi':None,
+                                       'sdssr':None,
+                                       'stations':None,
+                                       'twomassid':None,
+                                       'ucac4id':None,
+                                       'vmag':None},
+                         'finderchart':None,
+                         'sigclip':sigclip,
+                         'normto':normto,
+                         'normmingap':normmingap}
+
+    # end of objectinfo processing
+
+    # add the varinfo dict
+    if isinstance(varinfo, dict):
+        checkplotdict['varinfo'] = varinfo
+    else:
+        checkplotdict['varinfo'] = {
+            'objectisvar':None,
+            'vartags':None,
+            'varisperiodic':None,
+            'varperiod':None,
+            'varepoch':None,
+        }
+
+    return checkplotdict
 
 
 
@@ -1550,7 +1587,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
 
 
 
-def _write_picklefile(checkplotdict, outfile=None):
+def _write_checkplot_picklefile(checkplotdict, outfile=None):
     '''This writes the checkplotdict to a gzipped pickle file.
 
     If outfile is None, writes a gzipped pickle file of the form:
@@ -1573,9 +1610,22 @@ def _write_picklefile(checkplotdict, outfile=None):
     return os.path.abspath(outfile)
 
 
-###################################################
-## PICKLE CHECKPLOT WRITE/READ/UPDATE FUNCTIONS  ##
-###################################################
+
+def _read_checkplot_picklefile(checkplotpickle):
+    '''This reads a checkplot gzipped pickle file back into a dict.
+
+    '''
+
+    with gzip.open(checkplotpickle,'rb') as infd:
+        checkplot = pickle.load(infd)
+
+    return checkplot
+
+
+
+##############################################
+## PICKLE CHECKPLOT WRITE/UPDATE FUNCTIONS  ##
+##############################################
 
 def checkplot_pickle(lspinfolist,
                      times,
@@ -1623,13 +1673,31 @@ def checkplot_pickle(lspinfolist,
     All other options are the same as for checkplot_png.
 
     '''
+    # generate the outfile filename
+    if not outfile and isinstance(lspinfolist[0],str):
+        plotfpath = os.path.join(
+            os.path.dirname(lspinfolist[0]),
+            'checkplot-%s.pkl.gz' % (
+                os.path.basename(lspinfolist[0]),
+            )
+        )
+    elif outfile:
+        plotfpath = outfile
+    else:
+        plotfpath = 'checkplot.pkl.gz'
 
 
+    # first, get the objectinfo and finder chart
 
-def read_checkplot_picklefile(checkplotpickle):
-    '''This reads a checkplot gzipped pickle file back into a dict.
+    # next, get the mag series plot
 
-    '''
+    # next, for each lspinfo dict in lspinfodict, get the phased mag series
+    # plots for each of the nbestperiods in each lspinfo dict
+
+    # write the checkplot to a gzipped pickle
+
+    # at the end, return it as well
+
 
 
 def checkplot_pickle_update(current, updated, outfile=None):
