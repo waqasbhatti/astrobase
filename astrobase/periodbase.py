@@ -1788,6 +1788,17 @@ def bls_serial_pfind(times, mags, errs,
                            'you might want to use the '
                            'periodbase.bls_parallel_pfind function instead')
 
+            if minfreq < (1.0/(ftimes.max() - ftimes.min())):
+
+                LOGWARNING('the requested max P = %.3f is larger than '
+                           'the time base of the observations = %.3f, '
+                           ' will make minfreq = 2 x 1/timebase'
+                           % (endp, ftimes.max() - ftimes.min()))
+                minfreq = 2.0/(ftimes.max() - ftimes.min())
+                LOGINFO('new minfreq: %s, maxfreq: %s' %
+                        (minfreq, maxfreq))
+
+
             # run BLS
             try:
 
@@ -2021,6 +2032,16 @@ def bls_parallel_pfind(
                          mintransitduration, maxtransitduration))
                 LOGINFO('manualfreq: minfreq: %s, maxfreq: %s' %
                         (minfreq,maxfreq))
+
+            if minfreq < (1.0/(ftimes.max() - ftimes.min())):
+
+                LOGWARNING('the requested max P = %.3f is larger than '
+                           'the time base of the observations = %.3f, '
+                           ' will make minfreq = 2 x 1/timebase'
+                           % (endp, ftimes.max() - ftimes.min()))
+                minfreq = 2.0/(ftimes.max() - ftimes.min())
+                LOGINFO('new minfreq: %s, maxfreq: %s' %
+                        (minfreq, maxfreq))
 
 
             #############################
