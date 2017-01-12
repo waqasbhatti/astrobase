@@ -15,6 +15,7 @@ This package requires the following other packages:
 - jplephem
 - simplejson
 - astroquery
+- tornado
 
 You might need to install `openssl-devel` or a similar RPM/DEB package for the
 `python-cryptography` module that gets pulled in as a dependency for
