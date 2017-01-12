@@ -56,7 +56,7 @@ from tornado.options import define, options
 ## DEFINING URL HANDLERS ##
 ###########################
 
-import checkplotserver_handlers as cphandlers
+import astrobase.checkplotserver_handlers as cphandlers
 
 
 ###############################
@@ -76,7 +76,16 @@ define('serve',
        type=str)
 define('assetpath',
        default=os.path.join(modpath,'data'),
-       help='sets the asset (server images, css, js) path for checkplotserver.',
+       help=('sets the asset (server images, css, js, DB) path for '
+             'checkplotserver.'),
+       type=str)
+define('checkplotlist',
+       default=None,
+       help=('the path to the checkplot-filelist.json file '
+             'listing checkplots to load and serve. if this is not provided, '
+             'checkplotserver will start up in global mode, '
+             'showing all checkplot lists '
+             'it knows about, and ask which one should be used'),
        type=str)
 define('debugmode',
        default=0,
@@ -111,7 +120,44 @@ def main():
     # out checkplot locations
     CURRENTDIR = os.getcwd()
 
-    # FIXME: load the checkplot directory in the {ASSETPATH}/cps-allcps.json
+    # load the checkplot project list in the {ASSETPATH}/cps-projects.json file
+    try:
+
+        projectlistf = os.path.join(ASSETPATH, 'cps-projects.json')
+
+        with open(projectlistf,'r') as infd:
+            ALLPROJECTS = json.load(infd)
+
+    # if it doesn't exist, make one
+    except Exception as e:
+
+        LOGGER.warning('no existing project database. '
+                       'creating a new one at %s' % projectlistf)
+
+        projectdict = {
+            'nprojects':1,
+            'sampleproject':{
+                'checkplotlist':'checkplot-filelist.json',
+                'ncheckplots':1,
+            }
+        }
+        with open(projectlistf,'w') as outfd:
+            json.dump(projectdict, outfd)
+
+        ALLPROJECTS = projectdict
+
+
+    # if a checkplotlist is provided, then load it
+    cplistfile = options.checkplotlist
+
+    if cplistfile and os.path.exists(cplistfile):
+        with open(cplistfile,'r') as infd:
+            CHECKPLOTLIST = json.load(infd)
+        LOGGER.info('using checkplot list file %s' % cplistfile)
+
+    else:
+        CHECKPLOTLIST = None
+
 
     ##################
     ## URL HANDLERS ##
@@ -123,17 +169,20 @@ def main():
          cphandlers.IndexHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
-          'allcps':ALLCPS}),
+          'allprojects':ALLPROJECTS,
+          'cplist':CHECKPLOTLIST}),
         (r'/cp/(checkplotfname)',
-         cphandlers.CheckPlotHandler,
+         cphandlers.CheckplotHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
-          'allcps':ALLCPS}),
+          'allprojects':ALLPROJECTS,
+          'cplist':CHECKPLOTLIST}),
         (r'/op',
          cphandlers.OperationsHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
-          'allcps':ALLCPS}),
+          'allprojects':ALLPROJECTS,
+          'cplist':CHECKPLOTLIST}),
     ]
 
     #######################
@@ -142,7 +191,6 @@ def main():
 
     app = tornado.web.Application(
         handlers=HANDLERS,
-        cookie_secret=SESSIONSECRET,
         static_path=ASSETPATH,
         template_path=ASSETPATH,
         static_url_prefix='/static/',

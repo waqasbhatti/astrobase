@@ -28,6 +28,8 @@ try:
 except:
     import json
 
+# get a logger
+LOGGER = logging.getLogger(__name__)
 
 #####################
 ## TORNADO IMPORTS ##
@@ -36,6 +38,7 @@ except:
 import tornado.ioloop
 import tornado.httpserver
 import tornado.web
+from tornado.escape import xhtml_escape, xhtml_unescape, url_unescape
 
 ###################
 ## LOCAL IMPORTS ##
