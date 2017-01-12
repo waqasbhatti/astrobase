@@ -22,28 +22,23 @@
 
   <div class="col-sm-10">
 
-    <!-- instructions go here -->
+    <!-- instructions and nav bar go here -->
     <div class="row">
       <div class="col-sm-12 text-sm-center">
         <p>Use the <kbd>&larr;</kbd> and the <kbd>&rarr;</kbd> keys to move
-          through the checkplot list. All updates are automatically saved.</p>
-      </div>
-    </div>
-
-    <!-- nav bar for checkplots -->
-    <div class="row">
-      <div class="col-sm-12 text-sm-center">
-        <h4><a href="#" class="checkplot-prev">&lt;&lt; previous</a>
+          through the checkplot list. All updates are automatically saved.<br>
+          <a href="#" class="checkplot-prev">&lt;&lt; previous</a>
           | <span id="checkplot-current"></span> |
-          <a href="#" class="checkplot-next">next &gt;&gt;</a></h4>
+          <a href="#" class="checkplot-next">next &gt;&gt;</a>
+        </p>
       </div>
     </div>
 
     <!-- first row: finderchart, objectinfo, varinfo, unphased LC -->
     <div class="row objectinfo-row">
 
-      <div class="col-md-3">
-        <h5 id="objectid">objectid</h5>
+      <div class="col-md-3 text-sm-center">
+        <h4 id="objectid">objectid</h4>
         <h6 id="twomassid">twomassid</h6>
         <img class="img-fluid" id="finderchart">
       </div>
@@ -70,29 +65,6 @@
 
         </table>
 
-        <table class="table table-sm">
-          <tr>
-            <th>Object tags</th>
-            <td>blah</td>
-          </tr>
-          <tr>
-            <th>Variable?</th>
-            <td>blah</td>
-          </tr>
-          <tr>
-            <th>Variability tags</th>
-            <td>blah</td>
-          </tr>
-          <tr>
-            <th>Period</th>
-            <td>blah</td>
-          </tr>
-          <tr>
-            <th>Epoch</th>
-            <td>blah</td>
-          </tr>
-        </table>
-
       </div>
 
       <div class="col-md-5">
@@ -101,7 +73,86 @@
 
     </div>
 
-    <!-- next rows contain periodogram and phased LCs to be filled in by JS -->
+    <!-- next row contains the variability form -->
+    <form name="variability-form">
+
+        <div class="row">
+
+          <div class="col-sm-2">
+              <strong>Variable object?</strong>
+          </div>
+
+          <div class="col-sm-2">
+              <strong>Period and epoch</strong>
+          </div>
+
+          <div class="col-sm-4">
+              <strong>Object tags</strong>
+          </div>
+
+          <div class="col-sm-4">
+              <strong>Variability tags</strong>
+          </div>
+
+        </div>
+
+        <div class="row">
+
+          <div class="col-sm-2">
+
+            <label class="form-check-label">
+              <input class="form-check-input"
+                     type="radio"
+                     name="varcheck"
+                     id="varcheckyes"
+                     value="yes" checked>
+              Yes
+            </label>
+            <label class="form-check-label">
+              <input class="form-check-input"
+                     type="radio"
+                     name="varcheck"
+                     id="varcheckmaybe"
+                     value="maybe">
+              Maybe
+            </label>
+            <label class="form-check-label">
+              <input class="form-check-input"
+                     type="radio"
+                     name="varcheck"
+                     id="varcheckno"
+                     value="no">
+              No
+            </label>
+
+          </div>
+
+          <div class="col-sm-2">
+            <input type="text" class="form-control"
+                   name="objectperiod" id="objectperiod"
+                   placeholder="period in days">
+            <input type="text" class="form-control"
+                   name="objectepoch" id="objectepoch"
+                   placeholder="epoch in JD">
+          </div>
+
+          <div class="col-sm-4">
+            <input type="text" class="form-control"
+                   name="objecttags" id="objecttags"
+                   placeholder="object tag 1, object tag 2,...">
+          </div>
+
+          <div class="col-sm-4">
+            <input type="text" class="form-control"
+                   name="vartags" id="vartags"
+                   placeholder="variability tag 1, variability tag 2,...">
+          </div>
+
+        </div>
+
+    </form>
+
+    <!-- next rows contain periodogram and phased LCs -->
     <div id="phasedlcs">
     </div>
 
