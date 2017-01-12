@@ -71,6 +71,11 @@ options) to look through or update all your checkplots. Any changes will be
 written back to the checkplot .pkl.gz files, making this method of browsing more
 suited to more serious variability search.
 
+TL;DR
+=====
+
+python checkplotlist.py <pkl|png> <subdir/containing/the/checkplots/>
+
 '''
 
 import os
@@ -119,7 +124,7 @@ if __name__ == '__main__':
             os.path.join(currdir,'checkplot-filelist.json')
         )
 
-        with open(outjson,'wb') as outfd:
+        with open(outjson,'w') as outfd:
 
             outdict = {'checkplots':sorted(searchresults),
                        'nfiles':len(searchresults)}
