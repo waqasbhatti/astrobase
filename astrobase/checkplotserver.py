@@ -149,7 +149,8 @@ def main():
         ALLPROJECTS = projectdict
 
 
-    # if a checkplotlist is provided, then load it
+    # if a checkplotlist is provided, then load it. all paths in this file are
+    # relative to the path of the checkplotlist file itself.
     cplistfile = options.checkplotlist
 
     if cplistfile and os.path.exists(cplistfile):
@@ -175,19 +176,22 @@ def main():
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
           'allprojects':ALLPROJECTS,
-          'cplist':CHECKPLOTLIST}),
+          'cplist':CHECKPLOTLIST,
+          'cplistfile':cplistfile}),
         (r'/cp/(checkplotfname)',
          cphandlers.CheckplotHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
           'allprojects':ALLPROJECTS,
-          'cplist':CHECKPLOTLIST}),
+          'cplist':CHECKPLOTLIST,
+          'cplistfile':cplistfile}),
         (r'/op',
          cphandlers.OperationsHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
           'allprojects':ALLPROJECTS,
-          'cplist':CHECKPLOTLIST}),
+          'cplist':CHECKPLOTLIST,
+          'cplistfile':cplistfile}),
     ]
 
     #######################

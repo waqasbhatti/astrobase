@@ -54,6 +54,13 @@ from .checkplot import checkplot_pickle_update, checkplot_pickle_to_png, \
 #     stellingwerf_pdm, bls_parallel_pfind
 
 
+#######################
+## UTILITY FUNCTIONS ##
+#######################
+
+
+
+
 #####################
 ## HANDLER CLASSES ##
 #####################
@@ -64,11 +71,13 @@ class IndexHandler(tornado.web.RequestHandler):
 
     This page shows the current project, saved projects, and allows people to
     load, save, and delete these projects. The project database is a json file
-    stored in $MODULEPATH/data.
+    stored in $MODULEPATH/data. If a checkplotlist is provided, then we jump
+    straight into the current project view.
 
     '''
 
-    def initialize(self, currentdir, assetpath, allcps):
+    def initialize(self, currentdir, assetpath, allprojects,
+                   cplist, cplistfile):
         '''
         handles initial setup.
 
@@ -76,10 +85,13 @@ class IndexHandler(tornado.web.RequestHandler):
 
         self.currentdir = currentdir
         self.assetpath = assetpath
-        self.allcps = allcps
-        self.currentproject = allcps['currentproject']
+        self.allprojects = allprojects
+        self.currentproject = cplist
+        self.cplistfile = cplistfile
 
         LOGGER.info('working in directory %s' % self.currentdir)
+        LOGGER.info('working on checkplot list file %s' % self.cplistfile)
+
 
 
     def get(self):
@@ -88,10 +100,13 @@ class IndexHandler(tornado.web.RequestHandler):
 
         '''
 
+        # generate the project's list of checkplots
+        project_checkplots = sorted(self.currentproject['checkplots'])
+
         self.render('cpindex.html',
-                    allcps=self.allcps,
-                    currentdir=self.currentdir,
-                    currentproject=self.currentproject)
+                    project_checkplots=project_checkplots)
+
+
 
 
 
@@ -103,7 +118,8 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
     '''
 
-    def initialize(self, currentdir, assetpath, allcps):
+    def initialize(self, currentdir, assetpath, allprojects,
+                   cplist, cplistfile):
         '''
         handles initial setup.
 
@@ -111,21 +127,30 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
         self.currentdir = currentdir
         self.assetpath = assetpath
-        self.allcps = allcps
+        self.allprojects = allprojects
+        self.currentproject = cplist
+        self.cplistfile = cplistfile
 
         LOGGER.info('working in directory %s' % self.currentdir)
+        LOGGER.info('working on checkplot list file %s' % self.cplistfile)
+
 
 
     def get(self, checkplotfname):
-        '''
-        This handles GET requests.
+        '''This handles GET requests.
+
+        This is an AJAX endpoint; returns JSON that gets converted by the
+        frontend into things to render.
 
         '''
+
 
 
     def post(self):
         '''
         This handles POST requests.
+
+        Also an AJAX endpoint.
 
         '''
 
@@ -142,7 +167,8 @@ class OperationsHandler(tornado.web.RequestHandler):
 
     '''
 
-    def initialize(self, currentdir, assetpath, allcps):
+    def initialize(self, currentdir, assetpath, allprojects,
+                   cplist, cplistfile):
         '''
         handles initial setup.
 
@@ -150,9 +176,13 @@ class OperationsHandler(tornado.web.RequestHandler):
 
         self.currentdir = currentdir
         self.assetpath = assetpath
-        self.allcps = allcps
+        self.allprojects = allprojects
+        self.currentproject = cplist
+        self.cplistfile = cplistfile
 
         LOGGER.info('working in directory %s' % self.currentdir)
+        LOGGER.info('working on checkplot list file %s' % self.cplistfile)
+
 
 
     def get(self):

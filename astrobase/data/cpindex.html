@@ -1,0 +1,112 @@
+{% extends 'cpbase.html' %}
+
+{% block pagecontent %}
+<div class="row">
+
+  <div class="col-sm-2 sidebar-list">
+
+    <h3>Checkplot list</h3>
+    <ul id="checkplotlist" class="list-unstyled">
+      {% for entry in project_checkplots %}
+      <li>
+        <a class="checkplot-load" href="#" data-fname="{{ entry }}">
+          {{ entry }}
+        </a>
+      </li>
+      {% end %}
+    </ul>
+
+  </div>
+
+  <div class="col-sm-10">
+
+    <!-- nav bar for checkplots -->
+    <div class="row">
+      <div class="col-sm-12 text-sm-center">
+        <h3><a href="#" class="checkplot-prev">&lt;&lt; previous</a>
+          | <span id="checkplot-current"></span> |
+          <a href="#" class="checkplot-next">next &gt;&gt;</a></h3>
+      </div>
+    </div>
+
+    <!-- first row: finderchart, objectinfo, varinfo, unphased LC -->
+    <div class="row">
+
+      <div class="col-md-3">
+        <h3 id="objectid">objectid</h3>
+        <img class="img-fluid" id="finderchart">
+      </div>
+
+      <div class="col-md-4">
+        <h3>Magnitudes and Colors</h3>
+
+        <h3>Variability</h3>
+
+      </div>
+
+      <div class="col-md-5">
+        <h3>Magnitude series plot</h3>
+
+        <img class="img-fluid" id="magseriesplot">
+
+      </div>
+
+    </div>
+
+    <!-- next rows contain periodogram and phased LCs to be filled in by JS -->
+    <div id="phasedlcs">
+    </div>
+
+    <!-- instructions go here -->
+    <div class="row">
+      <div class="col-sm-12 text-sm-center">
+        <p>Use the <kbd>&larr;</kbd> and the <kbd>&rarr;</kbd> keys to
+          move through the checkplot list.</p>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% end %}
+
+{% block pagejs %}
+<script src="{{ static_url("cpserver.js") }}"></script>
+
+<script>
+
+  $(document).ready(function() {
+  // set up the controls
+  // cpv.action_setup();
+
+  // load the filelist and the first checkplot
+
+  // fix the height for the sidebar
+  var winheight = $(window).height();
+  $('.sidebar-list').css({'height': winheight + 'px'});
+
+  });
+
+  // this is to bind the left and right keys to the
+  // next and previous object links
+  $(document).keydown(function(event) {
+
+  // right key pressed
+  if (event.which == 39) {
+  event.preventDefault();
+  console.log('moving to the next object')
+  $('.checkplot-next').click();
+
+  }
+
+  // left key pressed
+  if (event.which == 37) {
+  console.log('moving to the prev object')
+  event.preventDefault();
+  $('.checkplot-prev').click();
+  }
+
+  });
+
+</script>
+{% end %}
