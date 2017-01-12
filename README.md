@@ -1,56 +1,8 @@
 This is a bunch of Python modules I wrote for my astronomy work with the HAT
 surveys, mostly focused on variable stars. Full documentation is still a work in
 progress (as soon as I figure out how Sphinx works), but the docstrings are
-fairly good and an [overview](#contents) is provided below.
-
-# Installation
-
-This package requires the following other packages:
-
-- numpy
-- scipy
-- astropy
-- matplotlib
-- Pillow
-- jplephem
-- simplejson
-- astroquery
-- tornado
-
-You might need to install `openssl-devel` or a similar RPM/DEB package for the
-`python-cryptography` module that gets pulled in as a dependency for
-`astroquery`. For `astrobase.lcdb` to work, you'll also need:
-
-- psycopg2
-
-To install:
-
-```bash
-## make sure numpy is installed first!                ##
-## this is required for the bls module installation   ##
-$ pip install numpy
-
-## you'll need a Fortran compiler for the bls module! ##
-## on Linux: dnf/yum/apt install gcc gcc-gfortran     ##
-## on OSX (using homebrew): brew install gcc          ##
-
-# next, install astrobase
-$ git clone https://github.com/waqasbhatti/astrobase
-$ cd astrobase
-$ python setup.py install
-$ # or use pip install . to install requirements automatically
-$ # or use pip install -e . to install in develop mode along with requirements
-```
-
-This package isn't yet available from PyPI, but will be as soon as it becomes
-more stable.
-
-
-# License
-
-`astrobase` is provided under the MIT License. See the LICENSE file for the full
-text.
-
+fairly good and an [overview](#contents) is provided below. See the instructions
+for [installation](#installation) to get started.
 
 # Contents
 
@@ -157,3 +109,51 @@ This wraps `eebls.f` from Geza Kovacs. Extracted from
 [python-bls](http://github.com/dfm/python-bls) by Daniel Foreman-Mackey, Ruth
 Angus, and others. Used as the BLS implementation by `astrobase.periodbase`
 functions. See its [README](bls/README.md) for details.
+
+# Installation
+
+This package requires the following other packages:
+
+- numpy
+- scipy
+- astropy
+- matplotlib
+- Pillow
+- jplephem
+- simplejson
+- astroquery
+- tornado
+
+You might need to install `openssl-devel` or a similar RPM/DEB package for the
+`python-cryptography` module that gets pulled in as a dependency for
+`astroquery`. For `astrobase.lcdb` to work, you'll also need:
+
+- psycopg2
+
+To install:
+
+```bash
+## make sure numpy is installed first!                ##
+## this is required for the bls module installation   ##
+$ pip install numpy
+
+## you'll need a Fortran compiler for the bls module! ##
+## on Linux: dnf/yum/apt install gcc gcc-gfortran     ##
+## on OSX (using homebrew): brew install gcc          ##
+
+# next, install astrobase
+$ git clone https://github.com/waqasbhatti/astrobase
+$ cd astrobase
+$ python setup.py install
+$ # or use pip install . to install requirements automatically
+$ # or use pip install -e . to install in develop mode along with requirements
+```
+
+This package isn't yet available from PyPI, but will be as soon as it becomes
+more stable.
+
+
+# License
+
+`astrobase` is provided under the MIT License. See the LICENSE file for the full
+text.
