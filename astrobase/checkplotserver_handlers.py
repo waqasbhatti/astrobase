@@ -189,7 +189,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
                 # these are base64 which can be provided directly to JS to
                 # generate images (neat!)
-
                 finderchart = cpdict['finderchart']
                 magseries = cpdict['magseries']['plot']
 
@@ -277,10 +276,12 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
 
     def post(self):
-        '''
-        This handles POST requests.
+        '''This handles POST requests.
 
-        Also an AJAX endpoint.
+        Also an AJAX endpoint. Loads the checkplot again, updates it using the
+        changes from the UI, and then saves it back to disk. This could
+        definitely be faster by just loading the checkplot into a server-wide
+        shared dict or something.
 
         '''
 

@@ -342,13 +342,15 @@ var cpv = {
             console.log('period selected = ' + period);
             console.log('epoch selected = ' + epoch);
 
-
+            // update the boxes
             $('#objectperiod').val(period);
             $('#objectepoch').val(epoch);
 
             // save to currcp
             cpv.currcp.varinfo.varperiod = parseFloat(period);
             cpv.currcp.varinfo.varepoch = parseFloat(epoch);
+
+            // add a selected class
 
 
         });
