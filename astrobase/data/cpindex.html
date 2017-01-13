@@ -98,61 +98,43 @@
 
     </div>
 
-    <!-- next row contains the variability form -->
-    <form name="variability-form">
+
+    <div class="row">
+
+      <!-- this column contains variability controls -->
+      <div class="col-sm-3">
 
         <div class="row">
+          <div class="col-sm-12 text-sm-center">
+            <strong>Is this a variable star?</strong>
 
-          <div class="col-sm-2">
-              <strong>Variable object?</strong>
+            <div class="btn-group" data-toggle="buttons">
+              <label class="btn btn-primary active" id="varcheck-yeslabel">
+                <input type="radio" name="varcheck" value="no"
+                       id="varcheck-no" autocomplete="off" checked>
+                No
+              </label>
+              <label class="btn btn-primary" id="varcheck-maybelabel">
+                <input type="radio" name="varcheck" value="maybe"
+                       id="varcheck-maybe" autocomplete="off">
+                Maybe
+              </label>
+              <label class="btn btn-primary" id="varcheck-nolabel">
+                <input type="radio" name="varcheck" value="yes"
+                       id="varcheck-yes" autocomplete="off">
+                Yes
+              </label>
+            </div>
+
           </div>
-
-          <div class="col-sm-2">
-              <strong>Period and epoch</strong>
-          </div>
-
-          <div class="col-sm-4">
-              <strong>Object tags</strong>
-          </div>
-
-          <div class="col-sm-4">
-              <strong>Variability tags</strong>
-          </div>
-
         </div>
 
         <div class="row">
+          <div class="col-sm-12">
+            <div class="text-sm-center">
+              <strong>Period and epoch</strong>
+            </div>
 
-          <div class="col-sm-2">
-
-            <label class="form-check-label">
-              <input class="form-check-input"
-                     type="radio"
-                     name="varcheck"
-                     id="varcheckyes"
-                     value="yes">
-              Yes
-            </label>
-            <label class="form-check-label">
-              <input class="form-check-input"
-                     type="radio"
-                     name="varcheck"
-                     id="varcheckmaybe"
-                     value="maybe" checked>
-              Maybe
-            </label>
-            <label class="form-check-label">
-              <input class="form-check-input"
-                     type="radio"
-                     name="varcheck"
-                     id="varcheckno"
-                     value="no">
-              No
-            </label>
-
-          </div>
-
-          <div class="col-sm-2">
             <input type="text" class="form-control"
                    name="objectperiod" id="objectperiod"
                    placeholder="period in days">
@@ -160,28 +142,45 @@
                    name="objectepoch" id="objectepoch"
                    placeholder="epoch in JD">
           </div>
+        </div>
 
-          <div class="col-sm-4">
+        <div class="row">
+          <div class="col-sm-12">
+            <div class="text-sm-center">
+              <strong>Variability tags</strong>
+            </div>
+
+            <input type="text" class="form-control"
+                   name="vartags" id="vartags"
+                   placeholder="variability tag 1, variability tag 2,...">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-sm-12">
+            <div class="text-sm-center">
+              <strong>Object tags</strong>
+            </div>
+
             <input type="text" class="form-control"
                    name="objecttags" id="objecttags"
                    placeholder="object tag 1, object tag 2,...">
           </div>
-
-          <div class="col-sm-4">
-            <input type="text" class="form-control"
-                   name="vartags" id="vartags"
-                   placeholder="variability tag 1, variability tag 2,...">
-            <div id="object-savetools">
-            </div>
-          </div>
-
         </div>
 
-    </form>
+      </div>
 
-    <!-- next rows contain periodogram and phased LCs -->
-    <div id="phasedlcs">
+      <!-- contains the periodogram and phased LCs for each method-->
+      <!-- each method gets their own column with as many rows as necessary -->
+      <div class="col-sm-9">
+        <div class="row phased-container">
+
+        </div>
+      </div>
+
+
     </div>
+
 
   </div>
 
@@ -198,12 +197,11 @@
   cpv.action_setup();
 
   // load the first checkplot
-
-
   // fix the height for the sidebar
   var winheight = $(window).height();
+  var docheight = $(document).height();
   $('.sidebar-list').css({'height': winheight/2.0 + 'px'});
-  $('.sidebar-controls').css({'height': winheight/2.0 + 'px'});
+  $('.sidebar-controls').css({'height': docheight - winheight/2.0 + 'px'});
 
   });
 
