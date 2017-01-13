@@ -189,6 +189,9 @@ var cpv = {
 
             var colwidth = 12/ncols;
 
+            // zero out previous stuff
+            $('.phased-container').empty();
+
             // then go through each lsp method, and generate the containers
             for (let lspmethod of lspmethods) {
 
