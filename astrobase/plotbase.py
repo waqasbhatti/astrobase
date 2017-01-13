@@ -745,7 +745,7 @@ PLOTYLABELS = {'gls':'Generalized Lomb-Scargle normalized power',
                'sls':'Lomb-Scargle normalized power'}
 
 METHODLABELS = {'gls':'Generalized Lomb-Scargle periodogram',
-                'pdm':'Stellingwerf phase-dispersion minization',
+                'pdm':'Stellingwerf phase-dispersion minimization',
                 'aov':'Schwarzenberg-Cerny analysis of variance',
                 'bls':'Box Least-squared Search',
                 'sls':'Lomb-Scargle periodogram (Scipy)'}
