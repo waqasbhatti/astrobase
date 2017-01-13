@@ -152,6 +152,7 @@ def main():
     # if a checkplotlist is provided, then load it. all paths in this file are
     # relative to the path of the checkplotlist file itself.
     cplistfile = options.checkplotlist
+    LOGGER.info('provided checkplotlist = %s' % cplistfile)
 
     if cplistfile and os.path.exists(cplistfile):
 
@@ -161,7 +162,7 @@ def main():
 
     else:
         LOGGER.warning('could not find checkplotlist %s' %
-                       os.path.abspath(cplistfile))
+                       cplistfile)
         CHECKPLOTLIST = None
 
 
