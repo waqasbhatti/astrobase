@@ -1642,10 +1642,33 @@ def _write_checkplot_picklefile(checkplotdict, outfile=None):
 def _read_checkplot_picklefile(checkplotpickle):
     '''This reads a checkplot gzipped pickle file back into a dict.
 
+    NOTE: the try-except is for Python 2 pickles that have numpy arrays in
+    them. Apparently, these aren't compatible with Python 3. See here:
+
+    http://stackoverflow.com/q/11305790
+
+    The workaround is noted in this answer:
+
+    http://stackoverflow.com/a/41366785
+
+    But not sure how robust this is. We should probably move to another format
+    for these checkplots.
+
     '''
 
-    with gzip.open(checkplotpickle,'rb') as infd:
-        checkplot = pickle.load(infd)
+    try:
+        with gzip.open(checkplotpickle) as infd:
+            checkplot = pickle.load(infd)
+
+    except UnicodeDecodeError:
+
+        with gzip.open(checkplotpickle) as infd:
+            checkplot = pickle.load(infd, encoding='latin1')
+
+        LOGWARNING('pickle %s was probably from Python 2 '
+                   'and failed to load without using "latin1" encoding. '
+                   'This is probably a numpy issue: '
+                   'http://stackoverflow.com/q/11305790' % checkplotpickle)
 
     return checkplot
 

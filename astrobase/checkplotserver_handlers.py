@@ -189,8 +189,14 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
                 # these are base64 which can be provided directly to JS to
                 # generate images (neat!)
-                finderchart = cpdict['finderchart'].decode()
-                magseries = cpdict['magseries']['plot'].decode()
+
+                finderchart = cpdict['finderchart']
+                magseries = cpdict['magseries']['plot']
+
+                if isinstance(finderchart,bytes):
+                    finderchart = finderchart.decode()
+                if isinstance(magseries,bytes):
+                    magseries = magseries.decode()
 
                 cpstatus = cpdict['status']
 
@@ -209,22 +215,39 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 for key in ('pdm','aov','bls','gls','sls'):
 
                     if key in cpdict:
+
+                        periodogram = cpdict[key]['periodogram']
+                        if isinstance(periodogram,bytes):
+                            periodogram = periodogram.decode()
+
+                        phasedlc0plot = cpdict[key][0]['plot']
+                        if isinstance(phasedlc0plot,bytes):
+                            phasedlc0plot = phasedlc0plot.decode()
+
+                        phasedlc1plot = cpdict[key][1]['plot']
+                        if isinstance(phasedlc1plot,bytes):
+                            phasedlc1plot = phasedlc1plot.decode()
+
+                        phasedlc2plot = cpdict[key][2]['plot']
+                        if isinstance(phasedlc2plot,bytes):
+                            phasedlc2plot = phasedlc2plot.decode()
+
                         resultdict['result'][key] = {
                             'nbestperiods':cpdict[key]['nbestperiods'],
-                            'periodogram':cpdict[key]['periodogram'].decode(),
+                            'periodogram':periodogram,
                             'bestperiod':cpdict[key]['bestperiod'],
                             'phasedlc0':{
-                                'plot':cpdict[key][0]['plot'].decode(),
+                                'plot':phasedlc0plot,
                                 'period':float(cpdict[key][0]['period']),
                                 'epoch':float(cpdict[key][0]['epoch'])
                             },
                             'phasedlc1':{
-                                'plot':cpdict[key][1]['plot'].decode(),
+                                'plot':phasedlc1plot,
                                 'period':float(cpdict[key][1]['period']),
                                 'epoch':float(cpdict[key][1]['epoch'])
                             },
                             'phasedlc2':{
-                                'plot':cpdict[key][2]['plot'].decode(),
+                                'plot':phasedlc2plot,
                                 'period':float(cpdict[key][2]['period']),
                                 'epoch':float(cpdict[key][2]['epoch'])
                             },
