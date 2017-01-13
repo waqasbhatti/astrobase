@@ -11,11 +11,13 @@
         <ul id="checkplotlist" class="list-unstyled">
           {% for ind, entry in enumerate(project_checkplots) %}
           <li>
+            <span class="object-status" data-fname="{{ entry }}"></span>
             <a class="checkplot-load" href="#"
                data-findex="{{ ind }}"
                data-fname="{{ entry }}">
               {{ entry }}
-            </a> <span class="object-status" data-fname="{{ entry }}"></span>
+            </a>
+            <span class="object-disposition" data-fname="{{ entry }}"></span>
           </li>
           {% end %}
         </ul>
