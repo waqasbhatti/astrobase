@@ -488,7 +488,7 @@ def kepler_lcdict_to_pkl(lcdict, outfile=None):
         outfile = 'EPIC%s-keplc.pkl.gz' % lcdict['objectinfo']['keplerid']
 
     with gzip.open(outfile,'wb') as outfd:
-        pickle.dump(lcdict, outfd)
+        pickle.dump(lcdict, outfd, protocol=2)
 
     return os.path.abspath(outfile)
 
