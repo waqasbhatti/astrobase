@@ -128,9 +128,134 @@ var cpv = {
                                 '#magseriesplot');
 
             // update the varinfo
+            if (cpv.currcp.varinfo.objectisvar == true) {
+                $('#varcheck-yes').prop('checked',true);
+                $('#varcheck-yeslabel').addClass('active');
+
+                $('#varcheck-maybe').prop('checked',false);
+                $('#varcheck-maybelabel').removeClass('active');
+
+                $('#varcheck-no').prop('checked',false);
+                $('#varcheck-nolabel').removeClass('active');
+
+            }
+            else if (cpv.currcp.varinfo.objectisvar == false) {
+                $('#varcheck-no').prop('checked',true);
+                $('#varcheck-nolabel').addClass('active');
+
+                $('#varcheck-yes').prop('checked',false);
+                $('#varcheck-yeslabel').removeClass('active');
+
+                $('#varcheck-maybe').prop('checked',false);
+                $('#varcheck-maybelabel').removeClass('active');
+            }
+            else {
+                $('#varcheck-maybe').prop('checked',true);
+                $('#varcheck-maybelabel').addClass('active');
+
+                $('#varcheck-yes').prop('checked',false);
+                $('#varcheck-yeslabel').removeClass('active');
+
+                $('#varcheck-no').prop('checked',false);
+                $('#varcheck-nolabel').removeClass('active');
+            }
+            $('#objectperiod').val(cpv.currcp.varinfo.varperiod);
+            $('#objectepoch').val(cpv.currcp.varinfo.varepoch);
+            $('#objecttags').val(cpv.currcp.objectinfo.objecttags);
+            $('#vartags').val(cpv.currcp.varinfo.vartags);
 
             // update the phased light curves
 
+            // first, count the number of methods we have in the cp
+            var lspmethods = [];
+            var ncols = 0;
+
+            if ('pdm' in cpv.currcp) {
+                lspmethods.push('pdm');
+                ncols = ncols + 1;
+            }
+            if ('gls' in cpv.currcp) {
+                lspmethods.push('gls');
+                ncols = ncols + 1;
+            }
+            if ('bls' in cpv.currcp) {
+                lspmethods.push('bls');
+                ncols = ncols + 1;
+            }
+            if ('aov' in cpv.currcp) {
+                lspmethods.push('aov');
+                ncols = ncols + 1;
+            }
+
+            var colwidth = 12/ncols;
+
+            // then go through each lsp method, and generate the containers
+            for (const lspmethod of lspmethods) {
+
+                if (lspmethod in cpv.currcp) {
+
+                    var nbestperiods = cpv.currcp[lspmethod].nbestperiods;
+                    var periodogram = cpv.currcp[lspmethod].periodogram;
+
+                    // start putting together the container for this method
+                    var mcontainer_coltop =
+                        '<div class="col-sm-' + colwidth +
+                        '" "data-lspmethod="' + lspmethod + '">';
+                    var mcontainer_colbot = '</div>';
+
+                    var periodogram_row =
+                        '<div class="row periodogram-container">' +
+                        '<div class="col-sm-12">' +
+                        '<img src="data:image/png;base64,' +
+                        cpv.currcp[lspmethod].periodogram + '" ' +
+                        'class="img-fluid" id="periodogram-' +
+                        lspmethod + '">' + '</div></div>';
+
+                    var phasedlcrows= [];
+
+                    // up to 5 periods are possible
+                    var periodindexes = ['phasedlc0',
+                                         'phasedlc1',
+                                         'phasedlc2',
+                                         'phasedlc3',
+                                         'phasedlc4'];
+
+                    for (const periodind of periodindexes) {
+
+                        if (periodind in cpv.currcp[lspmethod]) {
+
+                            var phasedlcrow =
+                                '<a href="#" class="phasedlc-select" ' +
+                                'data-lspmethod="' + lspmethod + '" ' +
+                                'data-periodind="' + periodind + '" ' +
+                                'data-currentbest="no" ' +
+                                'data-period="' +
+                                cpv.currcp[lspmethod][periodind].period + '" ' +
+                                'data-epoch="' +
+                                cpv.currcp[lspmethod][periodind].epoch + '">' +
+                                '<div class="row py-1 phasedlc-container-row">' +
+                                '<div class="col-sm-12">' +
+                                '<img src="data:image/png;base64,' +
+                                cpv.currcp[lspmethod][periodind].plot + '"' +
+                                'class="img-fluid" id="plot-' +
+                                periodind + '">' + '</div></div></a>';
+                            phasedlcrows.push(phasedlcrow);
+
+                        }
+
+                    }
+
+                    // now that we've collected everything, generate the
+                    // container column
+                    var mcontainer = mcontainer_coltop + periodogram_row +
+                        phasedlcrows.join(' ') + mcontainer_colbot;
+
+                    // write the column to the phasedlc-container
+                    $('.phased-container').append(mcontainer);
+
+                }
+
+            }
 
 
         }).done(function () {
@@ -141,6 +266,12 @@ var cpv = {
             cpv.currfile = filename;
             // highlight the file in the sidebar list
             $("a[data-fname='" + filename + "']").wrap('<strong></strong>')
+
+            // fix the height of the sidebar as required
+            var winheight = $(window).height();
+            var docheight = $(document).height();
+            $('.sidebar-list').css({'height': winheight/2.0 + 'px'});
+            $('.sidebar-controls').css({'height': docheight - winheight/2.0 + 'px'});
 
         }).fail (function (xhr) {
 
@@ -195,6 +326,17 @@ var cpv = {
             cpv.load_checkplot(filetoload);
 
         });
+
+        $(window).on('resize', function (evt) {
+
+            // fix the height of the sidebar as required
+            var winheight = $(window).height();
+            var docheight = $(document).height();
+            $('.sidebar-list').css({'height': winheight/2.0 + 'px'});
+            $('.sidebar-controls').css({'height': docheight - winheight/2.0 + 'px'});
+
+        });
+
 
     }
 
