@@ -353,6 +353,7 @@ var cpv = {
             // add a selected class
 
 
+
         });
 
         // clicking on the is-object-variable control saves the info to currcp
