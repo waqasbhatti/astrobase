@@ -190,7 +190,7 @@ var cpv = {
             var colwidth = 12/ncols;
 
             // then go through each lsp method, and generate the containers
-            for (const lspmethod of lspmethods) {
+            for (let lspmethod of lspmethods) {
 
                 if (lspmethod in cpv.currcp) {
 
@@ -220,7 +220,7 @@ var cpv = {
                                          'phasedlc3',
                                          'phasedlc4'];
 
-                    for (const periodind of periodindexes) {
+                    for (let periodind of periodindexes) {
 
                         if (periodind in cpv.currcp[lspmethod]) {
 
