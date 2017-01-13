@@ -33,11 +33,14 @@ var cputils = {
 };
 
 
-// this is the checkplot object
+// this contains updates to current checkplots
+var cptracker = {
+};
+
+
+// this is the container for the main functions
 var cpv = {
 
-    filelist: [],
-    nfiles: 0,
     currfile: '',
     currcp:'',
 
@@ -181,16 +184,15 @@ var cpv = {
         });
 
         // clicking on a checkplot file in the sidebar
-        $('#pnglist').on('click', '.checkplot-load', function (evt) {
+        $('#checkplotlist').on('click', '.checkplot-load', function (evt) {
 
             evt.preventDefault();
 
             var filetoload = $(this).attr('data-fname');
             console.log('file to load: ' + filetoload);
 
-            if (cpv.filelist.indexOf(filetoload) != -1) {
-                cpv.load_checkplot(filetoload);
-            }
+            // ask the backend for this file
+            cpv.load_checkplot(filetoload);
 
         });
 
