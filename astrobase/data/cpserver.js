@@ -327,6 +327,50 @@ var cpv = {
 
         });
 
+        // clicking on a phased LC loads its period and epoch into the boxes
+        // also saves them to the currcp
+        $('.phased-container').on('click','.phasedlc-select', function (evt) {
+
+            evt.preventDefault();
+
+            var period = $(this).attr('data-period');
+            var epoch = $(this).attr('data-epoch');
+
+            console.log('period selected = ' + period);
+            console.log('epoch selected = ' + epoch);
+
+
+            $('#objectperiod').val(period);
+            $('#objectepoch').val(epoch);
+
+            // save to currcp
+            cpv.currcp.varinfo.varperiod = parseFloat(period);
+            cpv.currcp.varinfo.varepoch = parseFloat(epoch);
+
+
+        });
+
+        // clicking on the is-object-variable control saves the info to currcp
+        $('.varcheck').on('click', function (evt) {
+
+            var varcheckval = $("input[name='varcheck']").val()
+
+            console.log('objectisvar = ' + varcheckval);
+
+            if (varcheckval == 'no') {
+                cpv.currcp.varinfo.objectisvar = true;
+            }
+            else if (varcheckval == 'no') {
+                cpv.currcp.varinfo.objectisvar = false;
+            }
+            else if (varcheckval == 'maybe') {
+                cpv.currcp.varinfo.objectisvar = null;
+            }
+
+        });
+
+
+        // resizing the window fixes the sidebar again
         $(window).on('resize', function (evt) {
 
             // fix the height of the sidebar as required
