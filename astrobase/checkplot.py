@@ -1629,7 +1629,11 @@ def _write_checkplot_picklefile(checkplotdict, outfile=None):
         )
 
     with gzip.open(outfile,'wb') as outfd:
-        pickle.dump(checkplotdict,outfd,pickle.HIGHEST_PROTOCOL)
+        # FIXME: this makes pickles created in > Py3.4 unreadable in Py2.7
+        # pickle.dump(checkplotdict,outfd,pickle.HIGHEST_PROTOCOL)
+        # use the default pickle format instead (defaults to '3')
+        # should be readable everywhere
+        pickle.dump(checkplotdict,outfd)
 
     return os.path.abspath(outfile)
 
