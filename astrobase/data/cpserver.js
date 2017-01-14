@@ -236,7 +236,8 @@ var cpv = {
                                 cpv.currcp[lspmethod][periodind].period + '" ' +
                                 'data-epoch="' +
                                 cpv.currcp[lspmethod][periodind].epoch + '">' +
-                                '<div class="row py-1 phasedlc-container-row">' +
+                                '<div class="row py-1 phasedlc-container-row" ' +
+                                'data-periodind="' + periodind + '">' +
                                 '<div class="col-sm-12">' +
                                 '<img src="data:image/png;base64,' +
                                 cpv.currcp[lspmethod][periodind].plot + '"' +
@@ -273,8 +274,9 @@ var cpv = {
             // fix the height of the sidebar as required
             var winheight = $(window).height();
             var docheight = $(document).height();
-            $('.sidebar-list').css({'height': winheight/2.0 + 'px'});
-            $('.sidebar-controls').css({'height': docheight - winheight/2.0 + 'px'});
+            var ctrlheight = $('.sidebar-controls').height()
+
+            $('.sidebar').css({'height': docheight + 'px'});
 
         }).fail (function (xhr) {
 
@@ -351,8 +353,13 @@ var cpv = {
             cpv.currcp.varinfo.varepoch = parseFloat(epoch);
 
             // add a selected class
-
-
+            var selector = '[data-periodind="' +
+                $(this).attr('data-periodind') +
+                '"]';
+            $('.phasedlc-container-row').removeClass('phasedlc-selected');
+            $(this)
+                .children('.phasedlc-container-row')
+                .filter(selector).addClass('phasedlc-selected');
 
         });
 
@@ -382,8 +389,9 @@ var cpv = {
             // fix the height of the sidebar as required
             var winheight = $(window).height();
             var docheight = $(document).height();
-            $('.sidebar-list').css({'height': winheight/2.0 + 'px'});
-            $('.sidebar-controls').css({'height': docheight - winheight/2.0 + 'px'});
+            var ctrlheight = $('.sidebar-controls').height()
+
+            $('.sidebar').css({'height': docheight + 'px'});
 
         });
 
