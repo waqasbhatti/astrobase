@@ -22,11 +22,7 @@ import base64
 import hashlib
 import logging
 from datetime import time
-
-try:
-    import simplejson as json
-except:
-    import json
+import json
 
 # get a logger
 LOGGER = logging.getLogger(__name__)

@@ -62,7 +62,6 @@ npsetup(
         'matplotlib',
         'Pillow',
         'jplephem',
-        'simplejson',
         'astroquery',
     ],
 )
