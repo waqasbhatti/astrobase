@@ -46,17 +46,11 @@ from datetime import datetime
 from traceback import format_exc
 import subprocess
 import re
+import sqlite3 as sql
+import json
 
 import numpy as np
 from numpy import nan
-
-import sqlite3 as sql
-
-# try using simplejson if that's available; it's faster than stdlib json
-try:
-    import simplejson as json
-except:
-    import json
 
 
 #################
