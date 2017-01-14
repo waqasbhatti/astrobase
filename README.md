@@ -120,7 +120,6 @@ This package requires the following other packages:
 - matplotlib
 - Pillow
 - jplephem
-- simplejson
 - astroquery
 - tornado
 

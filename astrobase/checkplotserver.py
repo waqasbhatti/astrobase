@@ -22,11 +22,7 @@ import hashlib
 import signal
 import logging
 from datetime import time
-
-try:
-    import simplejson as json
-except:
-    import json
+import json
 
 # setup signal trapping on SIGINT
 def recv_sigint(signum, stack):

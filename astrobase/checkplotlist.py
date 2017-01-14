@@ -82,10 +82,7 @@ import os
 import os.path
 import sys
 import glob
-try:
-    import simplejson as json
-except:
-    import json
+import json
 
 if __name__ == '__main__':
 
