@@ -119,7 +119,7 @@ def main():
     # load the checkplot project list in the {ASSETPATH}/cps-projects.json file
     try:
 
-        projectlistf = os.path.join(ASSETPATH, 'cps-projects.json')
+        projectlistf = os.path.join(modpath,'data', 'cps-projects.json')
 
         with open(projectlistf,'r') as infd:
             ALLPROJECTS = json.load(infd)
