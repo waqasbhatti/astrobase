@@ -83,9 +83,6 @@ class IndexHandler(tornado.web.RequestHandler):
         self.currentproject = cplist
         self.cplistfile = cplistfile
 
-        LOGGER.info('working in directory %s' % self.currentdir)
-        LOGGER.info('working on checkplot list file %s' % self.cplistfile)
-
 
 
     def get(self):
@@ -141,8 +138,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
         '''
 
-        LOGGER.info('provided checkplotfname = %s' % checkplotfname)
-
         if checkplotfname:
 
             # do the usual safing
@@ -150,12 +145,8 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 base64.b64decode(checkplotfname)
             )
 
-            LOGGER.info('actual checkplot filename: %s' % self.checkplotfname)
-
             # see if this plot is in the current project
             if self.checkplotfname in self.currentproject['checkplots']:
-
-                LOGGER.info('found %s in current list' % self.checkplotfname)
 
                 # make sure this file exists
                 cpfpath = os.path.join(
@@ -163,7 +154,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                     self.checkplotfname
                 )
 
-                LOGGER.info('trying to load %s' % cpfpath)
+                LOGGER.info('loading %s...' % cpfpath)
 
                 if not os.path.exists(cpfpath):
 
@@ -176,13 +167,17 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
 
                 # load it if it does exist
-                LOGGER.info('reading %s' % cpfpath)
                 cpdict = _read_checkplot_picklefile(cpfpath)
 
                 # break out the initial info
                 objectid = cpdict['objectid']
                 objectinfo = cpdict['objectinfo']
                 varinfo = cpdict['varinfo']
+
+                if 'comments' in cpdict:
+                    objectcomments = cpdict['comments']
+                else:
+                    objectcomments = None
 
                 # these are base64 which can be provided directly to JS to
                 # generate images (neat!)
@@ -201,6 +196,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                     'message':'found checkplot %s' % self.checkplotfname,
                     'result':{'objectid':objectid,
                               'objectinfo':objectinfo,
+                              'objectcomments':objectcomments,
                               'varinfo':varinfo,
                               'finderchart':finderchart,
                               'magseries':magseries,
