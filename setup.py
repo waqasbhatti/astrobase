@@ -98,7 +98,6 @@ setup(
         'matplotlib',
         'Pillow',
         'jplephem',
-        'simplejson',
         'astroquery',
         'tornado',
     ],
