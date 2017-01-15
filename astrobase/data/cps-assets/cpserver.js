@@ -206,6 +206,7 @@ var cpv = {
             $('#objectperiod').val(cpv.currcp.varinfo.varperiod);
             $('#objectepoch').val(cpv.currcp.varinfo.varepoch);
             $('#objecttags').val(cpv.currcp.objectinfo.objecttags);
+            $('#objectcomments').val(cpv.currcp.objectcomments);
             $('#vartags').val(cpv.currcp.varinfo.vartags);
 
             // update the phased light curves
