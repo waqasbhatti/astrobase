@@ -40,14 +40,51 @@ var cptracker = {
 
 // this is the container for the main functions
 var cpv = {
-
+    // these hold the current checkplot's data and filename respectively
     currfile: '',
     currcp:'',
+
+    // this function generates a spinner
+    make_spinner: function (spinnermsg) {
+
+        var spinner =
+            '<div class="spinner">' +
+            spinnermsg +
+            '<div class="rect1"></div>' +
+            '<div class="rect2"></div>' +
+            '<div class="rect3"></div>' +
+            '<div class="rect4"></div>' +
+            '<div class="rect5"></div>' +
+            '</div>';
+
+        $('#alert-box').html(spinner);
+
+    },
+
+    // this function generates an alert box
+    make_alert: function (alertmsg) {
+
+        var alert =
+            '<div class="alert alert-warning alert-dismissible fade show" ' +
+            'role="alert">' +
+            '<button type="button" class="close" data-dismiss="alert" ' +
+            'aria-label="Close">' +
+            '<span aria-hidden="true">&times;</span>' +
+            '</button>' +
+            alertmsg +
+            '</div>';
+
+        $('#alert-box').html(alert);
+
+    },
 
     // this loads a checkplot from an image file into an HTML canvas object
     load_checkplot: function (filename) {
 
         console.log('loading ' + filename);
+
+        // start the spinny thing
+        cpv.make_spinner('loading...');
 
         // build the title for this current file
         var plottitle = $('#checkplot-current');
@@ -74,6 +111,7 @@ var cpv = {
             // update the UI with elems for this checkplot //
             /////////////////////////////////////////////////
 
+
             // update the objectid header
             objectidelem.html(cpv.currcp.objectid);
             // update the twomassid header
@@ -93,8 +131,13 @@ var cpv = {
 
             var coordspm =
                 '<strong>RA, Dec:</strong> ' +
+                '<a title="SIMBAD search at these coordinates" ' +
+                'href="http://simbad.u-strasbg.fr/simbad/sim-coo?Coord=' +
+                cpv.currcp.objectinfo.ra + '+' + cpv.currcp.objectinfo.decl +
+                '&Radius=1&Radius.unit=arcmin' +
+                '" rel="nofollow" target="_blank">' +
                 math.format(cpv.currcp.objectinfo.ra,6) + ', ' +
-                math.format(cpv.currcp.objectinfo.decl,6) + '<br>' +
+                math.format(cpv.currcp.objectinfo.decl,6) + '</a><br>' +
                 '<strong>Total PM:</strong> ' +
                 math.format(cpv.currcp.objectinfo.propermotion,5) +
                 ' mas/yr<br>' +
@@ -150,6 +193,7 @@ var cpv = {
                 $('#varcheck-maybelabel').removeClass('active');
             }
             else {
+
                 $('#varcheck-maybe').prop('checked',true);
                 $('#varcheck-maybelabel').addClass('active');
 
@@ -229,6 +273,7 @@ var cpv = {
 
                             var phasedlcrow =
                                 '<a href="#" class="phasedlc-select" ' +
+                                'title="use this period and epoch" ' +
                                 'data-lspmethod="' + lspmethod + '" ' +
                                 'data-periodind="' + periodind + '" ' +
                                 'data-currentbest="no" ' +
@@ -278,11 +323,41 @@ var cpv = {
 
             $('.sidebar').css({'height': docheight + 'px'});
 
+            // get rid of the spinny thing
+            $('#alert-box').empty();
+
         }).fail (function (xhr) {
 
+            cpv.make_alert('could not load checkplot <strong>' +
+                           filename + '</strong>!');
             console.log('cp loading failed from ' + ajaxurl);
 
         });
+
+
+    },
+
+    // this functions saves the current checkplot by doing a POST request to the
+    // backend. this MUST be called on every checkplot list action (i.e. next,
+    // prev, before load of a new checkplot, so changes are always saved). UI
+    // elements in the checkplot list will tag the saved checkplots
+    // appropriately
+    save_checkplot: function () {
+
+        // first, generate the object to send with the POST request
+        var postobj = {cpfile: cpv.currfile,
+                       cpcontents: cpv.currcp};
+
+        // next, do a saving animation in the alert box
+
+
+        // next, send the POST request
+
+
+        // on POST done, update the UI elements in the checkplot list
+
+        // if POST failed, inform the user by popping up an alert in the alert
+        // box
 
 
     },
