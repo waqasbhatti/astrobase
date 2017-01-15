@@ -26,6 +26,23 @@ def readme():
     with open('README.md') as f:
         return f.read()
 
+INSTALL_REQUIRES = [
+    'numpy',
+    'scipy',
+    'astropy',
+    'matplotlib',
+    'Pillow',
+    'jplephem',
+    'astroquery',
+    'tornado',
+]
+
+# add extra stuff needed if we're running Python 2.7
+if sys.version_info.major < 3:
+    INSTALL_REQUIRES.append([
+        'futures'
+    ])
+
 ########################
 ## DO THE FORTRAN BIT ##
 ########################
@@ -55,16 +72,7 @@ npsetup(
     license='MIT',
     packages=["bls"],
     ext_modules=[bls,],
-    install_requires=[
-        'numpy',
-        'scipy',
-        'astropy',
-        'matplotlib',
-        'Pillow',
-        'jplephem',
-        'astroquery',
-        'tornado',
-    ],
+    install_requires=INSTALL_REQUIRES,
 )
 
 
@@ -91,16 +99,7 @@ setup(
     author_email='waqas.afzal.bhatti@gmail.com',
     license='MIT',
     packages=['astrobase'],
-    install_requires=[
-        'numpy',
-        'scipy',
-        'astropy',
-        'matplotlib',
-        'Pillow',
-        'jplephem',
-        'astroquery',
-        'tornado',
-    ],
+    install_requires=INSTALL_REQUIRES,
     extras_require={
         'LCDB':['psycopg2'],
     },

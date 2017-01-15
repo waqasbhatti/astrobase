@@ -25,6 +25,10 @@ from datetime import time
 import json
 import sys
 
+# this handles async updates of the checkplot pickles so the UI remains
+# responsive
+from concurrent.futures import ProcessPoolExecutor
+
 # setup signal trapping on SIGINT
 def recv_sigint(signum, stack):
     '''
@@ -172,9 +176,11 @@ def main():
             LOGGER.error(helpmsg)
             sys.exit(1)
 
-    #################################
-    ## PERSISTENT CHECKPLOT HOLDER ##
-    #################################
+    ###############################################
+    ## PERSISTENT CHECKPLOT EXECUTOR AND STORAGE ##
+    ###############################################
+
+    EXECUTOR = ProcessPoolExecutor(1)
 
     # this will updated using dict.update(loaded_checkplot)
     CURRENTCP = dict()
@@ -191,21 +197,24 @@ def main():
           'assetpath':ASSETPATH,
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile,
-          'currentcp':CURRENTCP}),
+          'currentcp':CURRENTCP,
+          'executor':EXECUTOR}),
         (r'/cp/?(.*)',
          cphandlers.CheckplotHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile,
-          'currentcp':CURRENTCP}),
+          'currentcp':CURRENTCP,
+          'executor':EXECUTOR}),
         (r'/op',
          cphandlers.OperationsHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile,
-          'currentcp':CURRENTCP}),
+          'currentcp':CURRENTCP,
+          'executor':EXECUTOR}),
     ]
 
     #######################
@@ -235,6 +244,8 @@ def main():
     except KeyboardInterrupt:
         LOGGER.info('received Ctrl-C: shutting down...')
 
+    # close down the processpool
+    EXECUTOR.shutdown()
 
 # run the server
 if __name__ == '__main__':
