@@ -172,6 +172,13 @@ def main():
             LOGGER.error(helpmsg)
             sys.exit(1)
 
+    #################################
+    ## PERSISTENT CHECKPLOT HOLDER ##
+    #################################
+
+    # this will updated using dict.update(loaded_checkplot)
+    CURRENTCP = dict()
+
     ##################
     ## URL HANDLERS ##
     ##################
@@ -183,19 +190,22 @@ def main():
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
           'cplist':CHECKPLOTLIST,
-          'cplistfile':cplistfile}),
+          'cplistfile':cplistfile,
+          'currentcp':CURRENTCP}),
         (r'/cp/?(.*)',
          cphandlers.CheckplotHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
           'cplist':CHECKPLOTLIST,
-          'cplistfile':cplistfile}),
+          'cplistfile':cplistfile,
+          'currentcp':CURRENTCP}),
         (r'/op',
          cphandlers.OperationsHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
           'cplist':CHECKPLOTLIST,
-          'cplistfile':cplistfile}),
+          'cplistfile':cplistfile,
+          'currentcp':CURRENTCP}),
     ]
 
     #######################

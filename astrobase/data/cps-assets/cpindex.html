@@ -28,18 +28,45 @@
       <div class="col-sm-12">
         <h4 class="text-sm-center">Project</h4>
 
-        <p>FIXME: This will contain overall controls, such as:</p>
+        <!-- this is the status row -->
+        <div class="row">
+          <div class="col-sm-12">
 
-        <ul>
-          <li>Saving the whole thing to CSV or JSON</li>
-          <li>Flushing all changes to checkplot pickles on disk</li>
-          <li>Discarding all changes currently in memory</li>
-          <!-- <li>Maybe a variability and object tag cloud? Will load tag
-          results in the list box above, will have an associated 'clear'
-          button.</li> -->
-          <li>Status updates on the number of objects classified, and of those,
-          how many variable, maybes, non-variable.</li>
-        </ul>
+          </div>
+        </div>
+
+        <!-- this is the save project row -->
+        <div class="row">
+          <div class="col-sm-12">
+            <p>You may save all project data to CSV or JSON. This includes the
+              following for each object:</p>
+            <ul>
+              <li>object information (coordinates, proper motion, magnitudes,
+              and colors)</li>
+              <li>variability tags, period, and epoch</li>
+              <li>object tags and comments</li>
+              <li>checkplot pickle file name and status</li>
+            </ul>
+
+            <p>Save to
+              <button type="button" id="save-project-csv"
+                      class="btn btn-outline-primary btn-sm">
+                CSV
+              </button> or
+              <button type="button" id="save-project-json"
+                      class="btn btn-outline-primary btn-sm">
+                JSON
+            </button></p>
+
+          </div>
+        </div>
+
+        <!-- this is where downloads appear -->
+        <div class="row">
+          <div class="col-sm-12 download-center">
+
+          </div>
+        </div>
 
       </div>
     </div>
@@ -52,7 +79,8 @@
     <div class="row">
       <div class="col-sm-12 text-sm-center">
         <p>Use the <kbd>&larr;</kbd> and the <kbd>&rarr;</kbd> keys to move
-          through the checkplot list. All updates are automatically saved.<br>
+          through the checkplot list. All updates are automatically saved to
+          checkplot pickles on disk.<br>
           <a href="#" class="checkplot-prev">&lt;&lt; previous</a>
           | <span id="checkplot-current"></span> |
           <a href="#" class="checkplot-next">next &gt;&gt;</a>
