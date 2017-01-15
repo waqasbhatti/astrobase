@@ -35,6 +35,7 @@ import tornado.ioloop
 import tornado.httpserver
 import tornado.web
 from tornado.escape import xhtml_escape, xhtml_unescape, url_unescape
+from tornado import gen
 
 ###################
 ## LOCAL IMPORTS ##
@@ -72,7 +73,8 @@ class IndexHandler(tornado.web.RequestHandler):
 
     '''
 
-    def initialize(self, currentdir, assetpath, cplist, cplistfile, currentcp):
+    def initialize(self, currentdir, assetpath, cplist,
+                   cplistfile, currentcp, executor):
         '''
         handles initial setup.
 
@@ -83,6 +85,7 @@ class IndexHandler(tornado.web.RequestHandler):
         self.currentproject = cplist
         self.cplistfile = cplistfile
         self.currentcp = currentcp
+        self.executor = executor
 
 
 
@@ -113,7 +116,8 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
     '''
 
-    def initialize(self, currentdir, assetpath, cplist, cplistfile, currentcp):
+    def initialize(self, currentdir, assetpath, cplist,
+                   cplistfile, currentcp, executor):
         '''
         handles initial setup.
 
@@ -124,11 +128,12 @@ class CheckplotHandler(tornado.web.RequestHandler):
         self.currentproject = cplist
         self.cplistfile = cplistfile
         self.currentcp = currentcp
+        self.executor = executor
 
         LOGGER.info('working on checkplot list file %s' % self.cplistfile)
 
 
-
+    @gen.coroutine
     def get(self, checkplotfname):
         '''This handles GET requests.
 
@@ -169,10 +174,16 @@ class CheckplotHandler(tornado.web.RequestHandler):
                     self.currentcp = dict()
 
                     self.write(resultdict)
+                    self.finish()
 
+                # this is the async call to the executor
+                self.currentcp = yield self.executor.submit(
+                    _read_checkplot_picklefile, cpfpath
+                )
 
-                # load it if it does exist
-                self.currentcp = _read_checkplot_picklefile(cpfpath)
+                #####################################
+                ## continue after we're good to go ##
+                #####################################
 
                 # break out the initial info
                 objectid = self.currentcp['objectid']
@@ -252,6 +263,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
                 # return this via JSON
                 self.write(resultdict)
+                self.finish()
 
             else:
 
@@ -262,6 +274,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                               'result':None}
                 self.currentcp = dict()
                 self.write(resultdict)
+                self.finish()
 
 
         else:
@@ -270,11 +283,11 @@ class CheckplotHandler(tornado.web.RequestHandler):
                           'message':'No checkplot provided to load.',
                           'result':None}
 
-            self.write(resultdict)
             self.currentcp = dict()
+            self.write(resultdict)
 
 
-
+    @gen.coroutine
     def post(self):
         '''This handles POST requests.
 
