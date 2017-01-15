@@ -71,7 +71,7 @@ define('serve',
        help='bind to given address and serve content.',
        type=str)
 define('assetpath',
-       default=os.path.join(modpath,'data'),
+       default=os.path.join(modpath,'data','cps-assets'),
        help=('sets the asset (server images, css, js, DB) path for '
              'checkplotserver.'),
        type=str)
