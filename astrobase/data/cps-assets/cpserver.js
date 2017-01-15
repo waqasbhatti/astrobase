@@ -35,6 +35,30 @@ var cputils = {
 
 // this contains updates to current checkplots
 var cptracker = {
+
+    // this is the actual object that will get written to JSON or CSV
+    cpdata: '',
+
+    // this updates the cpdata object with the current cpv.currcp
+    cptracker_update: function () {
+
+        // we don't save the big images, etc.; only the objectinfo, varinfo,
+        // comments, best periods from each period-finding method, and checkplot
+        // status get saved
+
+    },
+
+    // this generates a CSV for download
+    // FIXME: figure out how to do this
+    cpdata_to_csv: function () {
+
+    },
+
+    // this generates a JSON for download
+    cpdata_to_json: function () {
+
+    }
+
 };
 
 
