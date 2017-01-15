@@ -63,6 +63,7 @@ npsetup(
         'Pillow',
         'jplephem',
         'astroquery',
+        'tornado',
     ],
 )
 
