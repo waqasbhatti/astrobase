@@ -23,6 +23,7 @@ import signal
 import logging
 from datetime import time
 import json
+import sys
 
 # setup signal trapping on SIGINT
 def recv_sigint(signum, stack):
@@ -64,24 +65,24 @@ modpath = os.path.abspath(os.path.dirname(__file__))
 # define our commandline options
 define('port',
        default=5225,
-       help='run on the given port.',
+       help='Run on the given port.',
        type=int)
 define('serve',
        default='127.0.0.1',
-       help='bind to given address and serve content.',
+       help='Bind to given address and serve content.',
        type=str)
 define('assetpath',
        default=os.path.join(modpath,'data','cps-assets'),
-       help=('sets the asset (server images, css, js, DB) path for '
+       help=('Sets the asset (server images, css, js, DB) path for '
              'checkplotserver.'),
        type=str)
 define('checkplotlist',
        default=None,
-       help=('the path to the checkplot-filelist.json file '
-             'listing checkplots to load and serve. if this is not provided, '
-             'checkplotserver will start up in global mode, '
-             'showing all checkplot lists '
-             'it knows about, and ask which one should be used'),
+       help=('The path to the checkplot-filelist.json file '
+             'listing checkplots to load and serve. If this is not provided, '
+             'checkplotserver will look for a '
+             'checkplot-pickle-flist.json in the directory '
+             'that it was started in'),
        type=str)
 define('debugmode',
        default=0,
@@ -116,51 +117,60 @@ def main():
     # out checkplot locations
     CURRENTDIR = os.getcwd()
 
-    # load the checkplot project list in the {ASSETPATH}/cps-projects.json file
-    try:
-
-        projectlistf = os.path.join(modpath,'data', 'cps-projects.json')
-
-        with open(projectlistf,'r') as infd:
-            ALLPROJECTS = json.load(infd)
-
-        LOGGER.info('using project database: %s' % projectlistf)
-
-    # if it doesn't exist, make one
-    except Exception as e:
-
-        LOGGER.warning('no existing project database. '
-                       'creating a new one at %s' % projectlistf)
-
-        projectdict = {
-            'nprojects':1,
-            'sampleproject':{
-                'checkplotlist':'checkplot-pickle-flist.json',
-                'ncheckplots':1,
-            }
-        }
-        with open(projectlistf,'w') as outfd:
-            json.dump(projectdict, outfd)
-
-        ALLPROJECTS = projectdict
-
-
-    # if a checkplotlist is provided, then load it. all paths in this file are
-    # relative to the path of the checkplotlist file itself.
+    # if a checkplotlist is provided, then load it.
+    # NOTE: all paths in this file are relative to the path of the checkplotlist
+    # file itself.
     cplistfile = options.checkplotlist
-    LOGGER.info('provided checkplotlist = %s' % cplistfile)
 
+    # if the provided cplistfile is OK
     if cplistfile and os.path.exists(cplistfile):
 
         with open(cplistfile,'r') as infd:
             CHECKPLOTLIST = json.load(infd)
-        LOGGER.info('using checkplot list file %s' % cplistfile)
+        LOGGER.info('using provided checkplot list file: %s' % cplistfile)
 
+    # if a cplist is provided, but doesn't exist
+    elif cplistfile and not os.path.exists(cplistfile):
+        helpmsg = (
+            "Couldn't find the file %s\n"
+            "NOTE: To make a checkplot list file, "
+            "try running the following command:\n"
+            "python %s pkl "
+            "/path/to/folder/where/the/checkplot.pkl.gz/files/are" %
+            (cplistfile, os.path.join(modpath,'checkplotlist.py'))
+        )
+        LOGGER.error(helpmsg)
+        sys.exit(1)
+
+    # finally, if no cplistfile is provided at all, search for a
+    # checkplot-filelist.json in the current directory
     else:
-        LOGGER.warning('could not find checkplotlist %s' %
-                       cplistfile)
-        CHECKPLOTLIST = None
+        LOGGER.warning('No checkplot list file provided!\n'
+                       '(use --checkplotlist=... for this, '
+                       'or use --help to see all options)\n'
+                       'looking for checkplot-filelist.json in the '
+                       'current directory %s ...' % CURRENTDIR)
 
+        if os.path.exists(os.path.join(CURRENTDIR,'checkplot-filelist.json')):
+
+            cplistfile = os.path.join(CURRENTDIR,'checkplot-filelist.json')
+            with open(cplistfile,'r') as infd:
+                CHECKPLOTLIST = json.load(infd)
+            LOGGER.info('found! using checkplot list file: %s' % cplistfile)
+
+        else:
+
+            helpmsg = (
+                "No checkplot-filelist.json found, "
+                "can't continue without one.\n"
+                "Did you make a checkplot list file? "
+                "To make one, try running the following command:\n"
+                "python %s pkl "
+                "/path/to/folder/where/the/checkplot.pkl.gz/files/are" %
+                (os.path.join(modpath,'checkplotlist.py'))
+            )
+            LOGGER.error(helpmsg)
+            sys.exit(1)
 
     ##################
     ## URL HANDLERS ##
@@ -172,21 +182,18 @@ def main():
          cphandlers.IndexHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
-          'allprojects':ALLPROJECTS,
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile}),
         (r'/cp/?(.*)',
          cphandlers.CheckplotHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
-          'allprojects':ALLPROJECTS,
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile}),
         (r'/op',
          cphandlers.OperationsHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
-          'allprojects':ALLPROJECTS,
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile}),
     ]
