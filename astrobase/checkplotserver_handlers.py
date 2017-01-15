@@ -72,8 +72,7 @@ class IndexHandler(tornado.web.RequestHandler):
 
     '''
 
-    def initialize(self, currentdir, assetpath, allprojects,
-                   cplist, cplistfile):
+    def initialize(self, currentdir, assetpath, cplist, cplistfile):
         '''
         handles initial setup.
 
@@ -81,7 +80,6 @@ class IndexHandler(tornado.web.RequestHandler):
 
         self.currentdir = currentdir
         self.assetpath = assetpath
-        self.allprojects = allprojects
         self.currentproject = cplist
         self.cplistfile = cplistfile
 
@@ -119,8 +117,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
     '''
 
-    def initialize(self, currentdir, assetpath, allprojects,
-                   cplist, cplistfile):
+    def initialize(self, currentdir, assetpath, cplist, cplistfile):
         '''
         handles initial setup.
 
@@ -128,7 +125,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
         self.currentdir = currentdir
         self.assetpath = assetpath
-        self.allprojects = allprojects
         self.currentproject = cplist
         self.cplistfile = cplistfile
 
@@ -299,8 +295,7 @@ class OperationsHandler(tornado.web.RequestHandler):
 
     '''
 
-    def initialize(self, currentdir, assetpath, allprojects,
-                   cplist, cplistfile):
+    def initialize(self, currentdir, assetpath, cplist, cplistfile):
         '''
         handles initial setup.
 
@@ -308,7 +303,6 @@ class OperationsHandler(tornado.web.RequestHandler):
 
         self.currentdir = currentdir
         self.assetpath = assetpath
-        self.allprojects = allprojects
         self.currentproject = cplist
         self.cplistfile = cplistfile
 
