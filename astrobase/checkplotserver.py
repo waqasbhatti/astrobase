@@ -37,10 +37,6 @@ def recv_sigint(signum, stack):
     '''
     raise KeyboardInterrupt
 
-# register the signal callback
-signal.signal(signal.SIGINT,recv_sigint)
-signal.signal(signal.SIGTERM,recv_sigint)
-
 
 #####################
 ## TORNADO IMPORTS ##
@@ -92,6 +88,11 @@ define('debugmode',
        default=0,
        help='start up in debug mode if set to 1.',
        type=int)
+define('maxprocs',
+       default=4,
+       help='number of background processes to use '
+       'for saving/loading checkplot files',
+       type=int)
 
 ############
 ### MAIN ###
@@ -114,6 +115,8 @@ def main():
     ###################
     ## SET UP CONFIG ##
     ###################
+
+    MAXPROCS = options.maxprocs
 
     ASSETPATH = options.assetpath
 
@@ -176,14 +179,11 @@ def main():
             LOGGER.error(helpmsg)
             sys.exit(1)
 
-    ###############################################
-    ## PERSISTENT CHECKPLOT EXECUTOR AND STORAGE ##
-    ###############################################
+    ###################################
+    ## PERSISTENT CHECKPLOT EXECUTOR ##
+    ###################################
 
-    EXECUTOR = ProcessPoolExecutor(1)
-
-    # this will updated using dict.update(loaded_checkplot)
-    CURRENTCP = dict()
+    EXECUTOR = ProcessPoolExecutor(MAXPROCS)
 
     ##################
     ## URL HANDLERS ##
@@ -197,7 +197,6 @@ def main():
           'assetpath':ASSETPATH,
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile,
-          'currentcp':CURRENTCP,
           'executor':EXECUTOR}),
         (r'/cp/?(.*)',
          cphandlers.CheckplotHandler,
@@ -205,7 +204,6 @@ def main():
           'assetpath':ASSETPATH,
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile,
-          'currentcp':CURRENTCP,
           'executor':EXECUTOR}),
         (r'/op',
          cphandlers.OperationsHandler,
@@ -213,7 +211,6 @@ def main():
           'assetpath':ASSETPATH,
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile,
-          'currentcp':CURRENTCP,
           'executor':EXECUTOR}),
     ]
 
@@ -237,15 +234,21 @@ def main():
     LOGGER.info('starting event loop. listening on http://localhost:%s' %
                 options.port)
 
+    # register the signal callbacks
+    signal.signal(signal.SIGINT,recv_sigint)
+    signal.signal(signal.SIGTERM,recv_sigint)
+
     # start the IOLoop and begin serving requests
     try:
         tornado.ioloop.IOLoop.instance().start()
 
     except KeyboardInterrupt:
-        LOGGER.info('received Ctrl-C: shutting down...')
 
-    # close down the processpool
-    EXECUTOR.shutdown()
+        LOGGER.info('received Ctrl-C: shutting down...')
+        tornado.ioloop.IOLoop.instance().stop()
+
+        # close down the processpool
+        EXECUTOR.shutdown()
 
 # run the server
 if __name__ == '__main__':
