@@ -66,15 +66,15 @@ from .checkplot import checkplot_pickle_update, checkplot_pickle_to_png, \
 class IndexHandler(tornado.web.RequestHandler):
     '''This handles the index page.
 
-    This page shows the current project, saved projects, and allows people to
-    load, save, and delete these projects. The project database is a json file
-    stored in $MODULEPATH/data. If a checkplotlist is provided, then we jump
-    straight into the current project view.
+    This page shows the current project.
+
+    FUTURE: this should show a list of all projects the server knows about and
+    then allow loading them, etc.
 
     '''
 
     def initialize(self, currentdir, assetpath, cplist,
-                   cplistfile, currentcp, executor):
+                   cplistfile, executor):
         '''
         handles initial setup.
 
@@ -84,7 +84,6 @@ class IndexHandler(tornado.web.RequestHandler):
         self.assetpath = assetpath
         self.currentproject = cplist
         self.cplistfile = cplistfile
-        self.currentcp = currentcp
         self.executor = executor
 
 
@@ -116,8 +115,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
     '''
 
-    def initialize(self, currentdir, assetpath, cplist,
-                   cplistfile, currentcp, executor):
+    def initialize(self, currentdir, assetpath, cplist, cplistfile, executor):
         '''
         handles initial setup.
 
@@ -127,10 +125,8 @@ class CheckplotHandler(tornado.web.RequestHandler):
         self.assetpath = assetpath
         self.currentproject = cplist
         self.cplistfile = cplistfile
-        self.currentcp = currentcp
         self.executor = executor
 
-        LOGGER.info('working on checkplot list file %s' % self.cplistfile)
 
 
     @gen.coroutine
@@ -139,10 +135,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
         This is an AJAX endpoint; returns JSON that gets converted by the
         frontend into things to render.
-
-        NOTE: this saves the loaded checkplot into the persistent server-wide
-        dict. if we run into any errors, we should re-initialize the persistent
-        stored dict
 
         '''
 
@@ -171,13 +163,12 @@ class CheckplotHandler(tornado.web.RequestHandler):
                     resultdict = {'status':'error',
                                   'message':msg,
                                   'result':None}
-                    self.currentcp = dict()
 
                     self.write(resultdict)
                     self.finish()
 
                 # this is the async call to the executor
-                self.currentcp = yield self.executor.submit(
+                cpdict = yield self.executor.submit(
                     _read_checkplot_picklefile, cpfpath
                 )
 
@@ -186,26 +177,26 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 #####################################
 
                 # break out the initial info
-                objectid = self.currentcp['objectid']
-                objectinfo = self.currentcp['objectinfo']
-                varinfo = self.currentcp['varinfo']
+                objectid = cpdict['objectid']
+                objectinfo = cpdict['objectinfo']
+                varinfo = cpdict['varinfo']
 
-                if 'comments' in self.currentcp:
-                    objectcomments = self.currentcp['comments']
+                if 'comments' in cpdict:
+                    objectcomments = cpdict['comments']
                 else:
                     objectcomments = None
 
                 # these are base64 which can be provided directly to JS to
                 # generate images (neat!)
-                finderchart = self.currentcp['finderchart']
-                magseries = self.currentcp['magseries']['plot']
+                finderchart = cpdict['finderchart']
+                magseries = cpdict['magseries']['plot']
 
                 if isinstance(finderchart,bytes):
                     finderchart = finderchart.decode()
                 if isinstance(magseries,bytes):
                     magseries = magseries.decode()
 
-                cpstatus = self.currentcp['status']
+                cpstatus = cpdict['status']
 
                 resultdict = {
                     'status':'ok',
@@ -222,42 +213,42 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 # now get the other stuff
                 for key in ('pdm','aov','bls','gls','sls'):
 
-                    if key in self.currentcp:
+                    if key in cpdict:
 
-                        periodogram = self.currentcp[key]['periodogram']
+                        periodogram = cpdict[key]['periodogram']
                         if isinstance(periodogram,bytes):
                             periodogram = periodogram.decode()
 
-                        phasedlc0plot = self.currentcp[key][0]['plot']
+                        phasedlc0plot = cpdict[key][0]['plot']
                         if isinstance(phasedlc0plot,bytes):
                             phasedlc0plot = phasedlc0plot.decode()
 
-                        phasedlc1plot = self.currentcp[key][1]['plot']
+                        phasedlc1plot = cpdict[key][1]['plot']
                         if isinstance(phasedlc1plot,bytes):
                             phasedlc1plot = phasedlc1plot.decode()
 
-                        phasedlc2plot = self.currentcp[key][2]['plot']
+                        phasedlc2plot = cpdict[key][2]['plot']
                         if isinstance(phasedlc2plot,bytes):
                             phasedlc2plot = phasedlc2plot.decode()
 
                         resultdict['result'][key] = {
-                            'nbestperiods':self.currentcp[key]['nbestperiods'],
+                            'nbestperiods':cpdict[key]['nbestperiods'],
                             'periodogram':periodogram,
-                            'bestperiod':self.currentcp[key]['bestperiod'],
+                            'bestperiod':cpdict[key]['bestperiod'],
                             'phasedlc0':{
                                 'plot':phasedlc0plot,
-                                'period':float(self.currentcp[key][0]['period']),
-                                'epoch':float(self.currentcp[key][0]['epoch'])
+                                'period':float(cpdict[key][0]['period']),
+                                'epoch':float(cpdict[key][0]['epoch'])
                             },
                             'phasedlc1':{
                                 'plot':phasedlc1plot,
-                                'period':float(self.currentcp[key][1]['period']),
-                                'epoch':float(self.currentcp[key][1]['epoch'])
+                                'period':float(cpdict[key][1]['period']),
+                                'epoch':float(cpdict[key][1]['epoch'])
                             },
                             'phasedlc2':{
                                 'plot':phasedlc2plot,
-                                'period':float(self.currentcp[key][2]['period']),
-                                'epoch':float(self.currentcp[key][2]['epoch'])
+                                'period':float(cpdict[key][2]['period']),
+                                'epoch':float(cpdict[key][2]['epoch'])
                             },
                         }
 
@@ -272,7 +263,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 resultdict = {'status':'error',
                               'message':"This checkplot doesn't exist.",
                               'result':None}
-                self.currentcp = dict()
                 self.write(resultdict)
                 self.finish()
 
@@ -283,7 +273,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
                           'message':'No checkplot provided to load.',
                           'result':None}
 
-            self.currentcp = dict()
             self.write(resultdict)
 
 
@@ -296,9 +285,13 @@ class CheckplotHandler(tornado.web.RequestHandler):
         definitely be faster by just loading the checkplot into a server-wide
         shared dict or something.
 
-        FIXME: should this be async and run a processpoolexecutor or something?
-
-        FIXME: should this zero out the persistent dict?
+        FIXME: this will be async and run a processpoolexecutor:
+        - receive post request
+        - fork to background save process
+        - write save-started message to frontend with filename that's busy
+        - frontend marks this file as busy and carries on with the next op
+        - once the save returns, this writes a save-complete message
+        - then closes the request
 
         '''
 
@@ -315,7 +308,7 @@ class OperationsHandler(tornado.web.RequestHandler):
 
     '''
 
-    def initialize(self, currentdir, assetpath, cplist, cplistfile, currentcp):
+    def initialize(self, currentdir, assetpath, cplist, cplistfile, executor):
         '''
         handles initial setup.
 
@@ -325,9 +318,8 @@ class OperationsHandler(tornado.web.RequestHandler):
         self.assetpath = assetpath
         self.currentproject = cplist
         self.cplistfile = cplistfile
-        self.currentcp = currentcp
+        self.executor = executor
 
-        LOGGER.info('working in directory %s' % self.currentdir)
         LOGGER.info('working on checkplot list file %s' % self.cplistfile)
 
 
