@@ -23,6 +23,7 @@ import hashlib
 import logging
 from datetime import time
 import json
+import time
 
 # get a logger
 LOGGER = logging.getLogger(__name__)
@@ -115,6 +116,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
     '''
 
+
     def initialize(self, currentdir, assetpath, cplist, cplistfile, executor):
         '''
         handles initial setup.
@@ -126,6 +128,9 @@ class CheckplotHandler(tornado.web.RequestHandler):
         self.currentproject = cplist
         self.cplistfile = cplistfile
         self.executor = executor
+
+
+
 
 
 
@@ -277,7 +282,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
 
     @gen.coroutine
-    def post(self):
+    def post(self, cpfile):
         '''This handles POST requests.
 
         Also an AJAX endpoint. Updates the persistent checkplot dict using the
@@ -294,6 +299,92 @@ class CheckplotHandler(tornado.web.RequestHandler):
         - then closes the request
 
         '''
+
+        LOGGER.info(self.request)
+
+        # now try to update the contents
+        try:
+
+            self.cpfile = base64.b64decode(cpfile).decode()
+            cpcontents = self.get_argument('cpcontents', default=None)
+
+            if not self.cpfile or not cpcontents:
+
+                msg = "did not receive a checkplot update payload"
+                resultdict = {'status':'error',
+                              'message':msg,
+                              'result':None}
+                self.set_status(400)
+                self.write(resultdict)
+                self.finish()
+
+            cpcontents = json.loads(cpcontents)
+
+            # the only keys in cpdict that can updated from the UI are from
+            # varinfo, objectinfo (objecttags) and comments
+            updated = {'varinfo': cpcontents['varinfo'],
+                       'objectinfo':cpcontents['objectinfo'],
+                       'comments':cpcontents['comments']}
+
+            # we need reform the self.cpfile so it points to the full path
+            cpfpath = os.path.join(
+                os.path.abspath(os.path.dirname(self.cplistfile)),
+                self.cpfile
+            )
+
+            LOGGER.info('loading %s...' % cpfpath)
+
+            if not os.path.exists(cpfpath):
+
+                msg = "couldn't find checkplot %s" % cpfpath
+                LOGGER.error(msg)
+                resultdict = {'status':'error',
+                              'message':msg,
+                              'result':None}
+
+                self.write(resultdict)
+                self.finish()
+
+            # dispatch the task
+            updated = yield self.executor.submit(checkplot_pickle_update,
+                                                 cpfpath, updated)
+
+            # continue processing after this is done
+            if updated:
+
+                LOGGER.info('updated checkplot %s successfully' % updated)
+                resultdict = {'status':'success',
+                              'message':'checkplot update successful',
+                              'result':{'checkplot':updated,
+                                        'unixtime':time.time(),
+                                        'changes':cpcontents}}
+                self.write(resultdict)
+                self.finish()
+
+            else:
+                LOGGER.error('could not handle checkplot update for %s: %s' %
+                             (self.cpfile, cpcontents))
+                msg = "checkplot update failed because of a backend error"
+                resultdict = {'status':'error',
+                              'message':msg,
+                              'result':None}
+                self.set_status(500)
+                self.write(resultdict)
+                self.finish()
+
+        # if something goes wrong, inform the user
+        except Exception as e:
+
+            LOGGER.exception('could not handle checkplot update for %s: %s' %
+                             (self.cpfile, cpcontents))
+            msg = "checkplot update failed because of an exception"
+            resultdict = {'status':'error',
+                          'message':msg,
+                          'result':None}
+            self.set_status(500)
+            self.write(resultdict)
+            self.finish()
+
 
 
 class OperationsHandler(tornado.web.RequestHandler):

@@ -78,9 +78,9 @@
     <!-- instructions and nav bar go here -->
     <div class="row">
       <div class="col-sm-12 text-sm-center">
-        <p>Use the <kbd>&larr;</kbd> and the <kbd>&rarr;</kbd> keys to move
-          through the checkplot list. All updates are automatically saved to
-          checkplot pickles on disk.<br>
+        <p>Use the <kbd>ctrl</kbd> + <kbd>&larr;</kbd> and the <kbd>ctrl</kbd>
+          + <kbd>&rarr;</kbd> keys to move through the checkplot list. All
+          updates are automatically saved to checkplot pickles on disk.<br>
           <a href="#" class="checkplot-prev">&lt;&lt; previous</a>
           | <span id="checkplot-current"></span> |
           <a href="#" class="checkplot-next">next &gt;&gt;</a>
@@ -255,16 +255,16 @@
   // next and previous object links
   $(document).keydown(function(event) {
 
-  // right key pressed
-  if (event.which == 39) {
+  // ctrl+right keys pressed
+  if (event.ctrlKey && event.which == 39) {
   event.preventDefault();
   console.log('moving to the next object')
   $('.checkplot-next').click();
 
   }
 
-  // left key pressed
-  if (event.which == 37) {
+  // ctrl+left key pressed
+  if (event.ctrlKey && event.which == 37) {
   console.log('moving to the prev object')
   event.preventDefault();
   $('.checkplot-prev').click();
