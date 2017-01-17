@@ -36,17 +36,11 @@ var cputils = {
 // this contains updates to current checkplots
 var cptracker = {
 
-    // this is the actual object that will get written to JSON or CSV
-    cpdata: '',
-
-    // this updates the cpdata object with the current cpv.currcp
-    cptracker_update: function () {
-
-        // we don't save the big images, etc.; only the objectinfo, varinfo,
-        // comments, best periods from each period-finding method, and checkplot
-        // status get saved
-
-    },
+    // this is the actual object that will get written to JSON or CSV we'll
+    // search for the latest update and write that to disk if told to do so. if
+    // we're told to include all updates, then we'll get all the history for
+    // each checkplot
+    cpdata: {},
 
     // this generates a CSV for download
     // FIXME: figure out how to do this
@@ -65,8 +59,9 @@ var cptracker = {
 // this is the container for the main functions
 var cpv = {
     // these hold the current checkplot's data and filename respectively
+    currfind: 0,
     currfile: '',
-    currcp:'',
+    currcp: {},
 
     // this function generates a spinner
     make_spinner: function (spinnermsg) {
@@ -88,7 +83,7 @@ var cpv = {
     // this function generates an alert box
     make_alert: function (alertmsg) {
 
-        var alert =
+        var xalert =
             '<div class="alert alert-warning alert-dismissible fade show" ' +
             'role="alert">' +
             '<button type="button" class="close" data-dismiss="alert" ' +
@@ -98,7 +93,7 @@ var cpv = {
             alertmsg +
             '</div>';
 
-        $('#alert-box').html(alert);
+        $('#alert-box').html(xalert);
 
     },
 
@@ -196,36 +191,22 @@ var cpv = {
 
             // update the varinfo
             if (cpv.currcp.varinfo.objectisvar == true) {
-                $('#varcheck-yes').prop('checked',true);
-                $('#varcheck-yeslabel').addClass('active');
 
-                $('#varcheck-maybe').prop('checked',false);
-                $('#varcheck-maybelabel').removeClass('active');
-
-                $('#varcheck-no').prop('checked',false);
-                $('#varcheck-nolabel').removeClass('active');
+                console.log('objectisvar = true');
+                $('#varcheck-yes').click();
 
             }
             else if (cpv.currcp.varinfo.objectisvar == false) {
-                $('#varcheck-no').prop('checked',true);
-                $('#varcheck-nolabel').addClass('active');
 
-                $('#varcheck-yes').prop('checked',false);
-                $('#varcheck-yeslabel').removeClass('active');
+                console.log('objectisvar = false');
+                $('#varcheck-no').click();
 
-                $('#varcheck-maybe').prop('checked',false);
-                $('#varcheck-maybelabel').removeClass('active');
             }
             else {
 
-                $('#varcheck-maybe').prop('checked',true);
-                $('#varcheck-maybelabel').addClass('active');
+                console.log('objectisvar = maybe (null)');
+                $('#varcheck-maybe').click();
 
-                $('#varcheck-yes').prop('checked',false);
-                $('#varcheck-yeslabel').removeClass('active');
-
-                $('#varcheck-no').prop('checked',false);
-                $('#varcheck-nolabel').removeClass('active');
             }
             $('#objectperiod').val(cpv.currcp.varinfo.varperiod);
             $('#objectepoch').val(cpv.currcp.varinfo.varepoch);
@@ -336,8 +317,12 @@ var cpv = {
 
             console.log('done with cp');
 
-            // update the current file tracker
+            // update the current file trackers
             cpv.currfile = filename;
+            cpv.currind = parseInt(
+                $("a[data-fname='" + filename + "']").attr('data-findex')
+            );
+
             // highlight the file in the sidebar list
             $("a[data-fname='" + filename + "']").wrap('<strong></strong>')
 
@@ -367,23 +352,89 @@ var cpv = {
     // prev, before load of a new checkplot, so changes are always saved). UI
     // elements in the checkplot list will tag the saved checkplots
     // appropriately
-    save_checkplot: function () {
+    save_checkplot: function (nextfunc_callback, nextfunc_arg) {
+
+        // do the AJAX call to get this checkplot
+        var ajaxurl = '/cp/' + cputils.b64_encode(cpv.currfile);
+
+        // make sure that we've saved the input varinfo, objectinfo and comments
+        cpv.currcp.varinfo.vartags = $('#vartags').val();
+        cpv.currcp.objectinfo.objecttags = $('#objecttags').val();
+        cpv.currcp.objectcomments = $('#objectcomments').val();
+
+        var cppayload = JSON.stringify({objectid: cpv.currcp.objectid,
+                                        objectinfo: cpv.currcp.objectinfo,
+                                        varinfo: cpv.currcp.varinfo,
+                                        comments: cpv.currcp.objectcomments});
 
         // first, generate the object to send with the POST request
         var postobj = {cpfile: cpv.currfile,
-                       cpcontents: cpv.currcp};
+                       cpcontents: cppayload};
+
+        // this is to deal with UI elements later
+        var currfile = postobj.cpfile;
 
         // next, do a saving animation in the alert box
+        cpv.make_spinner('saving...');
 
+        // next, send the POST request and handle anything the server returns
+        // FIXME: this should use _xsrf once we set that up
+        $.post(ajaxurl, postobj, function (data) {
 
-        // next, send the POST request
+            // get the info from the backend
+            var updatestatus = data.status;
+            var updatemsg = data.message;
+            var updateinfo = data.result;
 
+            // update the cptracker with what changed so we can try to undo
+            // later if necessary.
+            if (updatestatus == 'ok') {
+
+                // we don't need full precision for the time of update
+                var updts = parseInt(updateinfo.unixtime);
+
+                if (!(cpfile in cptracker.cpdata)) {
+                    cptracker.cpdata[cpfile] = {};
+                }
+
+                cptracker.cpdata.cpfile[updts] = {
+                    changes: updateinfo.changes,
+                    filename: updateinfo.checkplot,
+                    unixtime: updateinfo.unixtime
+                };
+
+            }
+
+            else {
+                cpv.make_alert(updatemsg);
+            }
 
         // on POST done, update the UI elements in the checkplot list
+        // and call the next function.
+        },'json').done(function (xhr) {
 
-        // if POST failed, inform the user by popping up an alert in the alert
-        // box
+            // clean out the alert box
+            $('#alert-box').empty();
 
+            // tag the current checkplot in the list as done
+
+            // clean out the cpv.currcp and cpv.currfile before the next one
+            // loads
+
+            // call the next function. we call this here so we can be sure the
+            // save finished before the next action starts
+            if (!(nextfunc_callback === undefined)) {
+                nextfunc_callback(nextfunc_arg);
+            }
+
+        // if POST failed, pop up an alert in the alert box
+        }).fail(function (xhr) {
+
+            var errmsg = 'could not update ' +
+                currfile + ' because of an internal server error';
+            cpv.make_alert(errmsg);
+
+        });
 
     },
 
@@ -397,10 +448,14 @@ var cpv = {
             evt.preventDefault();
 
             // find the current index
-            var currindex = cpv.filelist.indexOf(cpv.currfile);
-            var prevfile = cpv.filelist[currindex-1];
+            var prevfile = $("a[data-findex='" + (cpv.currentfind-1) + "']")
+                .attr('data-fname');
+            console.log('moving to prev file: ' + prevfile);
             if (prevfile != undefined) {
                 cpv.load_checkplot(prevfile);
+            }
+            else {
+                console.log('no prev file, staying right here');
             }
 
         });
@@ -411,10 +466,15 @@ var cpv = {
             evt.preventDefault();
 
             // find the current index
-            var currindex = cpv.filelist.indexOf(cpv.currfile);
-            var nextfile = cpv.filelist[currindex+1];
+            var nextfile = $("a[data-findex='" + (cpv.currentfind+1) + "']")
+                .attr('data-fname');
+            console.log('moving to next file: ' + nextfile);
+
             if (nextfile != undefined) {
                 cpv.load_checkplot(nextfile);
+            }
+            else {
+                console.log('no next file, staying right here');
             }
 
         });
@@ -427,8 +487,16 @@ var cpv = {
             var filetoload = $(this).attr('data-fname');
             console.log('file to load: ' + filetoload);
 
-            // ask the backend for this file
-            cpv.load_checkplot(filetoload);
+            // save the currentcp if one exists, use the load_checkplot as a
+            // callback to load the next one
+            if (('objectid' in cpv.currcp) && (cpv.currfile.length > 0))  {
+                cpv.save_checkplot(cpv.load_checkplot,filetoload);
+            }
+
+            else {
+                // ask the backend for this file
+                cpv.load_checkplot(filetoload);
+            }
 
         });
 
@@ -464,21 +532,23 @@ var cpv = {
         });
 
         // clicking on the is-object-variable control saves the info to currcp
-        $('.varcheck').on('click', function (evt) {
+        $("input[name='varcheck']").on('click', function (evt) {
 
-            var varcheckval = $("input[name='varcheck']").val()
+            var yes = $('#varcheck-yes').prop('checked');
+            var no = $('#varcheck-no').prop('checked');
+            var maybe = $('#varcheck-maybe').prop('checked');
 
-            console.log('objectisvar = ' + varcheckval);
-
-            if (varcheckval == 'no') {
+            if (yes) {
                 cpv.currcp.varinfo.objectisvar = true;
             }
-            else if (varcheckval == 'no') {
+            else if (no) {
                 cpv.currcp.varinfo.objectisvar = false;
             }
-            else if (varcheckval == 'maybe') {
+            else if (maybe) {
                 cpv.currcp.varinfo.objectisvar = null;
             }
+
+            console.log('yes, no, maybe ' + yes + ',' + no + ',' + maybe);
 
         });
 

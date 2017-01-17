@@ -21,8 +21,8 @@ import base64
 import hashlib
 import signal
 import logging
-from datetime import time
 import json
+import time
 import sys
 
 # this handles async updates of the checkplot pickles so the UI remains
@@ -246,9 +246,10 @@ def main():
 
         LOGGER.info('received Ctrl-C: shutting down...')
         tornado.ioloop.IOLoop.instance().stop()
-
         # close down the processpool
-        EXECUTOR.shutdown()
+
+    EXECUTOR.shutdown()
+    time.sleep(3)
 
 # run the server
 if __name__ == '__main__':
