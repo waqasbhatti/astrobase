@@ -35,6 +35,7 @@ INSTALL_REQUIRES = [
     'jplephem',
     'astroquery',
     'tornado',
+    'lmdb'
 ]
 
 # add extra stuff needed if we're running Python 2.7
