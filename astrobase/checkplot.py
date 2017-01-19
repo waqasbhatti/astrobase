@@ -509,7 +509,8 @@ def checkplot_png(lspinfo,
                   phasesort=True,
                   phasebin=0.002,
                   plotxlim=[-0.8,0.8],
-                  plotdpi=100):
+                  plotdpi=100,
+                  greenhighlight=True):
     '''This makes a checkplot for an info dict from a period-finding routine.
 
     A checkplot is a 3 x 3 grid of plots like so:
@@ -748,7 +749,7 @@ def checkplot_png(lspinfo,
                     (varperiod, varepoch))
 
             # make sure the best period phased LC plot stands out
-            if periodind == 0:
+            if periodind == 0 and greenhighlight:
                 axes[periodind+2].set_axis_bgcolor('#adff2f')
 
             _make_phased_magseries_plot(axes[periodind+2],
@@ -1472,7 +1473,8 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                                stimes, smags, serrs,
                                varperiod, varepoch,
                                phasewrap, phasesort, phasebin,
-                               plotxlim, plotdpi=100):
+                               plotxlim, plotdpi=100, greenhighlight=True,
+                               xgridlines=None):
     '''This returns the phased magseries plot PNG as base64 plus info as a dict.
 
     '''
@@ -1569,11 +1571,16 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
         plt.xlim((plotxlim[0],plotxlim[1]))
 
     # make a grid
+    ax = plt.gca()
+    if isinstance(xgridlines,list):
+        ax.set_xticks(xgridlines, minor=False)
+
     plt.grid(color='#a9a9a9',
               alpha=0.9,
               zorder=0,
               linewidth=1.0,
               linestyle=':')
+
 
    # make the x and y axis labels
     plot_xlabel = 'phase'
@@ -1591,7 +1598,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
     plt.title(plottitle)
 
     # make sure the best period phased LC plot stands out
-    if periodind == 0:
+    if periodind == 0 and greenhighlight:
         plt.gca().set_axis_bgcolor('#adff2f')
 
     # this is the output instance
@@ -1720,7 +1727,9 @@ def checkplot_pickle(lspinfolist,
                      plotxlim=[-0.8,0.8],
                      plotdpi=100,
                      returndict=False,
-                     pickleprotocol=None):
+                     pickleprotocol=None,
+                     greenhighlight=True,
+                     xgridlines=None):
 
     '''This writes a multiple lspinfo checkplot to a gzipped pickle file.
 
@@ -1774,6 +1783,13 @@ def checkplot_pickle(lspinfolist,
     sigclip in the list is appleid to -ve magnitude deviations (brighter).
     An example list would be `[10.,-3.]` (for 10 sigma dimmings, 3 sigma
     brightenings).
+
+    greenhighlight (boolean) sets whether user wants a green background on
+    bestperiod from each periodogram.
+
+    xgridlines (default None) can be a list, e.g., [-0.5,0.,0.5] that sets the
+    x-axis grid lines on plotted phased LCs for easy visual identification of
+    important features.
     '''
     # generate the outfile filename
     if not outfile and isinstance(lspinfolist[0],str):
@@ -1904,7 +1920,8 @@ def checkplot_pickle(lspinfolist,
                     stimes, smags, serrs,
                     nbperiod, varepoch,
                     phasewrap, phasesort, phasebin,
-                    plotxlim, plotdpi=plotdpi
+                    plotxlim, plotdpi=plotdpi, greenhighlight=greenhighlight,
+                    xgridlines=xgridlines
                 )
 
         # the checkplotdict now contains everything we need
