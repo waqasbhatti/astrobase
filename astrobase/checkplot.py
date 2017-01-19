@@ -947,10 +947,25 @@ def twolsp_checkplot_png(lspinfo1,
     median_mag = npmedian(fmags)
     stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
 
-    # sigclip next
-    if sigclip:
+    # sigclip next for a single sigclip value
+    if sigclip and isinstance(sigclip,float):
 
         sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
+
+        stimes = ftimes[sigind]
+        smags = fmags[sigind]
+        serrs = ferrs[sigind]
+
+        LOGINFO('sigclip = %s: before = %s observations, '
+                'after = %s observations' %
+                (sigclip, len(times), len(stimes)))
+
+    # this handles sigclipping for asymmetric +ve and -ve clip values
+    elif sigclip and isinstance(sigclip,list) and len(sigclip) == 2:
+
+        sigposind = (fmags - median_mag) < (sigclip[0]*stddev_mag)
+        signegind = (fmags - median_mag) > (sigclip[1]*stddev_mag)
+        sigind = sigposind & signegind
 
         stimes = ftimes[sigind]
         smags = fmags[sigind]
@@ -1753,6 +1768,12 @@ def checkplot_pickle(lspinfolist,
     3. It will emit a warning if it uses protocol version 3 that these pickles
     won't work on older Pythons.
 
+    sigclip is either a single float or a list of two floats. in the first case,
+    the sigclip is applied symmetrically. in the second case, the first sigclip
+    in the list is applied to +ve magnitude deviations (fainter) and the second
+    sigclip in the list is appleid to -ve magnitude deviations (brighter).
+    An example list would be `[10.,-3.]` (for 10 sigma dimmings, 3 sigma
+    brightenings).
     '''
     # generate the outfile filename
     if not outfile and isinstance(lspinfolist[0],str):
@@ -1788,10 +1809,25 @@ def checkplot_pickle(lspinfolist,
     median_mag = npmedian(fmags)
     stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
 
-    # sigclip next
-    if sigclip:
+    # sigclip next for a single sigclip value
+    if sigclip and isinstance(sigclip,float):
 
         sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
+
+        stimes = ftimes[sigind]
+        smags = fmags[sigind]
+        serrs = ferrs[sigind]
+
+        LOGINFO('sigclip = %s: before = %s observations, '
+                'after = %s observations' %
+                (sigclip, len(times), len(stimes)))
+
+    # this handles sigclipping for asymmetric +ve and -ve clip values
+    elif sigclip and isinstance(sigclip,list) and len(sigclip) == 2:
+
+        sigposind = (fmags - median_mag) < (sigclip[0]*stddev_mag)
+        signegind = (fmags - median_mag) > (sigclip[1]*stddev_mag)
+        sigind = sigposind & signegind
 
         stimes = ftimes[sigind]
         smags = fmags[sigind]
@@ -1806,6 +1842,8 @@ def checkplot_pickle(lspinfolist,
         stimes = ftimes
         smags = fmags
         serrs = ferrs
+
+
 
     # take care of the normalization
     if normto is not False:
