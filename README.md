@@ -6,7 +6,7 @@ Sphinx works), but the docstrings are fairly good and an [overview](#contents)
 is provided below. See the instructions for [installation](#installation) to get
 started.
 
-astrobase should work with Python > 3.3 and Python 2.7. Using the newest Python
+astrobase should work with Python >= 3.4 and Python 2.7. Using the newest Python
 3 version available is recommended.
 
 # Contents
@@ -133,7 +133,6 @@ You might need to install `openssl-devel` or a similar RPM/DEB package for the
 `astroquery`. For some extra functionality, you'll need the following modules:
 
 - for `astrobase.lcdb` to work, you'll also need psycogp2
-- for `astrobase.checkplot.checkplot_lmdb, you'll also need lmdb
 
 First, make sure numpy and a Fortran compiler are installed:
 
