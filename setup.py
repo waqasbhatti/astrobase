@@ -39,7 +39,6 @@ INSTALL_REQUIRES = [
 
 EXTRAS_REQUIRE = {
     'LCDB':['psycopg2'],
-    'cplmdb':['lmdb'],
 }
 
 # add extra stuff needed if we're running Python 2.7
