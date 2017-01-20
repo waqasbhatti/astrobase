@@ -1707,31 +1707,28 @@ def _read_checkplot_picklefile(checkplotpickle):
 ## PICKLE CHECKPLOT WRITE/UPDATE FUNCTIONS  ##
 ##############################################
 
-def checkplot_pickle(lspinfolist,
-                     times,
-                     mags,
-                     errs,
-                     nperiodstouse=3,
-                     objectinfo=None,
-                     varinfo=None,
-                     findercmap='gray_r',
-                     finderconvolve=None,
-                     normto='globalmedian',
-                     normmingap=4.0,
-                     outfile=None,
-                     sigclip=4.0,
-                     varepoch='min',
-                     phasewrap=True,
-                     phasesort=True,
-                     phasebin=0.002,
-                     plotxlim=[-0.8,0.8],
-                     plotdpi=100,
-                     returndict=False,
-                     pickleprotocol=None,
-                     greenhighlight=True,
-                     xgridlines=None):
+def checkplot_dict(lspinfolist,
+                   times,
+                   mags,
+                   errs,
+                   nperiodstouse=3,
+                   objectinfo=None,
+                   varinfo=None,
+                   findercmap='gray_r',
+                   finderconvolve=None,
+                   normto='globalmedian',
+                   normmingap=4.0,
+                   sigclip=4.0,
+                   varepoch='min',
+                   phasewrap=True,
+                   phasesort=True,
+                   phasebin=0.002,
+                   plotxlim=[-0.8,0.8],
+                   plotdpi=100,
+                   greenhighlight=True,
+                   xgridlines=None):
 
-    '''This writes a multiple lspinfo checkplot to a gzipped pickle file.
+    '''This writes a multiple lspinfo checkplot to a dict.
 
     This function can take input from multiple lspinfo dicts (e.g. a list of
     output dicts or gzipped pickles of dicts from independent runs of BLS, PDM,
@@ -1741,11 +1738,12 @@ def checkplot_pickle(lspinfolist,
     lspmethod ('pdm','gls','sls','aov','bls'), the latest one in the list will
     overwrite the earlier ones.
 
-    The output gzipped pickle file contains all the plots (magseries and phased
+    The output dict contains all the plots (magseries and phased
     magseries), periodograms, object information, variability information, light
-    curves, and phased light curves. This is intended to be used with an
-    external viewer app (e.g. checkplotserver.py), or by using the
-    checkplot_pickle_to_png function below.
+    curves, and phased light curves. This can be written to:
+
+    - a pickle with checkplot.checkplot_pickle below
+    - an LMDB backed file with checkplot.checkplot_lmdb below
 
     All kwargs are the same as for checkplot_png, except for the following:
 
@@ -1766,17 +1764,6 @@ def checkplot_pickle(lspinfolist,
     and written to the output pickle. This can be later updated using
     checkplotviewer.py, etc.
 
-    if returndict is True, will return the checkplotdict created and the path to
-    the output checkplot pickle file as a tuple. if returndict is False, will
-    only return the path to the output checkplot pickle.
-
-    pickleprotocol sets the protocol version of the output pickle. Anything with
-    version > 2 can't be read by Python 2.7 or earlier, but is much faster to
-    dump, load, and is smaller on disk. This function will detect your Python
-    version and attempt to use version 3 if Python > 3 or version 2 if Python <
-    3. It will emit a warning if it uses protocol version 3 that these pickles
-    won't work on older Pythons.
-
     sigclip is either a single float or a list of two floats. in the first case,
     the sigclip is applied symmetrically. in the second case, the first sigclip
     in the list is applied to +ve magnitude deviations (fainter) and the second
@@ -1791,20 +1778,6 @@ def checkplot_pickle(lspinfolist,
     x-axis grid lines on plotted phased LCs for easy visual identification of
     important features.
     '''
-    # generate the outfile filename
-    if not outfile and isinstance(lspinfolist[0],str):
-        plotfpath = os.path.join(
-            os.path.dirname(lspinfolist[0]),
-            'checkplot-%s.pkl.gz' % (
-                os.path.basename(
-                    lspinfolist[0].replace('.pkl','').replace('.gz','')
-                )
-            )
-        )
-    elif outfile:
-        plotfpath = outfile
-    else:
-        plotfpath = 'checkplot.pkl.gz'
 
     # first, get the objectinfo and finder chart
     # and initialize the checkplotdict
@@ -1938,22 +1911,158 @@ def checkplot_pickle(lspinfolist,
         checkplotdict['magseries'] = None
         checkplotdict['status'] = 'failed: not enough LC points'
 
+    # at the end, return the dict
+    return checkplotdict
+
+
+
+def checkplot_pickle(lspinfolist,
+                     times,
+                     mags,
+                     errs,
+                     nperiodstouse=3,
+                     objectinfo=None,
+                     varinfo=None,
+                     findercmap='gray_r',
+                     finderconvolve=None,
+                     normto='globalmedian',
+                     normmingap=4.0,
+                     outfile=None,
+                     sigclip=4.0,
+                     varepoch='min',
+                     phasewrap=True,
+                     phasesort=True,
+                     phasebin=0.002,
+                     plotxlim=[-0.8,0.8],
+                     plotdpi=100,
+                     returndict=False,
+                     pickleprotocol=None,
+                     greenhighlight=True,
+                     xgridlines=None):
+
+    '''This writes a multiple lspinfo checkplot to a gzipped pickle file.
+
+    This function can take input from multiple lspinfo dicts (e.g. a list of
+    output dicts or gzipped pickles of dicts from independent runs of BLS, PDM,
+    AoV, or GLS period-finders in periodbase).
+
+    NOTE: if lspinfolist contains more than one lspinfo object with the same
+    lspmethod ('pdm','gls','sls','aov','bls'), the latest one in the list will
+    overwrite the earlier ones.
+
+    The output dict contains all the plots (magseries and phased magseries),
+    periodograms, object information, variability information, light curves, and
+    phased light curves. The pickle produced by this function can be used with
+    an external viewer app (e.g. checkplotserver.py), or by using the
+    checkplot_pickle_to_png function below.
+
+    All kwargs are the same as for checkplot_png, except for the following:
+
+    nperiodstouse controls how many 'best' periods to make phased LC plots
+    for. By default, this is the 3 best. If this is set to None, all 'best'
+    periods present in each lspinfo dict's 'nbestperiods' key will be plotted
+    (this is 5 according to periodbase functions' defaults).
+
+    varinfo is a dictionary with the following keys:
+
+      {'objectisvar': True if object is time-variable,
+       'vartags': list of variable type tags (strings),
+       'varisperiodic': True if object is a periodic variable,
+       'varperiod': variability period of the object,
+       'varepoch': epoch of variability in JD}
+
+    if varinfo is None, an initial empty dictionary of this form will be created
+    and written to the output pickle. This can be later updated using
+    checkplotviewer.py, etc.
+
+    if returndict is True, will return the checkplotdict created and the path to
+    the output checkplot pickle file as a tuple. if returndict is False, will
+    only return the path to the output checkplot pickle.
+
+    pickleprotocol sets the protocol version of the output pickle. Anything with
+    version > 2 can't be read by Python 2.7 or earlier, but is much faster to
+    dump, load, and is smaller on disk. This function will detect your Python
+    version and attempt to use version 3 if Python > 3 or version 2 if Python <
+    3. It will emit a warning if it uses protocol version 3 that these pickles
+    won't work on older Pythons.
+
+    sigclip is either a single float or a list of two floats. in the first case,
+    the sigclip is applied symmetrically. in the second case, the first sigclip
+    in the list is applied to +ve magnitude deviations (fainter) and the second
+    sigclip in the list is appleid to -ve magnitude deviations (brighter).
+    An example list would be `[10.,-3.]` (for 10 sigma dimmings, 3 sigma
+    brightenings).
+
+    greenhighlight (boolean) sets whether user wants a green background on
+    bestperiod from each periodogram.
+
+    xgridlines (default None) can be a list, e.g., [-0.5,0.,0.5] that sets the
+    x-axis grid lines on plotted phased LCs for easy visual identification of
+    important features.
+
+    '''
+    # generate the outfile filename
+    if not outfile and isinstance(lspinfolist[0],str):
+        plotfpath = os.path.join(
+            os.path.dirname(lspinfolist[0]),
+            'checkplot-%s.pkl.gz' % (
+                os.path.basename(
+                    lspinfolist[0].replace('.pkl','').replace('.gz','')
+                )
+            )
+        )
+    elif outfile:
+        plotfpath = outfile
+    else:
+        plotfpath = 'checkplot.pkl.gz'
+
+
+    # call checkplot_dict for most of the work
+    checkplotdict = checkplot_dict(
+        lspinfolist,
+        times,
+        mags,
+        errs,
+        nperiodstouse=nperiodstouse,
+        objectinfo=objectinfo,
+        varinfo=varinfo,
+        findercmap=findercmap,
+        finderconvolve=finderconvolve,
+        normto=normto,
+        normmingap=normmingap,
+        sigclip=sigclip,
+        varepoch=varepoch,
+        phasewrap=phasewrap,
+        phasesort=phasesort,
+        phasebin=phasebin,
+        plotxlim=plotxlim,
+        plotdpi=plotdpi,
+        greenhighlight=greenhighlight,
+        xgridlines=xgridlines
+    )
+
 
     # figure out which protocol to use
-    if ((sys.version_info.major == 3 and not pickleprotocol) or
+    # for Python >= 3.4; use v3
+    if ((sys.version_info[0:2] >= (3,4) and not pickleprotocol) or
         (pickleprotocol == 3)):
         pickleprotocol = 3
         LOGWARNING('the output pickle uses protocol v3 '
                    'which IS NOT backwards compatible with Python 2.7')
-    elif sys.version_info.major == 2 and not pickleprotocol:
+
+    # for Python == 2.7; use v2
+    elif sys.version_info[0:2] == (2,7) and not pickleprotocol:
         pickleprotocol = 2
 
+    # otherwise, if left unspecified, use the slowest but most compatible
+    # protocol. this will be readable by all (most?) Pythons
+    elif not pickleprotocol:
+        pickleprotocol = 0
 
     # write the completed checkplotdict to a gzipped pickle
     picklefname = _write_checkplot_picklefile(checkplotdict,
                                               outfile=plotfpath,
                                               protocol=pickleprotocol)
-
 
     # at the end, return the dict and filename if asked for
     if returndict:
