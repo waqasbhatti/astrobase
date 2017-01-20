@@ -84,26 +84,30 @@ import sys
 import glob
 import json
 
-if __name__ == '__main__':
 
-    if len(sys.argv) != 3:
+def main(args=None):
+
+    if not args:
+        args = sys.argv
+
+    if len(args) != 3:
         docstring = __doc__
         if docstring:
             print(docstring)
         else:
             print('Usage: %s <pkl|png> <subdir/containing/the/checkplots/> ' %
-                  sys.argv[0])
+                  args[0])
         sys.exit(2)
 
-    checkplotbasedir = sys.argv[2]
+    checkplotbasedir = args[2]
 
-    if sys.argv[1] == 'pkl':
-        checkplotglob = 'pkl.gz'
-    elif sys.argv[1] == 'png':
+    if args[1] == 'pkl':
+        checkplotglob = 'pkl'
+    elif args[1] == 'png':
         checkplotglob = 'png'
     else:
         print("unknown format for checkplots: %s! can't continue!"
-              % sys.argv[1])
+              % args[1])
         sys.exit(1)
 
 
@@ -135,3 +139,9 @@ if __name__ == '__main__':
     else:
 
         print('ERR! no checkplots found in %s' % checkplotbasedir)
+
+
+if __name__ == '__main__':
+
+    args = sys.argv
+    main(args=args)
