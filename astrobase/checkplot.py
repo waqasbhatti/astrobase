@@ -1944,6 +1944,9 @@ def checkplot_dict(lspinfolist,
         LOGINFO('checkplot dict contents: %s' % contents)
         checkplotdict['status'] = 'ok: contents are %s' % contents
 
+        # add a comments key:val
+        checkplotdict['comments'] = None
+
     # otherwise, we don't have enough LC points, return nothing
     else:
 
