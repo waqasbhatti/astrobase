@@ -1657,22 +1657,40 @@ def _write_checkplot_picklefile(checkplotdict,
     '''
 
     if outgzip:
+
         if not outfile:
 
             outfile = (
-                'checkplot-{objectid}.pkl.gz'.format(checkplotdict['objectid'])
+                'checkplot-{objectid}.pkl.gz'.format(
+                    objectid=checkplotdict['objectid']
+                )
             )
+
         with gzip.open(outfile,'wb') as outfd:
             pickle.dump(checkplotdict,outfd,protocol=protocol)
 
     else:
+
         if not outfile:
 
             outfile = (
-                'checkplot-{objectid}.pkl'.format(checkplotdict['objectid'])
+                'checkplot-{objectid}.pkl'.format(
+                    objectid=checkplotdict['objectid']
+                )
             )
-        with open(outfile,'wb') as outfd:
-            pickle.dump(checkplotdict,outfd,protocol=protocol)
+
+        # make sure to do the right thing if '.gz' is in the filename but
+        # outgzip was False
+        if outfile.endswith('.gz'):
+
+            LOGWARNING('output filename ends with .gz but kwarg outgzip=False. '
+                       'will use gzip to compress the output pickle')
+            with gzip.open(outfile,'wb') as outfd:
+                pickle.dump(checkplotdict,outfd,protocol=protocol)
+
+        else:
+            with open(outfile,'wb') as outfd:
+                pickle.dump(checkplotdict,outfd,protocol=protocol)
 
     return os.path.abspath(outfile)
 
