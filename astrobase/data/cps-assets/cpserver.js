@@ -59,7 +59,7 @@ var cptracker = {
 // this is the container for the main functions
 var cpv = {
     // these hold the current checkplot's data and filename respectively
-    currfind: 0,
+    currentfind: 0,
     currfile: '',
     currcp: {},
 
@@ -319,7 +319,7 @@ var cpv = {
 
             // update the current file trackers
             cpv.currfile = filename;
-            cpv.currind = parseInt(
+            cpv.currentfind = parseInt(
                 $("a[data-fname='" + filename + "']").attr('data-findex')
             );
 
