@@ -108,6 +108,7 @@ setup(
     entry_points={
         'console_scripts':[
             'checkplotserver=astrobase.checkplotserver:main',
+            'checkplotlist=astrobase.checkplotlist:main',
         ],
     },
     include_package_data=True,
