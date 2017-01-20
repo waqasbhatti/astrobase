@@ -3,6 +3,7 @@
     height: 100%;
 }
 .sidebar-list {
+    height: 300px;
     overflow-y: auto;
     font-size: x-small;
 }
