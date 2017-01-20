@@ -1,8 +1,13 @@
 This is a bunch of Python modules I wrote for my astronomy work with the HAT
-surveys, mostly focused on variable stars. Full documentation is still a work in
-progress (as soon as I figure out how Sphinx works), but the docstrings are
-fairly good and an [overview](#contents) is provided below. See the instructions
-for [installation](#installation) to get started.
+surveys, mostly focused on variable stars.
+
+Full documentation is still a work in progress (as soon as I figure out how
+Sphinx works), but the docstrings are fairly good and an [overview](#contents)
+is provided below. See the instructions for [installation](#installation) to get
+started.
+
+astrobase should work with Python > 3.3 and Python 2.7. Using the newest Python
+3 version available is recommended.
 
 # Contents
 
@@ -122,26 +127,31 @@ This package requires the following other packages:
 - jplephem
 - astroquery
 - tornado
-- lmdb
 
 You might need to install `openssl-devel` or a similar RPM/DEB package for the
 `python-cryptography` module that gets pulled in as a dependency for
-`astroquery`. For `astrobase.lcdb` to work, you'll also need:
+`astroquery`. For some extra functionality, you'll need the following modules:
 
-- psycopg2
+- for `astrobase.lcdb` to work, you'll also need psycogp2
+- for `astrobase.checkplot.checkplot_lmdb, you'll also need lmdb
 
-To install:
+First, make sure numpy and a Fortran compiler are installed:
 
 ```bash
 ## make sure numpy is installed first!                ##
 ## this is required for the bls module installation   ##
-$ pip install numpy
+
+$ pip install numpy # in a virtualenv
+# or use dnf/yum/apt install numpy to install systemwide
 
 ## you'll need a Fortran compiler for the bls module! ##
 ## on Linux: dnf/yum/apt install gcc gcc-gfortran     ##
 ## on OSX (using homebrew): brew install gcc          ##
+```
 
-# next, install astrobase
+Next, install astrobase.
+
+```bash
 $ git clone https://github.com/waqasbhatti/astrobase
 $ cd astrobase
 $ python setup.py install

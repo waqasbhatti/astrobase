@@ -35,8 +35,12 @@ INSTALL_REQUIRES = [
     'jplephem',
     'astroquery',
     'tornado',
-    'lmdb'
 ]
+
+EXTRAS_REQUIRE = {
+    'LCDB':['psycopg2'],
+    'cplmdb':['lmdb'],
+}
 
 # add extra stuff needed if we're running Python 2.7
 if sys.version_info.major < 3:
@@ -101,9 +105,7 @@ setup(
     license='MIT',
     packages=['astrobase'],
     install_requires=INSTALL_REQUIRES,
-    extras_require={
-        'LCDB':['psycopg2'],
-    },
+    extras_require=EXTRAS_REQUIRE,
     entry_points={
         'console_scripts':[
             'checkplotserver=astrobase.checkplotserver:main',
