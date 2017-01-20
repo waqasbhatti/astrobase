@@ -452,7 +452,7 @@ var cpv = {
                 .attr('data-fname');
             console.log('moving to prev file: ' + prevfile);
             if (prevfile != undefined) {
-                cpv.load_checkplot(prevfile);
+                cpv.save_checkplot(cpv.load_checkplot,prevfile);
             }
             else {
                 console.log('no prev file, staying right here');
@@ -471,7 +471,7 @@ var cpv = {
             console.log('moving to next file: ' + nextfile);
 
             if (nextfile != undefined) {
-                cpv.load_checkplot(nextfile);
+                cpv.save_checkplot(cpv.load_checkplot,nextfile);
             }
             else {
                 console.log('no next file, staying right here');
