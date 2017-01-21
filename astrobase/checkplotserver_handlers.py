@@ -300,8 +300,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
         '''
 
-        LOGGER.info(self.request)
-
         # now try to update the contents
         try:
 
