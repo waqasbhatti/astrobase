@@ -84,9 +84,9 @@ tweaked for your purposes.
 - **[periodbase](astrobase/periodbase.py)**: parallelized functions (using
   `multiprocessing.map`) to run fast period searches on light curves, including:
   the generalized Lomb-Scargle algorithm from Zechmeister & Kurster (2008), the
-  string length algorithm from Dworetsky (1983), the phase dispersion
-  minimization algorithm from Stellingwerf (1978, 2011), the AoV algorithm from
-  Schwarzenberg-Cerny (1989), and the BLS algorithm from Kovacs et al. (2002)
+  phase dispersion minimization algorithm from Stellingwerf (1978, 2011), the
+  AoV algorithm from Schwarzenberg-Cerny (1989), and the BLS algorithm from
+  Kovacs et al. (2002)
 
 - **[plotbase](astrobase/plotbase.py)**: functions to plot light curves, phased
   light curves, periodograms, and download cutouts using `astroquery` and the
