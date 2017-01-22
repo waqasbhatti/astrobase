@@ -24,6 +24,7 @@ import logging
 import json
 import time
 import sys
+import socket
 
 # this handles async updates of the checkplot pickles so the UI remains
 # responsive
@@ -112,6 +113,8 @@ def main():
         LOGGER.setLevel(logging.INFO)
 
 
+
+
     ###################
     ## SET UP CONFIG ##
     ###################
@@ -163,7 +166,7 @@ def main():
             cplistfile = os.path.join(CURRENTDIR,'checkplot-filelist.json')
             with open(cplistfile,'r') as infd:
                 CHECKPLOTLIST = json.load(infd)
-            LOGGER.info('found! using checkplot list file: %s' % cplistfile)
+            LOGGER.info('using checkplot list file: %s' % cplistfile)
 
         else:
 
@@ -229,10 +232,28 @@ def main():
     # start up the HTTP server and our application. xheaders = True turns on
     # X-Forwarded-For support so we can see the remote IP in the logs
     http_server = tornado.httpserver.HTTPServer(app, xheaders=True)
-    http_server.listen(options.port, options.serve)
 
-    LOGGER.info('starting event loop. listening on http://localhost:%s' %
-                options.port)
+    # make sure the port we're going to listen on is ok
+    # inspired by how Jupyter notebook does this
+    portok = False
+    sock = socket.socket()
+    serverport = options.port
+    maxtrys = 5
+    thistry = 0
+    while not portok and thistry < maxtrys:
+        try:
+            sock.bind((options.serve, serverport))
+            portok = True
+        except socket.error as e:
+            LOGGER.warning('%s:%s is already in use, trying port %s' %
+                           (options.serve, serverport, serverport + 1))
+            serverport = serverport + 1
+    sock.close()
+
+    http_server.listen(serverport, options.serve)
+
+    LOGGER.info('starting event loop. listening on http://%s:%s' %
+                (options.serve, serverport))
 
     # register the signal callbacks
     signal.signal(signal.SIGINT,recv_sigint)
@@ -240,6 +261,7 @@ def main():
 
     # start the IOLoop and begin serving requests
     try:
+
         tornado.ioloop.IOLoop.instance().start()
 
     except KeyboardInterrupt:
