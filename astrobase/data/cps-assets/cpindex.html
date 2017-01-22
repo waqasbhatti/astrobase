@@ -79,8 +79,9 @@
     <div class="row">
       <div class="col-sm-12 text-sm-center">
         <p>Use the <kbd>ctrl</kbd> + <kbd>&larr;</kbd> and the <kbd>ctrl</kbd>
-          + <kbd>&rarr;</kbd> keys to move through the checkplot list. All
-          updates are automatically saved to checkplot pickles on disk.<br>
+          + <kbd>&rarr;</kbd> keys to move through the checkplot
+          list. <a href="#" id="shortcuts-box" data-toggle="modal"
+          data-target="#help-box">See more keyboard shortcuts and help.</a><br>
           <a href="#" class="checkplot-prev">&lt;&lt; previous</a>
           | <span id="checkplot-current"></span> |
           <a href="#" class="checkplot-next">next &gt;&gt;</a>
@@ -138,17 +139,20 @@
 
             <div class="btn-group" data-toggle="buttons">
               <label class="btn btn-primary active" id="varcheck-yeslabel">
-                <input type="radio" name="varcheck" value="no" class="varcheck"
-                       id="varcheck-no" autocomplete="off" checked>
+                <input type="radio" name="varcheck" value="no"
+                       class="varcheck mousetrap"
+                       id="varcheck-no" autocomplete="off">
                 No
               </label>
               <label class="btn btn-primary" id="varcheck-maybelabel">
-                <input type="radio" name="varcheck" value="maybe" class="varcheck"
+                <input type="radio" name="varcheck" value="maybe"
+                       class="varcheck mousetrap"
                        id="varcheck-maybe" autocomplete="off">
                 Maybe
               </label>
               <label class="btn btn-primary" id="varcheck-nolabel">
-                <input type="radio" name="varcheck" value="yes"  class="varcheck"
+                <input type="radio" name="varcheck" value="yes"
+                       class="varcheck mousetrap"
                        id="varcheck-yes" autocomplete="off">
                 Yes
               </label>
@@ -163,10 +167,10 @@
               <strong>Period and epoch</strong>
             </div>
 
-            <input type="text" class="form-control"
+            <input type="text" class="form-control mousetrap"
                    name="objectperiod" id="objectperiod"
                    placeholder="period in days">
-            <input type="text" class="form-control"
+            <input type="text" class="form-control mousetrap"
                    name="objectepoch" id="objectepoch"
                    placeholder="epoch in JD">
           </div>
@@ -178,7 +182,7 @@
               <strong>Variability tags</strong>
             </div>
 
-            <input type="text" class="form-control"
+            <input type="text" class="form-control mousetrap"
                    name="vartags" id="vartags"
                    placeholder="variability tag 1, variability tag 2,...">
           </div>
@@ -190,7 +194,7 @@
               <strong>Object tags</strong>
             </div>
 
-            <input type="text" class="form-control"
+            <input type="text" class="form-control mousetrap"
                    name="objecttags" id="objecttags"
                    placeholder="object tag 1, object tag 2,...">
           </div>
@@ -202,7 +206,7 @@
               <strong>Comments</strong>
             </div>
 
-            <textarea class="form-control" id="objectcomments" rows="5">
+            <textarea class="form-control mousetrap" id="objectcomments" rows="5">
             </textarea>
           </div>
         </div>
@@ -231,9 +235,158 @@
   </div>
 
 </div>
+
+<!-- this is the help box modal  -->
+<div class="modal fade" id="help-box" tabindex="-1" role="dialog"
+     aria-labelledby="help-box" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="help-box-title">Help and Keyboard
+        Shortcuts</h5> <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+
+        <h6>Moving around</h6>
+
+        <table class="table table-sm">
+          <tr>
+            <td><kbd>ctrl</kbd> + <kbd>&rarr;</kbd></td>
+            <td>save the current checkplot and move to next in list</td>
+          </tr>
+          <tr>
+            <td><kbd>ctrl</kbd> + <kbd>&larr;</kbd></td>
+            <td>save the current checkplot and move to previous in list</td>
+          </tr>
+          <tr>
+            <td><kbd>ctrl</kbd> + <kbd>enter</kbd></td>
+            <td>save the current checkplot and move to next in list</td>
+          </tr>
+          <tr>
+            <td><kbd>ctrl</kbd> + <kbd>backspace</kbd></td>
+            <td>clear variable tags, save this checkplot,
+              and move to next in list</td>
+          </tr>
+          <tr>
+            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>backspace</kbd></td>
+            <td>clear all object information, save this checkplot, and move to
+            next in list</td>
+          </tr>
+        </table>
+
+        <h6>Tagging objects by variability</h6>
+
+        <table class="table table-sm">
+          <tr>
+            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>1</kbd></td>
+            <td>add a <span class="cp-tag">planet candidate</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>2</kbd></td>
+            <td>add a <span class="cp-tag">RRab pulsator</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>3</kbd></td>
+            <td>add a <span class="cp-tag">RRc pulsator</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>4</kbd></td>
+            <td>add a <span class="cp-tag">starspot rotation</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>5</kbd></td>
+            <td>add a <span class="cp-tag">flare star</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>6</kbd></td>
+            <td>add a <span class="cp-tag">contact EB</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>7</kbd></td>
+            <td>add a <span class="cp-tag">semi-detached EB</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>8</kbd></td>
+            <td>add a <span class="cp-tag">detached EB</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>9</kbd></td>
+            <td>add a <span class="cp-tag">weird variability</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>0</kbd></td>
+            <td>add a <span class="cp-tag">periodic harmonic</span> tag</td>
+          </tr>
+        </table>
+
+      </div>
+
+        <h6>Tagging objects by type</h6>
+
+        <table class="table table-sm">
+          <tr>
+            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>1</kbd></td>
+            <td>add a <span class="cp-tag">white dwarf</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>2</kbd></td>
+            <td>add a <span class="cp-tag">hot star (OB)</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>3</kbd></td>
+            <td>add a <span class="cp-tag">A star</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>4</kbd></td>
+            <td>add a <span class="cp-tag">F or G dwarf</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>5</kbd></td>
+            <td>add a <span class="cp-tag">red giant</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>6</kbd></td>
+            <td>add a <span class="cp-tag">K or M dwarf</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>7</kbd></td>
+            <td>add a <span class="cp-tag">giant star</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>8</kbd></td>
+            <td>add a <span class="cp-tag">dwarf star</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>9</kbd></td>
+            <td>add a <span class="cp-tag">blended with neighbors</span> tag</td>
+          </tr>
+          <tr>
+            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>0</kbd></td>
+            <td>add a <span class="cp-tag">weird object</span> tag</td>
+          </tr>
+        </table>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary"
+                data-dismiss="modal">Close</button>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
 {% end %}
 
 {% block pagejs %}
+<script src="{{ static_url("mousetrap.min.js") }}"></script>
 <script src="{{ static_url("cpserver.js") }}"></script>
 
 <script>
@@ -242,34 +395,20 @@
   // set up the controls
   cpv.action_setup();
 
-  // load the first checkplot
+  // set up the keyboard shortcuts
+  cpv.keyboard_setup();
+
   // fix the height for the sidebar
   var winheight = $(window).height();
   var docheight = $(document).height();
   $('.sidebar-controls').css({'height': (docheight - 300.0) + 'px'});
 
-  });
-
-  // this is to bind the left and right keys to the
-  // next and previous object links
-  $(document).keydown(function(event) {
-
-  // ctrl+right keys pressed
-  if (event.ctrlKey && event.which == 39) {
-  event.preventDefault();
-  console.log('moving to the next object')
-  $('.checkplot-next').click();
-
-  }
-
-  // ctrl+left key pressed
-  if (event.ctrlKey && event.which == 37) {
-  console.log('moving to the prev object')
-  event.preventDefault();
-  $('.checkplot-prev').click();
-  }
+  // load the first checkplot
+  var firstcp = $("a[data-findex='0']").attr('data-fname');
+  cpv.load_checkplot(firstcp);
 
   });
+
 
 </script>
 {% end %}
