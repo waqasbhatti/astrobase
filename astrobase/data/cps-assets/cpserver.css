@@ -2,37 +2,47 @@
     background: #fffade;
     height: 100%;
 }
+
 .sidebar-list {
     height: 400px;
     overflow-y: auto;
     font-size: x-small;
 }
-.objectinfo-row {
-    height: 360px;
-}
+
+/* .objectinfo-row { */
+/*     height: 360px; */
+/* } */
+
 img#magseriesplot {
     height: 300px;
 }
+
 .sidebar-controls {
     overflow-y: auto;
     font-size: small;
 }
+
 .phased-container {
     overflow-x: auto;
     overflow-y: auto;
 }
+
 .phased-container-col {
     overflow-y: auto;
 }
+
 .phasedlc-container-row:link {
     background: #bbb;
 }
+
 .phasedlc-container-row:hover {
     background: #bbb;
 }
+
 .phasedlc-container-row:active {
     background: #bbb;
 }
+
 .phasedlc-selected {
     background: #bbb;
 }

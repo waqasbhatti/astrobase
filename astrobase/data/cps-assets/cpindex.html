@@ -92,10 +92,31 @@
     <!-- first row: finderchart, objectinfo, varinfo, unphased LC -->
     <div class="row objectinfo-row">
 
-      <div class="col-md-3 text-sm-center">
-        <h4 id="objectid">objectid</h4>
-        <h6 id="twomassid">twomassid</h6>
-        <img class="img-fluid" id="finderchart">
+      <div class="col-md-3">
+
+        <div class="row">
+          <div class="col-sm-12 text-sm-center">
+
+            <h4 id="objectid">objectid</h4>
+            <h6 id="twomassid">twomassid</h6>
+            <img class="img-fluid" id="finderchart">
+
+          </div>
+        </div>
+
+        <div class="row py-1">
+          <div class="col-sm-12 text-sm-center">
+
+            <select class="custom-select mousetrap" id="varcheck" name="varcheck">
+              <option value="0" selected>Is this a variable star?</option>
+              <option value="1">Probably a variable star</option>
+              <option value="2">Probably not a variable star</option>
+              <option value="3">Not sure if variable or not</option>
+            </select>
+
+          </div>
+        </div>
+
       </div>
 
       <div class="col-md-4">
@@ -132,34 +153,6 @@
 
       <!-- this column contains variability controls -->
       <div class="col-sm-3">
-
-        <div class="row">
-          <div class="col-sm-12 text-sm-center">
-            <strong>Is this a variable star?</strong>
-
-            <div class="btn-group" data-toggle="buttons">
-              <label class="btn btn-primary active" id="varcheck-yeslabel">
-                <input type="radio" name="varcheck" value="no"
-                       class="varcheck mousetrap"
-                       id="varcheck-no" autocomplete="off">
-                No
-              </label>
-              <label class="btn btn-primary" id="varcheck-maybelabel">
-                <input type="radio" name="varcheck" value="maybe"
-                       class="varcheck mousetrap"
-                       id="varcheck-maybe" autocomplete="off">
-                Maybe
-              </label>
-              <label class="btn btn-primary" id="varcheck-nolabel">
-                <input type="radio" name="varcheck" value="yes"
-                       class="varcheck mousetrap"
-                       id="varcheck-yes" autocomplete="off">
-                Yes
-              </label>
-            </div>
-
-          </div>
-        </div>
 
         <div class="row">
           <div class="col-sm-12">
@@ -252,30 +245,67 @@
 
       <div class="modal-body">
 
-        <h6>Moving around</h6>
+        <h6>Moving around and editing</h6>
 
         <table class="table table-sm">
           <tr>
-            <td><kbd>ctrl</kbd> + <kbd>&rarr;</kbd></td>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>&rarr;</kbd></td>
             <td>save the current checkplot and move to next in list</td>
           </tr>
           <tr>
-            <td><kbd>ctrl</kbd> + <kbd>&larr;</kbd></td>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>&larr;</kbd></td>
             <td>save the current checkplot and move to previous in list</td>
           </tr>
           <tr>
-            <td><kbd>ctrl</kbd> + <kbd>enter</kbd></td>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>enter</kbd></td>
             <td>save the current checkplot and move to next in list</td>
           </tr>
           <tr>
-            <td><kbd>ctrl</kbd> + <kbd>backspace</kbd></td>
-            <td>clear variable tags, save this checkplot,
-              and move to next in list</td>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>backspace</kbd></td>
+            <td>clear variability flag and all variability tags</td>
           </tr>
           <tr>
-            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>backspace</kbd></td>
-            <td>clear all object information, save this checkplot, and move to
-            next in list</td>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>backspace</kbd></td>
+            <td>clear all object information</td>
+          </tr>
+        </table>
+
+        <h6>Setting best period and epoch</h6>
+
+        <table class="table table-sm">
+          <tr>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>&darr;</kbd></td>
+            <td>move to the next phased light curve plot and set its period and
+            epoch as the current best period and epoch</td>
+          </tr>
+          <tr>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>&uarr;</kbd></td>
+            <td>move to the previous phased light curve plot and set its period
+            and epoch as the current best period and epoch</td>
+          </tr>
+        </table>
+
+        <h6>Setting variability flags</h6>
+
+        <table class="table table-sm">
+          <tr>
+            <td width="200"><kbd>alt</kbd> + <kbd>shift</kbd> + <kbd>v</kbd></td>
+            <td>set the variability flag to <span class="cp-tag">object is
+                variable</span></td>
+          </tr>
+          <tr>
+            <td width="200"><kbd>alt</kbd> + <kbd>shift</kbd> + <kbd>n</kbd></td>
+            <td>set the variability flag to <span class="cp-tag">object is not
+                variable</span></td>
+          </tr>
+          <tr>
+            <td width="200"><kbd>alt</kbd> + <kbd>shift</kbd> + <kbd>m</kbd></td>
+            <td>set the variability flag to <span class="cp-tag">object is
+                maybe variable</span></td>
+          </tr>
+          <tr>
+            <td width="200"><kbd>alt</kbd> + <kbd>shift</kbd> + <kbd>u</kbd></td>
+            <td>reset the variability flag to the unknown state</td>
           </tr>
         </table>
 
@@ -283,43 +313,43 @@
 
         <table class="table table-sm">
           <tr>
-            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>1</kbd></td>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>1</kbd></td>
             <td>add a <span class="cp-tag">planet candidate</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>2</kbd></td>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>2</kbd></td>
             <td>add a <span class="cp-tag">RRab pulsator</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>3</kbd></td>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>3</kbd></td>
             <td>add a <span class="cp-tag">RRc pulsator</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>4</kbd></td>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>4</kbd></td>
             <td>add a <span class="cp-tag">starspot rotation</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>5</kbd></td>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>5</kbd></td>
             <td>add a <span class="cp-tag">flare star</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>6</kbd></td>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>6</kbd></td>
             <td>add a <span class="cp-tag">contact EB</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>7</kbd></td>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>7</kbd></td>
             <td>add a <span class="cp-tag">semi-detached EB</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>8</kbd></td>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>8</kbd></td>
             <td>add a <span class="cp-tag">detached EB</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>9</kbd></td>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>9</kbd></td>
             <td>add a <span class="cp-tag">weird variability</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>0</kbd></td>
+            <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>0</kbd></td>
             <td>add a <span class="cp-tag">periodic harmonic</span> tag</td>
           </tr>
         </table>
@@ -330,43 +360,43 @@
 
         <table class="table table-sm">
           <tr>
-            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>1</kbd></td>
+            <td width="200"><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>1</kbd></td>
             <td>add a <span class="cp-tag">white dwarf</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>2</kbd></td>
+            <td width="200"><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>2</kbd></td>
             <td>add a <span class="cp-tag">hot star (OB)</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>3</kbd></td>
+            <td width="200"><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>3</kbd></td>
             <td>add a <span class="cp-tag">A star</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>4</kbd></td>
+            <td width="200"><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>4</kbd></td>
             <td>add a <span class="cp-tag">F or G dwarf</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>5</kbd></td>
+            <td width="200"><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>5</kbd></td>
             <td>add a <span class="cp-tag">red giant</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>6</kbd></td>
+            <td width="200"><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>6</kbd></td>
             <td>add a <span class="cp-tag">K or M dwarf</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>7</kbd></td>
+            <td width="200"><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>7</kbd></td>
             <td>add a <span class="cp-tag">giant star</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>8</kbd></td>
+            <td width="200"><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>8</kbd></td>
             <td>add a <span class="cp-tag">dwarf star</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>9</kbd></td>
+            <td width="200"><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>9</kbd></td>
             <td>add a <span class="cp-tag">blended with neighbors</span> tag</td>
           </tr>
           <tr>
-            <td><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>0</kbd></td>
+            <td width="200"><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>0</kbd></td>
             <td>add a <span class="cp-tag">weird object</span> tag</td>
           </tr>
         </table>
