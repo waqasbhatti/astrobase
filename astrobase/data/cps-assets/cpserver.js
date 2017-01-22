@@ -251,6 +251,8 @@ var cpv = {
 
             // zero out previous stuff
             $('.phased-container').empty();
+            cpv.currphasedind = null;
+            cpv.maxphasedind = null;
 
             // this is the fast scroll index for moving quickly through the
             // phased plots and selecting them as the best
@@ -471,11 +473,14 @@ var cpv = {
             evt.preventDefault();
 
             // find the current index
-            var prevfile = $("a[data-findex='" + (cpv.currentfind-1) + "']")
-                .attr('data-fname');
+            var prevfilelink = $("a[data-findex='" +
+                                 (cpv.currentfind-1) + "']");
+            var prevfile = prevfilelink.attr('data-fname');
             console.log('moving to prev file: ' + prevfile);
+
             if (prevfile != undefined) {
                 cpv.save_checkplot(cpv.load_checkplot,prevfile);
+                // $(prevfilelink)[0].scrollIntoView();
             }
             else {
                 console.log('no prev file, staying right here');
@@ -489,12 +494,14 @@ var cpv = {
             evt.preventDefault();
 
             // find the current index
-            var nextfile = $("a[data-findex='" + (cpv.currentfind+1) + "']")
-                .attr('data-fname');
+            var nextfilelink = $("a[data-findex='" +
+                                 (cpv.currentfind+1) + "']");
+            var nextfile = nextfilelink.attr('data-fname');
             console.log('moving to next file: ' + nextfile);
 
             if (nextfile != undefined) {
                 cpv.save_checkplot(cpv.load_checkplot,nextfile);
+                // $(nextfilelink)[0].scrollIntoView();
             }
             else {
                 console.log('no next file, staying right here');
@@ -552,6 +559,9 @@ var cpv = {
                 .children('.phasedlc-container-row')
                 .filter(selector).addClass('phasedlc-selected');
 
+            // scroll this into view
+            $(this)[0].scrollIntoView(true)
+
         });
 
         // resizing the window fixes the sidebar again
@@ -602,12 +612,12 @@ var cpv = {
         //////////////
 
         // ctrl+right: save this, move to next checkplot
-        Mousetrap.bind('ctrl+right', function() {
+        Mousetrap.bind(['ctrl+right','shift+right'], function() {
             $('.checkplot-next').click();
         });
 
         // ctrl+left: save this, move to prev checkplot
-        Mousetrap.bind('ctrl+left', function() {
+        Mousetrap.bind(['ctrl+left','shift+left'], function() {
             $('.checkplot-prev').click();
         });
 
@@ -617,7 +627,7 @@ var cpv = {
         });
 
         // ctrl+down: move to the next phased LC and set it as the best
-        Mousetrap.bind('ctrl+down', function() {
+        Mousetrap.bind(['ctrl+down','shift+down'], function() {
 
             // check the current phased index, if it's null, then set it to 0
             if (cpv.currphasedind == null) {
@@ -633,7 +643,7 @@ var cpv = {
         });
 
         // ctrl+up: move to the prev phased LC and set it as the best
-        Mousetrap.bind('ctrl+up', function() {
+        Mousetrap.bind(['ctrl+up','shift+up'], function() {
 
             // check the current phased index, if it's null, then set it to 0
             if (cpv.currphasedind == null) {
