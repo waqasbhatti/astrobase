@@ -5,9 +5,14 @@
 
   <div class="col-sm-2 sidebar">
 
-    <div class="row sidebar-list">
+    <div class="row">
       <div class="col-sm-12">
         <h4 class="text-sm-center">Checkplots</h4>
+      </div>
+    </div>
+
+    <div class="row sidebar-list">
+      <div class="col-sm-12">
         <ul id="checkplotlist" class="list-unstyled">
           {% for cplpath, cplbase, cplind in zip(project_checkplots, project_checkplotbasenames,project_checkplotindices) %}
           <li>
