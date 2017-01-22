@@ -63,6 +63,10 @@ var cpv = {
     currfile: '',
     currcp: {},
 
+    // these help in moving quickly through the phased LCs
+    currphasedind: null,
+    maxphasedind: null,
+
     // this function generates a spinner
     make_spinner: function (spinnermsg) {
 
@@ -190,22 +194,28 @@ var cpv = {
                                 '#magseriesplot');
 
             // update the varinfo
-            if (cpv.currcp.varinfo.objectisvar == true) {
+            if (cpv.currcp.varinfo.objectisvar == 1) {
 
                 console.log('objectisvar = true');
-                $('#varcheck-yes').click();
+                $('#varcheck').val(1);
 
             }
-            else if (cpv.currcp.varinfo.objectisvar == false) {
+            else if (cpv.currcp.varinfo.objectisvar == 2) {
 
                 console.log('objectisvar = false');
-                $('#varcheck-no').click();
+                $('#varcheck').val(2);
+
+            }
+            else if (cpv.currcp.varinfo.objectisvar == 3) {
+
+                console.log('objectisvar = maybe');
+                $('#varcheck').val(3);
 
             }
             else {
 
-                console.log('objectisvar = maybe (null)');
-                $('#varcheck-maybe').click();
+                console.log('objectisvar = none');
+                $('#varcheck').val(0);
 
             }
             $('#objectperiod').val(cpv.currcp.varinfo.varperiod);
@@ -241,6 +251,10 @@ var cpv = {
 
             // zero out previous stuff
             $('.phased-container').empty();
+
+            // this is the fast scroll index for moving quickly through the
+            // phased plots and selecting them as the best
+            var phasedplotindex = 0;
 
             // then go through each lsp method, and generate the containers
             for (let lspmethod of lspmethods) {
@@ -282,6 +296,7 @@ var cpv = {
                                 'title="use this period and epoch" ' +
                                 'data-lspmethod="' + lspmethod + '" ' +
                                 'data-periodind="' + periodind + '" ' +
+                                'data-phasedind="' + phasedplotindex + '" ' +
                                 'data-currentbest="no" ' +
                                 'data-period="' +
                                 cpv.currcp[lspmethod][periodind].period + '" ' +
@@ -294,7 +309,9 @@ var cpv = {
                                 cpv.currcp[lspmethod][periodind].plot + '"' +
                                 'class="img-fluid" id="plot-' +
                                 periodind + '">' + '</div></div></a>';
+
                             phasedlcrows.push(phasedlcrow);
+                            phasedplotindex = phasedplotindex + 1;
 
                         }
 
@@ -311,6 +328,9 @@ var cpv = {
                 }
 
             }
+
+            // write the max phasedind
+            cpv.maxphasedind = phasedplotindex;
 
 
         }).done(function () {
@@ -356,6 +376,9 @@ var cpv = {
 
         // do the AJAX call to get this checkplot
         var ajaxurl = '/cp/' + cputils.b64_encode(cpv.currfile);
+
+        // get the current value of the objectisvar select box
+        cpv.currcp.varinfo.objectisvar = $('#varcheck').val();
 
         // make sure that we've saved the input varinfo, objectinfo and comments
         cpv.currcp.varinfo.vartags = $('#vartags').val();
@@ -531,28 +554,6 @@ var cpv = {
 
         });
 
-        // clicking on the is-object-variable control saves the info to currcp
-        $("input[name='varcheck']").on('click', function (evt) {
-
-            var yes = $('#varcheck-yes').prop('checked');
-            var no = $('#varcheck-no').prop('checked');
-            var maybe = $('#varcheck-maybe').prop('checked');
-
-            if (yes) {
-                cpv.currcp.varinfo.objectisvar = true;
-            }
-            else if (no) {
-                cpv.currcp.varinfo.objectisvar = false;
-            }
-            else if (maybe) {
-                cpv.currcp.varinfo.objectisvar = null;
-            }
-
-            console.log('yes, no, maybe ' + yes + ',' + no + ',' + maybe);
-
-        });
-
-
         // resizing the window fixes the sidebar again
         $(window).on('resize', function (evt) {
 
@@ -570,6 +571,31 @@ var cpv = {
 
     // this does keyboard shortcut setup
     keyboard_setup: function () {
+
+        /////////////////////////
+        // SETTING VARIABILITY //
+        /////////////////////////
+
+        // alt+shift+v: object is variable
+        Mousetrap.bind('alt+shift+v', function() {
+            $('#varcheck').val(1);
+        });
+
+        // alt+shift+u: object is not variable
+        Mousetrap.bind('alt+shift+n', function() {
+            $('#varcheck').val(2);
+        });
+
+        // alt+shift+m: object is maybe a variable
+        Mousetrap.bind('alt+shift+m', function() {
+            $('#varcheck').val(3);
+        });
+
+        // alt+shift+u: unset variability flag
+        Mousetrap.bind('alt+shift+u', function() {
+            $('#varcheck').val(0);
+        });
+
 
         //////////////
         // MOVEMENT //
@@ -590,31 +616,65 @@ var cpv = {
             $('.checkplot-next').click();
         });
 
-        // ctrl+backspace: clear variability tags, save, move to next
+        // ctrl+down: move to the next phased LC and set it as the best
+        Mousetrap.bind('ctrl+down', function() {
+
+            // check the current phased index, if it's null, then set it to 0
+            if (cpv.currphasedind == null) {
+                cpv.currphasedind = 0;
+            }
+            else if (cpv.currphasedind < cpv.maxphasedind) {
+                cpv.currphasedind = cpv.currphasedind + 1;
+            }
+
+            // find the phased plot with this phasedind and click on it
+            $('a[data-phasedind="' + cpv.currphasedind + '"]').click();
+
+        });
+
+        // ctrl+up: move to the prev phased LC and set it as the best
+        Mousetrap.bind('ctrl+up', function() {
+
+            // check the current phased index, if it's null, then set it to 0
+            if (cpv.currphasedind == null) {
+                cpv.currphasedind = 0;
+            }
+            else if (cpv.currphasedind > 0) {
+                cpv.currphasedind = cpv.currphasedind - 1;
+            }
+
+            // find the phased plot with this phasedind and click on it
+            $('a[data-phasedind="' + cpv.currphasedind + '"]').click();
+
+        });
+
+        // ctrl+backspace: clear variability tags
         Mousetrap.bind('ctrl+backspace', function() {
 
-            // clean out the variability tags and input boxes
+            // clean out the variability info and input boxes
             $('#vartags').val('');
             $('#objectperiod').val('');
             $('#objectepoch').val('');
+            $('#varcheck').val(0);
+
             cpv.currcp.varinfo.objectisvar = null;
             cpv.currcp.varinfo.varepoch = null;
             cpv.currcp.varinfo.varisperiodic = null;
             cpv.currcp.varinfo.varperiod = null;
             cpv.currcp.varinfo.vartags = null;
-
-            $('.checkplot-next').click();
         });
 
         // ctrl+shift+backspace: clear all info
         Mousetrap.bind('ctrl+shift+backspace', function() {
 
-            // clean out the variability tags and input boxes
+            // clean out the all info and input boxes
             $('#vartags').val('');
             $('#objectperiod').val('');
             $('#objectepoch').val('');
             $('#objecttags').val('');
             $('#objectcomments').val('');
+            $('#varcheck').val(0);
+
             cpv.currcp.varinfo.objectisvar = null;
             cpv.currcp.varinfo.varepoch = null;
             cpv.currcp.varinfo.varisperiodic = null;
@@ -622,8 +682,6 @@ var cpv = {
             cpv.currcp.varinfo.vartags = null;
             cpv.currcp.objectinfo.objecttags = null;
             cpv.currcp.comments = null;
-
-            $('.checkplot-next').click();
         });
 
 
