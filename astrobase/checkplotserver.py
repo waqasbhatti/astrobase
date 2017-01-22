@@ -258,7 +258,7 @@ def main():
     ## start the server ##
     ######################
     http_server.listen(serverport, options.serve)
-    LOGGER.info('starting event loop. listening on http://%s:%s' %
+    LOGGER.info('started checkplotserver. listening on http://%s:%s' %
                 (options.serve, serverport))
 
     # register the signal callbacks
