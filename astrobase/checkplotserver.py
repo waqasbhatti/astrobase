@@ -250,8 +250,14 @@ def main():
             serverport = serverport + 1
     sock.close()
 
-    http_server.listen(serverport, options.serve)
+    if not portok:
+        LOGGER.error('could not find a free port after 5 tries, giving up')
+        sys.exit(1)
 
+    ######################
+    ## start the server ##
+    ######################
+    http_server.listen(serverport, options.serve)
     LOGGER.info('starting event loop. listening on http://%s:%s' %
                 (options.serve, serverport))
 
