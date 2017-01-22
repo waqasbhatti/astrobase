@@ -233,31 +233,29 @@ def main():
     # X-Forwarded-For support so we can see the remote IP in the logs
     http_server = tornado.httpserver.HTTPServer(app, xheaders=True)
 
+    ######################
+    ## start the server ##
+    ######################
+
     # make sure the port we're going to listen on is ok
     # inspired by how Jupyter notebook does this
     portok = False
-    sock = socket.socket()
     serverport = options.port
     maxtrys = 5
     thistry = 0
     while not portok and thistry < maxtrys:
         try:
-            sock.bind((options.serve, serverport))
+            http_server.listen(serverport, options.serve)
             portok = True
         except socket.error as e:
             LOGGER.warning('%s:%s is already in use, trying port %s' %
                            (options.serve, serverport, serverport + 1))
             serverport = serverport + 1
-    sock.close()
 
     if not portok:
         LOGGER.error('could not find a free port after 5 tries, giving up')
         sys.exit(1)
 
-    ######################
-    ## start the server ##
-    ######################
-    http_server.listen(serverport, options.serve)
     LOGGER.info('started checkplotserver. listening on http://%s:%s' %
                 (options.serve, serverport))
 
