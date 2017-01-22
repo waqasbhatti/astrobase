@@ -27,11 +27,11 @@ USAGE
 If you made checkplots in the PNG format (checkplot-*.png)
 ----------------------------------------------------------
 
-Copy this file along with checkplot-viewer.html and checkplot-viewer.js to the
+Copy checkplot-viewer.html and checkplot-viewer.js to the
 base directory from where you intend to serve your checkplot images from. Then
-invoke it from that directory like so:
+invoke this command from that directory:
 
-$ python checkplotlist.py png subdir/containing/the/checkplots
+$ checkplotlist png subdir/containing/the/checkplots
 
 This will generate a checkplot-filelist.json file containing the file paths to
 the checkplots.
@@ -49,13 +49,12 @@ browse to the checkplot-viewer.html file normally. Note that a file:/// URL
 provided to the browser won't necessarily work in some browsers (especially
 Google Chrome) because of security precautions.
 
-If you made checkplots in the gzipped pickle format (checkplot-*.pkl.gz)
-------------------------------------------------------------------------
+If you made checkplots in the pickle format (checkplot-*.pkl)
+-------------------------------------------------------------
 
-Copy this file to where you put your checkplot gzipped pickles. Then invoke it
-from that directory like so:
+Invoke this command from that directory like so:
 
-$ python checkplotlist.py pkl subdir/containing/the/checkplots
+$ checkplotlist pkl subdir/containing/the/checkplots
 
 Then, from that directory, invoke the checkplotserver webapp (make sure the
 astrobase virtualenv is active, so the command below is in your path):
@@ -68,13 +67,16 @@ read the checkplot-filelist.json file to find the checkplots.
 
 Browse to http://localhost:5225 (or whatever port you set in checkplotserver
 options) to look through or update all your checkplots. Any changes will be
-written back to the checkplot .pkl.gz files, making this method of browsing more
-suited to more serious variability search.
+written back to the checkplot .pkl files, making this method of browsing more
+suited to more serious variability searches on large numbers of checkplots.
 
 TL;DR
 =====
 
-python checkplotlist.py <pkl|png> <subdir/containing/the/checkplots/>
+This makes a checkplot file list for use with the checkplot-viewer.html (for
+checkplot PNGs) or the checkplotserver.py (for checkplot pickles) webapps.
+
+checkplotlist <pkl|png> <subdir/containing/the/checkplots/>
 
 '''
 
