@@ -566,6 +566,589 @@ var cpv = {
         });
 
 
+    },
+
+    // this does keyboard shortcut setup
+    keyboard_setup: function () {
+
+        //////////////
+        // MOVEMENT //
+        //////////////
+
+        // ctrl+right: save this, move to next checkplot
+        Mousetrap.bind('ctrl+right', function() {
+            $('.checkplot-next').click();
+        });
+
+        // ctrl+left: save this, move to prev checkplot
+        Mousetrap.bind('ctrl+left', function() {
+            $('.checkplot-prev').click();
+        });
+
+        // ctrl+enter: save this, move to next checkplot
+        Mousetrap.bind('ctrl+enter', function() {
+            $('.checkplot-next').click();
+        });
+
+        // ctrl+backspace: clear variability tags, save, move to next
+        Mousetrap.bind('ctrl+backspace', function() {
+
+            // clean out the variability tags and input boxes
+            $('#vartags').val('');
+            $('#objectperiod').val('');
+            $('#objectepoch').val('');
+            cpv.currcp.varinfo.objectisvar = null;
+            cpv.currcp.varinfo.varepoch = null;
+            cpv.currcp.varinfo.varisperiodic = null;
+            cpv.currcp.varinfo.varperiod = null;
+            cpv.currcp.varinfo.vartags = null;
+
+            $('.checkplot-next').click();
+        });
+
+        // ctrl+shift+backspace: clear all info
+        Mousetrap.bind('ctrl+shift+backspace', function() {
+
+            // clean out the variability tags and input boxes
+            $('#vartags').val('');
+            $('#objectperiod').val('');
+            $('#objectepoch').val('');
+            $('#objecttags').val('');
+            $('#objectcomments').val('');
+            cpv.currcp.varinfo.objectisvar = null;
+            cpv.currcp.varinfo.varepoch = null;
+            cpv.currcp.varinfo.varisperiodic = null;
+            cpv.currcp.varinfo.varperiod = null;
+            cpv.currcp.varinfo.vartags = null;
+            cpv.currcp.objectinfo.objecttags = null;
+            cpv.currcp.comments = null;
+
+            $('.checkplot-next').click();
+        });
+
+
+        ///////////////////////
+        // TAGGING VARIABLES //
+        ///////////////////////
+
+        // ctrl+shift+1: planet candidate
+        Mousetrap.bind('ctrl+shift+1', function () {
+
+            // get the current val for the vartags
+            var vartags = $('#vartags').val();
+
+            // split by comma and strip extra spaces
+            vartags = vartags.split(',');
+            vartags.forEach(function (item, index, arr) {
+                vartags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            vartags = vartags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (vartags.indexOf('planet candidate') == -1) {
+                vartags.push('planet candidate');
+                vartags = vartags.join(', ');
+                $('#vartags').val(vartags);
+            }
+
+        });
+
+        // ctrl+shift+2: RRab pulsator
+        Mousetrap.bind('ctrl+shift+2', function () {
+
+            // get the current val for the vartags
+            var vartags = $('#vartags').val();
+
+            // split by comma and strip extra spaces
+            vartags = vartags.split(',');
+            vartags.forEach(function (item, index, arr) {
+                vartags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            vartags = vartags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (vartags.indexOf('RRab pulsator') == -1) {
+                vartags.push('RRab pulsator');
+                vartags = vartags.join(', ');
+                $('#vartags').val(vartags);
+            }
+
+        });
+
+        // ctrl+shift+3: RRc pulsator
+        Mousetrap.bind('ctrl+shift+3', function () {
+
+            // get the current val for the vartags
+            var vartags = $('#vartags').val();
+
+            // split by comma and strip extra spaces
+            vartags = vartags.split(',');
+            vartags.forEach(function (item, index, arr) {
+                vartags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            vartags = vartags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (vartags.indexOf('RRc pulsator') == -1) {
+                vartags.push('RRc pulsator');
+                vartags = vartags.join(', ');
+                $('#vartags').val(vartags);
+            }
+
+        });
+
+        // ctrl+shift+4: starspot rotation
+        Mousetrap.bind('ctrl+shift+4', function () {
+
+            // get the current val for the vartags
+            var vartags = $('#vartags').val();
+
+            // split by comma and strip extra spaces
+            vartags = vartags.split(',');
+            vartags.forEach(function (item, index, arr) {
+                vartags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            vartags = vartags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (vartags.indexOf('starspot rotation') == -1) {
+                vartags.push('starspot rotation');
+                vartags = vartags.join(', ');
+                $('#vartags').val(vartags);
+            }
+
+        });
+
+        // ctrl+shift+5: flare star
+        Mousetrap.bind('ctrl+shift+5', function () {
+
+            // get the current val for the vartags
+            var vartags = $('#vartags').val();
+
+            // split by comma and strip extra spaces
+            vartags = vartags.split(',');
+            vartags.forEach(function (item, index, arr) {
+                vartags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            vartags = vartags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (vartags.indexOf('flare star') == -1) {
+                vartags.push('flare star');
+                vartags = vartags.join(', ');
+                $('#vartags').val(vartags);
+            }
+
+        });
+
+        // ctrl+shift+6: contact EB
+        Mousetrap.bind('ctrl+shift+6', function () {
+
+            // get the current val for the vartags
+            var vartags = $('#vartags').val();
+
+            // split by comma and strip extra spaces
+            vartags = vartags.split(',');
+            vartags.forEach(function (item, index, arr) {
+                vartags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            vartags = vartags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (vartags.indexOf('contact EB') == -1) {
+                vartags.push('contact EB');
+                vartags = vartags.join(', ');
+                $('#vartags').val(vartags);
+            }
+
+        });
+
+        // ctrl+shift+7: semi-detached EB
+        Mousetrap.bind('ctrl+shift+7', function () {
+
+            // get the current val for the vartags
+            var vartags = $('#vartags').val();
+
+            // split by comma and strip extra spaces
+            vartags = vartags.split(',');
+            vartags.forEach(function (item, index, arr) {
+                vartags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            vartags = vartags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (vartags.indexOf('semi-detached EB') == -1) {
+                vartags.push('semi-detached EB');
+                vartags = vartags.join(', ');
+                $('#vartags').val(vartags);
+            }
+
+        });
+
+        // ctrl+shift+8: detached EB
+        Mousetrap.bind('ctrl+shift+8', function () {
+
+            // get the current val for the vartags
+            var vartags = $('#vartags').val();
+
+            // split by comma and strip extra spaces
+            vartags = vartags.split(',');
+            vartags.forEach(function (item, index, arr) {
+                vartags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            vartags = vartags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (vartags.indexOf('detached EB') == -1) {
+                vartags.push('detached EB');
+                vartags = vartags.join(', ');
+                $('#vartags').val(vartags);
+            }
+
+        });
+
+        // ctrl+shift+9: weird variability
+        Mousetrap.bind('ctrl+shift+9', function () {
+
+            // get the current val for the vartags
+            var vartags = $('#vartags').val();
+
+            // split by comma and strip extra spaces
+            vartags = vartags.split(',');
+            vartags.forEach(function (item, index, arr) {
+                vartags[index] = item.trim();
+            });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (vartags.indexOf('weird variability') == -1) {
+                vartags.push('weird variability');
+                vartags = vartags.join(', ');
+                $('#vartags').val(vartags);
+            }
+
+        });
+
+        // ctrl+shift+0: period harmonic
+        Mousetrap.bind('ctrl+shift+0', function () {
+
+            // get the current val for the vartags
+            var vartags = $('#vartags').val();
+
+            // split by comma and strip extra spaces
+            vartags = vartags.split(',');
+            vartags.forEach(function (item, index, arr) {
+                vartags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            objecttags = objecttags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (vartags.indexOf('period harmonic') == -1) {
+                vartags.push('period harmonic');
+                vartags = vartags.join(', ');
+                $('#vartags').val(vartags);
+            }
+
+        });
+
+
+        //////////////////////////
+        // TAGGING OBJECT TYPES //
+        //////////////////////////
+
+        // alt+shift+1: white dwarf
+        Mousetrap.bind(['alt+shift+1','command+shift+1'], function () {
+
+            // get the current val for the objecttags
+            var objecttags = $('#objecttags').val();
+
+            // split by comma and strip extra spaces
+            objecttags = objecttags.split(',');
+            objecttags.forEach(function (item, index, arr) {
+                objecttags[index] = item.trim();
+            });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (objecttags.indexOf('white dwarf') == -1) {
+                objecttags.push('white dwarf');
+                objecttags = objecttags.join(', ');
+                $('#objecttags').val(objecttags);
+            }
+
+        });
+
+        // alt+shift+2: hot star (OB)
+        Mousetrap.bind(['alt+shift+2','command+shift+2'], function () {
+
+            // get the current val for the objecttags
+            var objecttags = $('#objecttags').val();
+
+            // split by comma and strip extra spaces
+            objecttags = objecttags.split(',');
+            objecttags.forEach(function (item, index, arr) {
+                objecttags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            objecttags = objecttags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (objecttags.indexOf('hot star (OB)') == -1) {
+                objecttags.push('hot star (OB)');
+                objecttags = objecttags.join(', ');
+                $('#objecttags').val(objecttags);
+            }
+
+        });
+
+        // alt+shift+3: A star
+        Mousetrap.bind(['alt+shift+3','command+shift+3'], function () {
+
+            // get the current val for the objecttags
+            var objecttags = $('#objecttags').val();
+
+            // split by comma and strip extra spaces
+            objecttags = objecttags.split(',');
+            objecttags.forEach(function (item, index, arr) {
+                objecttags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            objecttags = objecttags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (objecttags.indexOf('A star') == -1) {
+                objecttags.push('A star');
+                objecttags = objecttags.join(', ');
+                $('#objecttags').val(objecttags);
+            }
+
+        });
+
+        // alt+shift+4: F or G dwarf
+        Mousetrap.bind(['alt+shift+4','command+shift+4'], function () {
+
+            // get the current val for the objecttags
+            var objecttags = $('#objecttags').val();
+
+            // split by comma and strip extra spaces
+            objecttags = objecttags.split(',');
+            objecttags.forEach(function (item, index, arr) {
+                objecttags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            objecttags = objecttags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (objecttags.indexOf('F or G dwarf') == -1) {
+                objecttags.push('F or G dwarf');
+                objecttags = objecttags.join(', ');
+                $('#objecttags').val(objecttags);
+            }
+
+        });
+
+        // alt+shift+5: red giant
+        Mousetrap.bind(['alt+shift+5','command+shift+5'], function () {
+
+            // get the current val for the objecttags
+            var objecttags = $('#objecttags').val();
+
+            // split by comma and strip extra spaces
+            objecttags = objecttags.split(',');
+            objecttags.forEach(function (item, index, arr) {
+                objecttags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            objecttags = objecttags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (objecttags.indexOf('red giant') == -1) {
+                objecttags.push('red giant');
+                objecttags = objecttags.join(', ');
+                $('#objecttags').val(objecttags);
+            }
+
+        });
+
+        // alt+shift+6: K or M dwarf
+        Mousetrap.bind(['alt+shift+6','command+shift+6'], function () {
+
+            // get the current val for the objecttags
+            var objecttags = $('#objecttags').val();
+
+            // split by comma and strip extra spaces
+            objecttags = objecttags.split(',');
+            objecttags.forEach(function (item, index, arr) {
+                objecttags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            objecttags = objecttags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (objecttags.indexOf('K or M dwarf') == -1) {
+                objecttags.push('K or M dwarf');
+                objecttags = objecttags.join(', ');
+                $('#objecttags').val(objecttags);
+            }
+
+        });
+
+        // alt+shift+7: giant star
+        Mousetrap.bind(['alt+shift+7','command+shift+7'], function () {
+
+            // get the current val for the objecttags
+            var objecttags = $('#objecttags').val();
+
+            // split by comma and strip extra spaces
+            objecttags = objecttags.split(',');
+            objecttags.forEach(function (item, index, arr) {
+                objecttags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            objecttags = objecttags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (objecttags.indexOf('giant star') == -1) {
+                objecttags.push('giant star');
+                objecttags = objecttags.join(', ');
+                $('#objecttags').val(objecttags);
+            }
+
+        });
+
+        // alt+shift+8: dwarf star
+        Mousetrap.bind(['alt+shift+8','command+shift+8'], function () {
+
+            // get the current val for the objecttags
+            var objecttags = $('#objecttags').val();
+
+            // split by comma and strip extra spaces
+            objecttags = objecttags.split(',');
+            objecttags.forEach(function (item, index, arr) {
+                objecttags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            objecttags = objecttags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (objecttags.indexOf('dwarf star') == -1) {
+                objecttags.push('dwarf star');
+                objecttags = objecttags.join(', ');
+                $('#objecttags').val(objecttags);
+            }
+
+        });
+
+        // alt+shift+9: blended with neighbors
+        Mousetrap.bind(['alt+shift+9','command+shift+9'], function () {
+
+            // get the current val for the objecttags
+            var objecttags = $('#objecttags').val();
+
+            // split by comma and strip extra spaces
+            objecttags = objecttags.split(',');
+            objecttags.forEach(function (item, index, arr) {
+                objecttags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            objecttags = objecttags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (objecttags.indexOf('blended with neighbors') == -1) {
+                objecttags.push('blended with neighbors');
+                objecttags = objecttags.join(', ');
+                $('#objecttags').val(objecttags);
+            }
+
+        });
+
+        // alt+shift+0: weird object
+        Mousetrap.bind(['alt+shift+0','command+shift+0'], function () {
+
+            // get the current val for the objecttags
+            var objecttags = $('#objecttags').val();
+
+            // split by comma and strip extra spaces
+            objecttags = objecttags.split(',');
+            objecttags.forEach(function (item, index, arr) {
+                objecttags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            objecttags = objecttags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (objecttags.indexOf('weird object') == -1) {
+                objecttags.push('weird object');
+                objecttags = objecttags.join(', ');
+                $('#objecttags').val(objecttags);
+            }
+
+        });
+
+
     }
 
 };
