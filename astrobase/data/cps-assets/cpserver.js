@@ -62,6 +62,7 @@ var cpv = {
     currentfind: 0,
     currfile: '',
     currcp: {},
+    totalcps: 0,
 
     // these help in moving quickly through the phased LCs
     currphasedind: null,
@@ -417,18 +418,67 @@ var cpv = {
 
                 console.log('checkplot updated ok');
 
-                // we don't need full precision for the time of update
-                var updts = parseInt(updateinfo.unixtime);
+                // store only the latest update in the tracker
+                // FIXME: think about adding in update history
+                // probably a better fit for indexedDB or something
+                cptracker.cpdata[postobj.cpfile] = updateinfo.changes;
 
-                if (!(postobj.cpfile in cptracker.cpdata)) {
-                    cptracker.cpdata[postobj.cpfile] = {};
+                // we need to update the project status widget
+
+                // generate the new list element: this contains objectid -
+                // variability flag, variability tags, object tags
+                var objectidelem = '<li data-objectid="' +
+                    updateinfo.changes.objectid +
+                    '"><strong>' +
+                    updateinfo.changes.objectid + '</strong>: ';
+
+                if (updateinfo.changes.varinfo.objectisvar == '1') {
+                    objectidelem = objectidelem + 'variable';
+                }
+                else if (updateinfo.changes.varinfo.objectisvar == '2') {
+                    objectidelem = objectidelem + 'not variable';
+                }
+                else if (updateinfo.changes.varinfo.objectisvar == '3') {
+                    objectidelem = objectidelem + 'maybe variable';
+                }
+                else if (updateinfo.changes.varinfo.objectisvar == '0') {
+                    objectidelem = objectidelem + 'no varflag set';
                 }
 
-                cptracker.cpdata[postobj.cpfile][updts] = {
-                    changes: updateinfo.changes,
-                    filename: updateinfo.checkplot,
-                    unixtime: updateinfo.unixtime
-                };
+                var thisvartags =
+                    updateinfo.changes.varinfo.vartags.split(', ');
+
+                var thisobjtags =
+                    updateinfo.changes.objectinfo.objecttags.split(', ');
+
+                if (thisvartags[0].length > 0) {
+
+                    objectidelem = objectidelem + ' &mdash; ';
+                    thisvartags.forEach(function (e, i, a) {
+                        objectidelem = objectidelem + '<span class="cp-tag">' +
+                            e + '</span> ';
+                    });
+                }
+                if (thisobjtags[0].length > 0) {
+
+                    objectidelem = objectidelem + ' &mdash; ';
+                    thisobjtags.forEach(function (e, i, a) {
+                        objectidelem = objectidelem + '<span class="cp-tag">' +
+                            e + '</span> ';
+                    });
+                }
+
+                // check if this object is already present and remove if it so
+                var statobjcheck = $('li[data-objectid="' +
+                                     updateinfo.changes.objectid +
+                                     '"]').remove();
+
+                // add the new elem in
+                $('#project-status').append(objectidelem);
+
+                // update the count in saved-count
+                var nsaved = $('#project-status li').length;
+                $('#saved-count').html(nsaved + '/' + cpv.totalcps);
 
             }
 
@@ -486,6 +536,8 @@ var cpv = {
                 // $(prevfilelink)[0].scrollIntoView();
             }
             else {
+                // make sure to save current
+                cpv.save_checkplot(null,null);
                 console.log('no prev file, staying right here');
             }
 
@@ -507,6 +559,8 @@ var cpv = {
                 // $(nextfilelink)[0].scrollIntoView();
             }
             else {
+                // make sure to save current
+                cpv.save_checkplot(null,null);
                 console.log('no next file, staying right here');
             }
 
