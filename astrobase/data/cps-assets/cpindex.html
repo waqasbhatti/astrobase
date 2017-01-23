@@ -33,27 +33,11 @@
       <div class="col-sm-12">
         <h4 class="text-sm-center py-1">Project</h4>
 
-        <!-- this is the status row -->
-        <div class="row">
-          <div class="col-sm-12">
-
-          </div>
-        </div>
-
         <!-- this is the save project row -->
         <div class="row">
           <div class="col-sm-12">
-            <p>You may save all project data to CSV or JSON. This includes the
-              following for each object:</p>
-            <ul>
-              <li>object information (coordinates, proper motion, magnitudes,
-              and colors)</li>
-              <li>variability tags, period, and epoch</li>
-              <li>object tags and comments</li>
-              <li>checkplot pickle file name and status</li>
-            </ul>
 
-            <p>Save to
+            <p>Download:
               <button type="button" id="save-project-csv"
                       class="btn btn-outline-primary btn-sm">
                 CSV
@@ -69,9 +53,23 @@
         <!-- this is where downloads appear -->
         <div class="row">
           <div class="col-sm-12 download-center">
+            <p>Saved objects in the current project:
+              <strong><span id="saved-count"></span></strong></p>
 
           </div>
         </div>
+
+        <!-- this is the status row -->
+        <div class="row status-list">
+          <div class="col-sm-12" >
+
+            <ul class="list-unstyled" id="project-status">
+
+            </ul>
+
+          </div>
+        </div>
+
 
       </div>
     </div>
@@ -445,6 +443,10 @@
   // load the first checkplot
   var firstcp = $("a[data-findex='0']").attr('data-fname');
   cpv.load_checkplot(firstcp);
+
+  // load the count of the objects
+  cpv.totalcps = $('#checkplotlist li').length;
+
 
   });
 
