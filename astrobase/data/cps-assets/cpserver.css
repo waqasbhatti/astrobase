@@ -4,13 +4,13 @@
 }
 
 .sidebar-list {
-    height: 350px;
+    height: 325px;
     overflow-y: auto;
     font-size: small;
 }
 
 .status-list {
-    height: 350px;
+    height: 375px;
     overflow-y: auto;
     font-size: small;
 }
@@ -66,6 +66,10 @@ span.cp-tag {
 
 li.tracker-obj {
     padding-bottom: 12px;
+}
+
+.bot-mrg-10px {
+    margin-bottom: 10px;
 }
 
 /* fancy spinner thing - http://tobiasahlin.com/spinkit/

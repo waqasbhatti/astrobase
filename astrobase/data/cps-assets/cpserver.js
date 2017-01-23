@@ -33,26 +33,68 @@ var cputils = {
 };
 
 
-// this contains updates to current checkplots
+// this contains updates to current checkplots, tracks the entire project's info
+// and provides functions to save everything to CSV or JSON
 var cptracker = {
 
-    // this is the actual object that will get written to JSON or CSV we'll
-    // search for the latest update and write that to disk if told to do so. if
-    // we're told to include all updates, then we'll get all the history for
-    // each checkplot
+    // this is the actual object that will get written to JSON or CSV
     cpdata: {},
 
     // this is the order of columns for generating the CSV
-    csvcolumns: ['objectid','checkplot',''],
+    infocolumns: [
+        'objectid','checkplot',
+        'objectinfo.hatid','objectinfo.twomassid',
+        'objectinfo.network','objectinfo.stations','objectinfo.ndet',
+        'objectinfo.objecttags','objectinfo.bmag','objectinfo.vmag',
+        'objectinfo.sdssg','objectinfo.sdssr','objectinfo.sdssi',
+        'objectinfo.jmag','objectinfo.hmag','objectinfo.kmag',
+        'objectinfo.bvcolor','objectinfo.ijcolor','objectinfo.jkcolor',
+        'objectinfo.pmra','objectinfo.pmra_err',
+        'objectinfo.pmdecl','objectinfo.pmdecl_err',
+        'objectinfo.propermotion','objectinfo.reducedpropermotion',
+        'varinfo.objectisvar','varinfo.varperiod','varinfo.varepoch',
+        'varinfo.vartags','comments'
+    ],
+
+    // this function generates a CSV row for a single object in the
+    // cptracker.cpdata object
+    cpdata_get_csvrow: function (cpdkey) {
+
+
+
+    },
 
     // this generates a CSV for download
     // FIXME: figure out how to do this
     cpdata_to_csv: function () {
 
+
+
     },
 
     // this generates a JSON for download
     cpdata_to_json: function () {
+
+        // we need to reverse the keys of the cpdata, so they're objectid first,
+        // add the object's checkplot file into its own dict
+        var jsonobj = {};
+
+        for (obj in cptracker.cpdata) {
+
+            var thisdata = cptracker.cpdata[obj];
+            thisdata['checkplot'] = obj;
+            jsonobj[thisdata['objectid']] = thisdata;
+
+        }
+
+        // generate the string
+        var jsonstr = "data:text/json;charset=utf-8," +
+            encodeURIComponent(JSON.stringify(jsonobj));
+
+        $('#download-anchor').attr('href', jsonstr);
+        $('#download-anchor').attr('download', 'project-objectlist.json');
+        $('#download-anchor').html('download JSON for saved objects');
+        $('#download-anchor').css({'display': 'inline'});
 
     }
 
@@ -565,6 +607,19 @@ var cpv = {
                 // make sure to save current
                 cpv.save_checkplot(null,null);
                 console.log('no next file, staying right here');
+            }
+
+        });
+
+
+        // clicking on the generate JSON button
+        $('#save-project-json').click(function (evt) {
+
+            // make sure we have at least one object in the saved list
+            nsaved = $('#project-status li').length;
+
+            if (nsaved > 0) {
+                cptracker.cpdata_to_json();
             }
 
         });
