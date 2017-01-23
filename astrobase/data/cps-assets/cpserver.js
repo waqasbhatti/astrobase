@@ -413,16 +413,18 @@ var cpv = {
 
             // update the cptracker with what changed so we can try to undo
             // later if necessary.
-            if (updatestatus == 'ok') {
+            if (updatestatus == 'success') {
+
+                console.log('checkplot updated ok');
 
                 // we don't need full precision for the time of update
                 var updts = parseInt(updateinfo.unixtime);
 
-                if (!(cpfile in cptracker.cpdata)) {
-                    cptracker.cpdata[cpfile] = {};
+                if (!(postobj.cpfile in cptracker.cpdata)) {
+                    cptracker.cpdata[postobj.cpfile] = {};
                 }
 
-                cptracker.cpdata.cpfile[updts] = {
+                cptracker.cpdata[postobj.cpfile][updts] = {
                     changes: updateinfo.changes,
                     filename: updateinfo.checkplot,
                     unixtime: updateinfo.unixtime
@@ -919,6 +921,10 @@ var cpv = {
                 vartags[index] = item.trim();
             });
 
+            // remove any item with zero length
+            vartags = vartags
+                .filter(function(val) { return val.length > 0 });
+
             // check if we already have this vartag in the list and append it if
             // we don't.
             if (vartags.indexOf('weird variability') == -1) {
@@ -942,7 +948,7 @@ var cpv = {
             });
 
             // remove any item with zero length
-            objecttags = objecttags
+            vartags = vartags
                 .filter(function(val) { return val.length > 0 });
 
             // check if we already have this vartag in the list and append it if
@@ -972,8 +978,12 @@ var cpv = {
                 objecttags[index] = item.trim();
             });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
+            // remove any item with zero length
+            objecttags = objecttags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this objecttag in the list and append it
+            // if we don't.
             if (objecttags.indexOf('white dwarf') == -1) {
                 objecttags.push('white dwarf');
                 objecttags = objecttags.join(', ');
@@ -998,8 +1008,8 @@ var cpv = {
             objecttags = objecttags
                 .filter(function(val) { return val.length > 0 });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
+            // check if we already have this objecttag in the list and append it
+            // if we don't.
             if (objecttags.indexOf('hot star (OB)') == -1) {
                 objecttags.push('hot star (OB)');
                 objecttags = objecttags.join(', ');
@@ -1024,8 +1034,8 @@ var cpv = {
             objecttags = objecttags
                 .filter(function(val) { return val.length > 0 });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
+            // check if we already have this objecttag in the list and append it
+            // if we don't.
             if (objecttags.indexOf('A star') == -1) {
                 objecttags.push('A star');
                 objecttags = objecttags.join(', ');
@@ -1050,8 +1060,8 @@ var cpv = {
             objecttags = objecttags
                 .filter(function(val) { return val.length > 0 });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
+            // check if we already have this objecttag in the list and append it
+            // if we don't.
             if (objecttags.indexOf('F or G dwarf') == -1) {
                 objecttags.push('F or G dwarf');
                 objecttags = objecttags.join(', ');
@@ -1076,8 +1086,8 @@ var cpv = {
             objecttags = objecttags
                 .filter(function(val) { return val.length > 0 });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
+            // check if we already have this objecttag in the list and append it
+            // if we don't.
             if (objecttags.indexOf('red giant') == -1) {
                 objecttags.push('red giant');
                 objecttags = objecttags.join(', ');
@@ -1102,8 +1112,8 @@ var cpv = {
             objecttags = objecttags
                 .filter(function(val) { return val.length > 0 });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
+            // check if we already have this objecttag in the list and append it
+            // if we don't.
             if (objecttags.indexOf('K or M dwarf') == -1) {
                 objecttags.push('K or M dwarf');
                 objecttags = objecttags.join(', ');
@@ -1128,8 +1138,8 @@ var cpv = {
             objecttags = objecttags
                 .filter(function(val) { return val.length > 0 });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
+            // check if we already have this objecttag in the list and append it
+            // if we don't.
             if (objecttags.indexOf('giant star') == -1) {
                 objecttags.push('giant star');
                 objecttags = objecttags.join(', ');
@@ -1154,8 +1164,8 @@ var cpv = {
             objecttags = objecttags
                 .filter(function(val) { return val.length > 0 });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
+            // check if we already have this objecttag in the list and append it
+            // if we don't.
             if (objecttags.indexOf('dwarf star') == -1) {
                 objecttags.push('dwarf star');
                 objecttags = objecttags.join(', ');
@@ -1180,8 +1190,8 @@ var cpv = {
             objecttags = objecttags
                 .filter(function(val) { return val.length > 0 });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
+            // check if we already have this objecttag in the list and append it
+            // if we don't.
             if (objecttags.indexOf('blended with neighbors') == -1) {
                 objecttags.push('blended with neighbors');
                 objecttags = objecttags.join(', ');
@@ -1206,8 +1216,8 @@ var cpv = {
             objecttags = objecttags
                 .filter(function(val) { return val.length > 0 });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
+            // check if we already have this objecttag in the list and append it
+            // if we don't.
             if (objecttags.indexOf('weird object') == -1) {
                 objecttags.push('weird object');
                 objecttags = objecttags.join(', ');
