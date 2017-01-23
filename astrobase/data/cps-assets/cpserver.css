@@ -64,6 +64,10 @@ span.cp-tag {
     white-space: nowrap;
 }
 
+li.tracker-obj {
+    padding-bottom: 12px;
+}
+
 /* fancy spinner thing - http://tobiasahlin.com/spinkit/
 
 to use this:
