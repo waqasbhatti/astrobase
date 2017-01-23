@@ -58,9 +58,38 @@ var cptracker = {
 
     // this function generates a CSV row for a single object in the
     // cptracker.cpdata object
-    cpdata_get_csvrow: function (cpdkey) {
+    cpdata_get_csvrow: function (cpdkey, separator) {
 
+        var thisdata = cptracker.cpdata[cpdkey];
+        var rowarr = [];
 
+        cptracker.infocolumns.forEach(function (e, i, a) {
+
+            // if the key is a compound one (firstlev.secondlev)
+            if (e.indexOf('.') != -1) {
+
+                var keys = e.split('.');
+                rowarr.push(thisdata[keys[0]][keys[1]]);
+
+            }
+
+            // otherwise, it's just in the first level
+            else {
+
+                // special case of checkplot filename
+                if (e == 'checkplot') {
+                    rowarr.push(cpdkey);
+                }
+                else {
+                    rowarr.push(thisdata[e]);
+                }
+            }
+
+        });
+
+        // join the output row
+        var csvrow = rowarr.join(separator);
+        return csvrow
 
     },
 
@@ -68,7 +97,19 @@ var cptracker = {
     // FIXME: figure out how to do this
     cpdata_to_csv: function () {
 
+        var csvarr = [cptracker.infocolumns.join('|')];
 
+        for (obj in cptracker.cpdata) {
+            csvarr.push(cptracker.cpdata_get_csvrow(obj,'|'));
+        }
+
+        csvarr = "data:text/csv;charset=utf-8," +
+            encodeURIComponent(csvarr.join('\n'));
+
+        $('#download-anchor').attr('href', csvarr);
+        $('#download-anchor').attr('download', 'project-objectlist.csv');
+        $('#download-anchor').html('download CSV for saved objects');
+        $('#download-anchor').css({'display': 'inline'});
 
     },
 
@@ -623,6 +664,19 @@ var cpv = {
             }
 
         });
+
+        // clicking on the generate CSV button
+        $('#save-project-csv').click(function (evt) {
+
+            // make sure we have at least one object in the saved list
+            nsaved = $('#project-status li').length;
+
+            if (nsaved > 0) {
+                cptracker.cpdata_to_csv();
+            }
+
+        });
+
 
         // clicking on a checkplot file in the sidebar
         $('#checkplotlist').on('click', '.checkplot-load', function (evt) {
