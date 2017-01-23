@@ -191,8 +191,6 @@ var cpv = {
     // this loads a checkplot from an image file into an HTML canvas object
     load_checkplot: function (filename) {
 
-        console.log('loading ' + filename);
-
         // start the spinny thing
         cpv.make_spinner('loading...');
 
@@ -215,7 +213,6 @@ var cpv = {
         $.getJSON(ajaxurl, function (data) {
 
             cpv.currcp = data.result;
-            console.log('received cp for ' + cpv.currcp.objectid);
 
             /////////////////////////////////////////////////
             // update the UI with elems for this checkplot //
@@ -283,25 +280,21 @@ var cpv = {
             // update the varinfo
             if (cpv.currcp.varinfo.objectisvar == 1) {
 
-                console.log('objectisvar = true');
                 $('#varcheck').val(1);
 
             }
             else if (cpv.currcp.varinfo.objectisvar == 2) {
 
-                console.log('objectisvar = false');
                 $('#varcheck').val(2);
 
             }
             else if (cpv.currcp.varinfo.objectisvar == 3) {
 
-                console.log('objectisvar = maybe');
                 $('#varcheck').val(3);
 
             }
             else {
 
-                console.log('objectisvar = none');
                 $('#varcheck').val(0);
 
             }
@@ -424,8 +417,6 @@ var cpv = {
 
         }).done(function () {
 
-            console.log('done with cp');
-
             // update the current file trackers
             cpv.currfile = filename;
             cpv.currentfind = parseInt(
@@ -449,7 +440,6 @@ var cpv = {
 
             cpv.make_alert('could not load checkplot <strong>' +
                            filename + '</strong>!');
-            console.log('cp loading failed from ' + ajaxurl);
 
         });
 
@@ -501,8 +491,6 @@ var cpv = {
             // update the cptracker with what changed so we can try to undo
             // later if necessary.
             if (updatestatus == 'success') {
-
-                console.log('checkplot updated ok');
 
                 // store only the latest update in the tracker
                 // FIXME: think about adding in update history
@@ -563,8 +551,6 @@ var cpv = {
                 // finish the objectidelem li tag
                 objectidelem = objectidelem + '</li>';
 
-                console.log(objectidelem);
-
                 // add the new elem in
                 $('#project-status').append(objectidelem);
 
@@ -621,7 +607,6 @@ var cpv = {
             var prevfilelink = $("a[data-findex='" +
                                  (cpv.currentfind-1) + "']");
             var prevfile = prevfilelink.attr('data-fname');
-            console.log('moving to prev file: ' + prevfile);
 
             if (prevfile != undefined) {
                 cpv.save_checkplot(cpv.load_checkplot,prevfile);
@@ -630,7 +615,6 @@ var cpv = {
             else {
                 // make sure to save current
                 cpv.save_checkplot(null,null);
-                console.log('no prev file, staying right here');
             }
 
         });
@@ -644,7 +628,6 @@ var cpv = {
             var nextfilelink = $("a[data-findex='" +
                                  (cpv.currentfind+1) + "']");
             var nextfile = nextfilelink.attr('data-fname');
-            console.log('moving to next file: ' + nextfile);
 
             if (nextfile != undefined) {
                 cpv.save_checkplot(cpv.load_checkplot,nextfile);
@@ -653,7 +636,6 @@ var cpv = {
             else {
                 // make sure to save current
                 cpv.save_checkplot(null,null);
-                console.log('no next file, staying right here');
             }
 
         });
@@ -690,9 +672,6 @@ var cpv = {
 
             var thisobjtag = $(this).attr('data-dnobjtag');
 
-            console.log('dropdown adding ' + thisobjtag);
-
-
             // get the current val for the objecttags
             var objecttags = $('#objecttags').val();
 
@@ -723,8 +702,6 @@ var cpv = {
 
             var thisvartag = $(this).attr('data-dnvartag');
 
-            console.log('dropdown adding ' + thisvartag);
-
             // get the current val for the vartags
             var vartags = $('#vartags').val();
 
@@ -754,7 +731,6 @@ var cpv = {
             evt.preventDefault();
 
             var filetoload = $(this).attr('data-fname');
-            console.log('file to load: ' + filetoload);
 
             // save the currentcp if one exists, use the load_checkplot as a
             // callback to load the next one
@@ -775,7 +751,6 @@ var cpv = {
             evt.preventDefault();
 
             var filetoload = $(this).attr('data-fname');
-            console.log('objectid triggered load: ' + filetoload);
 
             // save the currentcp if one exists, use the load_checkplot as a
             // callback to load the next one
@@ -799,9 +774,6 @@ var cpv = {
 
             var period = $(this).attr('data-period');
             var epoch = $(this).attr('data-epoch');
-
-            console.log('period selected = ' + period);
-            console.log('epoch selected = ' + epoch);
 
             // update the boxes
             $('#objectperiod').val(period);
