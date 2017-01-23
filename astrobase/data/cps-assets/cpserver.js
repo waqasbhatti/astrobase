@@ -515,8 +515,9 @@ var cpv = {
                 // variability flag, variability tags, object tags
                 var objectidelem = '<li class="tracker-obj" data-objectid="' +
                     updateinfo.changes.objectid +
-                    '"><strong>' +
-                    updateinfo.changes.objectid + '</strong>: ';
+                    '"><strong><a href="#" class="objload-checkplot" ' +
+                    'data-fname="' + postobj.cpfile + '">' +
+                    updateinfo.changes.objectid + '</a></strong>: ';
 
                 if (updateinfo.changes.varinfo.objectisvar == '1') {
                     objectidelem = objectidelem + 'variable';
@@ -558,6 +559,11 @@ var cpv = {
                 var statobjcheck = $('li[data-objectid="' +
                                      updateinfo.changes.objectid +
                                      '"]').remove();
+
+                // finish the objectidelem li tag
+                objectidelem = objectidelem + '</li>';
+
+                console.log(objectidelem);
 
                 // add the new elem in
                 $('#project-status').append(objectidelem);
@@ -762,6 +768,28 @@ var cpv = {
             }
 
         });
+
+        // clicking on a checkplot file in the sidebar
+        $('#project-status').on('click', '.objload-checkplot', function (evt) {
+
+            evt.preventDefault();
+
+            var filetoload = $(this).attr('data-fname');
+            console.log('objectid triggered load: ' + filetoload);
+
+            // save the currentcp if one exists, use the load_checkplot as a
+            // callback to load the next one
+            if (('objectid' in cpv.currcp) && (cpv.currfile.length > 0))  {
+                cpv.save_checkplot(cpv.load_checkplot,filetoload);
+            }
+
+            else {
+                // ask the backend for this file
+                cpv.load_checkplot(filetoload);
+            }
+
+        });
+
 
         // clicking on a phased LC loads its period and epoch into the boxes
         // also saves them to the currcp
