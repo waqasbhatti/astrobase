@@ -90,7 +90,7 @@ define('debugmode',
        help='start up in debug mode if set to 1.',
        type=int)
 define('maxprocs',
-       default=4,
+       default=1,
        help='number of background processes to use '
        'for saving/loading checkplot files',
        type=int)
