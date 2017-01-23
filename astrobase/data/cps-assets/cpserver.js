@@ -677,6 +677,70 @@ var cpv = {
 
         });
 
+        // this handles adding object tags from the dropdown
+        $('.objtag-dn').click(function (evt) {
+
+            evt.preventDefault();
+
+            var thisobjtag = $(this).attr('data-dnobjtag');
+
+            console.log('dropdown adding ' + thisobjtag);
+
+
+            // get the current val for the objecttags
+            var objecttags = $('#objecttags').val();
+
+            // split by comma and strip extra spaces
+            objecttags = objecttags.split(',');
+            objecttags.forEach(function (item, index, arr) {
+                objecttags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            objecttags = objecttags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (objecttags.indexOf(thisobjtag) == -1) {
+                objecttags.push(thisobjtag);
+                objecttags = objecttags.join(', ');
+                $('#objecttags').val(objecttags);
+            }
+
+        });
+
+        // this handles adding object tags from the dropdown
+        $('.vartag-dn').click(function (evt) {
+
+            evt.preventDefault();
+
+            var thisvartag = $(this).attr('data-dnvartag');
+
+            console.log('dropdown adding ' + thisvartag);
+
+            // get the current val for the vartags
+            var vartags = $('#vartags').val();
+
+            // split by comma and strip extra spaces
+            vartags = vartags.split(',');
+            vartags.forEach(function (item, index, arr) {
+                vartags[index] = item.trim();
+            });
+
+            // remove any item with zero length
+            vartags = vartags
+                .filter(function(val) { return val.length > 0 });
+
+            // check if we already have this vartag in the list and append it if
+            // we don't.
+            if (vartags.indexOf(thisvartag) == -1) {
+                vartags.push(thisvartag);
+                vartags = vartags.join(', ');
+                $('#vartags').val(vartags);
+            }
+
+        });
 
         // clicking on a checkplot file in the sidebar
         $('#checkplotlist').on('click', '.checkplot-load', function (evt) {
