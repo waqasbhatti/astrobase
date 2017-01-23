@@ -42,6 +42,9 @@ var cptracker = {
     // each checkplot
     cpdata: {},
 
+    // this is the order of columns for generating the CSV
+    csvcolumns: ['objectid','checkplot',''],
+
     // this generates a CSV for download
     // FIXME: figure out how to do this
     cpdata_to_csv: function () {
@@ -427,7 +430,7 @@ var cpv = {
 
                 // generate the new list element: this contains objectid -
                 // variability flag, variability tags, object tags
-                var objectidelem = '<li data-objectid="' +
+                var objectidelem = '<li class="tracker-obj" data-objectid="' +
                     updateinfo.changes.objectid +
                     '"><strong>' +
                     updateinfo.changes.objectid + '</strong>: ';
