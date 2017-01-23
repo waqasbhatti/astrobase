@@ -33,11 +33,20 @@
       <div class="col-sm-12">
         <h4 class="text-sm-center py-1">Project</h4>
 
+        <!-- this is where downloads appear -->
+        <div class="row">
+          <div class="col-sm-12 download-center text-sm-center">
+            <p>Currently saved objects:
+              <strong><span id="saved-count"></span></strong></p>
+
+          </div>
+        </div>
+
         <!-- this is the save project row -->
         <div class="row">
-          <div class="col-sm-12">
+          <div class="col-sm-12 text-sm-center">
 
-            <p>Download:
+            <p>Generate:
               <button type="button" id="save-project-csv"
                       class="btn btn-outline-primary btn-sm">
                 CSV
@@ -50,12 +59,11 @@
           </div>
         </div>
 
-        <!-- this is where downloads appear -->
-        <div class="row">
-          <div class="col-sm-12 download-center">
-            <p>Saved objects in the current project:
-              <strong><span id="saved-count"></span></strong></p>
-
+        <div class="row bot-mrg-10px">
+          <div class="col-sm-12 text-sm-center">
+            <a id="download-anchor" style="display:none">
+              download data for saved objects
+            </a>
           </div>
         </div>
 
