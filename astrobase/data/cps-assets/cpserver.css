@@ -4,9 +4,15 @@
 }
 
 .sidebar-list {
-    height: 400px;
+    height: 350px;
     overflow-y: auto;
-    font-size: x-small;
+    font-size: small;
+}
+
+.status-list {
+    height: 350px;
+    overflow-y: auto;
+    font-size: small;
 }
 
 /* .objectinfo-row { */
@@ -55,6 +61,7 @@ span.cp-tag {
     margin: 2px auto;
     background: #2f4f4f;
     color: #eee;
+    white-space: nowrap;
 }
 
 /* fancy spinner thing - http://tobiasahlin.com/spinkit/
