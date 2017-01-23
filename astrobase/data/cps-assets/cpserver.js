@@ -450,7 +450,8 @@ var cpv = {
 
             // call the next function. we call this here so we can be sure the
             // save finished before the next action starts
-            if (!(nextfunc_callback === undefined)) {
+            if (!(nextfunc_callback === undefined) &&
+                !(nextfunc_callback === null)) {
                 nextfunc_callback(nextfunc_arg);
             }
 
@@ -627,6 +628,13 @@ var cpv = {
         Mousetrap.bind('ctrl+enter', function() {
             $('.checkplot-next').click();
         });
+
+
+        // shift+enter: save this, but don't go anywhere
+        Mousetrap.bind('shift+enter', function() {
+            cpv.save_checkplot(null, null);
+        });
+
 
         // ctrl+down: move to the next phased LC and set it as the best
         Mousetrap.bind(['ctrl+down','shift+down'], function() {
