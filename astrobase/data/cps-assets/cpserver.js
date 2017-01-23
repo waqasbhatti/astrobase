@@ -793,7 +793,19 @@ var cpv = {
                 .filter(selector).addClass('phasedlc-selected');
 
             // scroll this into view
-            $(this)[0].scrollIntoView(true)
+            $(this)[0].scrollIntoView(true);
+
+            // change the variability flag to 'probably variable' automatically.
+            // since we've set a period and epoch, we probably think this is a
+            // variable
+            var currvarflag = $('#varcheck').val();
+
+            // we only change if the flag is not set already
+            if (currvarflag == 0) {
+                $('#varcheck').val(1);
+            }
+
+
 
         });
 
