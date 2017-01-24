@@ -3,7 +3,8 @@ surveys, mostly focused on variable stars.
 
 Full documentation is still a work in progress (as soon as I figure out how
 Sphinx works), but the docstrings are fairly good and an [overview](#contents)
-is provided below. See the instructions for [installation](#installation) to get
+is provided below, along with Jupyter notebooks that demonstrate some of the
+functionality. See the instructions for [installation](#installation) to get
 started.
 
 astrobase should work with Python >= 3.4 and Python 2.7. Using the newest Python
