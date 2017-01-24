@@ -55,7 +55,7 @@ tweaked for your purposes.
   save variability tags, object type tags, and best periods and epochs for each
   object using a browser-based UI (see below). The information entered can then
   be exported as CSV or JSON for the next stage of work. The
-  [lightcurves-and-checkplots](astrobase/notebooks/lightcurves-and-checkplots.ipynb)
+  [lightcurves-and-checkplots](https://github.com/waqasbhatti/astrobase/blob/master/notebooks/lightcurves-and-checkplots.ipynb)
   Jupyter notebook details how to do this and goes through a full example.
 
   ![Checkplot Server](astrobase/data/checkplotserver.png?raw=true)
