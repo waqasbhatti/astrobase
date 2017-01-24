@@ -40,9 +40,9 @@ Most of the modules with useful external functions live in here. The
 `astrobase.conf` file contains module-wide settings that may need to be tweaked
 for your purposes.
 
-All functions that deal with light curves (e.g. in the modules
-`astrobase.lcmath`, `astrobase.periodbase`, `astrobase.varbase`, and
-`astrobase.checkplot`) usually just require three numpy arrays as input:
+Functions that deal with light curves (e.g. in the modules `astrobase.lcmath`,
+`astrobase.periodbase`, `astrobase.varbase`, `astrobase.plotbase`, and
+`astrobase.checkplot`) usually just require three numpy ndarrays as input:
 `times`, `mags`, and `errs`, so they should work with any time-series data that
 can be represented in this form.
 
