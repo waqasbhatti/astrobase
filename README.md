@@ -21,6 +21,13 @@ package. Also contains other useful notes-to-self.
     [checkplot](astrobase/checkplot.py) modules for reading HAT light curves,
     finding periods, and plotting phased light curves
 
+- **[lightcurves-and-checkplots](notebooks/lightcurves-and-checkplots.ipynb)**:
+    demonstrates usage of the [hatlc](astrobase/hatlc.py),
+    [periodbase](astrobase/periodbase.py), [checkplot](astrobase/checkplot.py)
+    modules, and the [checkplotserver](astrobase/checkplotserver.py) for doing
+    period-finding and variability-classification work on a collection of light
+    curves.
+
 - **[parallel-ipython](notebooks/parallel-ipython.ipynb)**: shows examples of
     how to map `astrobase` functions across an
     [ipyparallel](http://ipyparallel.readthedocs.io/en/stable/) cluster to speed
@@ -55,7 +62,7 @@ tweaked for your purposes.
   save variability tags, object type tags, and best periods and epochs for each
   object using a browser-based UI (see below). The information entered can then
   be exported as CSV or JSON for the next stage of work. The
-  [lightcurves-and-checkplots](https://github.com/waqasbhatti/astrobase/blob/master/notebooks/lightcurves-and-checkplots.ipynb)
+  [lightcurves-and-checkplots](notebooks/lightcurves-and-checkplots.ipynb)
   Jupyter notebook details how to do this and goes through a full example.
 
   ![Checkplot Server](astrobase/data/checkplotserver-th.png?raw=true)
