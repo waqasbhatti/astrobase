@@ -191,6 +191,9 @@ var cpv = {
     // this loads a checkplot from an image file into an HTML canvas object
     load_checkplot: function (filename) {
 
+        // remove the summary download anchor from view since it's stale now
+        $('#download-anchor').css({'display': 'none'});
+
         // start the spinny thing
         cpv.make_spinner('loading...');
 
