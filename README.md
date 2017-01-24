@@ -58,7 +58,7 @@ tweaked for your purposes.
   [lightcurves-and-checkplots](https://github.com/waqasbhatti/astrobase/blob/master/notebooks/lightcurves-and-checkplots.ipynb)
   Jupyter notebook details how to do this and goes through a full example.
 
-  ![Checkplot Server](astrobase/data/checkplotserver.png?raw=true)
+  ![Checkplot Server](astrobase/data/checkplotserver-th.png?raw=true)
 
 - **[coordutils](astrobase/coordutils.py)**: functions for dealing with
   coordinates (conversions, distances, proper motion)
