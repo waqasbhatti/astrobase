@@ -108,7 +108,7 @@ var cptracker = {
 
         $('#download-anchor').attr('href', csvarr);
         $('#download-anchor').attr('download', 'project-objectlist.csv');
-        $('#download-anchor').html('download CSV for saved objects');
+        $('#download-anchor').html('get CSV for reviewed objects');
         $('#download-anchor').css({'display': 'inline'});
 
     },
@@ -134,7 +134,7 @@ var cptracker = {
 
         $('#download-anchor').attr('href', jsonstr);
         $('#download-anchor').attr('download', 'project-objectlist.json');
-        $('#download-anchor').html('download JSON for saved objects');
+        $('#download-anchor').html('get JSON for reviewed objects');
         $('#download-anchor').css({'display': 'inline'});
 
     }
