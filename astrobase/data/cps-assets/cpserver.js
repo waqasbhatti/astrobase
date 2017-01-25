@@ -797,7 +797,7 @@ var cpv = {
         $('#save-project-json').click(function (evt) {
 
             // make sure we have at least one object in the saved list
-            nsaved = $('#project-status li').length;
+            nsaved = $('#project-status div').length;
 
             if (nsaved > 0) {
                 cptracker.cpdata_to_json();
@@ -809,7 +809,7 @@ var cpv = {
         $('#save-project-csv').click(function (evt) {
 
             // make sure we have at least one object in the saved list
-            nsaved = $('#project-status li').length;
+            nsaved = $('#project-status div').length;
 
             if (nsaved > 0) {
                 cptracker.cpdata_to_csv();
