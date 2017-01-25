@@ -137,6 +137,144 @@ var cptracker = {
         $('#download-anchor').html('get JSON for reviewed objects');
         $('#download-anchor').css({'display': 'inline'});
 
+    },
+
+    // this saves a single object back to the checkplotlist JSON
+    reviewed_object_to_cplist: function () {
+
+        var saveinfo = {checkplot: cpv.currfile,
+                        varinfo: cpv.currcp.varinfo,
+                        objectinfo: cpv.currcp.objectinfo,
+                        comments: cpv.currcp.comments}
+
+        var postmsg = {objectid: cpv.currcp.objectid,
+                       changes: JSON.stringify(saveinfo)}
+
+        // send this back to the checkplotserver
+        $.post('/list', postmsg, function (data) {
+
+            var success = data.status;
+            var message = data.message;
+            var result = data.result;
+
+            if (!success) {
+
+                cpv.make_alert('could not save info for <strong>' +
+                               postmsg.objectid + '</strong>!');
+                console.log('saving the changes back to the '+
+                            'JSON file failed for ' + postmsg.objectid);
+
+            }
+
+
+        }, 'json').fail(function (xhr) {
+
+            cpv.make_alert('could not save info for <strong>' +
+                           postmsg.objectid + '</strong>!');
+            console.log('saving the changes back to the '+
+                        'JSON file failed for ' + postmsg.objectid);
+        });
+
+    },
+
+    // this loads all the reviewed objects from the current project's JSON
+    // checkplot file list, and updates the reviewed objects list
+    all_reviewed_from_cplist: function () {
+
+        $.getJSON('/list', function (data) {
+
+            var reviewedobjects = data.reviewed;
+
+            // generate the object info rows and append to the reviewed object
+            // list
+            for (obj in reviewedobjects) {
+
+                var objdict = reviewedobjects[obj];
+
+                var objectid = obj;
+                var objcp = objdict.checkplot;
+                var objectinfo = objdict.objectinfo;
+                var varinfo = objdict.varinfo;
+
+                // generate the new list element: this contains objectid -
+                // variability flag, variability tags, object tags
+                var objectidelem = '<li class="tracker-obj" data-objectid="' +
+                    objectid +
+                    '"><a href="#" class="objload-checkplot" ' +
+                    'data-fname="' + objcp + '">' +
+                    objectid + '</a>: ';
+
+                if (varinfo.objectisvar == '1') {
+                    objectidelem = objectidelem + 'variable';
+                }
+                else if (varinfo.objectisvar == '2') {
+                    objectidelem = objectidelem + 'not variable';
+                }
+                else if (varinfo.objectisvar == '3') {
+                    objectidelem = objectidelem + 'maybe variable';
+                }
+                else if (varinfo.objectisvar == '0') {
+                    objectidelem = objectidelem + 'no varflag set';
+                }
+
+                if (varinfo.vartags != null) {
+
+                    var thisvartags =
+                        varinfo.vartags.split(', ');
+
+                    if (thisvartags[0].length > 0) {
+
+                        objectidelem = objectidelem + ' &mdash; ';
+                        thisvartags.forEach(function (e, i, a) {
+                            objectidelem = objectidelem +
+                                '<span class="cp-tag">' +
+                                e + '</span> ';
+                        });
+                    }
+                }
+
+                if (objectinfo.objecttags != null) {
+
+                    var thisobjtags =
+                        objectinfo.objecttags.split(', ');
+
+                    if (thisobjtags[0].length > 0) {
+
+                        objectidelem = objectidelem + ' &mdash; ';
+                        thisobjtags.forEach(function (e, i, a) {
+                            objectidelem = objectidelem +
+                                '<span class="cp-tag">' +
+                                e + '</span> ';
+                        });
+                    }
+
+                }
+
+                // check if this object is already present and remove if it so
+                var statobjcheck = $('li[data-objectid="' +
+                                     objectid +
+                                     '"]').remove();
+
+                // finish the objectidelem li tag
+                objectidelem = objectidelem + '</li>';
+
+                // add the new elem in
+                $('#project-status').append(objectidelem);
+
+                // update the count in saved-count
+                var nsaved = $('#project-status li').length;
+                $('#saved-count').html(nsaved + '/' + cpv.totalcps);
+
+
+            }
+
+        }).fail(function (xhr) {
+
+            cpv.make_alert('could not load the existing checkplot list');
+            console.log('could not load the existing checkplot list');
+
+        });
+
     }
 
 };
@@ -144,6 +282,7 @@ var cptracker = {
 
 // this is the container for the main functions
 var cpv = {
+
     // these hold the current checkplot's data and filename respectively
     currentfind: 0,
     currfile: '',
@@ -506,9 +645,9 @@ var cpv = {
                 // variability flag, variability tags, object tags
                 var objectidelem = '<li class="tracker-obj" data-objectid="' +
                     updateinfo.changes.objectid +
-                    '"><strong><a href="#" class="objload-checkplot" ' +
+                    '"><a href="#" class="objload-checkplot" ' +
                     'data-fname="' + postobj.cpfile + '">' +
-                    updateinfo.changes.objectid + '</a></strong>: ';
+                    updateinfo.changes.objectid + '</a>: ';
 
                 if (updateinfo.changes.varinfo.objectisvar == '1') {
                     objectidelem = objectidelem + 'variable';
@@ -561,6 +700,7 @@ var cpv = {
                 var nsaved = $('#project-status li').length;
                 $('#saved-count').html(nsaved + '/' + cpv.totalcps);
 
+
             }
 
             else {
@@ -574,10 +714,9 @@ var cpv = {
             // clean out the alert box
             $('#alert-box').empty();
 
-            // tag the current checkplot in the list as done
-
-            // clean out the cpv.currcp and cpv.currfile before the next one
-            // loads
+            // send the changes to the backend so they're present in the
+            // checkplot-filelist.json file for the next time around
+            cptracker.reviewed_object_to_cplist();
 
             // call the next function. we call this here so we can be sure the
             // save finished before the next action starts

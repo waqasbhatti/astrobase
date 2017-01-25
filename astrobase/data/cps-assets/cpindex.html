@@ -78,19 +78,14 @@
           </div>
         </div>
 
-        <!-- TODO: maybe add a global sync back to the filelist JSON file -->
-        <!-- <div class="row py-1"> -->
-        <!--   <div class="col-sm-12" > -->
+        <div class="row py-1">
+          <div class="col-sm-12 text-sm-center">
+            <p>Updates are automatically synced to the checkplot list
+            <strong><abbr title="{{ project_checkplotfile }}">JSON
+            file</abbr></strong>.</p>
+          </div>
+        </div>
 
-        <!--     <button type="button" id="sync-all-changes" -->
-        <!--             title="save all changes to objects made here back to the -->
-        <!--             checkplot list JSON file" -->
-        <!--             class="btn btn-outline-danger btn-sm btn-block"> -->
-        <!--       Sync all changes<br>to checkplot list JSON -->
-        <!--     </button> -->
-
-        <!--   </div> -->
-        <!-- </div> -->
 
       </div>
     </div>
@@ -508,6 +503,9 @@
 <script>
 
   $(document).ready(function() {
+  // load the count of the objects
+  cpv.totalcps = $('#checkplotlist li').length;
+
   // set up the controls
   cpv.action_setup();
 
@@ -523,9 +521,8 @@
   var firstcp = $("a[data-findex='0']").attr('data-fname');
   cpv.load_checkplot(firstcp);
 
-  // load the count of the objects
-  cpv.totalcps = $('#checkplotlist li').length;
-
+  // get the already reviewed objects from the checkplot-filelist.json file
+  cptracker.all_reviewed_from_cplist();
 
   });
 
