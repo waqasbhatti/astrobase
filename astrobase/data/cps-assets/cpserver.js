@@ -198,11 +198,11 @@ var cptracker = {
 
                 // generate the new list element: this contains objectid -
                 // variability flag, variability tags, object tags
-                var objectidelem = '<li class="tracker-obj" data-objectid="' +
+                var objectidelem = '<div class="tracker-obj" data-objectid="' +
                     objectid +
                     '"><a href="#" class="objload-checkplot" ' +
                     'data-fname="' + objcp + '">' +
-                    objectid + '</a>: ';
+                    objectid + '</a> ';
 
                 if (varinfo.objectisvar == '1') {
                     objectidelem = objectidelem + 'variable';
@@ -224,7 +224,7 @@ var cptracker = {
 
                     if (thisvartags[0].length > 0) {
 
-                        objectidelem = objectidelem + ' &mdash; ';
+                        objectidelem = objectidelem + ' ';
                         thisvartags.forEach(function (e, i, a) {
                             objectidelem = objectidelem +
                                 '<span class="cp-tag">' +
@@ -240,7 +240,7 @@ var cptracker = {
 
                     if (thisobjtags[0].length > 0) {
 
-                        objectidelem = objectidelem + ' &mdash; ';
+                        objectidelem = objectidelem + ' ';
                         thisobjtags.forEach(function (e, i, a) {
                             objectidelem = objectidelem +
                                 '<span class="cp-tag">' +
@@ -250,19 +250,12 @@ var cptracker = {
 
                 }
 
-                // check if this object is already present and remove if it so
-                var statobjcheck = $('li[data-objectid="' +
-                                     objectid +
-                                     '"]').remove();
-
                 // finish the objectidelem li tag
-                objectidelem = objectidelem + '</li>';
-
-                // add the new elem in
+                objectidelem = objectidelem + '</div>';
                 $('#project-status').append(objectidelem);
 
                 // update the count in saved-count
-                var nsaved = $('#project-status li').length;
+                var nsaved = $('#project-status div').length;
                 $('#saved-count').html(nsaved + '/' + cpv.totalcps);
 
 
@@ -634,71 +627,88 @@ var cpv = {
             // later if necessary.
             if (updatestatus == 'success') {
 
-                // store only the latest update in the tracker
-                // FIXME: think about adding in update history
-                // probably a better fit for indexedDB or something
-                cptracker.cpdata[postobj.cpfile] = updateinfo.changes;
+                // FIXME: this is slow as hell but hopefully works around the
+                // issue we're having with jquery fucking everything up trying
+                // to append to the list
+                $('#project-status').empty();
+                cptracker.all_reviewed_from_cplist();
 
-                // we need to update the project status widget
+                // FIXME: figure why the following crap doesn't work!
 
-                // generate the new list element: this contains objectid -
-                // variability flag, variability tags, object tags
-                var objectidelem = '<li class="tracker-obj" data-objectid="' +
-                    updateinfo.changes.objectid +
-                    '"><a href="#" class="objload-checkplot" ' +
-                    'data-fname="' + postobj.cpfile + '">' +
-                    updateinfo.changes.objectid + '</a>: ';
+                // // store only the latest update in the tracker
+                // // FIXME: think about adding in update history
+                // // probably a better fit for indexedDB or something
+                // cptracker.cpdata[postobj.cpfile] = updateinfo.changes;
 
-                if (updateinfo.changes.varinfo.objectisvar == '1') {
-                    objectidelem = objectidelem + 'variable';
-                }
-                else if (updateinfo.changes.varinfo.objectisvar == '2') {
-                    objectidelem = objectidelem + 'not variable';
-                }
-                else if (updateinfo.changes.varinfo.objectisvar == '3') {
-                    objectidelem = objectidelem + 'maybe variable';
-                }
-                else if (updateinfo.changes.varinfo.objectisvar == '0') {
-                    objectidelem = objectidelem + 'no varflag set';
-                }
+                // // check if this object is already present and remove if it so
+                // var statobjcheck = $('div[data-objectid="' +
+                //                      updateinfo.changes.objectid +
+                //                      '"]');
 
-                var thisvartags =
-                    updateinfo.changes.varinfo.vartags.split(', ');
+                // // we need to update the project status widget
 
-                var thisobjtags =
-                    updateinfo.changes.objectinfo.objecttags.split(', ');
+                // // generate the new list element: this contains objectid -
+                // // variability flag, variability tags, object tags
+                // var objectli = '<div class="tracker-obj" ' +
+                //     'data-objectid="' + updateinfo.changes.objectid + '">';
 
-                if (thisvartags[0].length > 0) {
+                // var objectidelem =  '<a href="#" class="objload-checkplot" ' +
+                //     'data-fname="' + postobj.cpfile + '">' +
+                //     updateinfo.changes.objectid + '</a> ';
 
-                    objectidelem = objectidelem + ' &mdash; ';
-                    thisvartags.forEach(function (e, i, a) {
-                        objectidelem = objectidelem + '<span class="cp-tag">' +
-                            e + '</span> ';
-                    });
-                }
-                if (thisobjtags[0].length > 0) {
+                // if (updateinfo.changes.varinfo.objectisvar == '1') {
+                //     objectidelem = objectidelem + 'variable';
+                // }
+                // else if (updateinfo.changes.varinfo.objectisvar == '2') {
+                //     objectidelem = objectidelem + 'not variable';
+                // }
+                // else if (updateinfo.changes.varinfo.objectisvar == '3') {
+                //     objectidelem = objectidelem + 'maybe variable';
+                // }
+                // else if (updateinfo.changes.varinfo.objectisvar == '0') {
+                //     objectidelem = objectidelem + 'no varflag set';
+                // }
 
-                    objectidelem = objectidelem + ' &mdash; ';
-                    thisobjtags.forEach(function (e, i, a) {
-                        objectidelem = objectidelem + '<span class="cp-tag">' +
-                            e + '</span> ';
-                    });
-                }
+                // var thisvartags =
+                //     updateinfo.changes.varinfo.vartags.split(', ');
 
-                // check if this object is already present and remove if it so
-                var statobjcheck = $('li[data-objectid="' +
-                                     updateinfo.changes.objectid +
-                                     '"]').remove();
+                // var thisobjtags =
+                //     updateinfo.changes.objectinfo.objecttags.split(', ');
 
-                // finish the objectidelem li tag
-                objectidelem = objectidelem + '</li>';
+                // if ((thisvartags != null) && (thisvartags[0].length > 0)) {
 
-                // add the new elem in
-                $('#project-status').append(objectidelem);
+                //     objectidelem = objectidelem + ' ';
+                //     thisvartags.forEach(function (e, i, a) {
+                //         objectidelem = objectidelem + '<span class="cp-tag">' +
+                //             e + '</span> ';
+                //     });
+                // }
+                // if ((thisobjtags != null) && (thisobjtags[0].length > 0)) {
 
-                // update the count in saved-count
-                var nsaved = $('#project-status li').length;
-                $('#saved-count').html(nsaved + '/' + cpv.totalcps);
+                //     objectidelem = objectidelem + ' ';
+                //     thisobjtags.forEach(function (e, i, a) {
+                //         objectidelem = objectidelem + '<span class="cp-tag">' +
+                //             e + '</span> ';
+                //     });
+                // }
+
+                // // if this object exists in the list already
+                // // replace it with the new content
+                // if (statobjcheck.length > 0) {
+                //     statobjcheck.html(objectidelem);
+                // }
+
+                // // if this object doesn't exist, add a new row
+                // else {
+                //     // finish the objectidelem li tag
+                //     var fullelem = objectli + objectidelem + '</div>';
+                //     // add the new elem in
+                //     $('#project-status').append(fullelem);
+                // }
+
+                // // update the count in saved-count
+                // var nsaved = $('#project-status div').length;
+                // $('#saved-count').html(nsaved + '/' + cpv.totalcps);
 
 
             }
