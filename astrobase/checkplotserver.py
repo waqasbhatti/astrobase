@@ -208,13 +208,15 @@ def main():
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile,
           'executor':EXECUTOR}),
-        (r'/op',
-         cphandlers.OperationsHandler,
+        (r'/list',
+         cphandlers.CheckplotListHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile,
           'executor':EXECUTOR}),
+        # (r'/cpfile/(.*)',
+        #  tornado.web.StaticFileHandler, {'path': CURRENTDIR})
     ]
 
     #######################

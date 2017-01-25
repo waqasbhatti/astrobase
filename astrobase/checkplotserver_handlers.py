@@ -104,7 +104,8 @@ class IndexHandler(tornado.web.RequestHandler):
         self.render('cpindex.html',
                     project_checkplots=project_checkplots,
                     project_checkplotbasenames=project_checkplotbasenames,
-                    project_checkplotindices=project_checkplotindices)
+                    project_checkplotindices=project_checkplotindices,
+                    project_checkplotfile=self.cplistfile)
 
 
 
@@ -115,7 +116,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
     file and POST requests to save the checkplot changes back to the file.
 
     '''
-
 
     def initialize(self, currentdir, assetpath, cplist, cplistfile, executor):
         '''
@@ -128,10 +128,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
         self.currentproject = cplist
         self.cplistfile = cplistfile
         self.executor = executor
-
-
-
-
 
 
     @gen.coroutine
@@ -385,15 +381,12 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
 
 
-class OperationsHandler(tornado.web.RequestHandler):
-    '''This handles operations for checkplot stuff.
+class CheckplotListHandler(tornado.web.RequestHandler):
+    '''This handles loading and saving the checkplot-filelist.json file.
 
-    This includes GET requests to get the components (finder, objectinfo,
-    varinfo, magseries plots, for each lspinfo: periodogram + best phased
-    magseries plots).
-
-    Also includes POST requests to redo any of these components (e.g. redo a
-    phased mag series plot using twice or half the current period).
+    GET requests just return the current contents of the checkplot-filelist.json
+    file. POST requests will put in changes that the user made from the
+    frontend.
 
     '''
 
@@ -409,20 +402,64 @@ class OperationsHandler(tornado.web.RequestHandler):
         self.cplistfile = cplistfile
         self.executor = executor
 
-        LOGGER.info('working on checkplot list file %s' % self.cplistfile)
-
 
 
     def get(self):
         '''
-        This handles GET requests.
+        This handles GET requests. Used with AJAX from frontend.
 
         '''
+
+        # add the reviewed key to the current dict if it doesn't exist
+        # this will hold all the reviewed objects for the frontend
+        if not 'reviewed' in self.currentproject:
+            self.currentproject['reviewed'] = {}
+
+        # just returns the current project as JSON
+        self.write(self.currentproject)
 
 
 
     def post(self):
         '''
-        This handles POST requests.
+        This handles POST requests. Saves the changes made by the user.
+
 
         '''
+
+        objectid = self.get_argument('objectid', None)
+        changes = self.get_argument('changes',None)
+
+        if not objectid or not changes:
+            msg = ("could not parse changes to the checkplot filelist "
+                   "from the frontend")
+            LOGGER.error(msg)
+            resultdict = {'status':'error',
+                          'message':msg,
+                          'result':None}
+
+            self.write(resultdict)
+
+        objectid = xhtml_escape(objectid)
+        changes = json.loads(changes)
+
+        # update the dictionary
+        if 'reviewed' not in self.currentproject:
+            self.currentproject['reviewed'] = {}
+
+        self.currentproject['reviewed'][objectid] = changes
+
+        # update the JSON file
+        with open(self.cplistfile,'w') as outfd:
+            json.dump(self.currentproject, outfd)
+
+        # return status
+        msg = ("wrote all changes to the checkplot filelist "
+               "from the frontend for object: %s" % objectid)
+        LOGGER.info(msg)
+        resultdict = {'status':'success',
+                      'message':msg,
+                      'result':{'objectid':objectid,
+                                'changes':changes}}
+
+        self.write(resultdict)
