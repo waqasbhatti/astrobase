@@ -1197,7 +1197,8 @@ def _pkl_finder_objectinfo(objectinfo,
             plt.gca().set_frame_on(False)
             # this is the output instance
             finderpng = strio()
-            finderfig.savefig(finderpng, bbox_inches='tight',
+            finderfig.savefig(finderpng,
+                              bbox_inches='tight',
                               pad_inches=0.0, format='png')
             plt.close()
 
@@ -1372,7 +1373,8 @@ def _pkl_periodogram(lspinfo, plotdpi=100):
 
     # this is the output instance
     pgrampng = strio()
-    pgramfig.savefig(pgrampng, bbox_inches='tight',
+    pgramfig.savefig(pgrampng,
+                     # bbox_inches='tight',
                      pad_inches=0.0, format='png')
     plt.close()
 
@@ -1445,7 +1447,8 @@ def _pkl_magseries_plot(stimes, smags, serrs, plotdpi=100):
 
     # this is the output instance
     magseriespng = strio()
-    magseriesfig.savefig(magseriespng, bbox_inches='tight',
+    magseriesfig.savefig(magseriespng,
+                         # bbox_inches='tight',
                          pad_inches=0.05, format='png')
     plt.close()
 
@@ -1603,7 +1606,8 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
 
     # this is the output instance
     phasedseriespng = strio()
-    phasedseriesfig.savefig(phasedseriespng, bbox_inches='tight',
+    phasedseriesfig.savefig(phasedseriespng,
+                            # bbox_inches='tight',
                             pad_inches=0.0, format='png')
     plt.close()
 
