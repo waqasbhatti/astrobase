@@ -1482,7 +1482,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
 
     '''
     # open the figure instance
-    phasedseriesfig = plt.figure(figsize=(8.4,4.8),dpi=plotdpi)
+    phasedseriesfig = plt.figure(figsize=(7.5,4.8),dpi=plotdpi)
 
     # figure out the epoch, if it's None, use the min of the time
     if varepoch is None:
