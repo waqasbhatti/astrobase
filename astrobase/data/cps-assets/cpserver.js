@@ -704,18 +704,16 @@ var cpv = {
                     objtaglist = '';
                 }
 
-                var finelem = [objectli,
-                               objectidelem,
+                var finelem = [objectidelem,
                                varelem,
                                vartaglist,
-                               objtaglist,
-                               '</div>'].join(' ');
+                               objtaglist].join(' ');
 
                 // if this object exists in the list already
                 // replace it with the new content
                 if (statobjcheck.length > 0) {
 
-                    statobjcheck.remove();
+                    statobjcheck.html(finelem);
                     console.log('updating existing entry for ' +
                                 updateinfo.changes.objectid);
                 }
@@ -724,11 +722,8 @@ var cpv = {
                 else {
                     console.log('adding new entry for ' +
                                 updateinfo.changes.objectid);
+                    $('#project-status').append(objectli + finelem + '</div>');
                 }
-
-                var currlist = $('#project-status').html()
-                currlist = currlist + finelem;
-                $('#project-status').html(currlist);
 
                 // update the count in saved-count
                 var nsaved = $('#project-status div').length;
