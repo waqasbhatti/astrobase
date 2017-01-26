@@ -94,7 +94,6 @@ var cptracker = {
     },
 
     // this generates a CSV for download
-    // FIXME: figure out how to do this
     cpdata_to_csv: function () {
 
         var csvarr = [cptracker.infocolumns.join('|')];
@@ -339,7 +338,9 @@ var cpv = {
 
         if (cpv.currfile.length > 0) {
             // un-highlight the previous file in side bar
-            $("a[data-fname='" + cpv.currfile + "']").unwrap();
+            $("a.checkplot-load")
+                .filter("[data-fname='" + cpv.currfile + "']")
+                .unwrap();
         }
 
         // do the AJAX call to get this checkplot
@@ -555,11 +556,15 @@ var cpv = {
             // update the current file trackers
             cpv.currfile = filename;
             cpv.currentfind = parseInt(
-                $("a[data-fname='" + filename + "']").attr('data-findex')
+                $("a.checkplot-load")
+                    .filter("[data-fname='" + filename + "']")
+                    .attr('data-findex')
             );
 
             // highlight the file in the sidebar list
-            $("a[data-fname='" + filename + "']").wrap('<strong></strong>')
+            $("a.checkplot-load")
+                .filter("[data-fname='" + filename + "']")
+                .wrap('<strong></strong>')
 
             // fix the height of the sidebar as required
             var winheight = $(window).height();
@@ -627,88 +632,107 @@ var cpv = {
             // later if necessary.
             if (updatestatus == 'success') {
 
-                // FIXME: this is slow as hell but hopefully works around the
-                // issue we're having with jquery fucking everything up trying
-                // to append to the list
-                $('#project-status').empty();
-                cptracker.all_reviewed_from_cplist();
+                // store only the latest update in the tracker
+                // FIXME: think about adding in update history
+                // probably a better fit for indexedDB or something
+                cptracker.cpdata[postobj.cpfile] = updateinfo.changes;
 
-                // FIXME: figure why the following crap doesn't work!
+                // check if this object is already present and remove if it so
+                var statobjcheck = $('.tracker-obj').filter('[data-objectid="' +
+                                     updateinfo.changes.objectid +
+                                     '"]');
 
-                // // store only the latest update in the tracker
-                // // FIXME: think about adding in update history
-                // // probably a better fit for indexedDB or something
-                // cptracker.cpdata[postobj.cpfile] = updateinfo.changes;
+                // we need to update the project status widget
 
-                // // check if this object is already present and remove if it so
-                // var statobjcheck = $('div[data-objectid="' +
-                //                      updateinfo.changes.objectid +
-                //                      '"]');
+                // generate the new list element: this contains objectid -
+                // variability flag, variability tags, object tags
+                var objectli =
+                    '<div class="tracker-obj" ' +
+                    'data-objectid="' + updateinfo.changes.objectid + '">';
 
-                // // we need to update the project status widget
+                var objectidelem =  '<a class="objload-checkplot" ' +
+                    'href="#" data-fname="' + postobj.cpfile + '">' +
+                    updateinfo.changes.objectid +
+                    '</a>:';
 
-                // // generate the new list element: this contains objectid -
-                // // variability flag, variability tags, object tags
-                // var objectli = '<div class="tracker-obj" ' +
-                //     'data-objectid="' + updateinfo.changes.objectid + '">';
+                if (updateinfo.changes.varinfo.objectisvar == '1') {
+                    var varelem = 'variable';
+                }
+                else if (updateinfo.changes.varinfo.objectisvar == '2') {
+                    var varelem = 'not variable';
+                }
+                else if (updateinfo.changes.varinfo.objectisvar == '3') {
+                    var varelem = 'maybe variable';
+                }
+                else if (updateinfo.changes.varinfo.objectisvar == '0') {
+                    var varelem = 'no varflag set';
+                }
 
-                // var objectidelem =  '<a href="#" class="objload-checkplot" ' +
-                //     'data-fname="' + postobj.cpfile + '">' +
-                //     updateinfo.changes.objectid + '</a> ';
+                var thisvartags =
+                    updateinfo.changes.varinfo.vartags.split(', ');
 
-                // if (updateinfo.changes.varinfo.objectisvar == '1') {
-                //     objectidelem = objectidelem + 'variable';
-                // }
-                // else if (updateinfo.changes.varinfo.objectisvar == '2') {
-                //     objectidelem = objectidelem + 'not variable';
-                // }
-                // else if (updateinfo.changes.varinfo.objectisvar == '3') {
-                //     objectidelem = objectidelem + 'maybe variable';
-                // }
-                // else if (updateinfo.changes.varinfo.objectisvar == '0') {
-                //     objectidelem = objectidelem + 'no varflag set';
-                // }
+                var thisobjtags =
+                    updateinfo.changes.objectinfo.objecttags.split(', ');
 
-                // var thisvartags =
-                //     updateinfo.changes.varinfo.vartags.split(', ');
+                var vartaglist = [];
 
-                // var thisobjtags =
-                //     updateinfo.changes.objectinfo.objecttags.split(', ');
+                if ((thisvartags != null) && (thisvartags[0].length > 0)) {
 
-                // if ((thisvartags != null) && (thisvartags[0].length > 0)) {
+                    thisvartags.forEach(function (e, i, a) {
+                        vartaglist.push('<span class="cp-tag">' +
+                                        e + '</span>');
+                    });
 
-                //     objectidelem = objectidelem + ' ';
-                //     thisvartags.forEach(function (e, i, a) {
-                //         objectidelem = objectidelem + '<span class="cp-tag">' +
-                //             e + '</span> ';
-                //     });
-                // }
-                // if ((thisobjtags != null) && (thisobjtags[0].length > 0)) {
+                    vartaglist = vartaglist.join(' ');
+                }
+                else {
+                    vartaglist = '';
+                }
 
-                //     objectidelem = objectidelem + ' ';
-                //     thisobjtags.forEach(function (e, i, a) {
-                //         objectidelem = objectidelem + '<span class="cp-tag">' +
-                //             e + '</span> ';
-                //     });
-                // }
+                var objtaglist = [];
 
-                // // if this object exists in the list already
-                // // replace it with the new content
-                // if (statobjcheck.length > 0) {
-                //     statobjcheck.html(objectidelem);
-                // }
+                if ((thisobjtags != null) && (thisobjtags[0].length > 0)) {
 
-                // // if this object doesn't exist, add a new row
-                // else {
-                //     // finish the objectidelem li tag
-                //     var fullelem = objectli + objectidelem + '</div>';
-                //     // add the new elem in
-                //     $('#project-status').append(fullelem);
-                // }
+                    thisobjtags.forEach(function (e, i, a) {
+                        objtaglist.push('<span class="cp-tag">' +
+                                        e + '</span>');
+                    });
 
-                // // update the count in saved-count
-                // var nsaved = $('#project-status div').length;
-                // $('#saved-count').html(nsaved + '/' + cpv.totalcps);
+                    objtaglist = objtaglist.join(' ');
+                }
+                else {
+                    objtaglist = '';
+                }
+
+                var finelem = [objectli,
+                               objectidelem,
+                               varelem,
+                               vartaglist,
+                               objtaglist,
+                               '</div>'].join(' ');
+
+                // if this object exists in the list already
+                // replace it with the new content
+                if (statobjcheck.length > 0) {
+
+                    statobjcheck.remove();
+                    console.log('updating existing entry for ' +
+                                updateinfo.changes.objectid);
+                }
+
+                // if this object doesn't exist, add a new row
+                else {
+                    console.log('adding new entry for ' +
+                                updateinfo.changes.objectid);
+                }
+
+                var currlist = $('#project-status').html()
+                currlist = currlist + finelem;
+                $('#project-status').html(currlist);
+
+                // update the count in saved-count
+                var nsaved = $('#project-status div').length;
+                $('#saved-count').html(nsaved + '/' + cpv.totalcps);
 
 
             }
@@ -756,8 +780,9 @@ var cpv = {
             evt.preventDefault();
 
             // find the current index
-            var prevfilelink = $("a[data-findex='" +
-                                 (cpv.currentfind-1) + "']");
+            var prevfilelink = $("a.checkplot-load")
+                .filter("[data-findex='" +
+                        (cpv.currentfind-1) + "']");
             var prevfile = prevfilelink.attr('data-fname');
 
             if (prevfile != undefined) {
@@ -777,8 +802,9 @@ var cpv = {
             evt.preventDefault();
 
             // find the current index
-            var nextfilelink = $("a[data-findex='" +
-                                 (cpv.currentfind+1) + "']");
+            var nextfilelink = $("a.checkplot-load")
+                .filter("[data-findex='" +
+                        (cpv.currentfind+1) + "']");
             var nextfile = nextfilelink.attr('data-fname');
 
             if (nextfile != undefined) {
