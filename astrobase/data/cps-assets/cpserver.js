@@ -201,7 +201,7 @@ var cptracker = {
                     objectid +
                     '"><a href="#" class="objload-checkplot" ' +
                     'data-fname="' + objcp + '">' +
-                    objectid + '</a> ';
+                    objectid + '</a>: ';
 
                 if (varinfo.objectisvar == '1') {
                     objectidelem = objectidelem + 'variable';
