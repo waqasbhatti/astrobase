@@ -133,7 +133,7 @@ def get_frequency_grid(times,
 ## HOIST THE FINDER FUNCTIONS INTO THIS NAMESPACE ##
 ####################################################
 
-# from .kgls import pgen_lsp
-# from .spdm import stellingwerf_pdm
-# from .saov import aov_periodfind
-# from .kbls import bls_serial_pfind, bls_parallel_pfind
+from .zgls import pgen_lsp
+from .spdm import stellingwerf_pdm
+from .saov import aov_periodfind
+from .kbls import bls_serial_pfind, bls_parallel_pfind
