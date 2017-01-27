@@ -965,8 +965,10 @@ var cpv = {
                 .children('.phasedlc-container-row')
                 .filter(selector).addClass('phasedlc-selected');
 
-            // scroll this into view
-            $(this)[0].scrollIntoView(true);
+            // scroll this into view if off the screen
+            if ($(this).offset().top > $(window).height()) {
+                $(this)[0].scrollIntoView(true);
+            }
 
             // change the variability flag to 'probably variable' automatically.
             // since we've set a period and epoch, we probably think this is a
