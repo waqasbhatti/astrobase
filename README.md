@@ -87,10 +87,6 @@ can be represented in this form.
 - **[fortney2k7](astrobase/fortney2k7.py)**: giant planet models from Fortney
   et al. 2007, ApJ, 2659, 1661 made importable as Python dicts
 
-- **[glsp](astrobase/glsp.py)**: simple implementation of the Generalized
-  Lomb-Scargle periodogram from Zechmeister and Kurster (2008); use the more
-  optimized functions in `periodbase` for actual work
-
 - **[hatlc](astrobase/hatlc.py)**: functions to read, filter, and normalize
   new generation light curves from the HAT data server; the format is described
   here: http://data.hatsurveys.org/docs/lcformat
