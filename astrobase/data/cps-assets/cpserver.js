@@ -965,11 +965,6 @@ var cpv = {
                 .children('.phasedlc-container-row')
                 .filter(selector).addClass('phasedlc-selected');
 
-            // scroll this into view if off the screen
-            if ($(this).offset().top > $(window).height()) {
-                $(this)[0].scrollIntoView(true);
-            }
-
             // change the variability flag to 'probably variable' automatically.
             // since we've set a period and epoch, we probably think this is a
             // variable
@@ -1054,7 +1049,7 @@ var cpv = {
 
 
         // ctrl+down: move to the next phased LC and set it as the best
-        Mousetrap.bind(['ctrl+down','shift+down'], function() {
+        Mousetrap.bind(['shift+down'], function() {
 
             // check the current phased index, if it's null, then set it to 0
             if (cpv.currphasedind == null) {
@@ -1064,13 +1059,26 @@ var cpv = {
                 cpv.currphasedind = cpv.currphasedind + 1;
             }
 
-            // find the phased plot with this phasedind and click on it
-            $('a[data-phasedind="' + cpv.currphasedind + '"]').click();
+            var targetelem = $('a[data-phasedind="' +
+                               cpv.currphasedind + '"]');
+
+            if (targetelem.length > 0) {
+
+                // scroll into view if the bottom of this plot is off the screen
+                if ( (targetelem.offset().top + targetelem.height()) >
+                     $(window).height() ) {
+                    targetelem[0].scrollIntoView(true);
+                }
+
+                // click on the target elem to select it
+                targetelem.click();
+
+            }
 
         });
 
         // ctrl+up: move to the prev phased LC and set it as the best
-        Mousetrap.bind(['ctrl+up','shift+up'], function() {
+        Mousetrap.bind(['shift+up'], function() {
 
             // check the current phased index, if it's null, then set it to 0
             if (cpv.currphasedind == null) {
@@ -1080,8 +1088,20 @@ var cpv = {
                 cpv.currphasedind = cpv.currphasedind - 1;
             }
 
-            // find the phased plot with this phasedind and click on it
-            $('a[data-phasedind="' + cpv.currphasedind + '"]').click();
+            var targetelem = $('a[data-phasedind="' +
+                               cpv.currphasedind + '"]');
+
+            if (targetelem.length > 0) {
+
+                // scroll into view if the top of this plot is off the screen
+                if ( (targetelem.offset().top) > $(window).height() ) {
+                    targetelem[0].scrollIntoView(true);
+                }
+
+                // click on the target elem to select it
+                targetelem.click();
+
+            }
 
         });
 
