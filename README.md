@@ -20,7 +20,7 @@ package. Also contains other useful notes-to-self.
 - **[lightcurve-work](notebooks/lightcurve-work.ipynb)**: demonstrates usage of
     the [hatlc](astrobase/hatlc.py), [periodbase](astrobase/periodbase.py), and
     [checkplot](astrobase/checkplot.py) modules for reading HAT light curves,
-    finding periods, and plotting phased light curves
+    finding periods, and plotting phased light curves.
 
 - **[lightcurves-and-checkplots](notebooks/lightcurves-and-checkplots.ipynb)**:
     demonstrates usage of the [hatlc](astrobase/hatlc.py),
@@ -32,7 +32,7 @@ package. Also contains other useful notes-to-self.
 - **[parallel-ipython](notebooks/parallel-ipython.ipynb)**: shows examples of
     how to map `astrobase` functions across an
     [ipyparallel](http://ipyparallel.readthedocs.io/en/stable/) cluster to speed
-    up light curve processing
+    up light curve processing.
 
 ## astrobase
 
@@ -54,25 +54,26 @@ can be represented in this form.
   checkplots: a grid of plots used to quickly decide if a period search
   was successful. Checkplots come in two forms:
 
-  Python pickles: If you want to interactively browse through checkplots
-  prepared as part of a large variable star classification project, for example,
+  Python pickles: If you want to interactively browse through large numbers of
+  checkplots (e.g., as part of a large variable star classification project),
   you can use the `checkplotserver` webapp that works on checkplot pickle
   files. This interface (see below for an example) allows you to set and save
-  variability tags, object type tags, and best periods and epochs for each
-  object using a browser-based UI (see below). The information entered can then
-  be exported as CSV or JSON for the next stage of work. The
+  variability tags, object type tags, best periods and epochs, and comments for
+  each object using a browser-based UI (see below). The information entered can
+  then be exported as CSV or JSON for the next stage of work. The
   [lightcurves-and-checkplots](notebooks/lightcurves-and-checkplots.ipynb)
   Jupyter notebook details how to do this and goes through a full example.
 
   ![Checkplot Server](astrobase/data/checkplotserver-th.png?raw=true)
 
   PNG images: Alternatively, if you want to simply glance through lots of
-  checkplots, e.g. for an initial look at a collection of light curves; there's
+  checkplots (e.g. for an initial look at a collection of light curves), there's
   a tiny `checkplot-viewer` webapp available (see below for an example) that
-  operates on checkplot PNGs. The
-  [lightcurve-work](notebooks/lightcurve-work.ipynb) Jupyter goes through an
-  example of generating these checkplot PNGs for light curves. See the
-  [checkplot-viewer.js](astrobase/checkplot-viewer.js) file for instructions.
+  operates on checkplot PNG images. The
+  [lightcurve-work](notebooks/lightcurve-work.ipynb) Jupyter notebook goes
+  through an example of generating these checkplot PNGs for light curves. See
+  the [checkplot-viewer.js](astrobase/checkplot-viewer.js) file for more
+  instructions.
 
   ![Checkplot Viewer](astrobase/data/checkplot-viewer.png?raw=true)
 
