@@ -1476,7 +1476,9 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                                stimes, smags, serrs,
                                varperiod, varepoch,
                                phasewrap, phasesort, phasebin,
-                               plotxlim, plotdpi=100, greenhighlight=True,
+                               plotxlim,
+                               plotdpi=100,
+                               greenhighlight=False,
                                xgridlines=None):
     '''This returns the phased magseries plot PNG as base64 plus info as a dict.
 
