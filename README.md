@@ -54,25 +54,27 @@ can be represented in this form.
   checkplots: a grid of plots used to quickly decide if a period search
   was successful. Checkplots come in two forms:
 
-  PNG images: If you want to simply glance through lots of checkplots, e.g. for
-  an initial look at a collection of light curves; there's a tiny
-  checkplot-viewer webapp available. An example of using this is shown
-  below. See the [checkplot-viewer.js](astrobase/checkplot-viewer.js) file for
-  instructions.
-
-  ![Checkplot viewer](astrobase/data/checkplot-viewer.png?raw=true)
-
-  Python pickles: Alternatively, if you want to interactively browse through
-  checkplots prepared as part of a large variable star classification project,
-  for example, you can use the `checkplotserver` webapp that works on checkplot
-  pickle files. This interface (see below for an example) allows you to set and
-  save variability tags, object type tags, and best periods and epochs for each
+  Python pickles: If you want to interactively browse through checkplots
+  prepared as part of a large variable star classification project, for example,
+  you can use the `checkplotserver` webapp that works on checkplot pickle
+  files. This interface (see below for an example) allows you to set and save
+  variability tags, object type tags, and best periods and epochs for each
   object using a browser-based UI (see below). The information entered can then
   be exported as CSV or JSON for the next stage of work. The
   [lightcurves-and-checkplots](notebooks/lightcurves-and-checkplots.ipynb)
   Jupyter notebook details how to do this and goes through a full example.
 
   ![Checkplot Server](astrobase/data/checkplotserver-th.png?raw=true)
+
+  PNG images: Alternatively, if you want to simply glance through lots of
+  checkplots, e.g. for an initial look at a collection of light curves; there's
+  a tiny `checkplot-viewer` webapp available (see below for an example) that
+  operates on checkplot PNGs. The
+  [lightcurve-work](notebooks/lightcurve-work.ipynb) Jupyter goes through an
+  example of generating these checkplot PNGs for light curves. See the
+  [checkplot-viewer.js](astrobase/checkplot-viewer.js) file for instructions.
+
+  ![Checkplot Viewer](astrobase/data/checkplot-viewer.png?raw=true)
 
 - **[coordutils](astrobase/coordutils.py)**: functions for dealing with
   coordinates (conversions, distances, proper motion)
