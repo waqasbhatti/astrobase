@@ -1049,7 +1049,7 @@ var cpv = {
 
 
         // ctrl+down: move to the next phased LC and set it as the best
-        Mousetrap.bind(['shift+down'], function() {
+        Mousetrap.bind(['ctrl+shift+down'], function() {
 
             // check the current phased index, if it's null, then set it to 0
             if (cpv.currphasedind == null) {
@@ -1078,7 +1078,7 @@ var cpv = {
         });
 
         // ctrl+up: move to the prev phased LC and set it as the best
-        Mousetrap.bind(['shift+up'], function() {
+        Mousetrap.bind(['ctrl+shift+up'], function() {
 
             // check the current phased index, if it's null, then set it to 0
             if (cpv.currphasedind == null) {
