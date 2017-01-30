@@ -1,3 +1,24 @@
+#!/usr/bin/env python
+
+'''autocorr.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
+
+Calculates the autocorrelation for magnitude time series.
+
+'''
+
+
+from numpy import nan as npnan, sum as npsum, abs as npabs, \
+    roll as nproll, isfinite as npisfinite, std as npstd, \
+    sign as npsign, sqrt as npsqrt, median as npmedian, \
+    array as nparray, percentile as nppercentile, \
+    polyfit as nppolyfit, var as npvar, max as npmax, min as npmin, \
+    log10 as nplog10, arange as nparange, pi as MPI, floor as npfloor, \
+    argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
+    where as npwhere, linspace as nplinspace, \
+    zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
+    correlate as npcorrelate
+
+
 #####################
 ## AUTOCORRELATION ##
 #####################

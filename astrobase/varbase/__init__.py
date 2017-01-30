@@ -13,9 +13,6 @@ varbase.features: calculating nonperiodic and periodic variability features
 varbase.lcfit: fitting Fourier series and splines to light curves
 varbase.signals: masking periodic signals, pre-whitening light curves
 
-TO BE IMPLEMENTED:
-
-varbase.checkplot: adding variability info to checkplot pickles
-
-
 '''
+
+# there's nothing else here in this top-level module
