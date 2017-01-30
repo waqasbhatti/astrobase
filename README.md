@@ -134,7 +134,7 @@ can be represented in this form.
   equinoxes and due to proper motion; this will automatically download and save
   the JPL ephemerides **de430.bsp** from JPL upon first import
 
-- **[varbase](astrobase/varbase.py)**: functions for calculating variability
+- **[varbase](astrobase/varbase)**: functions for calculating variability
   indices for light curves, fitting and obtaining Fourier coefficients for use
   in classifications, and other variability features
 
