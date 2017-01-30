@@ -103,7 +103,7 @@ from .lcmath import phase_magseries, phase_magseries_with_errs, \
     time_bin_magseries, time_bin_magseries_with_errs, sigclip_magseries, \
     normalize_magseries, find_lc_timegroups
 
-from .varbase import spline_fit_magseries
+from .varbase.lcfit import spline_fit_magseries
 
 from .coordutils import total_proper_motion, reduced_proper_motion
 

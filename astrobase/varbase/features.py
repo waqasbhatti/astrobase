@@ -11,13 +11,6 @@ from datetime import datetime
 from traceback import format_exc
 from time import time as unixtime
 
-import os.path
-
-try:
-    import cPickle as pickle
-except:
-    import pickle
-
 from numpy import nan as npnan, sum as npsum, abs as npabs, \
     roll as nproll, isfinite as npisfinite, std as npstd, \
     sign as npsign, sqrt as npsqrt, median as npmedian, \
@@ -30,28 +23,7 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     correlate as npcorrelate
 
 from scipy.stats import skew as spskew, kurtosis as spkurtosis
-from scipy.optimize import leastsq as spleastsq, minimize as spminimize
-from scipy.interpolate import LSQUnivariateSpline
 from scipy.signal import savgol_filter
-
-import os
-# check the DISPLAY variable to see if we can plot stuff interactively
-try:
-    dispok = os.environ['DISPLAY']
-except KeyError:
-    import matplotlib
-    matplotlib.use('Agg')
-    dispok = False
-
-import matplotlib.pyplot as plt
-
-
-
-###################
-## LOCAL IMPORTS ##
-###################
-
-from .periodbase.zgls import pgen_lsp
 
 
 #############
@@ -62,7 +34,7 @@ from .periodbase.zgls import pgen_lsp
 LOGGER = None
 
 def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.varbase' % parent_name)
+    globals()['LOGGER'] = logging.getLogger('%s.features' % parent_name)
 
 def LOGDEBUG(message):
     if LOGGER:

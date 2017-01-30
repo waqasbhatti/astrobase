@@ -12,13 +12,7 @@ import logging
 from datetime import datetime
 from traceback import format_exc
 from time import time as unixtime
-
 import os.path
-
-try:
-    import cPickle as pickle
-except:
-    import pickle
 
 from numpy import nan as npnan, sum as npsum, abs as npabs, \
     roll as nproll, isfinite as npisfinite, std as npstd, \
@@ -30,11 +24,6 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     where as npwhere, linspace as nplinspace, \
     zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
     correlate as npcorrelate
-
-from scipy.stats import skew as spskew, kurtosis as spkurtosis
-from scipy.optimize import leastsq as spleastsq, minimize as spminimize
-from scipy.interpolate import LSQUnivariateSpline
-from scipy.signal import savgol_filter
 
 import os
 # check the DISPLAY variable to see if we can plot stuff interactively
@@ -53,7 +42,8 @@ import matplotlib.pyplot as plt
 ## LOCAL IMPORTS ##
 ###################
 
-from .periodbase.zgls import pgen_lsp
+from ..periodbase.zgls import pgen_lsp
+from .lcfit import _fourier_func, fourier_fit_magseries, spline_fit_magseries
 
 
 #############
@@ -234,7 +224,7 @@ def whiten_magseries(times, mags, errs,
 
 
 
-def lsp_whiten(times, mags, errs,
+def gls_whiten(times, mags, errs,
                startp=None, endp=None,
                autofreq=True,
                sigclip=30.0,
@@ -243,7 +233,7 @@ def lsp_whiten(times, mags, errs,
                nbestpeaks=5,
                nworkers=4,
                plotfits=None):
-    '''Iterative whitening using the LSP.
+    '''Iterative whitening of a magnitude series using the L-S periodogram.
 
     This finds the best period, fits a fourier series with the best period, then
     whitens the time series with the best period, and repeats until nbestpeaks
