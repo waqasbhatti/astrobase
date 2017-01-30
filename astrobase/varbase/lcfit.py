@@ -1,3 +1,77 @@
+#!/usr/bin/env python
+
+'''features.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
+
+Calculates light curve features for variability classification.
+
+'''
+
+import logging
+from datetime import datetime
+from traceback import format_exc
+from time import time as unixtime
+
+from numpy import nan as npnan, sum as npsum, abs as npabs, \
+    roll as nproll, isfinite as npisfinite, std as npstd, \
+    sign as npsign, sqrt as npsqrt, median as npmedian, \
+    array as nparray, percentile as nppercentile, \
+    polyfit as nppolyfit, var as npvar, max as npmax, min as npmin, \
+    log10 as nplog10, arange as nparange, pi as MPI, floor as npfloor, \
+    argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
+    where as npwhere, linspace as nplinspace, \
+    zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
+    correlate as npcorrelate
+
+from scipy.optimize import leastsq as spleastsq, minimize as spminimize
+from scipy.interpolate import LSQUnivariateSpline
+
+
+#############
+## LOGGING ##
+#############
+
+# setup a logger
+LOGGER = None
+
+def set_logger_parent(parent_name):
+    globals()['LOGGER'] = logging.getLogger('%s.lcfit' % parent_name)
+
+def LOGDEBUG(message):
+    if LOGGER:
+        LOGGER.debug(message)
+    elif DEBUG:
+        print('%sZ [DBUG]: %s' % (datetime.utcnow().isoformat(), message))
+
+def LOGINFO(message):
+    if LOGGER:
+        LOGGER.info(message)
+    else:
+        print('%sZ [INFO]: %s' % (datetime.utcnow().isoformat(), message))
+
+def LOGERROR(message):
+    if LOGGER:
+        LOGGER.error(message)
+    else:
+        print('%sZ [ERR!]: %s' % (datetime.utcnow().isoformat(), message))
+
+def LOGWARNING(message):
+    if LOGGER:
+        LOGGER.warning(message)
+    else:
+        print('%sZ [WRN!]: %s' % (datetime.utcnow().isoformat(), message))
+
+def LOGEXCEPTION(message):
+    if LOGGER:
+        LOGGER.exception(message)
+    else:
+        print(
+            '%sZ [EXC!]: %s\nexception was: %s' % (
+                datetime.utcnow().isoformat(),
+                message, format_exc()
+                )
+            )
+
+
 #####################################################
 ## FOURIER FITTING TO PHASED MAGNITUDE TIME SERIES ##
 #####################################################
