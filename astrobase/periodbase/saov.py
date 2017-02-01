@@ -39,7 +39,7 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
 LOGGER = None
 
 def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.spdm' % parent_name)
+    globals()['LOGGER'] = logging.getLogger('%s.saov' % parent_name)
 
 def LOGDEBUG(message):
     if LOGGER:
@@ -94,9 +94,9 @@ from . import get_frequency_grid
 NCPUS = cpu_count()
 
 
-###########################################################
-## ANALYSIS of VARIANCE (Schwarzenberg-Cerny 1989, 1996) ##
-###########################################################
+#####################################################
+## ANALYSIS of VARIANCE (Schwarzenberg-Cerny 1989) ##
+#####################################################
 
 def aov_theta(times, mags, errs, frequency,
               binsize=0.05, minbin=9):
