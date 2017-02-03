@@ -102,7 +102,7 @@ setup(
     author='Waqas Bhatti',
     author_email='waqas.afzal.bhatti@gmail.com',
     license='MIT',
-    packages=['astrobase'],
+    packages=['astrobase','astrobase.periodbase','astrobase.varbase'],
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
     entry_points={
