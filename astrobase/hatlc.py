@@ -952,6 +952,7 @@ def normalize_lcdict(lcdict,
 
             else:
                 LOGWARNING('column %s is all nan, skipping...' % col)
+                continue
 
 
             # now that everything is normalized to 0.0, add the global median
