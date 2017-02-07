@@ -91,7 +91,7 @@ def _fourier_func(fourierparams, phase, mags):
     '''
 
     # figure out the order from the length of the Fourier param list
-    order = len(fourierparams)/2
+    order = int(len(fourierparams)/2)
 
     # get the amplitude and phase coefficients
     f_amp = fourierparams[:order]
@@ -220,7 +220,7 @@ def fourier_fit_magseries(times, mags, errs, period,
     # with respect to phase -- the light curve minimum)
     ptimes = stimes[phasesortind]
 
-    fourierorder = len(initfourierparams)/2
+    fourierorder = int(len(initfourierparams)/2)
 
     LOGINFO('fitting Fourier series of order %s to '
             'mag series with %s observations, '
