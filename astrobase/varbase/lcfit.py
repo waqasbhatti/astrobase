@@ -1,9 +1,18 @@
 #!/usr/bin/env python
 
-'''features.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
+'''varbase/lcfit.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 
-Calculates light curve features for variability classification.
+Fitting routines for light curves. Includes:
+* fourier_fit_magseries: fit an arbitrary order Fourier series to a magnitude
+    time series.
+* spline_fit_magseries: fit a univariate cubic spline to the phased light
+    curve.
+* savgol_fit_magseries: apply a Savitzky-Golay filter to the phase light curve,
+    returning the resulting smoothed function as a "fit".
 
+TODO:
+* Find correct dof for reduced chi squared in spline_fit_magseries
+* Find correct dof for reduced chi squared in savgol_fit_magseries
 '''
 
 import logging
@@ -24,6 +33,8 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
 
 from scipy.optimize import leastsq as spleastsq, minimize as spminimize
 from scipy.interpolate import LSQUnivariateSpline
+from scipy.signal import savgol_filter
+import matplotlib.pyplot as plt
 
 
 #############
@@ -152,7 +163,8 @@ def fourier_fit_magseries(times, mags, errs, period,
                                              0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1],
                           sigclip=3.0,
                           plotfit=False,
-                          ignoreinitfail=True):
+                          ignoreinitfail=True,
+                          isnormalizedflux=False):
     '''This fits a Fourier series to a magnitude time series.
 
     This uses an 8th-order Fourier series by default. This is good for light
@@ -169,6 +181,10 @@ def fourier_fit_magseries(times, mags, errs, period,
 
     if ignoreinitfail is True, ignores the initial failure to find a set of
     optimized Fourier parameters and proceeds to do a least-squares fit anyway.
+
+    isnormalizedflux is a boolean value for setting the ylabel and ylimits of
+    plots for either magnitudes (False) or flux units (i.e. normalized to 1, in
+    which case isnormalizedflux should be set to True).
 
     '''
 
@@ -220,7 +236,7 @@ def fourier_fit_magseries(times, mags, errs, period,
     # with respect to phase -- the light curve minimum)
     ptimes = stimes[phasesortind]
 
-    fourierorder = int(len(initfourierparams)/2)
+    fourierorder = len(initfourierparams)/2
 
     LOGINFO('fitting Fourier series of order %s to '
             'mag series with %s observations, '
@@ -292,12 +308,16 @@ def fourier_fit_magseries(times, mags, errs, period,
                              markersize=2.0,capsize=0)
                 plt.plot(phase,fitmags, 'r-',linewidth=2.0)
                 ymin, ymax = plt.ylim()
-                plt.ylim(ymax,ymin)
+                if not isnormalizedflux:
+                    plt.ylim(ymax,ymin)
                 plt.gca().set_xticks(
                     [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
                 )
                 plt.xlabel('phase')
-                plt.ylabel('magnitude')
+                if not isnormalizedflux:
+                    plt.ylabel('magnitude')
+                if isnormalizedflux:
+                    plt.ylabel('normalized flux')
                 plt.title('period: %.6f, folded at %.6f, fit epoch: %.6f' %
                           (period, mintime, magseriesepoch))
                 plt.savefig(plotfit)
@@ -337,7 +357,8 @@ def spline_fit_magseries(times, mags, errs, period,
                          maxknots=100,
                          sigclip=30.0,
                          plotfit=False,
-                         ignoreinitfail=False):
+                         ignoreinitfail=False,
+                         isnormalizedflux=False):
 
     '''This fits a univariate cubic spline to the phased light curve.
 
@@ -347,6 +368,10 @@ def spline_fit_magseries(times, mags, errs, period,
     The knot fraction is the number of internal knots to use for the spline. A
     value of 0.01 (or 1%) of the total number of non-nan observations appears to
     work quite well, without over-fitting.
+
+    isnormalizedflux is a boolean value for setting the ylabel and ylimits of
+    plots for either magnitudes (False) or flux units (i.e. normalized to 1, in
+    which case isnormalizedflux should be set to True).
 
     Returns the chisq of the fit, as well as the reduced chisq. FIXME: check
     this equation below to see if it's right.
@@ -454,12 +479,16 @@ def spline_fit_magseries(times, mags, errs, period,
                      markersize=2.0,capsize=0)
         plt.plot(phase,fitmags, 'r-',linewidth=2.0)
         ymin, ymax = plt.ylim()
-        plt.ylim(ymax,ymin)
+        if not isnormalizedflux:
+            plt.ylim(ymax,ymin)
         plt.gca().set_xticks(
             [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
         )
         plt.xlabel('phase')
-        plt.ylabel('magnitude')
+        if not isnormalizedflux:
+            plt.ylabel('magnitude')
+        if isnormalizedflux:
+            plt.ylabel('normalized flux')
         plt.title('period: %.6f, folded at %.6f, fit epoch: %.6f' %
                   (period, mintime, magseriesepoch))
         plt.savefig(plotfit)
@@ -468,3 +497,181 @@ def spline_fit_magseries(times, mags, errs, period,
         returndict['fitplotfile'] = plotfit
 
     return returndict
+
+
+def savgol_fit_magseries(times, mags, errs, period,
+                         windowlength=None,
+                         polydeg=2,
+                         sigclip=30.0,
+                         plotfit=False,
+                         isnormalizedflux=False):
+
+    '''
+    Fit a Savitzky-Golay filter to the magnitude/flux time series.
+    SG fits successive sub-sets (windows) of adjacent data points with a
+    low-order polynomial via least squares. At each point (magnitude),
+    it returns the value of the polynomial at that magnitude's time.
+    This is made significantly cheaper than *actually* performing least squares
+    for each window through linear algebra tricks that are possible when
+    specifying the window size and polynomial order beforehand.
+    Numerical Recipes Ch 14.8 gives an overview, Eq. 14.8.6 is what Scipy has
+    implemented.
+
+    The idea behind Savitzky-Golay is to preserve higher moments (>=2) of the
+    input data series than would be done by a simple moving window average.
+
+    Note that the filter assumes evenly spaced data, which magnitude time
+    series are not. By *pretending* the data points are evenly spaced, we
+    introduce an additional noise source in the function values. This is a
+    relatively small noise source provided that the changes in the magnitude
+    values across the full width of the N=windowlength point window is <
+    sqrt(N/2) times the measurement noise on a single point.
+
+    Args:
+
+    windowlength (int): length of the filter window (the number of
+    coefficients). Must be either positive and odd, or None. (The window is
+    the number of points to the left, and to the right, of whatever point is
+    having a polynomial fit to it locally). Bigger windows at fixed polynomial
+    order risk lowering the amplitude of sharp features. If None, this routine
+    (arbitrarily) sets the windowlength for phased LCs to be either the number
+    of finite data points divided by 300, or polydeg+3, whichever is bigger.
+
+    polydeg (int): the order of the polynomial used to fit the samples. Must
+    be less than windowlength. "Higher-order filters do better at preserving
+    feature heights and widths, but do less smoothing on broader features."
+    (NumRec).
+
+    isnormalizedflux (bool): sets the ylabel and ylimits of plots for either
+    magnitudes (False) or flux units (i.e. normalized to 1, in which case
+    isnormalizedflux should be set to True).
+
+    '''
+
+    # get rid of nans
+    find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
+    ftimes = times[find]
+    fmags = mags[find]
+    ferrs = errs[find]
+
+    # get the median and stdev = 1.483 x MAD
+    median_mag = npmedian(fmags)
+    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
+
+    # sigclip next
+    if sigclip:
+
+        sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
+
+        stimes = ftimes[sigind]
+        smags = fmags[sigind]
+        serrs = ferrs[sigind]
+
+        LOGINFO('sigclip = %s: before = %s observations, '
+                'after = %s observations' %
+                (sigclip, len(times), len(stimes)))
+
+    else:
+
+        stimes = ftimes
+        smags = fmags
+        serrs = ferrs
+
+    # phase the mag series using the given period and epoch = min(stimes)
+    mintime = npmin(stimes)
+
+    # calculate the unsorted phase, then sort it
+    iphase = (stimes - mintime)/period - npfloor((stimes - mintime)/period)
+    phasesortind = npargsort(iphase)
+
+    # these are the final quantities to use for the SG fit
+    phase = iphase[phasesortind]
+    pmags = smags[phasesortind]
+    perrs = serrs[phasesortind]
+
+    # get the times sorted in phase order (useful to get the fit mag minimum
+    # with respect to phase -- the light curve minimum)
+    ptimes = stimes[phasesortind]
+
+    if not isinstance(windowlength, int):
+        windowlength = max(
+                polydeg+3,
+                int(len(phase)/300)
+                )
+        if windowlength % 2 == 0:
+            windowlength += 1
+
+    LOGINFO('applying Savitzky-Golay filter with '
+            'window length %s and polynomial degree %s to '
+            'mag series with %s observations, '
+            'using period %.6f, folded at %.6f' % (windowlength,
+                                                   polydeg,
+                                                   len(pmags),
+                                                   period,
+                                                   mintime))
+
+    # generate the function values obtained by applying the SG filter. The
+    # "wrap" option is best for phase-folded LCs.
+    sgf = savgol_filter(pmags, windowlength, polydeg, mode='wrap')
+
+    # here the "fit" to the phases is the function produced by the
+    # Savitzky-Golay filter. then compute the chisq and red-chisq.
+    fitmags = sgf
+
+    fitchisq = npsum(
+        ((fitmags - pmags)*(fitmags - pmags)) / (perrs*perrs)
+    )
+
+    # TODO: quantify dof for SG filter.
+    nparams = int(len(pmags)/windowlength) * polydeg
+    fitredchisq = fitchisq/(len(pmags) - nparams - 1)
+    fitredchisq = -99.
+
+    LOGINFO(
+        'SG filter applied. chisq = %.5f, reduced chisq = %.5f' %
+        (fitchisq, fitredchisq)
+    )
+
+    # figure out the time of light curve minimum (i.e. the fit epoch)
+    # this is when the fit mag is maximum (i.e. the faintest)
+    fitmagminind = npwhere(fitmags == npmax(fitmags))
+    magseriesepoch = ptimes[fitmagminind]
+
+    # assemble the returndict
+    returndict =  {'fitchisq':fitchisq,
+                   'fitredchisq':fitredchisq,
+                   'fitplotfile':None,
+                   'phase':phase,
+                   'mags':pmags,
+                   'errs':perrs,
+                   'fitmags':fitmags,
+                   'fitepoch':magseriesepoch}
+
+    # make the fit plot if required
+    if plotfit and isinstance(plotfit, str):
+
+        plt.figure(figsize=(8,6))
+        plt.axvline(0.5,color='g',linestyle='--')
+        plt.errorbar(phase,pmags,fmt='bo',yerr=perrs,
+                     markersize=2.0,capsize=0)
+        plt.plot(phase,fitmags, 'r-',linewidth=2.0)
+        ymin, ymax = plt.ylim()
+        if not isnormalizedflux:
+            plt.ylim(ymax,ymin)
+        plt.gca().set_xticks(
+            [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+        )
+        plt.xlabel('phase')
+        if not isnormalizedflux:
+            plt.ylabel('magnitude')
+        if isnormalizedflux:
+            plt.ylabel('normalized flux')
+        plt.title('period: %.6f, folded at %.6f, fit epoch: %.6f' %
+                  (period, mintime, magseriesepoch))
+        plt.savefig(plotfit)
+        plt.close()
+
+        returndict['fitplotfile'] = plotfit
+
+    return returndict
+
