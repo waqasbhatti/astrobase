@@ -236,7 +236,7 @@ def fourier_fit_magseries(times, mags, errs, period,
     # with respect to phase -- the light curve minimum)
     ptimes = stimes[phasesortind]
 
-    fourierorder = len(initfourierparams)/2
+    fourierorder = int(len(initfourierparams)/2)
 
     LOGINFO('fitting Fourier series of order %s to '
             'mag series with %s observations, '
@@ -335,7 +335,8 @@ def fourier_fit_magseries(times, mags, errs, period,
                  'reason: %s, returning scipy OptimizeResult'
                  % initialfit.message)
 
-        return {'finalparams':None,
+        return {'fourierorder':fourierorder
+                'finalparams':None,
                 'initialfit':initialfit,
                 'leastsqfit':None,
                 'fitchisq':None,
@@ -638,7 +639,9 @@ def savgol_fit_magseries(times, mags, errs, period,
     magseriesepoch = ptimes[fitmagminind]
 
     # assemble the returndict
-    returndict =  {'fitchisq':fitchisq,
+    returndict =  {'windowlength':windowlength,
+                   'polydeg':polydeg,
+                   'fitchisq':fitchisq,
                    'fitredchisq':fitredchisq,
                    'fitplotfile':None,
                    'phase':phase,
