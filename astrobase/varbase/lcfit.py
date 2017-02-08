@@ -236,7 +236,7 @@ def fourier_fit_magseries(times, mags, errs, period,
     # with respect to phase -- the light curve minimum)
     ptimes = stimes[phasesortind]
 
-    fourierorder = len(initfourierparams)/2
+    fourierorder = int(len(initfourierparams)/2)
 
     LOGINFO('fitting Fourier series of order %s to '
             'mag series with %s observations, '
