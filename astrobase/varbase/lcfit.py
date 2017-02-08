@@ -287,7 +287,8 @@ def fourier_fit_magseries(times, mags, errs, period,
             magseriesepoch = ptimes[fitmagminind]
 
             # assemble the returndict
-            returndict =  {'finalparams':finalparams,
+            returndict =  {'fourierorder':fourierorder,
+                           'finalparams':finalparams,
                            'initialfit':initialfit,
                            'leastsqfit':leastsqfit,
                            'fitchisq':fitchisq,
@@ -335,7 +336,7 @@ def fourier_fit_magseries(times, mags, errs, period,
                  'reason: %s, returning scipy OptimizeResult'
                  % initialfit.message)
 
-        return {'fourierorder':fourierorder
+        return {'fourierorder':fourierorder,
                 'finalparams':None,
                 'initialfit':initialfit,
                 'leastsqfit':None,
