@@ -281,7 +281,7 @@ def gls_whiten(times, mags, errs,
     fseries = fourier_fit_magseries(stimes, smags, serrs, wperiod,
                                     initfourierparams=initfparams,
                                     sigclip=sigclip)
-    ffitparams = fseries['finalparams']
+    ffitparams = fseries['fitinfo']['finalparams']
 
     # this is the initial whitened series using the initial fourier fit and
     # initial found best period
@@ -337,7 +337,7 @@ def gls_whiten(times, mags, errs,
         wfseries = fourier_fit_magseries(wtimes, wmags, werrs, wperiod,
                                          initfourierparams=initfparams,
                                          sigclip=sigclip)
-        wffitparams = wfseries['finalparams']
+        wffitparams = wfseries['fitinfo']['finalparams']
         wseries = whiten_magseries(wtimes, wmags, werrs, wperiod, wffitparams,
                                    sigclip=sigclip)
 
