@@ -287,19 +287,26 @@ def fourier_fit_magseries(times, mags, errs, period,
             magseriesepoch = ptimes[fitmagminind]
 
             # assemble the returndict
-            returndict =  {'fourierorder':fourierorder,
-                           'finalparams':finalparams,
-                           'initialfit':initialfit,
-                           'leastsqfit':leastsqfit,
-                           'fitchisq':fitchisq,
-                           'fitredchisq':fitredchisq,
-                           'fitplotfile':None,
-                           'phase':phase,
-                           'times':ptimes,
-                           'mags':pmags,
-                           'errs':perrs,
-                           'fitmags':fitmags,
-                           'fitepoch':magseriesepoch}
+            returndict =  {
+                'fittype':'fourier',
+                'fitinfo':{
+                    'fourierorder':fourierorder,
+                    'finalparams':finalparams,
+                    'initialfit':initialfit,
+                    'leastsqfit':leastsqfit,
+                    'fitmags':fitmags,
+                    'fitepoch':magseriesepoch
+                },
+                'fitchisq':fitchisq,
+                'fitredchisq':fitredchisq,
+                'fitplotfile':None,
+                'magseries':{
+                    'times':ptimes,
+                    'phase':phase,
+                    'mags':pmags,
+                    'errs':perrs,
+                },
+            }
 
             # make the fit plot if required
             if plotfit and isinstance(plotfit, str):
@@ -337,19 +344,26 @@ def fourier_fit_magseries(times, mags, errs, period,
                  'reason: %s, returning scipy OptimizeResult'
                  % initialfit.message)
 
-        return {'fourierorder':fourierorder,
+        return {
+            'fittype':'fourier',
+            'fitinfo':{
+                'fourierorder':fourierorder,
                 'finalparams':None,
                 'initialfit':initialfit,
                 'leastsqfit':None,
-                'fitchisq':None,
-                'fitredchisq':None,
-                'fitplotfile':None,
-                'phase':phase,
+                'fitmags':None,
+                'fitepoch':None
+                },
+            'fitchisq':None,
+            'fitredchisq':None,
+            'fitplotfile':None,
+            'magseries':{
                 'times':ptimes,
+                'phase':phase,
                 'mags':pmags,
                 'errs':perrs,
-                'fitmags':None,
-                'fitepoch':None}
+            }
+        }
 
 
 #################################################################
@@ -464,16 +478,23 @@ def spline_fit_magseries(times, mags, errs, period,
     magseriesepoch = ptimes[fitmagminind]
 
     # assemble the returndict
-    returndict =  {'nknots':nknots,
-                   'fitchisq':fitchisq,
-                   'fitredchisq':fitredchisq,
-                   'fitplotfile':None,
-                   'phase':phase,
-                   'times':ptimes,
-                   'mags':pmags,
-                   'errs':perrs,
-                   'fitmags':fitmags,
-                   'fitepoch':magseriesepoch}
+    returndict =  {
+        'fittype':'spline',
+        'fitinfo':{
+            'nknots':nknots,
+            'fitmags':fitmags,
+            'fitepoch':magseriesepoch
+        },
+        'fitchisq':fitchisq,
+        'fitredchisq':fitredchisq,
+        'fitplotfile':None,
+        'magseries':{
+            'times':ptimes,
+            'phase':phase,
+            'mags':pmags,
+            'errs':perrs,
+        },
+    }
 
     # make the fit plot if required
     if plotfit and isinstance(plotfit, str):
@@ -502,6 +523,7 @@ def spline_fit_magseries(times, mags, errs, period,
         returndict['fitplotfile'] = plotfit
 
     return returndict
+
 
 
 def savgol_fit_magseries(times, mags, errs, period,
@@ -643,17 +665,24 @@ def savgol_fit_magseries(times, mags, errs, period,
     magseriesepoch = ptimes[fitmagminind]
 
     # assemble the returndict
-    returndict =  {'windowlength':windowlength,
-                   'polydeg':polydeg,
-                   'fitchisq':fitchisq,
-                   'fitredchisq':fitredchisq,
-                   'fitplotfile':None,
-                   'phase':phase,
-                   'times':ptimes, # phase sorted times
-                   'mags':pmags,
-                   'errs':perrs,
-                   'fitmags':fitmags,
-                   'fitepoch':magseriesepoch}
+    returndict = {
+        'fittype':'savgol',
+        'fitinfo':{
+            'windowlength':windowlength,
+            'polydeg':polydeg,
+            'fitmags':fitmags,
+            'fitepoch':magseriesepoch
+        },
+        'fitchisq':fitchisq,
+        'fitredchisq':fitredchisq,
+        'fitplotfile':None,
+        'magseries':{
+            'times':ptimes,
+            'phase':phase,
+            'mags':pmags,
+            'errs':perrs,
+        }
+    }
 
     # make the fit plot if required
     if plotfit and isinstance(plotfit, str):
@@ -682,4 +711,3 @@ def savgol_fit_magseries(times, mags, errs, period,
         returndict['fitplotfile'] = plotfit
 
     return returndict
-
