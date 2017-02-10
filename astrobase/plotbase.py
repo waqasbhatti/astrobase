@@ -533,7 +533,7 @@ def plot_phased_mag_series(times,
         try:
             spfit = spline_fit_magseries(stimes, smags, serrs, period,
                                          knotfraction=fitknotfrac)
-            epoch = spfit['fitepoch']
+            epoch = spfit['fitinfo']['fitepoch']
             if len(epoch) != 1:
                 epoch = epoch[0]
         except Exception as e:

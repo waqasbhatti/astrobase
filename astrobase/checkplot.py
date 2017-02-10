@@ -738,7 +738,7 @@ def checkplot_png(lspinfo,
                 try:
                     spfit = spline_fit_magseries(stimes, smags, serrs,
                                                  varperiod)
-                    varepoch = spfit['fitepoch']
+                    varepoch = spfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
                 except Exception as e:
@@ -1022,7 +1022,7 @@ def twolsp_checkplot_png(lspinfo1,
                 try:
                     spfit = spline_fit_magseries(stimes, smags, serrs,
                                                  varperiod)
-                    varepoch = spfit['fitepoch']
+                    varepoch = spfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
                 except Exception as e:
@@ -1063,7 +1063,7 @@ def twolsp_checkplot_png(lspinfo1,
                 try:
                     spfit = spline_fit_magseries(stimes, smags, serrs,
                                                  varperiod)
-                    varepoch = spfit['fitepoch']
+                    varepoch = spfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
                 except Exception as e:
@@ -1498,7 +1498,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
         try:
             spfit = spline_fit_magseries(stimes, smags, serrs,
                                          varperiod)
-            varepoch = spfit['fitepoch']
+            varepoch = spfit['fitinfo']['fitepoch']
             if len(varepoch) != 1:
                 varepoch = varepoch[0]
         except Exception as e:
