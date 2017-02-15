@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-'''varbase/lcfit.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
+'''
+varbase/lcfit.py
+Waqas Bhatti and Luke Bouma - Feb 2017
+(wbhatti@astro.princeton.edu and luke@astro.princeton.edu)
 
 Fitting routines for light curves. Includes:
 * fourier_fit_magseries: fit an arbitrary order Fourier series to a magnitude
@@ -34,6 +37,7 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
 from scipy.optimize import leastsq as spleastsq, minimize as spminimize
 from scipy.interpolate import LSQUnivariateSpline
 from scipy.signal import savgol_filter
+from numpy.polynomial.legendre import Legendre, legval
 import matplotlib.pyplot as plt
 
 
@@ -627,6 +631,136 @@ def savgol_fit_magseries(times, mags, errs, period,
         'fitinfo':{
             'windowlength':windowlength,
             'polydeg':polydeg,
+            'fitmags':fitmags,
+            'fitepoch':magseriesepoch
+        },
+        'fitchisq':fitchisq,
+        'fitredchisq':fitredchisq,
+        'fitplotfile':None,
+        'magseries':{
+            'times':ptimes,
+            'phase':phase,
+            'mags':pmags,
+            'errs':perrs,
+        }
+    }
+
+    # make the fit plot if required
+    if plotfit and isinstance(plotfit, str):
+
+        _make_fit_plot(phase, pmags, perrs, fitmags, isnormalizedflux,
+                period, mintime, magseriesepoch, plotfit)
+
+        returndict['fitplotfile'] = plotfit
+
+    return returndict
+
+
+##########################################################
+## LEGENDRE-POLYNOMIAL FITTING TO MAGNITUDE TIME SERIES ##
+##########################################################
+
+def legendre_fit_magseries(times, mags, errs, period,
+                           legendredeg=10,
+                           sigclip=30.0,
+                           plotfit=False,
+                           isnormalizedflux=False):
+
+    '''
+    Fit an arbitrary-order Legendre series, via least squares, to the
+    magnitude/flux time series. This is a series of the form:
+
+        p(x) = c_0*L_0(x) + c_1*L_1(x) + c_2*L_2(x) + ... + c_n*L_n(x)
+
+    where L_i's are Legendre polynomials (also caleld "Legendre functions of
+    the first kind") and c_i's are the coefficients being fit.
+
+    Args:
+
+    legendredeg (int): n in the above equation. (I.e., if you give n=5, you
+    will get 6 coefficients). This number should be much less than the number
+    of data points you are fitting.
+
+    sigclip (float): number of standard deviations away from the mean of the
+    magnitude time-series from which to "clip" data points.
+
+    isnormalizedflux (bool): sets the ylabel and ylimits of plots for either
+    magnitudes (False) or flux units (i.e. normalized to 1, in which case
+    isnormalizedflux should be set to True).
+
+    Returns:
+
+    returndict:
+    {
+        'fittype':'legendre',
+        'fitinfo':{
+            'legendredeg':legendredeg,
+            'fitmags':fitmags,
+            'fitepoch':magseriesepoch
+        },
+        'fitchisq':fitchisq,
+        'fitredchisq':fitredchisq,
+        'fitplotfile':None,
+        'magseries':{
+            'times':ptimes,
+            'phase':phase,
+            'mags':pmags,
+            'errs':perrs,}
+    },
+    where `fitmags` is the values of the fit function interpolated onto
+    magseries' `phase`.
+
+    This function is mainly just a wrapper to
+    numpy.polynomial.legendre.Legendre.fit.
+
+    '''
+
+    median_mag, stddev_mag, stimes, smags, serrs = \
+            get_finite_and_sigclipped_data(times, mags, errs, sigclip)
+
+    phase, pmags, perrs, ptimes, mintime = \
+            get_phased_quantities(stimes, smags, serrs, period)
+
+    LOGINFO('fitting Legendre series with '
+            'maximum Legendre polynomial order %s to '
+            'mag series with %s observations, '
+            'using period %.6f, folded at %.6f' % (legendredeg,
+                                                   len(pmags),
+                                                   period,
+                                                   mintime))
+
+    # Least squares fit of Legendre polynomial series to the data. The window
+    # and domain (see "Using the Convenience Classes" in the numpy
+    # documentation) are handled automatically, scaling the times to a minimal
+    # domain in [-1,1], in which Legendre polynomials are a complete basis.
+
+    p = Legendre.fit(phase, pmags, legendredeg)
+    fitmags = p(phase)
+
+    # Now compute the chisq and red-chisq.
+
+    fitchisq = npsum(
+        ((fitmags - pmags)*(fitmags - pmags)) / (perrs*perrs)
+    )
+
+    nparams = legendredeg + 1
+    fitredchisq = fitchisq/(len(pmags) - nparams - 1)
+
+    LOGINFO(
+        'SG filter applied. chisq = %.5f, reduced chisq = %.5f' %
+        (fitchisq, fitredchisq)
+    )
+
+    # figure out the time of light curve minimum (i.e. the fit epoch)
+    # this is when the fit mag is maximum (i.e. the faintest)
+    fitmagminind = npwhere(fitmags == npmax(fitmags))
+    magseriesepoch = ptimes[fitmagminind]
+
+    # assemble the returndict
+    returndict = {
+        'fittype':'legendre',
+        'fitinfo':{
+            'legendredeg':legendredeg,
             'fitmags':fitmags,
             'fitepoch':magseriesepoch
         },
