@@ -292,7 +292,7 @@ def fourier_fit_magseries(times, mags, errs, period,
 
     This uses an 8th-order Fourier series by default. This is good for light
     curves with many thousands of observations (HAT light curves have ~10k
-    observations). Lower the order accordingly if you have less observations in
+    observations). Lower the order accordingly if you have fewer observations in
     your light curves to avoid over-fitting.
 
     Returns the Fourier fit parameters, the minimum chisq and reduced
