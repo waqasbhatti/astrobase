@@ -6,16 +6,23 @@ Waqas Bhatti and Luke Bouma - Feb 2017
 (wbhatti@astro.princeton.edu and luke@astro.princeton.edu)
 
 Fitting routines for light curves. Includes:
-* fourier_fit_magseries: fit an arbitrary order Fourier series to a magnitude
-    time series.
-* spline_fit_magseries: fit a univariate cubic spline to the phased light
-    curve.
-* savgol_fit_magseries: apply a Savitzky-Golay filter to the phase light curve,
-    returning the resulting smoothed function as a "fit".
+
+- fourier_fit_magseries: fit an arbitrary order Fourier series to a
+                         magnitude/flux time series.
+
+- spline_fit_magseries: fit a univariate cubic spline to a magnitude/flux time
+                        series with a specified spline knot fraction.
+
+- savgol_fit_magseries: apply a Savitzky-Golay smoothing filter to a
+                        magnitude/flux time series, returning the resulting
+                        smoothed function as a "fit".
+
+- legendre_fit_magseries: fit a Legendre function of the specified order to the
+                          magnitude/flux time series.
 
 TODO:
-* Find correct dof for reduced chi squared in spline_fit_magseries
-* Find correct dof for reduced chi squared in savgol_fit_magseries
+- Find correct dof for reduced chi squared in spline_fit_magseries
+- Find correct dof for reduced chi squared in savgol_fit_magseries
 '''
 
 import logging
@@ -172,7 +179,7 @@ def get_phased_quantities(stimes, smags, serrs, period):
 ########################
 
 def _make_fit_plot(phase, pmags, perrs, fitmags, isnormalizedflux,
-                        period, mintime, magseriesepoch, plotfit):
+                   period, mintime, magseriesepoch, plotfit):
 
     plt.close('all')
     plt.figure(figsize=(8,6))
