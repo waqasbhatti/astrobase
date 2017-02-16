@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-'''varbase/lcfit.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
+'''
+varbase/lcfit.py
+Waqas Bhatti and Luke Bouma - Feb 2017
+(wbhatti@astro.princeton.edu and luke@astro.princeton.edu)
 
 Fitting routines for light curves. Includes:
 * fourier_fit_magseries: fit an arbitrary order Fourier series to a magnitude
@@ -34,6 +37,7 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
 from scipy.optimize import leastsq as spleastsq, minimize as spminimize
 from scipy.interpolate import LSQUnivariateSpline
 from scipy.signal import savgol_filter
+from numpy.polynomial.legendre import Legendre, legval
 import matplotlib.pyplot as plt
 
 
@@ -81,6 +85,118 @@ def LOGEXCEPTION(message):
                 message, format_exc()
                 )
             )
+
+
+########################################
+## FUNCTIONS FOR SIMPLE LC OPERATIONS ##
+########################################
+
+def get_finite_and_sigclipped_data(times, mags, errs, sigclip):
+    '''
+    Given numpy arrays of times, mags, and errs:
+        1) select only values that are finite (neither inf nor nan)
+        2) clip by the number of standard deviations passed in `sigclip`.
+    Returns:
+        median magnitude, standard deviation in the median magnitude, and the
+        finite, sigma-clipped times, magnitudes, and errors thereof.
+    '''
+
+    # get rid of nans first
+    find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
+    ftimes = times[find]
+    fmags = mags[find]
+    ferrs = errs[find]
+
+    # get the median and stdev = 1.483 x MAD
+    median_mag = npmedian(fmags)
+    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
+
+    # sigclip next
+    if sigclip:
+
+        sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
+
+        stimes = ftimes[sigind]
+        smags = fmags[sigind]
+        serrs = ferrs[sigind]
+
+        LOGINFO('sigclip = %s: before = %s observations, '
+                'after = %s observations' %
+                (sigclip, len(times), len(stimes)))
+
+    else:
+
+        stimes = ftimes
+        smags = fmags
+        serrs = ferrs
+
+    return median_mag, stddev_mag, stimes, smags, serrs
+
+
+def get_phased_quantities(stimes, smags, serrs, period):
+    '''
+    Given finite and sigma-clipped times, magnitudes, and errors (i.e. the
+    output of lcfit.get_finite_and_sigclipped_data), along with the period at
+    which to phase-fold the data, perform the phase-folding and return:
+        1) phase: phase-sorted values of phase at each of stimes
+        2) pmags: phase-sorted magnitudes at each phase
+        3) perrs: phase-sorted errors
+        4) ptimes: phase-sorted times
+        5) mintime: earliest time in stimes.
+    '''
+
+    # phase the mag series using the given period and faintest mag time
+    # mintime = stimes[npwhere(smags == npmax(smags))]
+
+    # phase the mag series using the given period and epoch = min(stimes)
+    mintime = npmin(stimes)
+
+    # calculate the unsorted phase, then sort it
+    iphase = (stimes - mintime)/period - npfloor((stimes - mintime)/period)
+    phasesortind = npargsort(iphase)
+
+    # these are the final quantities to use for the Fourier fits
+    phase = iphase[phasesortind]
+    pmags = smags[phasesortind]
+    perrs = serrs[phasesortind]
+
+    # get the times sorted in phase order (useful to get the fit mag minimum
+    # with respect to phase -- the light curve minimum)
+    ptimes = stimes[phasesortind]
+
+    return phase, pmags, perrs, ptimes, mintime
+
+
+########################
+## PLOTTING UTILITIES ##
+########################
+
+def _make_fit_plot(phase, pmags, perrs, fitmags, isnormalizedflux,
+                        period, mintime, magseriesepoch, plotfit):
+
+    plt.close('all')
+    plt.figure(figsize=(8,6))
+    plt.axvline(0.5,color='g',linestyle='--')
+    plt.errorbar(phase,pmags,fmt='bo',yerr=perrs,
+                 markersize=2.0,capsize=0)
+    plt.plot(phase,fitmags, 'r-',linewidth=2.0)
+    ymin, ymax = plt.ylim()
+    if not isnormalizedflux:
+        plt.ylim(ymax,ymin)
+    plt.gca().set_xticks(
+        [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+    )
+    plt.xlabel('phase')
+    if not isnormalizedflux:
+        plt.ylabel('magnitude')
+    if isnormalizedflux:
+        plt.ylabel('normalized flux')
+    plt.title('period: %.6f, folded at %.6f, fit epoch: %.6f' %
+              (period, mintime, magseriesepoch))
+    plt.savefig(plotfit)
+    plt.close()
+
+
 
 
 #####################################################
@@ -188,53 +304,12 @@ def fourier_fit_magseries(times, mags, errs, period,
 
     '''
 
-    # get rid of nans first
-    find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
-    ftimes = times[find]
-    fmags = mags[find]
-    ferrs = errs[find]
+    median_mag, stddev_mag, stimes, smags, serrs = \
+            get_finite_and_sigclipped_data(times, mags, errs, sigclip)
 
-    # get the median and stdev = 1.483 x MAD
-    median_mag = npmedian(fmags)
-    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
+    phase, pmags, perrs, ptimes, mintime = \
+            get_phased_quantities(stimes, smags, serrs, period)
 
-    # sigclip next
-    if sigclip:
-
-        sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
-
-        stimes = ftimes[sigind]
-        smags = fmags[sigind]
-        serrs = ferrs[sigind]
-
-        LOGINFO('sigclip = %s: before = %s observations, '
-                'after = %s observations' %
-                (sigclip, len(times), len(stimes)))
-
-    else:
-
-        stimes = ftimes
-        smags = fmags
-        serrs = ferrs
-
-    # phase the mag series using the given period and faintest mag time
-    # mintime = stimes[npwhere(smags == npmax(smags))]
-
-    # phase the mag series using the given period and epoch = min(stimes)
-    mintime = npmin(stimes)
-
-    # calculate the unsorted phase, then sort it
-    iphase = (stimes - mintime)/period - npfloor((stimes - mintime)/period)
-    phasesortind = npargsort(iphase)
-
-    # these are the final quantities to use for the Fourier fits
-    phase = iphase[phasesortind]
-    pmags = smags[phasesortind]
-    perrs = serrs[phasesortind]
-
-    # get the times sorted in phase order (useful to get the fit mag minimum
-    # with respect to phase -- the light curve minimum)
-    ptimes = stimes[phasesortind]
 
     fourierorder = int(len(initfourierparams)/2)
 
@@ -311,26 +386,8 @@ def fourier_fit_magseries(times, mags, errs, period,
             # make the fit plot if required
             if plotfit and isinstance(plotfit, str):
 
-                plt.figure(figsize=(8,6))
-                plt.axvline(0.5,color='g',linestyle='--')
-                plt.errorbar(phase,pmags,fmt='bo',yerr=perrs,
-                             markersize=2.0,capsize=0)
-                plt.plot(phase,fitmags, 'r-',linewidth=2.0)
-                ymin, ymax = plt.ylim()
-                if not isnormalizedflux:
-                    plt.ylim(ymax,ymin)
-                plt.gca().set_xticks(
-                    [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
-                )
-                plt.xlabel('phase')
-                if not isnormalizedflux:
-                    plt.ylabel('magnitude')
-                if isnormalizedflux:
-                    plt.ylabel('normalized flux')
-                plt.title('period: %.6f, folded at %.6f, fit epoch: %.6f' %
-                          (period, mintime, magseriesepoch))
-                plt.savefig(plotfit)
-                plt.close()
+                _make_fit_plot(phase, pmags, perrs, fitmags, isnormalizedflux,
+                        period, mintime, magseriesepoch, plotfit)
 
                 returndict['fitplotfile'] = plotfit
 
@@ -401,53 +458,11 @@ def spline_fit_magseries(times, mags, errs, period,
     if errs is None:
         errs = npfull_like(mags, 0.005)
 
-    # get rid of nans first
-    find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
-    ftimes = times[find]
-    fmags = mags[find]
-    ferrs = errs[find]
+    median_mag, stddev_mag, stimes, smags, serrs = \
+            get_finite_and_sigclipped_data(times, mags, errs, sigclip)
 
-    # get the median and stdev = 1.483 x MAD
-    median_mag = npmedian(fmags)
-    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
-
-    # sigclip next
-    if sigclip:
-
-        sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
-
-        stimes = ftimes[sigind]
-        smags = fmags[sigind]
-        serrs = ferrs[sigind]
-
-        LOGINFO('sigclip = %s: before = %s observations, '
-                'after = %s observations' %
-                (sigclip, len(times), len(stimes)))
-
-    else:
-
-        stimes = ftimes
-        smags = fmags
-        serrs = ferrs
-
-    # phase the mag series using the given period and faintest mag time
-    # mintime = stimes[npwhere(smags == npmax(smags))]
-
-    # phase the mag series using the given period and epoch = min(stimes)
-    mintime = npmin(stimes)
-
-    # calculate the unsorted phase, then sort it
-    iphase = (stimes - mintime)/period - npfloor((stimes - mintime)/period)
-    phasesortind = npargsort(iphase)
-
-    # these are the final quantities to use for the Fourier fits
-    phase = iphase[phasesortind]
-    pmags = smags[phasesortind]
-    perrs = serrs[phasesortind]
-
-    # get the times sorted in phase order (useful to get the fit mag minimum
-    # with respect to phase -- the light curve minimum)
-    ptimes = stimes[phasesortind]
+    phase, pmags, perrs, ptimes, mintime = \
+            get_phased_quantities(stimes, smags, serrs, period)
 
     # now figure out the number of knots up to max knots (=100)
     nobs = len(phase)
@@ -499,32 +514,17 @@ def spline_fit_magseries(times, mags, errs, period,
     # make the fit plot if required
     if plotfit and isinstance(plotfit, str):
 
-        plt.figure(figsize=(8,6))
-        plt.axvline(0.5,color='g',linestyle='--')
-        plt.errorbar(phase,pmags,fmt='bo',yerr=perrs,
-                     markersize=2.0,capsize=0)
-        plt.plot(phase,fitmags, 'r-',linewidth=2.0)
-        ymin, ymax = plt.ylim()
-        if not isnormalizedflux:
-            plt.ylim(ymax,ymin)
-        plt.gca().set_xticks(
-            [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
-        )
-        plt.xlabel('phase')
-        if not isnormalizedflux:
-            plt.ylabel('magnitude')
-        if isnormalizedflux:
-            plt.ylabel('normalized flux')
-        plt.title('period: %.6f, folded at %.6f, fit epoch: %.6f' %
-                  (period, mintime, magseriesepoch))
-        plt.savefig(plotfit)
-        plt.close()
+        _make_fit_plot(phase, pmags, perrs, fitmags, isnormalizedflux,
+                period, mintime, magseriesepoch, plotfit)
 
         returndict['fitplotfile'] = plotfit
 
     return returndict
 
 
+#####################################################
+## SAVITZKY-GOLAY FITTING TO MAGNITUDE TIME SERIES ##
+#####################################################
 
 def savgol_fit_magseries(times, mags, errs, period,
                          windowlength=None,
@@ -575,50 +575,11 @@ def savgol_fit_magseries(times, mags, errs, period,
 
     '''
 
-    # get rid of nans
-    find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
-    ftimes = times[find]
-    fmags = mags[find]
-    ferrs = errs[find]
+    median_mag, stddev_mag, stimes, smags, serrs = \
+            get_finite_and_sigclipped_data(times, mags, errs, sigclip)
 
-    # get the median and stdev = 1.483 x MAD
-    median_mag = npmedian(fmags)
-    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
-
-    # sigclip next
-    if sigclip:
-
-        sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
-
-        stimes = ftimes[sigind]
-        smags = fmags[sigind]
-        serrs = ferrs[sigind]
-
-        LOGINFO('sigclip = %s: before = %s observations, '
-                'after = %s observations' %
-                (sigclip, len(times), len(stimes)))
-
-    else:
-
-        stimes = ftimes
-        smags = fmags
-        serrs = ferrs
-
-    # phase the mag series using the given period and epoch = min(stimes)
-    mintime = npmin(stimes)
-
-    # calculate the unsorted phase, then sort it
-    iphase = (stimes - mintime)/period - npfloor((stimes - mintime)/period)
-    phasesortind = npargsort(iphase)
-
-    # these are the final quantities to use for the SG fit
-    phase = iphase[phasesortind]
-    pmags = smags[phasesortind]
-    perrs = serrs[phasesortind]
-
-    # get the times sorted in phase order (useful to get the fit mag minimum
-    # with respect to phase -- the light curve minimum)
-    ptimes = stimes[phasesortind]
+    phase, pmags, perrs, ptimes, mintime = \
+            get_phased_quantities(stimes, smags, serrs, period)
 
     if not isinstance(windowlength, int):
         windowlength = max(
@@ -687,26 +648,138 @@ def savgol_fit_magseries(times, mags, errs, period,
     # make the fit plot if required
     if plotfit and isinstance(plotfit, str):
 
-        plt.figure(figsize=(8,6))
-        plt.axvline(0.5,color='g',linestyle='--')
-        plt.errorbar(phase,pmags,fmt='bo',yerr=perrs,
-                     markersize=2.0,capsize=0)
-        plt.plot(phase,fitmags, 'r-',linewidth=2.0)
-        ymin, ymax = plt.ylim()
-        if not isnormalizedflux:
-            plt.ylim(ymax,ymin)
-        plt.gca().set_xticks(
-            [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
-        )
-        plt.xlabel('phase')
-        if not isnormalizedflux:
-            plt.ylabel('magnitude')
-        if isnormalizedflux:
-            plt.ylabel('normalized flux')
-        plt.title('period: %.6f, folded at %.6f, fit epoch: %.6f' %
-                  (period, mintime, magseriesepoch))
-        plt.savefig(plotfit)
-        plt.close()
+        _make_fit_plot(phase, pmags, perrs, fitmags, isnormalizedflux,
+                period, mintime, magseriesepoch, plotfit)
+
+        returndict['fitplotfile'] = plotfit
+
+    return returndict
+
+
+##########################################################
+## LEGENDRE-POLYNOMIAL FITTING TO MAGNITUDE TIME SERIES ##
+##########################################################
+
+def legendre_fit_magseries(times, mags, errs, period,
+                           legendredeg=10,
+                           sigclip=30.0,
+                           plotfit=False,
+                           isnormalizedflux=False):
+
+    '''
+    Fit an arbitrary-order Legendre series, via least squares, to the
+    magnitude/flux time series. This is a series of the form:
+
+        p(x) = c_0*L_0(x) + c_1*L_1(x) + c_2*L_2(x) + ... + c_n*L_n(x)
+
+    where L_i's are Legendre polynomials (also caleld "Legendre functions of
+    the first kind") and c_i's are the coefficients being fit.
+
+    Args:
+
+    legendredeg (int): n in the above equation. (I.e., if you give n=5, you
+    will get 6 coefficients). This number should be much less than the number
+    of data points you are fitting.
+
+    sigclip (float): number of standard deviations away from the mean of the
+    magnitude time-series from which to "clip" data points.
+
+    isnormalizedflux (bool): sets the ylabel and ylimits of plots for either
+    magnitudes (False) or flux units (i.e. normalized to 1, in which case
+    isnormalizedflux should be set to True).
+
+    Returns:
+
+    returndict:
+    {
+        'fittype':'legendre',
+        'fitinfo':{
+            'legendredeg':legendredeg,
+            'fitmags':fitmags,
+            'fitepoch':magseriesepoch
+        },
+        'fitchisq':fitchisq,
+        'fitredchisq':fitredchisq,
+        'fitplotfile':None,
+        'magseries':{
+            'times':ptimes,
+            'phase':phase,
+            'mags':pmags,
+            'errs':perrs,}
+    },
+    where `fitmags` is the values of the fit function interpolated onto
+    magseries' `phase`.
+
+    This function is mainly just a wrapper to
+    numpy.polynomial.legendre.Legendre.fit.
+
+    '''
+
+    median_mag, stddev_mag, stimes, smags, serrs = \
+            get_finite_and_sigclipped_data(times, mags, errs, sigclip)
+
+    phase, pmags, perrs, ptimes, mintime = \
+            get_phased_quantities(stimes, smags, serrs, period)
+
+    LOGINFO('fitting Legendre series with '
+            'maximum Legendre polynomial order %s to '
+            'mag series with %s observations, '
+            'using period %.6f, folded at %.6f' % (legendredeg,
+                                                   len(pmags),
+                                                   period,
+                                                   mintime))
+
+    # Least squares fit of Legendre polynomial series to the data. The window
+    # and domain (see "Using the Convenience Classes" in the numpy
+    # documentation) are handled automatically, scaling the times to a minimal
+    # domain in [-1,1], in which Legendre polynomials are a complete basis.
+
+    p = Legendre.fit(phase, pmags, legendredeg)
+    fitmags = p(phase)
+
+    # Now compute the chisq and red-chisq.
+
+    fitchisq = npsum(
+        ((fitmags - pmags)*(fitmags - pmags)) / (perrs*perrs)
+    )
+
+    nparams = legendredeg + 1
+    fitredchisq = fitchisq/(len(pmags) - nparams - 1)
+
+    LOGINFO(
+        'SG filter applied. chisq = %.5f, reduced chisq = %.5f' %
+        (fitchisq, fitredchisq)
+    )
+
+    # figure out the time of light curve minimum (i.e. the fit epoch)
+    # this is when the fit mag is maximum (i.e. the faintest)
+    fitmagminind = npwhere(fitmags == npmax(fitmags))
+    magseriesepoch = ptimes[fitmagminind]
+
+    # assemble the returndict
+    returndict = {
+        'fittype':'legendre',
+        'fitinfo':{
+            'legendredeg':legendredeg,
+            'fitmags':fitmags,
+            'fitepoch':magseriesepoch
+        },
+        'fitchisq':fitchisq,
+        'fitredchisq':fitredchisq,
+        'fitplotfile':None,
+        'magseries':{
+            'times':ptimes,
+            'phase':phase,
+            'mags':pmags,
+            'errs':perrs,
+        }
+    }
+
+    # make the fit plot if required
+    if plotfit and isinstance(plotfit, str):
+
+        _make_fit_plot(phase, pmags, perrs, fitmags, isnormalizedflux,
+                period, mintime, magseriesepoch, plotfit)
 
         returndict['fitplotfile'] = plotfit
 
