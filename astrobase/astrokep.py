@@ -337,9 +337,9 @@ def read_kepler_fitslc(lcfits,
 
     # update the lcdict columns with the actual columns
     lcdict['columns'] = (
-        [x.lower() for x in LCDATAKEYS] +
-        ['sap.%s' % x.lower() for x in SAPDATAKEYS] +
-        ['pdc.%s' % x.lower() for x in SAPDATAKEYS] +
+        [x.lower() for x in datakeys] +
+        ['sap.%s' % x.lower() for x in sapkeys] +
+        ['pdc.%s' % x.lower() for x in pdckeys] +
         ['channel','skygroup','module','output','quarter','season']
     )
 
