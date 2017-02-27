@@ -559,9 +559,6 @@ def filter_kepler_lcdict(lcdict,
 
     This function filters the dict IN PLACE!
 
-    FIXME: there's a bug with applying iterative masks that leads to all the
-    elements of the arrays being the same.
-
     '''
 
     cols = lcdict['columns']
