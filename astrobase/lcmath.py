@@ -252,8 +252,8 @@ def sigmaclip_lc(times, mags, errs, isflux=False, sigclip=None):
 
         errs (np.array): ...
 
-        isflux (bool): True if your "mags" are in fact fluxes (e.g., typically
-        in relative flux units). If True, then
+        isflux (bool): True if your "mags" are in fact fluxes, i.e. if
+        "dimming" corresponds to your "mags" getting smaller.
 
         sigclip (float or list): If float, apply symmetric sigma clipping. If
         list, e.g., [10., 3.], will sigclip out greater than 10-sigma dimmings
