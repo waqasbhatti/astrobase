@@ -258,8 +258,9 @@ def plot_mag_series(times,
     ## FINALLY PLOT THE LIGHT CURVE ##
     ##################################
 
-    ntimegroups, timegroups = find_lc_timegroups(btimes,
-                                                 mingap=segmentmingap)
+    if segmentmingap is not None:
+        ntimegroups, timegroups = find_lc_timegroups(btimes,
+                                                     mingap=segmentmingap)
 
     # get the yrange for all the plots if it's given
     if yrange and isinstance(yrange,list) and len(yrange) == 2:
