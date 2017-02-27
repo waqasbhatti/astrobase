@@ -94,9 +94,7 @@ def find_lc_timegroups(lctimes, mingap=4.0):
 
     '''
 
-    lc_time_diffs = [(lctimes[x] - lctimes[x-1]) for x in range(1,len(lctimes))]
-    lc_time_diffs = np.array(lc_time_diffs)
-
+    lc_time_diffs = np.diff(lctimes)
     group_start_indices = np.where(lc_time_diffs > mingap)[0]
 
     if len(group_start_indices) > 0:
