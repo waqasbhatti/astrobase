@@ -13,6 +13,7 @@ import multiprocessing as mp
 import datetime
 
 import numpy as np
+from numpy import isfinite as npisfinite, median as npmedian, abs as npabs
 
 from scipy.spatial import cKDTree as kdtree
 from scipy.signal import medfilt
@@ -232,6 +233,80 @@ def sigclip_magseries(times, mags, maxsig=4.0):
             'magmedian':mag_median,
             'magstdev':mag_stdev}
 
+
+def sigmaclip_lc(times, mags, errs, isflux=False, sigclip=None):
+    '''
+    Select the finite times, magnitudes (or fluxes), and errors from the
+    passed values, and apply symmetric or asymmetric sigma clipping to them.
+    Returns sigma-clipped times, mags, and errs. (Slightly different
+    functionality than what's in sigclip_magseries).
+
+    Args:
+        times (np.array): ...
+
+        mags (np.array): numpy array to sigma-clip. Does not assume all values
+        are finite. Does not assume anything about whether they're
+        positive/negative.
+
+        errs (np.array): ...
+
+        isflux (bool): True if your "mags" are in fact fluxes, i.e. if
+        "dimming" corresponds to your "mags" getting smaller.
+
+        sigclip (float or list): If float, apply symmetric sigma clipping. If
+        list, e.g., [10., 3.], will sigclip out greater than 10-sigma dimmings
+        and greater than 3-sigma brightenings. Here the meaning of "dimming"
+        and "brightening" is set by *physics* (not the magnitude system), which
+        is why the `isflux` kwarg must be correctly set.
+
+    Returns:
+        stimes, smags, serrs: (sigmaclipped values of each).
+    '''
+
+    # filter the input times, mags, errs; do sigclipping and normalization
+    find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
+    ftimes, fmags, ferrs = times[find], mags[find], errs[find]
+
+    # get the median and stdev = 1.483 x MAD
+    median_mag = npmedian(fmags)
+    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
+
+    # sigclip next for a single sigclip value
+    if sigclip and isinstance(sigclip,float):
+
+        sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
+
+        stimes = ftimes[sigind]
+        smags = fmags[sigind]
+        serrs = ferrs[sigind]
+
+    # this handles sigclipping for asymmetric +ve and -ve clip values
+    elif sigclip and isinstance(sigclip,list) and len(sigclip) == 2:
+
+        # sigclip is passed as [dimmingclip, brighteningclip]
+        dimmingclip = sigclip[0]
+        brighteningclip = sigclip[1]
+
+        if isflux:
+            nottoodimind = (fmags - median_mag) > (-dimmingclip*stddev_mag)
+            nottoobrightind = (fmags - median_mag) < (brighteningclip*stddev_mag)
+        else:
+            nottoodimind = (fmags - median_mag) < (dimmingclip*stddev_mag)
+            nottoobrightind = (fmags - median_mag) > (-brighteningclip*stddev_mag)
+
+        sigind = nottoodimind & nottoobrightind
+
+        stimes = ftimes[sigind]
+        smags = fmags[sigind]
+        serrs = ferrs[sigind]
+
+    else:
+
+        stimes = ftimes
+        smags = fmags
+        serrs = ferrs
+
+    return stimes, smags, serrs
 
 
 #################
