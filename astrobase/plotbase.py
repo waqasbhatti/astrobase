@@ -310,7 +310,7 @@ def plot_mag_series(times,
         plt.subplots_adjust(wspace=0.07)
 
         # make the overall x and y labels
-        fig.text(0.5, 0.00, 'JD + %.3f (not showing gaps)' % btimeorigin,
+        fig.text(0.5, 0.00, 'JD - %.3f (not showing gaps)' % btimeorigin,
                  ha='center')
         if not magsarefluxes:
             fig.text(0.02, 0.5, 'magnitude', va='center', rotation='vertical')
@@ -339,7 +339,7 @@ def plot_mag_series(times,
         plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
         plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
 
-        plt.xlabel('JD + %.3f' % btimeorigin)
+        plt.xlabel('JD - %.3f' % btimeorigin)
 
         # set the yaxis limits and labels
         if not magsarefluxes:
