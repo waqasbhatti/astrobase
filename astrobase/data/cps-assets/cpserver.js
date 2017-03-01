@@ -364,12 +364,27 @@ var cpv = {
             cputils.b64_to_image(cpv.currcp.finderchart,
                                  '#finderchart');
 
+
+            var hatstations = cpv.currcp.objectinfo.stations;
+            if (hatstations != undefined) {
+                var splitstations =
+                    (cpv.currcp.objectinfo.stations.split(',')).join(', ');
+            }
+            else {
+                var splitstations = 'no HAT observations';
+            }
+
+            var objndet = cpv.currcp.objectinfo.ndet;
+
+            if (objndet == undefined) {
+                objndet = cpv.currcp.magseries_ndet;
+            }
+
             // update the objectinfo
             var hatinfo = '<strong>' +
-                (cpv.currcp.objectinfo.stations.split(',')).join(', ') +
+                splitstations +
                 '</strong><br>' +
-                '<strong>LC points:</strong> ' +
-                cpv.currcp.objectinfo.ndet;
+                '<strong>LC points:</strong> ' + objndet;
             $('#hatinfo').html(hatinfo);
 
             var coordspm =
