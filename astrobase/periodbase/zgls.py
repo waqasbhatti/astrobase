@@ -132,6 +132,7 @@ def pgen_lsp(
         times,
         mags,
         errs,
+        magsarefluxes=False,
         startp=None,
         endp=None,
         autofreq=True,
@@ -151,161 +152,127 @@ def pgen_lsp(
 
     '''
 
-    # get rid of nans first
-    find = np.isfinite(times) & np.isfinite(mags) & np.isfinite(errs)
-    ftimes = times[find]
-    fmags = mags[find]
-    ferrs = errs[find]
+    # get rid of nans first and sigclip
+    stimes, smags, serrs = sigclip_magseries(times,
+                                             mags,
+                                             errs,
+                                             magsarefluxes=magsarefluxes,
+                                             sigclip=sigclip)
 
-    if len(ftimes) > 9 and len(fmags) > 9 and len(ferrs) > 9:
 
-        # get the median and stdev = 1.483 x MAD
-        median_mag = np.median(fmags)
-        stddev_mag = (np.median(np.abs(fmags - median_mag))) * 1.483
+    # make sure there are enough points to calculate a spectrum
+    if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
 
-        # sigclip next
-        if sigclip:
-
-            sigind = (np.abs(fmags - median_mag)) < (sigclip * stddev_mag)
-
-            stimes = ftimes[sigind]
-            smags = fmags[sigind]
-            serrs = ferrs[sigind]
-
-            LOGINFO('sigclip = %s: before = %s observations, '
-                    'after = %s observations' %
-                    (sigclip, len(times), len(stimes)))
-
+        # get the frequencies to use
+        if startp:
+            endf = 1.0/startp
         else:
+            # default start period is 0.1 day
+            endf = 1.0/0.1
 
-            stimes = ftimes
-            smags = fmags
-            serrs = ferrs
+        if endp:
+            startf = 1.0/endp
+        else:
+            # default end period is length of time series
+            startf = 1.0/(stimes.max() - stimes.min())
 
-        # make sure there are enough points to calculate a spectrum
-        if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
-
-            # get the frequencies to use
-            if startp:
-                endf = 1.0/startp
-            else:
-                # default start period is 0.1 day
-                endf = 1.0/0.1
-
-            if endp:
-                startf = 1.0/endp
-            else:
-                # default end period is length of time series divided by 2
-                startf = 1.0/(stimes.max() - stimes.min())
-
-            # if we're not using autofreq, then use the provided frequencies
-            if not autofreq:
-                omegas = 2*np.pi*np.arange(startf, endf, stepsize)
-                LOGINFO(
-                    'using %s frequency points, start P = %.3f, end P = %.3f' %
-                    (omegas.size, 1.0/endf, 1.0/startf)
-                )
-            else:
-                # this gets an automatic grid of frequencies to use
-                freqs = get_frequency_grid(stimes,
-                                           minfreq=startf,
-                                           maxfreq=endf)
-                omegas = 2*np.pi*freqs
-                LOGINFO(
-                    'using autofreq with %s frequency points, '
-                    'start P = %.3f, end P = %.3f' %
-                    (omegas.size, 1.0/freqs.max(), 1.0/freqs.min())
-                )
-
-            # map to parallel workers
-            if (not nworkers) or (nworkers > NCPUS):
-                nworkers = NCPUS
-                LOGINFO('using %s workers...' % nworkers)
-
-            pool = Pool(nworkers)
-
-            tasks = [(stimes, smags, serrs, x) for x in omegas]
-            lsp = pool.map(glspfunc, tasks)
-
-            pool.close()
-            pool.join()
-            del pool
-
-            lsp = np.array(lsp)
-            periods = 2.0*np.pi/omegas
-
-            # find the nbestpeaks for the periodogram: 1. sort the lsp array by
-            # highest value first 2. go down the values until we find five
-            # values that are separated by at least periodepsilon in period
-
-            # make sure to filter out non-finite values of lsp
-
-            finitepeakind = npisfinite(lsp)
-            finlsp = lsp[finitepeakind]
-            finperiods = periods[finitepeakind]
-
-            bestperiodind = npargmax(finlsp)
-
-            sortedlspind = np.argsort(finlsp)[::-1]
-            sortedlspperiods = finperiods[sortedlspind]
-            sortedlspvals = finlsp[sortedlspind]
-
-            prevbestlspval = sortedlspvals[0]
-            # now get the nbestpeaks
-            nbestperiods, nbestlspvals, peakcount = (
-                [finperiods[bestperiodind]],
-                [finlsp[bestperiodind]],
-                1
+        # if we're not using autofreq, then use the provided frequencies
+        if not autofreq:
+            omegas = 2*np.pi*np.arange(startf, endf, stepsize)
+            LOGINFO(
+                'using %s frequency points, start P = %.3f, end P = %.3f' %
+                (omegas.size, 1.0/endf, 1.0/startf)
             )
-            prevperiod = sortedlspperiods[0]
-
-            # find the best nbestpeaks in the lsp and their periods
-            for period, lspval in zip(sortedlspperiods, sortedlspvals):
-
-                if peakcount == nbestpeaks:
-                    break
-                perioddiff = abs(period - prevperiod)
-                bestperiodsdiff = [abs(period - x) for x in nbestperiods]
-
-                # print('prevperiod = %s, thisperiod = %s, '
-                #       'perioddiff = %s, peakcount = %s' %
-                #       (prevperiod, period, perioddiff, peakcount))
-
-                # this ensures that this period is different from the last
-                # period and from all the other existing best periods by
-                # periodepsilon to make sure we jump to an entire different peak
-                # in the periodogram
-                if (perioddiff > periodepsilon and
-                    all(x > periodepsilon for x in bestperiodsdiff)):
-                    nbestperiods.append(period)
-                    nbestlspvals.append(lspval)
-                    peakcount = peakcount + 1
-
-                prevperiod = period
-
-
-            return {'bestperiod':finperiods[bestperiodind],
-                    'bestlspval':finlsp[bestperiodind],
-                    'nbestpeaks':nbestpeaks,
-                    'nbestlspvals':nbestlspvals,
-                    'nbestperiods':nbestperiods,
-                    'lspvals':lsp,
-                    'omegas':omegas,
-                    'periods':periods,
-                    'method':'gls'}
-
         else:
+            # this gets an automatic grid of frequencies to use
+            freqs = get_frequency_grid(stimes,
+                                       minfreq=startf,
+                                       maxfreq=endf)
+            omegas = 2*np.pi*freqs
+            LOGINFO(
+                'using autofreq with %s frequency points, '
+                'start P = %.3f, end P = %.3f' %
+                (omegas.size, 1.0/freqs.max(), 1.0/freqs.min())
+            )
 
-            LOGERROR('no good detections for these times and mags, skipping...')
-            return {'bestperiod':npnan,
-                    'bestlspval':npnan,
-                    'nbestpeaks':nbestpeaks,
-                    'nbestlspvals':None,
-                    'nbestperiods':None,
-                    'lspvals':None,
-                    'omegas':None,
-                    'periods':None,
-                    'method':'gls'}
+        # map to parallel workers
+        if (not nworkers) or (nworkers > NCPUS):
+            nworkers = NCPUS
+            LOGINFO('using %s workers...' % nworkers)
+
+        pool = Pool(nworkers)
+
+        tasks = [(stimes, smags, serrs, x) for x in omegas]
+        lsp = pool.map(glspfunc, tasks)
+
+        pool.close()
+        pool.join()
+        del pool
+
+        lsp = np.array(lsp)
+        periods = 2.0*np.pi/omegas
+
+        # find the nbestpeaks for the periodogram: 1. sort the lsp array by
+        # highest value first 2. go down the values until we find five
+        # values that are separated by at least periodepsilon in period
+
+        # make sure to filter out non-finite values of lsp
+
+        finitepeakind = npisfinite(lsp)
+        finlsp = lsp[finitepeakind]
+        finperiods = periods[finitepeakind]
+
+        bestperiodind = npargmax(finlsp)
+
+        sortedlspind = np.argsort(finlsp)[::-1]
+        sortedlspperiods = finperiods[sortedlspind]
+        sortedlspvals = finlsp[sortedlspind]
+
+        prevbestlspval = sortedlspvals[0]
+
+        # now get the nbestpeaks
+        nbestperiods, nbestlspvals, peakcount = (
+            [finperiods[bestperiodind]],
+            [finlsp[bestperiodind]],
+            1
+        )
+        prevperiod = sortedlspperiods[0]
+
+        # find the best nbestpeaks in the lsp and their periods
+        for period, lspval in zip(sortedlspperiods, sortedlspvals):
+
+            if peakcount == nbestpeaks:
+                break
+            perioddiff = abs(period - prevperiod)
+            bestperiodsdiff = [abs(period - x) for x in nbestperiods]
+
+            # print('prevperiod = %s, thisperiod = %s, '
+            #       'perioddiff = %s, peakcount = %s' %
+            #       (prevperiod, period, perioddiff, peakcount))
+
+            # this ensures that this period is different from the last
+            # period and from all the other existing best periods by
+            # periodepsilon to make sure we jump to an entire different peak
+            # in the periodogram
+            if (perioddiff > periodepsilon and
+                all(x > periodepsilon for x in bestperiodsdiff)):
+                nbestperiods.append(period)
+                nbestlspvals.append(lspval)
+                peakcount = peakcount + 1
+
+            prevperiod = period
+
+
+        return {'bestperiod':finperiods[bestperiodind],
+                'bestlspval':finlsp[bestperiodind],
+                'nbestpeaks':nbestpeaks,
+                'nbestlspvals':nbestlspvals,
+                'nbestperiods':nbestperiods,
+                'lspvals':lsp,
+                'omegas':omegas,
+                'periods':periods,
+                'method':'gls'}
+
     else:
 
         LOGERROR('no good detections for these times and mags, skipping...')
