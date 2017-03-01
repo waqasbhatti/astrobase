@@ -390,6 +390,8 @@ def gilliland_cdpp(times, mags, errs,
 
     '''
 
+
+
     if errs is None:
         errs = npfull_like(mags, 0.005)
 

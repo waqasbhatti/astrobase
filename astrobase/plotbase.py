@@ -113,6 +113,7 @@ from .coordutils import total_proper_motion, reduced_proper_motion
 
 def plot_mag_series(times,
                     mags,
+                    magsarefluxes=False,
                     errs=None,
                     outfile=None,
                     sigclip=30.0,
@@ -123,6 +124,9 @@ def plot_mag_series(times,
                     segmentmingap=100.0,
                     plotdpi=100):
     '''This plots a magnitude time series.
+
+    If magsarefluxes = False, then this function reverses the y-axis as is
+    customary for magnitudes. If magsarefluxes = True, then this isn't done.
 
     If outfile is none, then plots to matplotlib interactive window. If outfile
     is a string denoting a filename, uses that to write a png/eps/pdf figure.
@@ -152,78 +156,12 @@ def plot_mag_series(times,
 
     '''
 
-    if errs is not None:
-
-        # remove nans
-        find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
-        ftimes, fmags, ferrs = times[find], mags[find], errs[find]
-
-        # get the median and stdev = 1.483 x MAD
-        median_mag = npmedian(fmags)
-        stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
-
-        # sigclip next for a single sigclip value
-        if sigclip and isinstance(sigclip,float):
-
-            sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
-
-            stimes = ftimes[sigind]
-            smags = fmags[sigind]
-            serrs = ferrs[sigind]
-
-            LOGINFO('sigclip = %s: before = %s observations, '
-                    'after = %s observations' %
-                    (sigclip, len(times), len(stimes)))
-
-        # this handles sigclipping for asymmetric +ve and -ve clip values
-        elif sigclip and isinstance(sigclip,list) and len(sigclip) == 2:
-
-            sigposind = (fmags - median_mag) < (sigclip[0]*stddev_mag)
-            signegind = (fmags - median_mag) > (sigclip[1]*stddev_mag)
-            sigind = sigposind & signegind
-
-            stimes = ftimes[sigind]
-            smags = fmags[sigind]
-            serrs = ferrs[sigind]
-
-            LOGINFO('sigclip = %s: before = %s observations, '
-                    'after = %s observations' %
-                    (sigclip, len(times), len(stimes)))
-
-        else:
-
-            stimes = ftimes
-            smags = fmags
-            serrs = ferrs
-
-    else:
-
-        # remove nans
-        find = npisfinite(times) & npisfinite(mags)
-        ftimes, fmags, ferrs = times[find], mags[find], None
-
-        # get the median and stdev = 1.483 x MAD
-        median_mag = npmedian(fmags)
-        stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
-
-        # sigclip next
-        if sigclip:
-
-            sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
-
-            stimes = ftimes[sigind]
-            smags = fmags[sigind]
-            serrs = None
-
-            LOGINFO('sigclip = %s: before = %s observations, '
-                    'after = %s observations' %
-                    (sigclip, len(times), len(stimes)))
-
-        else:
-
-            stimes = ftimes
-            smags = fmags
-            serrs = None
+    # sigclip the magnitude timeseries
+    stimes, smags, serrs = sigclip_magseries(times,
+                                             mags,
+                                             errs,
+                                             magsarefluxes=magsarefluxes,
+                                             sigclip=sigclip)
 
     # now we proceed to binning
     if timebin and errs is not None:
@@ -258,8 +196,10 @@ def plot_mag_series(times,
     ## FINALLY PLOT THE LIGHT CURVE ##
     ##################################
 
-    ntimegroups, timegroups = find_lc_timegroups(btimes,
-                                                 mingap=segmentmingap)
+    # if we're going to plot with segment gaps highlighted, then find the gaps
+    if segmentmingap is not None:
+        ntimegroups, timegroups = find_lc_timegroups(btimes,
+                                                     mingap=segmentmingap)
 
     # get the yrange for all the plots if it's given
     if yrange and isinstance(yrange,list) and len(yrange) == 2:
@@ -267,9 +207,16 @@ def plot_mag_series(times,
 
     # if it's not given, figure it out
     else:
-        ycoverage = bmags.max() - bmags.min()
-        ymin, ymax = (bmags.min() - 0.05,
-                      bmags.max() + 0.05)
+
+        # the plot y limits are just 0.05 mags on each side if mags are used
+        if not magsarefluxes:
+            ymin, ymax = (bmags.min() - 0.05,
+                          bmags.max() + 0.05)
+        # if we're dealing with fluxes, limits are 2% of the flux range per side
+        else:
+            ycov = bmags.max() - bmags.min()
+            ymin = bmags.min() - 0.02*ycov
+            ymax = bmags.max() + 0.02*ycov
 
     # if we're supposed to make the plot segment-aware (i.e. gaps longer than
     # segmentmingap will be cut out)
@@ -278,8 +225,9 @@ def plot_mag_series(times,
         LOGINFO('%s time groups found' % ntimegroups)
 
         # our figure is now a multiple axis plot
+        # the aspect ratio is a bit wider
         fig, axes = plt.subplots(1,ntimegroups,sharey=True)
-        fig.set_size_inches(7.5,4.8)
+        fig.set_size_inches(9.6,4.8)
         axes = np.ravel(axes)
 
         # now go through each axis and make the plots for each timegroup
@@ -326,29 +274,32 @@ def plot_mag_series(times,
                 ax.yaxis.tick_right()
 
             # set the yaxis limits
-            ax.set_ylim(ymax, ymin)
+            if not magsarefluxes:
+                ax.set_ylim(ymax, ymin)
+            else:
+                ax.set_ylim(ymin, ymax)
 
             # now figure out the xaxis ticklabels and ranges
             tgrange = tgtimes.max() - tgtimes.min()
 
-            if tgrange < 10:
+            if tgrange < 10.0:
                 ticklocations = [tgrange/2.0]
                 ax.set_xlim(npmin(tgtimes) - 0.5, npmax(tgtimes) + 0.5)
             elif 10.0 < tgrange < 30.0:
                 ticklocations = np.linspace(tgtimes.min()+5.0,
                                             tgtimes.max()-5.0,
-                                            num=3)
+                                            num=2)
                 ax.set_xlim(npmin(tgtimes) - 2.0, npmax(tgtimes) + 2.0)
 
             elif 30.0 < tgrange < 100.0:
                 ticklocations = np.linspace(tgtimes.min()+10.0,
                                             tgtimes.max()-10.0,
-                                            num=4)
+                                            num=3)
                 ax.set_xlim(npmin(tgtimes) - 2.5, npmax(tgtimes) + 2.5)
             else:
                 ticklocations = np.linspace(tgtimes.min()+20.0,
                                             tgtimes.max()-20.0,
-                                            num=4)
+                                            num=3)
                 ax.set_xlim(npmin(tgtimes) - 3.0, npmax(tgtimes) + 3.0)
 
             ax.xaxis.set_ticks([int(x) for x in ticklocations])
@@ -356,12 +307,16 @@ def plot_mag_series(times,
         # done with plotting all the sub axes
 
         # make the distance between sub plots smaller
-        plt.subplots_adjust(wspace=0.1)
+        plt.subplots_adjust(wspace=0.07)
 
         # make the overall x and y labels
         fig.text(0.5, 0.00, 'JD - %.3f (not showing gaps)' % btimeorigin,
                  ha='center')
-        fig.text(0.02, 0.5, 'magnitude', va='center', rotation='vertical')
+        if not magsarefluxes:
+            fig.text(0.02, 0.5, 'magnitude', va='center', rotation='vertical')
+        else:
+            fig.text(0.02, 0.5, 'flux', va='center', rotation='vertical')
+
 
     # make normal figure otherwise
     else:
@@ -385,10 +340,14 @@ def plot_mag_series(times,
         plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
 
         plt.xlabel('JD - %.3f' % btimeorigin)
-        plt.ylabel('magnitude')
 
-        # set the yaxis limits
-        plt.ylim(ymax, ymin)
+        # set the yaxis limits and labels
+        if not magsarefluxes:
+            plt.ylim(ymax, ymin)
+            plt.ylabel('magnitude')
+        else:
+            plt.ylim(ymin, ymax)
+            plt.ylabel('flux')
 
     # write the plot out to a file if requested
     if outfile and isinstance(outfile, str):
@@ -424,6 +383,7 @@ def plot_mag_series(times,
 def plot_phased_mag_series(times,
                            mags,
                            period,
+                           magsarefluxes=False,
                            errs=None,
                            normto='globalmedian',
                            normmingap=4.0,
@@ -455,63 +415,12 @@ def plot_phased_mag_series(times,
 
     '''
 
-    if errs is not None:
-
-        # remove nans
-        find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
-        ftimes, fmags, ferrs = times[find], mags[find], errs[find]
-
-        # get the median and stdev = 1.483 x MAD
-        median_mag = npmedian(fmags)
-        stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
-
-        # sigclip next
-        if sigclip:
-
-            sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
-
-            stimes = ftimes[sigind]
-            smags = fmags[sigind]
-            serrs = ferrs[sigind]
-
-            LOGINFO('sigclip = %s: before = %s observations, '
-                    'after = %s observations' %
-                    (sigclip, len(times), len(stimes)))
-
-        else:
-
-            stimes = ftimes
-            smags = fmags
-            serrs = ferrs
-
-    else:
-
-        # remove nans
-        find = npisfinite(times) & npisfinite(mags)
-        ftimes, fmags, ferrs = times[find], mags[find], None
-
-        # get the median and stdev = 1.483 x MAD
-        median_mag = npmedian(fmags)
-        stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
-
-        # sigclip next
-        if sigclip:
-
-            sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
-
-            stimes = ftimes[sigind]
-            smags = fmags[sigind]
-            serrs = None
-
-            LOGINFO('sigclip = %s: before = %s observations, '
-                    'after = %s observations' %
-                    (sigclip, len(times), len(stimes)))
-
-        else:
-
-            stimes = ftimes
-            smags = fmags
-            serrs = None
+    # sigclip the magnitude timeseries
+    stimes, smags, serrs = sigclip_magseries(times,
+                                             mags,
+                                             errs,
+                                             magsarefluxes=magsarefluxes,
+                                             sigclip=sigclip)
 
 
     # check if we need to normalize
@@ -522,8 +431,7 @@ def plot_phased_mag_series(times,
 
     # figure out the epoch, if it's None, use the min of the time
     if epoch is None:
-
-        epoch = npmin(stimes)
+        epoch = stimes.min()
 
     # if the epoch is 'min', then fit a spline to the light curve phased
     # using the min of the time, find the fit mag minimum and use the time for
@@ -622,7 +530,14 @@ def plot_phased_mag_series(times,
         ymin, ymax = yrange
     else:
         ymin, ymax = plt.ylim()
-    plt.ylim(ymax,ymin)
+
+    # set the y axis labels and range
+    if not magsarefluxes:
+        plt.ylim(ymax, ymin)
+        yaxlabel = 'magnitude'
+    else:
+        plt.ylim(ymin, ymax)
+        yaxlabel = 'flux'
 
     # set the x axis limit
     if not plotphaselim:
@@ -632,10 +547,10 @@ def plot_phased_mag_series(times,
     else:
         plt.xlim((plotphaselim[0],plotphaselim[1]))
 
-    # set up the labels
+    # set up the axis labels and plot title
     plt.xlabel('phase')
-    plt.ylabel('magnitude')
-    plt.title('using period: %.6f d and epoch: %.6f' % (period, epoch))
+    plt.ylabel(yaxlabel)
+    plt.title('period: %.6f d - epoch: %.6f' % (period, epoch))
 
     LOGINFO('using period: %.6f d and epoch: %.6f' % (period, epoch))
 
@@ -643,9 +558,9 @@ def plot_phased_mag_series(times,
     if outfile and isinstance(outfile, str):
 
         if outfile.endswith('.png'):
-            plt.savefig(outfile,bbox_inches='tight',dpi=plotdpi)
+            plt.savefig(outfile, bbox_inches='tight', dpi=plotdpi)
         else:
-            plt.savefig(outfile,bbox_inches='tight')
+            plt.savefig(outfile, bbox_inches='tight')
         plt.close()
         return period, epoch, os.path.abspath(outfile)
 
@@ -660,7 +575,7 @@ def plot_phased_mag_series(times,
         LOGWARNING('no output file specified and no $DISPLAY set, '
                    'saving to magseries-phased-plot.png in current directory')
         outfile = 'magseries-phased-plot.png'
-        plt.savefig(outfile,bbox_inches='tight',dpi=plotdpi)
+        plt.savefig(outfile, bbox_inches='tight', dpi=plotdpi)
         plt.close()
         return period, epoch, os.path.abspath(outfile)
 
@@ -670,9 +585,10 @@ def plot_phased_mag_series(times,
 ## OBJECT STAMPS ##
 ###################
 
-def astroquery_skyview_stamp(ra, decl, survey='DSS2 Red',
-                             flip=True,
-                             convolvewith=None
+def astroquery_skyview_stamp(
+        ra, decl, survey='DSS2 Red',
+        flip=True,
+        convolvewith=None
 ):
     '''This uses astroquery's SkyView connector to get stamps.
 
@@ -717,8 +633,8 @@ def astroquery_skyview_stamp(ra, decl, survey='DSS2 Red',
 def get_dss_stamp(ra, decl, outfile, stampsize=5.0):
     '''This gets a DSS stamp from the HAT data server.
 
-    These are a bit nicer than the DSS stamps from STScI because they have
-    crosshairs and annotations.
+    These are a bit nicer than the DSS stamps direct from STScI because they
+    have crosshairs and annotations.
 
     '''
 
@@ -782,8 +698,7 @@ def plot_periodbase_lsp(lspinfo, outfile=None, plotdpi=100):
         lspmethod = lspinfo['method']
 
         # make the LSP plot on the first subplot
-        plt.plot(periods,lspvals)
-
+        plt.plot(periods, lspvals)
         plt.xscale('log',basex=10)
         plt.xlabel('Period [days]')
         plt.ylabel(PLOTYLABELS[lspmethod])

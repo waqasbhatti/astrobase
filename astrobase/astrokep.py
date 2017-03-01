@@ -164,10 +164,12 @@ def flux_ppm_to_magnitudes(ppm):
 
 # this is the list of keys to pull out of the light curve FITS table
 LCDATAKEYS = ['TIME','TIMECORR','CADENCENO',
-              'SAP_FLUX','SAP_FLUX_ERR','SAP_BKG','SAP_BKG_ERR',
-              'PDCSAP_FLUX','PDCSAP_FLUX_ERR','SAP_QUALITY',
+              'SAP_QUALITY',
               'PSF_CENTR1','PSF_CENTR1_ERR','PSF_CENTR2','PSF_CENTR2_ERR',
               'MOM_CENTR1','MOM_CENTR1_ERR','MOM_CENTR2','MOM_CENTR2_ERR']
+
+LCSAPKEYS = ['SAP_FLUX','SAP_FLUX_ERR','SAP_BKG','SAP_BKG_ERR']
+LCPDCKEYS = ['PDCSAP_FLUX','PDCSAP_FLUX_ERR']
 
 # this is the list of keys to pull out of the light curve header
 LCHEADERKEYS = ['TIMESYS','BJDREFI','BJDREFF',
@@ -208,6 +210,8 @@ LCAPERTUREKEYS = ['NPIXSAP','NPIXMISS','CDELT1','CDELT2']
 def read_kepler_fitslc(lcfits,
                        headerkeys=LCHEADERKEYS,
                        datakeys=LCDATAKEYS,
+                       sapkeys=LCSAPKEYS,
+                       pdckeys=LCPDCKEYS,
                        topkeys=LCTOPKEYS,
                        apkeys=LCAPERTUREKEYS):
     '''
@@ -303,11 +307,18 @@ def read_kepler_fitslc(lcfits,
             'aptgttotrat':[hdrinfo['crowdsap']],
             'aptgtfrac':[hdrinfo['flfrcsap']],
         },
+        'sap':{},
+        'pdc':{},
     }
 
     # get the LC columns
     for key in datakeys:
         lcdict[key.lower()] = lcdata[key]
+    for key in sapkeys:
+        lcdict['sap'][key.lower()] = lcdata[key]
+    for key in pdckeys:
+        lcdict['pdc'][key.lower()] = lcdata[key]
+
 
     # add some of the light curve information to the data arrays so we can sort
     # on them later
@@ -326,7 +337,9 @@ def read_kepler_fitslc(lcfits,
 
     # update the lcdict columns with the actual columns
     lcdict['columns'] = (
-        [x.lower() for x in LCDATAKEYS] +
+        [x.lower() for x in datakeys] +
+        ['sap.%s' % x.lower() for x in sapkeys] +
+        ['pdc.%s' % x.lower() for x in pdckeys] +
         ['channel','skygroup','module','output','quarter','season']
     )
 
@@ -354,6 +367,7 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
 SFFTOPKEYS = LCTOPKEYS + ['CAMPAIGN']
 SFFHEADERKEYS = LCHEADERKEYS + ['MASKTYPE','MASKINDE','NPIXSAP']
 SFFDATAKEYS = ['T','FRAW','FCOR','ARCLENGTH','MOVING','CADENCENO']
+
 
 def read_k2sff_lightcurve(lcfits):
     '''
@@ -532,6 +546,7 @@ def stitch_lightcurve_gaps(times, mags, errs, mindmagdt):
 
 def filter_kepler_lcdict(lcdict,
                          filterflags=True,
+                         nanfilter='sap,pdc',
                          timestoignore=None):
     '''This filters the Kepler light curve dict.
 
@@ -544,45 +559,54 @@ def filter_kepler_lcdict(lcdict,
 
     This function filters the dict IN PLACE!
 
-    FIXME: there's a bug with applying iterative masks that leads to all the
-    elements of the arrays being the same.
-
     '''
 
     cols = lcdict['columns']
-
 
     # filter all bad LC points as noted by quality flags
     if filterflags:
 
         nbefore = lcdict['time'].size
-
         filterind = lcdict['sap_quality'] == 0
 
         for col in cols:
-            lcdict[col] = lcdict[col][filterind]
+            if '.' in col:
+                key, subkey = col.split('.')
+                lcdict[key][subkey] = lcdict[key][subkey][filterind]
+            else:
+                lcdict[col] = lcdict[col][filterind]
 
         nafter = lcdict['time'].size
         LOGINFO('applied quality flag filter, ndet before = %s, ndet after = %s'
                 % (nbefore, nafter))
 
 
-    # # remove nans from all columns
-    # notnanind = npfull_like(lcdict['time'].size,True)
-    # nbefore = lcdict['time'].size
+    if nanfilter and nanfilter == 'sap,pdc':
+        notnanind = (
+            npisfinite(lcdict['sap']['sap_flux']) &
+            npisfinite(lcdict['pdc']['pdcsap_flux'])
+        )
+    elif nanfilter and nanfilter == 'sap':
+        notnanind = npisfinite(lcdict['sap']['sap_flux'])
+    elif nanfilter and nanfilter == 'pdc':
+        notnanind = npisfinite(lcdict['pdc']['pdcsap_flux'])
 
-    # # build up the mask
-    # for col in ['sap_flux','pdcsap_flux']:
-    #     thismask = npisfinite(lcdict[col])
-    #     notnanind = notnanind & thismask
 
-    # # apply the mask
-    # for col in cols:
-    #     lcdict[col] = lcdict[col][notnanind]
+    # remove nans from all columns
+    if nanfilter:
 
-    # nafter = lcdict['time'].size
-    # LOGINFO('removed nans, ndet before = %s, ndet after = %s'
-    #         % (nbefore, nafter))
+        nbefore = lcdict['time'].size
+        for col in cols:
+            if '.' in col:
+                key, subkey = col.split('.')
+                lcdict[key][subkey] = lcdict[key][subkey][notnanind]
+            else:
+                lcdict[col] = lcdict[col][notnanind]
+
+        nafter = lcdict['time'].size
+
+        LOGINFO('removed nans, ndet before = %s, ndet after = %s'
+                % (nbefore, nafter))
 
 
     # exclude all times in timestoignore
@@ -606,7 +630,6 @@ def filter_kepler_lcdict(lcdict,
         nafter = lcdict['time'].size
         LOGINFO('removed timestoignore, ndet before = %s, ndet after = %s'
                 % (nbefore, nafter))
-
 
 
 
@@ -647,7 +670,6 @@ def _epd_residual(coeffs, fluxes, xcc, ycc, bgv, bge):
 
 
 def epd_kepler_lightcurve(lcdict,
-                          fluxcol='sap_flux',
                           xccol='mom_centr1',
                           yccol='mom_centr2',
                           timestoignore=None,
@@ -691,9 +713,9 @@ def epd_kepler_lightcurve(lcdict,
     '''
 
     times, fluxes, background, background_err = (lcdict['time'],
-                                                 lcdict[fluxcol],
-                                                 lcdict['sap_bkg'],
-                                                 lcdict['sap_bkg_err'])
+                                                 lcdict['sap']['sap_flux'],
+                                                 lcdict['sap']['sap_bkg'],
+                                                 lcdict['sap']['sap_bkg_err'])
     xcc = lcdict[xccol]
     ycc = lcdict[yccol]
     flags = lcdict['sap_quality']
@@ -794,21 +816,23 @@ def epd_kepler_lightcurve(lcdict,
         # write these to the dictionary if requested
         if writetodict:
 
-            lcdict['epd_time'] = times
-            lcdict['epd_sapflux'] = fluxes
-            lcdict['epd_epdsapflux'] = epdfluxes
-            lcdict['epd_epdsapcorr'] = epdfit
-            lcdict['epd_bkg'] = background
-            lcdict['epd_bkg_err'] = background_err
-            lcdict['epd_xcc'] = xcc
-            lcdict['epd_ycc'] = ycc
-            lcdict['epd_quality'] = flags
+            lcdict['epd'] = {}
 
-            for newcol in ['epd_time','epd_sapflux',
-                           'epd_epdsapflux','epd_epdsapcorr',
-                           'epd_bkg','epd_bkg_err',
-                           'epd_xcc','epd_ycc',
-                           'epd_quality']:
+            lcdict['epd']['time'] = times
+            lcdict['epd']['sapflux'] = fluxes
+            lcdict['epd']['epdsapflux'] = epdfluxes
+            lcdict['epd']['epdsapcorr'] = epdfit
+            lcdict['epd']['bkg'] = background
+            lcdict['epd']['bkg_err'] = background_err
+            lcdict['epd']['xcc'] = xcc
+            lcdict['epd']['ycc'] = ycc
+            lcdict['epd']['quality'] = flags
+
+            for newcol in ['epd.time','epd.sapflux',
+                           'epd.epdsapflux','epd.epdsapcorr',
+                           'epd.bkg','epd.bkg.err',
+                           'epd.xcc','epd.ycc',
+                           'epd.quality']:
 
                 if newcol not in lcdict['columns']:
                     lcdict['columns'].append(newcol)
@@ -823,7 +847,6 @@ def epd_kepler_lightcurve(lcdict,
 
 
 def rfepd_kepler_lightcurve(lcdict,
-                            fluxcol='sap_flux',
                             xccol='mom_centr1',
                             yccol='mom_centr2',
                             timestoignore=None,
@@ -861,9 +884,9 @@ def rfepd_kepler_lightcurve(lcdict,
 
     '''
     times, fluxes, background, background_err = (lcdict['time'],
-                                                 lcdict[fluxcol],
-                                                 lcdict['sap_bkg'],
-                                                 lcdict['sap_bkg_err'])
+                                                 lcdict['sap']['sap_flux'],
+                                                 lcdict['sap']['sap_bkg'],
+                                                 lcdict['sap']['sap_bkg_err'])
     xcc = lcdict[xccol]
     ycc = lcdict[yccol]
     flags = lcdict['sap_quality']
@@ -972,21 +995,22 @@ def rfepd_kepler_lightcurve(lcdict,
     # write these to the dictionary if requested
     if writetodict:
 
-        lcdict['rfepd_time'] = times
-        lcdict['rfepd_sapflux'] = fluxes
-        lcdict['rfepd_epdsapflux'] = corrected_fluxes
-        lcdict['rfepd_epdsapcorr'] = flux_corrections
-        lcdict['rfepd_bkg'] = background
-        lcdict['rfepd_bkg_err'] = background_err
-        lcdict['rfepd_xcc'] = xcc
-        lcdict['rfepd_ycc'] = ycc
-        lcdict['rfepd_quality'] = flags
+        lcdict['rfepd'] = {}
+        lcdict['rfepd']['time'] = times
+        lcdict['rfepd']['sapflux'] = fluxes
+        lcdict['rfepd']['epdsapflux'] = corrected_fluxes
+        lcdict['rfepd']['epdsapcorr'] = flux_corrections
+        lcdict['rfepd']['bkg'] = background
+        lcdict['rfepd']['bkg_err'] = background_err
+        lcdict['rfepd']['xcc'] = xcc
+        lcdict['rfepd']['ycc'] = ycc
+        lcdict['rfepd']['quality'] = flags
 
-        for newcol in ['rfepd_time','rfepd_sapflux',
-                       'rfepd_epdsapflux','rfepd_epdsapcorr',
-                       'rfepd_bkg','rfepd_bkg_err',
-                       'rfepd_xcc','rfepd_ycc',
-                       'rfepd_quality']:
+        for newcol in ['rfepd.time','rfepd.sapflux',
+                       'rfepd.epdsapflux','rfepd.epdsapcorr',
+                       'rfepd.bkg','rfepd.bkg.err',
+                       'rfepd.xcc','rfepd.ycc',
+                       'rfepd.quality']:
 
             if newcol not in lcdict['columns']:
                 lcdict['columns'].append(newcol)
