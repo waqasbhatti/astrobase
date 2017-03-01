@@ -196,7 +196,9 @@ def normalize_magseries(times,
 ## SIGMA-CLIPPING ##
 ####################
 
-def sigclip_magseries(times, mags, errs, isflux=False, sigclip=None):
+def sigclip_magseries(times, mags, errs,
+                      magsarefluxes=False,
+                      sigclip=None):
     '''
     Select the finite times, magnitudes (or fluxes), and errors from the
     passed values, and apply symmetric or asymmetric sigma clipping to them.
@@ -211,7 +213,7 @@ def sigclip_magseries(times, mags, errs, isflux=False, sigclip=None):
 
         errs (np.array): ...
 
-        isflux (bool): True if your "mags" are in fact fluxes, i.e. if
+        magsarefluxes (bool): True if your "mags" are in fact fluxes, i.e. if
         "dimming" corresponds to your "mags" getting smaller.
 
         sigclip (float or list): If float, apply symmetric sigma clipping. If
