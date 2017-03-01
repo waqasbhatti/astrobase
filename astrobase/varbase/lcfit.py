@@ -48,7 +48,7 @@ from numpy.polynomial.legendre import Legendre, legval
 import matplotlib.pyplot as plt
 
 
-from .lcmath import sigclip_magseries
+from ..lcmath import sigclip_magseries
 
 
 #############
