@@ -683,18 +683,17 @@ def scipylsp_parallel(times,
     '''
 
     # make sure there are no nans anywhere
-    finiteind = np.isfinite(times) & np.isfinite(mags)
-    ftimes, fmags = times[finiteind], mags[finiteind]
+    finiteind = np.isfinite(mags) & np.isfinite(errs)
+    ftimes, fmags, ferrs = times[finiteind], mags[finiteind], errs[finiteind]
 
     if len(ftimes) > 0 and len(fmags) > 0:
 
         # sigclip the lightcurve if asked to do so
         if sigclip:
-            sigclipped = sigclip_magseries(ftimes,
-                                           fmags,
-                                           maxsig=sigclip)
-            worktimes = sigclipped['sctimes']
-            workmags = sigclipped['scmags']
+            worktimes, workmags, _ = sigclip_magseries(ftimes,
+                                                       fmags,
+                                                       ferrs,
+                                                       sigclip=sigclip)
             LOGINFO('ndet after sigclipping = %s' % len(worktimes))
 
         else:
