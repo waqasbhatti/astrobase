@@ -226,10 +226,14 @@ def sigclip_magseries(times, mags, errs,
         stimes, smags, serrs: (sigmaclipped values of each).
     '''
 
+    returnerrs = True
+
     # fake the errors if they don't exist
     # this is inconsequential to sigma-clipping
+    # we don't return these dummy values if the input errs are None
     if errs is None:
         errs = np.full_like(mags, 0.005)
+        returnerrs = False
 
     # filter the input times, mags, errs; do sigclipping and normalization
     find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
@@ -274,7 +278,11 @@ def sigclip_magseries(times, mags, errs,
         smags = fmags
         serrs = ferrs
 
-    return stimes, smags, serrs
+    if returnerrs:
+        return stimes, smags, serrs
+    else:
+        return stimes, smags
+
 
 
 #################
