@@ -363,7 +363,7 @@ def _make_magseries_plot(axes,
               linestyle=':')
 
    # make the x and y axis labels
-    plot_xlabel = 'JD + %.3f' % npmin(stimes)
+    plot_xlabel = 'JD - %.3f' % npmin(stimes)
     if magsarefluxes:
         plot_ylabel = 'flux'
     else:
