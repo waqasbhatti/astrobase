@@ -220,7 +220,7 @@ def sigclip_magseries(times, mags, errs,
         list, e.g., [10., 3.], will sigclip out greater than 10-sigma dimmings
         and greater than 3-sigma brightenings. Here the meaning of "dimming"
         and "brightening" is set by *physics* (not the magnitude system), which
-        is why the `isflux` kwarg must be correctly set.
+        is why the `magsarefluxes` kwarg must be correctly set.
 
     Returns:
         stimes, smags, serrs: (sigmaclipped values of each).
@@ -259,7 +259,7 @@ def sigclip_magseries(times, mags, errs,
         dimmingclip = sigclip[0]
         brighteningclip = sigclip[1]
 
-        if isflux:
+        if magsarefluxes:
             nottoodimind = (fmags - median_mag) > (-dimmingclip*stddev_mag)
             nottoobrightind = (fmags - median_mag) < (brighteningclip*stddev_mag)
         else:
