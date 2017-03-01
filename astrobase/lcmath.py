@@ -196,50 +196,11 @@ def normalize_magseries(times,
 ## SIGMA-CLIPPING ##
 ####################
 
-def sigclip_magseries(times, mags, maxsig=4.0):
-    '''
-    This sigmaclips a magnitude timeseries given a maxsig value in one shot.
-    The median is used as the central value of the mags array.
-
-    '''
-
-    # find all the finite values of the magnitudes and times
-    finiteind = np.isfinite(mags)
-    finite_times = times[finiteind]
-    finite_mags = mags[finiteind]
-
-    # calculate median and stdev
-    mag_median = np.median(mags[finiteind])
-    mag_stdev = np.std(mags[finiteind])
-
-    # if a maxsig is provided, then do the sigma-clip
-    if maxsig:
-
-        # do the oneshot sigma clip
-        excludeind = (np.abs(finite_mags - mag_median)) < (maxsig*mag_stdev)
-
-        final_mags = finite_mags[excludeind]
-        final_times = finite_times[excludeind]
-
-    # otherwise, just pass through the finite times and magnitudes
-    else:
-
-        final_mags = finite_mags
-        final_times = finite_times
-
-    return {'sctimes':final_times,
-            'scmags':final_mags,
-            'sigclip':maxsig,
-            'magmedian':mag_median,
-            'magstdev':mag_stdev}
-
-
-def sigmaclip_lc(times, mags, errs, isflux=False, sigclip=None):
+def sigclip_magseries(times, mags, errs, isflux=False, sigclip=None):
     '''
     Select the finite times, magnitudes (or fluxes), and errors from the
     passed values, and apply symmetric or asymmetric sigma clipping to them.
-    Returns sigma-clipped times, mags, and errs. (Slightly different
-    functionality than what's in sigclip_magseries).
+    Returns sigma-clipped times, mags, and errs.
 
     Args:
         times (np.array): ...
@@ -262,6 +223,11 @@ def sigmaclip_lc(times, mags, errs, isflux=False, sigclip=None):
     Returns:
         stimes, smags, serrs: (sigmaclipped values of each).
     '''
+
+    # fake the errors if they don't exist
+    # this is inconsequential to sigma-clipping
+    if errs is None:
+        errs = np.full_like(mags, 0.005)
 
     # filter the input times, mags, errs; do sigclipping and normalization
     find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
