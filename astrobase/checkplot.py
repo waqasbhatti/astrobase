@@ -132,7 +132,8 @@ def LOGEXCEPTION(message):
 ## LOCAL IMPORTS ##
 ###################
 
-from .lcmath import phase_magseries, phase_bin_magseries, normalize_magseries
+from .lcmath import phase_magseries, phase_bin_magseries, \
+    normalize_magseries, sigclip_magseries
 from .varbase.lcfit import spline_fit_magseries
 from .coordutils import total_proper_motion, reduced_proper_motion
 from .plotbase import astroquery_skyview_stamp, \
@@ -330,7 +331,8 @@ def _make_periodogram(axes,
 def _make_magseries_plot(axes,
                          stimes,
                          smags,
-                         serrs):
+                         serrs,
+                         magsarefluxes=False):
     '''makes the magseries plot tile.
 
     '''
@@ -344,8 +346,9 @@ def _make_magseries_plot(axes,
                  color='green')
 
     # flip y axis for mags
-    plot_ylim = axes.get_ylim()
-    axes.set_ylim((plot_ylim[1], plot_ylim[0]))
+    if not magsarefluxes:
+        plot_ylim = axes.get_ylim()
+        axes.set_ylim((plot_ylim[1], plot_ylim[0]))
 
     # set the x axis limit
     plot_xlim = axes.get_xlim()
@@ -360,8 +363,11 @@ def _make_magseries_plot(axes,
               linestyle=':')
 
    # make the x and y axis labels
-    plot_xlabel = 'JD - %.3f' % npmin(stimes)
-    plot_ylabel = 'magnitude'
+    plot_xlabel = 'JD + %.3f' % npmin(stimes)
+    if magsarefluxes:
+        plot_ylabel = 'flux'
+    else:
+        plot_ylabel = 'magnitude'
 
     axes.set_xlabel(plot_xlabel)
     axes.set_ylabel(plot_ylabel)
@@ -380,7 +386,8 @@ def _make_phased_magseries_plot(axes,
                                 phasewrap, phasesort, phasebin,
                                 plotxlim,
                                 lspmethod,
-                                twolspmode=False):
+                                twolspmode=False,
+                                magsarefluxes=False):
     '''makes the phased magseries plot tile.
 
     '''
@@ -421,8 +428,9 @@ def _make_phased_magseries_plot(axes,
                      color='blue')
 
     # flip y axis for mags
-    plot_ylim = axes.get_ylim()
-    axes.set_ylim((plot_ylim[1], plot_ylim[0]))
+    if not magsarefluxes:
+        plot_ylim = axes.get_ylim()
+        axes.set_ylim((plot_ylim[1], plot_ylim[0]))
 
     # set the x axis limit
     if not plotxlim:
@@ -441,7 +449,10 @@ def _make_phased_magseries_plot(axes,
 
    # make the x and y axis labels
     plot_xlabel = 'phase'
-    plot_ylabel = 'magnitude'
+    if magsarefluxes:
+        plot_ylabel = 'flux'
+    else:
+        plot_ylabel = 'magnitude'
 
     axes.set_xlabel(plot_xlabel)
     axes.set_ylabel(plot_ylabel)
@@ -497,6 +508,7 @@ def checkplot_png(lspinfo,
                   times,
                   mags,
                   errs,
+                  magsarefluxes=False,
                   objectinfo=None,
                   findercmap='gray_r',
                   finderconvolve=None,
@@ -554,6 +566,10 @@ def checkplot_png(lspinfo,
     'aov' -> Schwarzenberg-Cerny AoV (e.g., from periodbase.aov_periodfind)
     'bls' -> Box Least-squared Search (e.g., from periodbase.bls_parallel_pfind)
     'sls' -> Lomb-Scargle from Scipy (e.g., from periodbase.scipylsp_parallel)
+
+    magsarefluxes = True means the values provided in the mags input array are
+    actually fluxes; this affects the sigma-clipping and plotting of light
+    curves.
 
     If a dict is passed to objectinfo, this function will use it to figure out
     where in the sky the checkplotted object is, and put the finding chart plus
@@ -668,33 +684,11 @@ def checkplot_png(lspinfo,
     ## NOW MAKE THE PHASED LIGHT CURVES ##
     ######################################
 
-    # remove nans
-    find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
-    ftimes, fmags, ferrs = times[find], mags[find], errs[find]
-
-    # get the median and stdev = 1.483 x MAD
-    median_mag = npmedian(fmags)
-    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
-
-    # sigclip next
-    if sigclip:
-
-        sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
-
-        stimes = ftimes[sigind]
-        smags = fmags[sigind]
-        serrs = ferrs[sigind]
-
-        LOGINFO('sigclip = %s: before = %s observations, '
-                'after = %s observations' %
-                (sigclip, len(times), len(stimes)))
-
-    else:
-
-        stimes = ftimes
-        smags = fmags
-        serrs = ferrs
-
+    stimes, smags, serrs = sigclip_magseries(times,
+                                             mags,
+                                             errs,
+                                             magsarefluxes=magsarefluxes,
+                                             sigclip=sigclip)
 
     # take care of the normalization
     if normto is not False:
@@ -710,7 +704,8 @@ def checkplot_png(lspinfo,
         ## PLOT 2 is an unphased LC ##
         ##############################
 
-        _make_magseries_plot(axes[1], stimes, smags, serrs)
+        _make_magseries_plot(axes[1], stimes, smags, serrs,
+                             magsarefluxes=magsarefluxes)
 
 
         ###########################
@@ -757,7 +752,8 @@ def checkplot_png(lspinfo,
                                         stimes, smags,
                                         varperiod, varepoch,
                                         phasewrap, phasesort, phasebin,
-                                        plotxlim, lspmethod)
+                                        plotxlim, lspmethod,
+                                        magsarefluxes=magsarefluxes)
 
         # end of plotting for each ax
 
@@ -806,6 +802,7 @@ def twolsp_checkplot_png(lspinfo1,
                          times,
                          mags,
                          errs,
+                         magsarefluxes=False,
                          objectinfo=None,
                          findercmap='gray_r',
                          finderconvolve=None,
@@ -940,48 +937,12 @@ def twolsp_checkplot_png(lspinfo1,
     ## FIX UP THE MAGS AND REMOVE BAD STUFF ##
     ##########################################
 
-    # remove nans
-    find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
-    ftimes, fmags, ferrs = times[find], mags[find], errs[find]
-
-    # get the median and stdev = 1.483 x MAD
-    median_mag = npmedian(fmags)
-    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
-
-    # sigclip next for a single sigclip value
-    if sigclip and isinstance(sigclip,float):
-
-        sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
-
-        stimes = ftimes[sigind]
-        smags = fmags[sigind]
-        serrs = ferrs[sigind]
-
-        LOGINFO('sigclip = %s: before = %s observations, '
-                'after = %s observations' %
-                (sigclip, len(times), len(stimes)))
-
-    # this handles sigclipping for asymmetric +ve and -ve clip values
-    elif sigclip and isinstance(sigclip,list) and len(sigclip) == 2:
-
-        sigposind = (fmags - median_mag) < (sigclip[0]*stddev_mag)
-        signegind = (fmags - median_mag) > (sigclip[1]*stddev_mag)
-        sigind = sigposind & signegind
-
-        stimes = ftimes[sigind]
-        smags = fmags[sigind]
-        serrs = ferrs[sigind]
-
-        LOGINFO('sigclip = %s: before = %s observations, '
-                'after = %s observations' %
-                (sigclip, len(times), len(stimes)))
-
-    else:
-
-        stimes = ftimes
-        smags = fmags
-        serrs = ferrs
-
+    # sigclip first
+    stimes, smags, serrs = sigclip_magseries(times,
+                                             mags,
+                                             errs,
+                                             magsarefluxes=magsarefluxes,
+                                             sigclip=sigclip)
 
     # take care of the normalization
     if normto is not False:
@@ -997,7 +958,8 @@ def twolsp_checkplot_png(lspinfo1,
         ## PLOT 3 is an unphased LC ##
         ##############################
 
-        _make_magseries_plot(axes[2], stimes, smags, serrs)
+        _make_magseries_plot(axes[2], stimes, smags, serrs,
+                             magsarefluxes=magsarefluxes)
 
         # make the plot for each best period
         lspbestperiods1 = nbestperiods1[::]
@@ -1042,7 +1004,8 @@ def twolsp_checkplot_png(lspinfo1,
                                         varperiod, varepoch,
                                         phasewrap, phasesort, phasebin,
                                         plotxlim, lspmethod1,
-                                        twolspmode=True)
+                                        twolspmode=True,
+                                        magsarefluxes=magsarefluxes)
 
         ##########################################################
         ### NOW PLOT PHASED LCS FOR 3 BEST PERIODS IN LSPINFO2 ###
@@ -1083,7 +1046,8 @@ def twolsp_checkplot_png(lspinfo1,
                                         varperiod, varepoch,
                                         phasewrap, phasesort, phasebin,
                                         plotxlim, lspmethod2,
-                                        twolspmode=True)
+                                        twolspmode=True,
+                                        magsarefluxes=magsarefluxes)
 
         # end of plotting for each ax
 
@@ -1401,7 +1365,9 @@ def _pkl_periodogram(lspinfo, plotdpi=100):
 
 
 
-def _pkl_magseries_plot(stimes, smags, serrs, plotdpi=100):
+def _pkl_magseries_plot(stimes, smags, serrs,
+                        plotdpi=100,
+                        magsarefluxes=False):
     '''This returns the magseries plot PNG as base64, plus arrays as dict.
 
     '''
@@ -1418,8 +1384,9 @@ def _pkl_magseries_plot(stimes, smags, serrs, plotdpi=100):
                  color='green')
 
     # flip y axis for mags
-    plot_ylim = plt.ylim()
-    plt.ylim((plot_ylim[1], plot_ylim[0]))
+    if not magsarefluxes:
+        plot_ylim = plt.ylim()
+        plt.ylim((plot_ylim[1], plot_ylim[0]))
 
     # set the x axis limit
     plot_xlim = plt.xlim()
@@ -1435,7 +1402,10 @@ def _pkl_magseries_plot(stimes, smags, serrs, plotdpi=100):
 
    # make the x and y axis labels
     plot_xlabel = 'JD - %.3f' % npmin(stimes)
-    plot_ylabel = 'magnitude'
+    if magsarefluxes:
+        plot_ylabel = 'flux'
+    else:
+        plot_ylabel = 'magnitude'
 
     plt.xlabel(plot_xlabel)
     plt.ylabel(plot_ylabel)
@@ -1479,7 +1449,8 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                                plotxlim,
                                plotdpi=100,
                                greenhighlight=False,
-                               xgridlines=None):
+                               xgridlines=None,
+                               magsarefluxes=False):
     '''This returns the phased magseries plot PNG as base64 plus info as a dict.
 
     '''
@@ -1564,8 +1535,9 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                     color='blue')
 
     # flip y axis for mags
-    plot_ylim = plt.ylim()
-    plt.ylim((plot_ylim[1], plot_ylim[0]))
+    if not magsarefluxes:
+        plot_ylim = plt.ylim()
+        plt.ylim((plot_ylim[1], plot_ylim[0]))
 
     # set the x axis limit
     if not plotxlim:
@@ -1589,7 +1561,10 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
 
    # make the x and y axis labels
     plot_xlabel = 'phase'
-    plot_ylabel = 'magnitude'
+    if magsarefluxes:
+        plot_ylabel = 'flux'
+    else:
+        plot_ylabel = 'magnitude'
 
     plt.xlabel(plot_xlabel)
     plt.ylabel(plot_ylabel)
@@ -1763,6 +1738,7 @@ def checkplot_dict(lspinfolist,
                    times,
                    mags,
                    errs,
+                   magsarefluxes=False,
                    nperiodstouse=3,
                    objectinfo=None,
                    varinfo=None,
@@ -1842,39 +1818,14 @@ def checkplot_dict(lspinfolist,
                                            normmingap,
                                            plotdpi=plotdpi)
 
+
+
     # filter the input times, mags, errs; do sigclipping and normalization
-    find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
-    ftimes, fmags, ferrs = times[find], mags[find], errs[find]
-
-    # get the median and stdev = 1.483 x MAD
-    median_mag = npmedian(fmags)
-    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
-
-    # sigclip next for a single sigclip value
-    if sigclip and isinstance(sigclip,float):
-
-        sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
-
-        stimes = ftimes[sigind]
-        smags = fmags[sigind]
-        serrs = ferrs[sigind]
-
-    # this handles sigclipping for asymmetric +ve and -ve clip values
-    elif sigclip and isinstance(sigclip,list) and len(sigclip) == 2:
-
-        sigposind = (fmags - median_mag) < (sigclip[0]*stddev_mag)
-        signegind = (fmags - median_mag) > (sigclip[1]*stddev_mag)
-        sigind = sigposind & signegind
-
-        stimes = ftimes[sigind]
-        smags = fmags[sigind]
-        serrs = ferrs[sigind]
-
-    else:
-
-        stimes = ftimes
-        smags = fmags
-        serrs = ferrs
+    stimes, smags, serrs = sigclip_magseries(times,
+                                             mags,
+                                             errs,
+                                             magsarefluxes=magsarefluxes,
+                                             sigclip=sigclip)
 
     # report on how sigclip went
     LOGINFO('sigclip = %s: before = %s observations, '
@@ -1894,7 +1845,8 @@ def checkplot_dict(lspinfolist,
         # next, get the mag series plot using these filtered stimes, smags,
         # serrs
         magseriesdict = _pkl_magseries_plot(stimes, smags, serrs,
-                                            plotdpi=plotdpi)
+                                            plotdpi=plotdpi,
+                                            magsarefluxes=magsarefluxes)
 
         # update the checkplotdict
         checkplotdict.update(magseriesdict)
@@ -1940,7 +1892,10 @@ def checkplot_dict(lspinfolist,
                     stimes, smags, serrs,
                     nbperiod, varepoch,
                     phasewrap, phasesort, phasebin,
-                    plotxlim, plotdpi=plotdpi, greenhighlight=greenhighlight,
+                    plotxlim,
+                    plotdpi=plotdpi,
+                    greenhighlight=greenhighlight,
+                    magsarefluxes=magsarefluxes,
                     xgridlines=xgridlines
                 )
 
@@ -1974,6 +1929,7 @@ def checkplot_pickle(lspinfolist,
                      times,
                      mags,
                      errs,
+                     magsarefluxes=False,
                      nperiodstouse=3,
                      objectinfo=None,
                      varinfo=None,
@@ -2104,6 +2060,7 @@ def checkplot_pickle(lspinfolist,
         times,
         mags,
         errs,
+        magsarefluxes=magsarefluxes,
         nperiodstouse=nperiodstouse,
         objectinfo=objectinfo,
         varinfo=varinfo,
