@@ -44,6 +44,7 @@ import matplotlib.pyplot as plt
 
 from ..periodbase.zgls import pgen_lsp
 from .lcfit import _fourier_func, fourier_fit_magseries, spline_fit_magseries
+from .lcmath import sigclip_magseries
 
 
 #############
@@ -100,14 +101,16 @@ def whiten_magseries(times, mags, errs,
                      whitenperiod,
                      whitenparams,
                      sigclip=3.0,
+                     magsarefluxes=False,
                      plotfit=None,
                      rescaletomedian=True):
-    '''Removes a periodic signal generated using whitenparams from
+    '''Removes a periodic sinusoidal signal generated using whitenparams from
     the input magnitude time series.
 
     whitenparams is like so:
 
-    [ampl_1, ampl_2, ampl_3, ..., ampl_X, pha_1, pha_2, pha_3, ..., pha_X]
+    [ampl_1, ampl_2, ampl_3, ..., ampl_X,
+     pha_1, pha_2, pha_3, ..., pha_X]
 
     where X is the Fourier order.
 
@@ -116,37 +119,9 @@ def whiten_magseries(times, mags, errs,
 
     '''
 
-    # get rid of nans first
-    find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
-    ftimes = times[find]
-    fmags = mags[find]
-    ferrs = errs[find]
-
-    # get the median and stdev = 1.483 x MAD
-    median_mag = npmedian(fmags)
-    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
-
-    # sigclip next
-    if sigclip:
-
-        sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
-
-        stimes = ftimes[sigind]
-        smags = fmags[sigind]
-        serrs = ferrs[sigind]
-
-        LOGINFO('sigclip = %s: before = %s observations, '
-                'after = %s observations' %
-                (sigclip, len(times), len(stimes)))
-
-    else:
-
-        stimes = ftimes
-        smags = fmags
-        serrs = ferrs
-
-    # phase the mag series using the given period and faintest mag time
-    # mintime = stimes[npwhere(smags == npmax(smags))]
+    stimes, smags, errs = sigclip_magseries(times, mags, errs,
+                                            sigclip=sigclip,
+                                            magsarefluxes=magsarefluxes)
 
     # phase the mag series using the given period and epoch = min(stimes)
     mintime = npmin(stimes)
@@ -200,18 +175,29 @@ def whiten_magseries(times, mags, errs,
         plt.errorbar(stimes,smags,fmt='bo',yerr=serrs,
                      markersize=2.0,capsize=0)
         ymin, ymax = plt.ylim()
-        plt.ylim(ymax,ymin)
+
+        if not magsarefluxes:
+            plt.ylim(ymax,ymin)
+            plt.ylabel('magnitude')
+        else:
+            plt.ylim(ymin,ymax)
+            plt.ylabel('magnitude')
+
         plt.xlabel('JD')
-        plt.ylabel('magnitude')
         plt.title('LC before whitening')
 
         plt.subplot(212)
         plt.errorbar(wtimes,wmags,fmt='bo',yerr=werrs,
                      markersize=2.0,capsize=0)
-        ymin, ymax = plt.ylim()
-        plt.ylim(ymax,ymin)
+
+
+        if not magsarefluxes:
+            plt.ylim(ymax,ymin)
+            plt.ylabel('magnitude')
+        else:
+            plt.ylim(ymin,ymax)
+            plt.ylabel('magnitude')
         plt.xlabel('JD')
-        plt.ylabel('magnitude')
         plt.title('LC after whitening with period: %.6f' % whitenperiod)
 
         plt.savefig(plotfit)
@@ -228,6 +214,7 @@ def gls_whiten(times, mags, errs,
                startp=None, endp=None,
                autofreq=True,
                sigclip=30.0,
+               magsarefluxes=False,
                stepsize=1.0e-4,
                initfparams=[0.6,0.2,0.2,0.1,0.1,0.1], # 3rd order series
                nbestpeaks=5,
@@ -240,38 +227,14 @@ def gls_whiten(times, mags, errs,
     are done.
 
     '''
+    stimes, smags, errs = sigclip_magseries(times, mags, errs,
+                                            sigclip=sigclip,
+                                            magsarefluxes=magsarefluxes)
 
-    # get rid of nans first
-    find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
-    ftimes = times[find]
-    fmags = mags[find]
-    ferrs = errs[find]
-
-    # get the median and stdev = 1.483 x MAD
-    median_mag = npmedian(fmags)
-    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
-
-    # sigclip next
-    if sigclip:
-
-        sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
-
-        stimes = ftimes[sigind]
-        smags = fmags[sigind]
-        serrs = ferrs[sigind]
-
-        LOGINFO('sigclip = %s: before = %s observations, '
-                'after = %s observations' %
-                (sigclip, len(times), len(stimes)))
-
-    else:
-
-        stimes = ftimes
-        smags = fmags
-        serrs = ferrs
 
     # now start the cycle by doing an LSP on the initial timeseries
     lsp = pgen_lsp(stimes, smags, serrs,
+                   magsarefluxes=magsarefluxes,
                    startp=startp, endp=endp,
                    autofreq=autofreq,
                    sigclip=sigclip,
@@ -280,7 +243,8 @@ def gls_whiten(times, mags, errs,
     wperiod = lsp['bestperiod']
     fseries = fourier_fit_magseries(stimes, smags, serrs, wperiod,
                                     initfourierparams=initfparams,
-                                    sigclip=sigclip)
+                                    sigclip=sigclip,
+                                    magsarefluxes=magsarefluxes)
     ffitparams = fseries['fitinfo']['finalparams']
 
     # this is the initial whitened series using the initial fourier fit and
@@ -290,7 +254,8 @@ def gls_whiten(times, mags, errs,
                                serrs,
                                wperiod,
                                ffitparams,
-                               sigclip=sigclip)
+                               sigclip=sigclip,
+                               magsarefluxes=magsarefluxes)
 
     LOGINFO('round %s: period = %.6f' % (1, wperiod))
     bestperiods = [wperiod]
@@ -305,9 +270,15 @@ def gls_whiten(times, mags, errs,
         plt.errorbar(stimes,smags,fmt='bo',yerr=serrs,
                      markersize=2.0,capsize=0)
         ymin, ymax = plt.ylim()
-        plt.ylim(ymax,ymin)
+
+        if not magsarefluxes:
+            plt.ylim(ymax,ymin)
+            plt.ylabel('magnitude')
+        else:
+            plt.ylim(ymin,ymax)
+            plt.ylabel('magnitude')
+
         plt.xlabel('JD')
-        plt.ylabel('magnitude')
         plt.title('LC before whitening')
 
         plt.subplot(nplots,1,2)
@@ -315,9 +286,13 @@ def gls_whiten(times, mags, errs,
                      fmt='bo',yerr=wseries['werrs'],
                      markersize=2.0,capsize=0)
         ymin, ymax = plt.ylim()
-        plt.ylim(ymax,ymin)
+        if not magsarefluxes:
+            plt.ylim(ymax,ymin)
+            plt.ylabel('magnitude')
+        else:
+            plt.ylim(ymin,ymax)
+            plt.ylabel('magnitude')
         plt.xlabel('JD')
-        plt.ylabel('magnitude')
         plt.title('LC after whitening with period: %.6f' % wperiod)
 
     # now go through the rest of the cycles
@@ -328,7 +303,9 @@ def gls_whiten(times, mags, errs,
                                 wseries['werrs'])
 
         wlsp = pgen_lsp(wtimes, wmags, werrs,
-                        startp=startp, endp=endp,
+                        magsarefluxes=magsarefluxes,
+                        startp=startp,
+                        endp=endp,
                         autofreq=autofreq,
                         sigclip=sigclip,
                         stepsize=stepsize,
@@ -336,9 +313,11 @@ def gls_whiten(times, mags, errs,
         wperiod = wlsp['bestperiod']
         wfseries = fourier_fit_magseries(wtimes, wmags, werrs, wperiod,
                                          initfourierparams=initfparams,
+                                         magsarefluxes=magsarefluxes,
                                          sigclip=sigclip)
         wffitparams = wfseries['fitinfo']['finalparams']
         wseries = whiten_magseries(wtimes, wmags, werrs, wperiod, wffitparams,
+                                   magsarefluxes=magsarefluxes,
                                    sigclip=sigclip)
 
         LOGINFO('round %s: period = %.6f' % (fitind+2, wperiod))
@@ -350,9 +329,13 @@ def gls_whiten(times, mags, errs,
             plt.errorbar(wtimes,wmags,fmt='bo',yerr=werrs,
                          markersize=2.0,capsize=0)
             ymin, ymax = plt.ylim()
-            plt.ylim(ymax,ymin)
+            if not magsarefluxes:
+                plt.ylim(ymax,ymin)
+                plt.ylabel('magnitude')
+            else:
+                plt.ylim(ymin,ymax)
+                plt.ylabel('magnitude')
             plt.xlabel('JD')
-            plt.ylabel('magnitude')
             plt.title('LC after whitening with period: %.6f' % wperiod)
 
 
@@ -368,9 +351,11 @@ def gls_whiten(times, mags, errs,
         return bestperiods
 
 
+
 def mask_signal(times, mags, errs,
                 signalperiod,
                 signalepoch,
+                magsarefluxes=False,
                 maskphases=[0,0,0.5,1.0],
                 maskphaselength=0.1,
                 sigclip=30.0):
@@ -381,34 +366,9 @@ def mask_signal(times, mags, errs,
 
     '''
 
-    # get rid of nans first
-    find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
-    ftimes = times[find]
-    fmags = mags[find]
-    ferrs = errs[find]
-
-    # get the median and stdev = 1.483 x MAD
-    median_mag = npmedian(fmags)
-    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
-
-    # sigclip next
-    if sigclip:
-
-        sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
-
-        stimes = ftimes[sigind]
-        smags = fmags[sigind]
-        serrs = ferrs[sigind]
-
-        LOGINFO('sigclip = %s: before = %s observations, '
-                'after = %s observations' %
-                (sigclip, len(times), len(stimes)))
-
-    else:
-
-        stimes = ftimes
-        smags = fmags
-        serrs = ferrs
+    stimes, smags, errs = sigclip_magseries(times, mags, errs,
+                                            sigclip=sigclip,
+                                            magsarefluxes=magsarefluxes)
 
 
     # now phase the light curve using the period and epoch provided
