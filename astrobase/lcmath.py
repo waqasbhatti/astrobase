@@ -281,7 +281,7 @@ def sigclip_magseries(times, mags, errs,
     if returnerrs:
         return stimes, smags, serrs
     else:
-        return stimes, smags
+        return stimes, smags, None
 
 
 
