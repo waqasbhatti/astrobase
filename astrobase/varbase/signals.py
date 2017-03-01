@@ -44,7 +44,7 @@ import matplotlib.pyplot as plt
 
 from ..periodbase.zgls import pgen_lsp
 from .lcfit import _fourier_func, fourier_fit_magseries, spline_fit_magseries
-from .lcmath import sigclip_magseries
+from ..lcmath import sigclip_magseries
 
 
 #############
