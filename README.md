@@ -1,5 +1,12 @@
 This is a bunch of Python modules I wrote for my astronomy work with the HAT
-surveys, mostly focused on variable stars.
+surveys, mostly focused on handling light curves and characterizing variable
+stars. Module functions that deal with light curves (e.g. in the modules
+`astrobase.lcmath`, `astrobase.periodbase`, `astrobase.varbase`,
+`astrobase.plotbase`, and `astrobase.checkplot`) usually just require three
+numpy ndarrays as input: `times`, `mags`, and `errs`, so they should work with
+any time-series data that can be represented in this form. If you have flux time
+series measurements, most functions take a `magsarefluxes` keyword argument that
+makes them handle flux light curves correctly.
 
 Full documentation is still a work in progress (as soon as I figure out how
 Sphinx works), but the docstrings are fairly good and an [overview](#contents)
@@ -39,14 +46,6 @@ package. Also contains other useful notes-to-self.
 Most of the modules with useful external functions live in here. The
 `astrobase.conf` file contains module-wide settings that may need to be tweaked
 for your purposes.
-
-Functions that deal with light curves (e.g. in the modules `astrobase.lcmath`,
-`astrobase.periodbase`, `astrobase.varbase`, `astrobase.plotbase`, and
-`astrobase.checkplot`) usually just require three numpy ndarrays as input:
-`times`, `mags`, and `errs`, so they should work with any time-series data that
-can be represented in this form. If you have flux time series measurements, most
-of the functions mentioned earlier take a `magsarefluxes` keyword argument that
-makes them handle flux light curves correctly.
 
 - **[astrokep](astrobase/astrokep.py)**: contains functions for dealing with
   Kepler light curves (reading and converting) and some basic operations
