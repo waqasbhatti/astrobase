@@ -163,7 +163,7 @@ You might need to install `openssl-devel` or a similar RPM/DEB package for the
 `python-cryptography` module that gets pulled in as a dependency for
 `astroquery`. For some extra functionality, you'll need the following modules:
 
-- for `astrobase.lcdb` to work, you'll also need psycogp2
+- for `astrobase.lcdb` to work, you'll also need psycopg2
 
 First, make sure numpy and a Fortran compiler are installed:
 
