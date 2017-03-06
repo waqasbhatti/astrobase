@@ -259,8 +259,8 @@ def bls_serial_pfind(times, mags, errs,
         # run BLS
         try:
 
-            blsresult = _bls_runner(ftimes,
-                                    fmags,
+            blsresult = _bls_runner(stimes,
+                                    smags,
                                     nfreq,
                                     minfreq,
                                     stepsize,
@@ -465,7 +465,7 @@ def bls_parallel_pfind(
             LOGWARNING('the requested max P = %.3f is larger than '
                        'the time base of the observations = %.3f, '
                        ' will make minfreq = 2 x 1/timebase'
-                       % (endp, ftimes.max() - ftimes.min()))
+                       % (endp, stimes.max() - stimes.min()))
             minfreq = 2.0/(stimes.max() - stimes.min())
             LOGINFO('new minfreq: %s, maxfreq: %s' %
                     (minfreq, maxfreq))

@@ -202,13 +202,17 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 resultdict = {
                     'status':'ok',
                     'message':'found checkplot %s' % self.checkplotfname,
-                    'result':{'objectid':objectid,
-                              'objectinfo':objectinfo,
-                              'objectcomments':objectcomments,
-                              'varinfo':varinfo,
-                              'finderchart':finderchart,
-                              'magseries':magseries,
-                              'cpstatus':cpstatus}
+                    'result':{
+                        'objectid':objectid,
+                        'objectinfo':objectinfo,
+                        'objectcomments':objectcomments,
+                        'varinfo':varinfo,
+                        'finderchart':finderchart,
+                        'magseries':magseries,
+                        # fallback in case objectinfo doesn't have ndet
+                        'magseries_ndet':cpdict['magseries']['times'].size,
+                        'cpstatus':cpstatus
+                    }
                 }
 
                 # now get the other stuff

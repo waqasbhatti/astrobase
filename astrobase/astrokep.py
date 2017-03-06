@@ -279,6 +279,7 @@ def read_kepler_fitslc(lcfits,
             'ndet':[ndet],
         },
         'objectinfo':{
+            'objectid':hdrinfo['object'], # repeated here for checkplot use
             'keplerid':hdrinfo['keplerid'],
             'ra':hdrinfo['ra_obj'],
             'decl':hdrinfo['dec_obj'],

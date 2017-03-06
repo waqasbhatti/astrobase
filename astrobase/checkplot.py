@@ -386,9 +386,13 @@ def _make_phased_magseries_plot(axes,
                                 phasewrap, phasesort, phasebin,
                                 plotxlim,
                                 lspmethod,
+                                xliminsetmode=False,
                                 twolspmode=False,
                                 magsarefluxes=False):
     '''makes the phased magseries plot tile.
+
+    if xliminsetmode = True, then makes a zoomed-in plot with the provided
+    plotxlim as the main x limits, and the full plot as an inset.
 
     '''
 
@@ -498,6 +502,57 @@ def _make_phased_magseries_plot(axes,
 
     axes.set_title(plottitle)
 
+    # if we're making an inset plot showing the full range
+    if (plotxlim and isinstance(plotxlim, list) and
+        len(plotxlim) == 2 and xliminsetmode is True):
+
+        # bump the ylim of the plot so that the inset can fit in this axes plot
+        axesylim = axes.get_ylim()
+
+        if magsarefluxes:
+            axes.set_ylim(axesylim[0],
+                          axesylim[1] + 0.75*npabs(axesylim[1]-axesylim[0]))
+        else:
+            axes.set_ylim(axesylim[0],
+                          axesylim[1] - 0.75*npabs(axesylim[1]-axesylim[0]))
+
+        # put the inset axes in
+        inset = inset_axes(axes, width="40%", height="40%", loc=1)
+
+        # make the scatter plot for the phased LC plot
+        inset.scatter(plotphase,
+                      plotmags,
+                      marker='o',
+                      s=2,
+                      color='gray')
+
+        # overlay the binned phased LC plot if we're making one
+        if phasebin:
+            inset.scatter(binplotphase,
+                          binplotmags,
+                          marker='o',
+                          s=20,
+                          color='blue')
+
+        # show the full phase coverage
+        # show the full phase coverage
+        if phasewrap:
+            inset.set_xlim(-0.2,0.8)
+        else:
+            inset.set_xlim(-0.1,1.1)
+
+        # flip y axis for mags
+        if not magsarefluxes:
+            inset_ylim = inset.get_ylim()
+            inset.set_ylim((inset_ylim[1], inset_ylim[0]))
+
+        # set the plot title
+        inset.text(0.5,0.1,'full phased light curve',
+                   ha='center',va='center',transform=inset.transAxes)
+        # don't show axes labels or ticks
+        inset.set_xticks([])
+        inset.set_yticks([])
+
 
 
 ############################################
@@ -521,6 +576,7 @@ def checkplot_png(lspinfo,
                   phasesort=True,
                   phasebin=0.002,
                   plotxlim=[-0.8,0.8],
+                  xliminsetmode=False,
                   plotdpi=100,
                   greenhighlight=True):
     '''This makes a checkplot for an info dict from a period-finding routine.
@@ -616,6 +672,11 @@ def checkplot_png(lspinfo,
 
     This can be useful to see effects of wide-field telescopes with large pixel
     sizes (like HAT) on the blending of sources.
+
+    xliminsetmode = True sets up the phased mag series plot to show a zoomed-in
+    portion (set by plotxlim) as the main plot and an inset version of the full
+    phased light curve from phase 0.0 to 1.0. This can be useful if searching
+    for small dips near phase 0.0 caused by planetary transits for example.
 
     '''
 
@@ -731,8 +792,12 @@ def checkplot_png(lspinfo,
             elif isinstance(varepoch,str) and varepoch == 'min':
 
                 try:
-                    spfit = spline_fit_magseries(stimes, smags, serrs,
-                                                 varperiod)
+                    spfit = spline_fit_magseries(stimes,
+                                                 smags,
+                                                 serrs,
+                                                 varperiod,
+                                                 sigclip=None,
+                                                 magsarefluxes=magsarefluxes)
                     varepoch = spfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
@@ -753,6 +818,7 @@ def checkplot_png(lspinfo,
                                         varperiod, varepoch,
                                         phasewrap, phasesort, phasebin,
                                         plotxlim, lspmethod,
+                                        xliminsetmode=xliminsetmode,
                                         magsarefluxes=magsarefluxes)
 
         # end of plotting for each ax
@@ -815,6 +881,7 @@ def twolsp_checkplot_png(lspinfo1,
                          phasesort=True,
                          phasebin=0.002,
                          plotxlim=[-0.8,0.8],
+                         xliminsetmode=False,
                          plotdpi=100):
     '''This makes a checkplot using results from two independent period-finders.
 
@@ -982,8 +1049,12 @@ def twolsp_checkplot_png(lspinfo1,
             elif isinstance(varepoch,str) and varepoch == 'min':
 
                 try:
-                    spfit = spline_fit_magseries(stimes, smags, serrs,
-                                                 varperiod)
+                    spfit = spline_fit_magseries(stimes,
+                                                 smags,
+                                                 serrs,
+                                                 varperiod,
+                                                 sigclip=None,
+                                                 magsarefluxes=magsarefluxes)
                     varepoch = spfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
@@ -1005,7 +1076,8 @@ def twolsp_checkplot_png(lspinfo1,
                                         phasewrap, phasesort, phasebin,
                                         plotxlim, lspmethod1,
                                         twolspmode=True,
-                                        magsarefluxes=magsarefluxes)
+                                        magsarefluxes=magsarefluxes,
+                                        xliminsetmode=xliminsetmode)
 
         ##########################################################
         ### NOW PLOT PHASED LCS FOR 3 BEST PERIODS IN LSPINFO2 ###
@@ -1047,7 +1119,8 @@ def twolsp_checkplot_png(lspinfo1,
                                         phasewrap, phasesort, phasebin,
                                         plotxlim, lspmethod2,
                                         twolspmode=True,
-                                        magsarefluxes=magsarefluxes)
+                                        magsarefluxes=magsarefluxes,
+                                        xliminsetmode=xliminsetmode)
 
         # end of plotting for each ax
 
@@ -1450,6 +1523,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                                plotdpi=100,
                                greenhighlight=False,
                                xgridlines=None,
+                               xliminsetmode=False,
                                magsarefluxes=False):
     '''This returns the phased magseries plot PNG as base64 plus info as a dict.
 
@@ -1467,8 +1541,12 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
     elif isinstance(varepoch,str) and varepoch == 'min':
 
         try:
-            spfit = spline_fit_magseries(stimes, smags, serrs,
-                                         varperiod)
+            spfit = spline_fit_magseries(stimes,
+                                         smags,
+                                         serrs,
+                                         varperiod,
+                                         magsarefluxes=magsarefluxes,
+                                         sigclip=None)
             varepoch = spfit['fitinfo']['fitepoch']
             if len(varepoch) != 1:
                 varepoch = varepoch[0]
@@ -1580,6 +1658,60 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
     # make sure the best period phased LC plot stands out
     if periodind == 0 and greenhighlight:
         plt.gca().set_axis_bgcolor('#adff2f')
+
+    # if we're making an inset plot showing the full range
+    if (plotxlim and isinstance(plotxlim, list) and
+        len(plotxlim) == 2 and xliminsetmode is True):
+
+        # bump the ylim of the plot so that the inset can fit in this axes plot
+        axesylim = plt.gca().get_ylim()
+
+        if magsarefluxes:
+            plt.gca().set_ylim(
+                axesylim[0],
+                axesylim[1] + 0.75*npabs(axesylim[1]-axesylim[0])
+            )
+        else:
+            plt.gca().set_ylim(
+                axesylim[0],
+                axesylim[1] - 0.75*npabs(axesylim[1]-axesylim[0])
+            )
+
+        # put the inset axes in
+        inset = inset_axes(plt.gca(), width="40%", height="40%", loc=1)
+
+        # make the scatter plot for the phased LC plot
+        inset.scatter(plotphase,
+                      plotmags,
+                      marker='o',
+                      s=2,
+                      color='gray')
+
+        if phasebin:
+            # make the scatter plot for the phased LC plot
+            inset.scatter(binplotphase,
+                          binplotmags,
+                          marker='o',
+                          s=2,
+                          color='gray')
+
+        # show the full phase coverage
+        if phasewrap:
+            inset.set_xlim(-0.2,0.8)
+        else:
+            inset.set_xlim(-0.1,1.1)
+
+        # flip y axis for mags
+        if not magsarefluxes:
+            inset_ylim = inset.get_ylim()
+            inset.set_ylim((inset_ylim[1], inset_ylim[0]))
+
+        # set the plot title
+        inset.text(0.5,0.1,'full phased light curve',
+                   ha='center',va='center',transform=inset.transAxes)
+        # don't show axes labels or ticks
+        inset.set_xticks([])
+        inset.set_yticks([])
 
     # this is the output instance
     phasedseriespng = strio()
@@ -1762,6 +1894,7 @@ def checkplot_dict(lspinfolist,
                    phasesort=True,
                    phasebin=0.002,
                    plotxlim=[-0.8,0.8],
+                   xliminsetmode=False,
                    plotdpi=100,
                    greenhighlight=True,
                    xgridlines=None):
@@ -1815,6 +1948,12 @@ def checkplot_dict(lspinfolist,
     xgridlines (default None) can be a list, e.g., [-0.5,0.,0.5] that sets the
     x-axis grid lines on plotted phased LCs for easy visual identification of
     important features.
+
+    xliminsetmode = True sets up the phased mag series plot to show a zoomed-in
+    portion (set by plotxlim) as the main plot and an inset version of the full
+    phased light curve from phase 0.0 to 1.0. This can be useful if searching
+    for small dips near phase 0.0 caused by planetary transits for example.
+
     '''
 
     # first, get the objectinfo and finder chart
@@ -1913,6 +2052,7 @@ def checkplot_dict(lspinfolist,
                     plotdpi=plotdpi,
                     greenhighlight=greenhighlight,
                     magsarefluxes=magsarefluxes,
+                    xliminsetmode=xliminsetmode,
                     xgridlines=xgridlines
                 )
 
@@ -1962,6 +2102,7 @@ def checkplot_pickle(lspinfolist,
                      phasesort=True,
                      phasebin=0.002,
                      plotxlim=[-0.8,0.8],
+                     xliminsetmode=False,
                      plotdpi=100,
                      returndict=False,
                      pickleprotocol=None,
@@ -2034,6 +2175,11 @@ def checkplot_pickle(lspinfolist,
     x-axis grid lines on plotted phased LCs for easy visual identification of
     important features.
 
+    xliminsetmode = True sets up the phased mag series plot to show a zoomed-in
+    portion (set by plotxlim) as the main plot and an inset version of the full
+    phased light curve from phase 0.0 to 1.0. This can be useful if searching
+    for small dips near phase 0.0 caused by planetary transits for example.
+
     '''
 
     if outgzip:
@@ -2091,6 +2237,7 @@ def checkplot_pickle(lspinfolist,
         phasesort=phasesort,
         phasebin=phasebin,
         plotxlim=plotxlim,
+        xliminsetmode=xliminsetmode,
         plotdpi=plotdpi,
         greenhighlight=greenhighlight,
         xgridlines=xgridlines
