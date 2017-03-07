@@ -340,6 +340,8 @@ def bls_serial_pfind(times, mags, errs,
                 'stepsize':stepsize,
                 'nfreq':nfreq,
                 'nphasebins':nphasebins,
+                'mintransitduration':mintransitduration,
+                'maxtransitduration':maxtransitduration,
                 'method':'bls',
             }
 
@@ -355,6 +357,11 @@ def bls_serial_pfind(times, mags, errs,
                     'nbestperiods':None,
                     'lspvals':None,
                     'periods':None,
+                    'stepsize':stepsize,
+                    'nfreq':nfreq,
+                    'nphasebins':nphasebins,
+                    'mintransitduration':mintransitduration,
+                    'maxtransitduration':maxtransitduration,
                     'method':'bls'}
 
 
@@ -368,6 +375,11 @@ def bls_serial_pfind(times, mags, errs,
                 'nbestperiods':None,
                 'lspvals':None,
                 'periods':None,
+                'stepsize':stepsize,
+                'nfreq':nfreq,
+                'nphasebins':nphasebins,
+                'mintransitduration':mintransitduration,
+                'maxtransitduration':maxtransitduration,
                 'method':'bls'}
 
 
@@ -574,6 +586,8 @@ def bls_parallel_pfind(
             'stepsize':stepsize,
             'nfreq':nfreq,
             'nphasebins':nphasebins,
+            'mintransitduration':mintransitduration,
+            'maxtransitduration':maxtransitduration,
             'method':'bls',
         }
 
@@ -589,4 +603,10 @@ def bls_parallel_pfind(
                 'nbestperiods':None,
                 'lspvals':None,
                 'periods':None,
+                'blsresult':None,
+                'stepsize':stepsize,
+                'nfreq':nfreq,
+                'nphasebins':nphasebins,
+                'mintransitduration':mintransitduration,
+                'maxtransitduration':maxtransitduration,
                 'method':'bls'}
