@@ -337,6 +337,9 @@ def bls_serial_pfind(times, mags, errs,
                 'frequencies':frequencies,
                 'periods':periods,
                 'blsresult':blsresult,
+                'stepsize':stepsize,
+                'nfreq':nfreq,
+                'nphasebins':nphasebins,
                 'method':'bls',
             }
 
@@ -568,6 +571,9 @@ def bls_parallel_pfind(
             'frequencies':frequencies,
             'periods':periods,
             'blsresult':results,
+            'stepsize':stepsize,
+            'nfreq':nfreq,
+            'nphasebins':nphasebins,
             'method':'bls',
         }
 
