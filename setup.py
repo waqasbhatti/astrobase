@@ -16,10 +16,11 @@ from setuptools import setup
 try:
     from numpy.distutils.core import Extension, setup as npsetup
 except:
-    print('\nyou need to have numpy installed before running setup.py,\n'
-          'because we need its Extension functionality to make a\n'
-          'compiled Fortran extension for BLS!\n')
-    raise
+    raise ImportError(
+        '\nYou need to have numpy installed before running setup.py,\n'
+        'because we need its Extension functionality to make a\n'
+        'compiled Fortran extension for BLS!\n'
+    )
 
 
 def readme():
@@ -70,9 +71,9 @@ npsetup(
         "Programming Language :: Python",
     ],
     keywords='astronomy',
-    url='https://github.com/waqasbhatti/astrobase',
-    author='Waqas Bhatti',
-    author_email='waqas.afzal.bhatti@gmail.com',
+    url='https://github.com/dfm/python-bls',
+    author='Daniel Foreman-Mackey',
+    author_email='danfm@nyu.edu',
     license='MIT',
     packages=["bls"],
     ext_modules=[bls,],
