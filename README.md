@@ -11,15 +11,19 @@ makes them handle flux light curves correctly.
 Full documentation is still a work in progress (as soon as I figure out how
 Sphinx works), but the docstrings are fairly good and an [overview](#contents)
 is provided below, along with Jupyter notebooks that demonstrate some of the
-functionality. See the instructions for [installation](#installation) to get
-started. In brief:
+functionality.
+
+See the instructions for [installation](#installation) for details. To install
+**[astrobase](https://pypi.python.org/pypi/astrobase)** from the Python Package
+Index (PyPI):
 
 ```bash
 pip install astrobase
 ```
 
-will install this package. `astrobase` should work with Python >= 3.4 and Python
-2.7. Using the newest Python 3 version available is recommended.
+The package should work with Python >= 3.4 and Python 2.7. Using the newest
+Python 3 version available is recommended. See the [installation
+instructions](#installation) below for details.
 
 
 # Contents
