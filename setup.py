@@ -12,17 +12,6 @@ import sys, os.path
 
 from setuptools import setup
 
-# for f2py extension building
-try:
-    from numpy.distutils.core import Extension, setup as npsetup
-except:
-    raise ImportError(
-        '\nYou need to have numpy installed before running setup.py,\n'
-        'because we need its Extension functionality to make a\n'
-        'compiled Fortran extension for BLS!\n'
-    )
-
-
 def readme():
     with open('README.md') as f:
         return f.read()
@@ -36,6 +25,7 @@ INSTALL_REQUIRES = [
     'jplephem',
     'astroquery',
     'tornado',
+    'pyeebls'
 ]
 
 EXTRAS_REQUIRE = {
@@ -47,39 +37,6 @@ if sys.version_info.major < 3:
     INSTALL_REQUIRES.append([
         'futures'
     ])
-
-########################
-## DO THE FORTRAN BIT ##
-########################
-
-# taken from github:dfm/python-bls.git/setup.py
-
-# Define the Fortran extension.
-bls = Extension("bls._bls", ["bls/bls.pyf", "bls/eebls.f"])
-
-npsetup(
-    name='bls',
-    version=__version__,
-    description=('Python f2py extension wrapping '
-                 'eebls.f by Kovacs et al. 2002.'),
-    long_description=readme(),
-    classifiers=[
-        'Development Status :: 4 - Beta',
-        'License :: OSI Approved :: MIT License',
-        "Intended Audience :: Science/Research",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python",
-    ],
-    keywords='astronomy',
-    url='https://github.com/dfm/python-bls',
-    author='Daniel Foreman-Mackey',
-    author_email='danfm@nyu.edu',
-    license='MIT',
-    packages=["bls"],
-    ext_modules=[bls,],
-    install_requires=INSTALL_REQUIRES,
-)
-
 
 #############################
 ## RUN SETUP FOR ASTROBASE ##
