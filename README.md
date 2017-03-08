@@ -13,9 +13,8 @@ Sphinx works), but the docstrings are fairly good and an [overview](#contents)
 is provided below, along with Jupyter notebooks that demonstrate some of the
 functionality.
 
-See the instructions for [installation](#installation) for details. To install
-**[astrobase](https://pypi.python.org/pypi/astrobase)** from the Python Package
-Index (PyPI):
+To install **[astrobase](https://pypi.python.org/pypi/astrobase)** from the
+Python Package Index (PyPI):
 
 ```bash
 $ pip install astrobase
