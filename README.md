@@ -12,10 +12,15 @@ Full documentation is still a work in progress (as soon as I figure out how
 Sphinx works), but the docstrings are fairly good and an [overview](#contents)
 is provided below, along with Jupyter notebooks that demonstrate some of the
 functionality. See the instructions for [installation](#installation) to get
-started.
+started. In brief:
 
-astrobase should work with Python >= 3.4 and Python 2.7. Using the newest Python
-3 version available is recommended.
+```bash
+pip install astrobase
+```
+
+will install this package. `astrobase` should work with Python >= 3.4 and Python
+2.7. Using the newest Python 3 version available is recommended.
+
 
 # Contents
 
@@ -173,6 +178,12 @@ First, make sure numpy and a Fortran compiler are installed:
 ```
 
 Next, install astrobase.
+
+```bash
+$(venv) pip install astrobase
+```
+
+Or if you want the latest version:
 
 ```bash
 $ git clone https://github.com/waqasbhatti/astrobase
