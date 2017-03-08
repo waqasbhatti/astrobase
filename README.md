@@ -17,6 +17,7 @@ To install **[astrobase](https://pypi.python.org/pypi/astrobase)** from the
 Python Package Index (PyPI):
 
 ```bash
+$ pip install numpy # needed to set up Fortran wrappers
 $ pip install astrobase
 ```
 
