@@ -18,7 +18,7 @@ See the instructions for [installation](#installation) for details. To install
 Index (PyPI):
 
 ```bash
-pip install astrobase
+$ pip install astrobase
 ```
 
 The package should work with Python >= 3.4 and Python 2.7. Using the newest
