@@ -34,9 +34,7 @@ EXTRAS_REQUIRE = {
 
 # add extra stuff needed if we're running Python 2.7
 if sys.version_info.major < 3:
-    INSTALL_REQUIRES.append([
-        'futures'
-    ])
+    INSTALL_REQUIRES.append('futures')
 
 #############################
 ## RUN SETUP FOR ASTROBASE ##
