@@ -16,7 +16,8 @@ Sphinx works), but the docstrings are fairly good and an overview is provided at
 https://github.com/waqasbhatti/astrobase, along with Jupyter notebooks that
 demonstrate some of the functionality.
 
-# Installation
+Installation
+------------
 
 This package requires the following other packages:
 
