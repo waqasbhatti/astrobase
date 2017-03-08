@@ -1,5 +1,5 @@
-recursive-include astrobase/data *
-recursive-include notebooks *
+recursive-include astrobase/data/cps-assets *
+# recursive-include notebooks *
 include LICENSE
 include README.md
 include astrobase/astrobase.conf
