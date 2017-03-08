@@ -197,10 +197,6 @@ $ # or use pip install . to install requirements automatically
 $ # or use pip install -e . to install in develop mode along with requirements
 ```
 
-This package isn't yet available from PyPI, but will be as soon as it becomes
-more stable.
-
-
 # License
 
 `astrobase` is provided under the MIT License. See the LICENSE file for the full
