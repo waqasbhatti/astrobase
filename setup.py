@@ -33,6 +33,9 @@ EXTRAS_REQUIRE = {
 }
 
 # add extra stuff needed if we're running Python 2.7
+# FIXME: need to think about fixing this because Py3 will completely
+# ignore this and we usually run python setup.py dist from Py3
+# for now, we'll get rid of the wheel format and see if that fixes this
 if sys.version_info.major < 3:
     INSTALL_REQUIRES.append('futures')
 
