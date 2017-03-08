@@ -84,7 +84,7 @@ def LOGEXCEPTION(message):
 from ..lcmath import phase_magseries, sigclip_magseries, time_bin_magseries, \
     phase_bin_magseries
 
-from bls import eebls
+from pyeebls import eebls
 
 
 ############
