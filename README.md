@@ -180,7 +180,7 @@ First, make sure numpy and a Fortran compiler are installed:
 Next, install astrobase.
 
 ```bash
-$(venv) pip install astrobase
+(venv)$ pip install astrobase
 ```
 
 Or if you want the latest version:
