@@ -467,3 +467,45 @@ class CheckplotListHandler(tornado.web.RequestHandler):
                                 'changes':changes}}
 
         self.write(resultdict)
+
+
+
+class LCToolHandler(tornado.web.RequestHandler):
+    '''This handles dispatching light curve analysis tasks.
+
+    GET requests run the light curve tools specified in the URI with arguments
+    as specified in the args to the URI.
+
+    POST requests write the results to the JSON file. The frontend JS object is
+    automatically updated by the frontend code.
+
+    '''
+
+    def initialize(self, currentdir, assetpath, cplist, cplistfile, executor):
+        '''
+        handles initial setup.
+
+        '''
+
+        self.currentdir = currentdir
+        self.assetpath = assetpath
+        self.currentproject = cplist
+        self.cplistfile = cplistfile
+        self.executor = executor
+
+
+    def get(self, tooltype):
+        '''
+        This handles a GET request.
+
+
+        '''
+
+
+
+    def post(self, tooltype):
+        '''
+        This handles a GET request.
+
+
+        '''
