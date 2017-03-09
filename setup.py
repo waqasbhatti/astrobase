@@ -46,7 +46,7 @@ if sys.version_info.major < 3:
 setup(
     name='astrobase',
     version=__version__,
-    description=('A bunch of Python modules and scripts '
+    description=('Python modules and scripts '
                  'useful for variable star work in astronomy.'),
     long_description=readme(),
     classifiers=[
