@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 
 '''checkplotserver.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Nov 2016
@@ -90,9 +91,9 @@ define('debugmode',
        help='start up in debug mode if set to 1.',
        type=int)
 define('maxprocs',
-       default=1,
+       default=2,
        help='number of background processes to use '
-       'for saving/loading checkplot files',
+       'for saving/loading checkplot files and running light curves tools',
        type=int)
 
 ############
@@ -210,6 +211,13 @@ def main():
           'executor':EXECUTOR}),
         (r'/list',
          cphandlers.CheckplotListHandler,
+         {'currentdir':CURRENTDIR,
+          'assetpath':ASSETPATH,
+          'cplist':CHECKPLOTLIST,
+          'cplistfile':cplistfile,
+          'executor':EXECUTOR}),
+        (r'/tools/?(.*)',
+         cphandlers.LCToolHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
           'cplist':CHECKPLOTLIST,
