@@ -45,11 +45,11 @@ from tornado import gen
 from .checkplot import checkplot_pickle_update, checkplot_pickle_to_png, \
     _read_checkplot_picklefile, _base64_to_file
 
-# FIXME: import these for updating plots due to user input
-# from .checkplot import _pkl_finder_objectinfo, _pkl_periodogram, \
-#     _pkl_magseries_plot, _pkl_phased_magseries_plot,
-# from .periodbase import pgen_lsp, aov_periodfind, \
-#     stellingwerf_pdm, bls_parallel_pfind
+# import these for updating plots due to user input
+from .checkplot import _pkl_finder_objectinfo, _pkl_periodogram, \
+    _pkl_magseries_plot, _pkl_phased_magseries_plot
+from .periodbase import pgen_lsp, aov_periodfind, \
+    stellingwerf_pdm, bls_parallel_pfind
 
 
 #######################
@@ -494,18 +494,39 @@ class LCToolHandler(tornado.web.RequestHandler):
         self.executor = executor
 
 
-    def get(self, tooltype):
+    def get(self, cpfile):
         '''
         This handles a GET request.
 
+        The URI structure is:
+
+        /tools/<cpfile>?[args]
+
+        where args are:
+
+        lctool=<lctool>&toolarg=<toolargs>
+
+        lctools:
+
+        periods-gls: run Lomb-Scargle with given params
+        periods-bls: run BLS with given params
+        periods-pdm: run phase dispersion minimization with given params
+        periods-aov: run analysis-of-variance with given params
+
+        phased-newperiod: make phased LC with new provided period
+        phased-newepoch: make phased LC with new provided epoch
+
+        simple-cuttime: make simple LC plot cut to times given
+        simple-sigclip: sigclip the LC with given sigclip defn
 
         '''
 
 
 
-    def post(self, tooltype):
+    def post(self, cpfile):
         '''
-        This handles a GET request.
+        This handles a POST request.
 
+        This will save the current version of the checkplot back to the pickle.
 
         '''
