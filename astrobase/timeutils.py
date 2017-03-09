@@ -278,6 +278,15 @@ def datetime_to_jd(dt):
     return jdutc.jd
 
 
+def jd_to_datetime(jd, returniso=False):
+
+    tt = astime.Time(jd, format='jd', scale='utc')
+
+    if returniso:
+        return tt.iso
+    else:
+        return tt.datetime
+
 
 def jd_now():
     '''
