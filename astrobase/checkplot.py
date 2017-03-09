@@ -57,6 +57,7 @@ import os.path
 import gzip
 import base64
 import sys
+import uuid
 
 try:
     import cPickle as pickle
@@ -80,6 +81,7 @@ from mpl_toolkits.axes_grid.inset_locator import inset_axes
 import logging
 from datetime import datetime
 from traceback import format_exc
+
 
 
 #############
@@ -1310,13 +1312,19 @@ def _pkl_finder_objectinfo(objectinfo,
         # add the objecttags key to objectinfo
         checkplotdict['objectinfo']['objecttags'] = None
 
-    # if there's no objectinfo, we can't do anything
+    # if there's no objectinfo, we can't do anything.  we'll generate a random
+    # objectid so we can still save checkplots to pickles using checkplotserver
     else:
 
         # put together the initial checkplot pickle dictionary
         # this will be updated by the functions below as appropriate
         # and will written out as a gzipped pickle at the end of processing
-        checkplotdict = {'objectid':None,
+        objuuid = uuid.uuid4().hex[-8:]
+
+        LOGWARNING('no object ID provided, '
+                   'using a randomly generated one: %s' % objuuid)
+
+        checkplotdict = {'objectid':objuuid,
                          'objectinfo':{'bmag':None,
                                        'bvcolor':None,
                                        'decl':None,
@@ -2296,7 +2304,8 @@ def checkplot_pickle_update(currentcp, updatedcp,
         plotfpath = None
 
     # get the current checkplotdict
-    if isinstance(currentcp, str) and os.path.exists(currentcp):
+    if ((isinstance(currentcp, str) or isinstance(currentcp, unicode))
+        and os.path.exists(currentcp)):
         cp_current = _read_checkplot_picklefile(currentcp)
     elif isinstance(currentcp,dict):
         cp_current = currentcp
@@ -2306,7 +2315,8 @@ def checkplot_pickle_update(currentcp, updatedcp,
                  (os.path.abspath(currentcp), type(currentcp)))
         return None
 
-    if isinstance(updatedcp, str) and os.path.exists(updatedcp):
+    if ((isinstance(updatedcp, str) or isinstance(updatedcp, unicode))
+        and os.path.exists(updatedcp)):
         cp_updated = _read_checkplot_picklefile(updatedcp)
     elif isinstance(updatedcp, dict):
         cp_updated = updatedcp
