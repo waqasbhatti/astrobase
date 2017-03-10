@@ -57,7 +57,7 @@ import os.path
 import gzip
 import base64
 import sys
-import uuid
+import hashlib
 
 try:
     import cPickle as pickle
@@ -1312,19 +1312,13 @@ def _pkl_finder_objectinfo(objectinfo,
         # add the objecttags key to objectinfo
         checkplotdict['objectinfo']['objecttags'] = None
 
-    # if there's no objectinfo, we can't do anything.  we'll generate a random
-    # objectid so we can still save checkplots to pickles using checkplotserver
+    # if there's no objectinfo, we can't do anything.
     else:
 
         # put together the initial checkplot pickle dictionary
         # this will be updated by the functions below as appropriate
         # and will written out as a gzipped pickle at the end of processing
-        objuuid = uuid.uuid4().hex[-8:]
-
-        LOGWARNING('no object ID provided, '
-                   'using a randomly generated one: %s' % objuuid)
-
-        checkplotdict = {'objectid':objuuid,
+        checkplotdict = {'objectid':None,
                          'objectinfo':{'bmag':None,
                                        'bvcolor':None,
                                        'decl':None,
@@ -1966,6 +1960,24 @@ def checkplot_dict(lspinfolist,
                                            normmingap,
                                            plotdpi=plotdpi)
 
+    # if an objectinfo dict is absent, we'll generate a fake objectid based on
+    # the second five time and mag array values. this should be OK to ID the
+    # object across repeated runs of this function with the same times, mags,
+    # errs, but should provide enough uniqueness otherwise (across different
+    # times/mags array inputs). this is all done so we can still save checkplots
+    # correctly to pickles after reviewing them using checkplotserver
+    if checkplotdict['objectid'] is None:
+        try:
+            objuuid = hashlib.sha512(times[5:10].tostring() +
+                                     mags[5:10].tostring()).hexdigest()[:5]
+        except Exception as e:
+            LOGWARNING('times, mags, and errs may have too few items')
+            objuuid = hashlib.sha512(times.tostring() +
+                                     mags.tostring()).hexdigest()[:5]
+
+        LOGWARNING('no objectid provided in objectinfo keyword arg, '
+                   'generated from times[5:10] + mags[5:10]: %s' % objuuid)
+        checkplotdict['objectid'] = objuuid
 
 
     # filter the input times, mags, errs; do sigclipping and normalization
