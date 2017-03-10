@@ -675,6 +675,10 @@ def checkplot_png(lspinfo,
     This can be useful to see effects of wide-field telescopes with large pixel
     sizes (like HAT) on the blending of sources.
 
+    bestperiodhighlight sets whether user wants a background on the phased light
+    curve from each periodogram type to distinguish them from others. this is an
+    HTML hex color specification. If this is None, no highlight will be added.
+
     xliminsetmode = True sets up the phased mag series plot to show a zoomed-in
     portion (set by plotxlim) as the main plot and an inset version of the full
     phased light curve from phase 0.0 to 1.0. This can be useful if searching
@@ -1935,8 +1939,9 @@ def checkplot_dict(lspinfolist,
     An example list would be `[10.,-3.]` (for 10 sigma dimmings, 3 sigma
     brightenings).
 
-    bestperiodhighlight (boolean) sets whether user wants a green background on
-    bestperiod from each periodogram.
+    bestperiodhighlight sets whether user wants a background on the phased light
+    curve from each periodogram type to distinguish them from others. this is an
+    HTML hex color specification. If this is None, no highlight will be added.
 
     xgridlines (default None) can be a list, e.g., [-0.5,0.,0.5] that sets the
     x-axis grid lines on plotted phased LCs for easy visual identification of
@@ -2172,8 +2177,9 @@ def checkplot_pickle(lspinfolist,
     An example list would be `[10.,-3.]` (for 10 sigma dimmings, 3 sigma
     brightenings).
 
-    bestperiodhighlight (boolean) sets whether user wants a green background on
-    bestperiod from each periodogram.
+    bestperiodhighlight sets whether user wants a background on the phased light
+    curve from each periodogram type to distinguish them from others. this is an
+    HTML hex color specification. If this is None, no highlight will be added.
 
     xgridlines (default None) can be a list, e.g., [-0.5,0.,0.5] that sets the
     x-axis grid lines on plotted phased LCs for easy visual identification of
