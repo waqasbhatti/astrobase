@@ -276,8 +276,19 @@ def stellingwerf_pdm(times,
         finlsp = lsp[finitepeakind]
         finperiods = periods[finitepeakind]
 
-
-        bestperiodind = npargmin(finlsp)
+        # finlsp might not have any values. if so, argmin will return a ValueError.
+        try:
+            bestperiodind = npargmin(finlsp)
+        except ValueError:
+            LOGERROR('no good detections for these times and mags, skipping...')
+            return {'bestperiod':npnan,
+                    'bestlspval':npnan,
+                    'nbestpeaks':nbestpeaks,
+                    'nbestlspvals':None,
+                    'nbestperiods':None,
+                    'lspvals':None,
+                    'periods':None,
+                    'method':'pdm'}
 
         sortedlspind = np.argsort(finlsp)
         sortedlspperiods = finperiods[sortedlspind]
