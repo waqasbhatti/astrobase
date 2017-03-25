@@ -1965,6 +1965,12 @@ def checkplot_dict(lspinfolist,
                                            normmingap,
                                            plotdpi=plotdpi)
 
+<<<<<<< HEAD
+<<<<<<< HEAD
+    # filter the input times, mags, errs; do sigclipping and normalization
+    find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
+    ftimes, fmags, ferrs = times[find], mags[find], errs[find]
+=======
     # if an objectinfo dict is absent, we'll generate a fake objectid based on
     # the second five time and mag array values. this should be OK to ID the
     # object across repeated runs of this function with the same times, mags,
@@ -1983,6 +1989,7 @@ def checkplot_dict(lspinfolist,
         LOGWARNING('no objectid provided in objectinfo keyword arg, '
                    'generated from times[5:10] + mags[5:10]: %s' % objuuid)
         checkplotdict['objectid'] = objuuid
+>>>>>>> upstream/master
 
 
     # filter the input times, mags, errs; do sigclipping and normalization
