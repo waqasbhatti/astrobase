@@ -276,6 +276,17 @@ def stellingwerf_pdm(times,
         finlsp = lsp[finitepeakind]
         finperiods = periods[finitepeakind]
 
+        # lsp might not have any values. if so, continue.
+        if np.size(finlsp) == 0:
+            LOGERROR('no good detections for these times and mags, skipping...')
+            return {'bestperiod':npnan,
+                    'bestlspval':npnan,
+                    'nbestpeaks':nbestpeaks,
+                    'nbestlspvals':None,
+                    'nbestperiods':None,
+                    'lspvals':None,
+                    'periods':None,
+                    'method':'pdm'}
 
         bestperiodind = npargmin(finlsp)
 
