@@ -84,12 +84,7 @@ def LOGEXCEPTION(message):
 from ..lcmath import phase_magseries, sigclip_magseries, time_bin_magseries, \
     phase_bin_magseries
 
-<<<<<<< HEAD
-from . import get_frequency_grid
-
-=======
->>>>>>> upstream/master
-from bls import eebls
+from pyeebls import eebls
 
 
 ############
@@ -286,10 +281,6 @@ def bls_serial_pfind(times, mags, errs,
             # by highest value first 2. go down the values until we find
             # five values that are separated by at least periodepsilon in
             # period
-<<<<<<< HEAD
-
-=======
->>>>>>> upstream/master
             # make sure to get only the finite peaks in the periodogram
             # this is needed because BLS may produce infs for some peaks
             finitepeakind = npisfinite(lsp)
@@ -346,6 +337,11 @@ def bls_serial_pfind(times, mags, errs,
                 'frequencies':frequencies,
                 'periods':periods,
                 'blsresult':blsresult,
+                'stepsize':stepsize,
+                'nfreq':nfreq,
+                'nphasebins':nphasebins,
+                'mintransitduration':mintransitduration,
+                'maxtransitduration':maxtransitduration,
                 'method':'bls',
             }
 
@@ -361,6 +357,11 @@ def bls_serial_pfind(times, mags, errs,
                     'nbestperiods':None,
                     'lspvals':None,
                     'periods':None,
+                    'stepsize':stepsize,
+                    'nfreq':nfreq,
+                    'nphasebins':nphasebins,
+                    'mintransitduration':mintransitduration,
+                    'maxtransitduration':maxtransitduration,
                     'method':'bls'}
 
 
@@ -374,6 +375,11 @@ def bls_serial_pfind(times, mags, errs,
                 'nbestperiods':None,
                 'lspvals':None,
                 'periods':None,
+                'stepsize':stepsize,
+                'nfreq':None,
+                'nphasebins':None,
+                'mintransitduration':mintransitduration,
+                'maxtransitduration':maxtransitduration,
                 'method':'bls'}
 
 
@@ -577,6 +583,11 @@ def bls_parallel_pfind(
             'frequencies':frequencies,
             'periods':periods,
             'blsresult':results,
+            'stepsize':stepsize,
+            'nfreq':nfreq,
+            'nphasebins':nphasebins,
+            'mintransitduration':mintransitduration,
+            'maxtransitduration':maxtransitduration,
             'method':'bls',
         }
 
@@ -592,4 +603,10 @@ def bls_parallel_pfind(
                 'nbestperiods':None,
                 'lspvals':None,
                 'periods':None,
+                'blsresult':None,
+                'stepsize':stepsize,
+                'nfreq':None,
+                'nphasebins':None,
+                'mintransitduration':mintransitduration,
+                'maxtransitduration':maxtransitduration,
                 'method':'bls'}

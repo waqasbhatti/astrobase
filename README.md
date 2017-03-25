@@ -11,11 +11,20 @@ makes them handle flux light curves correctly.
 Full documentation is still a work in progress (as soon as I figure out how
 Sphinx works), but the docstrings are fairly good and an [overview](#contents)
 is provided below, along with Jupyter notebooks that demonstrate some of the
-functionality. See the instructions for [installation](#installation) to get
-started.
+functionality.
 
-astrobase should work with Python >= 3.4 and Python 2.7. Using the newest Python
-3 version available is recommended.
+To install **[astrobase](https://pypi.python.org/pypi/astrobase)** from the
+Python Package Index (PyPI):
+
+```bash
+$ pip install numpy # needed to set up Fortran wrappers
+$ pip install astrobase
+```
+
+The package should work with Python >= 3.4 and Python 2.7. Using the newest
+Python 3 version available is recommended. See the [installation
+instructions](#installation) below for details.
+
 
 # Contents
 
@@ -139,13 +148,6 @@ for your purposes.
   indices for light curves, fitting and obtaining Fourier coefficients for use
   in classifications, and other variability features
 
-## bls
-
-This wraps `eebls.f` from Geza Kovacs. Extracted from
-[python-bls](http://github.com/dfm/python-bls) by Daniel Foreman-Mackey, Ruth
-Angus, and others. Used as the BLS implementation by `astrobase.periodbase`
-functions. See its [README](bls/README.md) for details.
-
 # Installation
 
 This package requires the following other packages:
@@ -158,6 +160,7 @@ This package requires the following other packages:
 - jplephem
 - astroquery
 - tornado
+- pyeebls
 
 You might need to install `openssl-devel` or a similar RPM/DEB package for the
 `python-cryptography` module that gets pulled in as a dependency for
@@ -168,18 +171,23 @@ You might need to install `openssl-devel` or a similar RPM/DEB package for the
 First, make sure numpy and a Fortran compiler are installed:
 
 ```bash
-## make sure numpy is installed first!                ##
-## this is required for the bls module installation   ##
+## you'll need a Fortran compiler.                      ##
+## on Linux: dnf/yum/apt install gcc gcc-gfortran       ##
+## on OSX (using homebrew): brew install gcc            ##
 
-$ pip install numpy # in a virtualenv
+## make sure numpy is installed first!                  ##
+## this is required for the pyeebls module installation ##
+(venv)$ pip install numpy # in a virtualenv
 # or use dnf/yum/apt install numpy to install systemwide
-
-## you'll need a Fortran compiler for the bls module! ##
-## on Linux: dnf/yum/apt install gcc gcc-gfortran     ##
-## on OSX (using homebrew): brew install gcc          ##
 ```
 
 Next, install astrobase.
+
+```bash
+(venv)$ pip install astrobase
+```
+
+Or if you want the latest version:
 
 ```bash
 $ git clone https://github.com/waqasbhatti/astrobase
@@ -188,10 +196,6 @@ $ python setup.py install
 $ # or use pip install . to install requirements automatically
 $ # or use pip install -e . to install in develop mode along with requirements
 ```
-
-This package isn't yet available from PyPI, but will be as soon as it becomes
-more stable.
-
 
 # License
 

@@ -38,7 +38,6 @@ from jplephem.spk import SPK
 
 modpath = os.path.abspath(os.path.dirname(__file__))
 planetdatafile = os.path.join(modpath,'data/de430.bsp')
-leapsecondfile = os.path.join(modpath,'data/tai-utc.dat')
 
 # we'll try to load the SPK kernel. if that fails, we'll download it direct from
 # JPL so the source distribution is kept small
@@ -77,19 +76,6 @@ except Exception as e:
     else:
         print('failed to download the JPL kernel!')
         HAVEKERNEL = False
-
-
-#################
-## LEAPSECONDS ##
-#################
-
-# read in the tai-utc.dat file and find the latest correction
-with open(leapsecondfile,'rb') as infd:
-    leapline = infd.readlines()[-1]
-    leapstart = leapline.find(b'TAI-UTC')
-    leapinfo = leapline[leapstart+8:leapstart+21]
-
-LEAPSECONDCORRECTION = float(leapinfo)
 
 
 ##############
@@ -291,6 +277,15 @@ def datetime_to_jd(dt):
     jdutc = astime.Time(dt, format='datetime',scale='utc')
     return jdutc.jd
 
+
+def jd_to_datetime(jd, returniso=False):
+
+    tt = astime.Time(jd, format='jd', scale='utc')
+
+    if returniso:
+        return tt.iso
+    else:
+        return tt.datetime
 
 
 def jd_now():

@@ -57,6 +57,7 @@ import os.path
 import gzip
 import base64
 import sys
+import hashlib
 
 try:
     import cPickle as pickle
@@ -80,6 +81,7 @@ from mpl_toolkits.axes_grid.inset_locator import inset_axes
 import logging
 from datetime import datetime
 from traceback import format_exc
+
 
 
 #############
@@ -578,7 +580,7 @@ def checkplot_png(lspinfo,
                   plotxlim=[-0.8,0.8],
                   xliminsetmode=False,
                   plotdpi=100,
-                  greenhighlight=True):
+                  bestperiodhighlight='#adff2f'):
     '''This makes a checkplot for an info dict from a period-finding routine.
 
     A checkplot is a 3 x 3 grid of plots like so:
@@ -672,6 +674,10 @@ def checkplot_png(lspinfo,
 
     This can be useful to see effects of wide-field telescopes with large pixel
     sizes (like HAT) on the blending of sources.
+
+    bestperiodhighlight sets whether user wants a background on the phased light
+    curve from each periodogram type to distinguish them from others. this is an
+    HTML hex color specification. If this is None, no highlight will be added.
 
     xliminsetmode = True sets up the phased mag series plot to show a zoomed-in
     portion (set by plotxlim) as the main plot and an inset version of the full
@@ -809,8 +815,8 @@ def checkplot_png(lspinfo,
                     (varperiod, varepoch))
 
             # make sure the best period phased LC plot stands out
-            if periodind == 0 and greenhighlight:
-                axes[periodind+2].set_axis_bgcolor('#adff2f')
+            if periodind == 0 and bestperiodhighlight:
+                axes[periodind+2].set_axis_bgcolor(bestperiodhighlight)
 
             _make_phased_magseries_plot(axes[periodind+2],
                                         periodind,
@@ -882,7 +888,8 @@ def twolsp_checkplot_png(lspinfo1,
                          phasebin=0.002,
                          plotxlim=[-0.8,0.8],
                          xliminsetmode=False,
-                         plotdpi=100):
+                         plotdpi=100,
+                         bestperiodhighlight='#adff2f'):
     '''This makes a checkplot using results from two independent period-finders.
 
     Adapted from Luke Bouma's implementation of the same. This makes a special
@@ -1066,8 +1073,8 @@ def twolsp_checkplot_png(lspinfo1,
                     (varperiod, varepoch))
 
             # make sure the best period phased LC plot stands out
-            if periodind == 0:
-                plotaxes.set_axis_bgcolor('#adff2f')
+            if periodind == 0 and bestperiodhighlight:
+                plotaxes.set_axis_bgcolor(bestperiodhighlight)
 
             _make_phased_magseries_plot(plotaxes,
                                         periodind,
@@ -1309,7 +1316,7 @@ def _pkl_finder_objectinfo(objectinfo,
         # add the objecttags key to objectinfo
         checkplotdict['objectinfo']['objecttags'] = None
 
-    # if there's no objectinfo, we can't do anything
+    # if there's no objectinfo, we can't do anything.
     else:
 
         # put together the initial checkplot pickle dictionary
@@ -1521,7 +1528,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                                phasewrap, phasesort, phasebin,
                                plotxlim,
                                plotdpi=100,
-                               greenhighlight=False,
+                               bestperiodhighlight='#adff2f',
                                xgridlines=None,
                                xliminsetmode=False,
                                magsarefluxes=False):
@@ -1656,8 +1663,8 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
     plt.title(plottitle)
 
     # make sure the best period phased LC plot stands out
-    if periodind == 0 and greenhighlight:
-        plt.gca().set_axis_bgcolor('#adff2f')
+    if periodind == 0 and bestperiodhighlight:
+        plt.gca().set_axis_bgcolor(bestperiodhighlight)
 
     # if we're making an inset plot showing the full range
     if (plotxlim and isinstance(plotxlim, list) and
@@ -1772,7 +1779,6 @@ def _write_checkplot_picklefile(checkplotdict,
     if outgzip:
 
         if not outfile:
-<<<<<<< HEAD
 
             outfile = (
                 'checkplot-{objectid}.pkl.gz'.format(
@@ -1780,15 +1786,6 @@ def _write_checkplot_picklefile(checkplotdict,
                 )
             )
 
-=======
-
-            outfile = (
-                'checkplot-{objectid}.pkl.gz'.format(
-                    objectid=checkplotdict['objectid']
-                )
-            )
-
->>>>>>> upstream/master
         with gzip.open(outfile,'wb') as outfd:
             pickle.dump(checkplotdict,outfd,protocol=protocol)
 
@@ -1896,7 +1893,7 @@ def checkplot_dict(lspinfolist,
                    plotxlim=[-0.8,0.8],
                    xliminsetmode=False,
                    plotdpi=100,
-                   greenhighlight=True,
+                   bestperiodhighlight='#adff2f',
                    xgridlines=None):
 
     '''This writes a multiple lspinfo checkplot to a dict.
@@ -1942,8 +1939,9 @@ def checkplot_dict(lspinfolist,
     An example list would be `[10.,-3.]` (for 10 sigma dimmings, 3 sigma
     brightenings).
 
-    greenhighlight (boolean) sets whether user wants a green background on
-    bestperiod from each periodogram.
+    bestperiodhighlight sets whether user wants a background on the phased light
+    curve from each periodogram type to distinguish them from others. this is an
+    HTML hex color specification. If this is None, no highlight will be added.
 
     xgridlines (default None) can be a list, e.g., [-0.5,0.,0.5] that sets the
     x-axis grid lines on plotted phased LCs for easy visual identification of
@@ -1968,13 +1966,31 @@ def checkplot_dict(lspinfolist,
                                            plotdpi=plotdpi)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     # filter the input times, mags, errs; do sigclipping and normalization
     find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
     ftimes, fmags, ferrs = times[find], mags[find], errs[find]
+=======
+    # if an objectinfo dict is absent, we'll generate a fake objectid based on
+    # the second five time and mag array values. this should be OK to ID the
+    # object across repeated runs of this function with the same times, mags,
+    # errs, but should provide enough uniqueness otherwise (across different
+    # times/mags array inputs). this is all done so we can still save checkplots
+    # correctly to pickles after reviewing them using checkplotserver
+    if checkplotdict['objectid'] is None:
+        try:
+            objuuid = hashlib.sha512(times[5:10].tostring() +
+                                     mags[5:10].tostring()).hexdigest()[:5]
+        except Exception as e:
+            LOGWARNING('times, mags, and errs may have too few items')
+            objuuid = hashlib.sha512(times.tostring() +
+                                     mags.tostring()).hexdigest()[:5]
 
-    # get the median and stdev = 1.483 x MAD
-    median_mag = npmedian(fmags)
-    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
+        LOGWARNING('no objectid provided in objectinfo keyword arg, '
+                   'generated from times[5:10] + mags[5:10]: %s' % objuuid)
+        checkplotdict['objectid'] = objuuid
+>>>>>>> upstream/master
+
 
     # filter the input times, mags, errs; do sigclipping and normalization
     stimes, smags, serrs = sigclip_magseries(times,
@@ -2050,7 +2066,7 @@ def checkplot_dict(lspinfolist,
                     phasewrap, phasesort, phasebin,
                     plotxlim,
                     plotdpi=plotdpi,
-                    greenhighlight=greenhighlight,
+                    bestperiodhighlight=bestperiodhighlight,
                     magsarefluxes=magsarefluxes,
                     xliminsetmode=xliminsetmode,
                     xgridlines=xgridlines
@@ -2106,7 +2122,7 @@ def checkplot_pickle(lspinfolist,
                      plotdpi=100,
                      returndict=False,
                      pickleprotocol=None,
-                     greenhighlight=True,
+                     bestperiodhighlight='#adff2f',
                      xgridlines=None):
 
     '''This writes a multiple lspinfo checkplot to a (gzipped) pickle file.
@@ -2168,8 +2184,9 @@ def checkplot_pickle(lspinfolist,
     An example list would be `[10.,-3.]` (for 10 sigma dimmings, 3 sigma
     brightenings).
 
-    greenhighlight (boolean) sets whether user wants a green background on
-    bestperiod from each periodogram.
+    bestperiodhighlight sets whether user wants a background on the phased light
+    curve from each periodogram type to distinguish them from others. this is an
+    HTML hex color specification. If this is None, no highlight will be added.
 
     xgridlines (default None) can be a list, e.g., [-0.5,0.,0.5] that sets the
     x-axis grid lines on plotted phased LCs for easy visual identification of
@@ -2239,7 +2256,7 @@ def checkplot_pickle(lspinfolist,
         plotxlim=plotxlim,
         xliminsetmode=xliminsetmode,
         plotdpi=plotdpi,
-        greenhighlight=greenhighlight,
+        bestperiodhighlight=bestperiodhighlight,
         xgridlines=xgridlines
     )
 
@@ -2312,7 +2329,8 @@ def checkplot_pickle_update(currentcp, updatedcp,
         plotfpath = None
 
     # get the current checkplotdict
-    if isinstance(currentcp, str) and os.path.exists(currentcp):
+    if ((isinstance(currentcp, str) or isinstance(currentcp, unicode))
+        and os.path.exists(currentcp)):
         cp_current = _read_checkplot_picklefile(currentcp)
     elif isinstance(currentcp,dict):
         cp_current = currentcp
@@ -2322,7 +2340,8 @@ def checkplot_pickle_update(currentcp, updatedcp,
                  (os.path.abspath(currentcp), type(currentcp)))
         return None
 
-    if isinstance(updatedcp, str) and os.path.exists(updatedcp):
+    if ((isinstance(updatedcp, str) or isinstance(updatedcp, unicode))
+        and os.path.exists(updatedcp)):
         cp_updated = _read_checkplot_picklefile(updatedcp)
     elif isinstance(updatedcp, dict):
         cp_updated = updatedcp

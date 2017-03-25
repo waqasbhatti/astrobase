@@ -45,11 +45,11 @@ from tornado import gen
 from .checkplot import checkplot_pickle_update, checkplot_pickle_to_png, \
     _read_checkplot_picklefile, _base64_to_file
 
-# FIXME: import these for updating plots due to user input
-# from .checkplot import _pkl_finder_objectinfo, _pkl_periodogram, \
-#     _pkl_magseries_plot, _pkl_phased_magseries_plot,
-# from .periodbase import pgen_lsp, aov_periodfind, \
-#     stellingwerf_pdm, bls_parallel_pfind
+# import these for updating plots due to user input
+from .checkplot import _pkl_finder_objectinfo, _pkl_periodogram, \
+    _pkl_magseries_plot, _pkl_phased_magseries_plot
+from .periodbase import pgen_lsp, aov_periodfind, \
+    stellingwerf_pdm, bls_parallel_pfind
 
 
 #######################
@@ -467,3 +467,66 @@ class CheckplotListHandler(tornado.web.RequestHandler):
                                 'changes':changes}}
 
         self.write(resultdict)
+
+
+
+class LCToolHandler(tornado.web.RequestHandler):
+    '''This handles dispatching light curve analysis tasks.
+
+    GET requests run the light curve tools specified in the URI with arguments
+    as specified in the args to the URI.
+
+    POST requests write the results to the JSON file. The frontend JS object is
+    automatically updated by the frontend code.
+
+    '''
+
+    def initialize(self, currentdir, assetpath, cplist, cplistfile, executor):
+        '''
+        handles initial setup.
+
+        '''
+
+        self.currentdir = currentdir
+        self.assetpath = assetpath
+        self.currentproject = cplist
+        self.cplistfile = cplistfile
+        self.executor = executor
+
+
+    def get(self, cpfile):
+        '''
+        This handles a GET request.
+
+        The URI structure is:
+
+        /tools/<cpfile>?[args]
+
+        where args are:
+
+        lctool=<lctool>&toolarg=<toolargs>
+
+        lctools:
+
+        periods-gls: run Lomb-Scargle with given params
+        periods-bls: run BLS with given params
+        periods-pdm: run phase dispersion minimization with given params
+        periods-aov: run analysis-of-variance with given params
+
+        phased-newperiod: make phased LC with new provided period
+        phased-newepoch: make phased LC with new provided epoch
+
+        simple-cuttime: make simple LC plot cut to times given
+        simple-sigclip: sigclip the LC with given sigclip defn
+
+        '''
+
+
+
+    def post(self, cpfile):
+        '''
+        This handles a POST request.
+
+        This will save the current version of the checkplot back to the pickle.
+
+        '''

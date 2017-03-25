@@ -227,7 +227,7 @@ def plot_mag_series(times,
         # our figure is now a multiple axis plot
         # the aspect ratio is a bit wider
         fig, axes = plt.subplots(1,ntimegroups,sharey=True)
-        fig.set_size_inches(9.6,4.8)
+        fig.set_size_inches(10,4.8)
         axes = np.ravel(axes)
 
         # now go through each axis and make the plots for each timegroup

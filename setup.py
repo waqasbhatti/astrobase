@@ -6,24 +6,14 @@ Stolen from http://python-packaging.readthedocs.io/en/latest/everything.html and
 modified by me.
 
 '''
-__version__ = '0.1.0'
+__version__ = '0.1.7'
 
 import sys, os.path
 
 from setuptools import setup
 
-# for f2py extension building
-try:
-    from numpy.distutils.core import Extension, setup as npsetup
-except:
-    print('\nyou need to have numpy installed before running setup.py,\n'
-          'because we need its Extension functionality to make a\n'
-          'compiled Fortran extension for BLS!\n')
-    raise
-
-
 def readme():
-    with open('README.md') as f:
+    with open('README.rst') as f:
         return f.read()
 
 INSTALL_REQUIRES = [
@@ -35,6 +25,7 @@ INSTALL_REQUIRES = [
     'jplephem',
     'astroquery',
     'tornado',
+    'pyeebls'
 ]
 
 EXTRAS_REQUIRE = {
@@ -42,43 +33,11 @@ EXTRAS_REQUIRE = {
 }
 
 # add extra stuff needed if we're running Python 2.7
+# FIXME: need to think about fixing this because Py3 will completely
+# ignore this and we usually run python setup.py dist from Py3
+# for now, we'll get rid of the wheel format and see if that fixes this
 if sys.version_info.major < 3:
-    INSTALL_REQUIRES.append([
-        'futures'
-    ])
-
-########################
-## DO THE FORTRAN BIT ##
-########################
-
-# taken from github:dfm/python-bls.git/setup.py
-
-# Define the Fortran extension.
-bls = Extension("bls._bls", ["bls/bls.pyf", "bls/eebls.f"])
-
-npsetup(
-    name='bls',
-    version=__version__,
-    description=('Python f2py extension wrapping '
-                 'eebls.f by Kovacs et al. 2002.'),
-    long_description=readme(),
-    classifiers=[
-        'Development Status :: 4 - Beta',
-        'License :: OSI Approved :: MIT License',
-        "Intended Audience :: Science/Research",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python",
-    ],
-    keywords='astronomy',
-    url='https://github.com/waqasbhatti/astrobase',
-    author='Waqas Bhatti',
-    author_email='waqas.afzal.bhatti@gmail.com',
-    license='MIT',
-    packages=["bls"],
-    ext_modules=[bls,],
-    install_requires=INSTALL_REQUIRES,
-)
-
+    INSTALL_REQUIRES.append('futures')
 
 #############################
 ## RUN SETUP FOR ASTROBASE ##
@@ -87,7 +46,7 @@ npsetup(
 setup(
     name='astrobase',
     version=__version__,
-    description=('A bunch of Python modules and scripts '
+    description=('Python modules and scripts '
                  'useful for variable star work in astronomy.'),
     long_description=readme(),
     classifiers=[
