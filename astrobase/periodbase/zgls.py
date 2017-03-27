@@ -222,7 +222,24 @@ def pgen_lsp(
         finlsp = lsp[finitepeakind]
         finperiods = periods[finitepeakind]
 
-        bestperiodind = npargmax(finlsp)
+        # make sure that finlsp has finite values before we work on it
+        try:
+
+            bestperiodind = npargmax(finlsp)
+
+        except ValueError:
+
+            LOGERROR('no finite periodogram values '
+                     'for this mag series, skipping...')
+            return {'bestperiod':npnan,
+                    'bestlspval':npnan,
+                    'nbestpeaks':nbestpeaks,
+                    'nbestlspvals':None,
+                    'nbestperiods':None,
+                    'lspvals':None,
+                    'omegas':omegas,
+                    'periods':None,
+                    'method':'gls'}
 
         sortedlspind = np.argsort(finlsp)[::-1]
         sortedlspperiods = finperiods[sortedlspind]

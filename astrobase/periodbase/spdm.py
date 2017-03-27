@@ -276,11 +276,16 @@ def stellingwerf_pdm(times,
         finlsp = lsp[finitepeakind]
         finperiods = periods[finitepeakind]
 
-        # finlsp might not have any values. if so, argmin will return a ValueError.
+        # finlsp might not have any finite values if the period finding
+        # failed. if so, argmin will return a ValueError.
         try:
+
             bestperiodind = npargmin(finlsp)
+
         except ValueError:
-            LOGERROR('no good detections for these times and mags, skipping...')
+
+            LOGERROR('no finite periodogram values for '
+                     'this mag series, skipping...')
             return {'bestperiod':npnan,
                     'bestlspval':npnan,
                     'nbestpeaks':nbestpeaks,
