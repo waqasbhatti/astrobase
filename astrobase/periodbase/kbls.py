@@ -287,7 +287,24 @@ def bls_serial_pfind(times, mags, errs,
             finlsp = lsp[finitepeakind]
             finperiods = periods[finitepeakind]
 
-            bestperiodind = np.argmax(finlsp)
+            # make sure that finlsp has finite values before we work on it
+            try:
+
+                bestperiodind = npargmax(finlsp)
+
+            except ValueError:
+
+                LOGERROR('no finite periodogram values '
+                         'for this mag series, skipping...')
+                return {'bestperiod':npnan,
+                        'bestlspval':npnan,
+                        'nbestpeaks':nbestpeaks,
+                        'nbestlspvals':None,
+                        'nbestperiods':None,
+                        'lspvals':None,
+                        'periods':None,
+                        'method':'bls'}
+
             sortedlspind = np.argsort(finlsp)[::-1]
             sortedlspperiods = finperiods[sortedlspind]
             sortedlspvals = finlsp[sortedlspind]
@@ -532,7 +549,24 @@ def bls_parallel_pfind(
         finlsp = lsp[finitepeakind]
         finperiods = periods[finitepeakind]
 
-        bestperiodind = np.argmax(finlsp)
+        # make sure that finlsp has finite values before we work on it
+        try:
+
+            bestperiodind = npargmax(finlsp)
+
+        except ValueError:
+
+            LOGERROR('no finite periodogram values '
+                     'for this mag series, skipping...')
+            return {'bestperiod':npnan,
+                    'bestlspval':npnan,
+                    'nbestpeaks':nbestpeaks,
+                    'nbestlspvals':None,
+                    'nbestperiods':None,
+                    'lspvals':None,
+                    'periods':None,
+                    'method':'bls'}
+
         sortedlspind = np.argsort(finlsp)[::-1]
         sortedlspperiods = finperiods[sortedlspind]
         sortedlspvals = finlsp[sortedlspind]
