@@ -82,6 +82,8 @@ import logging
 from datetime import datetime
 from traceback import format_exc
 
+# import this to check if stimes, smags, serrs are Column objects
+from astropy.table import Column as astcolumn
 
 
 #############
@@ -1991,6 +1993,25 @@ def checkplot_dict(lspinfolist,
                                              errs,
                                              magsarefluxes=magsarefluxes,
                                              sigclip=sigclip)
+
+    # this may fix some unpickling issues for astropy.table.Column objects
+    # we convert them back to ndarrays
+    if isinstance(stimes, astcolumn):
+        stimes = stimes.data
+        LOGWARNING('times is an astropy.table.Column object, '
+                   'changing to numpy array because of '
+                   'potential unpickling issues')
+    if isinstance(smags, astcolumn):
+        smags = smags.data
+        LOGWARNING('mags is an astropy.table.Column object, '
+                   'changing to numpy array because of '
+                   'potential unpickling issues')
+    if isinstance(serrs, astcolumn):
+        serrs = serrs.data
+        LOGWARNING('errs is an astropy.table.Column object, '
+                   'changing to numpy array because of '
+                   'potential unpickling issues')
+
 
     # report on how sigclip went
     LOGINFO('sigclip = %s: before = %s observations, '
