@@ -222,6 +222,7 @@ def bootstrap_falsealarmprob(lspdict,
     allpeaks = []
     allperiods = []
     allfaps = []
+    alltrialbestpeaks = []
 
     # make sure there are enough points to calculate a spectrum
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
@@ -266,6 +267,7 @@ def bootstrap_falsealarmprob(lspdict,
                 trialbestpeaks.append(lspres['bestlspval'])
 
             trialbestpeaks = np.array(trialbestpeaks)
+            alltrialbestpeaks.append(trialbestpeaks)
 
             # calculate the FAP for a trial peak j = FAP[j] =
             # (1.0 + sum(trialbestpeaks[i] > peak[j]))/(ntrialbestpeaks + 1)
@@ -281,7 +283,7 @@ def bootstrap_falsealarmprob(lspdict,
             allperiods.append(period)
             allfaps.append(falsealarmprob)
 
-        return allpeaks, allperiods, allfaps
+        return allpeaks, allperiods, allfaps, alltrialbestpeaks
 
     else:
         LOGERROR('not enough mag series points to calculate periodogram')
