@@ -142,6 +142,7 @@ def pgen_lsp(
         nworkers=None,
         sigclip=10.0,
         glspfunc=glsp_worker,
+        verbose=True
 ):
     '''This calculates the generalized LSP given times, mags, errors.
 
@@ -179,26 +180,29 @@ def pgen_lsp(
         # if we're not using autofreq, then use the provided frequencies
         if not autofreq:
             omegas = 2*np.pi*np.arange(startf, endf, stepsize)
-            LOGINFO(
-                'using %s frequency points, start P = %.3f, end P = %.3f' %
-                (omegas.size, 1.0/endf, 1.0/startf)
-            )
+            if verbose:
+                LOGINFO(
+                    'using %s frequency points, start P = %.3f, end P = %.3f' %
+                    (omegas.size, 1.0/endf, 1.0/startf)
+                )
         else:
             # this gets an automatic grid of frequencies to use
             freqs = get_frequency_grid(stimes,
                                        minfreq=startf,
                                        maxfreq=endf)
             omegas = 2*np.pi*freqs
-            LOGINFO(
-                'using autofreq with %s frequency points, '
-                'start P = %.3f, end P = %.3f' %
-                (omegas.size, 1.0/freqs.max(), 1.0/freqs.min())
-            )
+            if verbose:
+                LOGINFO(
+                    'using autofreq with %s frequency points, '
+                    'start P = %.3f, end P = %.3f' %
+                    (omegas.size, 1.0/freqs.max(), 1.0/freqs.min())
+                )
 
         # map to parallel workers
         if (not nworkers) or (nworkers > NCPUS):
             nworkers = NCPUS
-            LOGINFO('using %s workers...' % nworkers)
+            if verbose:
+                LOGINFO('using %s workers...' % nworkers)
 
         pool = Pool(nworkers)
 
