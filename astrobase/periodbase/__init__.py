@@ -96,18 +96,6 @@ def LOGEXCEPTION(message):
 from ..lcmath import sigclip_magseries
 
 
-
-####################################################
-## HOIST THE FINDER FUNCTIONS INTO THIS NAMESPACE ##
-####################################################
-
-from .zgls import pgen_lsp
-from .spdm import stellingwerf_pdm
-from .saov import aov_periodfind
-from .kbls import bls_serial_pfind, bls_parallel_pfind
-
-
-
 #######################
 ## UTILITY FUNCTIONS ##
 #######################
@@ -148,6 +136,21 @@ def get_frequency_grid(times,
     else:
         return f0 + df * nparange(Nf)
 
+
+####################################################
+## HOIST THE FINDER FUNCTIONS INTO THIS NAMESPACE ##
+####################################################
+
+from .zgls import pgen_lsp
+from .spdm import stellingwerf_pdm
+from .saov import aov_periodfind
+from .kbls import bls_serial_pfind, bls_parallel_pfind
+
+
+
+#############################################################
+## FUNCTIONS FOR TESTING SIGNIFICANCE OF PERIODOGRAM PEAKS ##
+#############################################################
 
 # used to figure out which function to run for bootstrap resampling
 LSPMETHODS = {'bls':bls_parallel_pfind,
