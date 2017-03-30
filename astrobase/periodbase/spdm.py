@@ -297,7 +297,17 @@ def stellingwerf_pdm(times,
                     'nbestperiods':None,
                     'lspvals':None,
                     'periods':None,
-                    'method':'pdm'}
+                    'method':'pdm',
+                    'kwargs':{'startp':startp,
+                              'endp':endp,
+                              'stepsize':stepsize,
+                              'normalize':normalize,
+                              'phasebinsize':phasebinsize,
+                              'mindetperbin':mindetperbin,
+                              'autofreq':autofreq,
+                              'periodepsilon':periodepsilon,
+                              'nbestpeaks':nbestpeaks,
+                              'sigclip':sigclip}}
 
         sortedlspind = np.argsort(finlsp)
         sortedlspperiods = finperiods[sortedlspind]
@@ -345,7 +355,17 @@ def stellingwerf_pdm(times,
                 'nbestperiods':nbestperiods,
                 'lspvals':lsp,
                 'periods':periods,
-                'method':'pdm'}
+                'method':'pdm',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'normalize':normalize,
+                          'phasebinsize':phasebinsize,
+                          'mindetperbin':mindetperbin,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}}
 
     else:
 
@@ -357,4 +377,14 @@ def stellingwerf_pdm(times,
                 'nbestperiods':None,
                 'lspvals':None,
                 'periods':None,
-                'method':'pdm'}
+                'method':'pdm',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'normalize':normalize,
+                          'phasebinsize':phasebinsize,
+                          'mindetperbin':mindetperbin,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}}
