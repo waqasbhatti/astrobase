@@ -283,7 +283,10 @@ def bootstrap_falsealarmprob(lspdict,
             allperiods.append(period)
             allfaps.append(falsealarmprob)
 
-        return allpeaks, allperiods, allfaps, alltrialbestpeaks
+        return {'peaks':allpeaks,
+                'periods':allperiods,
+                'probabilities':allfaps,
+                'alltrialbestpeaks':alltrialbestpeaks}
 
     else:
         LOGERROR('not enough mag series points to calculate periodogram')
