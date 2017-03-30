@@ -219,14 +219,13 @@ def bootstrap_falsealarmprob(lspdict,
     # make sure there are enough points to calculate a spectrum
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
 
-        trialbestperiods = []
-        trialbestpeaks = []
-
         for ind, period, peak in zip(range(len(nbestperiods)),
                                      nbestperiods,
                                      nbestpeaks):
 
             LOGINFO('peak %s: running %s trials...' % (ind+1, nbootstrap))
+
+            trialbestpeaks = []
 
             for trial in range(nbootstrap):
 
@@ -242,7 +241,6 @@ def bootstrap_falsealarmprob(lspdict,
                     sigclip=sigclip,
                     verbose=False
                 )
-                trialbestperiods.append(lspres['bestperiod'])
                 trialbestpeaks.append(lspres['bestlspval'])
 
             trialbestpeaks = np.array(trialbestpeaks)
