@@ -187,9 +187,13 @@ def bootstrap_falsealarmprob(lspdict,
     The total number of trials is nbootstrap. This is set to 100 by default, but
     should probably be around 1000 for realistic results.
 
-    lspdict MUST contain a 'method' key that corresponds to one of the keys in
-    the LSPMETHODS dict above. This will let this function know which
-    periodogram function to run to generate the bootstrap samples.
+    lspdict is the output dict from a periodbase periodogram function and MUST
+    contain a 'method' key that corresponds to one of the keys in the LSPMETHODS
+    dict above. This will let this function know which periodogram function to
+    run to generate the bootstrap samples. The lspdict SHOULD also have a
+    'kwargs' key that corresponds to the input keyword arguments for the
+    periodogram function as it was run originally, to keep everything the same
+    during the bootstrap runs. If this is missing, default values will be used.
 
     FIXME: this may not be strictly correct; must look more into bootstrap
     significance testing. Also look into if we're doing resampling correctly.
@@ -237,12 +241,27 @@ def bootstrap_falsealarmprob(lspdict,
                                            high=mags.size,
                                            size=mags.size)
 
+
+                # get the kwargs dict out of the lspdict
+                if 'kwargs' in lspdict:
+
+                    kwargs = lspdict['kwargs']
+
+                    # update the kwargs with some local stuff
+                    kwargs.update({'magsarefluxes':magsarefluxes,
+                                   'sigclip':sigclip,
+                                   'verbose':False})
+                else:
+                    kwargs = {'magsarefluxes':magsarefluxes,
+                              'sigclip':sigclip,
+                              'verbose':False}
+
+
                 # run the periodogram with scrambled mags and errs
+                # and the appropriate keyword arguments
                 lspres = LSPMETHODS[lspdict['method']](
                     times, mags[tindex], errs[tindex],
-                    magsarefluxes=magsarefluxes,
-                    sigclip=sigclip,
-                    verbose=False
+                    **kwargs
                 )
                 trialbestpeaks.append(lspres['bestlspval'])
 
@@ -255,8 +274,8 @@ def bootstrap_falsealarmprob(lspdict,
                 (trialbestpeaks.size + 1.0)
             )
             LOGINFO('FAP for peak %s, period: %.6f = %.3g' % (ind+1,
-                                                            period,
-                                                            falsealarmprob))
+                                                              period,
+                                                              falsealarmprob))
 
             allpeaks.append(peak)
             allperiods.append(period)

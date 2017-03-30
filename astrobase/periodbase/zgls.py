@@ -243,7 +243,14 @@ def pgen_lsp(
                     'lspvals':None,
                     'omegas':omegas,
                     'periods':None,
-                    'method':'gls'}
+                    'method':'gls',
+                    'kwargs':{'startp':startp,
+                              'endp':endp,
+                              'stepsize':stepsize,
+                              'autofreq':autofreq,
+                              'periodepsilon':periodepsilon,
+                              'nbestpeaks':nbestpeaks,
+                              'sigclip':sigclip}}
 
         sortedlspind = np.argsort(finlsp)[::-1]
         sortedlspperiods = finperiods[sortedlspind]
@@ -292,7 +299,14 @@ def pgen_lsp(
                 'lspvals':lsp,
                 'omegas':omegas,
                 'periods':periods,
-                'method':'gls'}
+                'method':'gls',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}}
 
     else:
 
@@ -305,4 +319,11 @@ def pgen_lsp(
                 'lspvals':None,
                 'omegas':None,
                 'periods':None,
-                'method':'gls'}
+                'method':'gls',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}}

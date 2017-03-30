@@ -322,7 +322,17 @@ def aov_periodfind(times,
                     'nbestperiods':None,
                     'lspvals':None,
                     'periods':None,
-                    'method':'aov'}
+                    'method':'aov',
+                    'kwargs':{'startp':startp,
+                              'endp':endp,
+                              'stepsize':stepsize,
+                              'normalize':normalize,
+                              'phasebinsize':phasebinsize,
+                              'mindetperbin':mindetperbin,
+                              'autofreq':autofreq,
+                              'periodepsilon':periodepsilon,
+                              'nbestpeaks':nbestpeaks,
+                              'sigclip':sigclip}}
 
         sortedlspind = np.argsort(finlsp)[::-1]
         sortedlspperiods = finperiods[sortedlspind]
@@ -369,7 +379,17 @@ def aov_periodfind(times,
                 'nbestperiods':nbestperiods,
                 'lspvals':lsp,
                 'periods':periods,
-                'method':'aov'}
+                'method':'aov',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'normalize':normalize,
+                          'phasebinsize':phasebinsize,
+                          'mindetperbin':mindetperbin,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}}
 
     else:
 
@@ -381,4 +401,14 @@ def aov_periodfind(times,
                 'nbestperiods':None,
                 'lspvals':None,
                 'periods':None,
-                'method':'aov'}
+                'method':'aov',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'normalize':normalize,
+                          'phasebinsize':phasebinsize,
+                          'mindetperbin':mindetperbin,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}}

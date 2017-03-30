@@ -310,7 +310,17 @@ def bls_serial_pfind(times, mags, errs,
                         'nbestperiods':None,
                         'lspvals':None,
                         'periods':None,
-                        'method':'bls'}
+                        'method':'bls',
+                        'kwargs':{'startp':startp,
+                                  'endp':endp,
+                                  'stepsize':stepsize,
+                                  'mintransitduration':mintransitduration,
+                                  'maxtransitduration':maxtransitduration,
+                                  'nphasebins':nphasebins,
+                                  'autofreq':autofreq,
+                                  'periodepsilon':periodepsilon,
+                                  'nbestpeaks':nbestpeaks,
+                                  'sigclip':sigclip}}
 
             sortedlspind = np.argsort(finlsp)[::-1]
             sortedlspperiods = finperiods[sortedlspind]
@@ -367,6 +377,16 @@ def bls_serial_pfind(times, mags, errs,
                 'mintransitduration':mintransitduration,
                 'maxtransitduration':maxtransitduration,
                 'method':'bls',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'mintransitduration':mintransitduration,
+                          'maxtransitduration':maxtransitduration,
+                          'nphasebins':nphasebins,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}
             }
 
             return resultdict
@@ -386,7 +406,17 @@ def bls_serial_pfind(times, mags, errs,
                     'nphasebins':nphasebins,
                     'mintransitduration':mintransitduration,
                     'maxtransitduration':maxtransitduration,
-                    'method':'bls'}
+                    'method':'bls',
+                    'kwargs':{'startp':startp,
+                              'endp':endp,
+                              'stepsize':stepsize,
+                              'mintransitduration':mintransitduration,
+                              'maxtransitduration':maxtransitduration,
+                              'nphasebins':nphasebins,
+                              'autofreq':autofreq,
+                              'periodepsilon':periodepsilon,
+                              'nbestpeaks':nbestpeaks,
+                              'sigclip':sigclip}}
 
 
     else:
@@ -404,7 +434,17 @@ def bls_serial_pfind(times, mags, errs,
                 'nphasebins':None,
                 'mintransitduration':mintransitduration,
                 'maxtransitduration':maxtransitduration,
-                'method':'bls'}
+                'method':'bls',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'mintransitduration':mintransitduration,
+                          'maxtransitduration':maxtransitduration,
+                          'nphasebins':nphasebins,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}}
 
 
 
@@ -579,7 +619,17 @@ def bls_parallel_pfind(
                     'nbestperiods':None,
                     'lspvals':None,
                     'periods':None,
-                    'method':'bls'}
+                    'method':'bls',
+                    'kwargs':{'startp':startp,
+                              'endp':endp,
+                              'stepsize':stepsize,
+                              'mintransitduration':mintransitduration,
+                              'maxtransitduration':maxtransitduration,
+                              'nphasebins':nphasebins,
+                              'autofreq':autofreq,
+                              'periodepsilon':periodepsilon,
+                              'nbestpeaks':nbestpeaks,
+                              'sigclip':sigclip}}
 
         sortedlspind = np.argsort(finlsp)[::-1]
         sortedlspperiods = finperiods[sortedlspind]
@@ -637,6 +687,16 @@ def bls_parallel_pfind(
             'mintransitduration':mintransitduration,
             'maxtransitduration':maxtransitduration,
             'method':'bls',
+            'kwargs':{'startp':startp,
+                      'endp':endp,
+                      'stepsize':stepsize,
+                      'mintransitduration':mintransitduration,
+                      'maxtransitduration':maxtransitduration,
+                      'nphasebins':nphasebins,
+                      'autofreq':autofreq,
+                      'periodepsilon':periodepsilon,
+                      'nbestpeaks':nbestpeaks,
+                      'sigclip':sigclip}
         }
 
         return resultdict
@@ -657,7 +717,17 @@ def bls_parallel_pfind(
                 'nphasebins':None,
                 'mintransitduration':mintransitduration,
                 'maxtransitduration':maxtransitduration,
-                'method':'bls'}
+                'method':'bls',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'mintransitduration':mintransitduration,
+                          'maxtransitduration':maxtransitduration,
+                          'nphasebins':nphasebins,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}}
 
 
 
