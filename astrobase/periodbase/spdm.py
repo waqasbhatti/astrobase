@@ -193,7 +193,8 @@ def stellingwerf_pdm(times,
                      nbestpeaks=5,
                      periodepsilon=0.1, # 0.1
                      sigclip=10.0,
-                     nworkers=None):
+                     nworkers=None,
+                     verbose=True):
     '''This runs a parallel Stellingwerf PDM period search.
 
     '''
@@ -224,27 +225,30 @@ def stellingwerf_pdm(times,
         # if we're not using autofreq, then use the provided frequencies
         if not autofreq:
             frequencies = np.arange(startf, endf, stepsize)
-            LOGINFO(
-                'using %s frequency points, start P = %.3f, end P = %.3f' %
-                (frequencies.size, 1.0/endf, 1.0/startf)
-            )
+            if verbose:
+                LOGINFO(
+                    'using %s frequency points, start P = %.3f, end P = %.3f' %
+                    (frequencies.size, 1.0/endf, 1.0/startf)
+                )
         else:
             # this gets an automatic grid of frequencies to use
             frequencies = get_frequency_grid(stimes,
                                              minfreq=startf,
                                              maxfreq=endf)
-            LOGINFO(
-                'using autofreq with %s frequency points, '
-                'start P = %.3f, end P = %.3f' %
-                (frequencies.size,
-                 1.0/frequencies.max(),
-                 1.0/frequencies.min())
-            )
+            if verbose:
+                LOGINFO(
+                    'using autofreq with %s frequency points, '
+                    'start P = %.3f, end P = %.3f' %
+                    (frequencies.size,
+                     1.0/frequencies.max(),
+                     1.0/frequencies.min())
+                )
 
         # map to parallel workers
         if (not nworkers) or (nworkers > NCPUS):
             nworkers = NCPUS
-            LOGINFO('using %s workers...' % nworkers)
+            if verbose:
+                LOGINFO('using %s workers...' % nworkers)
 
         pool = Pool(nworkers)
 
