@@ -6,7 +6,7 @@ To run all the tests from the base directory of the git repository, make sure a
 virtualenv is active with all the needed requirements, and then run setup.py:
 
 ```bash
-$ virtualenv astrobase-testing (or use: python3 -m venv astrobase-testing)
+$ virtualenv astrobase-testing  # or use: python3 -m venv astrobase-testing
 $ source astrobase-testing/bin/activate
 $ git clone https://github.com/waqasbhatti/astrobase.git
 $ cd astrobase
