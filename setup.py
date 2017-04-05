@@ -12,6 +12,24 @@ import sys, os.path
 
 from setuptools import setup
 
+# pytesting stuff and imports copied wholesale from:
+# https://docs.pytest.org/en/latest/goodpractices.html#test-discovery
+from setuptools.command.test import test as TestCommand
+class PyTest(TestCommand):
+    user_options = [('pytest-args=', 'a', "Arguments to pass to pytest")]
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = []
+
+    def run_tests(self):
+        import shlex
+        #import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(shlex.split(self.pytest_args))
+        sys.exit(errno)
+
+
 def readme():
     with open('README.rst') as f:
         return f.read()
@@ -64,6 +82,8 @@ setup(
     packages=['astrobase','astrobase.periodbase','astrobase.varbase'],
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
+    tests_require=['pytest',],
+    cmdclass={'test':PyTest},
     entry_points={
         'console_scripts':[
             'checkplotserver=astrobase.checkplotserver:main',
