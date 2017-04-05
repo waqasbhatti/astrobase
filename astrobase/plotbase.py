@@ -187,6 +187,7 @@ def plot_mag_series(times,
     if normto is not False:
         btimes, bmags = normalize_magseries(btimes, bmags,
                                             normto=normto,
+                                            magsarefluxes=magsarefluxes,
                                             mingap=normmingap)
 
     btimeorigin = btimes.min()
@@ -427,6 +428,7 @@ def plot_phased_mag_series(times,
     if normto is not False:
         stimes, smags = normalize_magseries(stimes, smags,
                                             normto=normto,
+                                            magsarefluxes=magsarefluxes,
                                             mingap=normmingap)
 
     # figure out the epoch, if it's None, use the min of the time
