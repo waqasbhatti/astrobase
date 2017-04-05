@@ -14,13 +14,13 @@ These will take 5-7 minutes to run, depending on your CPU speed and number of
 cores.
 
 To run all the tests from the base directory of the git repository, make sure a
-virtualenv is active with all the needed requirements, and then run setup.py,
-e.g.:
+virtualenv is active with all the needed requirements, and then run setup.py:
 
 $ virtualenv astrobase-testing (or use: python3 -m venv astrobase-testing)
 $ source astrobase-testing/bin/activate
 $ git clone https://github.com/waqasbhatti/astrobase.git
 $ cd astrobase
+$ pip install numpy # do this first for f2py stuff
 $ pip install -r requirements.txt
 $ python setup.py test
 
