@@ -22,13 +22,10 @@ from numpy import nan as npnan, median as npmedian, \
     isfinite as npisfinite, min as npmin, max as npmax, abs as npabs, \
     ravel as npravel
 
-# check the DISPLAY variable to see if we can plot stuff interactively
-try:
-    dispok = os.environ['DISPLAY']
-except KeyError:
-    import matplotlib
-    matplotlib.use('Agg')
-    dispok = False
+# FIXME: enforce no display for now
+import matplotlib
+matplotlib.use('Agg')
+dispok = False
 
 import matplotlib.pyplot as plt
 
