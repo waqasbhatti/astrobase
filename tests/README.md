@@ -1,9 +1,9 @@
 This contains modules used for testing astrobase using the pytest package.
 
+# Running tests
+
 To run all the tests from the base directory of the git repository, make sure a
 virtualenv is active with all the needed requirements, and then run setup.py:
-
-# Running tests
 
 ```bash
 $ virtualenv astrobase-testing (or use: python3 -m venv astrobase-testing)
