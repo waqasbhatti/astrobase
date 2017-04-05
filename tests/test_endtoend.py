@@ -1,4 +1,6 @@
-'''
+'''test_endtoend.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Apr 2017
+License: MIT - see the LICENSE file for details.
+
 This is a basic end-to-end test of astrobase.
 
 This tests the following:
@@ -8,18 +10,24 @@ This tests the following:
 - runs the GLS, PDM, AoV, and BLS functions on the LC
 - creates a checkplot PNG, twolsp PNG, and pickle using these results
 
+These will take 5-7 minutes to run, depending on your CPU speed and number of
+cores.
+
 '''
 from __future__ import print_function
-
 import os.path
 try:
     from urllib import urlretrieve
 except:
     from urllib.request import urlretrieve
-
 from numpy.testing import assert_allclose
 
 from astrobase import hatlc, periodbase, checkplot
+
+
+############
+## CONFIG ##
+############
 
 # this is the light curve used for tests
 LCURL = ("https://github.com/waqasbhatti/astrobase/raw/master/"
@@ -36,12 +44,15 @@ modpath = os.path.abspath(__file__)
 LCPATH = os.path.abspath(os.path.join(os.path.dirname(modpath),
                                       '../notebooks/nb-data/',
                                       'HAT-772-0554686-V0-DR0-hatlc.sqlite.gz'))
-if not os.path.exists(dlpath):
+if not os.path.exists(LCPATH):
     localf, headerr = urlretrieve(
         LCURL,LCPATH,reporthook=on_download_chunk
     )
 
 
+###########
+## TESTS ##
+###########
 
 def test_hatlc():
     '''
@@ -49,7 +60,7 @@ def test_hatlc():
 
     '''
 
-    lcd, msg = hatlc.read_and_filter(LCPATH)
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
 
     assert isinstance(lcd, dict)
     assert msg == 'no SQL filters, LC OK'
@@ -62,7 +73,7 @@ def test_gls():
 
     '''
 
-    lcd, msg = hatlc.read_and_filter(LCPATH)
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
     gls = periodbase.pgen_lsp(lcd['rjd'], lcd['aep_000'], lcd['aie_000'])
 
     assert isinstance(gls, dict)
@@ -75,7 +86,7 @@ def test_pdm():
     Tests periodbase.stellingwerf_pdm.
 
     '''
-    lcd, msg = hatlc.read_and_filter(LCPATH)
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
     pdm = periodbase.stellingwerf_pdm(lcd['rjd'],
                                       lcd['aep_000'],
                                       lcd['aie_000'])
@@ -90,10 +101,10 @@ def test_aov():
     Tests periodbase.aov_periodfind.
 
     '''
-    lcd, msg = hatlc.read_and_filter(LCPATH)
-    aov = periodbase.stellingwerf_aov(lcd['rjd'],
-                                      lcd['aep_000'],
-                                      lcd['aie_000'])
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
+    aov = periodbase.aov_periodfind(lcd['rjd'],
+                                    lcd['aep_000'],
+                                    lcd['aie_000'])
 
     assert isinstance(aov, dict)
     assert_allclose(aov['bestperiod'], 3.08578956)
@@ -105,7 +116,7 @@ def test_bls_serial():
     Tests periodbase.bls_serial_pfind.
 
     '''
-    lcd, msg = hatlc.read_and_filter(LCPATH)
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
     bls = periodbase.bls_serial_pfind(lcd['rjd'],
                                       lcd['aep_000'],
                                       lcd['aie_000'],
@@ -121,7 +132,7 @@ def test_bls_parallel():
     Tests periodbase.bls_parallel_pfind.
 
     '''
-    lcd, msg = hatlc.read_and_filter(LCPATH)
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
     bls = periodbase.bls_parallel_pfind(lcd['rjd'],
                                         lcd['aep_000'],
                                         lcd['aie_000'],
@@ -141,7 +152,7 @@ def test_checkplot_png():
     outpath = os.path.join(os.path.dirname(LCPATH),
                            'test-checkplot.png')
 
-    lcd, msg = hatlc.read_and_filter(LCPATH)
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
     gls = periodbase.pgen_lsp(lcd['rjd'], lcd['aep_000'], lcd['aie_000'])
 
     assert isinstance(gls, dict)
@@ -163,9 +174,9 @@ def test_checkplot_twolsp_png():
     '''
 
     outpath = os.path.join(os.path.dirname(LCPATH),
-                           'test-checkplot.png')
+                           'test-twolsp-checkplot.png')
 
-    lcd, msg = hatlc.read_and_filter(LCPATH)
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
     gls = periodbase.pgen_lsp(lcd['rjd'], lcd['aep_000'], lcd['aie_000'])
 
     assert isinstance(gls, dict)
@@ -188,6 +199,7 @@ def test_checkplot_twolsp_png():
     assert os.path.exists(outpath)
 
 
+
 def test_checkplot_pickle_make():
     '''
     Tests if a checkplot pickle can be made.
@@ -195,9 +207,9 @@ def test_checkplot_pickle_make():
     '''
 
     outpath = os.path.join(os.path.dirname(LCPATH),
-                           'test-checkplot.png')
+                           'test-checkplot.pkl')
 
-    lcd, msg = hatlc.read_and_filter(LCPATH)
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
     gls = periodbase.pgen_lsp(lcd['rjd'], lcd['aep_000'], lcd['aie_000'])
 
     assert isinstance(gls, dict)
@@ -223,19 +235,14 @@ def test_checkplot_pickle_make():
 
 def test_checkplot_pickle_read():
     '''
-    Tests if a checkplot pickle can be read.
-
-    '''
-def test_checkplot_pickle_make():
-    '''
-    Tests if a checkplot pickle can be made.
+    Tests if a checkplot pickle can be made and read back.
 
     '''
 
     outpath = os.path.join(os.path.dirname(LCPATH),
-                           'test-checkplot.png')
+                           'test-checkplot.pkl')
 
-    lcd, msg = hatlc.read_and_filter(LCPATH)
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
     gls = periodbase.pgen_lsp(lcd['rjd'], lcd['aep_000'], lcd['aie_000'])
 
     assert isinstance(gls, dict)
@@ -265,7 +272,7 @@ def test_checkplot_pickle_make():
     testset = {'comments', 'finderchart', 'sigclip', 'objectid',
                'pdm', 'gls', 'objectinfo', 'status', 'varinfo',
                'normto', 'magseries', 'normmingap'}
-    assert (cpdkeys - testset) == set()
+    assert (testset - cpdkeys) == set()
 
     assert_allclose(cpd['gls']['bestperiod'], 1.54289477)
     assert_allclose(cpd['pdm']['bestperiod'], 3.08578956)
