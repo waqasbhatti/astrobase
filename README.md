@@ -1,5 +1,3 @@
-Python 2.7: [![Python 2.7](https://ci.wbhatti.org/buildStatus/icon?job=astrobase)](https://ci.wbhatti.org/job/astrobase) Python 3.6: [![Python 3.6](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py3)](https://ci.wbhatti.org/job/astrobase-py3)
-
 This is a bunch of Python modules I wrote for my astronomy work with the HAT
 surveys, mostly focused on handling light curves and characterizing variable
 stars. Module functions that deal with light curves (e.g. in the modules
@@ -27,6 +25,7 @@ The package should work with Python >= 3.4 and Python 2.7. Using the newest
 Python 3 version available is recommended. See the [installation
 instructions](#installation) below for details.
 
+Python 2.7: [![Python 2.7](https://ci.wbhatti.org/buildStatus/icon?job=astrobase)](https://ci.wbhatti.org/job/astrobase) Python 3.6: [![Python 3.6](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py3)](https://ci.wbhatti.org/job/astrobase-py3)
 
 # Contents
 
