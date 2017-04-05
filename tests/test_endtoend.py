@@ -20,8 +20,12 @@ $ virtualenv astrobase-testing (or use: python3 -m venv astrobase-testing)
 $ source astrobase-testing/bin/activate
 $ git clone https://github.com/waqasbhatti/astrobase.git
 $ cd astrobase
-$ pip install numpy # do this first for f2py stuff
+
+# run these to hopefully get wheels for faster install (can skip this step)
+$ pip install numpy  # do this first for f2py stuff
 $ pip install -r requirements.txt
+
+# finally run the tests (this will get and compile requirements automatically)
 $ python setup.py test
 
 '''
