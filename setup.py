@@ -26,7 +26,13 @@ class PyTest(TestCommand):
         import shlex
         #import here, cause outside the eggs aren't loaded
         import pytest
-        errno = pytest.main(shlex.split(self.pytest_args))
+
+        if not self.pytest_args:
+            targs = []
+        else:
+            targs = shlex.split(self.pytest_args)
+
+        errno = pytest.main(targs)
         sys.exit(errno)
 
 
