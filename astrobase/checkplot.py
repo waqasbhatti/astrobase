@@ -763,6 +763,7 @@ def checkplot_png(lspinfo,
     if normto is not False:
         stimes, smags = normalize_magseries(stimes, smags,
                                             normto=normto,
+                                            magsarefluxes=magsarefluxes,
                                             mingap=normmingap)
 
 
@@ -1024,6 +1025,7 @@ def twolsp_checkplot_png(lspinfo1,
     if normto is not False:
         stimes, smags = normalize_magseries(stimes, smags,
                                             normto=normto,
+                                            magsarefluxes=magsarefluxes,
                                             mingap=normmingap)
 
 
@@ -2023,6 +2025,7 @@ def checkplot_dict(lspinfolist,
     if normto is not False:
         stimes, smags = normalize_magseries(stimes, smags,
                                             normto=normto,
+                                            magsarefluxes=magsarefluxes,
                                             mingap=normmingap)
 
     # make sure we have some lightcurve points to plot after sigclip
