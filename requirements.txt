@@ -1,0 +1,9 @@
+numpy
+scipy
+astropy>=1.3
+matplotlib
+Pillow
+jplephem
+astroquery
+tornado
+pyeebls
