@@ -3,12 +3,65 @@
 License: MIT - see LICENSE for the full text.
 
 This contains functions to search for objects and get HAT sqlite
-("sqlitecurves") from the new HAT data server. These can be read by the
-astrobase.hatlc module.
+("sqlitecurves") or CSV gzipped text light curvesfrom the new HAT data
+server. These can be read by the hatlc module.
 
-TODO:
+To get a single light curve for an object with objectid, belonging to hatproject
+and in datarelease:
 
-- get HAT CSV light curves from the new HAT data server
+hatds.hatlc_for_object(objectid,
+                       hatproject,
+                       datarelease=None,
+                       apikey=None,
+                       outdir=None,
+                       lcformat='sqlite')
+
+To get multiple light curves for objects in parallel:
+
+hatds.hatlcs_for_objectlist(objectidlist,
+                            hatproject,
+                            datarelease=None,
+                            apikey=None,
+                            outdir=None,
+                            lcformat='sqlite',
+                            nworkers=None)
+
+To get all light curves for a specified location and search radius:
+
+hatds.hatlcs_at_radec(coordstring,
+                      hatproject,
+                      datarelease=None,
+                      apikey=None,
+                      outdir=None,
+                      lcformat='sqlite')
+
+For all of these functions:
+
+    hatproject is one of:
+
+    'hatnet'   -> The HATNet Exoplanet Survey
+    'hatsouth' -> The HATSouth Exoplanet Survey
+    'hatpi'    -> The HATPI Survey
+
+    datarelease is a string starting with 'DR' and ending with a number,
+    indicating the data release to use for the light curve. By default, this is
+    None, meaning that the latest data release light curve will be fetched.
+
+    apikey is your HAT Data Server apikey. If not provided, this will search for
+    a ~/.hatdsrc file and get it from there. If that file is not available,
+    will use anonymous mode.
+
+    lcformat is one of the following:
+
+    'sqlite' -> HAT sqlitecurve format: sqlite database file (readable by
+                astrobase.hatlc)
+    'csv'    -> HAT CSV light curve format: text CSV (astrobase.hatlc can read
+                this too)
+    'check'    -> this just returns a JSON string indicating if you have access
+                  to the light curve based on your access privilege level.
+
+See the docstrings for each function and the APIKEYHELP string below for
+details.
 
 '''
 
@@ -18,9 +71,6 @@ TODO:
 
 # the light curve API
 LCAPI = 'https://data.hatsurveys.org/api/lc'
-
-# the quicksearch API
-QSAPI = 'https://data.hatsurveys.org/api/qs'
 
 APIKEYHELP = '''\
 The HAT Data Server requires an API key to access data that is not open for
@@ -65,10 +115,17 @@ from traceback import format_exc
 import multiprocessing as mp
 import json
 
+# import url methods here.  we use built-ins because we want this module to be
+# usable as a single file. otherwise, we'd use something sane like Requests.
+
+# Python 2
 try:
-    from urllib import urlretrieve
+    from urllib import urlretrieve, urlencode
+    from urllib2 import urlopen
+# Python 3
 except:
-    from urllib.request import urlretrieve
+    from urllib.request import urlretrieve, urlopen
+    from urllib.parse import urlencode
 
 
 #############
@@ -165,14 +222,16 @@ def on_download_chunk(transferred, blocksize, totalsize):
 ## DATA SERVER LIGHT CURVE RETRIEVAL ##
 #######################################
 
-def get_hatlc(objectid,
-              hatproject,
-              datarelease=None,
-              apiuser=None,
-              apikey=None,
-              outdir=None,
-              lcformat='sqlite'):
+def hatlc_for_object(objectid,
+                     hatproject,
+                     datarelease=None,
+                     apikey=None,
+                     outdir=None,
+                     lcformat='sqlite'):
     '''This gets the light curve for the specified objectid.
+
+    outdir is where to put the downloaded file. If not provided, will download
+    to the current directory.
 
     hatproject is one of:
 
@@ -184,12 +243,9 @@ def get_hatlc(objectid,
     indicating the data release to use for the light curve. By default, this is
     None, meaning that the latest data release light curve will be fetched.
 
-    apiuser and apikey are your HAT Data Server API user email and key. If not
-    provided, will search for a ~/.hatdsrc file and get these from there. If
-    that file is not available, will use anonymous mode.
-
-    outdir is where to put the downloaded file. If not provided, will download
-    to the current directory.
+    apikey is your HAT Data Server apikey. If not provided, this will search for
+    a ~/.hatdsrc file and get it from there. If that file is not available,
+    will use anonymous mode.
 
     lcformat is one of the following:
 
@@ -197,20 +253,22 @@ def get_hatlc(objectid,
                 astrobase.hatlc)
     'csv'    -> HAT CSV light curve format: text CSV (astrobase.hatlc can read
                 this too)
+    'check'    -> this just returns a JSON string indicating if you have access
+                  to the light curve based on your access privilege level.
 
     '''
 
 
 
 
-def get_hatlcs(objectidlist,
-               hatproject,
-               datarelease=None,
-               apiuser=None,
-               apikey=None,
-               outdir=None,
-               lcformat='sqlite',
-               nworkers=None):
+
+def hatlcs_for_objectlist(objectidlist,
+                          hatproject,
+                          datarelease=None,
+                          apikey=None,
+                          outdir=None,
+                          lcformat='sqlite',
+                          nworkers=None):
     '''This gets light curves for all objectids in objectidlist.
 
     All args and kwargs are the same as for get_hatlc, except for:
@@ -219,5 +277,40 @@ def get_hatlcs(objectidlist,
     curves. By default, this is equal to the number of visible CPUs on your
     machine. There will be a random delay enforced for each worker's download
     job.
+
+    '''
+
+
+
+
+def hatlcs_at_radec(coordstring,
+                    hatproject,
+                    datarelease=None,
+                    apikey=None,
+                    outdir=None,
+                    lcformat='sqlite'):
+    '''This gets light curves for all objectids at coordstring.
+
+    All args and kwargs are the same as for get_hatlc, except for:
+
+    coordstring: this is a string of the following form:
+
+    '<ra> <decl> <search radius in arcmin>'
+
+    <ra> is the right ascension of the center coordinate in decimal degrees or
+    HH:MM:SS.ssss... format.
+
+    <decl> is the declination of the center coordinate in decimal degrees or
+    [+|-]DD:MM:SS.sss... format. Make sure to include the + sign if the
+    declination is positive (for both decimal degrees or sexagesimal format).
+
+    <search radius in arcmin> is the search radius used for the cone
+    search. This will be restricted by your access privileges. Anonymous users
+    can search up to a 1.0 arcminute radius. If you have an API key with
+    sufficient privileges, you may be able to search a wider radius.
+
+    This function will return a path to a ZIP archive containing all the
+    accessible light curves for objects found using the coordstring
+    specification.
 
     '''
