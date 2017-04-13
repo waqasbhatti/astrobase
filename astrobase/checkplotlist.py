@@ -102,6 +102,9 @@ def main(args=None):
         sys.exit(2)
 
     checkplotbasedir = args[2]
+
+    print('arglen = %s' % len(args))
+
     if len(args) == 4:
         fileglob = args[3]
     else:
