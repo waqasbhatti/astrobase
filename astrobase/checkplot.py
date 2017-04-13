@@ -2392,7 +2392,7 @@ def checkplot_pickle_update(currentcp, updatedcp,
         elif isinstance(updatedcp, dict):
             cp_updated = updatedcp
         else:
-            LOGERROR('currentcp: %s of type %s is not a '
+            LOGERROR('updatedcp: %s of type %s is not a '
                      'valid checkplot filename (or does not exist), or a dict' %
                      (os.path.abspath(updatedcp), type(updatedcp)))
             return None
