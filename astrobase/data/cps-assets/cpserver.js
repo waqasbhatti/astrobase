@@ -170,7 +170,7 @@ var cptracker = {
 
                 if (!success) {
 
-                    cpv.make_alert('could not save info for <strong>' +
+                    $('#alert-box').html('could not save info for <strong>' +
                                    postmsg.objectid + '</strong>!');
                     console.log('saving the changes back to the '+
                                 'JSON file failed for ' + postmsg.objectid);
@@ -180,7 +180,7 @@ var cptracker = {
 
             }, 'json').fail(function (xhr) {
 
-                cpv.make_alert('could not save info for <strong>' +
+                $('#alert-box').html('could not save info for <strong>' +
                                postmsg.objectid + '</strong>!');
                 console.log('saving the changes back to the '+
                             'JSON file failed for ' + postmsg.objectid);
@@ -276,7 +276,7 @@ var cptracker = {
 
         }).fail(function (xhr) {
 
-            cpv.make_alert('could not load the existing checkplot list');
+            $('#alert-box').html('could not load the existing checkplot list');
             console.log('could not load the existing checkplot list');
 
         });
@@ -620,7 +620,7 @@ var cpv = {
 
         }).fail (function (xhr) {
 
-            cpv.make_alert('could not load checkplot <strong>' +
+            $('#alert-box').html('could not load checkplot <strong>' +
                            filename + '</strong>!');
 
         });
@@ -803,7 +803,7 @@ var cpv = {
                 }
 
                 else {
-                    cpv.make_alert(updatemsg);
+                    $('#alert-box').html(updatemsg);
                 }
 
                 // on POST done, update the UI elements in the checkplot list
@@ -829,7 +829,7 @@ var cpv = {
 
                 var errmsg = 'could not update ' +
                     currfile + ' because of an internal server error';
-                cpv.make_alert(errmsg);
+                $('#alert-box').html(errmsg);
 
             });
 
