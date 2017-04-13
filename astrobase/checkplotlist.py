@@ -76,7 +76,14 @@ TL;DR
 This makes a checkplot file list for use with the checkplot-viewer.html (for
 checkplot PNGs) or the checkplotserver.py (for checkplot pickles) webapps.
 
-checkplotlist <pkl|png> <subdir/containing/checkplots/> [checkplot file glob]
+checkplotlist <pkl|png> <subdir/containing/checkplots/> '[checkplot file glob]'
+
+If you have checkplots that don't have 'checkplot' somewhere in their file name,
+use the optional checkplot file glob argument to checkplotlist to provide
+this. Make sure to use the quotes around this argument, otherwise the shell will
+expand it, e.g.:
+
+$ checkplot png my-project/awesome-objects '*awesome-objects*'
 
 '''
 
@@ -97,15 +104,13 @@ def main(args=None):
         if docstring:
             print(docstring)
         else:
-            print('Usage: %s <pkl|png> <subdir/containing/the/checkplots/> '
-                  '[file glob to use] ' % args[0])
+            print("Usage: %s <pkl|png> <subdir/containing/the/checkplots/> "
+                  "'[file glob to use]'" % args[0])
         sys.exit(2)
 
     checkplotbasedir = args[2]
 
-    print('arglen = %s' % len(args))
-
-    if args[3]:
+    if len(args) == 4:
         fileglob = args[3]
     else:
         fileglob = '*checkplot*'
