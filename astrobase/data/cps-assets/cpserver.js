@@ -149,30 +149,44 @@ var cptracker = {
         var postmsg = {objectid: cpv.currcp.objectid,
                        changes: JSON.stringify(saveinfo)}
 
-        // send this back to the checkplotserver
-        $.post('/list', postmsg, function (data) {
 
-            var success = data.status;
-            var message = data.message;
-            var result = data.result;
+        if (cpv.readonlymode) {
+            // if we're in readonly mode, inform the user
+            $('#alert-box').html(
+                'The checkplot server is in readonly mode.' +
+                    'Edits to object information will not be saved.'
+            );
+        }
 
-            if (!success) {
+        // if we're not in readonly mode, post the results
+        else {
+
+            // send this back to the checkplotserver
+            $.post('/list', postmsg, function (data) {
+
+                var success = data.status;
+                var message = data.message;
+                var result = data.result;
+
+                if (!success) {
+
+                    cpv.make_alert('could not save info for <strong>' +
+                                   postmsg.objectid + '</strong>!');
+                    console.log('saving the changes back to the '+
+                                'JSON file failed for ' + postmsg.objectid);
+
+                }
+
+
+            }, 'json').fail(function (xhr) {
 
                 cpv.make_alert('could not save info for <strong>' +
                                postmsg.objectid + '</strong>!');
                 console.log('saving the changes back to the '+
                             'JSON file failed for ' + postmsg.objectid);
+            });
 
-            }
-
-
-        }, 'json').fail(function (xhr) {
-
-            cpv.make_alert('could not save info for <strong>' +
-                           postmsg.objectid + '</strong>!');
-            console.log('saving the changes back to the '+
-                        'JSON file failed for ' + postmsg.objectid);
-        });
+        }
 
     },
 
@@ -281,6 +295,9 @@ var cpv = {
     currcp: {},
     totalcps: 0,
 
+    // this checks if the server is in readonly mode. disables controls if so.
+    readonlymode: false,
+
     // these help in moving quickly through the phased LCs
     currphasedind: null,
     maxphasedind: null,
@@ -354,6 +371,16 @@ var cpv = {
             // update the UI with elems for this checkplot //
             /////////////////////////////////////////////////
 
+            // update the readonly status
+            cpv.readonlymode = data.readonly;
+
+            if (cpv.readonlymode) {
+                // if we're in readonly mode, inform the user
+                $('#alert-box').html(
+                    'The checkplot server is in readonly mode.' +
+                        'Edits to object information will not be saved.'
+                );
+            }
 
             // update the objectid header
             objectidelem.html(cpv.currcp.objectid);
@@ -608,175 +635,205 @@ var cpv = {
     // appropriately
     save_checkplot: function (nextfunc_callback, nextfunc_arg) {
 
-        // do the AJAX call to get this checkplot
-        var ajaxurl = '/cp/' + cputils.b64_encode(cpv.currfile);
+        // make sure we're not in readonly mode
+        // if we are, then just bail out immediately
+        if (cpv.readonlymode) {
 
-        // get the current value of the objectisvar select box
-        cpv.currcp.varinfo.objectisvar = $('#varcheck').val();
-
-        // make sure that we've saved the input varinfo, objectinfo and comments
-        cpv.currcp.varinfo.vartags = $('#vartags').val();
-        cpv.currcp.objectinfo.objecttags = $('#objecttags').val();
-        cpv.currcp.objectcomments = $('#objectcomments').val();
-
-        var cppayload = JSON.stringify({objectid: cpv.currcp.objectid,
-                                        objectinfo: cpv.currcp.objectinfo,
-                                        varinfo: cpv.currcp.varinfo,
-                                        comments: cpv.currcp.objectcomments});
-
-        // first, generate the object to send with the POST request
-        var postobj = {cpfile: cpv.currfile,
-                       cpcontents: cppayload};
-
-        // this is to deal with UI elements later
-        var currfile = postobj.cpfile;
-
-        // next, do a saving animation in the alert box
-        cpv.make_spinner('saving...');
-
-        // next, send the POST request and handle anything the server returns
-        // FIXME: this should use _xsrf once we set that up
-        $.post(ajaxurl, postobj, function (data) {
-
-            // get the info from the backend
-            var updatestatus = data.status;
-            var updatemsg = data.message;
-            var updateinfo = data.result;
-
-            // update the cptracker with what changed so we can try to undo
-            // later if necessary.
-            if (updatestatus == 'success') {
-
-                // store only the latest update in the tracker
-                // FIXME: think about adding in update history
-                // probably a better fit for indexedDB or something
-                cptracker.cpdata[postobj.cpfile] = updateinfo.changes;
-
-                // check if this object is already present and remove if it so
-                var statobjcheck = $('.tracker-obj').filter('[data-objectid="' +
-                                     updateinfo.changes.objectid +
-                                     '"]');
-
-                // we need to update the project status widget
-
-                // generate the new list element: this contains objectid -
-                // variability flag, variability tags, object tags
-                var objectli =
-                    '<div class="tracker-obj" ' +
-                    'data-objectid="' + updateinfo.changes.objectid + '">';
-
-                var objectidelem =  '<a class="objload-checkplot" ' +
-                    'href="#" data-fname="' + postobj.cpfile + '">' +
-                    updateinfo.changes.objectid +
-                    '</a>:';
-
-                if (updateinfo.changes.varinfo.objectisvar == '1') {
-                    var varelem = 'variable';
-                }
-                else if (updateinfo.changes.varinfo.objectisvar == '2') {
-                    var varelem = 'not variable';
-                }
-                else if (updateinfo.changes.varinfo.objectisvar == '3') {
-                    var varelem = 'maybe variable';
-                }
-                else if (updateinfo.changes.varinfo.objectisvar == '0') {
-                    var varelem = 'no varflag set';
-                }
-
-                var thisvartags =
-                    updateinfo.changes.varinfo.vartags.split(', ');
-
-                var thisobjtags =
-                    updateinfo.changes.objectinfo.objecttags.split(', ');
-
-                var vartaglist = [];
-
-                if ((thisvartags != null) && (thisvartags[0].length > 0)) {
-
-                    thisvartags.forEach(function (e, i, a) {
-                        vartaglist.push('<span class="cp-tag">' +
-                                        e + '</span>');
-                    });
-
-                    vartaglist = vartaglist.join(' ');
-                }
-                else {
-                    vartaglist = '';
-                }
-
-                var objtaglist = [];
-
-                if ((thisobjtags != null) && (thisobjtags[0].length > 0)) {
-
-                    thisobjtags.forEach(function (e, i, a) {
-                        objtaglist.push('<span class="cp-tag">' +
-                                        e + '</span>');
-                    });
-
-                    objtaglist = objtaglist.join(' ');
-                }
-                else {
-                    objtaglist = '';
-                }
-
-                var finelem = [objectidelem,
-                               varelem,
-                               vartaglist,
-                               objtaglist].join(' ');
-
-                // if this object exists in the list already
-                // replace it with the new content
-                if (statobjcheck.length > 0) {
-
-                    statobjcheck.html(finelem);
-                    console.log('updating existing entry for ' +
-                                updateinfo.changes.objectid);
-                }
-
-                // if this object doesn't exist, add a new row
-                else {
-                    console.log('adding new entry for ' +
-                                updateinfo.changes.objectid);
-                    $('#project-status').append(objectli + finelem + '</div>');
-                }
-
-                // update the count in saved-count
-                var nsaved = $('#project-status div').length;
-                $('#saved-count').html(nsaved + '/' + cpv.totalcps);
-
-
-            }
-
-            else {
-                cpv.make_alert(updatemsg);
-            }
-
-        // on POST done, update the UI elements in the checkplot list
-        // and call the next function.
-        },'json').done(function (xhr) {
-
-            // clean out the alert box
-            $('#alert-box').empty();
-
-            // send the changes to the backend so they're present in the
-            // checkplot-filelist.json file for the next time around
-            cptracker.reviewed_object_to_cplist();
+            $('#alert-box').html(
+                'The checkplot server is in readonly mode.' +
+                    'Edits to object information will not be saved.'
+            );
 
             // call the next function. we call this here so we can be sure the
-            // save finished before the next action starts
+            // next action starts correctly even if we're not saving anything
             if (!(nextfunc_callback === undefined) &&
                 !(nextfunc_callback === null)) {
                 nextfunc_callback(nextfunc_arg);
             }
 
-        // if POST failed, pop up an alert in the alert box
-        }).fail(function (xhr) {
+        }
 
-            var errmsg = 'could not update ' +
-                currfile + ' because of an internal server error';
-            cpv.make_alert(errmsg);
+        // if we're not in readonly mode, go ahead and save stuff
+        else {
 
-        });
+            // do the AJAX call to get this checkplot
+            var ajaxurl = '/cp/' + cputils.b64_encode(cpv.currfile);
+
+            // get the current value of the objectisvar select box
+            cpv.currcp.varinfo.objectisvar = $('#varcheck').val();
+
+            // make sure that we've saved the input varinfo, objectinfo and
+            // comments
+            cpv.currcp.varinfo.vartags = $('#vartags').val();
+            cpv.currcp.objectinfo.objecttags = $('#objecttags').val();
+            cpv.currcp.objectcomments = $('#objectcomments').val();
+
+            var cppayload = JSON.stringify(
+                {objectid: cpv.currcp.objectid,
+                 objectinfo: cpv.currcp.objectinfo,
+                 varinfo: cpv.currcp.varinfo,
+                 comments: cpv.currcp.objectcomments}
+            );
+
+            // first, generate the object to send with the POST request
+            var postobj = {cpfile: cpv.currfile,
+                           cpcontents: cppayload};
+
+            // this is to deal with UI elements later
+            var currfile = postobj.cpfile;
+
+            // next, do a saving animation in the alert box
+            cpv.make_spinner('saving...');
+
+            // next, send the POST request and handle anything the server
+            // returns. FIXME: this should use _xsrf once we set that up
+            $.post(ajaxurl, postobj, function (data) {
+
+                // get the info from the backend
+                var updatestatus = data.status;
+                var updatemsg = data.message;
+                var updateinfo = data.result;
+
+                // update the cptracker with what changed so we can try to undo
+                // later if necessary.
+                if (updatestatus == 'success') {
+
+                    // store only the latest update in the tracker
+                    // FIXME: think about adding in update history
+                    // probably a better fit for indexedDB or something
+                    cptracker.cpdata[postobj.cpfile] = updateinfo.changes;
+
+                    // check if this object is already present and remove if it
+                    // so
+                    var statobjcheck = $('.tracker-obj').filter(
+                        '[data-objectid="' +
+                            updateinfo.changes.objectid +
+                            '"]'
+                    );
+
+                    // we need to update the project status widget
+
+                    // generate the new list element: this contains objectid -
+                    // variability flag, variability tags, object tags
+                    var objectli =
+                        '<div class="tracker-obj" ' +
+                        'data-objectid="' + updateinfo.changes.objectid + '">';
+
+                    var objectidelem =  '<a class="objload-checkplot" ' +
+                        'href="#" data-fname="' + postobj.cpfile + '">' +
+                        updateinfo.changes.objectid +
+                        '</a>:';
+
+                    if (updateinfo.changes.varinfo.objectisvar == '1') {
+                        var varelem = 'variable';
+                    }
+                    else if (updateinfo.changes.varinfo.objectisvar == '2') {
+                        var varelem = 'not variable';
+                    }
+                    else if (updateinfo.changes.varinfo.objectisvar == '3') {
+                        var varelem = 'maybe variable';
+                    }
+                    else if (updateinfo.changes.varinfo.objectisvar == '0') {
+                        var varelem = 'no varflag set';
+                    }
+
+                    var thisvartags =
+                        updateinfo.changes.varinfo.vartags.split(', ');
+
+                    var thisobjtags =
+                        updateinfo.changes.objectinfo.objecttags.split(', ');
+
+                    var vartaglist = [];
+
+                    if ((thisvartags != null) && (thisvartags[0].length > 0)) {
+
+                        thisvartags.forEach(function (e, i, a) {
+                            vartaglist.push('<span class="cp-tag">' +
+                                            e + '</span>');
+                        });
+
+                        vartaglist = vartaglist.join(' ');
+                    }
+                    else {
+                        vartaglist = '';
+                    }
+
+                    var objtaglist = [];
+
+                    if ((thisobjtags != null) && (thisobjtags[0].length > 0)) {
+
+                        thisobjtags.forEach(function (e, i, a) {
+                            objtaglist.push('<span class="cp-tag">' +
+                                            e + '</span>');
+                        });
+
+                        objtaglist = objtaglist.join(' ');
+                    }
+                    else {
+                        objtaglist = '';
+                    }
+
+                    var finelem = [objectidelem,
+                                   varelem,
+                                   vartaglist,
+                                   objtaglist].join(' ');
+
+                    // if this object exists in the list already
+                    // replace it with the new content
+                    if (statobjcheck.length > 0) {
+
+                        statobjcheck.html(finelem);
+                        console.log('updating existing entry for ' +
+                                    updateinfo.changes.objectid);
+                    }
+
+                    // if this object doesn't exist, add a new row
+                    else {
+                        console.log('adding new entry for ' +
+                                    updateinfo.changes.objectid);
+                        $('#project-status').append(objectli + finelem +
+                                                    '</div>');
+                    }
+
+                    // update the count in saved-count
+                    var nsaved = $('#project-status div').length;
+                    $('#saved-count').html(nsaved + '/' + cpv.totalcps);
+
+
+                }
+
+                else {
+                    cpv.make_alert(updatemsg);
+                }
+
+                // on POST done, update the UI elements in the checkplot list
+                // and call the next function.
+            },'json').done(function (xhr) {
+
+                // clean out the alert box
+                $('#alert-box').empty();
+
+                // send the changes to the backend so they're present in the
+                // checkplot-filelist.json file for the next time around
+                cptracker.reviewed_object_to_cplist();
+
+                // call the next function. we call this here so we can be sure
+                // the save finished before the next action starts
+                if (!(nextfunc_callback === undefined) &&
+                    !(nextfunc_callback === null)) {
+                    nextfunc_callback(nextfunc_arg);
+                }
+
+                // if POST failed, pop up an alert in the alert box
+            }).fail(function (xhr) {
+
+                var errmsg = 'could not update ' +
+                    currfile + ' because of an internal server error';
+                cpv.make_alert(errmsg);
+
+            });
+
+        }
 
     },
 
