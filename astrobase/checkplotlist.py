@@ -105,7 +105,7 @@ def main(args=None):
 
     print('arglen = %s' % len(args))
 
-    if len(args) == 4:
+    if args[3]:
         fileglob = args[3]
     else:
         fileglob = '*checkplot*'
