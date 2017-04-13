@@ -75,7 +75,7 @@ class IndexHandler(tornado.web.RequestHandler):
     '''
 
     def initialize(self, currentdir, assetpath, cplist,
-                   cplistfile, executor):
+                   cplistfile, executor, readonly):
         '''
         handles initial setup.
 
@@ -86,6 +86,7 @@ class IndexHandler(tornado.web.RequestHandler):
         self.currentproject = cplist
         self.cplistfile = cplistfile
         self.executor = executor
+        self.readonly = readonly
 
 
 
@@ -117,7 +118,8 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
     '''
 
-    def initialize(self, currentdir, assetpath, cplist, cplistfile, executor):
+    def initialize(self, currentdir, assetpath, cplist,
+                   cplistfile, executor, readonly):
         '''
         handles initial setup.
 
@@ -128,6 +130,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
         self.currentproject = cplist
         self.cplistfile = cplistfile
         self.executor = executor
+        self.readonly = readonly
 
 
     @gen.coroutine
@@ -202,6 +205,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 resultdict = {
                     'status':'ok',
                     'message':'found checkplot %s' % self.checkplotfname,
+                    'readonly':self.readonly,
                     'result':{
                         'objectid':objectid,
                         'objectinfo':objectinfo,
@@ -267,6 +271,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
                 resultdict = {'status':'error',
                               'message':"This checkplot doesn't exist.",
+                              'readonly':self.readonly,
                               'result':None}
                 self.write(resultdict)
                 self.finish()
@@ -276,6 +281,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
             resultdict = {'status':'error',
                           'message':'No checkplot provided to load.',
+                          'readonly':self.readonly,
                           'result':None}
 
             self.write(resultdict)
@@ -290,15 +296,20 @@ class CheckplotHandler(tornado.web.RequestHandler):
         definitely be faster by just loading the checkplot into a server-wide
         shared dict or something.
 
-        FIXME: this will be async and run a processpoolexecutor:
-        - receive post request
-        - fork to background save process
-        - write save-started message to frontend with filename that's busy
-        - frontend marks this file as busy and carries on with the next op
-        - once the save returns, this writes a save-complete message
-        - then closes the request
-
         '''
+
+        # if self.readonly is set, then don't accept any changes
+        # return immediately with a 400
+        if self.readonly:
+
+            msg = "checkplotserver is in readonly mode. no updates allowed."
+            resultdict = {'status':'error',
+                          'message':msg,
+                          'readonly':self.readonly,
+                          'result':None}
+            self.set_status(400)
+            self.write(resultdict)
+            self.finish()
 
         # now try to update the contents
         try:
@@ -311,6 +322,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 msg = "did not receive a checkplot update payload"
                 resultdict = {'status':'error',
                               'message':msg,
+                              'readonly':self.readonly,
                               'result':None}
                 self.set_status(400)
                 self.write(resultdict)
@@ -338,6 +350,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 LOGGER.error(msg)
                 resultdict = {'status':'error',
                               'message':msg,
+                              'readonly':self.readonly,
                               'result':None}
 
                 self.write(resultdict)
@@ -353,6 +366,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 LOGGER.info('updated checkplot %s successfully' % updated)
                 resultdict = {'status':'success',
                               'message':'checkplot update successful',
+                              'readonly':self.readonly,
                               'result':{'checkplot':updated,
                                         'unixtime':time.time(),
                                         'changes':cpcontents}}
@@ -365,6 +379,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 msg = "checkplot update failed because of a backend error"
                 resultdict = {'status':'error',
                               'message':msg,
+                              'readonly':self.readonly,
                               'result':None}
                 self.set_status(500)
                 self.write(resultdict)
@@ -378,6 +393,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
             msg = "checkplot update failed because of an exception"
             resultdict = {'status':'error',
                           'message':msg,
+                          'readonly':self.readonly,
                           'result':None}
             self.set_status(500)
             self.write(resultdict)
@@ -394,7 +410,8 @@ class CheckplotListHandler(tornado.web.RequestHandler):
 
     '''
 
-    def initialize(self, currentdir, assetpath, cplist, cplistfile, executor):
+    def initialize(self, currentdir, assetpath, cplist,
+                   cplistfile, executor, readonly):
         '''
         handles initial setup.
 
@@ -405,6 +422,7 @@ class CheckplotListHandler(tornado.web.RequestHandler):
         self.currentproject = cplist
         self.cplistfile = cplistfile
         self.executor = executor
+        self.readonly = readonly
 
 
 
@@ -431,19 +449,38 @@ class CheckplotListHandler(tornado.web.RequestHandler):
 
         '''
 
+        # if self.readonly is set, then don't accept any changes
+        # return immediately with a 400
+        if self.readonly:
+
+            msg = "checkplotserver is in readonly mode. no updates allowed."
+            resultdict = {'status':'error',
+                          'message':msg,
+                          'readonly':self.readonly,
+                          'result':None}
+            self.set_status(400)
+            self.write(resultdict)
+            self.finish()
+
+
         objectid = self.get_argument('objectid', None)
         changes = self.get_argument('changes',None)
 
+        # if either of the above is invalid, return nothing
         if not objectid or not changes:
             msg = ("could not parse changes to the checkplot filelist "
                    "from the frontend")
             LOGGER.error(msg)
             resultdict = {'status':'error',
                           'message':msg,
+                          'readonly':self.readonly,
                           'result':None}
 
             self.write(resultdict)
+            self.finish()
 
+
+        # otherwise, update the checkplot list JSON
         objectid = xhtml_escape(objectid)
         changes = json.loads(changes)
 
@@ -463,6 +500,7 @@ class CheckplotListHandler(tornado.web.RequestHandler):
         LOGGER.info(msg)
         resultdict = {'status':'success',
                       'message':msg,
+                      'readonly':self.readonly,
                       'result':{'objectid':objectid,
                                 'changes':changes}}
 
@@ -481,7 +519,8 @@ class LCToolHandler(tornado.web.RequestHandler):
 
     '''
 
-    def initialize(self, currentdir, assetpath, cplist, cplistfile, executor):
+    def initialize(self, currentdir, assetpath, cplist,
+                   cplistfile, executor, readonly):
         '''
         handles initial setup.
 
@@ -492,6 +531,7 @@ class LCToolHandler(tornado.web.RequestHandler):
         self.currentproject = cplist
         self.cplistfile = cplistfile
         self.executor = executor
+        self.readonly = readonly
 
 
     def get(self, cpfile):

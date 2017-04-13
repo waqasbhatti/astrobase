@@ -92,8 +92,16 @@ define('debugmode',
        type=int)
 define('maxprocs',
        default=2,
-       help='number of background processes to use '
-       'for saving/loading checkplot files and running light curves tools',
+       help=('number of background processes to use '
+             'for saving/loading checkplot files and '
+             'running light curves tools'),
+       type=int)
+define('readonly',
+       default=False,
+       help=("run the server in readonly mode. This is useful for a "
+             "public-facing instance of checkplotserver where you just "
+             "want to allow collaborators to "
+             "review objects but not edit them."),
        type=int)
 
 ############
@@ -121,8 +129,11 @@ def main():
     ###################
 
     MAXPROCS = options.maxprocs
-
     ASSETPATH = options.assetpath
+
+    READONLY = options.readonly
+    if READONLY:
+        LOGGER.warning('checkplotserver running in readonly mode.')
 
     # this is the directory checkplotserver.py was executed from. used to figure
     # out checkplot locations
@@ -201,28 +212,32 @@ def main():
           'assetpath':ASSETPATH,
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile,
-          'executor':EXECUTOR}),
+          'executor':EXECUTOR,
+          'readonly':READONLY}),
         (r'/cp/?(.*)',
          cphandlers.CheckplotHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile,
-          'executor':EXECUTOR}),
+          'executor':EXECUTOR,
+          'readonly':READONLY}),
         (r'/list',
          cphandlers.CheckplotListHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile,
-          'executor':EXECUTOR}),
+          'executor':EXECUTOR,
+          'readonly':READONLY}),
         (r'/tools/?(.*)',
          cphandlers.LCToolHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile,
-          'executor':EXECUTOR}),
+          'executor':EXECUTOR,
+          'readonly':READONLY}),
         # (r'/cpfile/(.*)',
         #  tornado.web.StaticFileHandler, {'path': CURRENTDIR})
     ]
