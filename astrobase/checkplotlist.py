@@ -92,7 +92,7 @@ def main(args=None):
     if not args:
         args = sys.argv
 
-    if len(args) != 3:
+    if len(args) < 3:
         docstring = __doc__
         if docstring:
             print(docstring)
