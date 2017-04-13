@@ -58,6 +58,7 @@ import gzip
 import base64
 import sys
 import hashlib
+import sys
 
 try:
     import cPickle as pickle
@@ -2345,28 +2346,56 @@ def checkplot_pickle_update(currentcp, updatedcp,
         # we'll get this later below
         plotfpath = None
 
-    # get the current checkplotdict
-    if ((isinstance(currentcp, str) or isinstance(currentcp, unicode))
-        and os.path.exists(currentcp)):
-        cp_current = _read_checkplot_picklefile(currentcp)
-    elif isinstance(currentcp,dict):
-        cp_current = currentcp
-    else:
-        LOGERROR('currentcp: %s of type %s is not a '
-                 'valid checkplot filename (or does not exist), or a dict' %
-                 (os.path.abspath(currentcp), type(currentcp)))
-        return None
 
-    if ((isinstance(updatedcp, str) or isinstance(updatedcp, unicode))
-        and os.path.exists(updatedcp)):
-        cp_updated = _read_checkplot_picklefile(updatedcp)
-    elif isinstance(updatedcp, dict):
-        cp_updated = updatedcp
+    # break out python 2.7 and > 3 nonsense
+    if sys.version_info[:2] > (3,2):
+
+        if (isinstance(currentcp, str) and os.path.exists(currentcp)):
+            cp_current = _read_checkplot_picklefile(currentcp)
+        elif isinstance(currentcp, dict):
+            cp_current = currentcp
+        else:
+            LOGERROR('currentcp: %s of type %s is not a '
+                     'valid checkplot filename (or does not exist), or a dict' %
+                     (os.path.abspath(currentcp), type(currentcp)))
+            return None
+
+        if (isinstance(updatedcp, str) and os.path.exists(updatedcp)):
+            cp_updated = _read_checkplot_picklefile(updatedcp)
+        elif isinstance(updatedcp, dict):
+            cp_updated = updatedcp
+        else:
+            LOGERROR('updatedcp: %s of type %s is not a '
+                     'valid checkplot filename (or does not exist), or a dict' %
+                     (os.path.abspath(updatedcp), type(updatedcp)))
+            return None
+
+    # check for unicode in python 2.7
     else:
-        LOGERROR('currentcp: %s of type %s is not a '
-                 'valid checkplot filename (or does not exist), or a dict' %
-                 (os.path.abspath(updatedcp), type(updatedcp)))
-        return None
+
+        # get the current checkplotdict
+        if ((isinstance(currentcp, str) or isinstance(currentcp, unicode))
+            and os.path.exists(currentcp)):
+            cp_current = _read_checkplot_picklefile(currentcp)
+        elif isinstance(currentcp,dict):
+            cp_current = currentcp
+        else:
+            LOGERROR('currentcp: %s of type %s is not a '
+                     'valid checkplot filename (or does not exist), or a dict' %
+                     (os.path.abspath(currentcp), type(currentcp)))
+            return None
+
+        # get the updated checkplotdict
+        if ((isinstance(updatedcp, str) or isinstance(updatedcp, unicode))
+            and os.path.exists(updatedcp)):
+            cp_updated = _read_checkplot_picklefile(updatedcp)
+        elif isinstance(updatedcp, dict):
+            cp_updated = updatedcp
+        else:
+            LOGERROR('currentcp: %s of type %s is not a '
+                     'valid checkplot filename (or does not exist), or a dict' %
+                     (os.path.abspath(updatedcp), type(updatedcp)))
+            return None
 
     # do the update using python's dict update mechanism
     # this requires updated to be in the same checkplotdict format as current
