@@ -118,8 +118,13 @@ def main(args=None):
 
 
     currdir = os.getcwd()
-    searchresults = glob.glob(os.path.join(checkplotbasedir,
-                                           '%s.%s' % (fileglob, checkplotext)))
+
+    checkplotglob = os.path.join(checkplotbasedir,
+                                 '%s.%s' % (fileglob, checkplotext)
+
+    print('searching for checkplots: %s' % checkplotglob)
+
+    searchresults = glob.glob(checkplotglob)
 
     if searchresults:
 
