@@ -3,7 +3,7 @@
 License: MIT - see LICENSE for the full text.
 
 This contains functions to search for objects and get HAT sqlite
-("sqlitecurves") or CSV gzipped text light curvesfrom the new HAT data
+("sqlitecurves") or CSV gzipped text light curves from the new HAT data
 server. These can be read by the hatlc module.
 
 To get a single light curve for an object with objectid, belonging to hatproject

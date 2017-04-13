@@ -374,14 +374,6 @@ var cpv = {
             // update the readonly status
             cpv.readonlymode = data.readonly;
 
-            if (cpv.readonlymode) {
-                // if we're in readonly mode, inform the user
-                $('#alert-box').html(
-                    'The checkplot server is in readonly mode. ' +
-                        'Edits to object information will not be saved.'
-                );
-            }
-
             // update the objectid header
             objectidelem.html(cpv.currcp.objectid);
             // update the twomassid header
@@ -617,6 +609,14 @@ var cpv = {
 
             // get rid of the spinny thing
             $('#alert-box').empty();
+
+            if (cpv.readonlymode) {
+                // if we're in readonly mode, inform the user
+                $('#alert-box').html(
+                    'The checkplot server is in readonly mode. ' +
+                        'Edits to object information will not be saved.'
+                );
+            }
 
         }).fail (function (xhr) {
 
