@@ -153,7 +153,7 @@ var cptracker = {
         if (cpv.readonlymode) {
             // if we're in readonly mode, inform the user
             $('#alert-box').html(
-                'The checkplot server is in readonly mode.' +
+                'The checkplot server is in readonly mode. ' +
                     'Edits to object information will not be saved.'
             );
         }
@@ -377,7 +377,7 @@ var cpv = {
             if (cpv.readonlymode) {
                 // if we're in readonly mode, inform the user
                 $('#alert-box').html(
-                    'The checkplot server is in readonly mode.' +
+                    'The checkplot server is in readonly mode. ' +
                         'Edits to object information will not be saved.'
                 );
             }
@@ -640,7 +640,7 @@ var cpv = {
         if (cpv.readonlymode) {
 
             $('#alert-box').html(
-                'The checkplot server is in readonly mode.' +
+                'The checkplot server is in readonly mode. ' +
                     'Edits to object information will not be saved.'
             );
 

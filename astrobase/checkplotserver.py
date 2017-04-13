@@ -102,7 +102,7 @@ define('readonly',
              "public-facing instance of checkplotserver where you just "
              "want to allow collaborators to "
              "review objects but not edit them."),
-       type=int)
+       type=bool)
 
 ############
 ### MAIN ###
