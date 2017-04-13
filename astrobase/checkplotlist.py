@@ -76,7 +76,7 @@ TL;DR
 This makes a checkplot file list for use with the checkplot-viewer.html (for
 checkplot PNGs) or the checkplotserver.py (for checkplot pickles) webapps.
 
-checkplotlist <pkl|png> <subdir/containing/the/checkplots/>
+checkplotlist <pkl|png> <subdir/containing/checkplots/> [checkplot file glob]
 
 '''
 
@@ -97,16 +97,20 @@ def main(args=None):
         if docstring:
             print(docstring)
         else:
-            print('Usage: %s <pkl|png> <subdir/containing/the/checkplots/> ' %
-                  args[0])
+            print('Usage: %s <pkl|png> <subdir/containing/the/checkplots/> '
+                  '[file glob to use] ' % args[0])
         sys.exit(2)
 
     checkplotbasedir = args[2]
+    if len(args) == 4:
+        fileglob = args[3]
+    else:
+        fileglob = '*checkplot*'
 
     if args[1] == 'pkl':
-        checkplotglob = 'pkl'
+        checkplotext = 'pkl'
     elif args[1] == 'png':
-        checkplotglob = 'png'
+        checkplotext = 'png'
     else:
         print("unknown format for checkplots: %s! can't continue!"
               % args[1])
@@ -115,7 +119,7 @@ def main(args=None):
 
     currdir = os.getcwd()
     searchresults = glob.glob(os.path.join(checkplotbasedir,
-                                           '*checkplot*.%s' % checkplotglob))
+                                           '%s.%s' % (fileglob, checkplotext)))
 
     if searchresults:
 
