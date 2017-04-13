@@ -120,7 +120,7 @@ def main(args=None):
     currdir = os.getcwd()
 
     checkplotglob = os.path.join(checkplotbasedir,
-                                 '%s.%s' % (fileglob, checkplotext)
+                                 '%s.%s' % (fileglob, checkplotext))
 
     print('searching for checkplots: %s' % checkplotglob)
 
