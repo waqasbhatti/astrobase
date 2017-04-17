@@ -77,6 +77,7 @@ setup(
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: MIT License',
         "Intended Audience :: Science/Research",
+        "Topic :: Scientific/Engineering :: Astronomy",
         "Operating System :: OS Independent",
         "Programming Language :: Python",
     ],
