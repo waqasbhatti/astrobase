@@ -2824,7 +2824,7 @@ def checkplot_pickle_to_png(checkplotin,
         for vartagline in range(nvartaglines):
             vartagslice = ','.join(vartagsplit[vartagline*3:vartagline*3+3])
             objinfodraw.text(
-                (1600, 250+vartagline*25),
+                (1600, 225+vartagline*25),
                 vartagslice,
                 font=cpfontnormal,
                 fill=(135, 54, 0, 255)
@@ -2927,8 +2927,7 @@ def checkplot_pickle_to_png(checkplotin,
 
             for ecolind, ecol in enumerate(ecols):
 
-                eplot = Image.open(erow[ecol])
-                )
+                eplot = Image.open(erow[ecolind])
                 eplotresized = eplot.resize((750,480), Image.ANTIALIAS)
                 outimg.paste(eplotresized,
                              (750*ecolind,
