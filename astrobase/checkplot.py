@@ -215,6 +215,9 @@ def _make_periodogram(axes,
                 'finder chart for %s at RA: %.3f, DEC: %.3f' %
                 (objectid, objectinfo['ra'], objectinfo['decl']))
 
+        # FIXME: get mag info from astroquery or HATDS if needed
+
+
         # calculate colors
         if ('bmag' in objectinfo and 'vmag' in objectinfo and
             'jmag' in objectinfo and 'kmag' in objectinfo and
@@ -237,7 +240,9 @@ def _make_periodogram(axes,
 
         # get the stamp
         try:
-            dss = astroquery_skyview_stamp(objectinfo['ra'],objectinfo['decl'])
+            dss = astroquery_skyview_stamp(objectinfo['ra'],
+                                           objectinfo['decl'],
+                                           convolvewith=finderconvolve)
             stamp = dss
 
             # inset plot it on the current axes
@@ -2437,17 +2442,17 @@ def checkplot_pickle_update(currentcp, updatedcp,
 
 
 
-def checkplot_pickle_to_png(checkplotpickle, outfpath):
+def checkplot_pickle_to_png(checkplotpickle, outfile):
     '''This reads the pickle provided, and writes out a PNG.
 
     checkplotpickle is either a checkplot dict produced by checkplot_pickle
-    above or a gzipped pickle file produced by the same function.
+    above or a pickle file produced by the same function.
 
     The PNG has 4 x N tiles, as below:
 
-    [    finder    ] [  objectinfo  ] [ variableinfo ] [ unphased LC  ]
-    [ periodogram1 ] [ phased LC P1 ] [ phased LC P2 ] [ phased LC P3 ]
-    [ periodogram2 ] [ phased LC P1 ] [ phased LC P2 ] [ phased LC P3 ]
+    [    finder    ] [  objectinfo  ] [ varinfo/comments ] [ unphased LC  ]
+    [ periodogram1 ] [ phased LC P1 ] [   phased LC P2   ] [ phased LC P3 ]
+    [ periodogram2 ] [ phased LC P1 ] [   phased LC P2   ] [ phased LC P3 ]
                                      .
                                      .
     [ periodogramN ] [ phased LC P1 ] [ phased LC P2 ] [ phased LC P3 ]
