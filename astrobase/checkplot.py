@@ -86,6 +86,10 @@ from traceback import format_exc
 # import this to check if stimes, smags, serrs are Column objects
 from astropy.table import Column as astcolumn
 
+# import from Pillow to generate pngs from checkplot dicts
+from PIL import Image, ImageOps, ImageDraw, ImageFont
+
+
 
 #############
 ## LOGGING ##
@@ -1184,7 +1188,7 @@ def twolsp_checkplot_png(lspinfo1,
 ## PICKLE CHECKPLOT UTILITY FUNCTIONS  ##
 #########################################
 
-def _base64_to_file(b64str, outfpath):
+def _base64_to_file(b64str, outfpath, writetostrio=False):
     '''
     This converts the base64 encoded string to a file.
 
@@ -1193,14 +1197,24 @@ def _base64_to_file(b64str, outfpath):
     try:
 
         filebytes = base64.b64decode(b64str)
-        with open(outfpath,'wb') as outfd:
-            outfd.write(filebytes)
 
-        if os.path.exists(outfpath):
-            return outfpath
+        # if we're writing back to a stringio object
+        if writetostrio:
+
+            outobj = strio(filebytes)
+            return outobj
+
+        # otherwise, we're writing to an actual file
         else:
-            LOGERROR('could not write output file: %s' % outfpath)
-            return None
+
+            with open(outfpath,'wb') as outfd:
+                outfd.write(filebytes)
+
+            if os.path.exists(outfpath):
+                return outfpath
+            else:
+                LOGERROR('could not write output file: %s' % outfpath)
+                return None
 
     except Exception as e:
 
@@ -1272,6 +1286,9 @@ def _pkl_finder_objectinfo(objectinfo,
 
         # now that we have the finder chart, get the rest of the object
         # information
+
+        # FIXME: get this stuff from astroquery or HATDS if it's missing and we
+        # have the ra/decl
 
         if ('bmag' in objectinfo and objectinfo['bmag'] is not None and
             'vmag' in objectinfo and objectinfo['vmag'] is not None):
@@ -2442,11 +2459,13 @@ def checkplot_pickle_update(currentcp, updatedcp,
 
 
 
-def checkplot_pickle_to_png(checkplotpickle, outfile):
+def checkplot_pickle_to_png(checkplotin,
+                            outfile,
+                            extrarows=None):
     '''This reads the pickle provided, and writes out a PNG.
 
-    checkplotpickle is either a checkplot dict produced by checkplot_pickle
-    above or a pickle file produced by the same function.
+    checkplotin is either a checkplot dict produced by checkplot_pickle above or
+    a pickle file produced by the same function.
 
     The PNG has 4 x N tiles, as below:
 
@@ -2463,6 +2482,463 @@ def checkplot_pickle_to_png(checkplotpickle, outfile):
     - phased LC P1,P2,P3: the phased lightcurves using the best 3 peaks in each
                           periodogram
 
-    FIXME: to be implemented
+    outfile is the output PNG file to generate.
+
+    extrarows is a list of 4-element tuples containing paths to PNG files that
+    will be added to the end of the rows generated from the checkplotin
+    pickle/dict. Each tuple represents a row in the final output PNG file. If
+    there are less than 4 elements per tuple, the missing elements will be
+    filled in with white-space. If there are more than 4 elements per tuple,
+    only the first four will be used.
+
+    The purpose of this kwarg is to incorporate periodograms and phased LC plots
+    (in the form of PNGs) generated from an external period-finding function or
+    program (like vartools) to allow for comparison with astrobase results.
+
+    Each external PNG will be resized to 750 x 480 pixels to fit into an output
+    image cell.
+
+    By convention, each 4-element tuple should contain:
+
+    a periodiogram PNG
+    phased LC PNG with 1st best peak period from periodogram
+    phased LC PNG with 2nd best peak period from periodogram
+    phased LC PNG with 3rd best peak period from periodogram
+
+    example of extrarows:
+
+    extrarows = [('/path/to/external/bls-periodogram.png',
+                  '/path/to/external/bls-phasedlc-plot-bestpeak.png',
+                  '/path/to/external/bls-phasedlc-plot-peak2.png',
+                  '/path/to/external/bls-phasedlc-plot-peak3.png'),
+                 ('/path/to/external/pdm-periodogram.png',
+                  '/path/to/external/pdm-phasedlc-plot-bestpeak.png',
+                  '/path/to/external/pdm-phasedlc-plot-peak2.png',
+                  '/path/to/external/pdm-phasedlc-plot-peak3.png'),
+                  ...]
+
 
     '''
+
+    # figure out if the checkplotpickle is a filename
+    # python 3
+    if sys.version_info[:2] > (3,2):
+
+        if (isinstance(checkplotin, str) and os.path.exists(checkplotin)):
+            cpd = _read_checkplot_picklefile(checkplotin)
+        elif isinstance(checkplotin, dict):
+            cpd = checkplotin
+        else:
+            LOGERROR('checkplotin: %s of type %s is not a '
+                     'valid checkplot filename (or does not exist), or a dict' %
+                     (os.path.abspath(checkplotin), type(checkplotin)))
+            return None
+
+    # check for unicode in python 2.7
+    else:
+
+        # get the current checkplotdict
+        if ((isinstance(checkplotin, str) or isinstance(checkplotin, unicode))
+            and os.path.exists(checkplotin)):
+            cpd = _read_checkplot_picklefile(checkplotin)
+        elif isinstance(checkplotin,dict):
+            cpd = checkplotin
+        else:
+            LOGERROR('checkplotin: %s of type %s is not a '
+                     'valid checkplot filename (or does not exist), or a dict' %
+                     (os.path.abspath(checkplotin), type(checkplotin)))
+            return None
+
+    # figure out the dimensions of the output png
+    # each cell is 750 x 480 pixels
+    # a row is made of four cells
+    # - the first row is for object info
+    # - the rest are for periodograms and phased LCs, one row per method
+    # if there are more than three phased LC plots per method, we'll only plot 3
+    cplspmethods = []
+    cprows = 0
+
+    # get checkplot pickle rows
+    for lspmethod in ('gls','pdm','bls','aov','fch','mav'):
+        if lspmethod in cpd:
+            cplspmethods.append(lspmethod)
+            cprows = cprows + 1
+
+    # add in any extra rows
+    if extrarows and len(extrarows) > 0:
+        erows = len(extrarows)
+    else:
+        erows = 0
+
+    totalwidth = 3000
+    totalheight = 480 + (cprows + erows)*480
+
+    # this is the output PNG
+    outimg = Image.new('RGBA',(totalwidth, totalheight),(255,255,255,255))
+
+    # now fill in the rows of the output png. we'll use Pillow to build up the
+    # output image from the already stored plots and stuff in the checkplot
+    # dict.
+
+    ###############################
+    # row 1, cell 1: finder chart #
+    ###############################
+
+    if cpd['finderchart']:
+        finder = Image.open(
+            _base64_to_file(cpd['finderchart'], None, writetostrio=True)
+            )
+        bigfinder = finder.resize((450,450), Image.ANTIALIAS)
+        outimg.paste(bigfinder,(150,20))
+
+    #####################################
+    # row 1, cell 2: object information #
+    #####################################
+
+    # find the font we need from the package data
+    fontpath = os.path.join(os.path.dirname(__file__),
+                            'data',
+                            'cps-assets',
+                            'DejaVuSans.ttf')
+    # load the font
+    if os.path.exists(fontpath):
+        cpfontnormal = ImageFont.truetype(fontpath, 20)
+        cpfontlarge = ImageFont.truetype(fontpath, 28)
+    else:
+        LOGWARNING('could not find the DejaVu Sans font in astrobase package '
+                   'data, using ugly defaults...')
+        cpfontnormal = ImageFont.load_default()
+        cpfontlarge = ImageFont.load_default()
+
+    # the image draw object
+    objinfodraw = ImageDraw.Draw(outimg)
+
+    # write out the object information
+
+    # objectid
+    objinfodraw.text(
+        (875, 25),
+        cpd['objectid'] if cpd['objectid'] else 'no objectid',
+        font=cpfontlarge,
+        fill=(0,0,255,255)
+    )
+    # twomass id
+    objinfodraw.text(
+        (875, 60),
+        ('2MASS J%s' % cpd['objectinfo']['twomassid']
+         if cpd['objectinfo']['twomassid']
+         else ''),
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+    # ndet
+    objinfodraw.text(
+        (875, 85),
+        ('LC points: %s' % cpd['objectinfo']['ndet']
+         if cpd['objectinfo']['ndet'] is not None
+         else ''),
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+
+    # coords and PM
+    objinfodraw.text(
+        (875, 125),
+        ('Coords and PM'),
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+    objinfodraw.text(
+        (1125, 125),
+        (('RA, Dec: %.3f, %.3f' %
+          (cpd['objectinfo']['ra'], cpd['objectinfo']['decl']))
+         if (cpd['objectinfo']['ra'] is not None and
+             cpd['objectinfo']['decl'] is not None)
+         else ''),
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+    objinfodraw.text(
+        (1125, 150),
+        (('Total PM: %.5f mas/yr' % cpd['objectinfo']['propermotion'])
+         if (cpd['objectinfo']['propermotion'] is not None)
+         else ''),
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+    objinfodraw.text(
+        (1125, 175),
+        (('Reduced PM: %.3f' % cpd['objectinfo']['reducedpropermotion'])
+         if (cpd['objectinfo']['reducedpropermotion'] is not None)
+         else ''),
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+
+    # magnitudes
+    objinfodraw.text(
+        (875, 200),
+        ('Magnitudes'),
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+    objinfodraw.text(
+        (1125, 200),
+        ('gri: %.3f, %.3f, %.3f' %
+         ((cpd['objectinfo']['sdssg'] if
+           cpd['objectinfo']['sdssg'] is not None
+           else npnan),
+          (cpd['objectinfo']['sdssr'] if
+           cpd['objectinfo']['sdssr'] is not None
+           else npnan),
+          (cpd['objectinfo']['sdssi'] if
+           cpd['objectinfo']['sdssi'] is not None
+           else npnan))),
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+    objinfodraw.text(
+        (1125, 225),
+        ('JHK: %.3f, %.3f, %.3f' %
+         ((cpd['objectinfo']['jmag'] if
+           cpd['objectinfo']['jmag'] is not None
+           else npnan),
+          (cpd['objectinfo']['hmag'] if
+           cpd['objectinfo']['hmag'] is not None
+           else npnan),
+          (cpd['objectinfo']['kmag'] if
+           cpd['objectinfo']['kmag'] is not None
+           else npnan))),
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+    objinfodraw.text(
+        (1125, 250),
+        ('BV: %.3f, %.3f' %
+         ((cpd['objectinfo']['bmag'] if
+           cpd['objectinfo']['bmag'] is not None
+           else npnan),
+          (cpd['objectinfo']['vmag'] if
+           cpd['objectinfo']['vmag'] is not None
+           else npnan))),
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+
+    # colors
+    objinfodraw.text(
+        (875, 275),
+        ('Colors'),
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+    objinfodraw.text(
+        (1125, 275),
+        ('B - V: %.3f' %
+         (cpd['objectinfo']['bvcolor'] if
+          cpd['objectinfo']['bvcolor'] is not None
+          else npnan)),
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+    objinfodraw.text(
+        (1125, 300),
+        ('i - J: %.3f' %
+         (cpd['objectinfo']['ijcolor'] if
+          cpd['objectinfo']['ijcolor'] is not None
+          else npnan)),
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+    objinfodraw.text(
+        (1125, 325),
+        ('J - K: %.3f' %
+         (cpd['objectinfo']['jkcolor'] if
+          cpd['objectinfo']['jkcolor'] is not None
+          else npnan)),
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+
+    # object tags
+    if cpd['objectinfo']['objecttags']:
+
+        objtagsplit = cpd['objectinfo']['objecttags'].split(',')
+
+        # write three tags per line
+        nobjtaglines = int(np.ceil(len(objtagsplit)/3.0))
+
+        for objtagline in range(nobjtaglines):
+            objtagslice = ','.join(objtagsplit[objtagline*3:objtagline*3+3])
+            objinfodraw.text(
+                (875, 375+objtagline*25),
+                objtagslice,
+                font=cpfontnormal,
+                fill=(135, 54, 0, 255)
+            )
+
+
+
+    ################################################
+    # row 1, cell 3: variability info and comments #
+    ################################################
+
+    # objectisvar
+    objinfodraw.text(
+        (1600, 125),
+        'Object is variable: %s' % cpd['varinfo']['objectisvar'],
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+
+    # period
+    objinfodraw.text(
+        (1600, 150),
+        ('Period [days]: %.6f' %
+         (cpd['varinfo']['varperiod']
+          if cpd['varinfo']['varperiod'] is not None
+          else np.nan)),
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+
+    # epoch
+    objinfodraw.text(
+        (1600, 175),
+        ('Epoch [JD]: %.6f' %
+         (cpd['varinfo']['varepoch']
+          if cpd['varinfo']['varepoch'] is not None
+          else np.nan)),
+        font=cpfontnormal,
+        fill=(0,0,0,255)
+    )
+
+    # variability tags
+    if cpd['varinfo']['vartags']:
+
+        vartagsplit = cpd['varinfo']['vartags'].split(',')
+
+        # write three tags per line
+        nvartaglines = int(np.ceil(len(vartagsplit)/3.0))
+
+        for vartagline in range(nvartaglines):
+            vartagslice = ','.join(vartagsplit[vartagline*3:vartagline*3+3])
+            objinfodraw.text(
+                (1600, 250+vartagline*25),
+                vartagslice,
+                font=cpfontnormal,
+                fill=(135, 54, 0, 255)
+            )
+
+    # object comments
+    if cpd['comments']:
+
+        commentsplit = cpd['comments'].split(' ')
+
+        # write 10 words per line
+        ncommentlines = int(np.ceil(len(commentsplit)/10.0))
+
+        for commentline in range(ncommentlines):
+            commentslice = ' '.join(
+                commentsplit[commentline*10:commentline*10+10]
+            )
+            objinfodraw.text(
+                (1600, 325+commentline*25),
+                commentslice,
+                font=cpfontnormal,
+                fill=(0,0,0,255)
+            )
+
+
+    #######################################
+    # row 1, cell 4: unphased light curve #
+    #######################################
+
+    if (cpd['magseries'] and
+        'plot' in cpd['magseries'] and
+        cpd['magseries']['plot']):
+        magseries = Image.open(
+            _base64_to_file(cpd['magseries']['plot'], None, writetostrio=True)
+            )
+        outimg.paste(magseries,(750*3,0))
+
+    ###############################
+    # the rest of the rows in cpd #
+    ###############################
+    for lspmethodind, lspmethod in enumerate(cplspmethods):
+
+        ###############################
+        # the periodogram comes first #
+        ###############################
+
+        if (cpd[lspmethod] and cpd[lspmethod]['periodogram']):
+
+            pgram = Image.open(
+            _base64_to_file(cpd[lspmethod]['periodogram'], None,
+                            writetostrio=True)
+            )
+            outimg.paste(pgram,(0,480 + 480*lspmethodind))
+
+        #############################
+        # best phased LC comes next #
+        #############################
+
+        if (cpd[lspmethod] and cpd[lspmethod][0]):
+
+            plc1 = Image.open(
+            _base64_to_file(cpd[lspmethod][0]['plot'], None, writetostrio=True)
+            )
+            outimg.paste(plc1,(750,480 + 480*lspmethodind))
+
+        #################################
+        # 2nd best phased LC comes next #
+        #################################
+
+        if (cpd[lspmethod] and cpd[lspmethod][1]):
+
+            plc2 = Image.open(
+            _base64_to_file(cpd[lspmethod][1]['plot'], None, writetostrio=True)
+            )
+            outimg.paste(plc2,(750*2,480 + 480*lspmethodind))
+
+        #################################
+        # 3rd best phased LC comes next #
+        #################################
+
+        if (cpd[lspmethod] and cpd[lspmethod][2]):
+
+            plc3 = Image.open(
+            _base64_to_file(cpd[lspmethod][2]['plot'], None, writetostrio=True)
+            )
+            outimg.paste(plc3,(750*3,480 + 480*lspmethodind))
+
+
+    ################################
+    ## ALL DONE WITH BUILDING PNG ##
+    ################################
+
+    #########################
+    # add in any extra rows #
+    #########################
+
+    if erows > 0:
+
+        for erowind, erow in enumerate(extrarows):
+
+            for ecolind, ecol in enumerate(ecols):
+
+                eplot = Image.open(
+                    _base64_to_file(erow[ecol], None, writetostrio=True)
+                )
+                outimg.paste(eplot,(750*ecolind,cprows*480 + 480*erowind))
+
+
+    #####################
+    ## WRITE FINAL PNG ##
+    #####################
+    outimg.save(outfile)
+
+    if os.path.exists(outfile):
+        LOGINFO('checkplot pickle -> checkplot PNG: %s OK' % outfile)
+    else:
+        LOGERROR('failed to write checkplot PNG')
