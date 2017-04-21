@@ -2927,10 +2927,12 @@ def checkplot_pickle_to_png(checkplotin,
 
             for ecolind, ecol in enumerate(ecols):
 
-                eplot = Image.open(
-                    _base64_to_file(erow[ecol], None, writetostrio=True)
+                eplot = Image.open(erow[ecol])
                 )
-                outimg.paste(eplot,(750*ecolind,cprows*480 + 480*erowind))
+                eplotresized = eplot.resize((750,480), Image.ANTIALIAS)
+                outimg.paste(eplotresized,
+                             (750*ecolind,
+                              cprows*480 + 480*erowind))
 
 
     #####################
