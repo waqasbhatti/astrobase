@@ -348,3 +348,66 @@ def test_checkplot_pickle_update():
     cpdupdated = checkplot._read_checkplot_picklefile(cpfupdated)
 
     assert cpdupdated['comments'] == cpd['comments']
+
+
+
+def test_checkplot_pickle_topng():
+    '''Tests if a checkplot pickle can be made, read, updated, exported to PNG.
+
+    '''
+
+    outpath = os.path.join(os.path.dirname(LCPATH),
+                           'test-checkplot.pkl')
+
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
+    gls = periodbase.pgen_lsp(lcd['rjd'], lcd['aep_000'], lcd['aie_000'])
+
+    assert isinstance(gls, dict)
+    assert_allclose(gls['bestperiod'], 1.54289477)
+
+    pdm = periodbase.stellingwerf_pdm(lcd['rjd'],
+                                      lcd['aep_000'],
+                                      lcd['aie_000'])
+
+    assert isinstance(pdm, dict)
+    assert_allclose(pdm['bestperiod'], 3.08578956)
+
+    # test write
+    cpf = checkplot.checkplot_pickle(
+        [gls, pdm],
+        lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+        outfile=outpath,
+        objectinfo=lcd['objectinfo']
+    )
+
+    assert os.path.exists(outpath)
+
+    # test read back
+    cpd = checkplot._read_checkplot_picklefile(cpf)
+
+    assert isinstance(cpd, dict)
+
+    cpdkeys = set(list(cpd.keys()))
+    testset = {'comments', 'finderchart', 'sigclip', 'objectid',
+               'pdm', 'gls', 'objectinfo', 'status', 'varinfo',
+               'normto', 'magseries', 'normmingap'}
+    assert (testset - cpdkeys) == set()
+
+    assert_allclose(cpd['gls']['bestperiod'], 1.54289477)
+    assert_allclose(cpd['pdm']['bestperiod'], 3.08578956)
+
+    # test update write to pickle
+    cpd['comments'] = ('this is a test of the checkplot pickle '
+                       'update mechanism. this is only a test.')
+    cpfupdated = checkplot.checkplot_pickle_update(cpf, cpd)
+
+    cpdupdated = checkplot._read_checkplot_picklefile(cpfupdated)
+
+    assert cpdupdated['comments'] == cpd['comments']
+
+    # export to PNG
+    cpd['varinfo']['objectisvar'] = "1"
+    cpd['varinfo']['varperiod'] = cpd['pdm']['bestperiod']
+
+    exportedpng = checkplot.checkplot_pickle_to_png(cpd, 'exported-checkplot.png')
+    assert (exportedpng and os.path.exists(exportedpng))
