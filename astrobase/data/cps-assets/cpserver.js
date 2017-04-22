@@ -805,9 +805,10 @@ var cpv = {
                     if (!(savetopng === undefined) &&
                         (updateinfo.cpfpng != 'png making failed')) {
 
-                        updatemsg = '<a href="' +
-                            'file:///' + updateinfo.cpfpng +
-                            '">PNG saved successfully</a>';
+                        updatemsg = 'saved PNG to:<br>' +
+                            '<textarea rows="3" readonly>' +
+                            updateinfo.cpfpng +
+                            '</textarea>';
                         $('#alert-box').html(updatemsg);
 
                     }
@@ -1143,6 +1144,7 @@ var cpv = {
         // shift+enter: save this, but don't go anywhere
         Mousetrap.bind('shift+enter', function() {
             cpv.save_checkplot(undefined, undefined);
+            $('#alert-box').empty();
         });
 
 
