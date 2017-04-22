@@ -2784,9 +2784,28 @@ def checkplot_pickle_to_png(checkplotin,
     ################################################
 
     # objectisvar
+    objisvar = cpd['varinfo']['objectisvar']
+
+    if objisvar == '0':
+        objvarflag = 'Variable star flag not set'
+    elif objisvar == '1':
+        objvarflag = 'Object is probably a variable star'
+    elif objisvar == '2':
+        objvarflag = 'Object is probably not a variable star'
+    elif objisvar == '3':
+        objvarflag = 'Not sure if this object is a variable star'
+    elif objisvar is None:
+        objvarflag = 'Variable star flag not set'
+    elif objisvar is True:
+        objvarflag = 'Object is probably a variable star'
+    elif objisvar is False:
+        objvarflag = 'Object is probably not a variable star'
+    else:
+        objvarflag = 'Variable star flag: %s' % objisvar
+
     objinfodraw.text(
         (1600, 125),
-        'Object is variable: %s' % cpd['varinfo']['objectisvar'],
+        objvarflag,
         font=cpfontnormal,
         fill=(0,0,0,255)
     )
