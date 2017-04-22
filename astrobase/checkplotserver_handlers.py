@@ -42,6 +42,9 @@ from tornado import gen
 ## LOCAL IMPORTS ##
 ###################
 
+from . import checkplot
+checkplot.set_logger_parent(__name__)
+
 from .checkplot import checkplot_pickle_update, checkplot_pickle_to_png, \
     _read_checkplot_picklefile, _base64_to_file
 
@@ -316,6 +319,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
             self.cpfile = base64.b64decode(cpfile).decode()
             cpcontents = self.get_argument('cpcontents', default=None)
+            savetopng = self.get_argument('savetopng', default=None)
 
             if not self.cpfile or not cpcontents:
 
@@ -336,7 +340,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                        'objectinfo':cpcontents['objectinfo'],
                        'comments':cpcontents['comments']}
 
-            # we need reform the self.cpfile so it points to the full path
+            # we need to reform the self.cpfile so it points to the full path
             cpfpath = os.path.join(
                 os.path.abspath(os.path.dirname(self.cplistfile)),
                 self.cpfile
@@ -364,12 +368,31 @@ class CheckplotHandler(tornado.web.RequestHandler):
             if updated:
 
                 LOGGER.info('updated checkplot %s successfully' % updated)
+
                 resultdict = {'status':'success',
                               'message':'checkplot update successful',
                               'readonly':self.readonly,
                               'result':{'checkplot':updated,
                                         'unixtime':time.time(),
-                                        'changes':cpcontents}}
+                                        'changes':cpcontents,
+                                        'cpfpng': None}}
+
+                # handle a savetopng trigger
+                if savetopng:
+
+                    cpfpng = os.path.abspath(cpfpath.replace('.pkl','.png'))
+
+                    pngdone = yield self.executor.submit(
+                        checkplot_pickle_to_png,
+                        cpfpath, cpfpng
+                    )
+
+                    if os.path.exists(cpfpng):
+                        resultdict['result']['cpfpng'] = cpfpng
+                    else:
+                        resultdict['result']['cpfpng'] = 'png making failed'
+
+
                 self.write(resultdict)
                 self.finish()
 

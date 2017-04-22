@@ -2941,5 +2941,7 @@ def checkplot_pickle_to_png(checkplotin,
 
     if os.path.exists(outfile):
         LOGINFO('checkplot pickle -> checkplot PNG: %s OK' % outfile)
+        return outimg
     else:
         LOGERROR('failed to write checkplot PNG')
+        return None
