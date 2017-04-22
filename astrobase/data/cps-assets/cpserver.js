@@ -294,6 +294,7 @@ var cpv = {
     currfile: '',
     currcp: {},
     totalcps: 0,
+    cpfpng: null,
 
     // this checks if the server is in readonly mode. disables controls if so.
     readonlymode: false,
@@ -633,7 +634,7 @@ var cpv = {
     // prev, before load of a new checkplot, so changes are always saved). UI
     // elements in the checkplot list will tag the saved checkplots
     // appropriately
-    save_checkplot: function (nextfunc_callback, nextfunc_arg) {
+    save_checkplot: function (nextfunc_callback, nextfunc_arg, savetopng) {
 
         // make sure we're not in readonly mode
         // if we are, then just bail out immediately
@@ -647,7 +648,7 @@ var cpv = {
             // call the next function. we call this here so we can be sure the
             // next action starts correctly even if we're not saving anything
             if (!(nextfunc_callback === undefined) &&
-                !(nextfunc_callback === null)) {
+                !(nextfunc_arg === undefined)) {
                 nextfunc_callback(nextfunc_arg);
             }
 
@@ -677,7 +678,8 @@ var cpv = {
 
             // first, generate the object to send with the POST request
             var postobj = {cpfile: cpv.currfile,
-                           cpcontents: cppayload};
+                           cpcontents: cppayload,
+                           savetopng: savetopng};
 
             // this is to deal with UI elements later
             var currfile = postobj.cpfile;
@@ -799,6 +801,24 @@ var cpv = {
                     var nsaved = $('#project-status div').length;
                     $('#saved-count').html(nsaved + '/' + cpv.totalcps);
 
+                    // if we called a save to PNG, show it if it succeeded
+                    if (!(savetopng === undefined) &&
+                        (updateinfo.cpfpng != 'png making failed')) {
+
+                        updatemsg = '<a href="' +
+                            'file:///' + updateinfo.cpfpng +
+                            '">PNG saved successfully</a>';
+                        $('#alert-box').html(updatemsg);
+
+                    }
+                    else if (!(savetopng === undefined) &&
+                        (updateinfo.cpfpng == 'png making failed')) {
+
+                        updatemsg = 'sorry, making a PNG for ' +
+                            'this object failed!';
+                        $('#alert-box').html(updatemsg);
+
+                    }
 
                 }
 
@@ -810,9 +830,6 @@ var cpv = {
                 // and call the next function.
             },'json').done(function (xhr) {
 
-                // clean out the alert box
-                $('#alert-box').empty();
-
                 // send the changes to the backend so they're present in the
                 // checkplot-filelist.json file for the next time around
                 cptracker.reviewed_object_to_cplist();
@@ -820,8 +837,11 @@ var cpv = {
                 // call the next function. we call this here so we can be sure
                 // the save finished before the next action starts
                 if (!(nextfunc_callback === undefined) &&
-                    !(nextfunc_callback === null)) {
+                    !(nextfunc_arg === undefined)) {
                     nextfunc_callback(nextfunc_arg);
+                    // clean out the alert box if there's a next function
+                    $('#alert-box').empty();
+
                 }
 
                 // if POST failed, pop up an alert in the alert box
@@ -1063,6 +1083,12 @@ var cpv = {
 
         });
 
+        $('#save-to-png').on('click', function(evt) {
+
+            evt.preventDefault();
+            cpv.save_checkplot(undefined, undefined, true);
+
+        });
 
     },
 
@@ -1116,7 +1142,7 @@ var cpv = {
 
         // shift+enter: save this, but don't go anywhere
         Mousetrap.bind('shift+enter', function() {
-            cpv.save_checkplot(null, null);
+            cpv.save_checkplot(undefined, undefined);
         });
 
 
