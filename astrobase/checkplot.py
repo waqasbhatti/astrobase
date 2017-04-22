@@ -2944,13 +2944,14 @@ def checkplot_pickle_to_png(checkplotin,
 
         for erowind, erow in enumerate(extrarows):
 
-            for ecolind, ecol in enumerate(ecols):
+            # make sure we never go above 4 plots in a row
+            for ecolind, ecol in enumerate(erow[:4]):
 
-                eplot = Image.open(erow[ecolind])
+                eplot = Image.open(ecol)
                 eplotresized = eplot.resize((750,480), Image.ANTIALIAS)
                 outimg.paste(eplotresized,
                              (750*ecolind,
-                              cprows*480 + 480*erowind))
+                              (cprows+1)*480 + 480*erowind))
 
 
     #####################
@@ -2960,7 +2961,7 @@ def checkplot_pickle_to_png(checkplotin,
 
     if os.path.exists(outfile):
         LOGINFO('checkplot pickle -> checkplot PNG: %s OK' % outfile)
-        return outimg
+        return outfile
     else:
         LOGERROR('failed to write checkplot PNG')
         return None
