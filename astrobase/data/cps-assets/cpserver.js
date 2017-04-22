@@ -806,7 +806,7 @@ var cpv = {
                         (updateinfo.cpfpng != 'png making failed')) {
 
                         updatemsg = 'saved PNG to:<br>' +
-                            '<textarea rows="3" readonly>' +
+                            '<textarea rows="3" class="form-control" readonly>' +
                             updateinfo.cpfpng +
                             '</textarea>';
                         $('#alert-box').html(updatemsg);
