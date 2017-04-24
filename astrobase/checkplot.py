@@ -2647,7 +2647,9 @@ def checkplot_pickle_to_png(checkplotin,
         erows = 0
 
     # add in any extra rows from the checkplot dict
-    if cpd['externalplots'] and len(cpd['externalplots']) > 0:
+    if ('externalplots' in cpd and
+        cpd['externalplots'] and
+        len(cpd['externalplots'])) > 0:
         cpderows = len(cpd['externalplots'])
     else:
         cpderows = 0
