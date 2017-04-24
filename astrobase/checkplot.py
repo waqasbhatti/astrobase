@@ -80,7 +80,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid.inset_locator import inset_axes
 
 import logging
-from datetime import datetime
+from datetime import datetime as dtime
 from traceback import format_exc
 
 # import this to check if stimes, smags, serrs are Column objects
@@ -105,25 +105,25 @@ def LOGDEBUG(message):
     if LOGGER:
         LOGGER.debug(message)
     elif DEBUG:
-        print('%sZ [DBUG]: %s' % (datetime.utcnow().isoformat(), message))
+        print('%sZ [DBUG]: %s' % (dtime.utcnow().isoformat(), message))
 
 def LOGINFO(message):
     if LOGGER:
         LOGGER.info(message)
     else:
-        print('%sZ [INFO]: %s' % (datetime.utcnow().isoformat(), message))
+        print('%sZ [INFO]: %s' % (dtime.utcnow().isoformat(), message))
 
 def LOGERROR(message):
     if LOGGER:
         LOGGER.error(message)
     else:
-        print('%sZ [ERR!]: %s' % (datetime.utcnow().isoformat(), message))
+        print('%sZ [ERR!]: %s' % (dtime.utcnow().isoformat(), message))
 
 def LOGWARNING(message):
     if LOGGER:
         LOGGER.warning(message)
     else:
-        print('%sZ [WRN!]: %s' % (datetime.utcnow().isoformat(), message))
+        print('%sZ [WRN!]: %s' % (dtime.utcnow().isoformat(), message))
 
 def LOGEXCEPTION(message):
     if LOGGER:
@@ -131,7 +131,7 @@ def LOGEXCEPTION(message):
     else:
         print(
             '%sZ [EXC!]: %s\nexception was: %s' % (
-                datetime.utcnow().isoformat(),
+                dtime.utcnow().isoformat(),
                 message, format_exc()
                 )
             )
@@ -1727,7 +1727,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                           binplotmags,
                           marker='o',
                           s=2,
-                          color='gray')
+                          color='blue')
 
         # show the full phase coverage
         if phasewrap:
@@ -1908,6 +1908,7 @@ def checkplot_dict(lspinfolist,
                    nperiodstouse=3,
                    objectinfo=None,
                    varinfo=None,
+                   externalplots=None,
                    findercmap='gray_r',
                    finderconvolve=None,
                    normto='globalmedian',
@@ -1958,6 +1959,33 @@ def checkplot_dict(lspinfolist,
     if varinfo is None, an initial empty dictionary of this form will be created
     and written to the output pickle. This can be later updated using
     checkplotviewer.py, etc.
+
+    externalplots is a list of 4-element tuples containing:
+
+    1. path to PNG of periodogram from a external period-finding method
+    2. path to PNG of best period phased light curve from external period-finder
+    3. path to PNG of 2nd-best phased light curve from external period-finder
+    4. path to PNG of 3rd-best phased light curve from external period-finder
+
+    This can be used to incorporate external period-finding method results into
+    the output checkplot pickle or exported PNG to allow for comparison with
+    astrobase results.
+
+    example of externalplots:
+
+    extrarows = [('/path/to/external/bls-periodogram.png',
+                  '/path/to/external/bls-phasedlc-plot-bestpeak.png',
+                  '/path/to/external/bls-phasedlc-plot-peak2.png',
+                  '/path/to/external/bls-phasedlc-plot-peak3.png'),
+                 ('/path/to/external/pdm-periodogram.png',
+                  '/path/to/external/pdm-phasedlc-plot-bestpeak.png',
+                  '/path/to/external/pdm-phasedlc-plot-peak2.png',
+                  '/path/to/external/pdm-phasedlc-plot-peak3.png'),
+                  ...]
+
+    If externalplots is provided, the checkplot_pickle_to_png function below
+    will automatically retrieve these plot PNGs and put them into the exported
+    checkplot PNG.
 
     sigclip is either a single float or a list of two floats. in the first case,
     the sigclip is applied symmetrically. in the second case, the first sigclip
@@ -2121,6 +2149,25 @@ def checkplot_dict(lspinfolist,
         # add a comments key:val
         checkplotdict['comments'] = None
 
+
+        # add any externalplots if we have them
+        checkplotdict['externalplots'] = []
+
+        if (externalplots and
+            isinstance(externalplots, list) and
+            len(externalplots) > 0):
+
+            for externalrow in externalplots:
+
+                if all(os.path.exists(erowfile) for erowfile in externalrow):
+                    LOGINFO('adding external plots: %s to checkplot dict' %
+                            repr(externalrow))
+                    checkplotdict['externalplots'].append(externalrow)
+                else:
+                    LOGWARNING('could not add some external '
+                               'plots in: %s to checkplot dict'
+                               % repr(externalrow))
+
     # otherwise, we don't have enough LC points, return nothing
     else:
 
@@ -2146,6 +2193,7 @@ def checkplot_pickle(lspinfolist,
                      nperiodstouse=3,
                      objectinfo=None,
                      varinfo=None,
+                     externalplots=None,
                      findercmap='gray_r',
                      finderconvolve=None,
                      normto='globalmedian',
@@ -2205,6 +2253,33 @@ def checkplot_pickle(lspinfolist,
     if varinfo is None, an initial empty dictionary of this form will be created
     and written to the output pickle. This can be later updated using
     checkplotviewer.py, etc.
+
+    externalplots is a list of 4-element tuples containing:
+
+    1. path to PNG of periodogram from a external period-finding method
+    2. path to PNG of best period phased light curve from external period-finder
+    3. path to PNG of 2nd-best phased light curve from external period-finder
+    4. path to PNG of 3rd-best phased light curve from external period-finder
+
+    This can be used to incorporate external period-finding method results into
+    the output checkplot pickle or exported PNG to allow for comparison with
+    astrobase results.
+
+    example of externalplots:
+
+    extrarows = [('/path/to/external/bls-periodogram.png',
+                  '/path/to/external/bls-phasedlc-plot-bestpeak.png',
+                  '/path/to/external/bls-phasedlc-plot-peak2.png',
+                  '/path/to/external/bls-phasedlc-plot-peak3.png'),
+                 ('/path/to/external/pdm-periodogram.png',
+                  '/path/to/external/pdm-phasedlc-plot-bestpeak.png',
+                  '/path/to/external/pdm-phasedlc-plot-peak2.png',
+                  '/path/to/external/pdm-phasedlc-plot-peak3.png'),
+                  ...]
+
+    If externalplots is provided, the checkplot_pickle_to_png function below
+    will automatically retrieve these plot PNGs and put them into the exported
+    checkplot PNG.
 
     if returndict is True, will return the checkplotdict created and the path to
     the output checkplot pickle file as a tuple. if returndict is False, will
@@ -2284,6 +2359,7 @@ def checkplot_pickle(lspinfolist,
         nperiodstouse=nperiodstouse,
         objectinfo=objectinfo,
         varinfo=varinfo,
+        externalplots=externalplots,
         findercmap=findercmap,
         finderconvolve=finderconvolve,
         normto=normto,
@@ -2564,14 +2640,20 @@ def checkplot_pickle_to_png(checkplotin,
             cplspmethods.append(lspmethod)
             cprows = cprows + 1
 
-    # add in any extra rows
+    # add in any extra rows from keyword arguments
     if extrarows and len(extrarows) > 0:
         erows = len(extrarows)
     else:
         erows = 0
 
+    # add in any extra rows from the checkplot dict
+    if cpd['externalplots'] and len(cpd['externalplots']) > 0:
+        cpderows = len(cpd['externalplots'])
+    else:
+        cpderows = 0
+
     totalwidth = 3000
-    totalheight = 480 + (cprows + erows)*480
+    totalheight = 480 + (cprows + erows + cpderows)*480
 
     # this is the output PNG
     outimg = Image.new('RGBA',(totalwidth, totalheight),(255,255,255,255))
@@ -2940,6 +3022,7 @@ def checkplot_pickle_to_png(checkplotin,
     # add in any extra rows #
     #########################
 
+    # from the keyword arguments
     if erows > 0:
 
         for erowind, erow in enumerate(extrarows):
@@ -2953,6 +3036,19 @@ def checkplot_pickle_to_png(checkplotin,
                              (750*ecolind,
                               (cprows+1)*480 + 480*erowind))
 
+    # from the checkplotdict
+    if cpderows > 0:
+
+        for cpderowind, cpderow in enumerate(cpd['externalplots']):
+
+            # make sure we never go above 4 plots in a row
+            for cpdecolind, cpdecol in enumerate(cpderow[:4]):
+
+                cpdeplot = Image.open(cpdecol)
+                cpdeplotresized = cpdeplot.resize((750,480), Image.ANTIALIAS)
+                outimg.paste(cpdeplotresized,
+                             (750*cpdecolind,
+                              (cprows+1)*480 + (erows*480) + 480*cpderowind))
 
     #####################
     ## WRITE FINAL PNG ##
