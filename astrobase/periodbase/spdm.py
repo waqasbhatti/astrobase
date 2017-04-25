@@ -193,7 +193,8 @@ def stellingwerf_pdm(times,
                      nbestpeaks=5,
                      periodepsilon=0.1, # 0.1
                      sigclip=10.0,
-                     nworkers=None):
+                     nworkers=None,
+                     verbose=True):
     '''This runs a parallel Stellingwerf PDM period search.
 
     '''
@@ -224,27 +225,30 @@ def stellingwerf_pdm(times,
         # if we're not using autofreq, then use the provided frequencies
         if not autofreq:
             frequencies = np.arange(startf, endf, stepsize)
-            LOGINFO(
-                'using %s frequency points, start P = %.3f, end P = %.3f' %
-                (frequencies.size, 1.0/endf, 1.0/startf)
-            )
+            if verbose:
+                LOGINFO(
+                    'using %s frequency points, start P = %.3f, end P = %.3f' %
+                    (frequencies.size, 1.0/endf, 1.0/startf)
+                )
         else:
             # this gets an automatic grid of frequencies to use
             frequencies = get_frequency_grid(stimes,
                                              minfreq=startf,
                                              maxfreq=endf)
-            LOGINFO(
-                'using autofreq with %s frequency points, '
-                'start P = %.3f, end P = %.3f' %
-                (frequencies.size,
-                 1.0/frequencies.max(),
-                 1.0/frequencies.min())
-            )
+            if verbose:
+                LOGINFO(
+                    'using autofreq with %s frequency points, '
+                    'start P = %.3f, end P = %.3f' %
+                    (frequencies.size,
+                     1.0/frequencies.max(),
+                     1.0/frequencies.min())
+                )
 
         # map to parallel workers
         if (not nworkers) or (nworkers > NCPUS):
             nworkers = NCPUS
-            LOGINFO('using %s workers...' % nworkers)
+            if verbose:
+                LOGINFO('using %s workers...' % nworkers)
 
         pool = Pool(nworkers)
 
@@ -276,11 +280,16 @@ def stellingwerf_pdm(times,
         finlsp = lsp[finitepeakind]
         finperiods = periods[finitepeakind]
 
-        # finlsp might not have any values. if so, argmin will return a ValueError.
+        # finlsp might not have any finite values if the period finding
+        # failed. if so, argmin will return a ValueError.
         try:
+
             bestperiodind = npargmin(finlsp)
+
         except ValueError:
-            LOGERROR('no good detections for these times and mags, skipping...')
+
+            LOGERROR('no finite periodogram values for '
+                     'this mag series, skipping...')
             return {'bestperiod':npnan,
                     'bestlspval':npnan,
                     'nbestpeaks':nbestpeaks,
@@ -288,7 +297,17 @@ def stellingwerf_pdm(times,
                     'nbestperiods':None,
                     'lspvals':None,
                     'periods':None,
-                    'method':'pdm'}
+                    'method':'pdm',
+                    'kwargs':{'startp':startp,
+                              'endp':endp,
+                              'stepsize':stepsize,
+                              'normalize':normalize,
+                              'phasebinsize':phasebinsize,
+                              'mindetperbin':mindetperbin,
+                              'autofreq':autofreq,
+                              'periodepsilon':periodepsilon,
+                              'nbestpeaks':nbestpeaks,
+                              'sigclip':sigclip}}
 
         sortedlspind = np.argsort(finlsp)
         sortedlspperiods = finperiods[sortedlspind]
@@ -336,7 +355,17 @@ def stellingwerf_pdm(times,
                 'nbestperiods':nbestperiods,
                 'lspvals':lsp,
                 'periods':periods,
-                'method':'pdm'}
+                'method':'pdm',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'normalize':normalize,
+                          'phasebinsize':phasebinsize,
+                          'mindetperbin':mindetperbin,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}}
 
     else:
 
@@ -348,4 +377,14 @@ def stellingwerf_pdm(times,
                 'nbestperiods':None,
                 'lspvals':None,
                 'periods':None,
-                'method':'pdm'}
+                'method':'pdm',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'normalize':normalize,
+                          'phasebinsize':phasebinsize,
+                          'mindetperbin':mindetperbin,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}}

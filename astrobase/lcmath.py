@@ -10,7 +10,7 @@ lightcurves (like phasing, sigma-clipping, etc.)
 
 import logging
 import multiprocessing as mp
-import datetime
+from datetime import datetime
 
 import numpy as np
 from numpy import isfinite as npisfinite, median as npmedian, abs as npabs
@@ -127,18 +127,34 @@ def normalize_magseries(times,
                         mags,
                         mingap=4.0,
                         normto='globalmedian',
+                        magsarefluxes=False,
                         debugmode=False):
     '''This normalizes the mag series to the value specified by normto.
 
-    the normto kwarg is one of the following strings:
+    This is used to normalize time series measurements that may have large time
+    gaps and vertical offsets in mag/flux measurement between these
+    'timegroups', either due to instrument changes or different filters.
+
+    NOTE: this works in-place! The mags array will be replaced with normalized
+    mags when this function finishes.
+
+    The normto kwarg is one of the following strings:
 
     'globalmedian' -> norms each mag to the global median of the LC column
     'zero'         -> norms each mag to zero
 
-    or a float indicating the canonical magnitude to normalize to.
+    or a float indicating the canonical magnitude/flux to normalize to.
 
-    NOTE: this works in-place! The mags array will be replaced with normalized
-    mags when this function finishes.
+    If magsarefluxes = True:
+
+      If normto='zero', then the median flux is divided from each observation's
+      flux value to yield normalized fluxes with 1.0 as the global median.
+
+      If normto='globalmedian', then the global median flux value across the
+      entire time series is multiplied with each measurement.
+
+      If normto=<some float number>, then this number is multiplied with the
+      flux value for each measurement.
 
     '''
 
@@ -162,7 +178,11 @@ def normalize_magseries(times,
             # find this timegroup's median mag and normalize the mags in
             # it to this median
             group_median = np.median((mags[tg])[finite_ind])
-            mags[tg] = mags[tg] - group_median
+
+            if magsarefluxes:
+                mags[tg] = mags[tg]/group_median
+            else:
+                mags[tg] = mags[tg] - group_median
 
             if debugmode:
                 LOGDEBUG('%s group %s: elems %s, '
@@ -176,18 +196,24 @@ def normalize_magseries(times,
         # offset back to all the mags and write the result back to the dict
         if isinstance(normto, str) and normto == 'globalmedian':
 
-            mags = mags + global_mag_median
+            if magsarefluxes:
+                mags = mags * global_mag_median
+            else:
+                mags = mags + global_mag_median
 
         # if the normto is a float, add everything to that float and return
         elif isinstance(normto, float):
 
-            mags = mags + normto
+            if magsarefluxes:
+                mags = mags * normto
+            else:
+                mags = mags + normto
 
         # anything else just returns the normalized mags as usual
         return times, mags
 
     else:
-        LOGWARNING('mags are all nan!')
+        LOGERROR('measurements are all nan!')
         return None, None
 
 

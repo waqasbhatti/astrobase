@@ -81,10 +81,13 @@ def LOGEXCEPTION(message):
 ## LOCAL IMPORTS ##
 ###################
 
-from ..lcmath import phase_magseries, sigclip_magseries, time_bin_magseries, \
-    phase_bin_magseries
+from ..lcmath import phase_magseries, sigclip_magseries, \
+    time_bin_magseries, phase_bin_magseries, \
+    phase_magseries_with_errs, phase_bin_magseries_with_errs
 
 from pyeebls import eebls
+
+from ..varbase.lcfit import spline_fit_magseries
 
 
 ############
@@ -171,7 +174,8 @@ def bls_serial_pfind(times, mags, errs,
                      autofreq=True, # figure out f0, nf, and df automatically
                      periodepsilon=0.1,
                      nbestpeaks=5,
-                     sigclip=10.0):
+                     sigclip=10.0,
+                     verbose=True):
     '''Runs the Box Least Squares Fitting Search for transit-shaped signals.
 
     Based on eebls.f from Kovacs et al. 2002 and python-bls from Foreman-Mackey
@@ -180,8 +184,6 @@ def bls_serial_pfind(times, mags, errs,
     while.
 
     '''
-
-
 
     # get rid of nans first and sigclip
     stimes, smags, serrs = sigclip_magseries(times,
@@ -209,13 +211,14 @@ def bls_serial_pfind(times, mags, errs,
             nphasebins = int(np.ceil(2.0/mintransitduration))
 
             # say what we're using
-            LOGINFO('autofreq: using stepsize: %s, min P: %s, '
-                    'max P: %s, nfreq: %s, nphasebins: %s, '
-                    'min transit duration: %s, max transit duration: %s' %
-                    (stepsize, startp, endp, nfreq, nphasebins,
-                     mintransitduration, maxtransitduration))
-            LOGINFO('autofreq: minfreq: %s, maxfreq: %s' % (minfreq,
-                                                            maxfreq))
+            if verbose:
+                LOGINFO('autofreq: using stepsize: %s, min P: %s, '
+                        'max P: %s, nfreq: %s, nphasebins: %s, '
+                        'min transit duration: %s, max transit duration: %s' %
+                        (stepsize, startp, endp, nfreq, nphasebins,
+                         mintransitduration, maxtransitduration))
+                LOGINFO('autofreq: minfreq: %s, maxfreq: %s' % (minfreq,
+                                                                maxfreq))
 
         else:
 
@@ -224,31 +227,35 @@ def bls_serial_pfind(times, mags, errs,
             nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
 
             # say what we're using
-            LOGINFO('manualfreq: using stepsize: %s, min P: %s, '
-                    'max P: %s, nfreq: %s, nphasebins: %s, '
-                    'min transit duration: %s, max transit duration: %s' %
-                    (stepsize, startp, endp, nfreq, nphasebins,
-                     mintransitduration, maxtransitduration))
-            LOGINFO('manualfreq: minfreq: %s, maxfreq: %s' %
-                    (minfreq,maxfreq))
+            if verbose:
+                LOGINFO('manualfreq: using stepsize: %s, min P: %s, '
+                        'max P: %s, nfreq: %s, nphasebins: %s, '
+                        'min transit duration: %s, max transit duration: %s' %
+                        (stepsize, startp, endp, nfreq, nphasebins,
+                         mintransitduration, maxtransitduration))
+                LOGINFO('manualfreq: minfreq: %s, maxfreq: %s' %
+                        (minfreq,maxfreq))
 
 
         if nfreq > 5.0e5:
 
-            LOGWARNING('more than 5.0e5 frequencies to go through; '
-                       'this will take a while. '
-                       'you might want to use the '
-                       'periodbase.bls_parallel_pfind function instead')
+            if verbose:
+                LOGWARNING('more than 5.0e5 frequencies to go through; '
+                           'this will take a while. '
+                           'you might want to use the '
+                           'periodbase.bls_parallel_pfind function instead')
 
         if minfreq < (1.0/(stimes.max() - stimes.min())):
 
-            LOGWARNING('the requested max P = %.3f is larger than '
-                       'the time base of the observations = %.3f, '
-                       ' will make minfreq = 2 x 1/timebase'
-                       % (endp, stimes.max() - stimes.min()))
+            if verbose:
+                LOGWARNING('the requested max P = %.3f is larger than '
+                           'the time base of the observations = %.3f, '
+                           ' will make minfreq = 2 x 1/timebase'
+                           % (endp, stimes.max() - stimes.min()))
             minfreq = 2.0/(stimes.max() - stimes.min())
-            LOGINFO('new minfreq: %s, maxfreq: %s' %
-                    (minfreq, maxfreq))
+            if verbose:
+                LOGINFO('new minfreq: %s, maxfreq: %s' %
+                        (minfreq, maxfreq))
 
 
         # run BLS
@@ -287,7 +294,34 @@ def bls_serial_pfind(times, mags, errs,
             finlsp = lsp[finitepeakind]
             finperiods = periods[finitepeakind]
 
-            bestperiodind = np.argmax(finlsp)
+            # make sure that finlsp has finite values before we work on it
+            try:
+
+                bestperiodind = npargmax(finlsp)
+
+            except ValueError:
+
+                LOGERROR('no finite periodogram values '
+                         'for this mag series, skipping...')
+                return {'bestperiod':npnan,
+                        'bestlspval':npnan,
+                        'nbestpeaks':nbestpeaks,
+                        'nbestlspvals':None,
+                        'nbestperiods':None,
+                        'lspvals':None,
+                        'periods':None,
+                        'method':'bls',
+                        'kwargs':{'startp':startp,
+                                  'endp':endp,
+                                  'stepsize':stepsize,
+                                  'mintransitduration':mintransitduration,
+                                  'maxtransitduration':maxtransitduration,
+                                  'nphasebins':nphasebins,
+                                  'autofreq':autofreq,
+                                  'periodepsilon':periodepsilon,
+                                  'nbestpeaks':nbestpeaks,
+                                  'sigclip':sigclip}}
+
             sortedlspind = np.argsort(finlsp)[::-1]
             sortedlspperiods = finperiods[sortedlspind]
             sortedlspvals = finlsp[sortedlspind]
@@ -343,6 +377,16 @@ def bls_serial_pfind(times, mags, errs,
                 'mintransitduration':mintransitduration,
                 'maxtransitduration':maxtransitduration,
                 'method':'bls',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'mintransitduration':mintransitduration,
+                          'maxtransitduration':maxtransitduration,
+                          'nphasebins':nphasebins,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}
             }
 
             return resultdict
@@ -362,7 +406,17 @@ def bls_serial_pfind(times, mags, errs,
                     'nphasebins':nphasebins,
                     'mintransitduration':mintransitduration,
                     'maxtransitduration':maxtransitduration,
-                    'method':'bls'}
+                    'method':'bls',
+                    'kwargs':{'startp':startp,
+                              'endp':endp,
+                              'stepsize':stepsize,
+                              'mintransitduration':mintransitduration,
+                              'maxtransitduration':maxtransitduration,
+                              'nphasebins':nphasebins,
+                              'autofreq':autofreq,
+                              'periodepsilon':periodepsilon,
+                              'nbestpeaks':nbestpeaks,
+                              'sigclip':sigclip}}
 
 
     else:
@@ -380,7 +434,17 @@ def bls_serial_pfind(times, mags, errs,
                 'nphasebins':None,
                 'mintransitduration':mintransitduration,
                 'maxtransitduration':maxtransitduration,
-                'method':'bls'}
+                'method':'bls',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'mintransitduration':mintransitduration,
+                          'maxtransitduration':maxtransitduration,
+                          'nphasebins':nphasebins,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}}
 
 
 
@@ -397,7 +461,8 @@ def bls_parallel_pfind(
         nbestpeaks=5,
         periodepsilon=0.1, # 0.1
         nworkers=None,
-        sigclip=10.0
+        sigclip=10.0,
+        verbose=True
 ):
     '''Runs the Box Least Squares Fitting Search for transit-shaped signals.
 
@@ -443,13 +508,14 @@ def bls_parallel_pfind(
             nphasebins = int(np.ceil(2.0/mintransitduration))
 
             # say what we're using
-            LOGINFO('autofreq: using stepsize: %s, min P: %s, '
-                    'max P: %s, nfreq: %s, nphasebins: %s, '
-                    'min transit duration: %s, max transit duration: %s' %
-                    (stepsize, startp, endp, nfreq, nphasebins,
-                     mintransitduration, maxtransitduration))
-            LOGINFO('autofreq: minfreq: %s, maxfreq: %s' % (minfreq,
-                                                            maxfreq))
+            if verbose:
+                LOGINFO('autofreq: using stepsize: %s, min P: %s, '
+                        'max P: %s, nfreq: %s, nphasebins: %s, '
+                        'min transit duration: %s, max transit duration: %s' %
+                        (stepsize, startp, endp, nfreq, nphasebins,
+                         mintransitduration, maxtransitduration))
+                LOGINFO('autofreq: minfreq: %s, maxfreq: %s' % (minfreq,
+                                                                maxfreq))
 
         else:
 
@@ -458,23 +524,26 @@ def bls_parallel_pfind(
             nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
 
             # say what we're using
-            LOGINFO('manualfreq: using stepsize: %s, min P: %s, '
-                    'max P: %s, nfreq: %s, nphasebins: %s, '
-                    'min transit duration: %s, max transit duration: %s' %
-                    (stepsize, startp, endp, nfreq, nphasebins,
-                     mintransitduration, maxtransitduration))
-            LOGINFO('manualfreq: minfreq: %s, maxfreq: %s' %
-                    (minfreq,maxfreq))
+            if verbose:
+                LOGINFO('manualfreq: using stepsize: %s, min P: %s, '
+                        'max P: %s, nfreq: %s, nphasebins: %s, '
+                        'min transit duration: %s, max transit duration: %s' %
+                        (stepsize, startp, endp, nfreq, nphasebins,
+                         mintransitduration, maxtransitduration))
+                LOGINFO('manualfreq: minfreq: %s, maxfreq: %s' %
+                        (minfreq,maxfreq))
 
         if minfreq < (1.0/(stimes.max() - stimes.min())):
 
-            LOGWARNING('the requested max P = %.3f is larger than '
-                       'the time base of the observations = %.3f, '
-                       ' will make minfreq = 2 x 1/timebase'
-                       % (endp, stimes.max() - stimes.min()))
+            if verbose:
+                LOGWARNING('the requested max P = %.3f is larger than '
+                           'the time base of the observations = %.3f, '
+                           ' will make minfreq = 2 x 1/timebase'
+                           % (endp, stimes.max() - stimes.min()))
             minfreq = 2.0/(stimes.max() - stimes.min())
-            LOGINFO('new minfreq: %s, maxfreq: %s' %
-                    (minfreq, maxfreq))
+            if verbose:
+                LOGINFO('new minfreq: %s, maxfreq: %s' %
+                        (minfreq, maxfreq))
 
 
         #############################
@@ -484,7 +553,8 @@ def bls_parallel_pfind(
         # fix number of CPUs if needed
         if not nworkers or nworkers > NCPUS:
             nworkers = NCPUS
-            LOGINFO('using %s workers...' % nworkers)
+            if verbose:
+                LOGINFO('using %s workers...' % nworkers)
 
         # break up the tasks into chunks
         frequencies = minfreq + nparange(nfreq)*stepsize
@@ -502,10 +572,11 @@ def bls_parallel_pfind(
                  for (chunk_nf, chunk_minf)
                  in zip(chunk_minfreqs, chunk_nfreqs)]
 
-        for ind, task in enumerate(tasks):
-            LOGINFO('worker %s: minfreq = %.3f, nfreqs = %s' %
-                    (ind+1, task[3], task[2]))
-        LOGINFO('running...')
+        if verbose:
+            for ind, task in enumerate(tasks):
+                LOGINFO('worker %s: minfreq = %.3f, nfreqs = %s' %
+                        (ind+1, task[3], task[2]))
+            LOGINFO('running...')
 
         # return tasks
 
@@ -532,7 +603,34 @@ def bls_parallel_pfind(
         finlsp = lsp[finitepeakind]
         finperiods = periods[finitepeakind]
 
-        bestperiodind = np.argmax(finlsp)
+        # make sure that finlsp has finite values before we work on it
+        try:
+
+            bestperiodind = npargmax(finlsp)
+
+        except ValueError:
+
+            LOGERROR('no finite periodogram values '
+                     'for this mag series, skipping...')
+            return {'bestperiod':npnan,
+                    'bestlspval':npnan,
+                    'nbestpeaks':nbestpeaks,
+                    'nbestlspvals':None,
+                    'nbestperiods':None,
+                    'lspvals':None,
+                    'periods':None,
+                    'method':'bls',
+                    'kwargs':{'startp':startp,
+                              'endp':endp,
+                              'stepsize':stepsize,
+                              'mintransitduration':mintransitduration,
+                              'maxtransitduration':maxtransitduration,
+                              'nphasebins':nphasebins,
+                              'autofreq':autofreq,
+                              'periodepsilon':periodepsilon,
+                              'nbestpeaks':nbestpeaks,
+                              'sigclip':sigclip}}
+
         sortedlspind = np.argsort(finlsp)[::-1]
         sortedlspperiods = finperiods[sortedlspind]
         sortedlspvals = finlsp[sortedlspind]
@@ -589,6 +687,16 @@ def bls_parallel_pfind(
             'mintransitduration':mintransitduration,
             'maxtransitduration':maxtransitduration,
             'method':'bls',
+            'kwargs':{'startp':startp,
+                      'endp':endp,
+                      'stepsize':stepsize,
+                      'mintransitduration':mintransitduration,
+                      'maxtransitduration':maxtransitduration,
+                      'nphasebins':nphasebins,
+                      'autofreq':autofreq,
+                      'periodepsilon':periodepsilon,
+                      'nbestpeaks':nbestpeaks,
+                      'sigclip':sigclip}
         }
 
         return resultdict
@@ -609,4 +717,273 @@ def bls_parallel_pfind(
                 'nphasebins':None,
                 'mintransitduration':mintransitduration,
                 'maxtransitduration':maxtransitduration,
-                'method':'bls'}
+                'method':'bls',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'mintransitduration':mintransitduration,
+                          'maxtransitduration':maxtransitduration,
+                          'nphasebins':nphasebins,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}}
+
+
+
+def bls_snr(blsdict,
+            times,
+            mags,
+            errs,
+            magsarefluxes=False,
+            sigclip=10.0,
+            perioddeltapercent=10,
+            npeaks=None,
+            assumeserialbls=False):
+    '''Calculates the signal-to-pink noise ratio for each best peak in the BLS
+    periodogram.
+
+    blsdict is the output of either bls_parallel_pfind or bls_serial_pfind.
+
+    times, mags, errs are ndarrays containing the magnitude series.
+
+    perioddeltapercent controls the period interval used by a bls_serial_pfind
+    run around each peak period to figure out the transit depth, duration, and
+    ingress/egress bins for eventual calculation of the SNR of the peak.
+
+    npeaks controls how many of the periods in blsdict['nbestperiods'] to find
+    the SNR for. If it's None, then this will calculate the SNR for all of
+    them. If it's an integer between 1 and len(blsdict['nbestperiods']), will
+    calculate for only the specified number of peak periods, starting from the
+    best period.
+
+    If assumeserialbls is True, will not rerun bls_serial_pfind to figure out
+    the transit depth, duration, and ingress/egress bins for eventual
+    calculation of the SNR of the peak. This is normally False because we assume
+    that the user will be using bls_parallel_pfind, which works on chunks of
+    frequency space so returns multiple values of transit depth, duration,
+    ingress/egress bin specific to those chunks. These may not be valid for the
+    global best peaks in the periodogram, so we need to rerun bls_serial_pfind
+    around each peak in blsdict['nbestperiods'] to get correct values for these.
+
+    FIXME: check if this method of getting an SNR makes sense. We're dividing
+    the transit depth by the rms of the residuals of the mag series after the
+    BLS box model is subtracted. This doesn't look right. Also, this is an SNR
+    for the transit signal, not the BLS peak itself.
+
+    FIXME: for now, we're only doing simple RMS. Need to calculate red and
+    white-noise RMS as outlined below (similar to what's done in J. Hartman's
+    vartools).
+
+    This is supposed to work like so:
+
+    - get the nbestperiods out of blsdict
+
+    - run bls_serial_pfind for each period index i in nbestperiods with:
+
+      - startp[i] = nbestperiod[i] - pdelta
+
+      - endp[i] = nbestperiod[i] + pdelta
+
+      - get the blsresult dict
+
+      - in the blsresult dict, get the transdepth, transduration,
+        transingressbin, and transegressbin values
+
+      - generate a BLS eclipse model in phase space, using these values and
+        subtract this model from the phased light curve at the best period.
+
+      - calculate the white noise rms and the red noise rms of the residual.
+
+        - the white noise rms is just the rms of the residual
+        - the red noise rms = sqrt(binnedrms^2 - expectedbinnedrms^2)
+
+      - calculate the SNR using:
+
+        sqrt(delta^2 / ((sigma_w ^2 / nt) + (sigma_r ^2 / Nt))))
+
+        where:
+
+        delta = transit depth
+        sigma_w = white noise rms
+        sigma_r = red noise rms
+        nt = number of in-transit points
+        Nt = number of distinct transits sampled
+
+    '''
+
+    # figure out how many periods to work on
+    if (npeaks and (0 < npeaks < len(blsdict['nbestperiods']))):
+        nperiods = npeaks
+    else:
+        LOGWARNING('npeaks not specified or invalid, '
+                   'getting SNR for all %s BLS peaks' %
+                   len(blsdict['nbestperiods']))
+        nperiods = len(blsdict['nbestperiods'])
+
+    nbestperiods = blsdict['nbestperiods'][:nperiods]
+
+    # get rid of nans first and sigclip
+    stimes, smags, serrs = sigclip_magseries(times,
+                                             mags,
+                                             errs,
+                                             magsarefluxes=magsarefluxes,
+                                             sigclip=sigclip)
+
+
+    # make sure there are enough points to calculate a spectrum
+    if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
+
+        nbestsnrs = []
+        transitdepth, transitduration = [], []
+
+        # get these later
+        whitenoise, rednoise = [], []
+        nphasebins, transingressbin, transegressbin = [], [], []
+
+        # keep these around for diagnostics
+        allsubtractedmags = []
+        allphasedmags = []
+        allphases = []
+        allblsmodels = []
+
+        for ind, period in enumerate(nbestperiods):
+
+            LOGINFO('finding SNR for peak %s, period: %.6f' % (ind+1, period))
+
+            # get the period interval
+            startp = period - perioddeltapercent*period/100.0
+            endp = period + perioddeltapercent*period/100.0
+
+            # see if we need to rerun bls_serial_pfind
+            if not assumeserialbls:
+
+                # run bls_serial_pfind
+                blsres = bls_serial_pfind(times, mags, errs,
+                                          magsarefluxes=magsarefluxes,
+                                          startp=startp,
+                                          endp=endp,
+                                          sigclip=sigclip,
+                                          verbose=False)
+
+            else:
+                blsres = blsdict
+
+            thistransdepth = blsres['blsresult']['transdepth']
+            thistransduration = blsres['blsresult']['transduration']
+            thisbestperiod = blsres['bestperiod']
+
+            # get the minimum light epoch using a spline fit
+            spfit = spline_fit_magseries(times, mags, errs,
+                                         thisbestperiod,
+                                         magsarefluxes=magsarefluxes)
+
+            thisminepoch = spfit['fitinfo']['fitepoch']
+            LOGINFO('new best period: %.6f, fit center of transit: %.5f' %
+                    (thisbestperiod, thisminepoch))
+
+            # phase using this epoch
+            phased_magseries = phase_magseries_with_errs(stimes,
+                                                         smags,
+                                                         serrs,
+                                                         thisbestperiod,
+                                                         thisminepoch,
+                                                         wrap=False,
+                                                         sort=True)
+
+            tphase = phased_magseries['phase']
+            tmags = phased_magseries['mags']
+            terrs = phased_magseries['errs']
+
+            # use the transit depth and duration to subtract the BLS transit
+            # model from the phased mag series. we're centered about 0.0 as the
+            # phase of the transit minimum so we need to look at stuff from
+            # [0.0, transitphase] and [1.0-transitphase, 1.0]
+            transitphase = thistransduration*period/2.0
+
+            LOGINFO('transit ingress phase = %.3f to %.3f' % (1.0 -
+                                                              transitphase,
+                                                              1.0))
+            LOGINFO('transit egress phase = %.3f to %.3f' % (0.0,
+                                                             transitphase))
+
+
+            transitindices = ((tphase < transitphase) |
+                              (tphase > (1.0 - transitphase)))
+            LOGINFO('npoints in transit: %s' % tmags[transitindices].size)
+
+            # this is the BLS model
+            # constant = median(tmags) outside transit
+            # constant = thistransitdepth inside transit
+            blsmodel = npfull_like(tmags, npmedian(tmags))
+
+            if magsarefluxes:
+                blsmodel[transitindices] = (
+                    blsmodel[transitindices] + thistransdepth
+                    )
+            else:
+                blsmodel[transitindices] = (
+                    blsmodel[transitindices] - thistransdepth
+                )
+
+            # this is the residual of mags - model
+            subtractedmags = tmags - blsmodel
+
+            # calculate the rms of this residual
+            subtractedrms = npstd(subtractedmags)
+
+            # the SNR is the transit depth divided by the rms of the residual
+            thissnr = npabs(thistransdepth/subtractedrms)
+
+            LOGINFO('peak %s, period: %.6f, '
+                    'transit depth (delta): %.5f, '
+                    'frac transit length (q): %.3f, '
+                    'transit length in phase: %.3f,'
+                    ' SNR: %.3f' %
+                    (ind+1, thisbestperiod,
+                     thistransdepth,
+                     thistransduration,
+                     transitphase*2.0,
+                     thissnr))
+
+            # update the lists with results from this peak
+            nbestsnrs.append(thissnr)
+            transitdepth.append(thistransdepth)
+            transitduration.append(thistransduration)
+
+            # update the diagnostics
+            allsubtractedmags.append(subtractedmags)
+            allphasedmags.append(tmags)
+            allphases.append(tphase)
+            allblsmodels.append(blsmodel)
+
+            # update these when we figure out how to do it
+            # nphasebins.append(thisnphasebins)
+            # transingressbin.append(thisingressbin)
+            # transegressbin.append(thisegressbin)
+
+        # done with working on each peak
+
+    # if there aren't enough points in the mag series, bail out
+    else:
+
+        LOGERROR('no good detections for these times and mags, skipping...')
+        nbestsnrs, whitenoise, rednoise = None, None, None
+        transitdepth, transitduration = None, None
+        nphasebins, transingressbin, transegressbin = None, None, None
+        allsubtractedmags, allphases, allphasedmags = None, None, None
+
+    return {'npeaks':npeaks,
+            'period':nbestperiods,
+            'snr':nbestsnrs,
+            'whitenoise':whitenoise,
+            'rednoise':rednoise,
+            'transitdepth':transitdepth,
+            'transitduration':transitduration,
+            'nphasebins':nphasebins,
+            'transingressbin':transingressbin,
+            'transegressbin':transegressbin,
+            'allblsmodels':allblsmodels,
+            'allsubtractedmags':allsubtractedmags,
+            'allphasedmags':allphasedmags,
+            'allphases':allphases}

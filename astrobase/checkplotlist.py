@@ -76,7 +76,14 @@ TL;DR
 This makes a checkplot file list for use with the checkplot-viewer.html (for
 checkplot PNGs) or the checkplotserver.py (for checkplot pickles) webapps.
 
-checkplotlist <pkl|png> <subdir/containing/the/checkplots/>
+checkplotlist <pkl|png> <subdir/containing/checkplots/> '[checkplot file glob]'
+
+If you have checkplots that don't have 'checkplot' somewhere in their file name,
+use the optional checkplot file glob argument to checkplotlist to provide
+this. Make sure to use the quotes around this argument, otherwise the shell will
+expand it, e.g.:
+
+$ checkplot png my-project/awesome-objects '*awesome-objects*'
 
 '''
 
@@ -92,21 +99,26 @@ def main(args=None):
     if not args:
         args = sys.argv
 
-    if len(args) != 3:
+    if len(args) < 3:
         docstring = __doc__
         if docstring:
             print(docstring)
         else:
-            print('Usage: %s <pkl|png> <subdir/containing/the/checkplots/> ' %
-                  args[0])
+            print("Usage: %s <pkl|png> <subdir/containing/the/checkplots/> "
+                  "'[file glob to use]'" % args[0])
         sys.exit(2)
 
     checkplotbasedir = args[2]
 
+    if len(args) == 4:
+        fileglob = args[3]
+    else:
+        fileglob = '*checkplot*'
+
     if args[1] == 'pkl':
-        checkplotglob = 'pkl'
+        checkplotext = 'pkl'
     elif args[1] == 'png':
-        checkplotglob = 'png'
+        checkplotext = 'png'
     else:
         print("unknown format for checkplots: %s! can't continue!"
               % args[1])
@@ -114,8 +126,13 @@ def main(args=None):
 
 
     currdir = os.getcwd()
-    searchresults = glob.glob(os.path.join(checkplotbasedir,
-                                           '*checkplot*.%s' % checkplotglob))
+
+    checkplotglob = os.path.join(checkplotbasedir,
+                                 '%s.%s' % (fileglob, checkplotext))
+
+    print('searching for checkplots: %s' % checkplotglob)
+
+    searchresults = glob.glob(checkplotglob)
 
     if searchresults:
 

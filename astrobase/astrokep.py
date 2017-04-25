@@ -38,9 +38,8 @@ from scipy.signal import medfilt
 from sklearn.ensemble import RandomForestRegressor
 
 import os
-if 'DISPLAY' not in os.environ:
-    import matplotlib
-    matplotlib.use('Agg')
+import matplotlib
+matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 

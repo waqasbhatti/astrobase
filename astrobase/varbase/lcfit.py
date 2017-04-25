@@ -45,8 +45,10 @@ from scipy.optimize import leastsq as spleastsq, minimize as spminimize
 from scipy.interpolate import LSQUnivariateSpline
 from scipy.signal import savgol_filter
 from numpy.polynomial.legendre import Legendre, legval
-import matplotlib.pyplot as plt
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 from ..lcmath import sigclip_magseries
 

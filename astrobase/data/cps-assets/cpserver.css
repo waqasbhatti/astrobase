@@ -15,6 +15,10 @@
     font-size: small;
 }
 
+#alert-box textarea {
+    font-size: 0.8rem;
+}
+
 /* .objectinfo-row { */
 /*     height: 360px; */
 /* } */
