@@ -22,13 +22,10 @@ from numpy import nan as npnan, median as npmedian, \
     isfinite as npisfinite, min as npmin, max as npmax, abs as npabs, \
     ravel as npravel
 
-# check the DISPLAY variable to see if we can plot stuff interactively
-try:
-    dispok = os.environ['DISPLAY']
-except KeyError:
-    import matplotlib
-    matplotlib.use('Agg')
-    dispok = False
+# FIXME: enforce no display for now
+import matplotlib
+matplotlib.use('Agg')
+dispok = False
 
 import matplotlib.pyplot as plt
 
@@ -187,6 +184,7 @@ def plot_mag_series(times,
     if normto is not False:
         btimes, bmags = normalize_magseries(btimes, bmags,
                                             normto=normto,
+                                            magsarefluxes=magsarefluxes,
                                             mingap=normmingap)
 
     btimeorigin = btimes.min()
@@ -427,6 +425,7 @@ def plot_phased_mag_series(times,
     if normto is not False:
         stimes, smags = normalize_magseries(stimes, smags,
                                             normto=normto,
+                                            magsarefluxes=magsarefluxes,
                                             mingap=normmingap)
 
     # figure out the epoch, if it's None, use the min of the time

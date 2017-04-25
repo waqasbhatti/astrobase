@@ -142,6 +142,7 @@ def pgen_lsp(
         nworkers=None,
         sigclip=10.0,
         glspfunc=glsp_worker,
+        verbose=True
 ):
     '''This calculates the generalized LSP given times, mags, errors.
 
@@ -179,26 +180,29 @@ def pgen_lsp(
         # if we're not using autofreq, then use the provided frequencies
         if not autofreq:
             omegas = 2*np.pi*np.arange(startf, endf, stepsize)
-            LOGINFO(
-                'using %s frequency points, start P = %.3f, end P = %.3f' %
-                (omegas.size, 1.0/endf, 1.0/startf)
-            )
+            if verbose:
+                LOGINFO(
+                    'using %s frequency points, start P = %.3f, end P = %.3f' %
+                    (omegas.size, 1.0/endf, 1.0/startf)
+                )
         else:
             # this gets an automatic grid of frequencies to use
             freqs = get_frequency_grid(stimes,
                                        minfreq=startf,
                                        maxfreq=endf)
             omegas = 2*np.pi*freqs
-            LOGINFO(
-                'using autofreq with %s frequency points, '
-                'start P = %.3f, end P = %.3f' %
-                (omegas.size, 1.0/freqs.max(), 1.0/freqs.min())
-            )
+            if verbose:
+                LOGINFO(
+                    'using autofreq with %s frequency points, '
+                    'start P = %.3f, end P = %.3f' %
+                    (omegas.size, 1.0/freqs.max(), 1.0/freqs.min())
+                )
 
         # map to parallel workers
         if (not nworkers) or (nworkers > NCPUS):
             nworkers = NCPUS
-            LOGINFO('using %s workers...' % nworkers)
+            if verbose:
+                LOGINFO('using %s workers...' % nworkers)
 
         pool = Pool(nworkers)
 
@@ -222,7 +226,31 @@ def pgen_lsp(
         finlsp = lsp[finitepeakind]
         finperiods = periods[finitepeakind]
 
-        bestperiodind = npargmax(finlsp)
+        # make sure that finlsp has finite values before we work on it
+        try:
+
+            bestperiodind = npargmax(finlsp)
+
+        except ValueError:
+
+            LOGERROR('no finite periodogram values '
+                     'for this mag series, skipping...')
+            return {'bestperiod':npnan,
+                    'bestlspval':npnan,
+                    'nbestpeaks':nbestpeaks,
+                    'nbestlspvals':None,
+                    'nbestperiods':None,
+                    'lspvals':None,
+                    'omegas':omegas,
+                    'periods':None,
+                    'method':'gls',
+                    'kwargs':{'startp':startp,
+                              'endp':endp,
+                              'stepsize':stepsize,
+                              'autofreq':autofreq,
+                              'periodepsilon':periodepsilon,
+                              'nbestpeaks':nbestpeaks,
+                              'sigclip':sigclip}}
 
         sortedlspind = np.argsort(finlsp)[::-1]
         sortedlspperiods = finperiods[sortedlspind]
@@ -271,7 +299,14 @@ def pgen_lsp(
                 'lspvals':lsp,
                 'omegas':omegas,
                 'periods':periods,
-                'method':'gls'}
+                'method':'gls',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}}
 
     else:
 
@@ -284,4 +319,11 @@ def pgen_lsp(
                 'lspvals':None,
                 'omegas':None,
                 'periods':None,
-                'method':'gls'}
+                'method':'gls',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}}

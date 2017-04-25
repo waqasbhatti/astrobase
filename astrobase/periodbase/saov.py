@@ -216,7 +216,8 @@ def aov_periodfind(times,
                    nbestpeaks=5,
                    periodepsilon=0.1, # 0.1
                    sigclip=10.0,
-                   nworkers=None):
+                   nworkers=None,
+                   verbose=True):
     '''This runs a parallel AoV period search.
 
     NOTE: normalize = True here as recommended by Schwarzenberg-Cerny 1996,
@@ -250,27 +251,30 @@ def aov_periodfind(times,
         # if we're not using autofreq, then use the provided frequencies
         if not autofreq:
             frequencies = np.arange(startf, endf, stepsize)
-            LOGINFO(
-                'using %s frequency points, start P = %.3f, end P = %.3f' %
-                (frequencies.size, 1.0/endf, 1.0/startf)
-            )
+            if verbose:
+                LOGINFO(
+                    'using %s frequency points, start P = %.3f, end P = %.3f' %
+                    (frequencies.size, 1.0/endf, 1.0/startf)
+                )
         else:
             # this gets an automatic grid of frequencies to use
             frequencies = get_frequency_grid(stimes,
                                              minfreq=startf,
                                              maxfreq=endf)
-            LOGINFO(
-                'using autofreq with %s frequency points, '
-                'start P = %.3f, end P = %.3f' %
-                (frequencies.size,
-                 1.0/frequencies.max(),
-                 1.0/frequencies.min())
-            )
+            if verbose:
+                LOGINFO(
+                    'using autofreq with %s frequency points, '
+                    'start P = %.3f, end P = %.3f' %
+                    (frequencies.size,
+                     1.0/frequencies.max(),
+                     1.0/frequencies.min())
+                )
 
         # map to parallel workers
         if (not nworkers) or (nworkers > NCPUS):
             nworkers = NCPUS
-            LOGINFO('using %s workers...' % nworkers)
+            if verbose:
+                LOGINFO('using %s workers...' % nworkers)
 
         pool = Pool(nworkers)
 
@@ -302,7 +306,33 @@ def aov_periodfind(times,
         finlsp = lsp[finitepeakind]
         finperiods = periods[finitepeakind]
 
-        bestperiodind = npargmax(lsp)
+        # make sure that finlsp has finite values before we work on it
+        try:
+
+            bestperiodind = npargmax(finlsp)
+
+        except ValueError:
+
+            LOGERROR('no finite periodogram values '
+                     'for this mag series, skipping...')
+            return {'bestperiod':npnan,
+                    'bestlspval':npnan,
+                    'nbestpeaks':nbestpeaks,
+                    'nbestlspvals':None,
+                    'nbestperiods':None,
+                    'lspvals':None,
+                    'periods':None,
+                    'method':'aov',
+                    'kwargs':{'startp':startp,
+                              'endp':endp,
+                              'stepsize':stepsize,
+                              'normalize':normalize,
+                              'phasebinsize':phasebinsize,
+                              'mindetperbin':mindetperbin,
+                              'autofreq':autofreq,
+                              'periodepsilon':periodepsilon,
+                              'nbestpeaks':nbestpeaks,
+                              'sigclip':sigclip}}
 
         sortedlspind = np.argsort(finlsp)[::-1]
         sortedlspperiods = finperiods[sortedlspind]
@@ -349,7 +379,17 @@ def aov_periodfind(times,
                 'nbestperiods':nbestperiods,
                 'lspvals':lsp,
                 'periods':periods,
-                'method':'aov'}
+                'method':'aov',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'normalize':normalize,
+                          'phasebinsize':phasebinsize,
+                          'mindetperbin':mindetperbin,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}}
 
     else:
 
@@ -361,4 +401,14 @@ def aov_periodfind(times,
                 'nbestperiods':None,
                 'lspvals':None,
                 'periods':None,
-                'method':'aov'}
+                'method':'aov',
+                'kwargs':{'startp':startp,
+                          'endp':endp,
+                          'stepsize':stepsize,
+                          'normalize':normalize,
+                          'phasebinsize':phasebinsize,
+                          'mindetperbin':mindetperbin,
+                          'autofreq':autofreq,
+                          'periodepsilon':periodepsilon,
+                          'nbestpeaks':nbestpeaks,
+                          'sigclip':sigclip}}

@@ -26,13 +26,8 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     correlate as npcorrelate
 
 import os
-# check the DISPLAY variable to see if we can plot stuff interactively
-try:
-    dispok = os.environ['DISPLAY']
-except KeyError:
-    import matplotlib
-    matplotlib.use('Agg')
-    dispok = False
+import matplotlib
+matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 
