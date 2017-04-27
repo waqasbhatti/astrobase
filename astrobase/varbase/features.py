@@ -371,12 +371,15 @@ def gilliland_cdpp(times, mags, errs,
                    windowlength=97,
                    polyorder=2,
                    sigclip=5.0,
-                   magsarefluxes=magsarefluxes,
+                   magsarefluxes=False,
                    **kwargs):
     '''This calculates the CDPP of a timeseries using the method in the paper:
 
     Gilliland, R. L., Chaplin, W. J., Dunham, E. W., et al. 2011, ApJS, 197, 6
     http://adsabs.harvard.edu/abs/2011ApJS..197....6G
+
+    use magsarefluxes to indicate if the values in the mags array are actually
+    flux values.
 
     The steps are:
 
@@ -403,9 +406,9 @@ def gilliland_cdpp(times, mags, errs,
 
     '''
 
-    # if no errs are given, assume 1% errors
+    # if no errs are given, assume 0.1% errors
     if errs is None:
-        errs = 0.01*mags
+        errs = 0.001*mags
 
     # get rid of nans first
     find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
