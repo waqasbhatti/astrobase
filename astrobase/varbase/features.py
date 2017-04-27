@@ -71,6 +71,13 @@ def LOGEXCEPTION(message):
                 )
             )
 
+###################
+## LOCAL IMPORTS ##
+###################
+
+from ..lcmath import sigclip_magseries, \
+    time_bin_magseries, time_bin_magseries_with_errs
+
 
 ##########################################
 ## BASE VARIABILITY FEATURE COMPUTATION ##
@@ -213,7 +220,8 @@ def nonperiodic_lightcurve_features(times, mags, errs):
         # get the beyond1std fraction
         series_above1std = len(fmags[fmags > (fmags + series_stdev)])
         series_below1std = len(fmags[fmags < (fmags - series_stdev)])
-        series_beyond1std = int((series_above1std + series_below1std)/float(ndet))
+        series_beyond1std = int((series_above1std +
+                                 series_below1std)/float(ndet))
 
         # get the fluxes
         series_fluxes = 10.0**(-0.4*fmags)
@@ -363,6 +371,7 @@ def gilliland_cdpp(times, mags, errs,
                    windowlength=97,
                    polyorder=2,
                    sigclip=5.0,
+                   magsarefluxes=magsarefluxes,
                    **kwargs):
     '''This calculates the CDPP of a timeseries using the method in the paper:
 
@@ -372,9 +381,13 @@ def gilliland_cdpp(times, mags, errs,
     The steps are:
 
     - pass the time-series through a Savitsky-Golay filter
+
       - we use scipy.signal.savgol_filter, **kwargs are passed to this
+
       - also see: http://scipy.github.io/old-wiki/pages/Cookbook/SavitzkyGolay
-      - the windowlength is the number of LC points to use (Kepler uses 2 days)
+
+      - the windowlength is the number of LC points to use (Kepler uses 2 days =
+        (1440 minutes/day / 30 minutes/LC point) x 2 days = 96 -> 97 LC points)
       - the polyorder is a quadratic by default
 
     - subtract the smoothed time-series from the actual light curve
@@ -390,10 +403,9 @@ def gilliland_cdpp(times, mags, errs,
 
     '''
 
-
-
+    # if no errs are given, assume 1% errors
     if errs is None:
-        errs = npfull_like(mags, 0.005)
+        errs = 0.01*mags
 
     # get rid of nans first
     find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
@@ -402,40 +414,27 @@ def gilliland_cdpp(times, mags, errs,
     ferrs = errs[find]
 
     # now get the smoothed mag series using the filter
-    smoothed = savgol_filter(fmags, windowlength, polyorder)
+    # kwargs are provided to the savgol_filter function
+    smoothed = savgol_filter(fmags, windowlength, polyorder, **kwargs)
     subtracted = fmags - smoothed
 
-    # get the median and stdev = 1.483 x MAD
-    median_mag = npmedian(fmags)
-    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
+    # sigclip the subtracted light curve
+    stimes, smags, serrs = sigclip_magseries(ftimes, fmags, ferrs,
+                                             magsarefluxes=magsarefluxes)
 
-    # sigclip next
-    if sigclip:
+    # bin over 6.5 hour bins and throw away all bins with less than 7 elements
+    binned = time_bin_magseries_with_errs(stimes, smags, serrs,
+                                          binsize=23400.0,
+                                          minbinelems=7)
 
-        sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
-
-        stimes = ftimes[sigind]
-        smags = fmags[sigind]
-        serrs = ferrs[sigind]
-
-        LOGINFO('sigclip = %s: before = %s observations, '
-                'after = %s observations' %
-                (sigclip, len(times), len(stimes)))
-
-    else:
-
-        stimes = ftimes
-        smags = fmags
-        serrs = ferrs
-
-    # bin over 6.5 hour bins
-
-
-    # throw away anything with less than 7 LC points in a bin
-
+    btimes, bmags, berrs = (binned['binnedtimes'],
+                            binned['binnedmags'],
+                            binned['binnederrs'])
 
     # stdev of bin mags x 1.168 -> CDPP
+    cdpp = npstd(bmags) * 1.168
 
+    return cdpp
 
 
 
