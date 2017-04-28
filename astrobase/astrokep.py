@@ -212,11 +212,15 @@ def read_kepler_fitslc(lcfits,
                        sapkeys=LCSAPKEYS,
                        pdckeys=LCPDCKEYS,
                        topkeys=LCTOPKEYS,
-                       apkeys=LCAPERTUREKEYS):
-    '''
-    This extracts the light curve from a single Kepler prime LC FITS file.
+                       apkeys=LCAPERTUREKEYS,
+                       appendto=None):
+    '''This extracts the light curve from a single Kepler prime LC FITS file.
 
     Returns an lcdict.
+
+    If appendto is an lcdict, will append measurements to that dict. This is
+    used for consolidating light curves across different files. Will sort
+    measurements in date order.
 
     '''
 
@@ -350,14 +354,42 @@ def read_kepler_fitslc(lcfits,
 
 def consolidate_kepler_fitslc(keplerid, lcfitsdir,
                               headerkeys=LCHEADERKEYS,
-                              datakeys=LCDATAKEYS):
+                              datakeys=LCDATAKEYS,
+                              sapkeys=LCSAPKEYS,
+                              pdckeys=LCPDCKEYS,
+                              topkeys=LCTOPKEYS,
+                              apkeys=LCAPERTUREKEYS):
     '''This gets all light curves for the given keplerid in lcfitsdir.
 
-    Sorts the light curves by time. Returns an lcdict.
+    Sorts the light curves by time. Returns an lcdict. This is meant to be used
+    for light curves across quarters.
+
+    Searches recursively in lcfitsdir for all of the files belonging to the
+    specified keplerid.
 
     '''
 
+    # use the os.walk function to start looking for files in lcfitsdir
+    walker = os.walk(lcfitsdir)
+    matching = []
+    nmatching = 0
+    LOGINFO('looking for Kepler light curve FITS in %s for %s...' % (lcfitsdir,
+                                                                     keplerid))
+    for root, dirs, files in walker:
+        for sdir in dirs:
+            searchpath = os.path.join(root,
+                                      sdir,
+                                      'kplr%09i-*_llc.fits' % keplerid)
+            foundfiles = glob.glob(searchpath)
 
+            if foundfiles:
+                matching.extend(foundfiles)
+                LOGINFO('found %s in dir: %s' % (repr(foundfiles),
+                                                 searchpath))
+                # open the files as we go. if this is the first file, then
+                # generate the initial lcdict using
+                # read_kepler_fitslc. otherwise, use read_kepler_fitslc in
+                # appendto mode.
 
 
 ########################
