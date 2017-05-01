@@ -519,7 +519,17 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
         # we use time for the columns and quarters for the headers
         LOGINFO('sorting by time...')
 
+        # NOTE: nans in time will be sorted to the end of the array
+        finiteind = npisfinite(consolidated['time'])
+        if npsum(finiteind) < consolidated['time'].size:
+            LOGWARNING('some time values are nan! '
+                       'measurements at these times will be '
+                       'sorted to the end of the column arrays.')
+
+        # get the sort index
         column_sort_ind = npargsort(consolidated['time'])
+
+
 
         # sort the columns by time
         for col in consolidated['columns']:
