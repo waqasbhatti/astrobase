@@ -41,9 +41,9 @@ def readme():
         return f.read()
 
 INSTALL_REQUIRES = [
-    'numpy',
+    'numpy>=1.4.0',
     'scipy',
-    'astropy',
+    'astropy>=1.3',
     'matplotlib',
     'Pillow',
     'jplephem',
