@@ -69,7 +69,7 @@ except:
 LOGGER = None
 
 def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.kepler' % parent_name)
+    globals()['LOGGER'] = logging.getLogger('%s.astrokep' % parent_name)
 
 def LOGDEBUG(message):
     if LOGGER:
