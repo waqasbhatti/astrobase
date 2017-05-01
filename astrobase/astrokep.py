@@ -323,37 +323,37 @@ def read_kepler_fitslc(lcfits,
 
         # append some of the light curve information into existing numpy arrays
         # so we can sort on them later
-        lcdict['lc_channel'] = np.concatenate(
+        lcdict['lc_channel'] = npconcatenate(
             lcdict['lc_channel'],
             npfull_like(lcdata['TIME'],
                         hdrinfo['channel']
             )
         )
-        lcdict['lc_skygroup'] = np.concatenate(
+        lcdict['lc_skygroup'] = npconcatenate(
             lcdict['lc_skygroup'],
             npfull_like(lcdata['TIME'],
                         hdrinfo['skygroup']
             )
         )
-        lcdict['lc_module'] = np.concatenate(
+        lcdict['lc_module'] = npconcatenate(
             lcdict['lc_module'],
             npfull_like(lcdata['TIME'],
                         hdrinfo['module']
             )
         )
-        lcdict['lc_output'] = np.concatenate(
+        lcdict['lc_output'] = npconcatenate(
             lcdict['lc_output'],
             npfull_like(lcdata['TIME'],
                         hdrinfo['output']
             )
         )
-        lcdict['lc_quarter'] = np.concatenate(
+        lcdict['lc_quarter'] = npconcatenate(
             lcdict['lc_quarter'],
             npfull_like(lcdata['TIME'],
                         hdrinfo['quarter']
             )
         )
-        lcdict['lc_season'] = np.concatenate(
+        lcdict['lc_season'] = npconcatenate(
             lcdict['lc_season'],
             npfull_like(lcdata['TIME'],
                         hdrinfo['season']
