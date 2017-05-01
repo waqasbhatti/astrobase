@@ -397,7 +397,8 @@ def _make_phased_magseries_plot(axes,
                                 periodind,
                                 stimes, smags,
                                 varperiod, varepoch,
-                                phasewrap, phasesort, phasebin,
+                                phasewrap, phasesort,
+                                phasebin, minbinelems,
                                 plotxlim,
                                 lspmethod,
                                 xliminsetmode=False,
@@ -425,7 +426,8 @@ def _make_phased_magseries_plot(axes,
 
         binphasedlc = phase_bin_magseries(plotphase,
                                           plotmags,
-                                          binsize=phasebin)
+                                          binsize=phasebin,
+                                          minbinelems=minbinelems)
         binplotphase = binphasedlc['binnedphases']
         binplotmags = binphasedlc['binnedmags']
 
@@ -589,6 +591,7 @@ def checkplot_png(lspinfo,
                   phasewrap=True,
                   phasesort=True,
                   phasebin=0.002,
+                  minbinelems=7,
                   plotxlim=[-0.8,0.8],
                   xliminsetmode=False,
                   plotdpi=100,
@@ -835,7 +838,8 @@ def checkplot_png(lspinfo,
                                         periodind,
                                         stimes, smags,
                                         varperiod, varepoch,
-                                        phasewrap, phasesort, phasebin,
+                                        phasewrap, phasesort,
+                                        phasebin, minbinelems,
                                         plotxlim, lspmethod,
                                         xliminsetmode=xliminsetmode,
                                         magsarefluxes=magsarefluxes)
@@ -899,6 +903,7 @@ def twolsp_checkplot_png(lspinfo1,
                          phasewrap=True,
                          phasesort=True,
                          phasebin=0.002,
+                         minbinelems=7,
                          plotxlim=[-0.8,0.8],
                          xliminsetmode=False,
                          plotdpi=100,
@@ -1094,7 +1099,8 @@ def twolsp_checkplot_png(lspinfo1,
                                         periodind,
                                         stimes, smags,
                                         varperiod, varepoch,
-                                        phasewrap, phasesort, phasebin,
+                                        phasewrap, phasesort,
+                                        phasebin, minbinelems,
                                         plotxlim, lspmethod1,
                                         twolspmode=True,
                                         magsarefluxes=magsarefluxes,
@@ -1117,8 +1123,12 @@ def twolsp_checkplot_png(lspinfo1,
             elif isinstance(varepoch,str) and varepoch == 'min':
 
                 try:
-                    spfit = spline_fit_magseries(stimes, smags, serrs,
-                                                 varperiod)
+                    spfit = spline_fit_magseries(stimes,
+                                                 smags,
+                                                 serrs,
+                                                 varperiod,
+                                                 magsarefluxes=magsarefluxes,
+                                                 sigclip=None)
                     varepoch = spfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
@@ -1137,7 +1147,8 @@ def twolsp_checkplot_png(lspinfo1,
                                         periodind,
                                         stimes, smags,
                                         varperiod, varepoch,
-                                        phasewrap, phasesort, phasebin,
+                                        phasewrap, phasesort,
+                                        phasebin, minbinelems,
                                         plotxlim, lspmethod2,
                                         twolspmode=True,
                                         magsarefluxes=magsarefluxes,
@@ -1552,7 +1563,8 @@ def _pkl_magseries_plot(stimes, smags, serrs,
 def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                                stimes, smags, serrs,
                                varperiod, varepoch,
-                               phasewrap, phasesort, phasebin,
+                               phasewrap, phasesort,
+                               phasebin, minbinelems,
                                plotxlim,
                                plotdpi=100,
                                bestperiodhighlight='#adff2f',
@@ -1622,7 +1634,8 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
 
         binphasedlc = phase_bin_magseries(plotphase,
                                           plotmags,
-                                          binsize=phasebin)
+                                          binsize=phasebin,
+                                          minbinelems=minbinelems)
         binplotphase = binphasedlc['binnedphases']
         binplotmags = binphasedlc['binnedmags']
 
@@ -1774,6 +1787,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
         'phasewrap':phasewrap,
         'phasesort':phasesort,
         'phasebin':phasebin,
+        'minbinelems':minbinelems,
         'plotxlim':plotxlim
     }
 
@@ -1918,6 +1932,7 @@ def checkplot_dict(lspinfolist,
                    phasewrap=True,
                    phasesort=True,
                    phasebin=0.002,
+                   minbinelems=7,
                    plotxlim=[-0.8,0.8],
                    xliminsetmode=False,
                    plotdpi=100,
@@ -2131,7 +2146,8 @@ def checkplot_dict(lspinfolist,
                     nbpind,
                     stimes, smags, serrs,
                     nbperiod, varepoch,
-                    phasewrap, phasesort, phasebin,
+                    phasewrap, phasesort,
+                    phasebin, minbinelems,
                     plotxlim,
                     plotdpi=plotdpi,
                     bestperiodhighlight=bestperiodhighlight,
@@ -2205,6 +2221,7 @@ def checkplot_pickle(lspinfolist,
                      phasewrap=True,
                      phasesort=True,
                      phasebin=0.002,
+                     minbinelems=7,
                      plotxlim=[-0.8,0.8],
                      xliminsetmode=False,
                      plotdpi=100,
@@ -2369,6 +2386,7 @@ def checkplot_pickle(lspinfolist,
         phasewrap=phasewrap,
         phasesort=phasesort,
         phasebin=phasebin,
+        minbinelems=minbinelems,
         plotxlim=plotxlim,
         xliminsetmode=xliminsetmode,
         plotdpi=plotdpi,
@@ -2649,7 +2667,7 @@ def checkplot_pickle_to_png(checkplotin,
     # add in any extra rows from the checkplot dict
     if ('externalplots' in cpd and
         cpd['externalplots'] and
-        len(cpd['externalplots'])) > 0:
+        len(cpd['externalplots']) > 0):
         cpderows = len(cpd['externalplots'])
     else:
         cpderows = 0
