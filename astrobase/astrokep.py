@@ -5,8 +5,6 @@
 Contains various useful tools for analyzing Kepler light curves.
 
 '''
-
-
 import logging
 from datetime import datetime
 from traceback import format_exc
@@ -21,6 +19,8 @@ except:
 
 import gzip
 
+import numpy as np
+
 from numpy import nan as npnan, sum as npsum, abs as npabs, \
     roll as nproll, isfinite as npisfinite, std as npstd, \
     sign as npsign, sqrt as npsqrt, median as npmedian, \
@@ -31,12 +31,17 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     where as npwhere, linspace as nplinspace, \
     zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
     correlate as npcorrelate, zeros as npzeros, ones as npones, \
-    column_stack as npcolumn_stack, concatenate as npconcatenate
+    column_stack as npcolumn_stack, in1d as npin1d, append as npappend, \
+    unique as npunique, argwhere as npargwhere, concatenate as npconcatenate
+
+from numpy.polynomial.legendre import Legendre
 
 from scipy.optimize import leastsq
 from scipy.signal import medfilt
 
 from sklearn.ensemble import RandomForestRegressor
+
+from .lcmath import sigclip_magseries, find_lc_timegroups
 
 import os
 import matplotlib
@@ -48,11 +53,6 @@ try:
     import pyfits
 except:
     from astropy.io import fits as pyfits
-
-###################
-## LOCAL IMPORTS ##
-###################
-
 
 
 #############
@@ -1222,3 +1222,365 @@ def rfepd_kepler_lightcurve(lcdict,
 
 
     return times, corrected_fluxes, flux_corrections
+
+
+#######################
+## CENTROID ANALYSIS ##
+#######################
+
+def detrend_centroid(lcd, detrend='legendre', σ_clip=None, mingap=0.5):
+    '''
+    You are given a dictionary, for a single quarter of Kepler data, returned
+    by `astrokep.read_kepler_fitslc`. This module returns this same dictionary,
+    appending detrended centroid_x and centroid_y values.
+
+    Here "detrended" means "finite, SAP quality flag set to 0, sigma clipped,
+    timegroups selected based on `mingap` day gaps, then fit vs time by a
+    legendre polynomial of lowish degree".
+
+    Args:
+        lcd (dict): the lightcurvedictionary returned by
+        astrokep.read_kepler_fitslc.
+
+        detrend (str): method by which to detrend the LC. 'legendre' is the
+        only thing implemented.
+
+        σ_clip (float or list): to pass to astrobase.lcmath.sigclip_magseries
+
+        mingap (float): number of days by which to define "timegroups" (for
+        individual fitting each of timegroup, and to eliminate "burn-in" of
+        Kepler spacecraft. For long cadence data, 0.5 days is typical.
+
+    Returns:
+        tuple of (lcd, errflag), where
+
+        lcd (dict): lcd, with the new key lcd['centroids'], containing the
+        detrended times, (centroid_x, centroid_y) values, and their errors.
+
+        errflag (bool): boolean error flag, could be raised at various points.
+    '''
+
+    qnum = npunique(lcd['quarter'])
+    try:
+        assert qnum.size == 1, 'lcd should be for a unique quarter'
+        assert detrend == 'legendre'
+        qnum = int(qnum)
+    except:
+        errflag = True
+
+    # Get finite, QUALITY_FLAG != 0 times, centroids, and their errors.
+    # Fraquelli & Thompson (2012), or perhaps also newer papers, give the list
+    # of exclusions for quality flags.
+    nbefore = lcd['time'].size
+
+    # "ctd" for centroid.
+    times = lcd['time'][lcd['sap_quality'] == 0]
+    ctd_x = lcd['mom_centr1'][lcd['sap_quality'] == 0]
+    ctd_y = lcd['mom_centr2'][lcd['sap_quality'] == 0]
+    ctd_x_err = lcd['mom_centr1_err'][lcd['sap_quality'] == 0]
+    ctd_y_err = lcd['mom_centr2_err'][lcd['sap_quality'] == 0]
+
+    find = npisfinite(times) & npisfinite(ctd_x) & npisfinite(ctd_y)
+    find &= (npisfinite(ctd_x_err)) & (npisfinite(ctd_y_err))
+
+    f_times, f_ctd_x, f_ctd_y = times[find], ctd_x[find], ctd_y[find]
+    f_ctd_x_err, f_ctd_y_err = ctd_x_err[find], ctd_y_err[find]
+
+    # Sigma clip whopping outliers. It'd be better to have a general purpose
+    # function for this, but sigclip_magseries works.
+    stimes_x, s_ctd_x, s_ctd_x_err = sigclip_magseries(f_times, f_ctd_x,
+            f_ctd_x_err, magsarefluxes=True, sigclip=30.)
+    stimes_y, s_ctd_y, s_ctd_y_err = sigclip_magseries(f_times, f_ctd_y,
+            f_ctd_y_err, magsarefluxes=True, sigclip=30.)
+
+    # Get times and centroids where everything is finite and sigma clipped.
+    mask_x = npin1d(stimes_x, stimes_y)
+    s_times, s_ctd_x, s_ctd_x_err = stimes_x[mask_x], \
+                                    s_ctd_x[mask_x], s_ctd_x_err[mask_x]
+    mask_y = npin1d(stimes_y, stimes_x)
+    tmp, s_ctd_y, s_ctd_y_err  = stimes_y[mask_y], \
+                                 s_ctd_y[mask_y], s_ctd_y_err[mask_y]
+    try:
+        np.testing.assert_array_equal(s_times, tmp)
+        assert len(s_ctd_y) == len(s_times)
+        assert len(s_ctd_y_err) == len(s_times)
+        assert len(s_ctd_x) == len(s_times)
+        assert len(s_ctd_x_err) == len(s_times)
+    except AssertionError:
+        errflag = True
+
+    nqflag = s_times.size
+
+    # Drop intra-quarter and interquarter gaps in the timeseries. These are the
+    # same limits set by Armstrong et al (2014): split each quarter's
+    # timegroups by whether points are within 0.5 day limits. Then drop points
+    # within 0.5 days of any boundary.  Finally, since the interquarter burn-in
+    # time is more like 1 day, drop a further 0.5 days from the edges of each
+    # quarter.  A nicer way to implement this would be with numpy masks, but
+    # this approach just constructs the full arrays for any given quarter.
+
+    ngroups, groups = find_lc_timegroups(s_times, mingap=mingap)
+    tmp_times, tmp_ctd_x, tmp_ctd_y = [], [], []
+    tmp_ctd_x_err, tmp_ctd_y_err = [], []
+
+    for group in groups:
+        tg_times = s_times[group]
+        tg_ctd_x = s_ctd_x[group]
+        tg_ctd_y = s_ctd_y[group]
+        tg_ctd_x_err = s_ctd_x_err[group]
+        tg_ctd_y_err = s_ctd_y_err[group]
+        try:
+            sel = (tg_times > npmin(tg_times)+mingap) & \
+                  (tg_times < npmax(tg_times)-mingap)
+        except ValueError:
+            # If tgtimes is empty, continue to next timegroup.
+            continue
+
+        tmp_times.append(tg_times[sel])
+        tmp_ctd_x.append(tg_ctd_x[sel])
+        tmp_ctd_y.append(tg_ctd_y[sel])
+        tmp_ctd_x_err.append(tg_ctd_x_err[sel])
+        tmp_ctd_y_err.append(tg_ctd_y_err[sel])
+
+    s_times,s_ctd_x,s_ctd_y,s_ctd_x_err,s_ctd_y_err = \
+            nparray([]),nparray([]),nparray([]),nparray([]),nparray([])
+
+    # N.b.: works fine with empty arrays.
+    for ix, _ in enumerate(tmp_times):
+        s_times = npappend(s_times, tmp_times[ix])
+        s_ctd_x = npappend(s_ctd_x, tmp_ctd_x[ix])
+        s_ctd_y = npappend(s_ctd_y, tmp_ctd_y[ix])
+        s_ctd_x_err = npappend(s_ctd_x_err, tmp_ctd_x_err[ix])
+        s_ctd_y_err = npappend(s_ctd_y_err, tmp_ctd_y_err[ix])
+
+    # Extra inter-quarter burn-in of 0.5 days.
+    try:
+        s_ctd_x = s_ctd_x[(s_times>(npmin(s_times)+mingap)) & \
+                          (s_times<(npmax(s_times)-mingap))]
+    except:
+        # Case: s_times is wonky, all across this quarter. (Implemented because
+        # of a rare bug with a singleton s_times array).
+        LOGERROR('DETREND FAILED, qnum {:d}'.format(qnum))
+        return npnan, True
+
+    s_ctd_y = s_ctd_y[(s_times>(npmin(s_times)+mingap)) & \
+                      (s_times<(npmax(s_times)-mingap))]
+    s_ctd_x_err = s_ctd_x_err[(s_times>(npmin(s_times)+mingap)) & \
+                              (s_times<(npmax(s_times)-mingap))]
+    s_ctd_y_err = s_ctd_y_err[(s_times>(npmin(s_times)+mingap)) & \
+                              (s_times<(npmax(s_times)-mingap))]
+    # Careful to do this last...
+    s_times = s_times[(s_times>(npmin(s_times)+mingap)) & \
+                      (s_times<(npmax(s_times)-mingap))]
+
+    nafter = s_times.size
+
+    LOGINFO('CLIPPING (SAP), qnum: {:d}'.format(qnum)+\
+            '\nndet before qflag & sigclip: {:d} ({:.3g}),'.format(
+                nbefore, 1.)+\
+            '\nndet after qflag & finite & sigclip: {:d} ({:.3g})'.format(
+                nqflag, nqflag/float(nbefore))+\
+            '\nndet after dropping pts near gaps: {:d} ({:.3g})'.format(
+                nafter, nafter/float(nbefore)))
+
+    # DETREND: fit a "low" order legendre series (see
+    # "legendredeg_vs_npts_per_timegroup_ctd.pdf"), and save it to the output
+    # dictionary. Save the fit (residuals to be computed after).
+    ctd_dtr = {}
+
+    if detrend == 'legendre':
+        mingap = 0.5 # days
+        ngroups, groups = find_lc_timegroups(s_times, mingap=mingap)
+        tmpctdxlegfit, tmpctdylegfit, legdegs = [], [], []
+        for group in groups:
+            tg_times = s_times[group]
+            tg_ctd_x = s_ctd_x[group]
+            tg_ctd_x_err = s_ctd_x_err[group]
+            tg_ctd_y = s_ctd_y[group]
+            tg_ctd_y_err = s_ctd_y_err[group]
+
+            legdeg = _get_legendre_deg_ctd(len(tg_times))
+            tg_ctd_x_fit, _, _ = _legendre_dtr(tg_times,tg_ctd_x,tg_ctd_x_err,
+                    legendredeg=legdeg)
+            tg_ctd_y_fit, _, _ = _legendre_dtr(tg_times,tg_ctd_y,tg_ctd_y_err,
+                    legendredeg=legdeg)
+
+            tmpctdxlegfit.append(tg_ctd_x_fit)
+            tmpctdylegfit.append(tg_ctd_y_fit)
+            legdegs.append(legdeg)
+
+        fit_ctd_x, fit_ctd_y = nparray([]), nparray([])
+        for ix, _ in enumerate(tmpctdxlegfit):
+            fit_ctd_x = npappend(fit_ctd_x, tmpctdxlegfit[ix])
+            fit_ctd_y = npappend(fit_ctd_y, tmpctdylegfit[ix])
+
+    ctd_dtr = {'times':s_times,
+               'ctd_x':s_ctd_x,
+               'ctd_x_err':s_ctd_x_err,
+               'fit_ctd_x':fit_ctd_x,
+               'ctd_y':s_ctd_y,
+               'ctd_y_err':s_ctd_y_err,
+               'fit_ctd_y':fit_ctd_y
+              }
+
+    lcd['ctd_dtr'] = ctd_dtr
+
+    return lcd, False
+
+
+def get_centroid_offsets(lcd, t_ing_egr, oot_buffer_time=0.1, sample_factor=3):
+    '''
+    After running detrend_centroid, get positions of centroids during transits,
+    and outside of transits. These positions can then be used in a false
+    positive analysis.
+
+    This routine requires knowing the ingress and egress times for every
+    transit of interest within the quarter this routine is being called for.
+    There is currently no astrobase routine that automates this for periodic
+    transits (it must be done in a calling routine).
+
+    To get out of transit centroids, this routine takes points outside of the
+    "buffer" set by `oot_buffer_time`, sampling 3x as many points on either
+    side of the transit as are in the transit (or however many are specified by
+    `sample_factor`).
+
+    args:
+        lcd (dict): "lightcurvedict", the dictionary output by
+        astrokep.read_kepler_fitslc (data from a single Kepler quarter).
+        Assumes astrokep.detrend_centroid has been run.
+
+        t_ing_egr (list of tuples): [(ingress time of i^th transit, egress time
+        of i^th transit)] for i the transit number index in this quarter
+        (starts at zero at the beginning of every quarter). Assumes units of
+        BJD.
+
+        oot_buffer_time (float): number of days away from ingress and egress
+        times to begin sampling "out of transit" centroid points. The number of
+        out of transit points to take per transit is 3x the number of points in
+        transit.
+
+        sample_factor (float): size of out of transit window from which to
+        sample.
+
+    returns:
+        cd (dict): dictionary keyed by transit number (i.e. the same index as
+        t_ing_egr), where each key contains:
+            {'ctd_x_in_tra':ctd_x_in_tra,
+            'ctd_y_in_tra':ctd_y_in_tra,
+            'ctd_x_oot':ctd_x_oot,
+            'ctd_y_oot':ctd_y_oot,
+            'npts_in_tra':len(ctd_x_in_tra),
+            'npts_oot':len(ctd_x_oot),
+            'in_tra_times':in_tra_times,
+            'oot_times':oot_times
+            }
+    '''
+    # NOTE:
+    # Bryson+ (2013) gives a more complicated and more correct approach to this
+    # problem, computing offsets relative to positions defined on the SKY. This
+    # requires using a Kepler focal plane geometry model. I don't have that
+    # model, or know how to get it. So I use a simpler approach.
+
+    qnum = int(np.unique(lcd['quarter']))
+    LOGINFO('Getting centroid offsets (qnum: {:d})...'.format(qnum))
+    # Kepler pixel scale, cf.
+    # https://keplerscience.arc.nasa.gov/the-kepler-space-telescope.html 
+    arcsec_per_px = 3.98
+
+    # Get the residuals (units: pixel offset).
+    times = lcd['ctd_dtr']['times']
+    ctd_resid_x = lcd['ctd_dtr']['ctd_x'] - lcd['ctd_dtr']['fit_ctd_x']
+    ctd_resid_y = lcd['ctd_dtr']['ctd_y'] - lcd['ctd_dtr']['fit_ctd_y']
+
+    # Return results in "centroid dictionary" (has keys of transit number).
+    cd = {}
+    for ix,(t_ing,t_egr) in enumerate(t_ing_egr):
+
+        # We have in-transit times as input.
+        in_tra_times = times[(times > t_ing) & (times < t_egr)]
+
+        # Compute out of transit times on either side of the in-transit times.
+        transit_dur = t_egr - t_ing
+        oot_window_len = sample_factor * transit_dur
+
+        oot_before = times[
+                (times < (t_ing-oot_buffer_time)) &
+                (times > (t_ing-oot_buffer_time-oot_window_len))]
+        oot_after = times[
+                (times > (t_egr+oot_buffer_time)) &
+                (times < (t_egr+oot_buffer_time+oot_window_len))]
+
+        oot_times = npconcatenate([oot_before, oot_after])
+
+        mask_tra = npin1d(times, in_tra_times)
+        mask_oot = npin1d(times, oot_times)
+
+        # Convert to units of arcseconds.
+        ctd_x_in_tra = ctd_resid_x[mask_tra]*arcsec_per_px
+        ctd_y_in_tra = ctd_resid_y[mask_tra]*arcsec_per_px
+        ctd_x_oot = ctd_resid_x[mask_oot]*arcsec_per_px
+        ctd_y_oot = ctd_resid_y[mask_oot]*arcsec_per_px
+
+        cd[ix] = {'ctd_x_in_tra':ctd_x_in_tra,
+                  'ctd_y_in_tra':ctd_y_in_tra,
+                  'ctd_x_oot':ctd_x_oot,
+                  'ctd_y_oot':ctd_y_oot,
+                  'npts_in_tra':len(ctd_x_in_tra),
+                  'npts_oot':len(ctd_x_oot),
+                  'in_tra_times':in_tra_times,
+                  'oot_times':oot_times
+                 }
+
+    LOGINFO('Got centroid offsets (qnum: {:d}).'.format(qnum))
+
+    return cd
+
+
+############################################
+# UTILITY FUNCTION FOR CENTROID DETRENDING #
+############################################
+def _get_legendre_deg_ctd(npts):
+    from scipy.interpolate import interp1d
+
+    degs = nparray([4,5,6,10,15])
+    pts = nparray([1e2,3e2,5e2,1e3,3e3])
+    fn = interp1d(pts, degs, kind='linear',
+                 bounds_error=False,
+                 fill_value=(min(degs), max(degs)))
+    legendredeg = int(npfloor(fn(npts)))
+
+    return legendredeg
+
+
+#######################################
+# UTILITY FUNCTION FOR ANY DETRENDING #
+#######################################
+def _legendre_dtr(x, y, y_err, legendredeg=10):
+    '''
+    args:
+        x (np.array): independent variable.
+        y (np.array): dependent variable.
+        y_err (np.array): errors of y for Χ^2 calculaiton.
+    '''
+    try:
+        p = Legendre.fit(x, y, legendredeg)
+        fit_y = p(x)
+    except:
+        fit_y = npzeros_like(y)
+
+    fitchisq = npsum(
+        ((fit_y - y)*(fit_y - y)) / (y_err*y_err)
+    )
+
+    nparams = legendredeg + 1
+    fitredchisq = fitchisq/(len(y) - nparams - 1)
+
+    LOGINFO(
+        'legendre detrend applied. chisq = %.5f, reduced chisq = %.5f' %
+        (fitchisq, fitredchisq)
+    )
+
+    return fit_y, fitchisq, fitredchisq
+
+
+
