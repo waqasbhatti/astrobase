@@ -222,20 +222,20 @@ def read_kepler_fitslc(lcfits,
                        topkeys=LCTOPKEYS,
                        apkeys=LCAPERTUREKEYS,
                        appendto=None):
-    '''This extracts the light curve from a single Kepler and K2 LC FITS file.
+    '''This extracts the light curve from a single Kepler or K2 LC FITS file.
 
     This works on the light curves available at MAST:
 
-    -> kepler{kepid}-{somedatething}_llc.fits files from the Kepler mission
+    -> kplr{kepid}-{somedatething}_llc.fits files from the Kepler mission
 
-    -> ktwo{epicid}-c{campaign}_llc.fits files from the K2 mission.
+    -> ktwo{epicid}-c{campaign}_llc.fits files from the K2 mission
 
     Returns an lcdict.
 
     If appendto is an lcdict, will append measurements to that dict. This is
-    used for consolidating light curves across different files. The appending
-    does not care about the time order. To consolidate light curves in time
-    order, use consolidate_kepler_fitslc below.
+    used for consolidating light curves for the same object across different
+    files (quarters). The appending does not care about the time order. To
+    consolidate light curves in time order, use consolidate_kepler_fitslc below.
 
     '''
 
@@ -459,6 +459,8 @@ def read_kepler_fitslc(lcfits,
                                            lcdict['quarter'][0])
         lcdict['lc_season'] = npfull_like(lcdict['time'],
                                           lcdict['season'][0])
+        lcdict['lc_campaign'] = npfull_like(lcdict['time'],
+                                            lcdict['campaign'][0])
 
     ## END OF LIGHT CURVE CONSTRUCTION ##
 
