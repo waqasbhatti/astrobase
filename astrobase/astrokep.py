@@ -473,9 +473,9 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
     '''
 
     # use the os.walk function to start looking for files in lcfitsdir
+    # FIXME: maybe we should shell out to `find` instead?
     walker = os.walk(lcfitsdir)
     matching = []
-    nmatching = 0
     LOGINFO('looking for Kepler light curve FITS in %s for %s...' % (lcfitsdir,
                                                                      keplerid))
     for root, dirs, files in walker:
@@ -488,12 +488,81 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
             if foundfiles:
                 matching.extend(foundfiles)
                 LOGINFO('found %s in dir: %s' % (repr(foundfiles),
-                                                 searchpath))
+                                                 os.path.join(root,sdir)))
 
-                # open the files as we go. if this is the first file, then
-                # generate the initial lcdict using
-                # read_kepler_fitslc. otherwise, use read_kepler_fitslc in
-                # appendto mode.
+    # now that we've found everything, read them all in
+    if len(matching) > 0:
+
+        LOGINFO('consolidating...')
+
+        # the first file
+        consolidated = read_kepler_fitslc(matching[0],
+                                          headerkeys=headerkeys,
+                                          datakeys=datakeys,
+                                          sapkeys=sapkeys,
+                                          pdckeys=pdckeys,
+                                          topkeys=topkeys,
+                                          apkeys=apkeys)
+        # get the rest of the files
+        for lcf in matching:
+            consolidated = read_kepler_fitslc(lcf,
+                                              appendto=consolidated,
+                                              headerkeys=headerkeys,
+                                              datakeys=datakeys,
+                                              sapkeys=sapkeys,
+                                              pdckeys=pdckeys,
+                                              topkeys=topkeys,
+                                              apkeys=apkeys)
+
+        # get the sort indices
+        # we use time for the columns and quarters for the headers
+        LOGINFO('sorting by time...')
+
+        column_sort_ind = npargsort(consolidated['time'])
+
+        # sort the columns by time
+        for col in consolidated['columns']:
+            if '.' in col:
+                key, subkey = col.split('.')
+                consolidated[key][subkey] = (
+                    consolidated[key][subkey][column_sort_ind]
+                )
+            else:
+                consolidated[col] = consolidated[col][column_sort_ind]
+
+        # now sort the headers by quarters
+        header_sort_ind = npargsort(consolidated['quarter']).tolist()
+
+        # this is a bit convoluted, but whatever: list -> array -> list
+
+        for key in ('quarter', 'season', 'datarelease', 'obsmode'):
+            consolidated[key] = (
+                np.array(consolidated[key])[header_sort_ind].tolist()
+            )
+
+        for key in ('timesys','bjdoffset','exptime','lcaperture',
+                    'aperpixused','aperpixunused','pixarcsec',
+                    'channel','skygroup','module','output','ndet'):
+            consolidated['lcinfo'][key] = (
+                np.array(consolidated['lcinfo'][key])[header_sort_ind].tolist()
+            )
+
+        for key in ('cdpp3_0','cdpp6_0','cdpp12_0','pdcvar','pdcmethod',
+                    'aper_target_total_ratio','aper_target_frac'):
+            consolidated['varinfo'][key] = (
+                np.array(consolidated['varinfo'][key])[header_sort_ind].tolist()
+            )
+
+        # finally, return the consolidated lcdict
+        return consolidated
+
+    # if we didn't find anything, complain
+    else:
+
+        LOGERROR('could not find any light curves '
+                 'for %s in %s or its subdirectories' % (keplerid,
+                                                         lcfitsdir))
+        return None
 
 
 ########################
