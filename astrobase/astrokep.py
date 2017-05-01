@@ -538,20 +538,20 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
 
         for key in ('quarter', 'season', 'datarelease', 'obsmode'):
             consolidated[key] = (
-                np.array(consolidated[key])[header_sort_ind].tolist()
+                nparray(consolidated[key])[header_sort_ind].tolist()
             )
 
         for key in ('timesys','bjdoffset','exptime','lcaperture',
                     'aperpixused','aperpixunused','pixarcsec',
                     'channel','skygroup','module','output','ndet'):
             consolidated['lcinfo'][key] = (
-                np.array(consolidated['lcinfo'][key])[header_sort_ind].tolist()
+                nparray(consolidated['lcinfo'][key])[header_sort_ind].tolist()
             )
 
         for key in ('cdpp3_0','cdpp6_0','cdpp12_0','pdcvar','pdcmethod',
                     'aper_target_total_ratio','aper_target_frac'):
             consolidated['varinfo'][key] = (
-                np.array(consolidated['varinfo'][key])[header_sort_ind].tolist()
+                nparray(consolidated['varinfo'][key])[header_sort_ind].tolist()
             )
 
         # finally, return the consolidated lcdict
