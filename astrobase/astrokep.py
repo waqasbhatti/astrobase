@@ -271,7 +271,7 @@ def read_kepler_fitslc(lcfits,
         # we don't update the objectid
 
         # update lcinfo
-        lcdict['lcinfo']['timesys'].append(hdrinfo['times'])
+        lcdict['lcinfo']['timesys'].append(hdrinfo['timesys'])
         lcdict['lcinfo']['bjdoffset'].append(
             hdrinfo['bjdrefi'] + hdrinfo['bjdreff']
         )
