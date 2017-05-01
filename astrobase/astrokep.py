@@ -56,9 +56,9 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 try:
-    import pyfits
-except:
     from astropy.io import fits as pyfits
+except:
+    import pyfits
 
 
 #############
@@ -187,7 +187,8 @@ LCHEADERKEYS = ['TIMESYS','BJDREFI','BJDREFF',
 
 # this is the list of keys to pull out of the top header of the FITS
 LCTOPKEYS = ['CHANNEL','SKYGROUP','MODULE','OUTPUT',
-             'QUARTER','SEASON','DATA_REL','OBSMODE',
+             'QUARTER','SEASON','CAMPAIGN',
+             'DATA_REL','OBSMODE',
              'PMRA','PMDEC','PMTOTAL','PARALLAX',
              'GLON','GLAT',
              'GMAG','RMAG','IMAG','ZMAG','D51MAG',
@@ -221,7 +222,13 @@ def read_kepler_fitslc(lcfits,
                        topkeys=LCTOPKEYS,
                        apkeys=LCAPERTUREKEYS,
                        appendto=None):
-    '''This extracts the light curve from a single Kepler Mission LC FITS file.
+    '''This extracts the light curve from a single Kepler and K2 LC FITS file.
+
+    This works on the light curves available at MAST:
+
+    -> kepler{kepid}-{somedatething}_llc.fits files from the Kepler mission
+
+    -> ktwo{epicid}-c{campaign}_llc.fits files from the K2 mission.
 
     Returns an lcdict.
 
@@ -276,6 +283,7 @@ def read_kepler_fitslc(lcfits,
         lcdict['season'].append(hdrinfo['season'])
         lcdict['datarelease'].append(hdrinfo['data_rel'])
         lcdict['obsmode'].append(hdrinfo['obsmode'])
+        lcdict['campaign'].append(hdrinfo['campaign'])
         # we don't update the objectid
 
         # update lcinfo
@@ -361,6 +369,11 @@ def read_kepler_fitslc(lcfits,
              npfull_like(lcdata['TIME'],
                          hdrinfo['season']))
         )
+        lcdict['lc_campaign'] = npconcatenate(
+            (lcdict['lc_campaign'],
+             npfull_like(lcdata['TIME'],
+                         hdrinfo['campaign']))
+        )
 
 
     # otherwise, this is a new lcdict
@@ -372,6 +385,7 @@ def read_kepler_fitslc(lcfits,
             'quarter':[hdrinfo['quarter']],
             'season':[hdrinfo['season']],
             'datarelease':[hdrinfo['data_rel']],
+            'campaign':[hdrinfo['campaign']], # this is None for KepPrime
             'obsmode':[hdrinfo['obsmode']],
             'objectid':hdrinfo['object'],
             'lcinfo':{
@@ -589,7 +603,7 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
 ## READING K2 SFF LCs ##
 ########################
 
-SFFTOPKEYS = LCTOPKEYS + ['CAMPAIGN']
+SFFTOPKEYS = LCTOPKEYS
 SFFHEADERKEYS = LCHEADERKEYS + ['MASKTYPE','MASKINDE','NPIXSAP']
 SFFDATAKEYS = ['T','FRAW','FCOR','ARCLENGTH','MOVING','CADENCENO']
 
