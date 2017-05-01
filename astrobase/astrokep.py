@@ -39,7 +39,13 @@ from numpy.polynomial.legendre import Legendre
 from scipy.optimize import leastsq
 from scipy.signal import medfilt
 
-from sklearn.ensemble import RandomForestRegressor
+# FIXME: should probably add this to setup.py requirements
+try:
+    from sklearn.ensemble import RandomForestRegressor
+    SKLEARN = True
+except:
+    SKLEARN = False
+
 
 from .lcmath import sigclip_magseries, find_lc_timegroups
 
@@ -1228,7 +1234,7 @@ def rfepd_kepler_lightcurve(lcdict,
 ## CENTROID ANALYSIS ##
 #######################
 
-def detrend_centroid(lcd, detrend='legendre', σ_clip=None, mingap=0.5):
+def detrend_centroid(lcd, detrend='legendre', sigclip=None, mingap=0.5):
     '''
     You are given a dictionary, for a single quarter of Kepler data, returned
     by `astrokep.read_kepler_fitslc`. This module returns this same dictionary,
@@ -1245,7 +1251,7 @@ def detrend_centroid(lcd, detrend='legendre', σ_clip=None, mingap=0.5):
         detrend (str): method by which to detrend the LC. 'legendre' is the
         only thing implemented.
 
-        σ_clip (float or list): to pass to astrobase.lcmath.sigclip_magseries
+        sigclip (float or list): to pass to astrobase.lcmath.sigclip_magseries
 
         mingap (float): number of days by which to define "timegroups" (for
         individual fitting each of timegroup, and to eliminate "burn-in" of
@@ -1295,11 +1301,13 @@ def detrend_centroid(lcd, detrend='legendre', σ_clip=None, mingap=0.5):
 
     # Get times and centroids where everything is finite and sigma clipped.
     mask_x = npin1d(stimes_x, stimes_y)
-    s_times, s_ctd_x, s_ctd_x_err = stimes_x[mask_x], \
-                                    s_ctd_x[mask_x], s_ctd_x_err[mask_x]
+    s_times, s_ctd_x, s_ctd_x_err = (stimes_x[mask_x],
+                                    s_ctd_x[mask_x],
+                                     s_ctd_x_err[mask_x])
     mask_y = npin1d(stimes_y, stimes_x)
-    tmp, s_ctd_y, s_ctd_y_err  = stimes_y[mask_y], \
-                                 s_ctd_y[mask_y], s_ctd_y_err[mask_y]
+    tmp, s_ctd_y, s_ctd_y_err  = (stimes_y[mask_y],
+                                 s_ctd_y[mask_y],
+                                  s_ctd_y_err[mask_y])
     try:
         np.testing.assert_array_equal(s_times, tmp)
         assert len(s_ctd_y) == len(s_times)
@@ -1330,8 +1338,8 @@ def detrend_centroid(lcd, detrend='legendre', σ_clip=None, mingap=0.5):
         tg_ctd_x_err = s_ctd_x_err[group]
         tg_ctd_y_err = s_ctd_y_err[group]
         try:
-            sel = (tg_times > npmin(tg_times)+mingap) & \
-                  (tg_times < npmax(tg_times)-mingap)
+            sel = ((tg_times > npmin(tg_times)+mingap) &
+                   (tg_times < npmax(tg_times)-mingap))
         except ValueError:
             # If tgtimes is empty, continue to next timegroup.
             continue
@@ -1342,8 +1350,9 @@ def detrend_centroid(lcd, detrend='legendre', σ_clip=None, mingap=0.5):
         tmp_ctd_x_err.append(tg_ctd_x_err[sel])
         tmp_ctd_y_err.append(tg_ctd_y_err[sel])
 
-    s_times,s_ctd_x,s_ctd_y,s_ctd_x_err,s_ctd_y_err = \
-            nparray([]),nparray([]),nparray([]),nparray([]),nparray([])
+    s_times,s_ctd_x,s_ctd_y,s_ctd_x_err,s_ctd_y_err = (
+        nparray([]),nparray([]),nparray([]),nparray([]),nparray([])
+    )
 
     # N.b.: works fine with empty arrays.
     for ix, _ in enumerate(tmp_times):
@@ -1355,7 +1364,7 @@ def detrend_centroid(lcd, detrend='legendre', σ_clip=None, mingap=0.5):
 
     # Extra inter-quarter burn-in of 0.5 days.
     try:
-        s_ctd_x = s_ctd_x[(s_times>(npmin(s_times)+mingap)) & \
+        s_ctd_x = s_ctd_x[(s_times>(npmin(s_times)+mingap)) &
                           (s_times<(npmax(s_times)-mingap))]
     except:
         # Case: s_times is wonky, all across this quarter. (Implemented because
@@ -1363,25 +1372,30 @@ def detrend_centroid(lcd, detrend='legendre', σ_clip=None, mingap=0.5):
         LOGERROR('DETREND FAILED, qnum {:d}'.format(qnum))
         return npnan, True
 
-    s_ctd_y = s_ctd_y[(s_times>(npmin(s_times)+mingap)) & \
+    s_ctd_y = s_ctd_y[(s_times>(npmin(s_times)+mingap)) &
                       (s_times<(npmax(s_times)-mingap))]
-    s_ctd_x_err = s_ctd_x_err[(s_times>(npmin(s_times)+mingap)) & \
+    s_ctd_x_err = s_ctd_x_err[(s_times>(npmin(s_times)+mingap)) &
                               (s_times<(npmax(s_times)-mingap))]
-    s_ctd_y_err = s_ctd_y_err[(s_times>(npmin(s_times)+mingap)) & \
+    s_ctd_y_err = s_ctd_y_err[(s_times>(npmin(s_times)+mingap)) &
                               (s_times<(npmax(s_times)-mingap))]
     # Careful to do this last...
-    s_times = s_times[(s_times>(npmin(s_times)+mingap)) & \
+    s_times = s_times[(s_times>(npmin(s_times)+mingap)) &
                       (s_times<(npmax(s_times)-mingap))]
 
     nafter = s_times.size
 
-    LOGINFO('CLIPPING (SAP), qnum: {:d}'.format(qnum)+\
-            '\nndet before qflag & sigclip: {:d} ({:.3g}),'.format(
-                nbefore, 1.)+\
-            '\nndet after qflag & finite & sigclip: {:d} ({:.3g})'.format(
-                nqflag, nqflag/float(nbefore))+\
-            '\nndet after dropping pts near gaps: {:d} ({:.3g})'.format(
-                nafter, nafter/float(nbefore)))
+    LOGINFO(
+        'CLIPPING (SAP), qnum: {:d}'.format(qnum) +
+        '\nndet before qflag & sigclip: {:d} ({:.3g}),'.format(
+            nbefore, 1.
+        ) +
+        '\nndet after qflag & finite & sigclip: {:d} ({:.3g})'.format(
+            nqflag, nqflag/float(nbefore)
+        ) +
+        '\nndet after dropping pts near gaps: {:d} ({:.3g})'.format(
+            nafter, nafter/float(nbefore)
+        )
+    )
 
     # DETREND: fit a "low" order legendre series (see
     # "legendredeg_vs_npts_per_timegroup_ctd.pdf"), and save it to the output
@@ -1401,9 +1415,9 @@ def detrend_centroid(lcd, detrend='legendre', σ_clip=None, mingap=0.5):
 
             legdeg = _get_legendre_deg_ctd(len(tg_times))
             tg_ctd_x_fit, _, _ = _legendre_dtr(tg_times,tg_ctd_x,tg_ctd_x_err,
-                    legendredeg=legdeg)
+                                               legendredeg=legdeg)
             tg_ctd_y_fit, _, _ = _legendre_dtr(tg_times,tg_ctd_y,tg_ctd_y_err,
-                    legendredeg=legdeg)
+                                               legendredeg=legdeg)
 
             tmpctdxlegfit.append(tg_ctd_x_fit)
             tmpctdylegfit.append(tg_ctd_y_fit)
@@ -1484,7 +1498,7 @@ def get_centroid_offsets(lcd, t_ing_egr, oot_buffer_time=0.1, sample_factor=3):
     qnum = int(np.unique(lcd['quarter']))
     LOGINFO('Getting centroid offsets (qnum: {:d})...'.format(qnum))
     # Kepler pixel scale, cf.
-    # https://keplerscience.arc.nasa.gov/the-kepler-space-telescope.html 
+    # https://keplerscience.arc.nasa.gov/the-kepler-space-telescope.html
     arcsec_per_px = 3.98
 
     # Get the residuals (units: pixel offset).
@@ -1581,6 +1595,3 @@ def _legendre_dtr(x, y, y_err, legendredeg=10):
     )
 
     return fit_y, fitchisq, fitredchisq
-
-
-
