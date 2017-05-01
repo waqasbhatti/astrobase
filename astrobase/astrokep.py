@@ -320,6 +320,47 @@ def read_kepler_fitslc(lcfits,
                     npconcatenate((lcdict['pdc'][key.lower()], lcdata[key]))
                 )
 
+
+        # append some of the light curve information into existing numpy arrays
+        # so we can sort on them later
+        lcdict['lc_channel'] = np.concatenate(
+            lcdict['lc_channel'],
+            npfull_like(lcdata['TIME'],
+                        hdrinfo['channel']
+            )
+        )
+        lcdict['lc_skygroup'] = np.concatenate(
+            lcdict['lc_skygroup'],
+            npfull_like(lcdata['TIME'],
+                        hdrinfo['skygroup']
+            )
+        )
+        lcdict['lc_module'] = np.concatenate(
+            lcdict['lc_module'],
+            npfull_like(lcdata['TIME'],
+                        hdrinfo['module']
+            )
+        )
+        lcdict['lc_output'] = np.concatenate(
+            lcdict['lc_output'],
+            npfull_like(lcdata['TIME'],
+                        hdrinfo['output']
+            )
+        )
+        lcdict['lc_quarter'] = np.concatenate(
+            lcdict['lc_quarter'],
+            npfull_like(lcdata['TIME'],
+                        hdrinfo['quarter']
+            )
+        )
+        lcdict['lc_season'] = np.concatenate(
+            lcdict['lc_season'],
+            npfull_like(lcdata['TIME'],
+                        hdrinfo['season']
+            )
+        )
+
+
     # otherwise, this is a new lcdict
     else:
 
@@ -388,22 +429,23 @@ def read_kepler_fitslc(lcfits,
         for key in pdckeys:
             lcdict['pdc'][key.lower()] = lcdata[key]
 
+        # turn some of the light curve information into numpy arrays so we can
+        # sort on them later
+        lcdict['lc_channel'] = npfull_like(lcdict['time'],
+                                           lcdict['lcinfo']['channel'][0])
+        lcdict['lc_skygroup'] = npfull_like(lcdict['time'],
+                                            lcdict['lcinfo']['skygroup'][0])
+        lcdict['lc_module'] = npfull_like(lcdict['time'],
+                                          lcdict['lcinfo']['module'][0])
+        lcdict['lc_output'] = npfull_like(lcdict['time'],
+                                          lcdict['lcinfo']['output'][0])
+        lcdict['lc_quarter'] = npfull_like(lcdict['time'],
+                                           lcdict['quarter'][0])
+        lcdict['lc_season'] = npfull_like(lcdict['time'],
+                                          lcdict['season'][0])
+
     ## END OF LIGHT CURVE CONSTRUCTION ##
 
-    # turn some of the light curve information into numpy arrays so we can sort
-    # on them later
-    lcdict['lc_channel'] = npfull_like(lcdict['time'],
-                                       lcdict['lcinfo']['channel'][0])
-    lcdict['lc_skygroup'] = npfull_like(lcdict['time'],
-                                        lcdict['lcinfo']['skygroup'][0])
-    lcdict['lc_module'] = npfull_like(lcdict['time'],
-                                      lcdict['lcinfo']['module'][0])
-    lcdict['lc_output'] = npfull_like(lcdict['time'],
-                                      lcdict['lcinfo']['output'][0])
-    lcdict['lc_quarter'] = npfull_like(lcdict['time'],
-                                       lcdict['quarter'][0])
-    lcdict['lc_season'] = npfull_like(lcdict['time'],
-                                      lcdict['season'][0])
 
     # update the lcdict columns with the actual columns
     lcdict['columns'] = (
