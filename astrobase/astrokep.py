@@ -264,7 +264,6 @@ def read_kepler_fitslc(lcfits,
 
         lcdict = appendto
 
-        # add the metadata to the existing arrays
         lcdict['quarter'].append(hdrinfo['quarter'])
         lcdict['season'].append(hdrinfo['season'])
         lcdict['datarelease'].append(hdrinfo['data_rel'])
@@ -391,27 +390,28 @@ def read_kepler_fitslc(lcfits,
 
     ## END OF LIGHT CURVE CONSTRUCTION ##
 
-    # add some of the light curve information to the data arrays so we can
-    # sort on them later
-    lcdict['channel'] = npfull_like(lcdict['time'],
-                                     lcdict['lcinfo']['channel'][0])
-    lcdict['skygroup'] = npfull_like(lcdict['time'],
-                                     lcdict['lcinfo']['skygroup'][0])
-    lcdict['module'] = npfull_like(lcdict['time'],
-                                     lcdict['lcinfo']['module'][0])
-    lcdict['output'] = npfull_like(lcdict['time'],
-                                     lcdict['lcinfo']['output'][0])
-    lcdict['quarter'] = npfull_like(lcdict['time'],
-                                     lcdict['quarter'][0])
-    lcdict['season'] = npfull_like(lcdict['time'],
-                                     lcdict['season'][0])
+    # turn some of the light curve information into numpy arrays so we can sort
+    # on them later
+    lcdict['lc_channel'] = npfull_like(lcdict['time'],
+                                       lcdict['lcinfo']['channel'][0])
+    lcdict['lc_skygroup'] = npfull_like(lcdict['time'],
+                                        lcdict['lcinfo']['skygroup'][0])
+    lcdict['lc_module'] = npfull_like(lcdict['time'],
+                                      lcdict['lcinfo']['module'][0])
+    lcdict['lc_output'] = npfull_like(lcdict['time'],
+                                      lcdict['lcinfo']['output'][0])
+    lcdict['lc_quarter'] = npfull_like(lcdict['time'],
+                                       lcdict['quarter'][0])
+    lcdict['lc_season'] = npfull_like(lcdict['time'],
+                                      lcdict['season'][0])
 
     # update the lcdict columns with the actual columns
     lcdict['columns'] = (
         [x.lower() for x in datakeys] +
         ['sap.%s' % x.lower() for x in sapkeys] +
         ['pdc.%s' % x.lower() for x in pdckeys] +
-        ['channel','skygroup','module','output','quarter','season']
+        ['lc_channel','lc_skygroup','lc_module',
+         'lc_output','lc_quarter','lc_season']
     )
 
     # return the lcdict at the end
