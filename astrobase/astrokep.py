@@ -268,7 +268,7 @@ def read_kepler_fitslc(lcfits,
         lcdict['season'].append(hdrinfo['season'])
         lcdict['datarelease'].append(hdrinfo['data_rel'])
         lcdict['obsmode'].append(hdrinfo['obsmode'])
-        lcdict['objectid'].append(hdrinfo['object'])
+        # we don't update the objectid
 
         # update lcinfo
         lcdict['lcinfo']['timesys'].append(hdrinfo['times'])
