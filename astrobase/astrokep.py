@@ -1234,6 +1234,11 @@ if SKLEARN:
 
         return times, corrected_fluxes, flux_corrections
 
+# if SKLEARN = False
+else:
+    LOGWARNING('scikit-learn package not found, '
+               'function rfepd_kepler_lightcurve '
+               'will not be available')
 
 #######################
 ## CENTROID ANALYSIS ##
