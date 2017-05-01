@@ -724,7 +724,7 @@ def kepler_lcdict_to_pkl(lcdict,
     '''
 
     if not outfile:
-        outfile = 'EPIC%s-keplc.pkl' % lcdict['objectinfo']['keplerid']
+        outfile = '%s-keplc.pkl' % lcdict['objectid'].replace(' ','-')
 
     # we're using pickle.HIGHEST_PROTOCOL here, this will make Py3 pickles
     # unreadable for Python 2.7
