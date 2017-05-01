@@ -258,74 +258,141 @@ def read_kepler_fitslc(lcfits,
         else:
             hdrinfo[key.lower()] = None
 
-    # form the lcdict
-    # the metadata is one-elem arrays because we might add on to them later
-    lcdict = {
-        'quarter':[hdrinfo['quarter']],
-        'season':[hdrinfo['season']],
-        'datarelease':[hdrinfo['data_rel']],
-        'obsmode':[hdrinfo['obsmode']],
-        'objectid':hdrinfo['object'],
-        'lcinfo':{
-            'timesys':[hdrinfo['timesys']],
-            'bjdoffset':[hdrinfo['bjdrefi'] + hdrinfo['bjdreff']],
-            'exptime':[hdrinfo['exposure']],
-            'lcaperture':[lcaperturedata],
-            'aperpixused':[hdrinfo['npixsap']],
-            'aperpixunused':[hdrinfo['npixmiss']],
-            'pixarcsec':[(npabs(hdrinfo['cdelt1']) +
-                         npabs(hdrinfo['cdelt2']))*3600.0/2.0],
-            'channel':[hdrinfo['channel']],
-            'skygroup':[hdrinfo['skygroup']],
-            'module':[hdrinfo['module']],
-            'output':[hdrinfo['output']],
-            'ndet':[ndet],
-        },
-        'objectinfo':{
-            'objectid':hdrinfo['object'], # repeated here for checkplot use
-            'keplerid':hdrinfo['keplerid'],
-            'ra':hdrinfo['ra_obj'],
-            'decl':hdrinfo['dec_obj'],
-            'pmra':hdrinfo['pmra'],
-            'pmdecl':hdrinfo['pmdec'],
-            'pmtotal':hdrinfo['pmtotal'],
-            'sdssg':hdrinfo['gmag'],
-            'sdssr':hdrinfo['rmag'],
-            'sdssi':hdrinfo['imag'],
-            'sdssz':hdrinfo['zmag'],
-            'kepmag':hdrinfo['kepmag'],
-            'teff':hdrinfo['teff'],
-            'logg':hdrinfo['logg'],
-            'feh':hdrinfo['feh'],
-            'ebminusv':hdrinfo['ebminusv'],
-            'extinction':hdrinfo['av'],
-            'starradius':hdrinfo['radius'],
-            'twomassuid':hdrinfo['tmindex'],
-        },
-        'varinfo':{
-            'cdpp3_0':[hdrinfo['cdpp3_0']],
-            'cdpp6_0':[hdrinfo['cdpp6_0']],
-            'cdpp12_0':[hdrinfo['cdpp12_0']],
-            'pdcvar':[hdrinfo['pdcvar']],
-            'pdcmethod':[hdrinfo['pdcmethd']],
-            'aptgttotrat':[hdrinfo['crowdsap']],
-            'aptgtfrac':[hdrinfo['flfrcsap']],
-        },
-        'sap':{},
-        'pdc':{},
-    }
 
-    # get the LC columns
-    for key in datakeys:
-        lcdict[key.lower()] = lcdata[key]
-    for key in sapkeys:
-        lcdict['sap'][key.lower()] = lcdata[key]
-    for key in pdckeys:
-        lcdict['pdc'][key.lower()] = lcdata[key]
+    # if we're appending to another lcdict
+    if appendto and isinstance(appendto, dict):
 
+        lcdict = appendto
 
-    # add some of the light curve information to the data arrays so we can sort
-    # on them later
+        # add the metadata to the existing arrays
+        lcdict['quarter'].append(hdrinfo['quarter'])
+        lcdict['season'].append(hdrinfo['season'])
+        lcdict['datarelease'].append(hdrinfo['data_rel'])
+        lcdict['obsmode'].append(hdrinfo['obsmode'])
+        lcdict['objectid'].append(hdrinfo['object'])
+
+        # update lcinfo
+        lcdict['lcinfo']['timesys'].append(hdrinfo['times'])
+        lcdict['lcinfo']['bjdoffset'].append(
+            hdrinfo['bjdrefi'] + hdrinfo['bjdreff']
+        )
+        lcdict['lcinfo']['exptime'].append(hdrinfo['exposure'])
+        lcdict['lcinfo']['lcaperture'].append(lcaperturedata)
+        lcdict['lcinfo']['aperpixused'].append(hdrinfo['npixsap'])
+        lcdict['lcinfo']['aperpixunused'].append(hdrinfo['npixmiss'])
+        lcdict['lcinfo']['pixarcsec'].append(
+            (npabs(hdrinfo['cdelt1']) +
+             npabs(hdrinfo['cdelt2']))*3600.0/2.0
+        )
+        lcdict['lcinfo']['channel'].append(hdrinfo['channel'])
+        lcdict['lcinfo']['skygroup'].append(hdrinfo['skygroup'])
+        lcdict['lcinfo']['module'].append(hdrinfo['module'])
+        lcdict['lcinfo']['output'].append(hdrinfo['output'])
+        lcdict['lcinfo']['ndet'].append(ndet)
+
+        # the objectinfo is not updated for the same object when appending to a
+        # light curve. FIXME: maybe it should be?
+
+        # update the varinfo for this light curve
+        lcdict['varinfo']['cdpp3_0'].append(hdrinfo['cdpp3_0'])
+        lcdict['varinfo']['cdpp6_0'].append(hdrinfo['cdpp6_0'])
+        lcdict['varinfo']['cdpp12_0'].append(hdrinfo['cdpp12_0'])
+        lcdict['varinfo']['pdcvar'].append(hdrinfo['pdcvar'])
+        lcdict['varinfo']['pdcmethod'].append(hdrinfo['pdcmethd'])
+        lcdict['varinfo']['aper_target_total_ratio'].append(hdrinfo['crowdsap'])
+        lcdict['varinfo']['aper_target_frac'].append(hdrinfo['flfrcsap'])
+
+        # update the light curve columns now
+        for key in datakeys:
+            if key.lower() in lcdict:
+                lcdict[key.lower()] = (
+                    np.concatenate((lcdict[key.lower()], lcdata[key]))
+                )
+
+        for key in sapkeys:
+            if key.lower() in lcdict['sap']:
+                lcdict['sap'][key.lower()] = (
+                    np.concatenate((lcdict['sap'][key.lower()], lcdata[key]))
+                )
+
+        for key in pdckeys:
+            if key.lower() in lcdict['pdc']:
+                lcdict['pdc'][key.lower()] = (
+                    np.concatenate((lcdict['pdc'][key.lower()], lcdata[key]))
+                )
+
+    # otherwise, this is a new lcdict
+    else:
+
+        # form the lcdict
+        # the metadata is one-elem arrays because we might add on to them later
+        lcdict = {
+            'quarter':[hdrinfo['quarter']],
+            'season':[hdrinfo['season']],
+            'datarelease':[hdrinfo['data_rel']],
+            'obsmode':[hdrinfo['obsmode']],
+            'objectid':hdrinfo['object'],
+            'lcinfo':{
+                'timesys':[hdrinfo['timesys']],
+                'bjdoffset':[hdrinfo['bjdrefi'] + hdrinfo['bjdreff']],
+                'exptime':[hdrinfo['exposure']],
+                'lcaperture':[lcaperturedata],
+                'aperpixused':[hdrinfo['npixsap']],
+                'aperpixunused':[hdrinfo['npixmiss']],
+                'pixarcsec':[(npabs(hdrinfo['cdelt1']) +
+                             npabs(hdrinfo['cdelt2']))*3600.0/2.0],
+                'channel':[hdrinfo['channel']],
+                'skygroup':[hdrinfo['skygroup']],
+                'module':[hdrinfo['module']],
+                'output':[hdrinfo['output']],
+                'ndet':[ndet],
+            },
+            'objectinfo':{
+                'objectid':hdrinfo['object'], # repeated here for checkplot use
+                'keplerid':hdrinfo['keplerid'],
+                'ra':hdrinfo['ra_obj'],
+                'decl':hdrinfo['dec_obj'],
+                'pmra':hdrinfo['pmra'],
+                'pmdecl':hdrinfo['pmdec'],
+                'pmtotal':hdrinfo['pmtotal'],
+                'sdssg':hdrinfo['gmag'],
+                'sdssr':hdrinfo['rmag'],
+                'sdssi':hdrinfo['imag'],
+                'sdssz':hdrinfo['zmag'],
+                'kepmag':hdrinfo['kepmag'],
+                'teff':hdrinfo['teff'],
+                'logg':hdrinfo['logg'],
+                'feh':hdrinfo['feh'],
+                'ebminusv':hdrinfo['ebminusv'],
+                'extinction':hdrinfo['av'],
+                'starradius':hdrinfo['radius'],
+                'twomassuid':hdrinfo['tmindex'],
+            },
+            'varinfo':{
+                'cdpp3_0':[hdrinfo['cdpp3_0']],
+                'cdpp6_0':[hdrinfo['cdpp6_0']],
+                'cdpp12_0':[hdrinfo['cdpp12_0']],
+                'pdcvar':[hdrinfo['pdcvar']],
+                'pdcmethod':[hdrinfo['pdcmethd']],
+                'aper_target_total_ratio':[hdrinfo['crowdsap']],
+                'aper_target_frac':[hdrinfo['flfrcsap']],
+            },
+            'sap':{},
+            'pdc':{},
+        }
+
+        # get the LC columns
+        for key in datakeys:
+            lcdict[key.lower()] = lcdata[key]
+        for key in sapkeys:
+            lcdict['sap'][key.lower()] = lcdata[key]
+        for key in pdckeys:
+            lcdict['pdc'][key.lower()] = lcdata[key]
+
+    ## END OF LIGHT CURVE CONSTRUCTION ##
+
+    # add some of the light curve information to the data arrays so we can
+    # sort on them later
     lcdict['channel'] = npfull_like(lcdict['time'],
                                      lcdict['lcinfo']['channel'][0])
     lcdict['skygroup'] = npfull_like(lcdict['time'],
@@ -386,6 +453,7 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
                 matching.extend(foundfiles)
                 LOGINFO('found %s in dir: %s' % (repr(foundfiles),
                                                  searchpath))
+
                 # open the files as we go. if this is the first file, then
                 # generate the initial lcdict using
                 # read_kepler_fitslc. otherwise, use read_kepler_fitslc in
