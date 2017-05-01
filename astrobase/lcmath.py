@@ -258,7 +258,9 @@ def sigclip_magseries(times, mags, errs,
     # this is inconsequential to sigma-clipping
     # we don't return these dummy values if the input errs are None
     if errs is None:
-        errs = np.full_like(mags, 0.005)
+        # assume 0.1% errors if not given
+        # this should work for mags and fluxes
+        errs = 0.001*mags
         returnerrs = False
 
     # filter the input times, mags, errs; do sigclipping and normalization
@@ -403,15 +405,19 @@ def phase_magseries_with_errs(times, mags, errs, period, epoch,
 ## BINNING LCs ##
 #################
 
-def time_bin_magseries(times, mags, binsize=540.0):
-    '''
-    This bins the given mag timeseries in time using the binsize given. binsize
-    is in seconds.
+def time_bin_magseries(times, mags,
+                       binsize=540.0,
+                       minbinelems=7):
+    '''This bins the given mag timeseries in time using the binsize given.
+
+    binsize is in seconds.
+
+    minbinelems is the minimum number of elements per bin.
 
     '''
 
     # check if the input arrays are ok
-    if not(times.shape and mags.shape and len(times) > 10 and len(mags) > 10):
+    if not(times.shape and mags.shape and len(times) > 9 and len(mags) > 9):
 
         LOGERROR("input time/mag arrays don't have enough elements")
         return
@@ -449,7 +455,8 @@ def time_bin_magseries(times, mags, binsize=540.0):
         # done with this bin, move to the next one. if they haven't,
         # then this is the start of a new bin.
         if (bin_indices not in binned_finite_timeseries_indices and
-            len(bin_indices)) > 0:
+            len(bin_indices) >= minbinelems):
+
             binned_finite_timeseries_indices.append(bin_indices)
 
     # convert to ndarrays
@@ -476,16 +483,20 @@ def time_bin_magseries(times, mags, binsize=540.0):
 
 
 
-def time_bin_magseries_with_errs(times, mags, errs, binsize=540.0):
-    '''
-    This bins the given mag timeseries in time using the binsize given. binsize
-    is in seconds.
+def time_bin_magseries_with_errs(times, mags, errs,
+                                 binsize=540.0,
+                                 minbinelems=7):
+    '''This bins the given mag timeseries in time using the binsize given.
+
+    binsize is in seconds.
+
+    minbinelems is the number of minimum elements in a bin.
 
     '''
 
     # check if the input arrays are ok
     if not(times.shape and mags.shape and errs.shape and
-           len(times) > 10 and len(mags) > 10):
+           len(times) > 9 and len(mags) > 9):
 
         LOGERROR("input time/mag arrays don't have enough elements")
         return
@@ -514,9 +525,9 @@ def time_bin_magseries_with_errs(times, mags, errs, binsize=540.0):
     collected_binned_mags = {}
 
     for jd in jdbins:
-        # find all bin indices close to within binsizejd of this point
-        # using the kdtree query. we use the p-norm = 1 (I think this
-        # means straight-up pairwise distance? FIXME: check this)
+
+        # find all bin indices close to within binsize of this point using the
+        # kdtree query. we use the p-norm = 1 for pairwise Euclidean distance.
         bin_indices = jdtree.query_ball_point(np.array([jd,1.0]),
                                               binsizejd/2.0, p=1.0)
 
@@ -524,7 +535,8 @@ def time_bin_magseries_with_errs(times, mags, errs, binsize=540.0):
         # done with this bin, move to the next one. if they haven't,
         # then this is the start of a new bin.
         if (bin_indices not in binned_finite_timeseries_indices and
-            len(bin_indices)) > 0:
+            len(bin_indices) >= minbinelems):
+
             binned_finite_timeseries_indices.append(bin_indices)
 
     # convert to ndarrays
@@ -559,10 +571,14 @@ def time_bin_magseries_with_errs(times, mags, errs, binsize=540.0):
 
 
 
-def phase_bin_magseries(phases, mags, binsize=0.005):
+def phase_bin_magseries(phases, mags,
+                        binsize=0.005,
+                        minbinelems=7):
     '''
     This bins a magnitude timeseries in phase using the binsize (in phase)
     provided.
+
+    minbinelems is the minimum number of elements in each bin.
 
     '''
 
@@ -593,9 +609,9 @@ def phase_bin_magseries(phases, mags, binsize=0.005):
     collected_binned_mags = {}
 
     for phase in phasebins:
-        # find all bin indices close to within binsize of this point
-        # using the kdtree query. we use the p-norm = 1 (I think this
-        # means straight-up pairwise distance? FIXME: check this)
+
+        # find all bin indices close to within binsize of this point using the
+        # kdtree query. we use the p-norm = 1 for pairwise Euclidean distance.
         bin_indices = phasetree.query_ball_point(np.array([phase,1.0]),
                                               binsize/2.0, p=1.0)
 
@@ -603,7 +619,8 @@ def phase_bin_magseries(phases, mags, binsize=0.005):
         # done with this bin, move to the next one. if they haven't,
         # then this is the start of a new bin.
         if (bin_indices not in binned_finite_phaseseries_indices and
-            len(bin_indices)) > 0:
+            len(bin_indices) >= minbinelems):
+
             binned_finite_phaseseries_indices.append(bin_indices)
 
     # convert to ndarrays
@@ -633,10 +650,14 @@ def phase_bin_magseries(phases, mags, binsize=0.005):
 
 
 
-def phase_bin_magseries_with_errs(phases, mags, errs, binsize=0.005):
+def phase_bin_magseries_with_errs(phases, mags, errs,
+                                  binsize=0.005,
+                                  minbinelems=7):
     '''
     This bins a magnitude timeseries in phase using the binsize (in phase)
     provided.
+
+    minbinelems is the minimum number of elements in each bin.
 
     '''
 
@@ -668,9 +689,9 @@ def phase_bin_magseries_with_errs(phases, mags, errs, binsize=0.005):
     collected_binned_mags = {}
 
     for phase in phasebins:
-        # find all bin indices close to within binsize of this point
-        # using the kdtree query. we use the p-norm = 1 (I think this
-        # means straight-up pairwise distance? FIXME: check this)
+
+        # find all bin indices close to within binsize of this point using the
+        # kdtree query. we use the p-norm = 1 for pairwise Euclidean distance.
         bin_indices = phasetree.query_ball_point(np.array([phase,1.0]),
                                               binsize/2.0, p=1.0)
 
@@ -678,7 +699,8 @@ def phase_bin_magseries_with_errs(phases, mags, errs, binsize=0.005):
         # done with this bin, move to the next one. if they haven't,
         # then this is the start of a new bin.
         if (bin_indices not in binned_finite_phaseseries_indices and
-            len(bin_indices)) > 0:
+            len(bin_indices) >= minbinelems):
+
             binned_finite_phaseseries_indices.append(bin_indices)
 
     # convert to ndarrays
