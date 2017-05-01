@@ -30,7 +30,7 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     where as npwhere, linspace as nplinspace, \
     zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
     correlate as npcorrelate, zeros as npzeros, ones as npones, \
-    column_stack as npcolumn_stack
+    column_stack as npcolumn_stack, concatenate as npconcatenate
 
 from scipy.optimize import leastsq
 from scipy.signal import medfilt
@@ -305,19 +305,19 @@ def read_kepler_fitslc(lcfits,
         for key in datakeys:
             if key.lower() in lcdict:
                 lcdict[key.lower()] = (
-                    np.concatenate((lcdict[key.lower()], lcdata[key]))
+                    npconcatenate((lcdict[key.lower()], lcdata[key]))
                 )
 
         for key in sapkeys:
             if key.lower() in lcdict['sap']:
                 lcdict['sap'][key.lower()] = (
-                    np.concatenate((lcdict['sap'][key.lower()], lcdata[key]))
+                    npconcatenate((lcdict['sap'][key.lower()], lcdata[key]))
                 )
 
         for key in pdckeys:
             if key.lower() in lcdict['pdc']:
                 lcdict['pdc'][key.lower()] = (
-                    np.concatenate((lcdict['pdc'][key.lower()], lcdata[key]))
+                    npconcatenate((lcdict['pdc'][key.lower()], lcdata[key]))
                 )
 
     # otherwise, this is a new lcdict
