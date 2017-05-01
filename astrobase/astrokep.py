@@ -529,8 +529,6 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
         # get the sort index
         column_sort_ind = npargsort(consolidated['time'])
 
-
-
         # sort the columns by time
         for col in consolidated['columns']:
             if '.' in col:
@@ -740,17 +738,6 @@ def read_kepler_pklc(picklefile):
 ##########################
 ## KEPLER LC PROCESSING ##
 ##########################
-
-
-def find_lightcurve_gaps(times, mags, errs, mindmagdt):
-    '''This finds gaps in the light curves.
-
-    Gets the first-derivative of the light curve per point, and compares that to
-    mindmagdt. If it's larger than that, then designates that as a new segment
-    of the LC.
-
-    '''
-
 
 def stitch_lightcurve_gaps(times, mags, errs, mindmagdt):
     '''
