@@ -1119,10 +1119,12 @@ if SKLEARN:
         and updates the 'columns' list in the lcdict as well.
 
         '''
-        times, fluxes, background, background_err = (lcdict['time'],
-                                                     lcdict['sap']['sap_flux'],
-                                                     lcdict['sap']['sap_bkg'],
-                                                     lcdict['sap']['sap_bkg_err'])
+        times, fluxes, background, background_err = (
+            lcdict['time'],
+            lcdict['sap']['sap_flux'],
+            lcdict['sap']['sap_bkg'],
+            lcdict['sap']['sap_bkg_err']
+        )
         xcc = lcdict[xccol]
         ycc = lcdict[yccol]
         flags = lcdict['sap_quality']
