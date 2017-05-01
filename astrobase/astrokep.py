@@ -739,9 +739,11 @@ def read_kepler_pklc(picklefile):
 ## KEPLER LC PROCESSING ##
 ##########################
 
-def stitch_lightcurve_gaps(times, mags, errs, mindmagdt):
+def stitch_kepler_lcdict(lcdict):
     '''
-    This stitches light curve gaps together.
+    This stitches Kepler light curves together across quarters.
+
+    FIXME: implement this.
 
     '''
 
