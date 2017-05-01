@@ -1057,177 +1057,182 @@ def epd_kepler_lightcurve(lcdict,
 
 
 
-def rfepd_kepler_lightcurve(lcdict,
-                            xccol='mom_centr1',
-                            yccol='mom_centr2',
-                            timestoignore=None,
-                            filterflags=True,
-                            writetodict=True,
-                            epdsmooth=23,
-                            decorr='xcc,ycc',
-                            nrftrees=200):
-    '''
-    This uses a RandomForestRegressor to fit and correct K2 light curves.
+# FIXME: this is only available if sklearn is available. not sure if we should
+# add yet another dependency
+if SKLEARN:
 
-    Fits the X and Y positions, and the background and background error.
+    def rfepd_kepler_lightcurve(lcdict,
+                                xccol='mom_centr1',
+                                yccol='mom_centr2',
+                                timestoignore=None,
+                                filterflags=True,
+                                writetodict=True,
+                                epdsmooth=23,
+                                decorr='xcc,ycc',
+                                nrftrees=200):
+        '''
+        This uses a RandomForestRegressor to fit and correct K2 light curves.
 
-    timestoignore is a list of tuples containing start and end times to mask
-    when fitting the EPD function:
+        Fits the X and Y positions, and the background and background error.
 
-    [(time1_start, time1_end), (time2_start, time2_end), ...]
+        timestoignore is a list of tuples containing start and end times to mask
+        when fitting the EPD function:
 
-    By default, this function removes points in the Kepler LC that have ANY
-    quality flags set.
+        [(time1_start, time1_end), (time2_start, time2_end), ...]
 
-    if writetodict is set, adds the following columns to the lcdict:
+        By default, this function removes points in the Kepler LC that have ANY
+        quality flags set.
 
-    rfepd_time = time array
-    rfepd_sapflux = uncorrected flux before EPD
-    rfepd_epdsapflux = corrected flux after EPD
-    rfepd_epdsapcorr = EPD flux corrections
-    rfepd_bkg = background array
-    rfepd_bkg_err = background errors array
-    rfepd_xcc = xcoord array
-    rfepd_ycc = ycoord array
-    rfepd_quality = quality flag array
+        if writetodict is set, adds the following columns to the lcdict:
 
-    and updates the 'columns' list in the lcdict as well.
+        rfepd_time = time array
+        rfepd_sapflux = uncorrected flux before EPD
+        rfepd_epdsapflux = corrected flux after EPD
+        rfepd_epdsapcorr = EPD flux corrections
+        rfepd_bkg = background array
+        rfepd_bkg_err = background errors array
+        rfepd_xcc = xcoord array
+        rfepd_ycc = ycoord array
+        rfepd_quality = quality flag array
 
-    '''
-    times, fluxes, background, background_err = (lcdict['time'],
-                                                 lcdict['sap']['sap_flux'],
-                                                 lcdict['sap']['sap_bkg'],
-                                                 lcdict['sap']['sap_bkg_err'])
-    xcc = lcdict[xccol]
-    ycc = lcdict[yccol]
-    flags = lcdict['sap_quality']
+        and updates the 'columns' list in the lcdict as well.
 
-    # filter all bad LC points as noted by quality flags
-    if filterflags:
+        '''
+        times, fluxes, background, background_err = (lcdict['time'],
+                                                     lcdict['sap']['sap_flux'],
+                                                     lcdict['sap']['sap_bkg'],
+                                                     lcdict['sap']['sap_bkg_err'])
+        xcc = lcdict[xccol]
+        ycc = lcdict[yccol]
+        flags = lcdict['sap_quality']
+
+        # filter all bad LC points as noted by quality flags
+        if filterflags:
+
+            nbefore = times.size
+
+            filterind = flags == 0
+
+            times = times[filterind]
+            fluxes = fluxes[filterind]
+            background = background[filterind]
+            background_err = background_err[filterind]
+            xcc = xcc[filterind]
+            ycc = ycc[filterind]
+            flags = flags[filterind]
+
+            nafter = times.size
+            LOGINFO('applied quality flag filter, ndet before = %s, '
+                    'ndet after = %s'
+                    % (nbefore, nafter))
+
+
+        # remove nans
+        find = (npisfinite(xcc) & npisfinite(ycc) &
+                npisfinite(times) & npisfinite(fluxes) &
+                npisfinite(background) & npisfinite(background_err))
 
         nbefore = times.size
 
-        filterind = flags == 0
-
-        times = times[filterind]
-        fluxes = fluxes[filterind]
-        background = background[filterind]
-        background_err = background_err[filterind]
-        xcc = xcc[filterind]
-        ycc = ycc[filterind]
-        flags = flags[filterind]
+        times = times[find]
+        fluxes = fluxes[find]
+        background = background[find]
+        background_err = background_err[find]
+        xcc = xcc[find]
+        ycc = ycc[find]
+        flags = flags[find]
 
         nafter = times.size
-        LOGINFO('applied quality flag filter, ndet before = %s, ndet after = %s'
+        LOGINFO('removed nans, ndet before = %s, ndet after = %s'
                 % (nbefore, nafter))
 
 
-    # remove nans
-    find = (npisfinite(xcc) & npisfinite(ycc) &
-            npisfinite(times) & npisfinite(fluxes) &
-            npisfinite(background) & npisfinite(background_err))
+        # exclude all times in timestoignore
+        if (timestoignore and
+            isinstance(timestoignore, list) and
+            len(timestoignore) > 0):
 
-    nbefore = times.size
+            exclind = npfull_like(times,True)
 
-    times = times[find]
-    fluxes = fluxes[find]
-    background = background[find]
-    background_err = background_err[find]
-    xcc = xcc[find]
-    ycc = ycc[find]
-    flags = flags[find]
+            nefore = times.size
 
-    nafter = times.size
-    LOGINFO('removed nans, ndet before = %s, ndet after = %s'
-            % (nbefore, nafter))
+            # apply all the masks
+            for ignoretime in timestoignore:
+                time0, time1 = ignoretime[0], ignoretime[1]
+                thismask = (times > time0) & (times < time1)
+                exclind = exclind & thismask
 
+            # quantities after masks have been applied
+            times = times[exclind]
+            fluxes = fluxes[exclind]
+            background = background[exclind]
+            background_err = background_err[exclind]
+            xcc = xcc[exclind]
+            ycc = ycc[exclind]
+            flags = flags[exclind]
 
-    # exclude all times in timestoignore
-    if (timestoignore and
-        isinstance(timestoignore, list) and
-        len(timestoignore) > 0):
-
-        exclind = npfull_like(times,True)
-
-        nefore = times.size
-
-        # apply all the masks
-        for ignoretime in timestoignore:
-            time0, time1 = ignoretime[0], ignoretime[1]
-            thismask = (times > time0) & (times < time1)
-            exclind = exclind & thismask
-
-        # quantities after masks have been applied
-        times = times[exclind]
-        fluxes = fluxes[exclind]
-        background = background[exclind]
-        background_err = background_err[exclind]
-        xcc = xcc[exclind]
-        ycc = ycc[exclind]
-        flags = flags[exclind]
-
-        nafter = times.size
-        LOGINFO('removed timestoignore, ndet before = %s, ndet after = %s'
-                % (nbefore, nafter))
+            nafter = times.size
+            LOGINFO('removed timestoignore, ndet before = %s, ndet after = %s'
+                    % (nbefore, nafter))
 
 
-    # now that we're all done, we can do EPD
+        # now that we're all done, we can do EPD
 
-    # set up the regressor
-    RFR = RandomForestRegressor(n_estimators=nrftrees)
+        # set up the regressor
+        RFR = RandomForestRegressor(n_estimators=nrftrees)
 
-    if decorr == 'xcc,ycc,bgv,bge':
-        # collect the features and target variable
-        features = npcolumn_stack((xcc,ycc,background,background_err))
-    elif decorr == 'xcc,ycc':
-        # collect the features and target variable
-        features = npcolumn_stack((xcc,ycc))
-    elif decorr == 'bgv,bge':
-        # collect the features and target variable
-        features = npcolumn_stack((background,background_err))
-    else:
-        LOGERROR("couldn't understand decorr, not decorrelating...")
-        return None
+        if decorr == 'xcc,ycc,bgv,bge':
+            # collect the features and target variable
+            features = npcolumn_stack((xcc,ycc,background,background_err))
+        elif decorr == 'xcc,ycc':
+            # collect the features and target variable
+            features = npcolumn_stack((xcc,ycc))
+        elif decorr == 'bgv,bge':
+            # collect the features and target variable
+            features = npcolumn_stack((background,background_err))
+        else:
+            LOGERROR("couldn't understand decorr, not decorrelating...")
+            return None
 
-    # smooth the light curve
-    if epdsmooth:
-        smoothedfluxes = medfilt(fluxes, epdsmooth)
-    else:
-        smoothedfluxes = fluxes
+        # smooth the light curve
+        if epdsmooth:
+            smoothedfluxes = medfilt(fluxes, epdsmooth)
+        else:
+            smoothedfluxes = fluxes
 
-    # fit, then generate the predicted values, then get corrected values
-    RFR.fit(features, smoothedfluxes)
-    flux_corrections = RFR.predict(features)
-    corrected_fluxes = npmedian(fluxes) + fluxes - flux_corrections
+        # fit, then generate the predicted values, then get corrected values
+        RFR.fit(features, smoothedfluxes)
+        flux_corrections = RFR.predict(features)
+        corrected_fluxes = npmedian(fluxes) + fluxes - flux_corrections
 
-    # remove the random forest to save RAM
-    del RFR
+        # remove the random forest to save RAM
+        del RFR
 
-    # write these to the dictionary if requested
-    if writetodict:
+        # write these to the dictionary if requested
+        if writetodict:
 
-        lcdict['rfepd'] = {}
-        lcdict['rfepd']['time'] = times
-        lcdict['rfepd']['sapflux'] = fluxes
-        lcdict['rfepd']['epdsapflux'] = corrected_fluxes
-        lcdict['rfepd']['epdsapcorr'] = flux_corrections
-        lcdict['rfepd']['bkg'] = background
-        lcdict['rfepd']['bkg_err'] = background_err
-        lcdict['rfepd']['xcc'] = xcc
-        lcdict['rfepd']['ycc'] = ycc
-        lcdict['rfepd']['quality'] = flags
+            lcdict['rfepd'] = {}
+            lcdict['rfepd']['time'] = times
+            lcdict['rfepd']['sapflux'] = fluxes
+            lcdict['rfepd']['epdsapflux'] = corrected_fluxes
+            lcdict['rfepd']['epdsapcorr'] = flux_corrections
+            lcdict['rfepd']['bkg'] = background
+            lcdict['rfepd']['bkg_err'] = background_err
+            lcdict['rfepd']['xcc'] = xcc
+            lcdict['rfepd']['ycc'] = ycc
+            lcdict['rfepd']['quality'] = flags
 
-        for newcol in ['rfepd.time','rfepd.sapflux',
-                       'rfepd.epdsapflux','rfepd.epdsapcorr',
-                       'rfepd.bkg','rfepd.bkg.err',
-                       'rfepd.xcc','rfepd.ycc',
-                       'rfepd.quality']:
+            for newcol in ['rfepd.time','rfepd.sapflux',
+                           'rfepd.epdsapflux','rfepd.epdsapcorr',
+                           'rfepd.bkg','rfepd.bkg.err',
+                           'rfepd.xcc','rfepd.ycc',
+                           'rfepd.quality']:
 
-            if newcol not in lcdict['columns']:
-                lcdict['columns'].append(newcol)
+                if newcol not in lcdict['columns']:
+                    lcdict['columns'].append(newcol)
 
 
-    return times, corrected_fluxes, flux_corrections
+        return times, corrected_fluxes, flux_corrections
 
 
 #######################
