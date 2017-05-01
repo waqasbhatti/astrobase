@@ -221,13 +221,14 @@ def read_kepler_fitslc(lcfits,
                        topkeys=LCTOPKEYS,
                        apkeys=LCAPERTUREKEYS,
                        appendto=None):
-    '''This extracts the light curve from a single Kepler prime LC FITS file.
+    '''This extracts the light curve from a single Kepler Mission LC FITS file.
 
     Returns an lcdict.
 
     If appendto is an lcdict, will append measurements to that dict. This is
-    used for consolidating light curves across different files. Will sort
-    measurements in date order.
+    used for consolidating light curves across different files. The appending
+    does not care about the time order. To consolidate light curves in time
+    order, use consolidate_kepler_fitslc below.
 
     '''
 
@@ -471,11 +472,15 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
                               apkeys=LCAPERTUREKEYS):
     '''This gets all light curves for the given keplerid in lcfitsdir.
 
-    Sorts the light curves by time. Returns an lcdict. This is meant to be used
-    for light curves across quarters.
-
     Searches recursively in lcfitsdir for all of the files belonging to the
-    specified keplerid.
+    specified keplerid. Sorts the light curves by time. Returns an lcdict. This
+    is meant to be used for light curves across quarters.
+
+    NOTE: keplerid is an integer (without the leading zeros). This is usually
+    the KIC ID.
+
+    NOTE: if light curve time arrays contain nans, these and their associated
+    measurements will be sorted to the end of the final combined arrays.
 
     '''
 
@@ -712,30 +717,42 @@ def read_k2sff_lightcurve(lcfits):
 ## INPUT/OUTPUT ##
 ##################
 
-def kepler_lcdict_to_pkl(lcdict, outfile=None):
-    '''
-    This simply writes the lcdict to a gzipped pickle.
+def kepler_lcdict_to_pkl(lcdict,
+                         outfile=None):
+    '''This simply writes the lcdict to a pickle.
 
     '''
 
     if not outfile:
-        outfile = 'EPIC%s-keplc.pkl.gz' % lcdict['objectinfo']['keplerid']
+        outfile = 'EPIC%s-keplc.pkl' % lcdict['objectinfo']['keplerid']
 
-    with gzip.open(outfile,'wb') as outfd:
-        pickle.dump(lcdict, outfd, protocol=2)
+    # we're using pickle.HIGHEST_PROTOCOL here, this will make Py3 pickles
+    # unreadable for Python 2.7
+    with open(outfile,'wb') as outfd:
+        pickle.dump(lcdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
 
     return os.path.abspath(outfile)
 
 
 
 def read_kepler_pklc(picklefile):
-    '''
-    This turns the gzipped pickled lightcurve back into an lcdict.
+    '''This turns the pickled lightcurve back into an lcdict.
 
     '''
 
-    with gzip.open(picklefile,'rb') as infd:
-        lcdict = pickle.load(infd)
+    try:
+        with open(picklefile, 'rb') as infd:
+            lcdict = pickle.load(infd)
+
+    except UnicodeDecodeError:
+
+        with open(picklefile,'rb') as infd:
+            lcdict = pickle.load(infd, encoding='latin1')
+
+        LOGWARNING('pickle %s was probably from Python 2 '
+                   'and failed to load without using "latin1" encoding. '
+                   'This is probably a numpy issue: '
+                   'http://stackoverflow.com/q/11305790' % checkplotpickle)
 
     return lcdict
 
