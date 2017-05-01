@@ -853,7 +853,11 @@ def filter_kepler_lcdict(lcdict,
 
         # apply the masks
         for col in cols:
-            lcdict[col] = lcdict[col][exclind]
+            if '.' in col:
+                key, subkey = col.split('.')
+                lcdict[key][subkey] = lcdict[key][subkey][exclind]
+            else:
+                lcdict[col] = lcdict[col][exclind]
 
         nafter = lcdict['time'].size
         LOGINFO('removed timestoignore, ndet before = %s, ndet after = %s'
