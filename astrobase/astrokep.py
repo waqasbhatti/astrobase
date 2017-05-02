@@ -1330,10 +1330,12 @@ def detrend_centroid(lcd, detrend='legendre', sigclip=None, mingap=0.5):
 
     # "ctd" for centroid.
     times = lcd['time'][lcd['sap_quality'] == 0]
-    ctd_x = lcd['mom_centr1'][lcd['sap_quality'] == 0]
-    ctd_y = lcd['mom_centr2'][lcd['sap_quality'] == 0]
-    ctd_x_err = lcd['mom_centr1_err'][lcd['sap_quality'] == 0]
-    ctd_y_err = lcd['mom_centr2_err'][lcd['sap_quality'] == 0]
+    # Kepler Archive Manual KDMC-10008-006, pg 18. MOM_CENTR1 is the *column*
+    # value for the flux-weighted centroid, MOM_CENTR2 is the row value.
+    ctd_x = lcd['mom_centr2'][lcd['sap_quality'] == 0]
+    ctd_y = lcd['mom_centr1'][lcd['sap_quality'] == 0]
+    ctd_x_err = lcd['mom_centr2_err'][lcd['sap_quality'] == 0]
+    ctd_y_err = lcd['mom_centr1_err'][lcd['sap_quality'] == 0]
 
     find = npisfinite(times) & npisfinite(ctd_x) & npisfinite(ctd_y)
     find &= (npisfinite(ctd_x_err)) & (npisfinite(ctd_y_err))
