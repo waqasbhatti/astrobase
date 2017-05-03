@@ -58,12 +58,14 @@ Most of the modules with useful external functions live in here. The
 for your purposes.
 
 - **[astrokep](astrobase/astrokep.py)**: contains functions for dealing with
-  Kepler light curves (reading and converting) and some basic operations
-  (converting fluxes to mags, decorrelation of light curves, etc.)
+  Kepler and K2 Mission light curves from STScI MAST (reading the FITS files),
+  some basic operations (converting fluxes to mags, decorrelation of light
+  curves, filtering light curves, and fitting object centroids for eclipse
+  analysis, etc.)
 
 - **[checkplot](astrobase/checkplot.py)**: contains functions to make
-  checkplots: a grid of plots used to quickly decide if a period search
-  was successful. Checkplots come in two forms:
+  checkplots: a grid of plots used to quickly decide if a period search for a
+  possibly variable object was successful. Checkplots come in two forms:
 
   Python pickles: If you want to interactively browse through large numbers of
   checkplots (e.g., as part of a large variable star classification project),
@@ -105,6 +107,10 @@ for your purposes.
 - **[imageutils](astrobase/imageutils.py)**: various functions to deal with
   FITS images: reading headers, generating postage stamps, converting to JPEGs,
   and checking for warps
+
+- **[k2hat](astrobase/k2hat.py)**: functions to read K2 Mission light curves
+    reduced by the HAT Project team; these are available at
+    http://k2.hatsurveys.org.
 
 - **[lcdb](astrobase/lcdb.py)**: a lightweight wrapper around the
   `psycopg2` library to talk to PostgreSQL database servers
