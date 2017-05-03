@@ -370,6 +370,7 @@ def qso_variability_metrics(times, mags, errs, weights=None):
 def gilliland_cdpp(times, mags, errs,
                    windowlength=97,
                    polyorder=2,
+                   binsize=23400, # in seconds: 6.5 hours for classic CDPP
                    sigclip=5.0,
                    magsarefluxes=False,
                    **kwargs):
@@ -391,6 +392,7 @@ def gilliland_cdpp(times, mags, errs,
 
       - the windowlength is the number of LC points to use (Kepler uses 2 days =
         (1440 minutes/day / 30 minutes/LC point) x 2 days = 96 -> 97 LC points)
+
       - the polyorder is a quadratic by default
 
     - subtract the smoothed time-series from the actual light curve
@@ -427,7 +429,7 @@ def gilliland_cdpp(times, mags, errs,
 
     # bin over 6.5 hour bins and throw away all bins with less than 7 elements
     binned = time_bin_magseries_with_errs(stimes, smags, serrs,
-                                          binsize=23400.0,
+                                          binsize=binsize,
                                           minbinelems=7)
 
     btimes, bmags, berrs = (binned['binnedtimes'],
