@@ -50,7 +50,7 @@ from ..lcmath import sigclip_magseries
 LOGGER = None
 
 def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.varbase' % parent_name)
+    globals()['LOGGER'] = logging.getLogger('%s.varbase.signals' % parent_name)
 
 def LOGDEBUG(message):
     if LOGGER:
