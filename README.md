@@ -58,10 +58,11 @@ Most of the modules with useful external functions live in here. The
 for your purposes.
 
 - **[astrokep](astrobase/astrokep.py)**: contains functions for dealing with
-  Kepler and K2 Mission light curves from STScI MAST (reading the FITS files),
-  some basic operations (converting fluxes to mags, decorrelation of light
-  curves, filtering light curves, and fitting object centroids for eclipse
-  analysis, etc.)
+  Kepler and K2 Mission light curves from STScI MAST (reading the FITS files,
+  consolidating light curves for objects over quarters), and some basic
+  operations (converting fluxes to mags, decorrelation of light curves,
+  filtering light curves, and fitting object centroids for eclipse analysis,
+  etc.)
 
 - **[checkplot](astrobase/checkplot.py)**: contains functions to make
   checkplots: a grid of plots used to quickly decide if a period search for a
@@ -157,6 +158,8 @@ for your purposes.
 
 # Installation
 
+## Requirements
+
 This package requires the following other packages:
 
 - numpy
@@ -171,9 +174,15 @@ This package requires the following other packages:
 
 You might need to install `openssl-devel` or a similar RPM/DEB package for the
 `python-cryptography` module that gets pulled in as a dependency for
-`astroquery`. For some extra functionality, you'll need the following modules:
+`astroquery`.
+
+For some extra functionality:
 
 - for `astrobase.lcdb` to work, you'll also need psycopg2
+- for the `astrobase.astrokep.rfepd_kepler_lightcurve` function to work, you'll
+  need scikit-learn
+
+## Installing with pip
 
 First, make sure numpy and a Fortran compiler are installed:
 
