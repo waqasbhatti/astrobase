@@ -84,6 +84,7 @@ def LOGEXCEPTION(message):
 ## FLARE MODEL FUNCTIONS ##
 ###########################
 
+
 def flare_model(times,
                 mags,
                 errs,
@@ -98,11 +99,10 @@ def flare_model(times,
 
     http://adsabs.harvard.edu/abs/2014MNRAS.445.2268P
 
-    times: a numpy array of times. the flare model will be interpolated to match
-    the cadence and gaps in this data
+    times: a numpy array of times
 
-    mags: a numpy array of magnitudes or fluxes. the median level will be used
-    as the base for the flare model.
+    mags: a numpy array of magnitudes or fluxes. the flare will simply be added
+    to mags at the appropriate times
 
     errs: a numpy array of measurement errors for each mag/flux measurement
 
@@ -119,17 +119,63 @@ def flare_model(times,
 
     '''
 
-    internal_times = np.linspace(times.nanmin(), times.nanmax(), num=1000)
-    base_level = npmedian(mags)
-
     # set up the model
     if magsarefluxes:
 
-        blah()
+        # before peak gaussian rise...
+        mags[times < flare_peak_time] = (
+            mags[times < flare_peak_time] +
+            amplitude * np.exp(
+                -((times[times < flare_peak_time] -
+                   flare_peak_time) *
+                  (times[times < flare_peak_time] -
+                   flare_peak_time)) /
+                (2.0*rise_gaussian_stdev*rise_gaussian_stdev)
+                )
+        )
+
+        # after peak exponential decay...
+        mags[times > flare_peak_time] = (
+            mags[times > flare_peak_time] +
+            amplitude * np.exp(
+                -((times[times > flare_peak_time] -
+                   flare_peak_time)) /
+                (decay_time_constant)
+                )
+        )
 
     else:
 
-        bleh()
+        # before peak gaussian rise...
+        mags[times < flare_peak_time] = (
+            mags[times < flare_peak_time] -
+            amplitude * np.exp(
+                -((times[times < flare_peak_time] -
+                   flare_peak_time) *
+                  (times[times < flare_peak_time] -
+                   flare_peak_time)) /
+                (2.0*rise_gaussian_stdev*rise_gaussian_stdev)
+                )
+        )
+
+        # after peak exponential decay...
+        mags[times > flare_peak_time] = (
+            mags[times > flare_peak_time] -
+            amplitude * np.exp(
+                -((times[times > flare_peak_time] -
+                   flare_peak_time)) /
+                (decay_time_constant)
+                )
+        )
+
+
+    return {'times':times,
+            'mags':mags,
+            'errs':errs,
+            'amplitude':amplitude,
+            'flare_peak_time':flare_peak_time,
+            'rise_gaussian_stdev':rise_gaussian_stdev,
+            'decay_time_constant':decay_time_constant}
 
 
 
@@ -214,14 +260,19 @@ def simple_flare_find(times, mags, errs,
         extind = npwhere(subtracted < (-minflaresigma*series_stdev))
 
 
-    # figure out if there are any consecutive deviations
+    # see if there are any extrema
     if extind and extind[0]:
 
-        extind = extind[0]
-        diffextind = np.diff(extind)
+        extrema_indices = extind[0]
+
+        flaregroups = []
 
         # find the deviations within the requested flaremaxcadencediff
-        di
+        for ind, extrema_index in enumerate(extrema_indices):
+
+            stuff_to_do()
+
+
 
 
 
