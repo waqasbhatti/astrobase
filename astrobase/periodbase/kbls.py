@@ -879,6 +879,14 @@ def bls_snr(blsdict,
                                          magsarefluxes=magsarefluxes)
 
             thisminepoch = spfit['fitinfo']['fitepoch']
+            if isinstance(thisminepoch, np.ndarray):
+                LOGWARNING('minimum epoch is actually an array: '
+                           '%s instead of a float, are time values '
+                           'repeated in the original input? '
+                           'will use the first value in this array.'
+                           % repr(thisminepoch))
+                thisminepoch = thisminepoch[0]
+
             LOGINFO('new best period: %.6f, fit center of transit: %.5f' %
                     (thisbestperiod, thisminepoch))
 
