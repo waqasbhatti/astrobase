@@ -880,9 +880,11 @@ def bls_snr(blsdict,
 
             thisminepoch = spfit['fitinfo']['fitepoch']
             if isinstance(thisminepoch, np.ndarray):
-                LOGWARNING('minimum epoch is actually an array: '
-                           '%s instead of a float, are time values '
-                           'repeated in the original input? '
+                LOGWARNING('minimum epoch is actually an array:\n'
+                           '%s\n'
+                           'instead of a float, '
+                           'are there duplicate time values '
+                           'in the original input? '
                            'will use the first value in this array.'
                            % repr(thisminepoch))
                 thisminepoch = thisminepoch[0]
