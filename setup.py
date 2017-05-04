@@ -6,7 +6,7 @@ Stolen from http://python-packaging.readthedocs.io/en/latest/everything.html and
 modified by me.
 
 '''
-__version__ = '0.1.19'
+__version__ = '0.1.20'
 
 import sys, os.path
 
