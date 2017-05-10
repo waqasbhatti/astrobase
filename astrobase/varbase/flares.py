@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 '''flares.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - May 2017
+License: MIT. See the LICENSE file for the full text.
 
 Contains functions to deal with finding stellar flares in time series.
 
@@ -13,6 +14,8 @@ from traceback import format_exc
 from time import time as unixtime
 import os.path
 import os
+
+import numpy as np
 
 from numpy import nan as npnan, sum as npsum, abs as npabs, \
     roll as nproll, isfinite as npisfinite, std as npstd, \
