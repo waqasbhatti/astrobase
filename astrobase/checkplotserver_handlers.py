@@ -557,9 +557,9 @@ class LCToolHandler(tornado.web.RequestHandler):
         self.readonly = readonly
 
 
+    @gen.coroutine
     def get(self, cpfile):
-        '''
-        This handles a GET request.
+        '''This handles a GET request.
 
         The URI structure is:
 
@@ -569,27 +569,115 @@ class LCToolHandler(tornado.web.RequestHandler):
 
         lctool=<lctool>&toolarg=<toolargs>
 
-        lctools:
+        lctool is either a period-finder or a light curve manip function
 
-        periods-gls: run Lomb-Scargle with given params
-        periods-bls: run BLS with given params
-        periods-pdm: run phase dispersion minimization with given params
-        periods-aov: run analysis-of-variance with given params
+        LCTOOLS
+        -------
 
-        phased-newperiod: make phased LC with new provided period
-        phased-newepoch: make phased LC with new provided epoch
+        psearch-gls: run Lomb-Scargle with given params
+        psearch-bls: run BLS with given params
+        psearch-pdm: run phase dispersion minimization with given params
+        psearch-aov: run analysis-of-variance with given params
 
-        simple-cuttime: make simple LC plot cut to times given
-        simple-sigclip: sigclip the LC with given sigclip defn
+        for lctools:
+
+        toolargs is a base64-encoded string of keyword args to the backing
+        period-finder function with each kwarg separated by an ampersand:
+
+        startp=XX
+        endp=XX
+        magsarefluxes=True|False
+        autofreq=True|False
+        stepsize=XX
+        nbestpeaks=XX
+        periodepsilon=XX
+        sigclip=XX
+
+
+        LIGHT CURVE FUNCS
+        -----------------
+
+        phasedlc-newperiod: make phased LC with new provided period
+        phasedlc-newepoch: make phased LC with new provided epoch
+
+        simplelc-cuttime: make simple LC plot cut to times given
+        simplelc-sigclip: sigclip the LC with given sigclip defn
+
+        Returns the results of the tool run in checkplot dict format.
 
         '''
 
+        if cpfile:
+
+            self.cpfile = xhtml_escape(base64.b64decode(cpfile))
+
+            # see if this plot is in the current project
+            if self.cpfile in self.currentproject['checkplots']:
+
+                # make sure this file exists
+                cpfpath = os.path.join(
+                    os.path.abspath(os.path.dirname(self.cplistfile)),
+                    self.cpfile
+                )
+
+                LOGGER.info('loading %s...' % cpfpath)
+
+                # if we can't find the pickle, quit immediately
+                if not os.path.exists(cpfpath):
+
+                    msg = "couldn't find checkplot %s" % cpfpath
+                    LOGGER.error(msg)
+                    resultdict = {'status':'error',
+                                  'message':msg,
+                                  'result':None}
+
+                    self.write(resultdict)
+                    self.finish()
+
+                # this is the async call to the executor
+                # this loads the checkplot pickle
+                cpdict = yield self.executor.submit(
+                    _read_checkplot_picklefile, cpfpath
+                )
+
+                #####################################
+                ## continue after we're good to go ##
+                #####################################
+
+                # now we have the pickle in hand, get the rest of the args and
+                # figure out what to do with them
+
+
+
+
+            else:
+
+                LOGGER.error('could not find %s' % self.cpfile)
+
+                resultdict = {'status':'error',
+                              'message':"This checkplot doesn't exist.",
+                              'readonly':self.readonly,
+                              'result':None}
+                self.write(resultdict)
+                self.finish()
+
+
+        else:
+
+            resultdict = {'status':'error',
+                          'message':'No checkplot provided to load.',
+                          'readonly':self.readonly,
+                          'result':None}
+
+            self.write(resultdict)
 
 
     def post(self, cpfile):
-        '''
-        This handles a POST request.
+        '''This handles a POST request.
 
-        This will save the current version of the checkplot back to the pickle.
+        This will save the results of the previous tool run to the checkplot
+        file and the JSON filelist.
+
+        The posted arguments are serialized versions of the
 
         '''
