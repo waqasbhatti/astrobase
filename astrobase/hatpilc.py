@@ -2,7 +2,7 @@
 License: MIT. See LICENSE for full text.
 
 This is mostly for internal use. Contains functions to read text light curves
-produced by the HATPI prototype system.
+produced by the HATPI prototype system's image-subtraction photometry pipeline.
 
 '''
 
@@ -142,6 +142,9 @@ def read_hatpi_txtlc(lcfile):
 
             lcdict = {}
             LOGWARNING('no detections in %s' % lcfile)
+            # convert to empty ndarrays
+            for col in thiscoldefs:
+                lcdict[col[0]] = np.array([])
 
         # add the object's name to the lcdict
         hatid = HATIDREGEX.findall(lcfile)
