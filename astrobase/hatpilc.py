@@ -83,4 +83,7 @@ def read_hatpi_txtlc(lcfile):
         hatid = HATIDREGEX.findall(lcfile)
         lcdict['objectid'] = hatid[0] if hatid else 'unknown object'
 
+        # add the columns to the lcdict
+        lcdict['columns'] = [x[0] for x in thiscoldefs]
+
     return lcdict
