@@ -6,15 +6,73 @@ produced by the HATPI prototype system.
 
 '''
 
+####################
+## SYSTEM IMPORTS ##
+####################
+
+import logging
+from datetime import datetime
+from traceback import format_exc
 import os.path
 import gzip
 import re
 
 import numpy as np
 
+
+#############
+## LOGGING ##
+#############
+
+# setup a logger
+LOGGER = None
+
+def set_logger_parent(parent_name):
+    globals()['LOGGER'] = logging.getLogger('%s.hatpilc' % parent_name)
+
+def LOGDEBUG(message):
+    if LOGGER:
+        LOGGER.debug(message)
+    elif DEBUG:
+        print('%sZ [DBUG]: %s' % (datetime.utcnow().isoformat(), message))
+
+def LOGINFO(message):
+    if LOGGER:
+        LOGGER.info(message)
+    else:
+        print('%sZ [INFO]: %s' % (datetime.utcnow().isoformat(), message))
+
+def LOGERROR(message):
+    if LOGGER:
+        LOGGER.error(message)
+    else:
+        print('%sZ [ERR!]: %s' % (datetime.utcnow().isoformat(), message))
+
+def LOGWARNING(message):
+    if LOGGER:
+        LOGGER.warning(message)
+    else:
+        print('%sZ [WRN!]: %s' % (datetime.utcnow().isoformat(), message))
+
+def LOGEXCEPTION(message):
+    if LOGGER:
+        LOGGER.exception(message)
+    else:
+        print(
+            '%sZ [EXC!]: %s\nexception was: %s' % (
+                datetime.utcnow().isoformat(),
+                message, format_exc()
+                )
+            )
+
+
+###################
+## USEFUL CONFIG ##
+###################
+
 HATIDREGEX = re.compile(r'HAT-\d{3}-\d{7}')
 
-coldefs = [('rjd',float),
+COLDEFS = [('rjd',float),
            ('stf',str),
            ('hat',str),
            ('xcc',float),
@@ -45,6 +103,11 @@ coldefs = [('rjd',float),
            ('iep2',float),
            ('iep3',float)]
 
+
+######################
+## READING TEXT LCS ##
+######################
+
 def read_hatpi_txtlc(lcfile):
     '''
     This reads in a textlc that is complete up to the TFA stage.
@@ -52,24 +115,23 @@ def read_hatpi_txtlc(lcfile):
     '''
 
     if 'TF1' in lcfile:
-        thiscoldefs = coldefs + [('itf1',float)]
+        thiscoldefs = COLDEFS + [('itf1',float)]
     elif 'TF2' in lcfile:
-        thiscoldefs = coldefs + [('itf2',float)]
+        thiscoldefs = COLDEFS + [('itf2',float)]
     elif 'TF3' in lcfile:
-        thiscoldefs = coldefs + [('itf3',float)]
+        thiscoldefs = COLDEFS + [('itf3',float)]
 
-    print('reading %s' % lcfile)
+    LOGINFO('reading %s' % lcfile)
 
     with gzip.open(lcfile,'r') as infd:
 
         lclines = infd.read().decode().split('\n')
         lclines = [x.split() for x in lclines if ('#' not in x and len(x) > 0)]
-        print('ndet: %s' % len(lclines))
+        ndet = len(lclines)
 
-        if len(lclines) > 0:
+        if ndet > 0:
 
             lccols = list(zip(*lclines))
-            print('ncols: %s' % len(lccols))
             lcdict = {x[0]:y for (x,y) in zip(thiscoldefs, lccols)}
 
             # convert to ndarray
@@ -77,7 +139,9 @@ def read_hatpi_txtlc(lcfile):
                 lcdict[col[0]] = np.array([col[1](x) for x in lcdict[col[0]]])
 
         else:
+
             lcdict = {}
+            LOGWARNING('no detections in %s' % lcfile)
 
         # add the object's name to the lcdict
         hatid = HATIDREGEX.findall(lcfile)
@@ -85,5 +149,9 @@ def read_hatpi_txtlc(lcfile):
 
         # add the columns to the lcdict
         lcdict['columns'] = [x[0] for x in thiscoldefs]
+
+        # add some basic info
+        lcdict['objectinfo'] = {'ndet':ndet,
+                                'hatid':hatid}
 
     return lcdict
