@@ -2041,6 +2041,13 @@ def checkplot_dict(lspinfolist,
     # errs, but should provide enough uniqueness otherwise (across different
     # times/mags array inputs). this is all done so we can still save checkplots
     # correctly to pickles after reviewing them using checkplotserver
+
+    # try again to get the right objectid
+    if (objectinfo and isinstance(objectinfo, dict) and
+        'objectid' in objectinfo and objectinfo['objectid']):
+        checkplotdict['objectid'] = objectinfo['objectid']
+
+    # if this doesn't work, generate a random one
     if checkplotdict['objectid'] is None:
         try:
             objuuid = hashlib.sha512(times[5:10].tostring() +
