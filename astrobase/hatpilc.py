@@ -151,7 +151,9 @@ def read_hatpi_txtlc(lcfile):
         lcdict['columns'] = [x[0] for x in thiscoldefs]
 
         # add some basic info
-        lcdict['objectinfo'] = {'ndet':ndet,
-                                'hatid':hatid}
+        lcdict['objectinfo'] = {
+            'ndet':ndet,
+            'hatid':hatid[0] if hatid else 'unknown object'
+        }
 
     return lcdict
