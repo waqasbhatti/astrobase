@@ -281,7 +281,8 @@ def concatenate_textlcs_for_objectid(lcbasedir, objectid,
 
         matching = glob.glob(os.path.join(lcbasedir,
                                           '**',
-                                          '*%s*%s*' % (objectid, aperture)))
+                                          '*%s*%s*' % (objectid, aperture)),
+                             recursive=True)
         LOGINFO('found %s files: %s' % (len(matching), repr(matching)))
 
     # otherwise, use os.walk and glob
