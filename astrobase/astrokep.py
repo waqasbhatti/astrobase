@@ -1637,7 +1637,7 @@ def _legendre_dtr(x, y, y_err, legendredeg=10):
     args:
         x (np.array): independent variable.
         y (np.array): dependent variable.
-        y_err (np.array): errors of y for Χ^2 calculation.
+        y_err (np.array): errors of y for x**2 calculation.
     '''
     try:
         p = Legendre.fit(x, y, legendredeg)
