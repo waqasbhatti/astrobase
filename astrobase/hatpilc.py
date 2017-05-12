@@ -234,7 +234,7 @@ def concatenate_textlcs(lclist):
         else:
 
             for col in lcdict['columns']:
-                lcdict[col] = np.concatenate((lcdict[col], thislcf[col]))
+                lcdict[col] = np.concatenate((lcdict[col], thislcd[col]))
 
     # now we're all done concatenatin'
     return lcdict
@@ -267,7 +267,7 @@ def concatenate_textlcs_for_hatid(lcbasedir, objectid,
     walker = os.walk(lcbasedir)
     matching = []
     LOGINFO('looking for light curves for %s, aperture %s in %s...'
-            % (lcbasedir, objectid, aperture))
+            % (objectid, aperture, lcbasedir))
     for root, dirs, files in walker:
         for sdir in dirs:
             searchpath = os.path.join(root,
