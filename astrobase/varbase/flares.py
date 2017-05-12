@@ -262,12 +262,10 @@ def simple_flare_find(times, mags, errs,
     else:
         extind = npwhere(subtracted < (-minflaresigma*series_stdev))
 
-
     # see if there are any extrema
     if extind and extind[0]:
 
         extrema_indices = extind[0]
-
         flaregroups = []
 
         # find the deviations within the requested flaremaxcadencediff
