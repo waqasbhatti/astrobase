@@ -13,6 +13,7 @@ produced by the HATPI prototype system's image-subtraction photometry pipeline.
 import logging
 from datetime import datetime
 from traceback import format_exc
+import os
 import os.path
 import gzip
 import re
@@ -253,3 +254,5 @@ def concatenate_textlcs_for_hatid(lcbasedir, objectid,
                                               TF3 = aperture 3)
 
     '''
+
+    # use os.walk to go through the directories
