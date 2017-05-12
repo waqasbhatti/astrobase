@@ -189,7 +189,7 @@ def lcdict_to_pickle(lcdict, outfile=None):
         outfile = 'hptxtlc.pkl'
 
     with open(outfile,'wb') as outfd:
-        pickle.dump(lcdict, outfile, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(lcdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
 
     if os.path.exists(outfile):
         LOGINFO('lcdict for object: %s -> %s OK' % (lcdict['objectid'],
