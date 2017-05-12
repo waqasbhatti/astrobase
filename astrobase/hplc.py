@@ -183,12 +183,12 @@ def read_hatpi_textlc(lcfile):
         # into separate columns
         framekeyelems = FRAMEREGEX.findall('\n'.join(lcdict['frk']))
 
-        lcdict['stf'] = np.array([(int(x[0]) if x.isdigit() else np.nan)
+        lcdict['stf'] = np.array([(int(x[0]) if x[0].isdigit() else np.nan)
                                   for x in framekeyelems])
-        lcdict['cfn'] = np.array([(int(x[1]) if x.isdigit() else np.nan)
+        lcdict['cfn'] = np.array([(int(x[1]) if x[0].isdigit() else np.nan)
                                   for x in framekeyelems])
         lcdict['cfs'] = np.array([x[2] for x in framekeyelems])
-        lcdict['ccd'] = np.array([(int(x[3]) if x.isdigit() else np.nan)
+        lcdict['ccd'] = np.array([(int(x[3]) if x[0].isdigit() else np.nan)
                                   for x in framekeyelems])
 
         # update the column list with these columns
