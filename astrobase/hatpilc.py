@@ -118,7 +118,7 @@ COLDEFS = [('rjd',float),
 ## READING AND WRITING TEXT LCS ##
 ##################################
 
-def read_hatpi_txtlc(lcfile):
+def read_hatpi_textlc(lcfile):
     '''
     This reads in a textlc that is complete up to the TFA stage.
 
@@ -274,9 +274,11 @@ def concatenate_textlcs_for_hatid(lcbasedir, objectid,
                                                  os.path.join(root,sdir)))
 
     # now that we all files, concatenate them
-    if matching:
+    if matching and len(matching) > 1:
         clcdict = concatenate_textlcs(matching)
         return clcdict
+    elif matching and len(matching) == 0:
+        return read_hatpi_textlc(matching[0])
     else:
         LOGERROR('did not find any light curves for %s and aperture %s' %
                  (objectid, aperture))
