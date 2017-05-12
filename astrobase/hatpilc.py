@@ -25,6 +25,7 @@ except:
 import numpy as np
 
 
+
 #############
 ## LOGGING ##
 #############
@@ -71,6 +72,7 @@ def LOGEXCEPTION(message):
             )
 
 
+
 ###################
 ## USEFUL CONFIG ##
 ###################
@@ -109,9 +111,10 @@ COLDEFS = [('rjd',float),
            ('iep3',float)]
 
 
-######################
-## READING TEXT LCS ##
-######################
+
+##################################
+## READING AND WRITING TEXT LCS ##
+##################################
 
 def read_hatpi_txtlc(lcfile):
     '''
@@ -168,11 +171,46 @@ def read_hatpi_txtlc(lcfile):
 
 
 
-def concatenate_hatpi_textlcs(lclist):
+def lcdict_to_pickle(lcdict, outfile=None):
+    '''This just writes the lcdict to a pickle.
+
+    If outfile is None, then will try to get the name from the
+    lcdict['objectid'] and write to <objectid>-hptxtlc.pkl. If that fails, will
+    write to a file named hptxtlc.pkl'.
+
+    '''
+
+    if not outfile and lcdict['objectid']:
+        outfile = '%s-hptxtlc.pkl' % lcdict['objectid']
+    elif not outfile and not lcdict['objectid']:
+        outfile = 'hptxtlc.pkl'
+
+    with open(outfile,'wb') as outfd:
+        pickle.dump(lcdict, outfile, protocol=pickle.HIGHEST_PROTOCOL)
+
+    if os.path.exists(outfile):
+        LOGINFO('lcdict for object: %s -> %s OK' % (lcdict['objectid'],
+                                                    outfile))
+        return outfile
+    else:
+        LOGERROR('could not make a pickle for this lcdict!')
+        return None
+
+
+
+################################
+## CONCATENATING LIGHT CURVES ##
+################################
+
+def concatenate_textlcs(lclist):
     '''This concatenates a list of light curves.
 
-    Does not care about overlaps, etc. The light curves must all be from the
-    same aperture.
+    Does not care about overlaps or duplicates. The light curves must all be
+    from the same aperture.
+
+    The intended use is to concatenate light curves across CCDs or instrument
+    changes for a single object. These can then be normalized later using
+    standard astrobase tools to search for variablity and/or periodicity.
 
     '''
 
@@ -202,27 +240,17 @@ def concatenate_hatpi_textlcs(lclist):
 
 
 
-def lcdict_to_pickle(lcdict, outfile=None):
-    '''This just writes the lcdict to a pickle.
+def concatenate_textlcs_for_hatid(lcbasedir, objectid,
+                                  aperture='TF1'):
+    '''
+    This concatenates all text LCs for an objectid with the given aperture.
 
-    If outfile is None, then will try to get the name from the
-    lcdict['objectid'] and write to <objectid>-hptxtlc.pkl. If that fails, will
-    write to a file named hptxtlc.pkl'.
+    lcbasedir is the directory to start searching in.
+
+    objectid is the object to search for.
+
+    aperture is the aperture postfix to use: (TF1 = aperture 1,
+                                              TF2 = aperture 2,
+                                              TF3 = aperture 3)
 
     '''
-
-    if not outfile and lcdict['objectid']:
-        outfile = '%s-hptxtlc.pkl' % lcdict['objectid']
-    elif not outfile and not lcdict['objectid']:
-        outfile = 'hptxtlc.pkl'
-
-    with open(outfile,'wb') as outfd:
-        pickle.dump(lcdict, outfile, protocol=pickle.HIGHEST_PROTOCOL)
-
-    if os.path.exists(outfile):
-        LOGINFO('lcdict for object: %s -> %s OK' % (lcdict['objectid'],
-                                                    outfile))
-        return outfile
-    else:
-        LOGERROR('could not make a pickle for this lcdict!')
-        return None
