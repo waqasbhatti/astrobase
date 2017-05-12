@@ -10,6 +10,7 @@ from datetime import datetime
 from traceback import format_exc
 from time import time as unixtime
 import glob
+import fnmatch
 
 import os.path
 try:
@@ -508,10 +509,12 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
                                                                      keplerid))
     for root, dirs, files in walker:
         for sdir in dirs:
-            searchpath = os.path.join(root,
-                                      sdir,
-                                      'kplr%09i-*_llc.fits' % keplerid)
-            foundfiles = glob.glob(searchpath)
+            # searchpath = os.path.join(root,
+            #                           sdir,
+            #                           'kplr%09i-*_llc.fits' % keplerid)
+            # foundfiles = glob.glob(searchpath)
+            # use fnmatch filter instead of glob for speed
+            foundfiles = fnmatch.filter(files, 'kplr%09i-*_llc.fits' % keplerid)
 
             if foundfiles:
                 matching.extend(foundfiles)
