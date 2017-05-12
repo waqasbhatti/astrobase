@@ -508,6 +508,7 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
         matching = glob.glob(os.path.join(lcfitsdir,
                                             '**',
                                             'kplr%09i-*_llc.fits' % keplerid))
+        LOGINFO('found %s files: %s' % (len(matching), repr(foundfiles)))
 
     # for Python < 3.5, use os.walk and glob
     else:
