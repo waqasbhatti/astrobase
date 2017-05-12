@@ -303,7 +303,7 @@ def concatenate_textlcs_for_objectid(lcbasedir, objectid,
                     LOGINFO('found %s in dir: %s' % (repr(foundfiles),
                                                      os.path.join(root,sdir)))
 
-    # now that we all files, concatenate them
+    # now that we have all the files, concatenate them
     if matching and len(matching) > 1:
         clcdict = concatenate_textlcs(matching)
         return clcdict
