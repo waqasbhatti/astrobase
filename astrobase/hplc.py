@@ -379,10 +379,13 @@ def concatenate_textlcs(lclist,
 
         LOGINFO('sorting concatenated light curve by %s...' % sortby)
         sortind = np.argsort(lcdict[sortby])
-        # sort all the columns by this index
+
+        # sort all the measurement columns by this index
         for col in lcdict['columns']:
             lcdict[col] = lcdict[col][sortind]
 
+        # make sure to sort the lcn index as well
+        lcdict['lcn'] = lcdict['lcn'][sortind]
 
     LOGINFO('done. concatenated light curve has %s detections' %
             lcdict['objectinfo']['ndet'])
