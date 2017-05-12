@@ -224,7 +224,11 @@ def concatenate_textlcs(lclist):
     for lcf in lclist[1:]:
 
         thislcd = read_hatpi_textlc(lcf)
-        LOGINFO('adding %s to %s' % (lcf, lclist[0]))
+        LOGINFO('adding %s (ndet: %s) to %s (ndet: %s)'
+                % (lcf,
+                   thislcd['objectinfo']['ndet'],
+                   lclist[0],
+                   lcdict[lcdict['columns'][0]].size))
 
         if thislcd['columns'] != lcdict['columns']:
             LOGERROR('file %s does not have the '
@@ -241,6 +245,8 @@ def concatenate_textlcs(lclist):
 
     # make sure to add up the ndet
     lcdict['objectinfo']['ndet'] = lcdict[lcdict['columns'][0]].size
+    LOGINFO('done. concatenated light curve has %s detections' %
+            lcdict['objectinfo']['ndet'])
 
     return lcdict
 
@@ -267,6 +273,8 @@ def concatenate_textlcs_for_objectid(lcbasedir, objectid,
                                               TF3 = aperture 3)
 
     '''
+    LOGINFO('looking for light curves for %s, aperture %s in %s...'
+            % (objectid, aperture, lcbasedir))
 
     # use recursive glob for Python 3.5+
     if sys.version_info[:2] > (3,4):
@@ -282,8 +290,6 @@ def concatenate_textlcs_for_objectid(lcbasedir, objectid,
         # use os.walk to go through the directories
         walker = os.walk(lcbasedir)
         matching = []
-        LOGINFO('looking for light curves for %s, aperture %s in %s...'
-                % (objectid, aperture, lcbasedir))
 
         for root, dirs, files in walker:
             for sdir in dirs:
