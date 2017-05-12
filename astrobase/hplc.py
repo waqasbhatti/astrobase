@@ -282,6 +282,12 @@ def concatenate_textlcs(lclist,
     If normalize is True, then each light curve's magnitude columns are
     normalized to zero.
 
+    The returned lcdict has an extra column: 'lcn' that tracks which measurement
+    belongs to which input light curve. This can be used with
+    lcdict['concatenated'] which relates input light curve index to input light
+    curve filepath. Finally, there is an 'nconcatenated' key in the lcdict that
+    contains the total number of concatenated light curves.
+
     '''
 
     # read the first light curve
@@ -414,8 +420,11 @@ def concatenate_textlcs_for_objectid(lcbasedir,
     normalized to zero, and the whole light curve is then normalized to the
     global median magnitude for each magnitude column.
 
-    If normto == 'globalmedian', will add back the global median values to the
-    light curve.
+    The returned lcdict has an extra column: 'lcn' that tracks which measurement
+    belongs to which input light curve. This can be used with
+    lcdict['concatenated'] which relates input light curve index to input light
+    curve filepath. Finally, there is an 'nconcatenated' key in the lcdict that
+    contains the total number of concatenated light curves.
 
     '''
     LOGINFO('looking for light curves for %s, aperture %s in directory: %s'
@@ -470,8 +479,10 @@ def concat_write_pklc(lcbasedir,
                       sortby='rjd',
                       normalize=True,
                       outdir=None):
-    '''
-    This concatenates all text LCs for the given object and writes to a pklc.
+    '''This concatenates all text LCs for the given object and writes to a pklc.
+
+    Basically a rollup for the concatenate_textlcs_for_objectid and
+    lcdict_to_pickle functions.
 
     '''
 
@@ -485,5 +496,6 @@ def concat_write_pklc(lcbasedir,
         if not os.path.exists(outdir):
             os.mkdir(outdir)
 
-    outfpath = os.path.join(outdir, '%s-pklc.pkl' % lcdict['objectid'])
+    outfpath = os.path.join(outdir, '%s-%s-pklc.pkl' % (lcdict['objectid'],
+                                                        aperture))
     pklc = lcdict_to_pickle(lcdict, outfile=outfpath)
