@@ -386,7 +386,7 @@ def concatenate_textlcs(lclist,
                     )
 
 
-        if normto == 'globalmedian':
+        if normalize and normto == 'globalmedian':
             # now that everything is normalized to zero, we need to add back the
             # global median value for each column across all light curves
             for col in MAGCOLS:
