@@ -17,6 +17,11 @@ import os.path
 import gzip
 import re
 
+try:
+    import cPickle as pickle
+except:
+    import pickle
+
 import numpy as np
 
 
@@ -160,3 +165,64 @@ def read_hatpi_txtlc(lcfile):
         }
 
     return lcdict
+
+
+
+def concatenate_hatpi_textlcs(lclist):
+    '''This concatenates a list of light curves.
+
+    Does not care about overlaps, etc. The light curves must all be from the
+    same aperture.
+
+    '''
+
+    # read the first light curve
+    lcdict = read_hatpi_textlc(lclist[0])
+
+    # now read the rest
+    for lcf in lclist[1:]:
+
+        thislcd = read_hatpi_textlc(lcf)
+        LOGINFO('adding %s to %s' % (lcf, lclist[0]))
+
+        if not thislcd['columns'] == lcdict['columns']:
+            LOGERROR('file %s does not have the '
+                     'same columns as first file %s, skipping...'
+                     % (lcf, lclist[0]))
+            continue
+
+        else:
+
+            for col in lcdict['columns']:
+                lcdict[col] = np.concatenate((lcdict[col], thislcf[col]))
+
+
+    # now we're all done concatenatin'
+    return lcdict
+
+
+
+def lcdict_to_pickle(lcdict, outfile=None):
+    '''This just writes the lcdict to a pickle.
+
+    If outfile is None, then will try to get the name from the
+    lcdict['objectid'] and write to <objectid>-hptxtlc.pkl. If that fails, will
+    write to a file named hptxtlc.pkl'.
+
+    '''
+
+    if not outfile and lcdict['objectid']:
+        outfile = '%s-hptxtlc.pkl' % lcdict['objectid']
+    elif not outfile and not lcdict['objectid']:
+        outfile = 'hptxtlc.pkl'
+
+    with open(outfile,'wb') as outfd:
+        pickle.dump(lcdict, outfile, protocol=pickle.HIGHEST_PROTOCOL)
+
+    if os.path.exists(outfile):
+        LOGINFO('lcdict for object: %s -> %s OK' % (lcdict['objectid'],
+                                                    outfile))
+        return outfile
+    else:
+        LOGERROR('could not make a pickle for this lcdict!')
+        return None
