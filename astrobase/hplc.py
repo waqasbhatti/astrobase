@@ -290,7 +290,7 @@ def concatenate_textlcs(lclist,
     # track which LC goes where
     # initial LC
     lccounter = 0
-    lcdict['concatenated'] = {lccounter: lclist[0]}
+    lcdict['concatenated'] = {lccounter: os.path.abspath(lclist[0])}
     lcdict['lcn'] = np.full_like(lcdict['rjd'], lccounter)
 
     # normalize if needed
@@ -331,7 +331,7 @@ def concatenate_textlcs(lclist,
 
             # update LC tracking
             lccounter = lccounter + 1
-            lcdict['concatenated'][lccounter] = lcf
+            lcdict['concatenated'][lccounter] = os.path.abspath(lcf)
             lcdict['lcn'] = np.concatenate((
                 lcdict['lcn'],
                 np.full_like(thislcd['rjd'],lccounter)
