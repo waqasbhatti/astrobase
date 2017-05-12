@@ -11,13 +11,12 @@ from traceback import format_exc
 from time import time as unixtime
 import glob
 import fnmatch
-
+import sys
 import os.path
 try:
     import cPickle as pickle
 except:
     import pickle
-
 import gzip
 
 import numpy as np
@@ -501,25 +500,33 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
 
     '''
 
-    # use the os.walk function to start looking for files in lcfitsdir
-    # FIXME: maybe we should shell out to `find` instead?
-    walker = os.walk(lcfitsdir)
-    matching = []
     LOGINFO('looking for Kepler light curve FITS in %s for %s...' % (lcfitsdir,
                                                                      keplerid))
-    for root, dirs, files in walker:
-        for sdir in dirs:
-            # searchpath = os.path.join(root,
-            #                           sdir,
-            #                           'kplr%09i-*_llc.fits' % keplerid)
-            # foundfiles = glob.glob(searchpath)
-            # use fnmatch filter instead of glob for speed
-            foundfiles = fnmatch.filter(files, 'kplr%09i-*_llc.fits' % keplerid)
+    # for Python 3.5 and up, use recursive glob
+    if sys.version_info[:2] > (3,4):
 
-            if foundfiles:
-                matching.extend(foundfiles)
-                LOGINFO('found %s in dir: %s' % (repr(foundfiles),
-                                                 os.path.join(root,sdir)))
+        matching = glob.glob(os.path.join(lcfitsdir,
+                                            '**',
+                                            'kplr%09i-*_llc.fits' % keplerid))
+
+    # for Python < 3.5, use os.walk and glob
+    else:
+
+        # use the os.walk function to start looking for files in lcfitsdir
+        # FIXME: maybe we should shell out to `find` instead?
+        walker = os.walk(lcfitsdir)
+        matching = []
+        for root, dirs, files in walker:
+            for sdir in dirs:
+                searchpath = os.path.join(root,
+                                          sdir,
+                                          'kplr%09i-*_llc.fits' % keplerid)
+                foundfiles = glob.glob(searchpath)
+
+                if foundfiles:
+                    matching.extend(foundfiles)
+                    LOGINFO('found %s in dir: %s' % (repr(foundfiles),
+                                                     os.path.join(root,sdir)))
 
     # now that we've found everything, read them all in
     if len(matching) > 0:
