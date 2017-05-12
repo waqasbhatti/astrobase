@@ -502,7 +502,9 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
 
     LOGINFO('looking for Kepler light curve FITS in %s for %s...' % (lcfitsdir,
                                                                      keplerid))
-    # for Python 3.5 and up, use recursive glob
+
+    # for Python 3.5 and up, use recursive glob, it appears to be absurdly
+    # faster than os.walk
     if sys.version_info[:2] > (3,4):
 
         matching = glob.glob(os.path.join(lcfitsdir,
@@ -514,7 +516,6 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
     else:
 
         # use the os.walk function to start looking for files in lcfitsdir
-        # FIXME: maybe we should shell out to `find` instead?
         walker = os.walk(lcfitsdir)
         matching = []
         for root, dirs, files in walker:
