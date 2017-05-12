@@ -6,7 +6,7 @@ Stolen from http://python-packaging.readthedocs.io/en/latest/everything.html and
 modified by me.
 
 '''
-__version__ = '0.1.14'
+__version__ = '0.1.20'
 
 import sys, os.path
 
@@ -41,9 +41,9 @@ def readme():
         return f.read()
 
 INSTALL_REQUIRES = [
-    'numpy',
+    'numpy>=1.4.0',
     'scipy',
-    'astropy',
+    'astropy>=1.3',
     'matplotlib',
     'Pillow',
     'jplephem',

@@ -61,7 +61,7 @@ from ..lcmath import sigclip_magseries
 LOGGER = None
 
 def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.lcfit' % parent_name)
+    globals()['LOGGER'] = logging.getLogger('%s.varbase.lcfit' % parent_name)
 
 def LOGDEBUG(message):
     if LOGGER:
