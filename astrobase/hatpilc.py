@@ -259,8 +259,8 @@ def concatenate_textlcs_for_hatid(lcbasedir, objectid,
     # use os.walk to go through the directories
     walker = os.walk(lcbasedir)
     matching = []
-    LOGINFO('looking for Kepler light curve FITS in %s for %s...' % (lcfitsdir,
-                                                                     keplerid))
+    LOGINFO('looking for light curves for %s, aperture %s in %s...'
+            % (lcbasedir, objectid, aperture))
     for root, dirs, files in walker:
         for sdir in dirs:
             searchpath = os.path.join(root,
