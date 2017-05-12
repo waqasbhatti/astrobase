@@ -532,9 +532,12 @@ def consolidate_kepler_fitslc(keplerid,
     NOTE: if light curve time arrays contain nans, these and their associated
     measurements will be sorted to the end of the final combined arrays.
 
-    If normalize == True, then each component light curve's flux measurements
-    will be normalized to 1.0 by dividing out the median flux for the component
-    light curve.
+    If normalize == True, then each component light curve's SAP_FLUX and
+    PDCSAP_FLUX measurements will be normalized to 1.0 by dividing out the
+    median flux for the component light curve.
+
+    NOTE: The other flux related measurements, such as errors and backgrounds
+    WILL NOT be normalized (FIXME: for now).
 
     '''
 
