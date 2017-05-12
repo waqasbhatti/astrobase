@@ -80,38 +80,46 @@ def LOGEXCEPTION(message):
 ## USEFUL CONFIG ##
 ###################
 
+# used to find HATIDs
 HATIDREGEX = re.compile(r'HAT-\d{3}-\d{7}')
 
-COLDEFS = [('rjd',float),
-           ('stf',str),
-           ('hat',str),
-           ('xcc',float),
-           ('ycc',float),
-           ('xic',float),
-           ('yic',float),
-           ('fsv',float),
-           ('fdv',float),
-           ('fkv',float),
-           ('bgv',float),
-           ('bge',float),
-           ('ifl1',float),
-           ('ife1',float),
-           ('irm1',float),
-           ('ire1',float),
-           ('irq1',str),
-           ('ifl2',float),
-           ('ife2',float),
-           ('irm2',float),
-           ('ire2',float),
-           ('irq2',str),
-           ('ifl3',float),
-           ('ife3',float),
-           ('irm3',float),
-           ('ire3',float),
-           ('irq3',str),
-           ('iep1',float),
-           ('iep2',float),
-           ('iep3',float)]
+# used to get the station ID, frame number, subframe id, and CCD number from a
+# framekey or standard HAT FITS filename
+FRAMEREGEX = re.compile(r'(\d{1})\-(\d{6})(\w{0,1})_(\d{1})')
+
+# these are the columns in the input text LCs, common to all epdlc and tfalcs
+# an additional column for the TFA magnitude in the current aperture is added
+# for tfalcs. there are three tfalcs for each epdlc, one for each aperture.
+COLDEFS = [('rjd',float),  # The reduced Julian date
+           ('frk',str),    # Framekey: {stationid}-{framenum}{framesub}_{ccdnum}
+           ('hat',str),    # The HATID of the object
+           ('xcc',float),  # Original x coordinate on the imagesub astromref
+           ('ycc',float),  # Original y coordinate on the imagesub astromref
+           ('xic',float),  # Shifted x coordinate on this frame
+           ('yic',float),  # Shifted y coordinate on this frame
+           ('fsv',float),  # Measured S value
+           ('fdv',float),  # Measured D value
+           ('fkv',float),  # Measured K value
+           ('bgv',float),  # Background value
+           ('bge',float),  # Background measurement error
+           ('ifl1',float), # Flux measurement in ADU, aperture 1
+           ('ife1',float), # Flux error in ADU, aperture 1
+           ('irm1',float), # Instrumental magnitude in aperture 1
+           ('ire1',float), # Instrumental magnitude error for aperture 1
+           ('irq1',str),   # Instrumental magnitude quality flag for aperture 1
+           ('ifl2',float), # Flux measurement in ADU, aperture 2
+           ('ife2',float), # Flux error in ADU, aperture 2
+           ('irm2',float), # Instrumental magnitude in aperture 2
+           ('ire2',float), # Instrumental magnitude error for aperture 2
+           ('irq2',str),   # Instrumental magnitude quality flag for aperture 2
+           ('ifl3',float), # Flux measurement in ADU, aperture 3
+           ('ife3',float), # Flux error in ADU, aperture 3
+           ('irm3',float), # Instrumental magnitude in aperture 3
+           ('ire3',float), # Instrumental magnitude error for aperture 3
+           ('irq3',str),   # Instrumental magnitude quality flag for aperture 3
+           ('iep1',float), # EPD magnitude for aperture 1
+           ('iep2',float), # EPD magnitude for aperture 2
+           ('iep3',float)] # EPD magnitude for aperture 3
 
 
 
@@ -164,11 +172,31 @@ def read_hatpi_textlc(lcfile):
         # add the columns to the lcdict
         lcdict['columns'] = [x[0] for x in thiscoldefs]
 
-        # add some basic info
+        # add some basic info similar to usual HATLCs
         lcdict['objectinfo'] = {
             'ndet':ndet,
-            'hatid':hatid[0] if hatid else 'unknown object'
+            'hatid':hatid[0] if hatid else 'unknown object',
+            'network':'HP',
         }
+
+        # break out the {stationid}-{framenum}{framesub}_{ccdnum} framekey
+        # into separate columns
+        framekeyelems = FRAMEREGEX.findall('\n'.join(lcdict['frk']))
+
+        lcdict['stf'] = np.array([(int(x[0]) if x.isdigit() else np.nan)
+                                  for x in framekeyelems])
+        lcdict['cfn'] = np.array([(int(x[1]) if x.isdigit() else np.nan)
+                                  for x in framekeyelems])
+        lcdict['cfs'] = np.array([x[2] for x in framekeyelems])
+        lcdict['ccd'] = np.array([(int(x[3]) if x.isdigit() else np.nan)
+                                  for x in framekeyelems])
+
+        # update the column list with these columns
+        lcdict['columns'].extend(['stf','cfn','cfs','ccd'])
+
+        # add more objectinfo: 'stations', etc.
+        lcdict['objectinfo']['stations'] = np.unique(lcdict['stf']).tolist()
+
 
     return lcdict
 
@@ -198,6 +226,33 @@ def lcdict_to_pickle(lcdict, outfile=None):
     else:
         LOGERROR('could not make a pickle for this lcdict!')
         return None
+
+
+
+def read_hatpi_pklc(lcfile):
+    '''
+    This just reads a pickle LC. Returns an lcdict.
+
+    '''
+
+    try:
+        with open(lcfile,'rb') as infd:
+            lcdict = pickle.load(infd)
+
+        return lcdict
+
+    except UnicodeDecodeError:
+
+        with open(lcfile,'rb') as infd:
+            lcdict = pickle.load(infd, encoding='latin1')
+
+        LOGWARNING('pickle %s was probably from Python 2 '
+                   'and failed to load without using "latin1" encoding. '
+                   'This is probably a numpy issue: '
+                   'http://stackoverflow.com/q/11305790' % lcfile)
+
+        return lcdict
+
 
 
 
@@ -241,10 +296,17 @@ def concatenate_textlcs(lclist):
             for col in lcdict['columns']:
                 lcdict[col] = np.concatenate((lcdict[col], thislcd[col]))
 
+    #
     # now we're all done concatenatin'
+    #
 
     # make sure to add up the ndet
     lcdict['objectinfo']['ndet'] = lcdict[lcdict['columns'][0]].size
+
+    # update the stations
+    lcdict['objectinfo']['stations'] = np.unique(lcdict['stf']).tolist()
+
+
     LOGINFO('done. concatenated light curve has %s detections' %
             lcdict['objectinfo']['ndet'])
 
