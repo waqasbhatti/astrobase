@@ -260,7 +260,7 @@ def read_hatpi_pklc(lcfile):
 ## CONCATENATING LIGHT CURVES ##
 ################################
 
-def concatenate_textlcs(lclist):
+def concatenate_textlcs(lclist, sortby='rjd'):
     '''This concatenates a list of light curves.
 
     Does not care about overlaps or duplicates. The light curves must all be
@@ -269,6 +269,9 @@ def concatenate_textlcs(lclist):
     The intended use is to concatenate light curves across CCDs or instrument
     changes for a single object. These can then be normalized later using
     standard astrobase tools to search for variablity and/or periodicity.
+
+    sortby is a column to sort the final concatenated light curve by in
+    ascending order.
 
     '''
 
@@ -306,9 +309,17 @@ def concatenate_textlcs(lclist):
     # update the stations
     lcdict['objectinfo']['stations'] = np.unique(lcdict['stf']).tolist()
 
-
     LOGINFO('done. concatenated light curve has %s detections' %
             lcdict['objectinfo']['ndet'])
+
+    # if we're supposed to sort by a column, do so
+    if sortby and sortby in [x[0] for x in COLDEFS]:
+
+        LOGINFO('sorting concatenated light curve by %s' % sortby)
+        sortind = np.argsort(lcdict[sortby])
+        # sort all the columns by this index
+        for col in lcdict['columns']:
+            lcdict[col] = lcdict[col][sortind]
 
     return lcdict
 
