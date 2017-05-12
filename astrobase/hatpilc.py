@@ -243,8 +243,15 @@ def concatenate_textlcs(lclist):
 
 def concatenate_textlcs_for_hatid(lcbasedir, objectid,
                                   aperture='TF1'):
-    '''
-    This concatenates all text LCs for an objectid with the given aperture.
+    '''This concatenates all text LCs for an objectid with the given aperture.
+
+    Does not care about overlaps or duplicates. The light curves must all be
+    from the same aperture.
+
+    The intended use is to concatenate light curves across CCDs or instrument
+    changes for a single object. These can then be normalized later using
+    standard astrobase tools to search for variablity and/or periodicity.
+
 
     lcbasedir is the directory to start searching in.
 
