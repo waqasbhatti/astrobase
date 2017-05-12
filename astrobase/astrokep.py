@@ -221,6 +221,7 @@ def read_kepler_fitslc(lcfits,
                        pdckeys=LCPDCKEYS,
                        topkeys=LCTOPKEYS,
                        apkeys=LCAPERTUREKEYS,
+                       normalize=False,
                        appendto=None):
     '''This extracts the light curve from a single Kepler or K2 LC FITS file.
 
@@ -231,6 +232,10 @@ def read_kepler_fitslc(lcfits,
     -> ktwo{epicid}-c{campaign}_llc.fits files from the K2 mission
 
     Returns an lcdict.
+
+    If normalize == True, then each component light curve's flux measurements
+    will be normalized to 1.0 by dividing out the median flux for the component
+    light curve.
 
     If appendto is an lcdict, will append measurements to that dict. This is
     used for consolidating light curves for the same object across different
@@ -326,14 +331,30 @@ def read_kepler_fitslc(lcfits,
 
         for key in sapkeys:
             if key.lower() in lcdict['sap']:
+
+                # normalize the current flux measurements if needed
+                if normalize and key == 'SAP_FLUX':
+                    LOGINFO('normalizing SAP_FLUX')
+                    thislcdata = lcdata[key] / np.nanmedian(lcdata[key])
+                else:
+                    thislcdata = lcdata[key]
+
                 lcdict['sap'][key.lower()] = (
-                    npconcatenate((lcdict['sap'][key.lower()], lcdata[key]))
+                    npconcatenate((lcdict['sap'][key.lower()], thislcdata))
                 )
 
         for key in pdckeys:
             if key.lower() in lcdict['pdc']:
+
+                # normalize the current flux measurements if needed
+                if normalize and key == 'PDCSAP_FLUX':
+                    LOGINFO('normalizing PDCSAP_FLUX')
+                    thislcdata = lcdata[key] / np.nanmedian(lcdata[key])
+                else:
+                    thislcdata = lcdata[key]
+
                 lcdict['pdc'][key.lower()] = (
-                    npconcatenate((lcdict['pdc'][key.lower()], lcdata[key]))
+                    npconcatenate((lcdict['pdc'][key.lower()], thislcdata))
                 )
 
 
@@ -464,6 +485,17 @@ def read_kepler_fitslc(lcfits,
 
     ## END OF LIGHT CURVE CONSTRUCTION ##
 
+    # normalize the SAP and PDCSAP fluxes if needed
+    # FIXME: should we normalize the other stuff too?
+    if normalize:
+        lcdict['sap']['sap_flux'] = (
+            lcdict['sap']['sap_flux'] /
+            np.nanmedian(lcdict['sap']['sap_flux'])
+        )
+        lcdict['pdc']['pdcsap_flux'] = (
+            lcdict['pdc']['pdcsap_flux'] /
+            np.nanmedian(lcdict['pdc']['pdcsap_flux'])
+        )
 
     # update the lcdict columns with the actual columns
     lcdict['columns'] = (
@@ -479,7 +511,9 @@ def read_kepler_fitslc(lcfits,
 
 
 
-def consolidate_kepler_fitslc(keplerid, lcfitsdir,
+def consolidate_kepler_fitslc(keplerid,
+                              lcfitsdir,
+                              normalize=True,
                               headerkeys=LCHEADERKEYS,
                               datakeys=LCDATAKEYS,
                               sapkeys=LCSAPKEYS,
@@ -497,6 +531,10 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
 
     NOTE: if light curve time arrays contain nans, these and their associated
     measurements will be sorted to the end of the final combined arrays.
+
+    If normalize == True, then each component light curve's flux measurements
+    will be normalized to 1.0 by dividing out the median flux for the component
+    light curve.
 
     '''
 
@@ -543,7 +581,10 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
                                           sapkeys=sapkeys,
                                           pdckeys=pdckeys,
                                           topkeys=topkeys,
-                                          apkeys=apkeys)
+                                          apkeys=apkeys,
+                                          normalize=normalize)
+
+
         # get the rest of the files
         for lcf in matching:
             consolidated = read_kepler_fitslc(lcf,
@@ -553,7 +594,8 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
                                               sapkeys=sapkeys,
                                               pdckeys=pdckeys,
                                               topkeys=topkeys,
-                                              apkeys=apkeys)
+                                              apkeys=apkeys,
+                                              normalize=normalize)
 
         # get the sort indices
         # we use time for the columns and quarters for the headers
