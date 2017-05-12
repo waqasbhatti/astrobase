@@ -486,11 +486,11 @@ def concat_write_pklc(lcbasedir,
 
     '''
 
-    lcdict = concatenate_textlcs_for_objectid(lcbasedir,
-                                              objectid,
-                                              aperture=aperture,
-                                              sortby=sortby,
-                                              normalize=normalize)
+    concatlcd = concatenate_textlcs_for_objectid(lcbasedir,
+                                                 objectid,
+                                                 aperture=aperture,
+                                                 sortby=sortby,
+                                                 normalize=normalize)
     if not outdir:
         outdir = 'pklcs'
         if not os.path.exists(outdir):
@@ -498,4 +498,4 @@ def concat_write_pklc(lcbasedir,
 
     outfpath = os.path.join(outdir, '%s-%s-pklc.pkl' % (lcdict['objectid'],
                                                         aperture))
-    pklc = lcdict_to_pickle(lcdict, outfile=outfpath)
+    pklc = lcdict_to_pickle(concatlcd, outfile=outfpath)
