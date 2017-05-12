@@ -277,7 +277,7 @@ def concatenate_textlcs_for_hatid(lcbasedir, objectid,
     if matching and len(matching) > 1:
         clcdict = concatenate_textlcs(matching)
         return clcdict
-    elif matching and len(matching) == 0:
+    elif matching and len(matching) == 1:
         return read_hatpi_textlc(matching[0])
     else:
         LOGERROR('did not find any light curves for %s and aperture %s' %
