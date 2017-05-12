@@ -10,15 +10,13 @@ from datetime import datetime
 from traceback import format_exc
 from time import time as unixtime
 import glob
-import fnmatch
-
 import os.path
 try:
     import cPickle as pickle
 except:
     import pickle
-
 import gzip
+import sys
 
 import numpy as np
 
@@ -507,19 +505,27 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
     matching = []
     LOGINFO('looking for Kepler light curve FITS in %s for %s...' % (lcfitsdir,
                                                                      keplerid))
+    # # for Python 3.5 and up, use recursive glob
+    # if sys.version_info[:2] > (3,4):
+
+    #     matching = glob.glob(os.path.join(lcfitsdir,
+    #                                       '**',
+    #                                       'kplr%09i-*_llc.fits' % keplerid))
+    #     LOGINFO('found %s' % repr(matching))
+
+    # # otherwise, use os.walk and glob
+    # else:
+
     for root, dirs, files in walker:
         for sdir in dirs:
-            # searchpath = os.path.join(root,
-            #                           sdir,
-            #                           'kplr%09i-*_llc.fits' % keplerid)
-            # foundfiles = glob.glob(searchpath)
-            # use fnmatch filter instead of glob for speed
-            foundfiles = fnmatch.filter(files, 'kplr%09i-*_llc.fits' % keplerid)
+            for sflist in files:
+                foundfiles = fnmatch.filter(sflist,
+                                            'kplr%09i-*_llc.fits' % keplerid)
 
-            if foundfiles:
-                matching.extend(foundfiles)
-                LOGINFO('found %s in dir: %s' % (repr(foundfiles),
-                                                 os.path.join(root,sdir)))
+                if foundfiles:
+                    matching.extend(foundfiles)
+                    LOGINFO('found %s in dir: %s' % (repr(foundfiles),
+                                                     os.path.join(root,sdir)))
 
     # now that we've found everything, read them all in
     if len(matching) > 0:
