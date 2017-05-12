@@ -223,7 +223,7 @@ def concatenate_textlcs(lclist):
         thislcd = read_hatpi_textlc(lcf)
         LOGINFO('adding %s to %s' % (lcf, lclist[0]))
 
-        if not thislcd['columns'] == lcdict['columns']:
+        if thislcd['columns'] != lcdict['columns']:
             LOGERROR('file %s does not have the '
                      'same columns as first file %s, skipping...'
                      % (lcf, lclist[0]))
