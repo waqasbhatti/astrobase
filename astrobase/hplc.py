@@ -122,9 +122,10 @@ COLDEFS = [('rjd',float),  # The reduced Julian date
            ('iep3',float)] # EPD magnitude for aperture 3
 
 # these are the mag columns
-MAGCOLS = ['ifl1','irm1','iep1',
-           'ifl2','irm2','iep2',
-           'ifl3','irm3','iep3']
+MAGCOLS = ['ifl1','irm1','iep1','itf1',
+           'ifl2','irm2','iep2','itf2',
+           'ifl3','irm3','iep3','itf3']
+
 
 ##################################
 ## READING AND WRITING TEXT LCS ##
@@ -265,8 +266,7 @@ def read_hatpi_pklc(lcfile):
 
 def concatenate_textlcs(lclist,
                         sortby='rjd',
-                        normalize=True,
-                        normto=None):
+                        normalize=True):
     '''This concatenates a list of light curves.
 
     Does not care about overlaps or duplicates. The light curves must all be
@@ -280,11 +280,7 @@ def concatenate_textlcs(lclist,
     ascending order.
 
     If normalize is True, then each light curve's magnitude columns are
-    normalized to zero, and the whole light curve is then normalized to the
-    global median magnitude for each magnitude column.
-
-    If normto == 'globalmedian', will add back the global median values to the
-    light curve.
+    normalized to zero.
 
     '''
 
@@ -296,6 +292,21 @@ def concatenate_textlcs(lclist,
     lccounter = 0
     lcdict['concatenated'] = {lccounter: lclist[0]}
     lcdict['lcn'] = np.full_like(lcdict['rjd'], lccounter)
+
+    # normalize if needed
+    if normalize:
+
+        for col in MAGCOLS:
+
+            if col in lcdict:
+                thismedval = np.nanmedian(lcdict[col])
+
+                # handle fluxes
+                if col in ('ifl1','ifl2','ifl3'):
+                    lcdict[col] = lcdict[col] / thismedval
+                # handle mags
+                else:
+                    lcdict[col] = lcdict[col] - thismedval
 
     # now read the rest
     for lcf in lclist[1:]:
@@ -328,6 +339,20 @@ def concatenate_textlcs(lclist,
 
             # concatenate the columns
             for col in lcdict['columns']:
+
+                # handle normalization for magnitude columns
+                if normalize and col in MAGCOLS:
+
+                    thismedval = np.nanmedian(thislcd[col])
+
+                    # handle fluxes
+                    if col in ('ifl1','ifl2','ifl3'):
+                        thislcd[col] = thislcd[col] / thismedval
+                    # handle mags
+                    else:
+                        thislcd[col] = thislcd[col] - thismedval
+
+                # concatenate the values
                 lcdict[col] = np.concatenate((lcdict[col], thislcd[col]))
 
     #
@@ -351,55 +376,6 @@ def concatenate_textlcs(lclist,
         # sort all the columns by this index
         for col in lcdict['columns']:
             lcdict[col] = lcdict[col][sortind]
-
-
-    # if we're supposed to normalize, do it by LC
-    if normalize:
-
-        LOGINFO('normalizing concatenated light curve...')
-
-        # this tracks median mag for each LC
-        medianmags = {x:[] for x in MAGCOLS}
-
-        for lcind in range(lcdict['nconcatenated']):
-
-            for col in MAGCOLS:
-
-                LOGINFO('normalizing %s for LC index: %s' % (col, lcind))
-
-                thismedval = np.nanmedian(lcdict[col][lcdict['lcn'] == lcind])
-                medianmags[col].append(thismedval)
-
-                # handle fluxes
-                if col in ('ifl1','ifl2','ifl3'):
-
-                    lcdict[col][lcdict['lcn'] == lcind] = (
-                        lcdict[col][lcdict['lcn'] == lcind] /
-                        thismedval
-                    )
-
-                else:
-
-                    lcdict[col][lcdict['lcn'] == lcind] = (
-                        lcdict[col][lcdict['lcn'] == lcind] -
-                        thismedval
-                    )
-
-        lcdict['concatenatedmedmags'] = medianmags
-
-        if normalize and normto == 'globalmedian':
-            # now that everything is normalized to zero, we need to add back the
-            # global median value for each column across all light curves
-            for col in MAGCOLS:
-
-                # handle fluxes
-                if col in ('ifl1','ifl2','ifl3'):
-
-                    lcdict[col] = lcdict[col] * np.median(medianmags[col])
-
-                else:
-
-                    lcdict[col] = lcdict[col] + np.median(medianmags[col])
 
 
     LOGINFO('done. concatenated light curve has %s detections' %
