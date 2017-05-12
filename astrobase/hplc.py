@@ -385,6 +385,7 @@ def concatenate_textlcs(lclist,
                         thismedval
                     )
 
+        lcdict['concatenatedmedmags'] = medianmags
 
         if normalize and normto == 'globalmedian':
             # now that everything is normalized to zero, we need to add back the
