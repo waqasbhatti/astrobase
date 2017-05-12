@@ -234,7 +234,6 @@ def concatenate_textlcs(lclist):
             for col in lcdict['columns']:
                 lcdict[col] = np.concatenate((lcdict[col], thislcf[col]))
 
-
     # now we're all done concatenatin'
     return lcdict
 
