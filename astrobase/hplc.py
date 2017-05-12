@@ -388,8 +388,7 @@ def concatenate_textlcs_for_objectid(lcbasedir,
                                      objectid,
                                      aperture='TF1',
                                      sortby='rjd',
-                                     normalize=True,
-                                     normto=None):
+                                     normalize=True):
     '''This concatenates all text LCs for an objectid with the given aperture.
 
     Does not care about overlaps or duplicates. The light curves must all be
@@ -454,8 +453,7 @@ def concatenate_textlcs_for_objectid(lcbasedir,
     if matching and len(matching) > 1:
         clcdict = concatenate_textlcs(matching,
                                       sortby=sortby,
-                                      normalize=normalize,
-                                      normto=normto)
+                                      normalize=normalize)
         return clcdict
     elif matching and len(matching) == 1:
         return read_hatpi_textlc(matching[0])
@@ -469,6 +467,8 @@ def concatenate_textlcs_for_objectid(lcbasedir,
 def concat_write_pklc(lcbasedir,
                       objectid,
                       aperture='TF1',
+                      sortby='rjd',
+                      normalize=True,
                       outdir=None):
     '''
     This concatenates all text LCs for the given object and writes to a pklc.
@@ -477,7 +477,9 @@ def concat_write_pklc(lcbasedir,
 
     lcdict = concatenate_textlcs_for_objectid(lcbasedir,
                                               objectid,
-                                              aperture=aperture)
+                                              aperture=aperture,
+                                              sortby=sortby,
+                                              normalize=normalize)
     if not outdir:
         outdir = 'pklcs'
         if not os.path.exists(outdir):
