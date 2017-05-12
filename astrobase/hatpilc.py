@@ -314,3 +314,25 @@ def concatenate_textlcs_for_objectid(lcbasedir, objectid,
         LOGERROR('did not find any light curves for %s and aperture %s' %
                  (objectid, aperture))
         return None
+
+
+
+def concat_write_pklc(lcbasedir,
+                      objectid,
+                      aperture='TF1',
+                      outdir=None):
+    '''
+    This concatenates all text LCs for the given object and writes to a pklc.
+
+    '''
+
+    lcdict = concatenate_textlcs_for_objectid(lcbasedir,
+                                              objectid,
+                                              aperture=aperture)
+    if not outdir:
+        outdir = 'pklcs'
+        if not os.path.exists(outdir):
+            os.mkdir(outdir)
+
+    outfpath = os.path.join(outdir, '%s-pklc.pkl' % lcdict['objectid'])
+    pklc = lcdict_to_pickle(lcdict, outfile=outfpath)
