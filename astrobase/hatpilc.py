@@ -17,6 +17,7 @@ import os
 import os.path
 import gzip
 import re
+import glob
 
 try:
     import cPickle as pickle
@@ -256,3 +257,27 @@ def concatenate_textlcs_for_hatid(lcbasedir, objectid,
     '''
 
     # use os.walk to go through the directories
+    walker = os.walk(lcbasedir)
+    matching = []
+    LOGINFO('looking for Kepler light curve FITS in %s for %s...' % (lcfitsdir,
+                                                                     keplerid))
+    for root, dirs, files in walker:
+        for sdir in dirs:
+            searchpath = os.path.join(root,
+                                      sdir,
+                                      '*%s*%s*' % (objectid, aperture))
+            foundfiles = glob.glob(searchpath)
+
+            if foundfiles:
+                matching.extend(foundfiles)
+                LOGINFO('found %s in dir: %s' % (repr(foundfiles),
+                                                 os.path.join(root,sdir)))
+
+    # now that we all files, concatenate them
+    if matching:
+        clcdict = concatenate_textlcs(matching)
+        return clcdict
+    else:
+        LOGERROR('did not find any light curves for %s and aperture %s' %
+                 (objectid, aperture))
+        return None
