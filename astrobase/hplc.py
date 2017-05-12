@@ -1,4 +1,4 @@
-'''hatpilc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - May 2017
+'''hplc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - May 2017
 License: MIT. See LICENSE for full text.
 
 This is mostly for internal use. Contains functions to read text light curves
@@ -37,7 +37,7 @@ import numpy as np
 LOGGER = None
 
 def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.hatpilc' % parent_name)
+    globals()['LOGGER'] = logging.getLogger('%s.hplc' % parent_name)
 
 def LOGDEBUG(message):
     if LOGGER:
