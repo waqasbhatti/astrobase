@@ -519,7 +519,6 @@ def consolidate_kepler_fitslc(keplerid, lcfitsdir,
     for root, dirs, files in walker:
         for sdir in dirs:
             for sflist in files:
-                print(sflist)
                 foundfiles = fnmatch.filter(sflist,
                                             'kplr%09i-*_llc.fits' % keplerid)
 
