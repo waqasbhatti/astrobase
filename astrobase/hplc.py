@@ -317,10 +317,10 @@ def concatenate_textlcs(lclist,
             # update LC tracking
             lccounter = lccounter + 1
             lcdict['concatenated'][lccounter] = lcf
-            lcdict['lcn'] = np.concatenate(
+            lcdict['lcn'] = np.concatenate((
                 lcdict['lcn'],
                 np.full_like(thislcd['rjd'],lccounter)
-            )
+            ))
 
             # concatenate the columns
             for col in lcdict['columns']:
