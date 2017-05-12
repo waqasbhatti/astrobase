@@ -432,7 +432,7 @@ def concatenate_textlcs_for_objectid(lcbasedir,
     global median magnitude for each magnitude column.
 
     '''
-    LOGINFO('looking for light curves for %s, aperture %s in %s...'
+    LOGINFO('looking for light curves for %s, aperture %s in directory: %s'
             % (objectid, aperture, lcbasedir))
 
     # use recursive glob for Python 3.5+
