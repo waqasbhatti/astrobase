@@ -396,6 +396,7 @@ def concatenate_textlcs(lclist,
 def concatenate_textlcs_for_objectid(lcbasedir,
                                      objectid,
                                      aperture='TF1',
+                                     postfix='.gz',
                                      sortby='rjd',
                                      normalize=True):
     '''This concatenates all text LCs for an objectid with the given aperture.
@@ -438,7 +439,9 @@ def concatenate_textlcs_for_objectid(lcbasedir,
 
         matching = glob.glob(os.path.join(lcbasedir,
                                           '**',
-                                          '*%s*%s*' % (objectid, aperture)),
+                                          '*%s*%s*%s' % (objectid,
+                                                         aperture,
+                                                         postfix)),
                              recursive=True)
         LOGINFO('found %s files: %s' % (len(matching), repr(matching)))
 
@@ -479,6 +482,7 @@ def concatenate_textlcs_for_objectid(lcbasedir,
 def concat_write_pklc(lcbasedir,
                       objectid,
                       aperture='TF1',
+                      postfix='.gz',
                       sortby='rjd',
                       normalize=True,
                       outdir=None):
