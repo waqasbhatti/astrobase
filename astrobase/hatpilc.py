@@ -18,6 +18,7 @@ import os.path
 import gzip
 import re
 import glob
+import sys
 
 try:
     import cPickle as pickle
@@ -245,8 +246,8 @@ def concatenate_textlcs(lclist):
 
 
 
-def concatenate_textlcs_for_hatid(lcbasedir, objectid,
-                                  aperture='TF1'):
+def concatenate_textlcs_for_objectid(lcbasedir, objectid,
+                                     aperture='TF1'):
     '''This concatenates all text LCs for an objectid with the given aperture.
 
     Does not care about overlaps or duplicates. The light curves must all be
@@ -267,22 +268,34 @@ def concatenate_textlcs_for_hatid(lcbasedir, objectid,
 
     '''
 
-    # use os.walk to go through the directories
-    walker = os.walk(lcbasedir)
-    matching = []
-    LOGINFO('looking for light curves for %s, aperture %s in %s...'
-            % (objectid, aperture, lcbasedir))
-    for root, dirs, files in walker:
-        for sdir in dirs:
-            searchpath = os.path.join(root,
-                                      sdir,
-                                      '*%s*%s*' % (objectid, aperture))
-            foundfiles = glob.glob(searchpath)
+    # use recursive glob for Python 3.5+
+    if sys.version_info[:2] > (3,4):
 
-            if foundfiles:
-                matching.extend(foundfiles)
-                LOGINFO('found %s in dir: %s' % (repr(foundfiles),
-                                                 os.path.join(root,sdir)))
+        matching = glob.glob(os.path.join(lcbasedir,
+                                          '**',
+                                          '*%s*%s*' % (objectid, aperture)))
+        LOGINFO('found %s files: %s' % (len(matching), repr(matching)))
+
+    # otherwise, use os.walk and glob
+    else:
+
+        # use os.walk to go through the directories
+        walker = os.walk(lcbasedir)
+        matching = []
+        LOGINFO('looking for light curves for %s, aperture %s in %s...'
+                % (objectid, aperture, lcbasedir))
+
+        for root, dirs, files in walker:
+            for sdir in dirs:
+                searchpath = os.path.join(root,
+                                          sdir,
+                                          '*%s*%s*' % (objectid, aperture))
+                foundfiles = glob.glob(searchpath)
+
+                if foundfiles:
+                    matching.extend(foundfiles)
+                    LOGINFO('found %s in dir: %s' % (repr(foundfiles),
+                                                     os.path.join(root,sdir)))
 
     # now that we all files, concatenate them
     if matching and len(matching) > 1:
