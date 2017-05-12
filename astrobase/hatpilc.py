@@ -237,6 +237,10 @@ def concatenate_textlcs(lclist):
                 lcdict[col] = np.concatenate((lcdict[col], thislcd[col]))
 
     # now we're all done concatenatin'
+
+    # make sure to add up the ndet
+    lcdict['objectinfo']['ndet'] = lcdict[lcdict['columns'][0]].size
+
     return lcdict
 
 
