@@ -398,7 +398,8 @@ def concatenate_textlcs_for_objectid(lcbasedir,
                                      aperture='TF1',
                                      postfix='.gz',
                                      sortby='rjd',
-                                     normalize=True):
+                                     normalize=True,
+                                     recursive=True):
     '''This concatenates all text LCs for an objectid with the given aperture.
 
     Does not care about overlaps or duplicates. The light curves must all be
@@ -434,35 +435,42 @@ def concatenate_textlcs_for_objectid(lcbasedir,
     LOGINFO('looking for light curves for %s, aperture %s in directory: %s'
             % (objectid, aperture, lcbasedir))
 
-    # use recursive glob for Python 3.5+
-    if sys.version_info[:2] > (3,4):
+    if recursive == False:
 
         matching = glob.glob(os.path.join(lcbasedir,
-                                          '**',
                                           '*%s*%s*%s' % (objectid,
                                                          aperture,
-                                                         postfix)),
-                             recursive=True)
-        LOGINFO('found %s files: %s' % (len(matching), repr(matching)))
-
-    # otherwise, use os.walk and glob
+                                                         postfix)))
     else:
+        # use recursive glob for Python 3.5+
+        if sys.version_info[:2] > (3,4):
 
-        # use os.walk to go through the directories
-        walker = os.walk(lcbasedir)
-        matching = []
+            matching = glob.glob(os.path.join(lcbasedir,
+                                              '**',
+                                              '*%s*%s*%s' % (objectid,
+                                                             aperture,
+                                                             postfix)),
+                                 recursive=True)
+            LOGINFO('found %s files: %s' % (len(matching), repr(matching)))
 
-        for root, dirs, files in walker:
-            for sdir in dirs:
-                searchpath = os.path.join(root,
-                                          sdir,
-                                          '*%s*%s*' % (objectid, aperture))
-                foundfiles = glob.glob(searchpath)
+        # otherwise, use os.walk and glob
+        else:
 
-                if foundfiles:
-                    matching.extend(foundfiles)
-                    LOGINFO('found %s in dir: %s' % (repr(foundfiles),
-                                                     os.path.join(root,sdir)))
+            # use os.walk to go through the directories
+            walker = os.walk(lcbasedir)
+            matching = []
+
+            for root, dirs, files in walker:
+                for sdir in dirs:
+                    searchpath = os.path.join(root,
+                                              sdir,
+                                              '*%s*%s*' % (objectid, aperture))
+                    foundfiles = glob.glob(searchpath)
+
+                    if foundfiles:
+                        matching.extend(foundfiles)
+                        LOGINFO('found %s in dir: %s' % (repr(foundfiles),
+                                                         os.path.join(root,sdir)))
 
     # now that we have all the files, concatenate them
     if matching and len(matching) > 1:
