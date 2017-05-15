@@ -425,6 +425,10 @@ def concatenate_textlcs_for_objectid(lcbasedir,
     normalized to zero, and the whole light curve is then normalized to the
     global median magnitude for each magnitude column.
 
+    If recursive is True, then the function will search recursively in lcbasedir
+    for any light curves matching the specified criteria. This may take a while,
+    especially on network filesystems.
+
     The returned lcdict has an extra column: 'lcn' that tracks which measurement
     belongs to which input light curve. This can be used with
     lcdict['concatenated'] which relates input light curve index to input light
