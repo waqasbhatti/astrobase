@@ -464,7 +464,9 @@ def concatenate_textlcs_for_objectid(lcbasedir,
                 for sdir in dirs:
                     searchpath = os.path.join(root,
                                               sdir,
-                                              '*%s*%s*' % (objectid, aperture))
+                                              '*%s*%s*%s' % (objectid,
+                                                             aperture,
+                                                             prefix))
                     foundfiles = glob.glob(searchpath)
 
                     if foundfiles:
@@ -493,7 +495,8 @@ def concat_write_pklc(lcbasedir,
                       postfix='.gz',
                       sortby='rjd',
                       normalize=True,
-                      outdir=None):
+                      outdir=None,
+                      recurvsive=True):
     '''This concatenates all text LCs for the given object and writes to a pklc.
 
     Basically a rollup for the concatenate_textlcs_for_objectid and
@@ -505,7 +508,8 @@ def concat_write_pklc(lcbasedir,
                                                  objectid,
                                                  aperture=aperture,
                                                  sortby=sortby,
-                                                 normalize=normalize)
+                                                 normalize=normalize,
+                                                 recursive=recursive)
     if not outdir:
         outdir = 'pklcs'
         if not os.path.exists(outdir):
