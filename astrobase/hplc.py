@@ -496,7 +496,7 @@ def concat_write_pklc(lcbasedir,
                       sortby='rjd',
                       normalize=True,
                       outdir=None,
-                      recurvsive=True):
+                      recursive=True):
     '''This concatenates all text LCs for the given object and writes to a pklc.
 
     Basically a rollup for the concatenate_textlcs_for_objectid and
