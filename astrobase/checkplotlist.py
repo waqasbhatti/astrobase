@@ -152,8 +152,6 @@ def main(args=None):
                            'directory:\n    %s\nDo you want to '
                            'overwrite it? (default: no) [y/n] ' % outjson)
 
-            print(answer)
-
             # if it's OK to overwrite, then do so
             if answer and answer == 'y':
 
