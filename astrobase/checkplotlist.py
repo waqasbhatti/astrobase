@@ -149,14 +149,14 @@ def main(args=None):
 
             answer = input('There is an existing '
                            'checkplot list file in this '
-                           'directory: %s.\nDo you want to '
+                           'directory:\n    %s\nDo you want to '
                            'overwrite it? (default: no) [y/n] ' % outjson)
 
             # if it's OK to overwrite, then do so
             if answer in 'yY':
 
                 with open(outjson,'w') as outfd:
-                    LOGWARNING('overwriting existing checkplot list')
+                    print('overwriting existing checkplot list')
                     outdict = {'checkplots':sorted(searchresults),
                                'nfiles':len(searchresults)}
                     json.dump(outdict,outfd)
@@ -166,7 +166,7 @@ def main(args=None):
 
                 # read in the outjson, and add stuff to it for objects that
                 # don't have an entry
-                LOGINFO('updating existing checkplot list file')
+                print('updating existing checkplot list file')
 
                 with open(outjson,'r') as infd:
                     indict = json.load(infd)
