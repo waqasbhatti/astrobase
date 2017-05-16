@@ -144,11 +144,47 @@ def main(args=None):
             os.path.join(currdir,'checkplot-filelist.json')
         )
 
-        with open(outjson,'w') as outfd:
+        # ask if the checkplot list JSON should be updated
+        if os.path.exists(outjson):
 
-            outdict = {'checkplots':sorted(searchresults),
-                       'nfiles':len(searchresults)}
-            json.dump(outdict,outfd)
+            answer = input('There is an existing '
+                           'checkplot list file in this '
+                           'directory: %s.\nDo you want to '
+                           'overwrite it? (default: no) [y/n] ' % outjson)
+
+            # if it's OK to overwrite, then do so
+            if answer in 'yY':
+
+                with open(outjson,'w') as outfd:
+                    LOGWARNING('overwriting existing checkplot list')
+                    outdict = {'checkplots':sorted(searchresults),
+                               'nfiles':len(searchresults)}
+                    json.dump(outdict,outfd)
+
+            # if it's not OK to overwrite, then
+            else:
+
+                # read in the outjson, and add stuff to it for objects that
+                # don't have an entry
+                LOGINFO('updating existing checkplot list file')
+
+                with open(outjson,'r') as infd:
+                    indict = json.load(infd)
+
+                # update the checkplot list only
+                indict['checkplots'] = sorted(searchresults)
+                indict['nfiles'] = len(searchresults)
+                # write the updated to back to the file
+                with open(outjson,'w') as outfd:
+                    json.dump(indict, outfd)
+
+        # if this is a new output file
+        else:
+
+            with open(outjson,'w') as outfd:
+                outdict = {'checkplots':sorted(searchresults),
+                           'nfiles':len(searchresults)}
+                json.dump(outdict,outfd)
 
         if os.path.exists(outjson):
             print('checkplot file list written to %s' % outjson)
