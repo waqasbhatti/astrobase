@@ -479,13 +479,12 @@ def concatenate_textlcs_for_objectid(lcbasedir,
                                                          os.path.join(root,sdir)))
 
     # now that we have all the files, concatenate them
-    if matching and len(matching) > 1:
+    # a single file will be returned as normalized
+    if matching and len(matching) > 0:
         clcdict = concatenate_textlcs(matching,
                                       sortby=sortby,
                                       normalize=normalize)
         return clcdict
-    elif matching and len(matching) == 1:
-        return read_hatpi_textlc(matching[0])
     else:
         LOGERROR('did not find any light curves for %s and aperture %s' %
                  (objectid, aperture))
