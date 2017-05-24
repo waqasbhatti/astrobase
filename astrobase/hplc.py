@@ -475,8 +475,10 @@ def concatenate_textlcs_for_objectid(lcbasedir,
 
                     if foundfiles:
                         matching.extend(foundfiles)
-                        LOGINFO('found %s in dir: %s' % (repr(foundfiles),
-                                                         os.path.join(root,sdir)))
+                        LOGINFO(
+                            'found %s in dir: %s' % (repr(foundfiles),
+                                                     os.path.join(root,sdir))
+                        )
 
     # now that we have all the files, concatenate them
     # a single file will be returned as normalized
