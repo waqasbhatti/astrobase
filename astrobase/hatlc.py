@@ -1302,6 +1302,13 @@ def normalize_lcdict_instruments(lcdict,
                         mags[nkey == uniqnkey] - medmag
                     )
 
+                    if debugmode:
+                        LOGINFO('%s groupby %s: elems %s, '
+                                'median mag %s' %
+                                (col, uniqnkey,
+                                 len(mags[nkey == uniqnkey]),
+                                 medmag))
+
             # everything should now be normalized to zero
             # add back the requested normto
             if normto in ('jmag', 'hmag', 'kmag',
