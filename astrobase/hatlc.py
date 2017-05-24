@@ -775,9 +775,214 @@ def describe(lcdict, returndesc=False):
         return description
 
 
-#####################################
-## NORMALIZING SQLITECURVE LCDICTS ##
-#####################################
+
+#############################
+## READING CSV LIGHTCURVES ##
+#############################
+
+def smartcast(castee, caster, subval=None):
+    '''
+    This just tries to apply the caster function to castee.
+
+    Returns None on failure.
+
+    '''
+
+    try:
+        return caster(castee)
+    except Exception as e:
+        if caster is float or caster is int:
+            return nan
+        elif caster is str:
+            return ''
+        else:
+            return subval
+
+
+
+# these are the keys used in the metadata section of the CSV LC
+METAKEYS = {'objectid':str,
+            'hatid':str,
+            'twomassid':str,
+            'ucac4id':str,
+            'network':str,
+            'stations':str,
+            'ndet':int,
+            'ra':float,
+            'decl':float,
+            'pmra':float,
+            'pmra_err':float,
+            'pmdecl':float,
+            'pmdecl_err':float,
+            'jmag':float,
+            'hmag':float,
+            'kmag':float,
+            'bmag':float,
+            'vmag':float,
+            'sdssg':float,
+            'sdssr':float,
+            'sdssi':float}
+
+
+
+def parse_csv_header(header):
+    '''
+    This parses the CSV header from the CSV HAT sqlitecurve.
+
+    Returns a dict that can be used to update an existing lcdict with the
+    relevant metadata info needed to form a full LC.
+
+    '''
+
+    # first, break into lines
+    headerlines = header.split('\n')
+    headerlines = [x.lstrip('# ') for x in headerlines]
+
+    # next, find the indices of the metadata sections
+    objectstart = headerlines.index('OBJECT')
+    metadatastart = headerlines.index('METADATA')
+    camfilterstart = headerlines.index('CAMFILTERS')
+    photaperturestart = headerlines.index('PHOTAPERTURES')
+    columnstart = headerlines.index('COLUMNS')
+    lcstart = headerlines.index('LIGHTCURVE')
+
+    # get the lines for the header sections
+    objectinfo = headerlines[objectstart+1:metadatastart-1]
+    metadatainfo = headerlines[metadatastart+1:camfilterstart-1]
+    camfilterinfo = headerlines[camfilterstart+1:photaperturestart-1]
+    photapertureinfo = headerlines[photaperturestart+1:columnstart-1]
+    columninfo = headerlines[columnstart+1:lcstart-1]
+
+    # parse the header sections and insert the appropriate key-val pairs into
+    # the lcdict
+    metadict = {'objectinfo':{}}
+
+    # first, the objectinfo section
+    objectinfo = [x.split(';') for x in objectinfo]
+
+    for elem in objectinfo:
+        for kvelem in elem:
+            key, val = kvelem.split(' = ',1)
+            metadict['objectinfo'][key.strip()] = (
+                smartcast(val, METAKEYS[key.strip()])
+                )
+
+    # the objectid belongs at the top level
+    metadict['objectid'] = metadict['objectinfo']['objectid'][:]
+    del metadict['objectinfo']['objectid']
+
+    # get the lightcurve metadata
+    metadatainfo = [x.split(';') for x in metadatainfo]
+    for elem in metadatainfo:
+        for kvelem in elem:
+
+            try:
+                key, val = kvelem.split(' = ',1)
+
+                # get the lcbestaperture into a dict again
+                if key.strip() == 'lcbestaperture':
+                    val = json.loads(val)
+
+                # get the lcversion and datarelease as integers
+                if key.strip() in ('datarelease', 'lcversion'):
+                    val = int(val)
+
+                # get the lastupdated as a float
+                if key.strip() == 'lastupdated':
+                    val = float(val)
+
+                # put the key-val into the dict
+                metadict[key.strip()] = val
+
+            except Exception as e:
+
+                LOGWARNING('could not understand header element "%s",'
+                           ' skipped.' % kvelem)
+
+
+    # get the camera filters
+    metadict['filters'] = []
+    for row in camfilterinfo:
+        filterid, filtername, filterdesc = row.split(' - ')
+        metadict['filters'].append((int(filterid),
+                                    filtername,
+                                    filterdesc))
+
+    # get the photometric apertures
+    metadict['lcapertures'] = {}
+    for row in photapertureinfo:
+        apnum, appix = row.split(' - ')
+        appix = float(appix.rstrip(' px'))
+        metadict['lcapertures'][apnum.strip()] = appix
+
+    # get the columns
+    metadict['columns'] = []
+
+    for row in columninfo:
+        colnum, colname, coldesc = row.split(' - ')
+        metadict['columns'].append(colname)
+
+    return metadict
+
+
+
+def read_csvlc(lcfile):
+    '''
+    This reads the HAT data server producd CSV light curve into a lcdict.
+
+    lcfile is the HAT gzipped CSV LC (with a .hatlc.csv.gz extension)
+
+    '''
+
+    # read in the file and split by lines
+    if '.gz' in os.path.basename(lcfile):
+        LOGINFO('reading gzipped HATLC: %s' % lcfile)
+        infd = gzip.open(lcfile,'rb')
+    else:
+        LOGINFO('reading HATLC: %s' % lcfile)
+        infd = open(lcfile,'rb')
+
+    lctext = infd.read().decode() # argh Python 3
+    infd.close()
+
+    # figure out the header and get the LC columns
+    lcstart = lctext.index('# LIGHTCURVE\n')
+    lcheader = lctext[:lcstart+12]
+    lccolumns = lctext[lcstart+13:].split('\n')
+    lccolumns = [x for x in lccolumns if len(x) > 0]
+
+    # initialize the lcdict and parse the CSV header
+    lcdict = parse_csv_header(lcheader)
+
+    # tranpose the LC rows into columns
+    lccolumns = [x.split(',') for x in lccolumns]
+    lccolumns = list(zip(*lccolumns)) # argh more Python 3
+
+    # write the columns to the dict
+    for colind, col in enumerate(lcdict['columns']):
+
+        if (col.split('_')[0] in LC_MAG_COLUMNS or
+            col.split('_')[0] in LC_ERR_COLUMNS or
+            col.split('_')[0] in LC_FLAG_COLUMNS):
+            lcdict[col] = np.array([smartcast(x,
+                                              COLUMNDEFS[col.split('_')[0]][2])
+                                    for x in lccolumns[colind]])
+
+        elif col in COLUMNDEFS:
+            lcdict[col] = np.array([smartcast(x,COLUMNDEFS[col][2])
+                                    for x in lccolumns[colind]])
+
+        else:
+            LOGWARNING('lcdict col %s has no formatter available' % col)
+            continue
+
+    return lcdict
+
+
+
+##########################
+## NORMALIZING  LCDICTS ##
+##########################
 
 def find_lc_timegroups(lctimes, mingap=4.0):
     '''
@@ -994,204 +1199,144 @@ def normalize_lcdict(lcdict,
 
 
 
-#############################
-## READING CSV LIGHTCURVES ##
-#############################
+def normalize_lcdict_instruments(lcdict,
+                                 normusing=('net','stf','ccd','prj','fld',
+                                            'flt','cid','exp','tid','tmi'),
+                                 magcols='all',
+                                 normto='sdssr',
+                                 debugmode=False):
+    '''This is a function to normalize light curves across all instrument
+    combinations present.
 
-def smartcast(castee, caster, subval=None):
-    '''
-    This just tries to apply the caster function to castee.
+    Use this to normalize a light curve containing a variety of:
 
-    Returns None on failure.
+    - filters
+    - ccd positions
+    - observed field names
+    - HAT project IDs
+    - HAT station IDs
+    - camera IDs
+    - exposure times
+    - telescope IDs
+    - telescope mount IDs
 
-    '''
+    The normusing kwarg controls which keys to find unique values for and
+    normalize all observations based on grouping by those keys. This will
+    normalize all observation groups to zero.
 
-    try:
-        return caster(castee)
-    except Exception as e:
-        if caster is float or caster is int:
-            return nan
-        elif caster is str:
-            return ''
-        else:
-            return subval
-
-
-
-# these are the keys used in the metadata section of the CSV LC
-METAKEYS = {'objectid':str,
-            'hatid':str,
-            'twomassid':str,
-            'ucac4id':str,
-            'network':str,
-            'stations':str,
-            'ndet':int,
-            'ra':float,
-            'decl':float,
-            'pmra':float,
-            'pmra_err':float,
-            'pmdecl':float,
-            'pmdecl_err':float,
-            'jmag':float,
-            'hmag':float,
-            'kmag':float,
-            'bmag':float,
-            'vmag':float,
-            'sdssg':float,
-            'sdssr':float,
-            'sdssi':float}
-
-
-
-def parse_csv_header(header):
-    '''
-    This parses the CSV header from the CSV HAT sqlitecurve.
-
-    Returns a dict that can be used to update an existing lcdict with the
-    relevant metadata info needed to form a full LC.
+    See the docstring for normalize_lcdict for more about the magcols and normto
+    kwargs. EXCEPTION: normalize_lcdict_instruments does not respect
+    normto='globalmedian'.
 
     '''
 
-    # first, break into lines
-    headerlines = header.split('\n')
-    headerlines = [x.lstrip('# ') for x in headerlines]
-
-    # next, find the indices of the metadata sections
-    objectstart = headerlines.index('OBJECT')
-    metadatastart = headerlines.index('METADATA')
-    camfilterstart = headerlines.index('CAMFILTERS')
-    photaperturestart = headerlines.index('PHOTAPERTURES')
-    columnstart = headerlines.index('COLUMNS')
-    lcstart = headerlines.index('LIGHTCURVE')
-
-    # get the lines for the header sections
-    objectinfo = headerlines[objectstart+1:metadatastart-1]
-    metadatainfo = headerlines[metadatastart+1:camfilterstart-1]
-    camfilterinfo = headerlines[camfilterstart+1:photaperturestart-1]
-    photapertureinfo = headerlines[photaperturestart+1:columnstart-1]
-    columninfo = headerlines[columnstart+1:lcstart-1]
-
-    # parse the header sections and insert the appropriate key-val pairs into
-    # the lcdict
-    metadict = {'objectinfo':{}}
-
-    # first, the objectinfo section
-    objectinfo = [x.split(';') for x in objectinfo]
-
-    for elem in objectinfo:
-        for kvelem in elem:
-            key, val = kvelem.split(' = ',1)
-            metadict['objectinfo'][key.strip()] = (
-                smartcast(val, METAKEYS[key.strip()])
-                )
-
-    # the objectid belongs at the top level
-    metadict['objectid'] = metadict['objectinfo']['objectid'][:]
-    del metadict['objectinfo']['objectid']
-
-    # get the lightcurve metadata
-    metadatainfo = [x.split(';') for x in metadatainfo]
-    for elem in metadatainfo:
-        for kvelem in elem:
-
-            try:
-                key, val = kvelem.split(' = ',1)
-
-                # get the lcbestaperture into a dict again
-                if key.strip() == 'lcbestaperture':
-                    val = json.loads(val)
-
-                # get the lcversion and datarelease as integers
-                if key.strip() in ('datarelease', 'lcversion'):
-                    val = int(val)
-
-                # get the lastupdated as a float
-                if key.strip() == 'lastupdated':
-                    val = float(val)
-
-                # put the key-val into the dict
-                metadict[key.strip()] = val
-
-            except Exception as e:
-
-                LOGWARNING('could not understand header element "%s",'
-                           ' skipped.' % kvelem)
+    # check if this lc has been normalized already. return as-is if so
+    if 'lcinstnormcols' in lcdict and len(lcdict['lcinstnormcols']) > 0:
+        LOGWARNING('this lightcurve is already normalized by instrument keys'
+                   ', returning...')
+        return lcdict
 
 
-    # get the camera filters
-    metadict['filters'] = []
-    for row in camfilterinfo:
-        filterid, filtername, filterdesc = row.split(' - ')
-        metadict['filters'].append((int(filterid),
-                                    filtername,
-                                    filterdesc))
+    # check if the normalization keys are all OK
+    normkeys = []
+    for key in normusing:
+        if key in lcdict:
+            normkeys.append(key)
 
-    # get the photometric apertures
-    metadict['lcapertures'] = {}
-    for row in photapertureinfo:
-        apnum, appix = row.split(' - ')
-        appix = float(appix.rstrip(' px'))
-        metadict['lcapertures'][apnum.strip()] = appix
+    # figure out the apertures
+    apertures = sorted(lcdict['lcapertures'].keys())
 
-    # get the columns
-    metadict['columns'] = []
+    # put together the column names
+    aimcols = [('aim_%s' % x) for x in apertures if ('aim_%s' % x) in lcdict]
+    armcols = [('arm_%s' % x) for x in apertures if ('arm_%s' % x) in lcdict]
+    aepcols = [('aep_%s' % x)for x in apertures if ('aep_%s' % x) in lcdict]
+    atfcols = [('atf_%s' % x) for x in apertures if ('atf_%s' % x) in lcdict]
+    psimcols = [x for x in ['psim','psrm','psep','pstf'] if x in lcdict]
+    irmcols = [('irm_%s' % x) for x in apertures if ('irm_%s' % x) in lcdict]
+    iepcols = [('iep_%s' % x) for x in apertures if ('iep_%s' % x) in lcdict]
+    itfcols = [('itf_%s' % x) for x in apertures if ('itf_%s' % x) in lcdict]
 
-    for row in columninfo:
-        colnum, colname, coldesc = row.split(' - ')
-        metadict['columns'].append(colname)
-
-    return metadict
-
-
-
-def read_csvlc(lcfile):
-    '''
-    This reads the HAT data server producd CSV light curve into a lcdict.
-
-    lcfile is the HAT gzipped CSV LC (with a .hatlc.csv.gz extension)
-
-    '''
-
-    # read in the file and split by lines
-    if '.gz' in os.path.basename(lcfile):
-        LOGINFO('reading gzipped HATLC: %s' % lcfile)
-        infd = gzip.open(lcfile,'rb')
+    # next, find all the mag columns to normalize
+    if magcols == 'all':
+        cols_to_normalize = (aimcols + irmcols + aepcols + atfcols +
+                             psimcols + irmcols + iepcols + itfcols)
+    elif magcols == 'redmags':
+        cols_to_normalize = (irmcols + (['psrm'] if 'psrm' in lcdict else []) +
+                             irmcols)
+    elif magcols == 'epdmags':
+        cols_to_normalize = (aepcols + (['psep'] if 'psep' in lcdict else []) +
+                             iepcols)
+    elif magcols == 'tfamags':
+        cols_to_normalize = (atfcols + (['pstf'] if 'pstf' in lcdict else []) +
+                             itfcols)
+    elif magcols == 'epdtfa':
+        cols_to_normalize = (aepcols + (['psep'] if 'psep' in lcdict else []) +
+                             iepcols + atfcols +
+                             (['pstf'] if 'pstf' in lcdict else []) +
+                             itfcols)
     else:
-        LOGINFO('reading HATLC: %s' % lcfile)
-        infd = open(lcfile,'rb')
+        cols_to_normalize = magcols.split(',')
+        cols_to_normalize = [x.strip() for x in cols_to_normalize]
 
-    lctext = infd.read().decode() # argh Python 3
-    infd.close()
+    colsnormalized = []
 
-    # figure out the header and get the LC columns
-    lcstart = lctext.index('# LIGHTCURVE\n')
-    lcheader = lctext[:lcstart+12]
-    lccolumns = lctext[lcstart+13:].split('\n')
-    lccolumns = [x for x in lccolumns if len(x) > 0]
+    # go through each column and normalize them
+    for col in cols_to_normalize:
 
-    # initialize the lcdict and parse the CSV header
-    lcdict = parse_csv_header(lcheader)
+        if col in lcdict:
 
-    # tranpose the LC rows into columns
-    lccolumns = [x.split(',') for x in lccolumns]
-    lccolumns = list(zip(*lccolumns)) # argh more Python 3
+            # note: this requires the columns in ndarray format
+            # unlike normalize_lcdict
+            mags = lcdict[col]
 
-    # write the columns to the dict
-    for colind, col in enumerate(lcdict['columns']):
+            # go through each key in normusing
+            for nkey in normkeys:
 
-        if (col.split('_')[0] in LC_MAG_COLUMNS or
-            col.split('_')[0] in LC_ERR_COLUMNS or
-            col.split('_')[0] in LC_FLAG_COLUMNS):
-            lcdict[col] = np.array([smartcast(x,
-                                              COLUMNDEFS[col.split('_')[0]][2])
-                                    for x in lccolumns[colind]])
+                # find the unique values of this key
+                uniqkeyvals = np.unique(lcdict[nkey])
 
-        elif col in COLUMNDEFS:
-            lcdict[col] = np.array([smartcast(x,COLUMNDEFS[col][2])
-                                    for x in lccolumns[colind]])
+                for uniqnkey in uniqkeyvals:
+
+                    medmag = np.nanmedian(mags[nkey == uniqnkey])
+                    mags[nkey == uniqnkey] = (
+                        mags[nkey == uniqnkey] - medmag
+                    )
+
+            # everything should now be normalized to zero
+            # add back the requested normto
+            if normto in ('jmag', 'hmag', 'kmag',
+                          'bmag', 'vmag',
+                          'sdssg', 'sdssr', 'sdssi'):
+
+                if (normto in lcdict['objectinfo'] and
+                  lcdict['objectinfo'][normto] is not None):
+                    mags = mags + lcdict['objectinfo'][normto]
+
+                else:
+                    LOGWARNING('no %s available in lcdict, '
+                               'normalizing to 0.0' % normto)
+                    normto = 'globalmedian'
+                    mags = mags + global_mag_median
+
+            # update the lcdict's magnitudes
+            lcdict[col] = mags
+
+            # update the colsnormalized list
+            colsnormalized.append(col)
 
         else:
-            LOGWARNING('lcdict col %s has no formatter available' % col)
+
+            LOGWARNING('column %s is not present, skipping...' % col)
             continue
+
+    # add the lcnormcols key to the lcdict
+    lcinstnormcols = ('cols normalized: %s - '
+                      'min day gap: %s - '
+                      'normalized to: %s') % (
+                          repr(colsnormalized),
+                          mingap,
+                          normto
+                      )
+    lcdict['lcinstnormcols'] = lcinstnormcols
 
     return lcdict
