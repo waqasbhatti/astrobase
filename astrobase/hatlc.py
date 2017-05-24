@@ -1315,7 +1315,7 @@ def normalize_lcdict_instruments(lcdict,
                 else:
                     LOGWARNING('no %s available in lcdict, '
                                'normalizing to 0.0' % normto)
-                    normto = 'globalmedian'
+                    normto = 'zero'
                     mags = mags + global_mag_median
 
             # update the lcdict's magnitudes
@@ -1331,10 +1331,8 @@ def normalize_lcdict_instruments(lcdict,
 
     # add the lcnormcols key to the lcdict
     lcinstnormcols = ('cols normalized: %s - '
-                      'min day gap: %s - '
                       'normalized to: %s') % (
                           repr(colsnormalized),
-                          mingap,
                           normto
                       )
     lcdict['lcinstnormcols'] = lcinstnormcols
