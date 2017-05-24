@@ -1292,12 +1292,24 @@ def normalize_lcdict_instruments(lcdict,
             # go through each key in normusing
             for nkey in normkeys:
 
-                # find the unique values of this key
+                # find the unique values of this key.
+
+                # FIXME: all items with key value = np.nan will be be left
+                # un-normalized since the equality comparison below always
+                # evaluates to False for np.nan == np.nan
                 uniqkeyvals = np.unique(lcdict[nkey])
+                funiquekeyvals = uniqkeyvals[np.isfinite(uniqkeyvals)]
+
+
+                if (funiquekeyvals.size < uniqkeyvals.size
+                    and not normignorenans):
+                    funiquekeyvals = np.concatenate((funiquevals,
+                                                     np.array([np.nan]))
 
                 for uniqnkey in uniqkeyvals:
 
                     medmag = np.nanmedian(mags[nkey == uniqnkey])
+
                     mags[nkey == uniqnkey] = (
                         mags[nkey == uniqnkey] - medmag
                     )
