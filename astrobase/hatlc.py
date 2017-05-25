@@ -1199,12 +1199,12 @@ def normalize_lcdict(lcdict,
 
 
 
-def normalize_lcdict_instruments(lcdict,
-                                 normusing=('net','stf','ccd','prj','fld',
-                                            'flt','cid','exp','tid','tmi'),
-                                 magcols='all',
-                                 normto='sdssr',
-                                 debugmode=False):
+def normalize_lcdict_byinst(
+        lcdict,
+        magcols='all',
+        normto='sdssr',
+        debugmode=False
+):
     '''This is a function to normalize light curves across all instrument
     combinations present.
 
@@ -1220,10 +1220,6 @@ def normalize_lcdict_instruments(lcdict,
     - telescope IDs
     - telescope mount IDs
 
-    The normusing kwarg controls which keys to find unique values for and
-    normalize all observations based on grouping by those keys. This will
-    normalize all observation groups to zero.
-
     See the docstring for normalize_lcdict for more about the magcols and normto
     kwargs. EXCEPTION: normalize_lcdict_instruments does not respect
     normto='globalmedian'.
@@ -1236,12 +1232,16 @@ def normalize_lcdict_instruments(lcdict,
                    ', returning...')
         return lcdict
 
+    # generate the normalization key
+    allkeys = ['%s-%s-%s-%s-%s' % (x,y,z,u,v) for (x,y,z,u,v)
+               in zip(lcdict['stf'],
+                      lcdict['flt'],
+                      lcdict['fld'],
+                      lcdict['prj'],
+                      lcdict['exp'])]
+    allkeys = np.array(allkeys)
 
-    # check if the normalization keys are all OK
-    normkeys = []
-    for key in normusing:
-        if key in lcdict:
-            normkeys.append(key)
+    normkeys = np.unique(allkeys)
 
     # figure out the apertures
     apertures = sorted(lcdict['lcapertures'].keys())
@@ -1287,32 +1287,21 @@ def normalize_lcdict_instruments(lcdict,
 
             # note: this requires the columns in ndarray format
             # unlike normalize_lcdict
-            mags = lcdict[col]
+            thismags = lcdict[col]
 
             # go through each key in normusing
             for nkey in normkeys:
 
-                # find the unique values of this key.
+                thisind = allkeys == nkey
 
-                # FIXME: all items with key value = np.nan will be be left
-                # un-normalized since the equality comparison below always
-                # evaluates to False for np.nan == np.nan
-                uniqkeyvals = np.unique(lcdict[nkey])
+                # do the normalization and update the thismags in the lcdict
+                medmag = np.nanmedian(thismags[thisind])
+                lcdict[col][thisind] = lcdict[col][thisind] - medmag
 
-                for uniqnkey in uniqkeyvals:
-
-                    medmag = np.nanmedian(mags[nkey == uniqnkey])
-
-                    mags[nkey == uniqnkey] = (
-                        mags[nkey == uniqnkey] - medmag
-                    )
-
-                    if debugmode:
-                        LOGINFO('%s groupby %s: elems %s, '
-                                'median mag %s' %
-                                (col, uniqnkey,
-                                 len(mags[nkey == uniqnkey]),
-                                 medmag))
+                if debugmode:
+                    LOGINFO('currkey %s, nelem %s, '
+                            'medmag %s' %
+                            (nkey, len(thismags[thisind]), medmag))
 
             # everything should now be normalized to zero
             # add back the requested normto
@@ -1321,17 +1310,13 @@ def normalize_lcdict_instruments(lcdict,
                           'sdssg', 'sdssr', 'sdssi'):
 
                 if (normto in lcdict['objectinfo'] and
-                  lcdict['objectinfo'][normto] is not None):
-                    mags = mags + lcdict['objectinfo'][normto]
+                    lcdict['objectinfo'][normto] is not None):
+                    lcdict[col] = lcdict[col] + lcdict['objectinfo'][normto]
 
                 else:
                     LOGWARNING('no %s available in lcdict, '
                                'normalizing to 0.0' % normto)
                     normto = 'zero'
-                    mags = mags + global_mag_median
-
-            # update the lcdict's magnitudes
-            lcdict[col] = mags
 
             # update the colsnormalized list
             colsnormalized.append(col)
