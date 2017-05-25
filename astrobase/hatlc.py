@@ -1301,9 +1301,8 @@ def normalize_lcdict_instruments(lcdict,
                 funiquekeyvals = uniqkeyvals[np.isfinite(uniqkeyvals)]
 
 
-                if (funiquekeyvals.size < uniqkeyvals.size
-                    and not normignorenans):
-                    funiquekeyvals = np.concatenate((funiquevals,
+                if (funiquekeyvals.size < uniqkeyvals.size):
+                    funiquekeyvals = np.concatenate((funiquekeyvals,
                                                      np.array([np.nan]))
 
                 for uniqnkey in uniqkeyvals:
