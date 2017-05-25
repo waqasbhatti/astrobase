@@ -1298,12 +1298,6 @@ def normalize_lcdict_instruments(lcdict,
                 # un-normalized since the equality comparison below always
                 # evaluates to False for np.nan == np.nan
                 uniqkeyvals = np.unique(lcdict[nkey])
-                funiquekeyvals = uniqkeyvals[np.isfinite(uniqkeyvals)]
-
-
-                if (funiquekeyvals.size < uniqkeyvals.size):
-                    funiquekeyvals = np.concatenate((funiquekeyvals,
-                                                     np.array([np.nan]))
 
                 for uniqnkey in uniqkeyvals:
 
