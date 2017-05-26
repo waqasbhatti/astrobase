@@ -83,6 +83,7 @@ https://github.com/waqasbhatti/astrobase/blob/master/notebooks/lightcurve-work.i
 import os.path
 import os
 import gzip
+import shutil
 import logging
 from datetime import datetime
 from traceback import format_exc
@@ -389,9 +390,69 @@ def squeeze(value):
 ## SQLITECURVE COMPRESSIION FUNCTIONS ##
 ########################################
 
-def compress_sqlitecurve(sqlitecurve, force=False):
+def pycompress_sqlitecurve(sqlitecurve, force=False):
+    '''This just compresses the sqlitecurve. Should be independent of OS.
+
     '''
-    This just compresses the sqlitecurve in gzip format.
+
+    outfile = '%s.gz' % sqlitecurve
+
+    try:
+
+        if os.path.exists(outfile) and not force:
+            os.remove(sqlitecurve)
+            return outfile
+
+        else:
+
+            with open(sqlitecurve,'rb') as infd:
+                with gzip.open(outfile,'wb') as outfd:
+                    shutil.copyfileobj(infd, outfd)
+
+            if os.path.exists(outfile):
+                os.remove(sqlitecurve)
+                return outfile
+            else:
+                LOGERROR('could not compress %s' % sqlitecurve)
+
+    except Exception as e:
+        LOGEXCEPTION('could not compress %s' % sqlitecurve)
+
+
+
+def pyuncompress_sqlitecurve(sqlitecurve, force=False):
+    '''This just uncompresses the sqlitecurve. Should be independent of OS.
+
+    '''
+
+    outfile = sqlitecurve.replace('.gz','')
+
+    try:
+
+        if os.path.exists(outfile) and not force:
+            return outfile
+
+        else:
+
+            with gzip.open(sqlitecurve,'rb') as infd:
+                with open(outfile,'wb') as outfd:
+                    shutil.copyfileobj(infd, outfd)
+
+            # do not remove the intput file yet
+            if os.path.exists(outfile):
+                return outfile
+            else:
+                LOGERROR('could not uncompress %s' % sqlitecurve)
+
+    except Exception as e:
+        LOGEXCEPTION('could not uncompress %s' % sqlitecurve)
+
+
+
+def gzip_sqlitecurve(sqlitecurve, force=False):
+    '''This just compresses the sqlitecurve in gzip format.
+
+    FIXME: this doesn't work with gzip < 1.6 or non-GNU gzip (probably).
 
     '''
 
@@ -421,14 +482,15 @@ def compress_sqlitecurve(sqlitecurve, force=False):
                 return None
 
     except subprocess.CalledProcessError:
-        LOGERROR('could not compress %s' % sqlitecurve)
+        LOGEXCEPTION('could not compress %s' % sqlitecurve)
         return None
 
 
 
-def uncompress_sqlitecurve(sqlitecurve):
-    '''
-    This just uncompresses the sqlitecurve in gzip format.
+def gunzip_sqlitecurve(sqlitecurve):
+    '''This just uncompresses the sqlitecurve in gzip format.
+
+    FIXME: this doesn't work with gzip < 1.6 or non-GNU gzip (probably).
 
     '''
 
@@ -441,6 +503,27 @@ def uncompress_sqlitecurve(sqlitecurve):
     except subprocess.CalledProcessError:
         LOGERROR('could not uncompress %s' % sqlitecurve)
         return None
+
+
+###############################################
+## DECIDE WHICH COMPRESSION FUNCTIONS TO USE ##
+###############################################
+
+try:
+    GZIPTEST = subprocess.check_output(
+        'gzip --version',
+        shell=True
+    ).decode().split('\n')[0].split()[-1]
+    GZIPTEST = float(GZIPTEST)
+    if GZIPTEST and GZIPTEST > 1.5:
+        compress_sqlitecurve = gzip_sqlitecurve
+        uncompress_sqlitecurve = gunzip_sqlitecurve
+    else:
+        compress_sqlitecurve = pycompress_sqlitecurve
+        uncompress_sqlitecurve = pyuncompress_sqlitecurve
+except:
+    compress_sqlitecurve = pycompress_sqlitecurve
+    uncompress_sqlitecurve = pyuncompress_sqlitecurve
 
 
 
