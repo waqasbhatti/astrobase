@@ -524,8 +524,7 @@ try:
 except:
     compress_sqlitecurve = pycompress_sqlitecurve
     uncompress_sqlitecurve = pyuncompress_sqlitecurve
-
-
+    GZIPTEST = None
 
 ###################################
 ## READING SQLITECURVE FUNCTIONS ##
