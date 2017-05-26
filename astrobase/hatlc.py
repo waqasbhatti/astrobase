@@ -1210,15 +1210,11 @@ def normalize_lcdict_byinst(
 
     Use this to normalize a light curve containing a variety of:
 
+    - HAT station IDs
     - filters
-    - ccd positions
     - observed field names
     - HAT project IDs
-    - HAT station IDs
-    - camera IDs
     - exposure times
-    - telescope IDs
-    - telescope mount IDs
 
     See the docstring for normalize_lcdict for more about the magcols and normto
     kwargs. EXCEPTION: normalize_lcdict_instruments does not respect
