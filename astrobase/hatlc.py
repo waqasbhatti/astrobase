@@ -14,7 +14,7 @@ read_csvlc(lcfile):
 
 
 read_and_filter_sqlitecurve(lcfile, columns=None, sqlfilters=None,
-                            raiseonfail=False):
+                            raiseonfail=False, forcerecompress=False):
     This reads the sqlitecurve and optionally filters it, returns an lcdict.
 
     Returns columns requested in columns. If None, then returns all columns
@@ -26,6 +26,47 @@ read_and_filter_sqlitecurve(lcfile, columns=None, sqlfilters=None,
 
     This returns an lcdict with an added 'lcfiltersql' key that indicates what
     the parsed SQL filter string was.
+
+    If forcerecompress = True, will recompress the un-gzipped sqlitecurve even
+    if the gzipped form exists on disk already.
+
+
+Two other functions that might be useful:
+
+normalize_lcdict(lcdict, timecol='rjd', magcols='all', mingap=4.0,
+                 normto='sdssr', debugmode=False):
+
+    This normalizes magnitude columns (specified in the magcols keyword
+    argument) in an lcdict obtained from reading a HAT light curve. This
+    normalization is done by finding 'timegroups' in each magnitude column,
+    assuming that these belong to different 'eras' separated by a specified gap
+    in the mingap keyword argument, and thus may be offset vertically from one
+    another. Measurements within a timegroup are normalized to zero using the
+    meidan magnitude of the timegroup. Once all timegroups have been processed
+    this way, the whole time series is then re-normalized to the specified value
+    in the normto keyword argument.
+
+
+normalize_lcdict_byinst(lcdict, magcols='all', normto='sdssr', debugmode=False)
+
+    This normalized magnitude columns (specified in the magcols keyword
+    argument) in an lcdict obtained from reading a HAT light curve. This
+    normalization is done by generating a normalization key using columns in the
+    lcdict that specify various instrument properties. The normalization key is
+    a combination of:
+
+    - HAT station IDs
+    - camera filters
+    - observed HAT field names
+    - HAT project IDs
+    - camera exposure times
+
+    with the assumption that measurements with identical normalization keys
+    belong to a single 'era'. Measurements within an era are normalized to zero
+    using the median magnitude of the era. Once all eras have been processed
+    this way, the whole time series is then re-normalized to the specified value
+    in the normto keyword argument.
+
 
 There's an IPython notebook describing the use of this module and accompanying
 modules from the astrobase package at:
@@ -348,12 +389,13 @@ def squeeze(value):
 ## SQLITECURVE COMPRESSIION FUNCTIONS ##
 ########################################
 
-def compress_sqlitecurve(sqlitecurve, force=True):
+def compress_sqlitecurve(sqlitecurve, force=False):
     '''
     This just compresses the sqlitecurve in gzip format.
 
     '''
 
+    # -k to keep the input file just in case something explodes
     if force:
         cmd = 'gzip -k -f %s' % sqlitecurve
     else:
@@ -364,8 +406,8 @@ def compress_sqlitecurve(sqlitecurve, force=True):
         outfile = '%s.gz' % sqlitecurve
 
         if os.path.exists(outfile) and not force:
-            LOGWARNING('output file already exists and '
-                       'force = False, this is a noop')
+            # get rid of the .sqlite file only
+            os.remove(sqlitecurve)
             return outfile
 
         else:
@@ -373,7 +415,6 @@ def compress_sqlitecurve(sqlitecurve, force=True):
 
             # check if the output file was successfully created
             if os.path.exists(outfile):
-                os.remove(sqlitecurve)
                 return outfile
             else:
                 LOGERROR('could not compress %s' % sqlitecurve)
@@ -391,7 +432,7 @@ def uncompress_sqlitecurve(sqlitecurve):
 
     '''
 
-    # keep the input .gz just in case something breaks while processing
+    # -k to keep the input .gz just in case something explodes
     cmd = 'gunzip -k %s' % sqlitecurve
 
     try:
@@ -471,7 +512,8 @@ def read_and_filter_sqlitecurve(lcfile,
                                 columns=None,
                                 sqlfilters=None,
                                 raiseonfail=False,
-                                returnarrays=True):
+                                returnarrays=True,
+                                forcerecompress=False):
     '''This reads the sqlitecurve and optionally filters it.
 
     Returns columns requested in columns. If None, then returns all columns
@@ -482,6 +524,9 @@ def read_and_filter_sqlitecurve(lcfile,
 
     This returns an lcdict with an added 'lcfiltersql' key that indicates what
     the parsed SQL filter string was.
+
+    If forcerecompress = True, will recompress the un-gzipped sqlitecurve even
+    if the gzipped form exists on disk already.
 
     '''
 
@@ -544,7 +589,7 @@ def read_and_filter_sqlitecurve(lcfile,
         if not proceed:
             # recompress the lightcurve at the end
             if '.gz' in lcfile[-4:] and lcf:
-                dcf = compress_sqlitecurve(lcf)
+                dcf = compress_sqlitecurve(lcf, force=forcerecompress)
             return None, "requested columns are invalid"
 
         # create the lcdict with the object, lc, and filter info
@@ -635,7 +680,7 @@ def read_and_filter_sqlitecurve(lcfile,
 
         # recompress the lightcurve at the end
         if '.gz' in lcfile[-4:] and lcf:
-            dcf = compress_sqlitecurve(lcf)
+            dcf = compress_sqlitecurve(lcf, force=forcerecompress)
 
 
         # return ndarrays if that's set
@@ -651,7 +696,7 @@ def read_and_filter_sqlitecurve(lcfile,
 
         # recompress the lightcurve at the end
         if '.gz' in lcfile[-4:] and lcf:
-            dcf = compress_sqlitecurve(lcf)
+            dcf = compress_sqlitecurve(lcf, force=forcerecompress)
 
         if raiseonfail:
             raise
