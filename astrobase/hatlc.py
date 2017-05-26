@@ -666,7 +666,6 @@ def read_and_filter_sqlitecurve(lcfile,
             LOGINFO('retrieving columns %s' % columns)
             proceed = True
         elif columns is None:
-            LOGINFO('retrieving all latest columns')
             columns = lccols.split(',')
             proceed = True
         else:
@@ -677,6 +676,7 @@ def read_and_filter_sqlitecurve(lcfile,
             # recompress the lightcurve at the end
             if '.gz' in lcfile[-4:] and lcf:
                 dcf = compress_sqlitecurve(lcf, force=forcerecompress)
+            LOGERROR('requested columns are invalid!')
             return None, "requested columns are invalid"
 
         # create the lcdict with the object, lc, and filter info
@@ -708,7 +708,6 @@ def read_and_filter_sqlitecurve(lcfile,
             else:
                 filtersok = False
         else:
-            LOGINFO('no LC filters specified')
             validatedfilters = None
             filtersok = None
 
