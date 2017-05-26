@@ -89,11 +89,6 @@ def stetson_jindex(mags, errs):
     pairs of observations. Based on Nicole Loncke's work for her Planets and
     Life certificate at Princeton.
 
-    if weights is None, all measurements will have equal weight.
-
-    if weights is not None, then it's a ndarray of weights ranging in the
-    interval [0,1] for each measurement in mags.
-
     '''
 
     # remove nans first
@@ -223,6 +218,12 @@ def nonperiodic_lightcurve_features(times, mags, errs):
         series_beyond1std = int((series_above1std +
                                  series_below1std)/float(ndet))
 
+        # get the magnitude percentiles
+        series_mag_percentiles = nppercentile(
+            fmags,
+            [5.0,10,17.5,25,32.5,40,60,67.5,75,82.5,90,95]
+        )
+
         # get the fluxes
         series_fluxes = 10.0**(-0.4*fmags)
         series_flux_median = npmedian(series_fluxes)
@@ -297,9 +298,11 @@ def nonperiodic_lightcurve_features(times, mags, errs):
 
         # this is the dictionary returned containing all the measures
         measures = {
+            'ndet':fmags.size,
             'mintime':mintime,
             'maxtime':maxtime,
             'timelength':timelength,
+            'ndetobslength_ratio':ndet/timelength,
             'ndet':ndet,
             'median':series_median,
             'wmean':series_wmean,
@@ -309,6 +312,7 @@ def nonperiodic_lightcurve_features(times, mags, errs):
             'skew':series_skew,
             'kurtosis':series_kurtosis,
             'beyond1std':series_beyond1std,
+            'mag_percentiles':series_mag_percentiles,
             'flux_median':series_flux_median,
             'flux_percent_amplitude':series_flux_percent_amplitude,
             'flux_percentiles':series_flux_percentiles,
@@ -418,6 +422,10 @@ def gilliland_cdpp(times, mags, errs,
     fmags = mags[find]
     ferrs = errs[find]
 
+    if ftimes.size < (3*windowlength):
+        LOGERROR('not enough LC points to calculate CDPP')
+        return npnan
+
     # now get the smoothed mag series using the filter
     # kwargs are provided to the savgol_filter function
     smoothed = savgol_filter(fmags, windowlength, polyorder, **kwargs)
@@ -440,6 +448,40 @@ def gilliland_cdpp(times, mags, errs,
     cdpp = npstd(bmags) * 1.168
 
     return cdpp
+
+
+
+#####################
+## ROLLUP FUNCTION ##
+#####################
+
+
+def all_nonperiodic_features(times, mags, errs,
+                             cdpp_windowlength=97,
+                             cdpp_polyorder=2,
+                             cdpp_binsize=23400,
+                             cdpp_sigclip=5.0,
+                             magsarefluxes=False):
+    '''
+    This rolls up the functions above and returns a single dict.
+
+    '''
+
+    stetj = stetson_jindex(mags, errs)
+    stetk = stetson_kindex(mags, errs)
+    xfeatures = nonperiodic_lightcurve_features(times, mags, errs)
+    cdpp = gilliland_cdpp(times, mags, errs,
+                          windowlength=cdpp_windowlength,
+                          polyorder=cdpp_polyorder,
+                          binsize=cdpp_binsize,
+                          sigclip=cdpp_sigclip,
+                          magsarefluxes=magsarefluxes)
+
+    xfeatures.update({'stetsonj':stetj,
+                      'stetsonk':stetk,
+                      'cdpp':cdpp})
+
+    return xfeatures
 
 
 
