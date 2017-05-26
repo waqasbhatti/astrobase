@@ -505,6 +505,7 @@ def gunzip_sqlitecurve(sqlitecurve):
         return None
 
 
+
 ###############################################
 ## DECIDE WHICH COMPRESSION FUNCTIONS TO USE ##
 ###############################################
@@ -519,12 +520,16 @@ try:
         compress_sqlitecurve = gzip_sqlitecurve
         uncompress_sqlitecurve = gunzip_sqlitecurve
     else:
+        LOGWARNING('gzip > 1.5 not available, using Python (gun)zip support')
         compress_sqlitecurve = pycompress_sqlitecurve
         uncompress_sqlitecurve = pyuncompress_sqlitecurve
 except:
     compress_sqlitecurve = pycompress_sqlitecurve
     uncompress_sqlitecurve = pyuncompress_sqlitecurve
     GZIPTEST = None
+    LOGWARNING('gzip > 1.5 not available, using Python (gun)zip support')
+
+
 
 ###################################
 ## READING SQLITECURVE FUNCTIONS ##
