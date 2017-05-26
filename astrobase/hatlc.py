@@ -1294,14 +1294,30 @@ def normalize_lcdict_byinst(
 
                 thisind = allkeys == nkey
 
-                # do the normalization and update the thismags in the lcdict
-                medmag = np.nanmedian(thismags[thisind])
-                lcdict[col][thisind] = lcdict[col][thisind] - medmag
+                # make sure we have at least 3 elements in the matched set of
+                # magnitudes corresponding to this key. also make sure that the
+                # magnitudes corresponding to this key aren't all nan.
+                thismagsize = thismags[thisind].size
+                thismagfinite = np.where(np.isfinite(thismags[thisind]))[0].size
 
-                if debugmode:
-                    LOGINFO('currkey %s, nelem %s, '
-                            'medmag %s' %
-                            (nkey, len(thismags[thisind]), medmag))
+                if thismagsize > 2 and thismagfinite > 2:
+
+                    # do the normalization and update the thismags in the lcdict
+                    medmag = np.nanmedian(thismags[thisind])
+                    lcdict[col][thisind] = lcdict[col][thisind] - medmag
+
+                    if debugmode:
+                        LOGINFO('currkey %s, nelem %s, '
+                                'medmag %s' %
+                                (nkey, len(thismags[thisind]), medmag))
+
+                # we remove mags that correspond to keys with less than 3
+                # (finite) elements because we can't get the median mag
+                # correctly and renormalizing them to zero would just set them
+                # to zero
+                else:
+
+                    lcdict[col][thisind] = np.nan
 
             # everything should now be normalized to zero
             # add back the requested normto
