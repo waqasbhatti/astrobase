@@ -21,7 +21,7 @@ import numpy as np
 LOGGER = None
 
 def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.checkplot' % parent_name)
+    globals()['LOGGER'] = logging.getLogger('%s.magnitudes' % parent_name)
 
 def LOGDEBUG(message):
     if LOGGER:
