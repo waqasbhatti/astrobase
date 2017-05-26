@@ -40,6 +40,7 @@ https://github.com/waqasbhatti/astrobase/blob/master/notebooks/lightcurve-work.i
 ####################
 
 import os.path
+import os
 import gzip
 import logging
 from datetime import datetime
@@ -354,13 +355,30 @@ def compress_sqlitecurve(sqlitecurve, force=True):
     '''
 
     if force:
-        cmd = 'gzip -f %s' % sqlitecurve
+        cmd = 'gzip -k -f %s' % sqlitecurve
     else:
-        cmd = 'gzip %s' % sqlitecurve
+        cmd = 'gzip -k %s' % sqlitecurve
 
     try:
-        procout = subprocess.check_output(cmd, shell=True)
-        return '%s.gz' % sqlitecurve
+
+        outfile = '%s.gz' % sqlitecurve
+
+        if os.path.exists(outfile) and not force:
+            LOGWARNING('output file already exists and '
+                       'force = False, this is a noop')
+            return outfile
+
+        else:
+            procout = subprocess.check_output(cmd, shell=True)
+
+            # check if the output file was successfully created
+            if os.path.exists(outfile):
+                os.remove(sqlitecurve)
+                return outfile
+            else:
+                LOGERROR('could not compress %s' % sqlitecurve)
+                return None
+
     except subprocess.CalledProcessError:
         LOGERROR('could not compress %s' % sqlitecurve)
         return None
@@ -373,7 +391,8 @@ def uncompress_sqlitecurve(sqlitecurve):
 
     '''
 
-    cmd = 'gunzip %s' % sqlitecurve
+    # keep the input .gz just in case something breaks while processing
+    cmd = 'gunzip -k %s' % sqlitecurve
 
     try:
         procout = subprocess.check_output(cmd, shell=True)
