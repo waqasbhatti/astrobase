@@ -832,7 +832,7 @@ def checkplot_png(lspinfo,
 
             # make sure the best period phased LC plot stands out
             if periodind == 0 and bestperiodhighlight:
-                axes[periodind+2].set_axis_bgcolor(bestperiodhighlight)
+                axes[periodind+2].set_facecolor(bestperiodhighlight)
 
             _make_phased_magseries_plot(axes[periodind+2],
                                         periodind,
@@ -1093,7 +1093,7 @@ def twolsp_checkplot_png(lspinfo1,
 
             # make sure the best period phased LC plot stands out
             if periodind == 0 and bestperiodhighlight:
-                plotaxes.set_axis_bgcolor(bestperiodhighlight)
+                plotaxes.set_facecolor(bestperiodhighlight)
 
             _make_phased_magseries_plot(plotaxes,
                                         periodind,
@@ -1141,7 +1141,7 @@ def twolsp_checkplot_png(lspinfo1,
 
             # make sure the best period phased LC plot stands out
             if periodind == 0:
-                plotaxes.set_axis_bgcolor('#adff2f')
+                plotaxes.set_facecolor('#adff2f')
 
             _make_phased_magseries_plot(plotaxes,
                                         periodind,
@@ -1704,7 +1704,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
 
     # make sure the best period phased LC plot stands out
     if periodind == 0 and bestperiodhighlight:
-        plt.gca().set_axis_bgcolor(bestperiodhighlight)
+        plt.gca().set_facecolor(bestperiodhighlight)
 
     # if we're making an inset plot showing the full range
     if (plotxlim and isinstance(plotxlim, list) and
