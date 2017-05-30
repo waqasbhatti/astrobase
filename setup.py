@@ -53,7 +53,7 @@ INSTALL_REQUIRES = [
 ]
 
 EXTRAS_REQUIRE = {
-    'LCDB':['psycopg2'],
+    'all':['psycopg2','scikit-learn'],
 }
 
 # add extra stuff needed if we're running Python 2.7
