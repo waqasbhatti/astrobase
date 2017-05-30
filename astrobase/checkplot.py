@@ -74,6 +74,7 @@ from numpy import nan as npnan, median as npmedian, \
 
 # we're going to plot using Agg only
 import matplotlib
+MPLVERSION = tuple([int(x) for x in matplotlib.__version__.split('.')])
 matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
@@ -87,7 +88,7 @@ from traceback import format_exc
 from astropy.table import Column as astcolumn
 
 # import from Pillow to generate pngs from checkplot dicts
-from PIL import Image, ImageOps, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 
 
@@ -832,7 +833,10 @@ def checkplot_png(lspinfo,
 
             # make sure the best period phased LC plot stands out
             if periodind == 0 and bestperiodhighlight:
-                axes[periodind+2].set_facecolor(bestperiodhighlight)
+                if MPLVERSION >= (2,0,0):
+                    axes[periodind+2].set_facecolor(bestperiodhighlight)
+                else:
+                    axes[periodind+2].set_axis_bgcolor(bestperiodhighlight)
 
             _make_phased_magseries_plot(axes[periodind+2],
                                         periodind,
@@ -1093,7 +1097,10 @@ def twolsp_checkplot_png(lspinfo1,
 
             # make sure the best period phased LC plot stands out
             if periodind == 0 and bestperiodhighlight:
-                plotaxes.set_facecolor(bestperiodhighlight)
+                if MPLVERSION >= (2,0,0):
+                    plotaxes.set_facecolor(bestperiodhighlight)
+                else:
+                    plotaxes.set_axis_bgcolor(bestperiodhighlight)
 
             _make_phased_magseries_plot(plotaxes,
                                         periodind,
@@ -1141,7 +1148,10 @@ def twolsp_checkplot_png(lspinfo1,
 
             # make sure the best period phased LC plot stands out
             if periodind == 0:
-                plotaxes.set_facecolor('#adff2f')
+                if MPLVERSION >= (2,0,0):
+                    plotaxes.set_facecolor(bestperiodhighlight)
+                else:
+                    plotaxes.set_axis_bgcolor(bestperiodhighlight)
 
             _make_phased_magseries_plot(plotaxes,
                                         periodind,
@@ -1704,7 +1714,10 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
 
     # make sure the best period phased LC plot stands out
     if periodind == 0 and bestperiodhighlight:
-        plt.gca().set_facecolor(bestperiodhighlight)
+        if MPLVERSION >= (2,0,0):
+            plt.gca().set_facecolor(bestperiodhighlight)
+        else:
+            plt.gca().set_axis_bgcolor(bestperiodhighlight)
 
     # if we're making an inset plot showing the full range
     if (plotxlim and isinstance(plotxlim, list) and
