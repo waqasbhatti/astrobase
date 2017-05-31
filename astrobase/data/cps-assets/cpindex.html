@@ -29,6 +29,18 @@
       </div>
     </div>
 
+    <!-- <\!-- FIXME: fill this in later. this is the control for filtering all checkplots -\-> -->
+    <!-- <div class="row"> -->
+    <!--   <div class="col-sm-12 text-sm-center"> -->
+    <!--     <select class="custom-select form-control" -->
+    <!--             id="checkplotfilter" name="checkplotfilter"> -->
+    <!--       <option value="0" selected>Show all checkplots</option> -->
+    <!--       <option value="1">Show reviewed checkplots</option> -->
+    <!--       <option value="2">Show unreviewed checkplots</option> -->
+    <!--     </select> -->
+    <!--   </div> -->
+    <!-- </div> -->
+
     <div class="row sidebar-controls">
       <div class="col-sm-12">
         <h4 class="text-sm-center">Reviewed Objects</h4>
@@ -78,7 +90,22 @@
           </div>
         </div>
 
-        <div class="row py-1">
+        <!-- this is the control for filtering reviewed objects -->
+        <div class="row">
+          <div class="col-sm-12 text-sm-center">
+            <select class="custom-select form-control"
+                    id="reviewedfilter" name="reviewedfilter">
+              <option value="0">Show objects with no variable flag</option>
+              <option value="1">Show objects flagged as variable</option>
+              <option value="2">Show objects flagged as not variable</option>
+              <option value="3">Show objects flagged as maybe variable</option>
+              <option value="4" selected>Show all reviewed objects</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- this is the location of the JSON file -->
+        <div class="row">
           <div class="col-sm-12 text-sm-center">
             <p>Updates are automatically synced to each checkplot pickle and the
             checkplot list <strong><abbr title="{{ project_checkplotfile
@@ -199,7 +226,7 @@
               <div class="dropdown-menu dropdown-menu-right"
                    aria-labelledby="vartag-dropdown">
                 <h6 class="dropdown-header">Add a tag from the list below<br>(or
-                type in a new one yourself)</h6>
+                type in a new one)</h6>
                 <a class="dropdown-item vartag-dn" href="#"
                    data-dnvartag="planet candidate">planet candidate</a>
                 <a class="dropdown-item vartag-dn" href="#"
@@ -240,7 +267,7 @@
               <div class="dropdown-menu dropdown-menu-right"
                    aria-labelledby="objtag-dropdown">
                 <h6 class="dropdown-header">Add a tag from the list below<br>(or
-                type in a new one yourself)</h6>
+                type in a new one)</h6>
                 <a class="dropdown-item objtag-dn" href="#"
                    data-dnobjtag="white dwarf">white dwarf</a>
                 <a class="dropdown-item objtag-dn" href="#"
@@ -303,9 +330,41 @@
       <!-- contains the periodogram and phased LCs for each method-->
       <!-- each method gets their own column with as many rows as necessary -->
       <div class="col-sm-9">
-        <div class="row phased-container">
+
+        <div class="row">
+          <div class="col-sm-12">
+
+            <ul class="nav nav-tabs" role="tablist">
+              <li class="nav-item">
+                <a class="nav-link active"
+                   data-toggle="tab"
+                   href="#overview" role="tab">Object Overview</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link"
+                   data-toggle="tab"
+                   href="#tools" role="tab">Period-search Tools</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="tab-content">
+
+          <div class="tab-pane active" id="overview" role="tabpanel">
+            <div class="row phased-container">
+
+            </div>
+          </div>
+
+          <div class="tab-pane" id="tools" role="tabpanel">
+            <div class="row">
+
+            </div>
+          </div>
 
         </div>
+
       </div>
 
 
