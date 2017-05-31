@@ -2727,7 +2727,8 @@ def checkplot_pickle_to_png(checkplotin,
         cpfontnormal = ImageFont.truetype(fontpath, 20)
         cpfontlarge = ImageFont.truetype(fontpath, 28)
     else:
-        LOGWARNING('could not find the DejaVu Sans font in astrobase package '
+        LOGWARNING('could not find bundled '
+                   'DejaVu Sans font in the astrobase package '
                    'data, using ugly defaults...')
         cpfontnormal = ImageFont.load_default()
         cpfontlarge = ImageFont.load_default()
@@ -2745,24 +2746,32 @@ def checkplot_pickle_to_png(checkplotin,
         fill=(0,0,255,255)
     )
     # twomass id
-    objinfodraw.text(
-        (875, 60),
-        ('2MASS J%s' % cpd['objectinfo']['twomassid']
-         if cpd['objectinfo']['twomassid']
-         else ''),
-        font=cpfontnormal,
-        fill=(0,0,0,255)
-    )
+    if 'twomassid' in cpd['objectinfo']:
+        objinfodraw.text(
+            (875, 60),
+            ('2MASS J%s' % cpd['objectinfo']['twomassid']
+             if cpd['objectinfo']['twomassid']
+             else ''),
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
     # ndet
-    objinfodraw.text(
-        (875, 85),
-        ('LC points: %s' % cpd['objectinfo']['ndet']
-         if cpd['objectinfo']['ndet'] is not None
-         else ''),
-        font=cpfontnormal,
-        fill=(0,0,0,255)
-    )
-
+    if 'ndet' in cpd['objectinfo']:
+        objinfodraw.text(
+            (875, 85),
+            ('LC points: %s' % cpd['objectinfo']['ndet']
+             if cpd['objectinfo']['ndet'] is not None
+             else ''),
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+    else:
+        objinfodraw.text(
+            (875, 85),
+            ('LC points: %s' % cpd['magseries']['times'].size),
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
     # coords and PM
     objinfodraw.text(
         (875, 125),
@@ -2770,32 +2779,58 @@ def checkplot_pickle_to_png(checkplotin,
         font=cpfontnormal,
         fill=(0,0,0,255)
     )
-    objinfodraw.text(
-        (1125, 125),
-        (('RA, Dec: %.3f, %.3f' %
-          (cpd['objectinfo']['ra'], cpd['objectinfo']['decl']))
-         if (cpd['objectinfo']['ra'] is not None and
-             cpd['objectinfo']['decl'] is not None)
-         else ''),
-        font=cpfontnormal,
-        fill=(0,0,0,255)
-    )
-    objinfodraw.text(
-        (1125, 150),
-        (('Total PM: %.5f mas/yr' % cpd['objectinfo']['propermotion'])
-         if (cpd['objectinfo']['propermotion'] is not None)
-         else ''),
-        font=cpfontnormal,
-        fill=(0,0,0,255)
-    )
-    objinfodraw.text(
-        (1125, 175),
-        (('Reduced PM: %.3f' % cpd['objectinfo']['reducedpropermotion'])
-         if (cpd['objectinfo']['reducedpropermotion'] is not None)
-         else ''),
-        font=cpfontnormal,
-        fill=(0,0,0,255)
-    )
+    if 'ra' in cpd['objectinfo'] and 'decl' in cpd['objectinfo']:
+        objinfodraw.text(
+            (1125, 125),
+            (('RA, Dec: %.3f, %.3f' %
+              (cpd['objectinfo']['ra'], cpd['objectinfo']['decl']))
+             if (cpd['objectinfo']['ra'] is not None and
+                 cpd['objectinfo']['decl'] is not None)
+             else ''),
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+    else:
+        objinfodraw.text(
+            (1125, 125),
+            'RA, Dec: nan, nan',
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+
+    if 'propermotion' in cpd['objectinfo']:
+        objinfodraw.text(
+            (1125, 150),
+            (('Total PM: %.5f mas/yr' % cpd['objectinfo']['propermotion'])
+             if (cpd['objectinfo']['propermotion'] is not None)
+             else ''),
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+    else:
+        objinfodraw.text(
+            (1125, 150),
+            'Total PM: nan',
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+
+    if 'reducedpropermotion' in cpd['objectinfo']:
+        objinfodraw.text(
+            (1125, 175),
+            (('Reduced PM: %.3f' % cpd['objectinfo']['reducedpropermotion'])
+             if (cpd['objectinfo']['reducedpropermotion'] is not None)
+             else ''),
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+    else:
+        objinfodraw.text(
+            (1125, 175),
+            'Reduced PM: nan',
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
 
     # magnitudes
     objinfodraw.text(
@@ -2808,13 +2843,16 @@ def checkplot_pickle_to_png(checkplotin,
         (1125, 200),
         ('gri: %.3f, %.3f, %.3f' %
          ((cpd['objectinfo']['sdssg'] if
-           cpd['objectinfo']['sdssg'] is not None
+           ('sdssg' in cpd['objectinfo'] and
+            cpd['objectinfo']['sdssg'] is not None)
            else npnan),
           (cpd['objectinfo']['sdssr'] if
-           cpd['objectinfo']['sdssr'] is not None
+           ('sdssr' in cpd['objectinfo'] and
+            cpd['objectinfo']['sdssr'] is not None)
            else npnan),
           (cpd['objectinfo']['sdssi'] if
-           cpd['objectinfo']['sdssi'] is not None
+           ('sdssi' in cpd['objectinfo'] and
+            cpd['objectinfo']['sdssi'] is not None)
            else npnan))),
         font=cpfontnormal,
         fill=(0,0,0,255)
@@ -2823,13 +2861,16 @@ def checkplot_pickle_to_png(checkplotin,
         (1125, 225),
         ('JHK: %.3f, %.3f, %.3f' %
          ((cpd['objectinfo']['jmag'] if
-           cpd['objectinfo']['jmag'] is not None
+           ('jmag' in cpd['objectinfo'] and
+            cpd['objectinfo']['jmag'] is not None)
            else npnan),
           (cpd['objectinfo']['hmag'] if
-           cpd['objectinfo']['hmag'] is not None
+           ('hmag' in cpd['objectinfo'] and
+            cpd['objectinfo']['hmag'] is not None)
            else npnan),
           (cpd['objectinfo']['kmag'] if
-           cpd['objectinfo']['kmag'] is not None
+           ('kmag' in cpd['objectinfo'] and
+            cpd['objectinfo']['kmag'] is not None)
            else npnan))),
         font=cpfontnormal,
         fill=(0,0,0,255)
@@ -2838,10 +2879,12 @@ def checkplot_pickle_to_png(checkplotin,
         (1125, 250),
         ('BV: %.3f, %.3f' %
          ((cpd['objectinfo']['bmag'] if
-           cpd['objectinfo']['bmag'] is not None
+           ('bmag' in cpd['objectinfo'] and
+            cpd['objectinfo']['bmag'] is not None)
            else npnan),
           (cpd['objectinfo']['vmag'] if
-           cpd['objectinfo']['vmag'] is not None
+           ('vmag' in cpd['objectinfo'] and
+            cpd['objectinfo']['vmag'] is not None)
            else npnan))),
         font=cpfontnormal,
         fill=(0,0,0,255)
@@ -2858,7 +2901,8 @@ def checkplot_pickle_to_png(checkplotin,
         (1125, 275),
         ('B - V: %.3f' %
          (cpd['objectinfo']['bvcolor'] if
-          cpd['objectinfo']['bvcolor'] is not None
+          ('bvcolor' in cpd['objectinfo'] and
+           cpd['objectinfo']['bvcolor'] is not None)
           else npnan)),
         font=cpfontnormal,
         fill=(0,0,0,255)
@@ -2867,7 +2911,8 @@ def checkplot_pickle_to_png(checkplotin,
         (1125, 300),
         ('i - J: %.3f' %
          (cpd['objectinfo']['ijcolor'] if
-          cpd['objectinfo']['ijcolor'] is not None
+          ('ijcolor' in cpd['objectinfo'] and
+           cpd['objectinfo']['ijcolor'] is not None)
           else npnan)),
         font=cpfontnormal,
         fill=(0,0,0,255)
@@ -2876,14 +2921,15 @@ def checkplot_pickle_to_png(checkplotin,
         (1125, 325),
         ('J - K: %.3f' %
          (cpd['objectinfo']['jkcolor'] if
-          cpd['objectinfo']['jkcolor'] is not None
+          ('jkcolor' in cpd['objectinfo'] and
+           cpd['objectinfo']['jkcolor'] is not None)
           else npnan)),
         font=cpfontnormal,
         fill=(0,0,0,255)
     )
 
     # object tags
-    if cpd['objectinfo']['objecttags']:
+    if 'objecttags' in cpd['objectinfo'] and cpd['objectinfo']['objecttags']:
 
         objtagsplit = cpd['objectinfo']['objecttags'].split(',')
 
