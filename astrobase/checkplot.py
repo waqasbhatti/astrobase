@@ -1148,7 +1148,7 @@ def twolsp_checkplot_png(lspinfo1,
                     (varperiod, varepoch))
 
             # make sure the best period phased LC plot stands out
-            if periodind == 0:
+            if periodind == 0 and bestperiodhighlight:
                 if MPLVERSION >= (2,0,0):
                     plotaxes.set_facecolor(bestperiodhighlight)
                 else:
