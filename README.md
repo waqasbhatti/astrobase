@@ -87,9 +87,8 @@ for your purposes.
   [lightcurve-work](notebooks/lightcurve-work.ipynb) Jupyter notebook goes
   through an example of generating these checkplot PNGs for light curves. See
   the [checkplot-viewer.js](astrobase/checkplot-viewer.js) file for more
-  instructions.
-
-  ![Checkplot Viewer](astrobase/data/checkplot-viewer.png?raw=true)
+  instructions and [checkplot-viewer.png](astrobase/data/checkplot-viewer.png)
+  for a screenshot.
 
 - **[coordutils](astrobase/coordutils.py)**: functions for dealing with
   coordinates (conversions, distances, proper motion)
