@@ -355,11 +355,12 @@ def _make_magseries_plot(axes,
 
     scaledplottime = stimes - npmin(stimes)
 
-    axes.scatter(scaledplottime,
-                 smags,
-                 marker='o',
-                 s=2,
-                 color='green')
+    axes.plot(scaledplottime,
+              smags,
+              marker='o',
+              ms=1.0, ls='None',
+              color='green',
+              rasterized=True)
 
     # flip y axis for mags
     if not magsarefluxes:
@@ -435,19 +436,21 @@ def _make_phased_magseries_plot(axes,
 
 
     # finally, make the phased LC plot
-    axes.scatter(plotphase,
-                 plotmags,
-                 marker='o',
-                 s=2,
-                 color='gray')
+    axes.plot(plotphase,
+              plotmags,
+              marker='o',
+              ms=1.0, ls='None',
+              color='gray',
+              rasterized=True)
 
     # overlay the binned phased LC plot if we're making one
     if phasebin:
-        axes.scatter(binplotphase,
-                     binplotmags,
-                     marker='o',
-                     s=20,
-                     color='blue')
+        axes.plot(binplotphase,
+                  binplotmags,
+                  marker='o',
+                  ms=7.0, ls='None',
+                  color='blue',
+                  rasterized=True)
 
     # flip y axis for mags
     if not magsarefluxes:
@@ -538,19 +541,21 @@ def _make_phased_magseries_plot(axes,
         inset = inset_axes(axes, width="40%", height="40%", loc=1)
 
         # make the scatter plot for the phased LC plot
-        inset.scatter(plotphase,
-                      plotmags,
-                      marker='o',
-                      s=2,
-                      color='gray')
+        inset.plot(plotphase,
+                   plotmags,
+                   marker='o',
+                   ms=1.0, ls='None',
+                   color='gray',
+                   rasterized=True)
 
         # overlay the binned phased LC plot if we're making one
         if phasebin:
-            inset.scatter(binplotphase,
-                          binplotmags,
-                          marker='o',
-                          s=20,
-                          color='blue')
+            inset.plot(binplotphase,
+                       binplotmags,
+                       marker='o',
+                       ms=7.0, ls='None',
+                       color='blue',
+                       rasterized=True)
 
         # show the full phase coverage
         # show the full phase coverage
@@ -1506,11 +1511,12 @@ def _pkl_magseries_plot(stimes, smags, serrs,
     # open the figure instance
     magseriesfig = plt.figure(figsize=(7.5,4.8),dpi=plotdpi)
 
-    plt.scatter(scaledplottime,
-                 smags,
-                 marker='o',
-                 s=2,
-                 color='green')
+    plt.plot(scaledplottime,
+             smags,
+             marker='o',
+             ms=1.0, ls='None',
+             color='green',
+             rasterized=True)
 
     # flip y axis for mags
     if not magsarefluxes:
@@ -1656,19 +1662,21 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
 
 
     # finally, make the phased LC plot
-    plt.scatter(plotphase,
-                plotmags,
-                marker='o',
-                s=2,
-                color='gray')
+    plt.plot(plotphase,
+             plotmags,
+             marker='o',
+             ms=1.0, ls='None',
+             color='gray',
+             rasterized=True)
 
     # overlay the binned phased LC plot if we're making one
     if phasebin:
-        plt.scatter(binplotphase,
-                    binplotmags,
-                    marker='o',
-                    s=10,
-                    color='blue')
+        plt.plot(binplotphase,
+                 binplotmags,
+                 marker='o',
+                 ms=7.0, ls='None',
+                 color='blue',
+                 rasterized=True)
 
     # flip y axis for mags
     if not magsarefluxes:
@@ -1742,19 +1750,21 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
         inset = inset_axes(plt.gca(), width="40%", height="40%", loc=1)
 
         # make the scatter plot for the phased LC plot
-        inset.scatter(plotphase,
-                      plotmags,
-                      marker='o',
-                      s=2,
-                      color='gray')
+        inset.plot(plotphase,
+                   plotmags,
+                   marker='o',
+                   ms=1.0, ls='None',
+                   color='gray',
+                   rasterized=True)
 
         if phasebin:
             # make the scatter plot for the phased LC plot
-            inset.scatter(binplotphase,
-                          binplotmags,
-                          marker='o',
-                          s=2,
-                          color='blue')
+            inset.plot(binplotphase,
+                       binplotmags,
+                       marker='o',
+                       ms=1.0, ls='None',
+                       color='blue',
+                       rasterized=True)
 
         # show the full phase coverage
         if phasewrap:
