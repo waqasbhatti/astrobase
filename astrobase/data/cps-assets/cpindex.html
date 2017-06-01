@@ -386,10 +386,18 @@
                     <select class="custom-select form-control form-control-sm"
                             id="psearchrun" name="psearchrun">
                       <option value="0" selected>Generalized Lomb-Scargle</option>
-                      <option value="1">Stellingwerf Phase Dispersion Minimization</option>
+                      <option value="1">Phase Dispersion Minimization</option>
                       <option value="2">Box Least-squared Search</option>
                       <option value="3">Analysis of Variance</option>
                     </select>
+                  </div>
+
+                  <div class="form-check">
+                    <label class="form-check-label">
+                      <input type="checkbox" id="autofreq"
+                             class="form-check-input" checked>
+                      Use automatic frequency step
+                    </label>
                   </div>
 
                   <div class="form-group">
@@ -408,14 +416,6 @@
                     <label for="freqstep">Frequency step [days<sup>-1</sup>]</label>
                     <input type="text" class="form-control form-control-sm"
                            id="freqstep">
-                  </div>
-
-                  <div class="form-check">
-                    <label class="form-check-label">
-                      <input type="checkbox" id="autofreq"
-                             class="form-check-input" checked>
-                      Use automatic frequency step
-                    </label>
                   </div>
 
                   <div class="form-check">
