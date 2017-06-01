@@ -145,6 +145,7 @@ def LOGEXCEPTION(message):
 from .lcmath import phase_magseries, phase_bin_magseries, \
     normalize_magseries, sigclip_magseries
 from .varbase.lcfit import spline_fit_magseries
+from .varbase.features import all_nonperiodic_features
 from .coordutils import total_proper_motion, reduced_proper_motion
 from .plotbase import astroquery_skyview_stamp, \
     PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
@@ -2176,17 +2177,33 @@ def checkplot_dict(lspinfolist,
                     xgridlines=xgridlines
                 )
 
-        # the checkplotdict now contains everything we need
-        LOGINFO('checkplot dict complete for %s' % checkplotdict['objectid'])
-        contents = sorted(list(checkplotdict.keys()))
-        LOGINFO('checkplot dict contents: %s' % contents)
-        checkplotdict['status'] = 'ok: contents are %s' % contents
+        ## update the checkplot dict with some other stuff that's needed by
+        ## checkplotserver
 
-        # add a comments key:val
+        # first, add a comments key:val
         checkplotdict['comments'] = None
 
+        # second, calculate some variability features
+        checkplotdict['varinfo']['features'] = all_nonperiodic_features(
+            stimes,
+            smags,
+            serrs
+            magsarefluxes=magsarefluxes
+        )
 
-        # add any externalplots if we have them
+        # third, add a signals key:val. this will be used by checkplotserver's
+        # pre-whitening and masking functions. these will write to
+        # checkplotdict['signals']['whiten'] and
+        # checkplotdict['signals']['mask'] respectively.
+        checkplotdict['signals'] = {}
+
+        # fourth, add a fitinfo key:val. this will be used by checkplotserver's
+        # lcfit functions. these will write to
+        # checkplotdict['fitinfo']['<fitmethod>'] for each fitmethod = 'spline',
+        # 'fourier', 'legendre', 'savgol'
+        checkplotdict['fitinfo'] = {}
+
+        # finally, add any externalplots if we have them
         checkplotdict['externalplots'] = []
 
         if (externalplots and
@@ -2203,6 +2220,12 @@ def checkplot_dict(lspinfolist,
                     LOGWARNING('could not add some external '
                                'plots in: %s to checkplot dict'
                                % repr(externalrow))
+
+        # the checkplotdict now contains everything we need
+        LOGINFO('checkplot dict complete for %s' % checkplotdict['objectid'])
+        contents = sorted(list(checkplotdict.keys()))
+        LOGINFO('checkplot dict contents: %s' % contents)
+        checkplotdict['status'] = 'ok: contents are %s' % contents
 
     # otherwise, we don't have enough LC points, return nothing
     else:
