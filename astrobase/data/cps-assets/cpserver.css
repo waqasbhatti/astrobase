@@ -150,3 +150,11 @@ to use this:
     -webkit-transform: scaleY(1.0);
   }
 }
+
+.tool-header-panel {
+    margin-top: 10px;
+}
+
+.tool-row-panel {
+    margin-top: 5px;
+}
