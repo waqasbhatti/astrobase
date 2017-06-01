@@ -2187,7 +2187,7 @@ def checkplot_dict(lspinfolist,
         checkplotdict['varinfo']['features'] = all_nonperiodic_features(
             stimes,
             smags,
-            serrs
+            serrs,
             magsarefluxes=magsarefluxes
         )
 
