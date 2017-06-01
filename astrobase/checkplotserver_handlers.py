@@ -25,6 +25,7 @@ from datetime import time
 import json
 import time
 
+
 # get a logger
 LOGGER = logging.getLogger(__name__)
 
@@ -42,6 +43,8 @@ from tornado import gen
 ## LOCAL IMPORTS ##
 ###################
 
+from numpy import ndarray
+
 from . import checkplot
 checkplot.set_logger_parent(__name__)
 
@@ -51,13 +54,147 @@ from .checkplot import checkplot_pickle_update, checkplot_pickle_to_png, \
 # import these for updating plots due to user input
 from .checkplot import _pkl_finder_objectinfo, _pkl_periodogram, \
     _pkl_magseries_plot, _pkl_phased_magseries_plot
-from .periodbase import pgen_lsp, aov_periodfind, \
-    stellingwerf_pdm, bls_parallel_pfind
+
+from .varbase import features
+features.set_logger_parent(__name__)
+
+from .varbase import lcfit
+lcfit.set_logger_parent(__name__)
+
+from .varbase import signals
+signals.set_logger_parent(__name__)
+
+from .periodbase import zgls
+zgls.set_logger_parent(__name__)
+from .periodbase import saov
+saov.set_logger_parent(__name__)
+from .periodbase import spdm
+spdm.set_logger_parent(__name__)
+from .periodbase import kbls
+kbls.set_logger_parent(__name__)
+
 
 
 #######################
 ## UTILITY FUNCTIONS ##
 #######################
+
+# this is the function map for arguments
+CPTOOLMAP = {
+    'psearch-gls':{
+        'args':('times','mags','errs'),
+        'argtypes':(ndarray, ndarray, ndarray),
+        'kwargs':('startp','endp','magsarefluxes','autofreq','stepsize'),
+        'kwargtypes':(float, float, bool, bool, float),
+        'kwargdefs':(None, None, False, True, 1.0e-4),
+        'func':zgls.pgen_lsp,
+        'resloc':['gls'],
+    },
+    'psearch-bls':{
+        'args':('times','mags','errs'),
+        'argtypes':(ndarray, ndarray, ndarray),
+        'kwargs':('startp','endp','magsarefluxes','autofreq','stepsize'),
+        'kwargtypes':(float, float, bool, bool, float),
+        'kwargdefs':(None, None, False, True, 1.0e-4),
+        'func':kbls.bls_parallel_pfind,
+        'resloc':['bls'],
+    },
+    'psearch-pdm':{
+        'args':('times','mags','errs'),
+        'argtypes':(ndarray, ndarray, ndarray),
+        'kwargs':('startp','endp','magsarefluxes','autofreq','stepsize'),
+        'kwargtypes':(float, float, bool, bool, float),
+        'kwargdefs':(None, None, False, True, 1.0e-4),
+        'func':spdm.stellingwerf_pdm,
+        'resloc':['pdm'],
+    },
+    'psearch-aov':{
+        'args':('times','mags','errs'),
+        'argtypes':(ndarray, ndarray, ndarray),
+        'kwargs':('startp','endp','magsarefluxes','autofreq','stepsize'),
+        'kwargtypes':(float, float, bool, bool, float),
+        'kwargdefs':(None, None, False, True, 1.0e-4),
+        'func':saov.aov_periodfind,
+        'resloc':['aov'],
+    },
+    'var-varfeatures':{
+        'args':('times','mags','errs'),
+        'argtypes':(ndarray,ndarray,ndarray),
+        'kwargs':(,),
+        'kwargtypes':(,),
+        'kwargdefs':(,),
+        'func':features.all_nonperiodic_features,
+        'resloc':['varinfo','features'],
+    },
+    'var-prewhiten':{
+        'args':('times','mags','errs','whiteperiod'),
+        'argtypes':(ndarray, ndarray, ndarray, float),
+        'kwargs':('magsarefluxes','fourierorder')
+        'kwargtypes':(bool,float),
+        'kwargdefs':(False,3),
+        'func':signals.whiten_magseries,
+        'resloc':['signals']['whiten'],
+    },
+    'var-masksig':{
+        'args':('times','mags','errs','signalperiod','signalepoch'),
+        'argtypes':(ndarray, ndarray, ndarray, float, float)
+        'kwargs':('magsarefluxes','maskphases','maskphaselength'),
+        'kwargtypes':(bool, list, float),
+        'kwargdefs':(False, [0.0,0.5,1.0], 0.1),
+        'func':signals.mask_signal,
+        'resloc':['signals','mask'],
+    },
+    'phasedlc-newplot':{
+        'args':(None,'lspmethod','periodind',
+                'times','mags','errs','varperiod','varepoch',
+                'phasewrap','phasesort','phasebin','minbinelem',
+                'plotxlim'),
+        'argtypes':(None, str, int,
+                    ndarray, ndarray, ndarray, float, float,
+                    bool, bool, float, int, list),
+        'kwargs':('xliminsetmode','magsarefluxes'),
+        'kwargtypes':(bool, bool),
+        'kwargdefs':(False, False),
+        'func':_pkl_phased_magseries_plot,
+        'resloc':[],
+    },
+    'lcfit-fourier':{
+        'args':('times','mags','errs','period'),
+        'argtypes':(ndarray, ndarray, ndarray, float),
+        'kwargs':('fourierorder','magsarefluxes'),
+        'kwargtypes':(int, bool),
+        'kwargdefs':(6,False),
+        'func':lcfit.fourier_fit_magseries,
+        'resloc':['fitinfo']['fourier'],
+    },
+    'lcfit-spline':{
+        'args':('times','mags','errs','period'),
+        'argtypes':(ndarray, ndarray, ndarray, float),
+        'kwargs':('knotfraction','magsarefluxes'),
+        'kwargtypes':(int, bool),
+        'kwargdefs':(0.01, False),
+        'func':lcfit.spline_fit_magseries,
+        'resloc':['fitinfo']['spline'],
+    },
+    'lcfit-legendre':{
+        'args':('times','mags','errs','period'),
+        'argtypes':(ndarray, ndarray, ndarray, float),
+        'kwargs':('legendredeg','magsarefluxes'),
+        'kwargtypes':(int, bool),
+        'kwargdefs':(10, False),
+        'func':lcfit.legendre_fit_magseries,
+        'resloc':['fitinfo']['legendre'],
+    },
+    'lcfit-savgol':{
+        'args':('times','mags','errs','period'),
+        'argtypes':(ndarray, ndarray, ndarray, float),
+        'kwargs':('windowlength','magsarefluxes'),
+        'kwargtypes':(int, bool),
+        'kwargdefs':(None, False),
+        'func':lcfit.savgol_fit_magseries,
+        'resloc':['fitinfo']['savgol'],
+    },
+}
 
 
 
@@ -205,6 +342,14 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
                 cpstatus = cpdict['status']
 
+                # FIXME: add in other stuff required by the frontend
+                # - signals
+                # - fitinfo
+
+                # FIXME: the frontend should load these other things as well
+                # into the various elems on the period-search-tools and
+                # variability-tools tabs
+
                 resultdict = {
                     'status':'ok',
                     'message':'found checkplot %s' % self.checkplotfname,
@@ -225,6 +370,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 # now get the other stuff
                 for key in ('pdm','aov','bls','gls','sls'):
 
+                    # we return only the first three phased LCs per periodogram
                     if key in cpdict:
 
                         periodogram = cpdict[key]['periodogram']
@@ -567,43 +713,60 @@ class LCToolHandler(tornado.web.RequestHandler):
 
         where args are:
 
-        lctool=<lctool>&toolarg=<toolargs>
+        ?lctool=<lctool>&argkey1=argval1&argkey2=argval2&...
 
-        lctool is either a period-finder or a light curve manip function
+        &forcereload=1 <- if this is present, then reload values from original
+        checkplot.
 
-        LCTOOLS
-        -------
+        lctool is one of the functions below
+
+        PERIODSEARCH FUNCTIONS
+        ----------------------
 
         psearch-gls: run Lomb-Scargle with given params
         psearch-bls: run BLS with given params
         psearch-pdm: run phase dispersion minimization with given params
         psearch-aov: run analysis-of-variance with given params
 
-        for lctools:
-
-        toolargs is a base64-encoded string of keyword args to the backing
-        period-finder function with each kwarg separated by an ampersand:
+        arguments:
 
         startp=XX
         endp=XX
         magsarefluxes=True|False
         autofreq=True|False
         stepsize=XX
-        nbestpeaks=XX
-        periodepsilon=XX
-        sigclip=XX
 
 
-        LIGHT CURVE FUNCS
-        -----------------
+        VARIABILITY FUNCTIONS
+        ---------------------
+
+        var-varfeatures: gets the variability from the checkplot or recalculates
+                         if it's not present
+
+        var-prewhiten: pre-whitens the light curve with a sinusoidal signal
+
+        var-masksig: masks a given phase location with given width from the
+                     light curve
+
+
+        LIGHT CURVE FUNCTIONS
+        ---------------------
 
         phasedlc-newperiod: make phased LC with new provided period
         phasedlc-newepoch: make phased LC with new provided epoch
 
-        simplelc-cuttime: make simple LC plot cut to times given
-        simplelc-sigclip: sigclip the LC with given sigclip defn
 
-        Returns the results of the tool run in checkplot dict format.
+        FIXME: figure out how to cache the results of these functions
+        temporarily and save them back to the checkplot after we click on save
+        in the frontend.
+
+        1. look for a checkplot-blah-blah.pkl-cps-processing file in the same
+        place as the usual pickle file. if this exists and is newer than the pkl
+        file, load it instead.
+
+        OR
+
+        have a checkplotdict['cpservertemp'] item.
 
         '''
 
@@ -644,12 +807,206 @@ class LCToolHandler(tornado.web.RequestHandler):
                 ## continue after we're good to go ##
                 #####################################
 
-                # now we have the pickle in hand, get the rest of the args and
+                # check if we have to force-reload
+                forcereload = self.get_argument('forcereload',False)
+                if forcereload and xhtml_escape(forcereload):
+                    forcereload = True if forcereload == '1' else False
+
+                # get the times, mags, errs out of the pickle. if there's an
+                # existing cpservertemp key in the cpdict, then we were
+                # operating on this checkplot previously and have not yet saved
+                # these changes to the actual checkplot. load these times, mags,
+                # errs from the cpdict['cpservertemp']['magseries'] key instead.
+                if ('cpservertemp' in cpdict and
+                    isinstance(cpdict['cpservertemp'], dict) and
+                    'magseries' in cpdict['cpservertemp'] and
+                    isinstance(cpdict['cpservertemp']['magseries'], dict) and
+                    'times' in cpdict['cpservertemp']['magseries'] and
+                    'mags' in cpdict['cpservertemp']['magseries'] and
+                    'errs' in cpdict['cpservertemp']['magseries'] and
+                    (not forcereload)):
+
+                    cptimes, cpmags, cperrs = (
+                        cpdict['cpservertemp']['magseries']['times'],
+                        cpdict['cpservertemp']['magseries']['mags'],
+                        cpdict['cpservertemp']['magseries']['errs'],
+                    )
+
+                # otherwise, reload the original times, mags, errs
+                else:
+
+                    cptimes, cpmags, cperrs = (cpdict['magseries']['times'],
+                                               cpdict['magseries']['mags'],
+                                               cpdict['magseries']['errs'])
+
+                 # now we have the pickle in hand, get the rest of the args and
                 # figure out what to do with them
+                lctool = self.get_argument('lctool', None)
 
+                # preemptive dict to fill out
+                resultdict = {'status':None,
+                              'message':None,
+                              'readonly':self.readonly,
+                              'result':None}
 
+                # check if the lctool arg is provided
+                if lctool:
 
+                    lctool = xhtml_escape(lctool)
+                    lctoolargs = []
+                    lctoolkwargs = {}
 
+                    # check if this lctool is OK and has all the required args
+                    if lctool in CPTOOLMAP:
+
+                        # collect the args
+                        for xarg, xargtype in zip(CPTOOLMAP[lctool]['args'],
+                                                  CPTOOLMAP[lctool]['argtypes']):
+
+                            # handle special args
+                            if xarg is None:
+                                lctoolargs.append(None)
+                            elif xarg == 'times':
+                                lctoolargs.append(cptimes)
+                            elif xarg == 'mags':
+                                lctoolargs.append(cpmags)
+                            elif xarg == 'errs':
+                                lctoolargs.append(cperrs)
+
+                            # handle other args
+                            else:
+
+                                try:
+
+                                    # get the arg
+                                    wbarg = url_unescape(
+                                        xhtml_escape(
+                                            self.get_argument(xarg, None)
+                                        )
+                                    )
+
+                                    # cast the arg to the required type
+
+                                    # special handling for lists
+                                    if isinstance(xargtype, list):
+                                        wbarg = json.loads(wbarg)
+                                        wbarg = [float(x) for x in wbarg]
+                                    # usual casting for other types
+                                    else:
+                                        wbarg = xargtype(wbarg)
+
+                                    lctoolargs.append(wbarg)
+
+                                except Exception as e:
+
+                                    LOGGER.error('lctool %s, arg %s '
+                                                 'will not work' %
+                                                 (lctool, xarg))
+                                    resultdict['status'] = 'error'
+                                    resultdict['message'] = (
+                                        'lctool %s, arg %s '
+                                        'will not work' %
+                                        (lctool, xarg)
+                                    )
+                                    self.write(resultdict)
+                                    self.finish()
+
+                        # all args should have been parsed successfully. parse
+                        # the kwargs now
+                        for xkwarg, xkwargtype, xkwargdef in zip(
+                                CPTOOLMAP[lctool]['kwargs'],
+                                CPTOOLMAP[lctool]['kwargtypes'],
+                                CPTOOLMAP[lctool]['kwargdefs']
+                        ):
+
+                            try:
+
+                                # get the kwarg
+                                wbkwarg = url_unescape(
+                                    xhtml_escape(
+                                        self.get_argument(xkwarg, None)
+                                    )
+                                )
+
+                                # if it's None, sub with the default
+                                if wbkwarg is None:
+
+                                    wbkwarg = xkwargdef
+
+                                # otherwise, cast it to the required type
+                                else:
+
+                                    # special handling for lists of floats
+                                    if isinstance(xkwargtype, list):
+                                        wbkwarg = json.loads(wbkwarg)
+                                        wbkwarg = [float(x) for x in wbkwarg]
+                                    # usual casting for other types
+                                    else:
+                                        wbkwarg = xkwargtype(wbkwarg)
+
+                                    lctoolkwargs.append(wbkwarg)
+
+                            except Exception as e:
+
+                                LOGGER.error('lctool %s, kwarg %s '
+                                             'will not work' %
+                                             (lctool, xkwarg))
+                                resultdict['status'] = 'error'
+                                resultdict['message'] = (
+                                    'lctool %s, kwarg %s '
+                                    'will not work' %
+                                    (lctool, xkwarg)
+                                )
+                                self.write(resultdict)
+                                self.finish()
+
+                        ##############################################
+                        ## NOW WE'RE READY TO ACTUALLY DO SOMETHING ##
+                        ##############################################
+
+                        # make sure the results aren't there already.
+                        # if they are and force-reload is not True,
+                        # just return them instead.
+                        resloc = CPTOOLMAP[lctool]['resloc']
+
+                        # FIXME: finish this:
+                        # - see if resloc is present in cpdict['cpservertemp']
+                        # - if it is and forcereload is not True, return it
+
+                        # otherwise, actually fire the function required
+                        # this is an async call to the background executor
+                        executorfunction = CPTOOLMAP[lctool]['func']
+
+                        # FIXME: next steps:
+                        # - yield to background executor
+                        # - put the results in the cpdict['cpservertemp'] key
+                        #   given by resloc
+                        # - save the pickle
+                        # - return the results in the same format as
+                        #   load_checkplot so that the frontend can send them
+                        #   off to the right places in UI
+
+                    # if the tool is not in the CPTOOLSMAP
+                    else:
+                        LOGGER.error('lctool %s, does not exist' % lctool)
+                        resultdict['status'] = 'error'
+                        resultdict['message'] = (
+                        'lctool %s does not exist' % lctool
+                        )
+                        self.write(resultdict)
+                        self.finish()
+
+                # if no lctool arg is provided
+                else:
+                    LOGGER.error('lctool argument not provided')
+                    resultdict['status'] = 'error'
+                    resultdict['message'] = (
+                    'lctool argument not provided'
+                    )
+                    self.write(resultdict)
+                    self.finish()
+
+            # if the cpfile doesn't exist
             else:
 
                 LOGGER.error('could not find %s' % self.cpfile)
@@ -661,7 +1018,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                 self.write(resultdict)
                 self.finish()
 
-
+        # if no checkplot was provided to load
         else:
 
             resultdict = {'status':'error',
@@ -672,12 +1029,12 @@ class LCToolHandler(tornado.web.RequestHandler):
             self.write(resultdict)
 
 
+
     def post(self, cpfile):
         '''This handles a POST request.
 
         This will save the results of the previous tool run to the checkplot
         file and the JSON filelist.
 
-        The posted arguments are serialized versions of the
 
         '''
