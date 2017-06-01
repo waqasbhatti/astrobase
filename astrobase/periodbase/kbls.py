@@ -553,13 +553,12 @@ def bls_parallel_pfind(
 
         if minfreq < (1.0/(stimes.max() - stimes.min())):
 
+            minfreq = 2.0/(stimes.max() - stimes.min())
             if verbose:
                 LOGWARNING('the requested max P = %.3f is larger than '
                            'the time base of the observations = %.3f, '
                            ' will make minfreq = 2 x 1/timebase'
                            % (endp, stimes.max() - stimes.min()))
-            minfreq = 2.0/(stimes.max() - stimes.min())
-            if verbose:
                 LOGINFO('new minfreq: %s, maxfreq: %s' %
                         (minfreq, maxfreq))
 
