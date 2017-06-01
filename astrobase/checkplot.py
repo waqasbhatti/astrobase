@@ -448,7 +448,7 @@ def _make_phased_magseries_plot(axes,
         axes.plot(binplotphase,
                   binplotmags,
                   marker='o',
-                  ms=7.0, ls='None',
+                  ms=5.0, ls='None',
                   color='blue',
                   rasterized=True)
 
@@ -553,7 +553,7 @@ def _make_phased_magseries_plot(axes,
             inset.plot(binplotphase,
                        binplotmags,
                        marker='o',
-                       ms=7.0, ls='None',
+                       ms=5.0, ls='None',
                        color='blue',
                        rasterized=True)
 
@@ -1674,7 +1674,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
         plt.plot(binplotphase,
                  binplotmags,
                  marker='o',
-                 ms=7.0, ls='None',
+                 ms=5.0, ls='None',
                  color='blue',
                  rasterized=True)
 
