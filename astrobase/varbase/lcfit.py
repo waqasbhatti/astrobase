@@ -444,6 +444,9 @@ def spline_fit_magseries(times, mags, errs, period,
 
     reduced_chisq = fit_chisq/(len(pmags) - len(knots) - 1)
 
+    FIXME: this should smooth the initial phased LC before fitting the spline to
+    it. This will probably lead to a better determination of the minepoch.
+
     '''
 
     # this is required to fit the spline correctly
