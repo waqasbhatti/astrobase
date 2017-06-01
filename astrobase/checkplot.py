@@ -1587,8 +1587,13 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                                bestperiodhighlight='#adff2f',
                                xgridlines=None,
                                xliminsetmode=False,
-                               magsarefluxes=False):
+                               magsarefluxes=False,
+                               directreturn=False):
     '''This returns the phased magseries plot PNG as base64 plus info as a dict.
+
+    checkplotdict is an existing checkplotdict to update. If it's None or
+    directreturn = True, then the generated dict result for this magseries plot
+    will be returned directly.
 
     '''
     # open the figure instance
@@ -1798,9 +1803,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
     # close the stringio buffer
     phasedseriespng.close()
 
-    # this requires the checkplotdict to be present already, we'll just update
-    # it at the appropriate lspmethod and periodind
-    checkplotdict[lspmethod][periodind] = {
+    retdict = {
         'plot':phasedseriesb64,
         'period':varperiod,
         'epoch':varepoch,
@@ -1815,7 +1818,18 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
         'plotxlim':plotxlim
     }
 
-    return checkplotdict
+    # if we're returning stuff directly, i.e. not being used embedded within
+    # the checkplot_dict function
+    if directreturn or checkplotdict is None:
+
+        return retdict
+
+    # this requires the checkplotdict to be present already, we'll just update
+    # it at the appropriate lspmethod and periodind
+    else:
+
+        checkplotdict[lspmethod][periodind] = retdict
+        return checkplotdict
 
 
 
