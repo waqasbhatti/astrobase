@@ -602,7 +602,7 @@ def checkplot_png(lspinfo,
                   plotxlim=[-0.8,0.8],
                   xliminsetmode=False,
                   plotdpi=100,
-                  bestperiodhighlight='#adff2f'):
+                  bestperiodhighlight=None):
     '''This makes a checkplot for an info dict from a period-finding routine.
 
     A checkplot is a 3 x 3 grid of plots like so:
@@ -917,7 +917,7 @@ def twolsp_checkplot_png(lspinfo1,
                          plotxlim=[-0.8,0.8],
                          xliminsetmode=False,
                          plotdpi=100,
-                         bestperiodhighlight='#adff2f'):
+                         bestperiodhighlight=None):
     '''This makes a checkplot using results from two independent period-finders.
 
     Adapted from Luke Bouma's implementation of the same. This makes a special
@@ -1584,7 +1584,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                                phasebin, minbinelems,
                                plotxlim,
                                plotdpi=100,
-                               bestperiodhighlight='#adff2f',
+                               bestperiodhighlight=None,
                                xgridlines=None,
                                xliminsetmode=False,
                                magsarefluxes=False,
@@ -1974,7 +1974,7 @@ def checkplot_dict(lspinfolist,
                    plotxlim=[-0.8,0.8],
                    xliminsetmode=False,
                    plotdpi=100,
-                   bestperiodhighlight='#adff2f',
+                   bestperiodhighlight=None,
                    xgridlines=None):
 
     '''This writes a multiple lspinfo checkplot to a dict.
@@ -2294,7 +2294,7 @@ def checkplot_pickle(lspinfolist,
                      plotdpi=100,
                      returndict=False,
                      pickleprotocol=None,
-                     bestperiodhighlight='#adff2f',
+                     bestperiodhighlight=None,
                      xgridlines=None):
 
     '''This writes a multiple lspinfo checkplot to a (gzipped) pickle file.
