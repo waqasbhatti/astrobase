@@ -6,7 +6,7 @@ Stolen from http://python-packaging.readthedocs.io/en/latest/everything.html and
 modified by me.
 
 '''
-__version__ = '0.1.20'
+__version__ = '0.1.22'
 
 import sys, os.path
 
@@ -53,7 +53,7 @@ INSTALL_REQUIRES = [
 ]
 
 EXTRAS_REQUIRE = {
-    'LCDB':['psycopg2'],
+    'all':['psycopg2','scikit-learn'],
 }
 
 # add extra stuff needed if we're running Python 2.7

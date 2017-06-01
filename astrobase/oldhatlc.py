@@ -16,6 +16,8 @@ See http://hatsouth.org/planets/lightcurves.html#lightcurve-schema for the light
 curve format description.
 
 '''
+# put this in here because oldhatlc can be used as a standalone module
+__version__ = '0.1.22'
 
 import os.path
 import gzip

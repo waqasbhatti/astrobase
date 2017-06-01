@@ -29,6 +29,18 @@
       </div>
     </div>
 
+    <!-- <\!-- FIXME: fill this in later. this is the control for filtering all checkplots -\-> -->
+    <!-- <div class="row"> -->
+    <!--   <div class="col-sm-12 text-sm-center"> -->
+    <!--     <select class="custom-select form-control" -->
+    <!--             id="checkplotfilter" name="checkplotfilter"> -->
+    <!--       <option value="0" selected>Show all checkplots</option> -->
+    <!--       <option value="1">Show reviewed checkplots</option> -->
+    <!--       <option value="2">Show unreviewed checkplots</option> -->
+    <!--     </select> -->
+    <!--   </div> -->
+    <!-- </div> -->
+
     <div class="row sidebar-controls">
       <div class="col-sm-12">
         <h4 class="text-sm-center">Reviewed Objects</h4>
@@ -78,7 +90,22 @@
           </div>
         </div>
 
-        <div class="row py-1">
+        <!-- this is the control for filtering reviewed objects -->
+        <div class="row">
+          <div class="col-sm-12 text-sm-center">
+            <select class="custom-select form-control"
+                    id="reviewedfilter" name="reviewedfilter">
+              <option value="0">Show objects with no variable flag</option>
+              <option value="1">Show objects flagged as variable</option>
+              <option value="2">Show objects flagged as not variable</option>
+              <option value="3">Show objects flagged as maybe variable</option>
+              <option value="4" selected>Show all reviewed objects</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- this is the location of the JSON file -->
+        <div class="row">
           <div class="col-sm-12 text-sm-center">
             <p>Updates are automatically synced to each checkplot pickle and the
             checkplot list <strong><abbr title="{{ project_checkplotfile
@@ -199,7 +226,7 @@
               <div class="dropdown-menu dropdown-menu-right"
                    aria-labelledby="vartag-dropdown">
                 <h6 class="dropdown-header">Add a tag from the list below<br>(or
-                type in a new one yourself)</h6>
+                type in a new one)</h6>
                 <a class="dropdown-item vartag-dn" href="#"
                    data-dnvartag="planet candidate">planet candidate</a>
                 <a class="dropdown-item vartag-dn" href="#"
@@ -240,7 +267,7 @@
               <div class="dropdown-menu dropdown-menu-right"
                    aria-labelledby="objtag-dropdown">
                 <h6 class="dropdown-header">Add a tag from the list below<br>(or
-                type in a new one yourself)</h6>
+                type in a new one)</h6>
                 <a class="dropdown-item objtag-dn" href="#"
                    data-dnobjtag="white dwarf">white dwarf</a>
                 <a class="dropdown-item objtag-dn" href="#"
@@ -303,9 +330,249 @@
       <!-- contains the periodogram and phased LCs for each method-->
       <!-- each method gets their own column with as many rows as necessary -->
       <div class="col-sm-9">
-        <div class="row phased-container">
+
+        <div class="row">
+          <div class="col-sm-12">
+            <ul class="nav nav-tabs" role="tablist">
+
+              <li class="nav-item">
+                <a class="nav-link active"
+                   data-toggle="tab"
+                   href="#overview" role="tab">Checkplot Overview</a>
+              </li>
+
+              <li class="nav-item">
+                <a class="nav-link"
+                   data-toggle="tab"
+                   href="#periodsearch" role="tab">Period Search Tools</a>
+              </li>
+
+              <li class="nav-item">
+                <a class="nav-link"
+                   data-toggle="tab"
+                   href="#variability" role="tab">Variability Tools</a>
+              </li>
+
+              <li class="nav-item">
+                <a class="nav-link"
+                   data-toggle="tab"
+                   href="#lcfit" role="tab">Light Curve Fitting</a>
+              </li>
+
+            </ul>
+          </div>
+        </div>
+
+        <div class="tab-content">
+
+          <!-- this tab panel contains the phased light curve plots -->
+          <div class="tab-pane active" id="overview" role="tabpanel">
+            <div class="row phased-container">
+
+            </div>
+          </div>
+
+
+          <!-- this tab panel contains the period-tools -->
+          <div class="tab-pane" id="periodsearch" role="tabpanel">
+
+            <div class="row tool-header-panel">
+
+              <div class="col-sm-4">
+                <form>
+
+                  <div class="form-group">
+                    <label for="psearchrun">Search method</label>
+                    <select class="custom-select form-control form-control-sm"
+                            id="psearchrun" name="psearchrun">
+                      <option value="0" selected>Generalized Lomb-Scargle</option>
+                      <option value="1">Stellingwerf Phase Dispersion Minimization</option>
+                      <option value="2">Box Least-squared Search</option>
+                      <option value="3">Analysis of Variance</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="startp">Start period [days]</label>
+                    <input type="text" class="form-control form-control-sm"
+                           id="startp" value="0.1">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="endp">End period [days]</label>
+                    <input type="text" class="form-control form-control-sm"
+                           id="endp" value="100.0">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="freqstep">Frequency step [days<sup>-1</sup>]</label>
+                    <input type="text" class="form-control form-control-sm"
+                           id="freqstep">
+                  </div>
+
+                  <div class="form-check">
+                    <label class="form-check-label">
+                      <input type="checkbox" id="autofreq"
+                             class="form-check-input" checked>
+                      Use automatic frequency step
+                    </label>
+                  </div>
+
+                  <div class="form-check">
+                    <label class="form-check-label">
+                      <input type="checkbox" id="periodsearch-magsarefluxes"
+                             class="form-check-input">
+                      Measurements are fluxes
+                    </label>
+                  </div>
+
+                  <button type="submit" id="start-psearch"
+                          class="btn btn-primary">Start</button>
+
+                </form>
+              </div>
+
+              <div class="col-sm-8" id="periodsearch-results">
+
+              </div>
+
+
+            </div>
+
+          </div>
+
+
+          <!-- this tab panel contains variability tools -->
+          <div class="tab-pane" id="variability" role="tabpanel">
+            <div class="row tool-header-panel">
+
+              <div class="col-sm-4">
+
+                <!-- this returns a JSON from the backend to HTML table -->
+                <!-- can download the table as CSV or JSON -->
+                <!-- can save results to the cpdict['varinfo']['features'] -->
+                <!-- these are reloaded from the checkplot if present already -->
+                <div class="row">
+                  <div class="col-sm-12">
+
+                    <h5>Variability features</h5>
+
+                    <form>
+                      <button type="submit" id="get-varfeatures"
+                              class="btn btn-secondary btn-block btn-sm">Compute
+                        variability features</button>
+                    </form>
+
+                  </div>
+                </div>
+
+
+                <!-- this pre-whitens a periodic signal from the light curve -->
+                <!-- the results can then be reused in the period-search tools -->
+                <!-- can save results to cpdict['signals']['whiten'] -->
+                <div class="row tool-header-panel">
+                  <div class="col-sm-12">
+
+                    <h5>Pre-whiten light curve</h5>
+
+                  </div>
+                </div>
+
+
+                <!-- this subtracts a periodic signal from the light curve -->
+                <!-- the results can then be reused in the period-search tools -->
+                <!-- can save results to cpdict['signals']['mask'] -->
+                <div class="row tool-header-panel">
+                  <div class="col-sm-12">
+
+                    <h5>Mask periodic signal</h5>
+
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="col-sm-8" id="variability-results">
+              </div>
+
+            </div>
+          </div>
+
+          <!-- this tab panel contains lcfit tools -->
+          <div class="tab-pane" id="lcfit" role="tabpanel">
+            <div class="row tool-header-panel">
+
+              <div class="col-sm-4">
+                <form>
+
+                  <!-- this does fitting using Fourier, spline, legendre, savgol -->
+                  <!-- can download the resulting plot as PNG -->
+                  <!-- can save results to cpdict['fitinfo'][method] -->
+                  <div class="form-group">
+                    <label for="lcfit-type">Fit method</label>
+                    <select class="custom-select form-control form-control-sm"
+                            id="lcfit-type"
+                            name="lcfit-type">
+                      <option value="0" selected>Fourier fit</option>
+                      <option value="1">Spline fit</option>
+                      <option value="2">Legendre polynomial fit</option>
+                      <option value="3">Savitsky-Golay smoothed fit</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="fitperiod">Fit period [days]</label>
+                    <input type="text" class="form-control form-control-sm"
+                           id="fitperiod">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="fitorder-fourier">Fourier fit order</label>
+                    <input type="text" class="form-control form-control-sm"
+                           id="fitorder-fourier" value="6">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="fitknots-spline">Spline knot fraction</label>
+                    <input type="text" class="form-control form-control-sm"
+                           id="fitknots-spline" value="0.01">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="polyorder-legendre">Lengendre polynomial order</label>
+                    <input type="text" class="form-control form-control-sm"
+                           id="polyorder-legendre" value="10">
+                  </div>
+
+                  <div class="form-group">
+                    <label for="winlength-savgol">Savitsky-Golay window length</label>
+                    <input type="text" class="form-control form-control-sm"
+                           id="winlength-savgol">
+                  </div>
+
+                  <div class="form-check">
+                    <label class="form-check-label">
+                      <input type="checkbox" id="lcfit-magsarefluxes"
+                             class="form-check-input">
+                      Measurements are fluxes
+                    </label>
+                  </div>
+
+                  <button type="submit" id="start-lcfit"
+                          class="btn btn-primary">Start</button>
+
+
+                </form>
+              </div>
+
+              <div class="col-sm-8" id="lcfit-results">
+              </div>
+
+            </div>
+          </div>
 
         </div>
+
       </div>
 
 

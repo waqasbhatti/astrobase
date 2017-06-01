@@ -14,7 +14,7 @@ read_csvlc(lcfile):
 
 
 read_and_filter_sqlitecurve(lcfile, columns=None, sqlfilters=None,
-                            raiseonfail=False):
+                            raiseonfail=False, forcerecompress=False):
     This reads the sqlitecurve and optionally filters it, returns an lcdict.
 
     Returns columns requested in columns. If None, then returns all columns
@@ -27,6 +27,47 @@ read_and_filter_sqlitecurve(lcfile, columns=None, sqlfilters=None,
     This returns an lcdict with an added 'lcfiltersql' key that indicates what
     the parsed SQL filter string was.
 
+    If forcerecompress = True, will recompress the un-gzipped sqlitecurve even
+    if the gzipped form exists on disk already.
+
+
+Two other functions that might be useful:
+
+normalize_lcdict(lcdict, timecol='rjd', magcols='all', mingap=4.0,
+                 normto='sdssr', debugmode=False):
+
+    This normalizes magnitude columns (specified in the magcols keyword
+    argument) in an lcdict obtained from reading a HAT light curve. This
+    normalization is done by finding 'timegroups' in each magnitude column,
+    assuming that these belong to different 'eras' separated by a specified gap
+    in the mingap keyword argument, and thus may be offset vertically from one
+    another. Measurements within a timegroup are normalized to zero using the
+    meidan magnitude of the timegroup. Once all timegroups have been processed
+    this way, the whole time series is then re-normalized to the specified value
+    in the normto keyword argument.
+
+
+normalize_lcdict_byinst(lcdict, magcols='all', normto='sdssr', debugmode=False)
+
+    This normalized magnitude columns (specified in the magcols keyword
+    argument) in an lcdict obtained from reading a HAT light curve. This
+    normalization is done by generating a normalization key using columns in the
+    lcdict that specify various instrument properties. The normalization key is
+    a combination of:
+
+    - HAT station IDs
+    - camera filters
+    - observed HAT field names
+    - HAT project IDs
+    - camera exposure times
+
+    with the assumption that measurements with identical normalization keys
+    belong to a single 'era'. Measurements within an era are normalized to zero
+    using the median magnitude of the era. Once all eras have been processed
+    this way, the whole time series is then re-normalized to the specified value
+    in the normto keyword argument.
+
+
 There's an IPython notebook describing the use of this module and accompanying
 modules from the astrobase package at:
 
@@ -34,13 +75,17 @@ https://github.com/waqasbhatti/astrobase/blob/master/notebooks/lightcurve-work.i
 
 '''
 
+# put this in here because hatlc can be used as a standalone module
+__version__ = '0.1.22'
 
 ####################
 ## SYSTEM IMPORTS ##
 ####################
 
 import os.path
+import os
 import gzip
+import shutil
 import logging
 from datetime import datetime
 from traceback import format_exc
@@ -347,33 +392,112 @@ def squeeze(value):
 ## SQLITECURVE COMPRESSIION FUNCTIONS ##
 ########################################
 
-def compress_sqlitecurve(sqlitecurve, force=True):
-    '''
-    This just compresses the sqlitecurve in gzip format.
+def pycompress_sqlitecurve(sqlitecurve, force=False):
+    '''This just compresses the sqlitecurve. Should be independent of OS.
 
     '''
 
-    if force:
-        cmd = 'gzip -f %s' % sqlitecurve
-    else:
-        cmd = 'gzip %s' % sqlitecurve
+    outfile = '%s.gz' % sqlitecurve
 
     try:
-        procout = subprocess.check_output(cmd, shell=True)
-        return '%s.gz' % sqlitecurve
+
+        if os.path.exists(outfile) and not force:
+            os.remove(sqlitecurve)
+            return outfile
+
+        else:
+
+            with open(sqlitecurve,'rb') as infd:
+                with gzip.open(outfile,'wb') as outfd:
+                    shutil.copyfileobj(infd, outfd)
+
+            if os.path.exists(outfile):
+                os.remove(sqlitecurve)
+                return outfile
+            else:
+                LOGERROR('could not compress %s' % sqlitecurve)
+
+    except Exception as e:
+        LOGEXCEPTION('could not compress %s' % sqlitecurve)
+
+
+
+def pyuncompress_sqlitecurve(sqlitecurve, force=False):
+    '''This just uncompresses the sqlitecurve. Should be independent of OS.
+
+    '''
+
+    outfile = sqlitecurve.replace('.gz','')
+
+    try:
+
+        if os.path.exists(outfile) and not force:
+            return outfile
+
+        else:
+
+            with gzip.open(sqlitecurve,'rb') as infd:
+                with open(outfile,'wb') as outfd:
+                    shutil.copyfileobj(infd, outfd)
+
+            # do not remove the intput file yet
+            if os.path.exists(outfile):
+                return outfile
+            else:
+                LOGERROR('could not uncompress %s' % sqlitecurve)
+
+    except Exception as e:
+        LOGEXCEPTION('could not uncompress %s' % sqlitecurve)
+
+
+
+def gzip_sqlitecurve(sqlitecurve, force=False):
+    '''This just compresses the sqlitecurve in gzip format.
+
+    FIXME: this doesn't work with gzip < 1.6 or non-GNU gzip (probably).
+
+    '''
+
+    # -k to keep the input file just in case something explodes
+    if force:
+        cmd = 'gzip -k -f %s' % sqlitecurve
+    else:
+        cmd = 'gzip -k %s' % sqlitecurve
+
+    try:
+
+        outfile = '%s.gz' % sqlitecurve
+
+        if os.path.exists(outfile) and not force:
+            # get rid of the .sqlite file only
+            os.remove(sqlitecurve)
+            return outfile
+
+        else:
+            procout = subprocess.check_output(cmd, shell=True)
+
+            # check if the output file was successfully created
+            if os.path.exists(outfile):
+                return outfile
+            else:
+                LOGERROR('could not compress %s' % sqlitecurve)
+                return None
+
     except subprocess.CalledProcessError:
-        LOGERROR('could not compress %s' % sqlitecurve)
+        LOGEXCEPTION('could not compress %s' % sqlitecurve)
         return None
 
 
 
-def uncompress_sqlitecurve(sqlitecurve):
-    '''
-    This just uncompresses the sqlitecurve in gzip format.
+def gunzip_sqlitecurve(sqlitecurve):
+    '''This just uncompresses the sqlitecurve in gzip format.
+
+    FIXME: this doesn't work with gzip < 1.6 or non-GNU gzip (probably).
 
     '''
 
-    cmd = 'gunzip %s' % sqlitecurve
+    # -k to keep the input .gz just in case something explodes
+    cmd = 'gunzip -k %s' % sqlitecurve
 
     try:
         procout = subprocess.check_output(cmd, shell=True)
@@ -381,6 +505,31 @@ def uncompress_sqlitecurve(sqlitecurve):
     except subprocess.CalledProcessError:
         LOGERROR('could not uncompress %s' % sqlitecurve)
         return None
+
+
+
+###############################################
+## DECIDE WHICH COMPRESSION FUNCTIONS TO USE ##
+###############################################
+
+try:
+    GZIPTEST = subprocess.check_output(
+        'gzip --version',
+        shell=True
+    ).decode().split('\n')[0].split()[-1]
+    GZIPTEST = float(GZIPTEST)
+    if GZIPTEST and GZIPTEST > 1.5:
+        compress_sqlitecurve = gzip_sqlitecurve
+        uncompress_sqlitecurve = gunzip_sqlitecurve
+    else:
+        LOGWARNING('gzip > 1.5 not available, using Python (gun)zip support')
+        compress_sqlitecurve = pycompress_sqlitecurve
+        uncompress_sqlitecurve = pyuncompress_sqlitecurve
+except:
+    compress_sqlitecurve = pycompress_sqlitecurve
+    uncompress_sqlitecurve = pyuncompress_sqlitecurve
+    GZIPTEST = None
+    LOGWARNING('gzip > 1.5 not available, using Python (gun)zip support')
 
 
 
@@ -452,7 +601,8 @@ def read_and_filter_sqlitecurve(lcfile,
                                 columns=None,
                                 sqlfilters=None,
                                 raiseonfail=False,
-                                returnarrays=True):
+                                returnarrays=True,
+                                forcerecompress=False):
     '''This reads the sqlitecurve and optionally filters it.
 
     Returns columns requested in columns. If None, then returns all columns
@@ -463,6 +613,9 @@ def read_and_filter_sqlitecurve(lcfile,
 
     This returns an lcdict with an added 'lcfiltersql' key that indicates what
     the parsed SQL filter string was.
+
+    If forcerecompress = True, will recompress the un-gzipped sqlitecurve even
+    if the gzipped form exists on disk already.
 
     '''
 
@@ -515,7 +668,6 @@ def read_and_filter_sqlitecurve(lcfile,
             LOGINFO('retrieving columns %s' % columns)
             proceed = True
         elif columns is None:
-            LOGINFO('retrieving all latest columns')
             columns = lccols.split(',')
             proceed = True
         else:
@@ -525,7 +677,8 @@ def read_and_filter_sqlitecurve(lcfile,
         if not proceed:
             # recompress the lightcurve at the end
             if '.gz' in lcfile[-4:] and lcf:
-                dcf = compress_sqlitecurve(lcf)
+                dcf = compress_sqlitecurve(lcf, force=forcerecompress)
+            LOGERROR('requested columns are invalid!')
             return None, "requested columns are invalid"
 
         # create the lcdict with the object, lc, and filter info
@@ -557,7 +710,6 @@ def read_and_filter_sqlitecurve(lcfile,
             else:
                 filtersok = False
         else:
-            LOGINFO('no LC filters specified')
             validatedfilters = None
             filtersok = None
 
@@ -616,7 +768,7 @@ def read_and_filter_sqlitecurve(lcfile,
 
         # recompress the lightcurve at the end
         if '.gz' in lcfile[-4:] and lcf:
-            dcf = compress_sqlitecurve(lcf)
+            dcf = compress_sqlitecurve(lcf, force=forcerecompress)
 
 
         # return ndarrays if that's set
@@ -632,7 +784,7 @@ def read_and_filter_sqlitecurve(lcfile,
 
         # recompress the lightcurve at the end
         if '.gz' in lcfile[-4:] and lcf:
-            dcf = compress_sqlitecurve(lcf)
+            dcf = compress_sqlitecurve(lcf, force=forcerecompress)
 
         if raiseonfail:
             raise
@@ -775,9 +927,214 @@ def describe(lcdict, returndesc=False):
         return description
 
 
-#####################################
-## NORMALIZING SQLITECURVE LCDICTS ##
-#####################################
+
+#############################
+## READING CSV LIGHTCURVES ##
+#############################
+
+def smartcast(castee, caster, subval=None):
+    '''
+    This just tries to apply the caster function to castee.
+
+    Returns None on failure.
+
+    '''
+
+    try:
+        return caster(castee)
+    except Exception as e:
+        if caster is float or caster is int:
+            return nan
+        elif caster is str:
+            return ''
+        else:
+            return subval
+
+
+
+# these are the keys used in the metadata section of the CSV LC
+METAKEYS = {'objectid':str,
+            'hatid':str,
+            'twomassid':str,
+            'ucac4id':str,
+            'network':str,
+            'stations':str,
+            'ndet':int,
+            'ra':float,
+            'decl':float,
+            'pmra':float,
+            'pmra_err':float,
+            'pmdecl':float,
+            'pmdecl_err':float,
+            'jmag':float,
+            'hmag':float,
+            'kmag':float,
+            'bmag':float,
+            'vmag':float,
+            'sdssg':float,
+            'sdssr':float,
+            'sdssi':float}
+
+
+
+def parse_csv_header(header):
+    '''
+    This parses the CSV header from the CSV HAT sqlitecurve.
+
+    Returns a dict that can be used to update an existing lcdict with the
+    relevant metadata info needed to form a full LC.
+
+    '''
+
+    # first, break into lines
+    headerlines = header.split('\n')
+    headerlines = [x.lstrip('# ') for x in headerlines]
+
+    # next, find the indices of the metadata sections
+    objectstart = headerlines.index('OBJECT')
+    metadatastart = headerlines.index('METADATA')
+    camfilterstart = headerlines.index('CAMFILTERS')
+    photaperturestart = headerlines.index('PHOTAPERTURES')
+    columnstart = headerlines.index('COLUMNS')
+    lcstart = headerlines.index('LIGHTCURVE')
+
+    # get the lines for the header sections
+    objectinfo = headerlines[objectstart+1:metadatastart-1]
+    metadatainfo = headerlines[metadatastart+1:camfilterstart-1]
+    camfilterinfo = headerlines[camfilterstart+1:photaperturestart-1]
+    photapertureinfo = headerlines[photaperturestart+1:columnstart-1]
+    columninfo = headerlines[columnstart+1:lcstart-1]
+
+    # parse the header sections and insert the appropriate key-val pairs into
+    # the lcdict
+    metadict = {'objectinfo':{}}
+
+    # first, the objectinfo section
+    objectinfo = [x.split(';') for x in objectinfo]
+
+    for elem in objectinfo:
+        for kvelem in elem:
+            key, val = kvelem.split(' = ',1)
+            metadict['objectinfo'][key.strip()] = (
+                smartcast(val, METAKEYS[key.strip()])
+                )
+
+    # the objectid belongs at the top level
+    metadict['objectid'] = metadict['objectinfo']['objectid'][:]
+    del metadict['objectinfo']['objectid']
+
+    # get the lightcurve metadata
+    metadatainfo = [x.split(';') for x in metadatainfo]
+    for elem in metadatainfo:
+        for kvelem in elem:
+
+            try:
+                key, val = kvelem.split(' = ',1)
+
+                # get the lcbestaperture into a dict again
+                if key.strip() == 'lcbestaperture':
+                    val = json.loads(val)
+
+                # get the lcversion and datarelease as integers
+                if key.strip() in ('datarelease', 'lcversion'):
+                    val = int(val)
+
+                # get the lastupdated as a float
+                if key.strip() == 'lastupdated':
+                    val = float(val)
+
+                # put the key-val into the dict
+                metadict[key.strip()] = val
+
+            except Exception as e:
+
+                LOGWARNING('could not understand header element "%s",'
+                           ' skipped.' % kvelem)
+
+
+    # get the camera filters
+    metadict['filters'] = []
+    for row in camfilterinfo:
+        filterid, filtername, filterdesc = row.split(' - ')
+        metadict['filters'].append((int(filterid),
+                                    filtername,
+                                    filterdesc))
+
+    # get the photometric apertures
+    metadict['lcapertures'] = {}
+    for row in photapertureinfo:
+        apnum, appix = row.split(' - ')
+        appix = float(appix.rstrip(' px'))
+        metadict['lcapertures'][apnum.strip()] = appix
+
+    # get the columns
+    metadict['columns'] = []
+
+    for row in columninfo:
+        colnum, colname, coldesc = row.split(' - ')
+        metadict['columns'].append(colname)
+
+    return metadict
+
+
+
+def read_csvlc(lcfile):
+    '''
+    This reads the HAT data server producd CSV light curve into a lcdict.
+
+    lcfile is the HAT gzipped CSV LC (with a .hatlc.csv.gz extension)
+
+    '''
+
+    # read in the file and split by lines
+    if '.gz' in os.path.basename(lcfile):
+        LOGINFO('reading gzipped HATLC: %s' % lcfile)
+        infd = gzip.open(lcfile,'rb')
+    else:
+        LOGINFO('reading HATLC: %s' % lcfile)
+        infd = open(lcfile,'rb')
+
+    lctext = infd.read().decode() # argh Python 3
+    infd.close()
+
+    # figure out the header and get the LC columns
+    lcstart = lctext.index('# LIGHTCURVE\n')
+    lcheader = lctext[:lcstart+12]
+    lccolumns = lctext[lcstart+13:].split('\n')
+    lccolumns = [x for x in lccolumns if len(x) > 0]
+
+    # initialize the lcdict and parse the CSV header
+    lcdict = parse_csv_header(lcheader)
+
+    # tranpose the LC rows into columns
+    lccolumns = [x.split(',') for x in lccolumns]
+    lccolumns = list(zip(*lccolumns)) # argh more Python 3
+
+    # write the columns to the dict
+    for colind, col in enumerate(lcdict['columns']):
+
+        if (col.split('_')[0] in LC_MAG_COLUMNS or
+            col.split('_')[0] in LC_ERR_COLUMNS or
+            col.split('_')[0] in LC_FLAG_COLUMNS):
+            lcdict[col] = np.array([smartcast(x,
+                                              COLUMNDEFS[col.split('_')[0]][2])
+                                    for x in lccolumns[colind]])
+
+        elif col in COLUMNDEFS:
+            lcdict[col] = np.array([smartcast(x,COLUMNDEFS[col][2])
+                                    for x in lccolumns[colind]])
+
+        else:
+            LOGWARNING('lcdict col %s has no formatter available' % col)
+            continue
+
+    return lcdict
+
+
+
+##########################
+## NORMALIZING  LCDICTS ##
+##########################
 
 def find_lc_timegroups(lctimes, mingap=4.0):
     '''
@@ -994,204 +1351,151 @@ def normalize_lcdict(lcdict,
 
 
 
-#############################
-## READING CSV LIGHTCURVES ##
-#############################
+def normalize_lcdict_byinst(
+        lcdict,
+        magcols='all',
+        normto='sdssr',
+        debugmode=False
+):
+    '''This is a function to normalize light curves across all instrument
+    combinations present.
 
-def smartcast(castee, caster, subval=None):
-    '''
-    This just tries to apply the caster function to castee.
+    Use this to normalize a light curve containing a variety of:
 
-    Returns None on failure.
+    - HAT station IDs
+    - filters
+    - observed field names
+    - HAT project IDs
+    - exposure times
 
-    '''
-
-    try:
-        return caster(castee)
-    except Exception as e:
-        if caster is float or caster is int:
-            return nan
-        elif caster is str:
-            return ''
-        else:
-            return subval
-
-
-
-# these are the keys used in the metadata section of the CSV LC
-METAKEYS = {'objectid':str,
-            'hatid':str,
-            'twomassid':str,
-            'ucac4id':str,
-            'network':str,
-            'stations':str,
-            'ndet':int,
-            'ra':float,
-            'decl':float,
-            'pmra':float,
-            'pmra_err':float,
-            'pmdecl':float,
-            'pmdecl_err':float,
-            'jmag':float,
-            'hmag':float,
-            'kmag':float,
-            'bmag':float,
-            'vmag':float,
-            'sdssg':float,
-            'sdssr':float,
-            'sdssi':float}
-
-
-
-def parse_csv_header(header):
-    '''
-    This parses the CSV header from the CSV HAT sqlitecurve.
-
-    Returns a dict that can be used to update an existing lcdict with the
-    relevant metadata info needed to form a full LC.
+    See the docstring for normalize_lcdict for more about the magcols and normto
+    kwargs. EXCEPTION: normalize_lcdict_instruments does not respect
+    normto='globalmedian'.
 
     '''
 
-    # first, break into lines
-    headerlines = header.split('\n')
-    headerlines = [x.lstrip('# ') for x in headerlines]
+    # check if this lc has been normalized already. return as-is if so
+    if 'lcinstnormcols' in lcdict and len(lcdict['lcinstnormcols']) > 0:
+        LOGWARNING('this lightcurve is already normalized by instrument keys'
+                   ', returning...')
+        return lcdict
 
-    # next, find the indices of the metadata sections
-    objectstart = headerlines.index('OBJECT')
-    metadatastart = headerlines.index('METADATA')
-    camfilterstart = headerlines.index('CAMFILTERS')
-    photaperturestart = headerlines.index('PHOTAPERTURES')
-    columnstart = headerlines.index('COLUMNS')
-    lcstart = headerlines.index('LIGHTCURVE')
+    # generate the normalization key
+    allkeys = ['%s-%s-%s-%s-%s' % (x,y,z,u,v) for (x,y,z,u,v)
+               in zip(lcdict['stf'],
+                      lcdict['flt'],
+                      lcdict['fld'],
+                      lcdict['prj'],
+                      lcdict['exp'])]
+    allkeys = np.array(allkeys)
 
-    # get the lines for the header sections
-    objectinfo = headerlines[objectstart+1:metadatastart-1]
-    metadatainfo = headerlines[metadatastart+1:camfilterstart-1]
-    camfilterinfo = headerlines[camfilterstart+1:photaperturestart-1]
-    photapertureinfo = headerlines[photaperturestart+1:columnstart-1]
-    columninfo = headerlines[columnstart+1:lcstart-1]
+    normkeys = np.unique(allkeys)
 
-    # parse the header sections and insert the appropriate key-val pairs into
-    # the lcdict
-    metadict = {'objectinfo':{}}
+    # figure out the apertures
+    apertures = sorted(lcdict['lcapertures'].keys())
 
-    # first, the objectinfo section
-    objectinfo = [x.split(';') for x in objectinfo]
+    # put together the column names
+    aimcols = [('aim_%s' % x) for x in apertures if ('aim_%s' % x) in lcdict]
+    armcols = [('arm_%s' % x) for x in apertures if ('arm_%s' % x) in lcdict]
+    aepcols = [('aep_%s' % x)for x in apertures if ('aep_%s' % x) in lcdict]
+    atfcols = [('atf_%s' % x) for x in apertures if ('atf_%s' % x) in lcdict]
+    psimcols = [x for x in ['psim','psrm','psep','pstf'] if x in lcdict]
+    irmcols = [('irm_%s' % x) for x in apertures if ('irm_%s' % x) in lcdict]
+    iepcols = [('iep_%s' % x) for x in apertures if ('iep_%s' % x) in lcdict]
+    itfcols = [('itf_%s' % x) for x in apertures if ('itf_%s' % x) in lcdict]
 
-    for elem in objectinfo:
-        for kvelem in elem:
-            key, val = kvelem.split(' = ',1)
-            metadict['objectinfo'][key.strip()] = (
-                smartcast(val, METAKEYS[key.strip()])
-                )
-
-    # the objectid belongs at the top level
-    metadict['objectid'] = metadict['objectinfo']['objectid'][:]
-    del metadict['objectinfo']['objectid']
-
-    # get the lightcurve metadata
-    metadatainfo = [x.split(';') for x in metadatainfo]
-    for elem in metadatainfo:
-        for kvelem in elem:
-
-            try:
-                key, val = kvelem.split(' = ',1)
-
-                # get the lcbestaperture into a dict again
-                if key.strip() == 'lcbestaperture':
-                    val = json.loads(val)
-
-                # get the lcversion and datarelease as integers
-                if key.strip() in ('datarelease', 'lcversion'):
-                    val = int(val)
-
-                # get the lastupdated as a float
-                if key.strip() == 'lastupdated':
-                    val = float(val)
-
-                # put the key-val into the dict
-                metadict[key.strip()] = val
-
-            except Exception as e:
-
-                LOGWARNING('could not understand header element "%s",'
-                           ' skipped.' % kvelem)
-
-
-    # get the camera filters
-    metadict['filters'] = []
-    for row in camfilterinfo:
-        filterid, filtername, filterdesc = row.split(' - ')
-        metadict['filters'].append((int(filterid),
-                                    filtername,
-                                    filterdesc))
-
-    # get the photometric apertures
-    metadict['lcapertures'] = {}
-    for row in photapertureinfo:
-        apnum, appix = row.split(' - ')
-        appix = float(appix.rstrip(' px'))
-        metadict['lcapertures'][apnum.strip()] = appix
-
-    # get the columns
-    metadict['columns'] = []
-
-    for row in columninfo:
-        colnum, colname, coldesc = row.split(' - ')
-        metadict['columns'].append(colname)
-
-    return metadict
-
-
-
-def read_csvlc(lcfile):
-    '''
-    This reads the HAT data server producd CSV light curve into a lcdict.
-
-    lcfile is the HAT gzipped CSV LC (with a .hatlc.csv.gz extension)
-
-    '''
-
-    # read in the file and split by lines
-    if '.gz' in os.path.basename(lcfile):
-        LOGINFO('reading gzipped HATLC: %s' % lcfile)
-        infd = gzip.open(lcfile,'rb')
+    # next, find all the mag columns to normalize
+    if magcols == 'all':
+        cols_to_normalize = (aimcols + irmcols + aepcols + atfcols +
+                             psimcols + irmcols + iepcols + itfcols)
+    elif magcols == 'redmags':
+        cols_to_normalize = (irmcols + (['psrm'] if 'psrm' in lcdict else []) +
+                             irmcols)
+    elif magcols == 'epdmags':
+        cols_to_normalize = (aepcols + (['psep'] if 'psep' in lcdict else []) +
+                             iepcols)
+    elif magcols == 'tfamags':
+        cols_to_normalize = (atfcols + (['pstf'] if 'pstf' in lcdict else []) +
+                             itfcols)
+    elif magcols == 'epdtfa':
+        cols_to_normalize = (aepcols + (['psep'] if 'psep' in lcdict else []) +
+                             iepcols + atfcols +
+                             (['pstf'] if 'pstf' in lcdict else []) +
+                             itfcols)
     else:
-        LOGINFO('reading HATLC: %s' % lcfile)
-        infd = open(lcfile,'rb')
+        cols_to_normalize = magcols.split(',')
+        cols_to_normalize = [x.strip() for x in cols_to_normalize]
 
-    lctext = infd.read().decode() # argh Python 3
-    infd.close()
+    colsnormalized = []
 
-    # figure out the header and get the LC columns
-    lcstart = lctext.index('# LIGHTCURVE\n')
-    lcheader = lctext[:lcstart+12]
-    lccolumns = lctext[lcstart+13:].split('\n')
-    lccolumns = [x for x in lccolumns if len(x) > 0]
+    # go through each column and normalize them
+    for col in cols_to_normalize:
 
-    # initialize the lcdict and parse the CSV header
-    lcdict = parse_csv_header(lcheader)
+        if col in lcdict:
 
-    # tranpose the LC rows into columns
-    lccolumns = [x.split(',') for x in lccolumns]
-    lccolumns = list(zip(*lccolumns)) # argh more Python 3
+            # note: this requires the columns in ndarray format
+            # unlike normalize_lcdict
+            thismags = lcdict[col]
 
-    # write the columns to the dict
-    for colind, col in enumerate(lcdict['columns']):
+            # go through each key in normusing
+            for nkey in normkeys:
 
-        if (col.split('_')[0] in LC_MAG_COLUMNS or
-            col.split('_')[0] in LC_ERR_COLUMNS or
-            col.split('_')[0] in LC_FLAG_COLUMNS):
-            lcdict[col] = np.array([smartcast(x,
-                                              COLUMNDEFS[col.split('_')[0]][2])
-                                    for x in lccolumns[colind]])
+                thisind = allkeys == nkey
 
-        elif col in COLUMNDEFS:
-            lcdict[col] = np.array([smartcast(x,COLUMNDEFS[col][2])
-                                    for x in lccolumns[colind]])
+                # make sure we have at least 3 elements in the matched set of
+                # magnitudes corresponding to this key. also make sure that the
+                # magnitudes corresponding to this key aren't all nan.
+                thismagsize = thismags[thisind].size
+                thismagfinite = np.where(np.isfinite(thismags[thisind]))[0].size
+
+                if thismagsize > 2 and thismagfinite > 2:
+
+                    # do the normalization and update the thismags in the lcdict
+                    medmag = np.nanmedian(thismags[thisind])
+                    lcdict[col][thisind] = lcdict[col][thisind] - medmag
+
+                    if debugmode:
+                        LOGINFO('currkey %s, nelem %s, '
+                                'medmag %s' %
+                                (nkey, len(thismags[thisind]), medmag))
+
+                # we remove mags that correspond to keys with less than 3
+                # (finite) elements because we can't get the median mag
+                # correctly and renormalizing them to zero would just set them
+                # to zero
+                else:
+
+                    lcdict[col][thisind] = np.nan
+
+            # everything should now be normalized to zero
+            # add back the requested normto
+            if normto in ('jmag', 'hmag', 'kmag',
+                          'bmag', 'vmag',
+                          'sdssg', 'sdssr', 'sdssi'):
+
+                if (normto in lcdict['objectinfo'] and
+                    lcdict['objectinfo'][normto] is not None):
+                    lcdict[col] = lcdict[col] + lcdict['objectinfo'][normto]
+
+                else:
+                    LOGWARNING('no %s available in lcdict, '
+                               'normalizing to 0.0' % normto)
+                    normto = 'zero'
+
+            # update the colsnormalized list
+            colsnormalized.append(col)
 
         else:
-            LOGWARNING('lcdict col %s has no formatter available' % col)
+
+            LOGWARNING('column %s is not present, skipping...' % col)
             continue
+
+    # add the lcnormcols key to the lcdict
+    lcinstnormcols = ('cols normalized: %s - '
+                      'normalized to: %s') % (
+                          repr(colsnormalized),
+                          normto
+                      )
+    lcdict['lcinstnormcols'] = lcinstnormcols
 
     return lcdict
