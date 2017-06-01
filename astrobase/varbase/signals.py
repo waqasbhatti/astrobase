@@ -94,7 +94,8 @@ def LOGEXCEPTION(message):
 
 def whiten_magseries(times, mags, errs,
                      whitenperiod,
-                     whitenparams,
+                     fourierorder=3,
+                     whitenparams=[0.6,0.2,0.2,0.1,0.1,0.1],
                      sigclip=3.0,
                      magsarefluxes=False,
                      plotfit=None,
@@ -136,7 +137,24 @@ def whiten_magseries(times, mags, errs,
     # get the times sorted in phase order (useful to get the fit mag minimum
     # with respect to phase -- the light curve minimum)
     ptimes = stimes[phasesortind]
-    fourierorder = len(whitenparams)/2
+
+    # get the fourier order either from the scalar order kwarg...
+    if fourierorder and fourierorder > 0 and not whitenparams:
+
+        initfourieramps = [0.6] + [0.2]*(fourierorder - 1)
+        initfourierphas = [0.1] + [0.1]*(fourierorder - 1)
+        whitenparams = initfourieramps + initfourierphas
+
+    # or from the fully specified coeffs vector
+    elif not fourierorder and whitenparams:
+
+        fourierorder = int(len(whitenparams)/2)
+
+    else:
+        LOGWARNING('specified both Fourier order AND Fourier coeffs, '
+                   'using the specified Fourier coeffs')
+        fourierorder = int(len(whitenparams)/2)
+
 
     # now subtract the harmonic series from the phased LC
     # these are still in phase order
