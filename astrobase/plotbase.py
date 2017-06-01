@@ -470,9 +470,9 @@ def plot_phased_mag_series(times,
                                                         plotmags,
                                                         ploterrs,
                                                         binsize=phasebin)
-            plotphase = binphasedlc['binnedphases']
-            plotmags = binphasedlc['binnedmags']
-            ploterrs = binphasedlc['binnederrs']
+            binplotphase = binphasedlc['binnedphases']
+            binplotmags = binphasedlc['binnedmags']
+            binploterrs = binphasedlc['binnederrs']
 
     else:
 
@@ -493,9 +493,9 @@ def plot_phased_mag_series(times,
             binphasedlc = phase_bin_magseries(plotphase,
                                               plotmags,
                                               binsize=phasebin)
-            plotphase = binphasedlc['binnedphases']
-            plotmags = binphasedlc['binnedmags']
-            ploterrs = None
+            binplotphase = binphasedlc['binnedphases']
+            binplotmags = binphasedlc['binnedmags']
+            binploterrs = None
 
 
     # finally, make the plots
@@ -504,9 +504,24 @@ def plot_phased_mag_series(times,
     fig = plt.figure()
     fig.set_size_inches(7.5,4.8)
 
-    plt.errorbar(plotphase, plotmags, fmt='bo', yerr=ploterrs,
-                 markersize=2.0, markeredgewidth=0.0, ecolor='#B2BEB5',
-                 capsize=0)
+    if phasebin:
+        plt.errorbar(plotphase, plotmags, fmt='o',
+                     color='#B2BEB5',
+                     yerr=ploterrs,
+                     markersize=3.0,
+                     markeredgewidth=0.0,
+                     ecolor='#B2BEB5',
+                     capsize=0)
+        plt.errorbar(binplotphase, binplotmags, fmt='bo', yerr=binploterrs,
+                     markersize=5.0, markeredgewidth=0.0, ecolor='#B2BEB5',
+                     capsize=0)
+
+    else:
+        plt.errorbar(plotphase, plotmags, fmt='ko', yerr=ploterrs,
+                     markersize=3.0, markeredgewidth=0.0, ecolor='#B2BEB5',
+                     capsize=0)
+
+
 
     # make a grid
     plt.grid(color='#a9a9a9',
