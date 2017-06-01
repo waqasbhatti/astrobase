@@ -6,6 +6,9 @@ produced by the HATPI prototype system's image-subtraction photometry pipeline.
 
 '''
 
+# put this in here because hplc can be used as a standalone module
+__version__ = '0.1.22'
+
 ####################
 ## SYSTEM IMPORTS ##
 ####################
@@ -475,8 +478,10 @@ def concatenate_textlcs_for_objectid(lcbasedir,
 
                     if foundfiles:
                         matching.extend(foundfiles)
-                        LOGINFO('found %s in dir: %s' % (repr(foundfiles),
-                                                         os.path.join(root,sdir)))
+                        LOGINFO(
+                            'found %s in dir: %s' % (repr(foundfiles),
+                                                     os.path.join(root,sdir))
+                        )
 
     # now that we have all the files, concatenate them
     # a single file will be returned as normalized

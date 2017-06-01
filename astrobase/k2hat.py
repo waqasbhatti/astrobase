@@ -47,6 +47,9 @@ array([ 16.03474,  16.02773,  16.01826, ...,  15.76997,  15.76577,
 
 '''
 
+# put this in here because k2hat can be used as a standalone module
+__version__ = '0.1.22'
+
 import os.path
 
 import gzip

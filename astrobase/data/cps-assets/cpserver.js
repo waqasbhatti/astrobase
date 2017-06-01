@@ -214,20 +214,35 @@ var cptracker = {
                 var objectidelem = '<div class="tracker-obj" data-objectid="' +
                     objectid +
                     '"><a href="#" class="objload-checkplot" ' +
-                    'data-fname="' + objcp + '">' +
-                    objectid + '</a>: ';
+                    'data-fname="' + objcp + '" ';
 
                 if (varinfo.objectisvar == '1') {
-                    objectidelem = objectidelem + 'variable';
+                    objectidelem = objectidelem +
+                        'data-objectisvar="1"' +
+                        '>' +
+                        objectid + '</a>: ' +
+                        'variable';
                 }
                 else if (varinfo.objectisvar == '2') {
-                    objectidelem = objectidelem + 'not variable';
+                    objectidelem = objectidelem +
+                        'data-objectisvar="2"' +
+                        '>' +
+                        objectid + '</a>: ' +
+                        'not variable';
                 }
                 else if (varinfo.objectisvar == '3') {
-                    objectidelem = objectidelem + 'maybe variable';
+                    objectidelem = objectidelem +
+                        'data-objectisvar="3"' +
+                        '>' +
+                        objectid + '</a>: ' +
+                        'maybe variable';
                 }
                 else if (varinfo.objectisvar == '0') {
-                    objectidelem = objectidelem + 'no varflag set';
+                    objectidelem = objectidelem +
+                        'data-objectisvar="0"' +
+                        '>' +
+                        objectid + '</a>: ' +
+                        'no varflag set';
                 }
 
                 if (varinfo.vartags != null) {
@@ -722,7 +737,9 @@ var cpv = {
                         'data-objectid="' + updateinfo.changes.objectid + '">';
 
                     var objectidelem =  '<a class="objload-checkplot" ' +
-                        'href="#" data-fname="' + postobj.cpfile + '">' +
+                        'href="#" data-fname="' + postobj.cpfile + '" ' +
+                        'data-objectisvar="' +
+                        updateinfo.changes.varinfo.objectisvar + '">' +
                         updateinfo.changes.objectid +
                         '</a>:';
 
@@ -806,7 +823,8 @@ var cpv = {
                         (updateinfo.cpfpng != 'png making failed')) {
 
                         updatemsg = 'saved PNG to:<br>' +
-                            '<textarea rows="3" class="form-control" readonly>' +
+                            '<textarea rows="3" ' +
+                            'class="form-control" readonly>' +
                             updateinfo.cpfpng +
                             '</textarea>';
                         $('#alert-box').html(updatemsg);
@@ -834,6 +852,9 @@ var cpv = {
                 // send the changes to the backend so they're present in the
                 // checkplot-filelist.json file for the next time around
                 cptracker.reviewed_object_to_cplist();
+
+                // update the filter select box
+                $('#reviewedfilter').change();
 
                 // call the next function. we call this here so we can be sure
                 // the save finished before the next action starts
@@ -930,6 +951,84 @@ var cpv = {
             }
 
         });
+
+
+        $('#reviewedfilter').on('change', function (evt) {
+
+            // get this value
+            var filterval = $(this).val();
+
+            if (filterval == 0) {
+                $('.objload-checkplot')
+                    .filter('[data-objectisvar="0"]')
+                    .parent()
+                    .show();
+                $('.objload-checkplot')
+                    .filter('[data-objectisvar!="0"]')
+                    .parent()
+                    .hide();
+            }
+            else if (filterval == 1) {
+                $('.objload-checkplot')
+                    .filter('[data-objectisvar="1"]')
+                    .parent()
+                    .show();
+                $('.objload-checkplot')
+                    .filter('[data-objectisvar!="1"]')
+                    .parent()
+                    .hide();
+            }
+            else if (filterval == 2) {
+                $('.objload-checkplot')
+                    .filter('[data-objectisvar="2"]')
+                    .parent()
+                    .show();
+                $('.objload-checkplot')
+                    .filter('[data-objectisvar!="2"]')
+                    .parent()
+                    .hide();
+            }
+            else if (filterval == 3) {
+                $('.objload-checkplot')
+                    .filter('[data-objectisvar="3"]')
+                    .parent()
+                    .show();
+                $('.objload-checkplot')
+                    .filter('[data-objectisvar!="3"]')
+                    .parent()
+                    .hide();
+            }
+            else {
+                $('.objload-checkplot').parent().show();
+            }
+
+        });
+
+
+        // FIXME: fill this in later
+        $('#checkplotfilter').on('change', function (evt) {
+
+            // get this value
+            var filterval = $(this).val();
+
+            if (filterval == 0) {
+                $('.checkplot-load').show();
+            }
+
+            else if (filterval == 1) {
+
+                var reviewedcps = [];
+
+
+            }
+
+            else if (filterval == 2) {
+
+            }
+
+        });
+
+
 
         // this handles adding object tags from the dropdown
         $('.objtag-dn').click(function (evt) {

@@ -3,16 +3,22 @@
     height: 100%;
 }
 
+.sidebar select {
+    font-size: 90%;
+}
+
 .sidebar-list {
-    height: 325px;
+    height: 300px;
     overflow-y: auto;
     font-size: small;
+    margin-bottom: 10px;
 }
 
 .status-list {
-    height: 375px;
+    height: 300px;
     overflow-y: auto;
     font-size: small;
+    margin-bottom: 10px;
 }
 
 #alert-box textarea {
@@ -30,6 +36,7 @@ img#magseriesplot {
 .sidebar-controls {
     overflow-y: auto;
     font-size: small;
+    margin-top: 20px;
 }
 
 .phased-container {
@@ -142,4 +149,12 @@ to use this:
     transform: scaleY(1.0);
     -webkit-transform: scaleY(1.0);
   }
+}
+
+.tool-header-panel {
+    margin-top: 10px;
+}
+
+.tool-row-panel {
+    margin-top: 5px;
 }
