@@ -120,16 +120,16 @@ CPTOOLMAP = {
     'var-varfeatures':{
         'args':('times','mags','errs'),
         'argtypes':(ndarray,ndarray,ndarray),
-        'kwargs':(,),
-        'kwargtypes':(,),
-        'kwargdefs':(,),
+        'kwargs':(),
+        'kwargtypes':(),
+        'kwargdefs':(),
         'func':features.all_nonperiodic_features,
         'resloc':['varinfo','features'],
     },
     'var-prewhiten':{
         'args':('times','mags','errs','whiteperiod'),
         'argtypes':(ndarray, ndarray, ndarray, float),
-        'kwargs':('magsarefluxes','fourierorder')
+        'kwargs':('magsarefluxes','fourierorder'),
         'kwargtypes':(bool,float),
         'kwargdefs':(False,3),
         'func':signals.whiten_magseries,
@@ -137,7 +137,7 @@ CPTOOLMAP = {
     },
     'var-masksig':{
         'args':('times','mags','errs','signalperiod','signalepoch'),
-        'argtypes':(ndarray, ndarray, ndarray, float, float)
+        'argtypes':(ndarray, ndarray, ndarray, float, float),
         'kwargs':('magsarefluxes','maskphases','maskphaselength'),
         'kwargtypes':(bool, list, float),
         'kwargdefs':(False, [0.0,0.5,1.0], 0.1),
@@ -1115,29 +1115,43 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 )
 
                                 # save these to the cpservertemp key
-                                if not 'cpservertemp' in cpdict:
-                                    cpdict['cpservertemp'] = {}
+                                # save the pickle only if readonly is not true
+                                if not self.readonly:
 
-                                cpdict['cpservertemp'][lspmethod] = {
-                                    'periods':funcresults['periods'],
-                                    'lspvals':funcresults['lspvals'],
-                                    'bestperiod':funcresults['bestperiod'],
-                                    'nbestperiods':funcresults['nbestperiods'],
-                                    'nbestlspvals':funcresults['nbestlspvals'],
-                                    'periodogram':pgramres['periodogram']
-                                    0:phasedlc
-                                }
+                                    if not 'cpservertemp' in cpdict:
+                                        cpdict['cpservertemp'] = {}
 
-                                # save the pickle
-                                savekwargs = {
-                                    'outfile':cpfpath,
-                                    'protocol':pickle.HIGHEST_PROTOCOL
-                                }
-                                savedcpf = yield self.executor.submit(
-                                    _write_checkplot_picklefile,
-                                    cpdict,
-                                    **savekwargs
-                                )
+                                    cpdict['cpservertemp'][lspmethod] = {
+                                        'periods':funcresults['periods'],
+                                        'lspvals':funcresults['lspvals'],
+                                        'bestperiod':funcresults['bestperiod'],
+                                        'nbestperiods':funcresults['nbestperiods'],
+                                        'nbestlspvals':funcresults['nbestlspvals'],
+                                        'periodogram':pgramres['periodogram'],
+                                        0:phasedlc
+                                    }
+
+
+                                    savekwargs = {
+                                        'outfile':cpfpath,
+                                        'protocol':pickle.HIGHEST_PROTOCOL
+                                    }
+                                    savedcpf = yield self.executor.submit(
+                                        _write_checkplot_picklefile,
+                                        cpdict,
+                                        **savekwargs
+                                    )
+
+                                    LOGINFO('saved temp results from '
+                                            '%s to checkplot: %s' %
+                                            (lctool, cpfpath))
+
+                                else:
+
+                                    LOGWARNING(
+                                        'not saving temp results to checkplot '
+                                        ' because readonly = True'
+                                    )
 
                                 #
                                 # assemble the return dict
@@ -1192,6 +1206,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                            dict) and
                                 (not forcereload)):
 
+                                # TODO:
                                 stuff()
 
                             # otherwise, we need to dispatch the function
@@ -1220,6 +1235,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                            dict) and
                                 (not forcereload)):
 
+                                # TODO:
                                 stuff()
 
                             # otherwise, we need to dispatch the function
@@ -1248,6 +1264,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                            dict) and
                                 (not forcereload)):
 
+                                # TODO:
                                 stuff()
 
                             # otherwise, we need to dispatch the function
@@ -1279,6 +1296,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                            dict) and
                                 (not forcereload)):
 
+                                # TODO:
                                 stuff()
 
                             # otherwise, we need to dispatch the function
@@ -1335,6 +1353,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                               'message':"This checkplot doesn't exist.",
                               'readonly':self.readonly,
                               'result':None}
+                self.set_status(404)
                 self.write(resultdict)
                 self.finish()
 
@@ -1345,7 +1364,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                           'message':'No checkplot provided to load.',
                           'readonly':self.readonly,
                           'result':None}
-
+            self.set_status(400)
             self.write(resultdict)
 
 
@@ -1356,5 +1375,8 @@ class LCToolHandler(tornado.web.RequestHandler):
         This will save the results of the previous tool run to the checkplot
         file and the JSON filelist.
 
+        This is only called when the user explicitly clicks on the 'permanently
+        update checkplot with results' button. If the server is in readonly
+        mode, this has no effect.
 
         '''
