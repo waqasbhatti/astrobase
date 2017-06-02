@@ -49,7 +49,7 @@ from . import checkplot
 checkplot.set_logger_parent(__name__)
 
 from .checkplot import checkplot_pickle_update, checkplot_pickle_to_png, \
-    _read_checkplot_picklefile, _base64_to_file
+    _read_checkplot_picklefile, _base64_to_file, _write_checkplot_picklefile
 
 # import these for updating plots due to user input
 from .checkplot import _pkl_finder_objectinfo, _pkl_periodogram, \
@@ -947,7 +947,8 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     else:
                                         wbkwarg = xkwargtype(wbkwarg)
 
-                                    lctoolkwargs.append(wbkwarg)
+                                # update the lctools kwarg dict
+                                lctoolkwargs.append(wbkwarg)
 
                             except Exception as e:
 
@@ -972,22 +973,228 @@ class LCToolHandler(tornado.web.RequestHandler):
                         # just return them instead.
                         resloc = CPTOOLMAP[lctool]['resloc']
 
-                        # FIXME: finish this:
-                        # - see if resloc is present in cpdict['cpservertemp']
-                        # - if it is and forcereload is not True, return it
+                        # if this is a single keyval, then the lctool is a
+                        # periodogram method
+                        if len(resloc) == 1:
 
-                        # otherwise, actually fire the function required
-                        # this is an async call to the background executor
-                        executorfunction = CPTOOLMAP[lctool]['func']
+                            # if we can return the results from a previous run
+                            if ('cpservertemp' in cpdict and
+                                resloc[0] in cpdict['cpservertemp'] and
+                                isinstance(cpdict['cpservertemp'][resloc[0]],
+                                           dict) and
+                                (not forcereload)):
 
-                        # FIXME: next steps:
-                        # - yield to background executor
-                        # - put the results in the cpdict['cpservertemp'] key
-                        #   given by resloc
-                        # - save the pickle
-                        # - return the results in the same format as
-                        #   load_checkplot so that the frontend can send them
-                        #   off to the right places in UI
+                                # for a periodogram method, we need the
+                                # following items
+                                bestperiod = (
+                                    cpdict[
+                                        'cpservertemp'
+                                    ][resloc[0]][
+                                        'bestperiod'
+                                    ]
+                                )
+                                nbestperiods = (
+                                    cpdict[
+                                        'cpservertemp'
+                                    ][resloc[0]][
+                                        'nbestperiods'
+                                    ]
+                                )
+                                nbestlspvals = (
+                                    cpdict[
+                                        'cpservertemp'
+                                    ][resloc[0]][
+                                        'nbestlspvals'
+                                    ]
+                                )
+                                periodogram = (
+                                    cpdict[
+                                        'cpservertemp'
+                                    ][resloc[0]][
+                                        'periodogram'
+                                    ]
+                                )
+                                if isinstance(periodogram,bytes):
+                                    periodogram = periodogram.decode()
+
+                                # get the first phased LC plot and its period
+                                # and epoch
+                                phasedlc0plot = (
+                                    cpdict['cpservertemp'][resloc[0]][0]['plot']
+                                )
+                                if isinstance(phasedlc0plot,bytes):
+                                    phasedlc0plot = phasedlc0plot.decode()
+                                phasedlc0period = float(
+                                    cpdict['cpservertemp'][resloc[0]][0]['period']
+                                )
+                                phasedlc0epoch = float(
+                                    cpdict['cpservertemp'][resloc[0]][0]['epoch']
+                                )
+
+                                resultdict['status'] = 'warning'
+                                resultdict['message'] = (
+                                    'previous '
+                                    'unsaved results from %s' %
+                                    lctool
+                                )
+
+                                resultdict['result'] = {
+                                    resloc[0]:{
+                                        'nbestperiods':nbestperiods,
+                                        'periodogram':periodogram,
+                                        'bestperiod':bestperiod,
+                                        'nbestpeaks':nbestlspvals,
+                                        'phasedlc0':{
+                                            'plot':phasedlc0plot,
+                                            'period':phasedlc0period,
+                                            'epoch':phasedlc0epoch,
+                                        }
+                                    }
+                                }
+
+                                self.write(resultdict)
+                                self.finish()
+
+                            # otherwise, we have to rerun the periodogram method
+                            else:
+
+                                # run the period finder
+                                lctoolfunction = CPTOOLMAP[lctool]['func']
+                                funcresults = yield self.executor.submit(
+                                    lctoolfunction,
+                                    *lctoolargs,
+                                    **lctoolkwargs,
+                                )
+
+                                # get what we need out of funcresults when it
+                                # returns
+                                nbestperiods = funcresults['nbestperiods']
+                                nbestlspvals = funcresults['nbestlspvals']
+                                bestperiod = funcresults['bestperiod']
+
+                                # generate the periodogram png
+                                pgramres = yield self.executor.submit(
+                                    _pkl_periodogram,
+                                    funcresults,
+                                )
+
+                                # generate the phased LC for the best period
+                                # only. we show this in the frontend along with
+                                # the periodogram. the user decides which other
+                                # peaks they want a phased LC for, and we save
+                                # them to the cpdict['cpservertemp'] as
+                                # required. for now, we'll save the best phased
+                                # LC back to cpdict['cpservertemp'].
+                                phasedlcargs = (None,
+                                                resloc[0],
+                                                0,
+                                                cptimes,
+                                                cpmags,
+                                                cperrs,
+                                                bestperiod,
+                                                'min',
+                                                True,
+                                                True,
+                                                0.002,
+                                                7,
+                                                [-0.8,0.8])
+                                phasedlckwargs = {
+                                    'xliminsetmode':False,
+                                    'magsarefluxes':lctoolkwargs['magsarefluxes']
+                                    }
+
+                                # dispatch the plot function
+                                phasedlc = yield self.exeecutor.submit(
+                                    _pkl_phased_magseries_plot,
+                                    *phasedlcargs,
+                                    **phasedlckwargs
+                                )
+
+                                # save these to the cpservertemp key
+                                if not 'cpservertemp' in cpdict:
+                                    cpdict['cpservertemp'] = {}
+
+                                cpdict['cpservertemp'][resloc[0]] = {
+                                    'periods':funcresults['periods'],
+                                    'lspvals':funcresults['lspvals'],
+                                    'bestperiod':funcresults['bestperiod'],
+                                    'nbestperiods':funcresults['nbestperiods'],
+                                    'nbestlspvals':funcresults['nbestlspvals'],
+                                    'periodogram':pgramres['periodogram']
+                                    0:phasedlc
+                                }
+
+                                # save the pickle
+                                savekwargs = {
+                                    'outfile':cpfpath,
+                                    'protocol':pickle.HIGHEST_PROTOCOL
+                                }
+                                savedcpf = yield self.executor.submit(
+                                    _write_checkplot_picklefile,
+                                    cpdict,
+                                    **savekwargs
+                                )
+
+                                #
+                                # assemble the return dict
+                                #
+
+                                # the periodogram
+                                periodogram = pgramres['periodogram']
+                                if isinstance(periodogram, bytes):
+                                    periodogram = periodogram.decode()
+
+                                # the best period phasedlc plot, period, and
+                                # epoch
+                                phasedlc0plot = phasedlc['plot']
+                                if isinstance(phasedlc0plot,bytes):
+                                    phasedlc0plot = phasedlc0plot.decode()
+                                phasedlc0period = float(phasedlc['period'])
+                                phasedlc0epoch = float(phasedlc['epoch'])
+
+                                resultdict['status'] = 'success'
+                                resultdict['message'] = (
+                                    'new results for %s' %
+                                    lctool
+                                )
+                                resultdict['result'] = {
+                                    resloc[0]:{
+                                        'nbestperiods':nbestperiods,
+                                        'periodogram':periodogram,
+                                        'bestperiod':bestperiod,
+                                        'nbestpeaks':nbestlspvals,
+                                        'phasedlc0':{
+                                            'plot':phasedlc0plot,
+                                            'period':phasedlc0period,
+                                            'epoch':phasedlc0epoch,
+                                        }
+                                    }
+                                }
+
+                                # return to frontend
+                                self.write(resultdict)
+                                self.finish()
+
+
+                        # if the lctool is a call to the phased LC plot itself
+                        elif len(resloc) == 0:
+
+
+                        # if the lctool is a call to a var- or lcfit- tool
+                        elif len(resloc) == 2:
+
+
+                        # otherwise, this is an unrecognized lctool
+                        else:
+
+                            LOGGER.error('lctool %s, does not exist' % lctool)
+                            resultdict['status'] = 'error'
+                            resultdict['message'] = (
+                            'lctool %s does not exist' % lctool
+                            )
+                            self.set_status(400)
+                            self.write(resultdict)
+                            self.finish()
 
                     # if the tool is not in the CPTOOLSMAP
                     else:
@@ -996,6 +1203,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                         resultdict['message'] = (
                         'lctool %s does not exist' % lctool
                         )
+                        self.set_status(400)
                         self.write(resultdict)
                         self.finish()
 
@@ -1006,6 +1214,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                     resultdict['message'] = (
                     'lctool argument not provided'
                     )
+                    self.set_status(400)
                     self.write(resultdict)
                     self.finish()
 
