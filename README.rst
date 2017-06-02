@@ -36,6 +36,7 @@ You might need to install ``openssl-devel`` or a similar RPM/DEB package for the
 ``astroquery``. For some extra functionality, you'll need the following modules:
 
 - for ``astrobase.lcdb`` to work, you'll also need psycopg2
+- for some functions in ``astrokep``, you'll need scikit-learn
 
 First, make sure numpy and a Fortran compiler are installed ::
 
@@ -51,6 +52,10 @@ First, make sure numpy and a Fortran compiler are installed ::
 Next, install astrobase ::
 
   (venv)$ pip install astrobase
+
+If you want to install all optional dependencies as well ::
+
+  (venv)$ pip install astrobase[all]
 
 Or if you want the latest version ::
 

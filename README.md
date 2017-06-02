@@ -202,7 +202,13 @@ Next, install astrobase.
 (venv)$ pip install astrobase
 ```
 
-Or if you want the latest version:
+Or if you want to install optional dependencies as well:
+
+```bash
+(venv)$ pip install astrobase[all]
+```
+
+Finally, if you want the latest version:
 
 ```bash
 $ git clone https://github.com/waqasbhatti/astrobase
