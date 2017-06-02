@@ -133,7 +133,7 @@ CPTOOLMAP = {
         'kwargtypes':(bool,float),
         'kwargdefs':(False,3),
         'func':signals.whiten_magseries,
-        'resloc':['signals']['whiten'],
+        'resloc':['signals','whiten'],
     },
     'var-masksig':{
         'args':('times','mags','errs','signalperiod','signalepoch'),
@@ -165,7 +165,7 @@ CPTOOLMAP = {
         'kwargtypes':(int, bool),
         'kwargdefs':(6,False),
         'func':lcfit.fourier_fit_magseries,
-        'resloc':['fitinfo']['fourier'],
+        'resloc':['fitinfo','fourier'],
     },
     'lcfit-spline':{
         'args':('times','mags','errs','period'),
@@ -174,7 +174,7 @@ CPTOOLMAP = {
         'kwargtypes':(int, bool),
         'kwargdefs':(0.01, False),
         'func':lcfit.spline_fit_magseries,
-        'resloc':['fitinfo']['spline'],
+        'resloc':['fitinfo','spline'],
     },
     'lcfit-legendre':{
         'args':('times','mags','errs','period'),
@@ -183,7 +183,7 @@ CPTOOLMAP = {
         'kwargtypes':(int, bool),
         'kwargdefs':(10, False),
         'func':lcfit.legendre_fit_magseries,
-        'resloc':['fitinfo']['legendre'],
+        'resloc':['fitinfo','legendre'],
     },
     'lcfit-savgol':{
         'args':('times','mags','errs','period'),
@@ -192,7 +192,7 @@ CPTOOLMAP = {
         'kwargtypes':(int, bool),
         'kwargdefs':(None, False),
         'func':lcfit.savgol_fit_magseries,
-        'resloc':['fitinfo']['savgol'],
+        'resloc':['fitinfo','savgol'],
     },
 }
 
@@ -752,15 +752,18 @@ class LCToolHandler(tornado.web.RequestHandler):
         LIGHT CURVE FUNCTIONS
         ---------------------
 
-        phasedlc-newperiod: make phased LC with new provided period
-        phasedlc-newepoch: make phased LC with new provided epoch
+        phasedlc-newplot: make phased LC with new provided period/epoch
+        lcfit-fourier: fit a Fourier function to the phased LC
+        lcfit-spline: fit a spline function to the phased LC
+        lcfit-legendre: fit a Legendre polynomial to the phased LC
+        lcfit-savgol: fit a Savitsky-Golay polynomial to the phased LC
 
 
         FIXME: figure out how to cache the results of these functions
         temporarily and save them back to the checkplot after we click on save
         in the frontend.
 
-        1. look for a checkplot-blah-blah.pkl-cps-processing file in the same
+        look for a checkplot-blah-blah.pkl-cps-processing file in the same
         place as the usual pickle file. if this exists and is newer than the pkl
         file, load it instead.
 
