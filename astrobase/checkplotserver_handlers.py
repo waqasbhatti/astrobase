@@ -1179,10 +1179,55 @@ class LCToolHandler(tornado.web.RequestHandler):
                         # if the lctool is a call to the phased LC plot itself
                         elif len(resloc) == 0:
 
+                            lspmethod = lctoolargs[1]
+
+                            # if we can return the results from a previous run
+                            if ('cpservertemp' in cpdict and
+                                lspmethod in cpdict['cpservertemp'] and
+                                isinstance(cpdict['cpservertemp'][lspmethod],
+                                           dict) and
+                                (not forcereload)):
+
+                                stuff()
+
+                            # otherwise, we need to dispatch the function
+                            else:
+
+                                # run the phased LC function
+                                lctoolfunction = CPTOOLMAP[lctool]['func']
+                                funcresults = yield self.executor.submit(
+                                    lctoolfunction,
+                                    *lctoolargs,
+                                    **lctoolkwargs,
+                                )
 
                         # if the lctool is a call to a var- or lcfit- tool
                         elif len(resloc) == 2:
 
+                            key1, key2 = resloc
+
+                            # if we can return the results from a previous run
+                            if ('cpservertemp' in cpdict and
+                                key1 in cpdict['cpservertemp'] and
+                                isinstance(cpdict['cpservertemp'][key1],
+                                           dict) and
+                                key2 in cpdict['cpservertemp'][key1] and
+                                isinstance(cpdict['cpservertemp'][key1][key2],
+                                           dict) and
+                                (not forcereload)):
+
+                                stuff()
+
+                            # otherwise, we need to dispatch the function
+                            else:
+
+                                # run the phased LC function
+                                lctoolfunction = CPTOOLMAP[lctool]['func']
+                                funcresults = yield self.executor.submit(
+                                    lctoolfunction,
+                                    *lctoolargs,
+                                    **lctoolkwargs,
+                                )
 
                         # otherwise, this is an unrecognized lctool
                         else:
