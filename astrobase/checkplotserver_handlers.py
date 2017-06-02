@@ -973,14 +973,18 @@ class LCToolHandler(tornado.web.RequestHandler):
                         # just return them instead.
                         resloc = CPTOOLMAP[lctool]['resloc']
 
-                        # if this is a single keyval, then the lctool is a
-                        # periodogram method
-                        if len(resloc) == 1:
+                        # if lctool is a periodogram method
+                        if lctool in ('psearch-gls',
+                                      'psearch-bls',
+                                      'psearch-pdm',
+                                      'psearch-aov'):
+
+                            lspmethod = resloc[0]
 
                             # if we can return the results from a previous run
                             if ('cpservertemp' in cpdict and
-                                resloc[0] in cpdict['cpservertemp'] and
-                                isinstance(cpdict['cpservertemp'][resloc[0]],
+                                lspmethod in cpdict['cpservertemp'] and
+                                isinstance(cpdict['cpservertemp'][lspmethod],
                                            dict) and
                                 (not forcereload)):
 
@@ -989,28 +993,28 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 bestperiod = (
                                     cpdict[
                                         'cpservertemp'
-                                    ][resloc[0]][
+                                    ][lspmethod][
                                         'bestperiod'
                                     ]
                                 )
                                 nbestperiods = (
                                     cpdict[
                                         'cpservertemp'
-                                    ][resloc[0]][
+                                    ][lspmethod][
                                         'nbestperiods'
                                     ]
                                 )
                                 nbestlspvals = (
                                     cpdict[
                                         'cpservertemp'
-                                    ][resloc[0]][
+                                    ][lspmethod][
                                         'nbestlspvals'
                                     ]
                                 )
                                 periodogram = (
                                     cpdict[
                                         'cpservertemp'
-                                    ][resloc[0]][
+                                    ][lspmethod][
                                         'periodogram'
                                     ]
                                 )
@@ -1020,15 +1024,15 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 # get the first phased LC plot and its period
                                 # and epoch
                                 phasedlc0plot = (
-                                    cpdict['cpservertemp'][resloc[0]][0]['plot']
+                                    cpdict['cpservertemp'][lspmethod][0]['plot']
                                 )
                                 if isinstance(phasedlc0plot,bytes):
                                     phasedlc0plot = phasedlc0plot.decode()
                                 phasedlc0period = float(
-                                    cpdict['cpservertemp'][resloc[0]][0]['period']
+                                    cpdict['cpservertemp'][lspmethod][0]['period']
                                 )
                                 phasedlc0epoch = float(
-                                    cpdict['cpservertemp'][resloc[0]][0]['epoch']
+                                    cpdict['cpservertemp'][lspmethod][0]['epoch']
                                 )
 
                                 resultdict['status'] = 'warning'
@@ -1039,7 +1043,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 )
 
                                 resultdict['result'] = {
-                                    resloc[0]:{
+                                    lspmethod:{
                                         'nbestperiods':nbestperiods,
                                         'periodogram':periodogram,
                                         'bestperiod':bestperiod,
@@ -1086,7 +1090,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 # required. for now, we'll save the best phased
                                 # LC back to cpdict['cpservertemp'].
                                 phasedlcargs = (None,
-                                                resloc[0],
+                                                lspmethod,
                                                 0,
                                                 cptimes,
                                                 cpmags,
@@ -1114,7 +1118,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 if not 'cpservertemp' in cpdict:
                                     cpdict['cpservertemp'] = {}
 
-                                cpdict['cpservertemp'][resloc[0]] = {
+                                cpdict['cpservertemp'][lspmethod] = {
                                     'periods':funcresults['periods'],
                                     'lspvals':funcresults['lspvals'],
                                     'bestperiod':funcresults['bestperiod'],
@@ -1158,7 +1162,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     lctool
                                 )
                                 resultdict['result'] = {
-                                    resloc[0]:{
+                                    lspmethod:{
                                         'nbestperiods':nbestperiods,
                                         'periodogram':periodogram,
                                         'bestperiod':bestperiod,
@@ -1177,7 +1181,7 @@ class LCToolHandler(tornado.web.RequestHandler):
 
 
                         # if the lctool is a call to the phased LC plot itself
-                        elif len(resloc) == 0:
+                        elif lctool == 'phasedlc-newplot':
 
                             lspmethod = lctoolargs[1]
 
@@ -1201,8 +1205,8 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     **lctoolkwargs,
                                 )
 
-                        # if the lctool is a call to a var- or lcfit- tool
-                        elif len(resloc) == 2:
+                        # if the lctool is var-varfeatures
+                        elif lctool == 'var-varfeatures':
 
                             key1, key2 = resloc
 
@@ -1221,7 +1225,66 @@ class LCToolHandler(tornado.web.RequestHandler):
                             # otherwise, we need to dispatch the function
                             else:
 
-                                # run the phased LC function
+                                # run the fit function
+                                lctoolfunction = CPTOOLMAP[lctool]['func']
+                                funcresults = yield self.executor.submit(
+                                    lctoolfunction,
+                                    *lctoolargs,
+                                    **lctoolkwargs,
+                                )
+
+                        # if the lctool is var-prewhiten or var-masksig
+                        elif lctool in ('var-prewhiten','var-masksig'):
+
+                            key1, key2 = resloc
+
+                            # if we can return the results from a previous run
+                            if ('cpservertemp' in cpdict and
+                                key1 in cpdict['cpservertemp'] and
+                                isinstance(cpdict['cpservertemp'][key1],
+                                           dict) and
+                                key2 in cpdict['cpservertemp'][key1] and
+                                isinstance(cpdict['cpservertemp'][key1][key2],
+                                           dict) and
+                                (not forcereload)):
+
+                                stuff()
+
+                            # otherwise, we need to dispatch the function
+                            else:
+
+                                # run the fit function
+                                lctoolfunction = CPTOOLMAP[lctool]['func']
+                                funcresults = yield self.executor.submit(
+                                    lctoolfunction,
+                                    *lctoolargs,
+                                    **lctoolkwargs,
+                                )
+
+                        # if the lctool is a lcfit method
+                        elif lctool in ('lcfit-fourier',
+                                        'lcfit-spline',
+                                        'lcfit-legendre',
+                                        'lcfit-savgol'):
+
+                            key1, key2 = resloc
+
+                            # if we can return the results from a previous run
+                            if ('cpservertemp' in cpdict and
+                                key1 in cpdict['cpservertemp'] and
+                                isinstance(cpdict['cpservertemp'][key1],
+                                           dict) and
+                                key2 in cpdict['cpservertemp'][key1] and
+                                isinstance(cpdict['cpservertemp'][key1][key2],
+                                           dict) and
+                                (not forcereload)):
+
+                                stuff()
+
+                            # otherwise, we need to dispatch the function
+                            else:
+
+                                # run the fit function
                                 lctoolfunction = CPTOOLMAP[lctool]['func']
                                 funcresults = yield self.executor.submit(
                                     lctoolfunction,
