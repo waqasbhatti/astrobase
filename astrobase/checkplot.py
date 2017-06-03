@@ -449,7 +449,7 @@ def _make_phased_magseries_plot(axes,
                   binplotmags,
                   marker='o',
                   ms=5.0, ls='None',
-                  color='blue',
+                  color='green',
                   rasterized=True)
 
     # flip y axis for mags
@@ -554,7 +554,7 @@ def _make_phased_magseries_plot(axes,
                        binplotmags,
                        marker='o',
                        ms=5.0, ls='None',
-                       color='blue',
+                       color='green',
                        rasterized=True)
 
         # show the full phase coverage
@@ -862,7 +862,7 @@ def checkplot_png(lspinfo,
             fig.savefig(plotfpath,dpi=plotdpi)
         else:
             fig.savefig(plotfpath)
-        plt.close()
+        plt.close('all')
 
         LOGINFO('checkplot done -> %s' % plotfpath)
         return plotfpath
@@ -889,7 +889,7 @@ def checkplot_png(lspinfo,
         else:
             fig.savefig(plotfpath)
 
-        plt.close()
+        plt.close('all')
 
         LOGINFO('checkplot done -> %s' % plotfpath)
         return plotfpath
@@ -1588,12 +1588,28 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                                xgridlines=None,
                                xliminsetmode=False,
                                magsarefluxes=False,
-                               directreturn=False):
+                               directreturn=False,
+                               overplotfit=None):
     '''This returns the phased magseries plot PNG as base64 plus info as a dict.
 
     checkplotdict is an existing checkplotdict to update. If it's None or
     directreturn = True, then the generated dict result for this magseries plot
     will be returned directly.
+
+    overplotfit is a result dict returned from one of the XXXX_fit_magseries
+    functions in astrobase.varbase.lcfit. If this is not None, then the fit will
+    be overplotted on the phased light curve plot.
+
+    overplotfit must have the following structure and at least the keys below if
+    not originally from one of these functions:
+
+    {'fitmethod':<str: name of fit method>,
+     'fitchisq':<float: the chi-squared value of the fit>,
+     'fitredchisq':<float: the reduced chi-squared value of the fit>,
+     'fitinfo':{'fitmags':<ndarray: model mags or fluxes from fit function>},
+     'magseries':{'times':<ndarray: times at which the fitmags are evaluated>}}
+
+    for overplotfit: fitmags and times should all be of the same size.
 
     '''
     # open the figure instance
@@ -1680,8 +1696,39 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                  binplotmags,
                  marker='o',
                  ms=5.0, ls='None',
-                 color='blue',
+                 color='green',
                  rasterized=True)
+
+
+    # if we're making a overplotfit, then plot the fit over the other stuff
+    if overplotfit and isinstance(overplotfit, dict):
+
+        fitmethod = overplotfit['fittype']
+        fitchisq = overplotfit['fitchisq']
+        fitredchisq = overplotfit['fitredchisq']
+
+        plotfitmags = overplotfit['fitinfo']['fitmags']
+        plotfittimes = overplotfit['magseries']['times']
+
+        # phase the fit magseries
+        fitphasedlc = phase_magseries(plotfittimes,
+                                      plotfitmags,
+                                      varperiod,
+                                      varepoch,
+                                      wrap=phasewrap,
+                                      sort=phasesort)
+        plotfitphase = fitphasedlc['phase']
+        plotfitmags = fitphasedlc['mags']
+
+        plotfitlabel = ('%s fit ${\chi}^2/{\mathrm{dof}} = %.3f$' %
+                        (fitmethod, fitredchisq))
+
+        # plot the fit phase and mags
+        plt.plot(plotfitphase, plotfitmags,'k-',
+                 linewidth=3, rasterized=True,label=plotfitlabel)
+
+        plt.legend(loc='upper left', frameon=False)
+
 
     # flip y axis for mags
     if not magsarefluxes:
@@ -1768,7 +1815,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                        binplotmags,
                        marker='o',
                        ms=1.0, ls='None',
-                       color='blue',
+                       color='green',
                        rasterized=True)
 
         # show the full phase coverage
@@ -1960,6 +2007,8 @@ def checkplot_dict(lspinfolist,
                    nperiodstouse=3,
                    objectinfo=None,
                    varinfo=None,
+                   lcfitfunc=None,
+                   lcfitparams={},
                    externalplots=None,
                    findercmap='gray_r',
                    finderconvolve=None,
@@ -2012,6 +2061,28 @@ def checkplot_dict(lspinfolist,
     if varinfo is None, an initial empty dictionary of this form will be created
     and written to the output pickle. This can be later updated using
     checkplotviewer.py, etc.
+
+    lcfitfunc is a Python function that is used to fit a model to the light
+    curve. This is then overplotted for each phased light curve in the
+    checkplot. This function should have the following signature:
+
+    def lcfitfunc(times, mags, errs, period, **lcfitfuncparams)
+
+    where lcfitparams encapsulates all external parameters (i.e. number of knots
+    for a spline function, the degree of a Legendre polynomial fit, etc.)  This
+    function should return a Python dict with the following structure (similar
+    to the functions in astrobase.varbase.lcfit) and at least the keys below:
+
+    {'fitmethod':<str: name of fit method>,
+     'fitchisq':<float: the chi-squared value of the fit>,
+     'fitredchisq':<float: the reduced chi-squared value of the fit>,
+     'fitinfo':{'fitmags':<ndarray: model mags or fluxes from fit function>},
+     'magseries':{'times':<ndarray: times at which the fitmags are evaluated>}}
+
+    additional keys can include ['fitinfo']['finalparams'] for the final model
+    fit parameters, ['fitinfo']['fitepoch'] for the minimum light epoch returned
+    by the model fit, among others. the output dict of lcfitfunc will be copied
+    to the output checkplot dict's ['fitinfo'][<fittype>] key:val dict.
 
     externalplots is a list of 4-element tuples containing:
 
@@ -2184,6 +2255,22 @@ def checkplot_dict(lspinfolist,
                     lspinfo['nbestperiods'][:nperiodstouse]
                     ):
 
+                # if there's a function to use for fitting, do the fit
+                if lcfitfunc:
+                    try:
+                        overplotfit = lcfitfunc(stimes,
+                                                smags,
+                                                serrs,
+                                                nbperiod,
+                                                **lcfitparams)
+                    except Exception as e:
+                        LOGEXCEPTION('the light curve fitting function '
+                                     'failed, not plotting a fit over the '
+                                     'phased light curve')
+                        overplotfit = None
+                else:
+                    overplotfit = None
+
                 # this updates things as it runs
                 checkplotdict = _pkl_phased_magseries_plot(
                     checkplotdict,
@@ -2194,6 +2281,7 @@ def checkplot_dict(lspinfolist,
                     phasewrap, phasesort,
                     phasebin, minbinelems,
                     plotxlim,
+                    overplotfit=overplotfit,
                     plotdpi=plotdpi,
                     bestperiodhighlight=bestperiodhighlight,
                     magsarefluxes=magsarefluxes,
@@ -2226,6 +2314,9 @@ def checkplot_dict(lspinfolist,
         # checkplotdict['fitinfo']['<fitmethod>'] for each fitmethod = 'spline',
         # 'fourier', 'legendre', 'savgol'
         checkplotdict['fitinfo'] = {}
+        # put the fit results into the checkplot
+        if overplotfit:
+            checkplotdict['fitinfo'][overplotfit['fittype']] = overplotfit
 
         # finally, add any externalplots if we have them
         checkplotdict['externalplots'] = []
@@ -2275,6 +2366,8 @@ def checkplot_pickle(lspinfolist,
                      magsarefluxes=False,
                      nperiodstouse=3,
                      objectinfo=None,
+                     lcfitfunc=None,
+                     lcfitparams={},
                      varinfo=None,
                      externalplots=None,
                      findercmap='gray_r',
@@ -2313,88 +2406,13 @@ def checkplot_pickle(lspinfolist,
     an external viewer app (e.g. checkplotserver.py), or by using the
     checkplot_pickle_to_png function below.
 
-    All kwargs are the same as for checkplot_png, except for the following:
+    ALL KWARGS ARE THE SAME AS FOR CHECKPLOT_PNG, EXCEPT FOR THE FOLLOWING:
 
     gzip controls whether to gzip the output pickle. it turns out that this is
     the slowest bit in the output process, so if you're after speed, best not to
     use this. this is False by default since it turns out that gzip actually
     doesn't save that much space (29 MB vs. 35 MB for the average checkplot
     pickle).
-
-    nperiodstouse controls how many 'best' periods to make phased LC plots
-    for. By default, this is the 3 best. If this is set to None, all 'best'
-    periods present in each lspinfo dict's 'nbestperiods' key will be plotted
-    (this is 5 according to periodbase functions' defaults).
-
-    varinfo is a dictionary with the following keys:
-
-      {'objectisvar': True if object is time-variable,
-       'vartags': list of variable type tags (strings),
-       'varisperiodic': True if object is a periodic variable,
-       'varperiod': variability period of the object,
-       'varepoch': epoch of variability in JD}
-
-    if varinfo is None, an initial empty dictionary of this form will be created
-    and written to the output pickle. This can be later updated using
-    checkplotviewer.py, etc.
-
-    externalplots is a list of 4-element tuples containing:
-
-    1. path to PNG of periodogram from a external period-finding method
-    2. path to PNG of best period phased light curve from external period-finder
-    3. path to PNG of 2nd-best phased light curve from external period-finder
-    4. path to PNG of 3rd-best phased light curve from external period-finder
-
-    This can be used to incorporate external period-finding method results into
-    the output checkplot pickle or exported PNG to allow for comparison with
-    astrobase results.
-
-    example of externalplots:
-
-    extrarows = [('/path/to/external/bls-periodogram.png',
-                  '/path/to/external/bls-phasedlc-plot-bestpeak.png',
-                  '/path/to/external/bls-phasedlc-plot-peak2.png',
-                  '/path/to/external/bls-phasedlc-plot-peak3.png'),
-                 ('/path/to/external/pdm-periodogram.png',
-                  '/path/to/external/pdm-phasedlc-plot-bestpeak.png',
-                  '/path/to/external/pdm-phasedlc-plot-peak2.png',
-                  '/path/to/external/pdm-phasedlc-plot-peak3.png'),
-                  ...]
-
-    If externalplots is provided, the checkplot_pickle_to_png function below
-    will automatically retrieve these plot PNGs and put them into the exported
-    checkplot PNG.
-
-    if returndict is True, will return the checkplotdict created and the path to
-    the output checkplot pickle file as a tuple. if returndict is False, will
-    only return the path to the output checkplot pickle.
-
-    pickleprotocol sets the protocol version of the output pickle. Anything with
-    version > 2 can't be read by Python 2.7 or earlier, but is much faster to
-    dump, load, and is smaller on disk. This function will detect your Python
-    version and attempt to use version 3 if Python > 3 or version 2 if Python <
-    3. It will emit a warning if it uses protocol version 3 that these pickles
-    won't work on older Pythons.
-
-    sigclip is either a single float or a list of two floats. in the first case,
-    the sigclip is applied symmetrically. in the second case, the first sigclip
-    in the list is applied to +ve magnitude deviations (fainter) and the second
-    sigclip in the list is appleid to -ve magnitude deviations (brighter).
-    An example list would be `[10.,-3.]` (for 10 sigma dimmings, 3 sigma
-    brightenings).
-
-    bestperiodhighlight sets whether user wants a background on the phased light
-    curve from each periodogram type to distinguish them from others. this is an
-    HTML hex color specification. If this is None, no highlight will be added.
-
-    xgridlines (default None) can be a list, e.g., [-0.5,0.,0.5] that sets the
-    x-axis grid lines on plotted phased LCs for easy visual identification of
-    important features.
-
-    xliminsetmode = True sets up the phased mag series plot to show a zoomed-in
-    portion (set by plotxlim) as the main plot and an inset version of the full
-    phased light curve from phase 0.0 to 1.0. This can be useful if searching
-    for small dips near phase 0.0 caused by planetary transits for example.
 
     '''
 
@@ -2443,6 +2461,8 @@ def checkplot_pickle(lspinfolist,
         nperiodstouse=nperiodstouse,
         objectinfo=objectinfo,
         varinfo=varinfo,
+        lcfitfunc=lcfitfunc,
+        lcfitparams=lcfitparams,
         externalplots=externalplots,
         findercmap=findercmap,
         finderconvolve=finderconvolve,
