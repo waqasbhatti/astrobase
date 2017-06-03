@@ -2406,11 +2406,97 @@ def checkplot_pickle(lspinfolist,
     an external viewer app (e.g. checkplotserver.py), or by using the
     checkplot_pickle_to_png function below.
 
-    ALL KWARGS ARE THE SAME AS FOR CHECKPLOT_PNG, EXCEPT FOR THE FOLLOWING:
+    All kwargs are the same as for checkplot_png, except for the following:
 
-    gzip controls whether to gzip the output pickle. it turns out that this is
-    the slowest bit in the output process, so if you're after speed, best not to
-    use this. this is False by default since it turns out that gzip actually
+    nperiodstouse controls how many 'best' periods to make phased LC plots
+    for. By default, this is the 3 best. If this is set to None, all 'best'
+    periods present in each lspinfo dict's 'nbestperiods' key will be plotted
+    (this is 5 according to periodbase functions' defaults).
+
+    varinfo is a dictionary with the following keys:
+
+      {'objectisvar': True if object is time-variable,
+       'vartags': list of variable type tags (strings),
+       'varisperiodic': True if object is a periodic variable,
+       'varperiod': variability period of the object,
+       'varepoch': epoch of variability in JD}
+
+    if varinfo is None, an initial empty dictionary of this form will be created
+    and written to the output pickle. This can be later updated using
+    checkplotviewer.py, etc.
+
+    lcfitfunc is a Python function that is used to fit a model to the light
+    curve. This is then overplotted for each phased light curve in the
+    checkplot. This function should have the following signature:
+
+    def lcfitfunc(times, mags, errs, period, **lcfitparams)
+
+    where lcfitparams encapsulates all external parameters (i.e. number of knots
+    for a spline function, the degree of a Legendre polynomial fit, etc.)  This
+    function should return a Python dict with the following structure (similar
+    to the functions in astrobase.varbase.lcfit) and at least the keys below:
+
+    {'fitmethod':<str: name of fit method>,
+     'fitchisq':<float: the chi-squared value of the fit>,
+     'fitredchisq':<float: the reduced chi-squared value of the fit>,
+     'fitinfo':{'fitmags':<ndarray: model mags or fluxes from fit function>},
+     'magseries':{'times':<ndarray: times at which the fitmags are evaluated>}}
+
+    additional keys can include ['fitinfo']['finalparams'] for the final model
+    fit parameters, ['fitinfo']['fitepoch'] for the minimum light epoch returned
+    by the model fit, among others. the output dict of lcfitfunc will be copied
+    to the output checkplot dict's ['fitinfo'][<fittype>] key:val dict.
+
+    externalplots is a list of 4-element tuples containing:
+
+    1. path to PNG of periodogram from a external period-finding method
+    2. path to PNG of best period phased light curve from external period-finder
+    3. path to PNG of 2nd-best phased light curve from external period-finder
+    4. path to PNG of 3rd-best phased light curve from external period-finder
+
+    This can be used to incorporate external period-finding method results into
+    the output checkplot pickle or exported PNG to allow for comparison with
+    astrobase results.
+
+    example of externalplots:
+
+    extrarows = [('/path/to/external/bls-periodogram.png',
+                  '/path/to/external/bls-phasedlc-plot-bestpeak.png',
+                  '/path/to/external/bls-phasedlc-plot-peak2.png',
+                  '/path/to/external/bls-phasedlc-plot-peak3.png'),
+                 ('/path/to/external/pdm-periodogram.png',
+                  '/path/to/external/pdm-phasedlc-plot-bestpeak.png',
+                  '/path/to/external/pdm-phasedlc-plot-peak2.png',
+                  '/path/to/external/pdm-phasedlc-plot-peak3.png'),
+                  ...]
+
+    If externalplots is provided, the checkplot_pickle_to_png function below
+    will automatically retrieve these plot PNGs and put them into the exported
+    checkplot PNG.
+
+    sigclip is either a single float or a list of two floats. in the first case,
+    the sigclip is applied symmetrically. in the second case, the first sigclip
+    in the list is applied to +ve magnitude deviations (fainter) and the second
+    sigclip in the list is appleid to -ve magnitude deviations (brighter).
+    An example list would be `[10.,-3.]` (for 10 sigma dimmings, 3 sigma
+    brightenings).
+
+    bestperiodhighlight sets whether user wants a background on the phased light
+    curve from each periodogram type to distinguish them from others. this is an
+    HTML hex color specification. If this is None, no highlight will be added.
+
+    xgridlines (default None) can be a list, e.g., [-0.5,0.,0.5] that sets the
+    x-axis grid lines on plotted phased LCs for easy visual identification of
+    important features.
+
+    xliminsetmode = True sets up the phased mag series plot to show a zoomed-in
+    portion (set by plotxlim) as the main plot and an inset version of the full
+    phased light curve from phase 0.0 to 1.0. This can be useful if searching
+    for small dips near phase 0.0 caused by planetary transits for example.
+
+    outgzip controls whether to gzip the output pickle. it turns out that this
+    is the slowest bit in the output process, so if you're after speed, best not
+    to use this. this is False by default since it turns out that gzip actually
     doesn't save that much space (29 MB vs. 35 MB for the average checkplot
     pickle).
 
