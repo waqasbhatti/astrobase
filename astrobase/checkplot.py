@@ -358,7 +358,7 @@ def _make_magseries_plot(axes,
     axes.plot(scaledplottime,
               smags,
               marker='o',
-              ms=1.0, ls='None',
+              ms=1.0, ls='None',mew=0,
               color='green',
               rasterized=True)
 
@@ -439,7 +439,7 @@ def _make_phased_magseries_plot(axes,
     axes.plot(plotphase,
               plotmags,
               marker='o',
-              ms=1.0, ls='None',
+              ms=1.0, ls='None',mew=0,
               color='gray',
               rasterized=True)
 
@@ -448,7 +448,7 @@ def _make_phased_magseries_plot(axes,
         axes.plot(binplotphase,
                   binplotmags,
                   marker='o',
-                  ms=5.0, ls='None',
+                  ms=5.0, ls='None',mew=0,
                   color='green',
                   rasterized=True)
 
@@ -544,7 +544,7 @@ def _make_phased_magseries_plot(axes,
         inset.plot(plotphase,
                    plotmags,
                    marker='o',
-                   ms=1.0, ls='None',
+                   ms=1.0, ls='None',mew=0,
                    color='gray',
                    rasterized=True)
 
@@ -553,7 +553,7 @@ def _make_phased_magseries_plot(axes,
             inset.plot(binplotphase,
                        binplotmags,
                        marker='o',
-                       ms=5.0, ls='None',
+                       ms=5.0, ls='None',mew=0,
                        color='green',
                        rasterized=True)
 
@@ -1514,7 +1514,7 @@ def _pkl_magseries_plot(stimes, smags, serrs,
     plt.plot(scaledplottime,
              smags,
              marker='o',
-             ms=1.0, ls='None',
+             ms=1.0, ls='None',mew=0,
              color='green',
              rasterized=True)
 
@@ -1686,7 +1686,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
     plt.plot(plotphase,
              plotmags,
              marker='o',
-             ms=1.0, ls='None',
+             ms=1.0, ls='None',mew=0,
              color='gray',
              rasterized=True)
 
@@ -1695,7 +1695,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
         plt.plot(binplotphase,
                  binplotmags,
                  marker='o',
-                 ms=5.0, ls='None',
+                 ms=5.0, ls='None',mew=0,
                  color='green',
                  rasterized=True)
 
@@ -1805,7 +1805,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
         inset.plot(plotphase,
                    plotmags,
                    marker='o',
-                   ms=1.0, ls='None',
+                   ms=1.0, ls='None',mew=0,
                    color='gray',
                    rasterized=True)
 
@@ -1814,7 +1814,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
             inset.plot(binplotphase,
                        binplotmags,
                        marker='o',
-                       ms=1.0, ls='None',
+                       ms=1.0, ls='None',mew=0,
                        color='green',
                        rasterized=True)
 
@@ -2066,7 +2066,7 @@ def checkplot_dict(lspinfolist,
     curve. This is then overplotted for each phased light curve in the
     checkplot. This function should have the following signature:
 
-    def lcfitfunc(times, mags, errs, period, **lcfitfuncparams)
+    def lcfitfunc(times, mags, errs, period, **lcfitparams)
 
     where lcfitparams encapsulates all external parameters (i.e. number of knots
     for a spline function, the degree of a Legendre polynomial fit, etc.)  This
