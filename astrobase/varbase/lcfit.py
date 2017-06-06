@@ -444,7 +444,7 @@ def fourier_fit_magseries(times, mags, errs, period,
 
 def spline_fit_magseries(times, mags, errs, period,
                          knotfraction=0.01,
-                         maxknots=100,
+                         maxknots=30,
                          sigclip=30.0,
                          plotfit=False,
                          ignoreinitfail=False,
