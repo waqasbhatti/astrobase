@@ -147,7 +147,7 @@ from .lcmath import phase_magseries, phase_bin_magseries, \
 from .varbase.lcfit import spline_fit_magseries
 from .varbase.features import all_nonperiodic_features
 from .coordutils import total_proper_motion, reduced_proper_motion
-from .plotbase import astroquery_skyview_stamp, internal_skyview_stamp, \
+from .plotbase import skyview_stamp, \
     PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
 
 
@@ -248,9 +248,9 @@ def _make_periodogram(axes,
 
         # get the stamp
         try:
-            dss = internal_skyview_stamp(objectinfo['ra'],
-                                         objectinfo['decl'],
-                                         convolvewith=finderconvolve)
+            dss = skyview_stamp(objectinfo['ra'],
+                                objectinfo['decl'],
+                                convolvewith=finderconvolve)
             stamp = dss
 
             # inset plot it on the current axes
@@ -1299,9 +1299,9 @@ def _pkl_finder_objectinfo(objectinfo,
 
         # get the finder chart
         try:
-            finder = internal_skyview_stamp(objectinfo['ra'],
-                                            objectinfo['decl'],
-                                            convolvewith=finderconvolve)
+            finder = skyview_stamp(objectinfo['ra'],
+                                   objectinfo['decl'],
+                                   convolvewith=finderconvolve)
             finderfig = plt.figure(figsize=(3,3),dpi=plotdpi,frameon=False)
             plt.imshow(finder, cmap=findercmap)
             plt.xticks([])
