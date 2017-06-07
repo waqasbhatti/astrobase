@@ -45,6 +45,11 @@ try:
 except:
     import pyfits
 
+try:
+    from urllib.parse import urljoin
+except:
+    from urlparse import urljoin
+
 #############
 ## LOGGING ##
 #############
@@ -754,11 +759,14 @@ def skyview_stamp(ra, decl,
 
     # figure out if we can get this image from the cache
     cachekey = '%s-%s-%s' % (formposition[0], survey, scaling)
-    cachekey = hashlib.md5(cachekey.encode()).hexdigest()
-    cachefname = os.path.join(cachedir, '%s.fits' % cachekey)
+    cachekey = hashlib.sha256(cachekey.encode()).hexdigest()
+    cachefname = os.path.join(cachedir, '%s.fits.gz' % cachekey)
+    provenance = 'cache'
 
     # if this exists in the cache and we're not refetching, get the frame
     if forcefetch or (not os.path.exists(cachefname)):
+
+        provenance= 'new download'
 
         # fire the request
         try:
@@ -785,7 +793,7 @@ def skyview_stamp(ra, decl,
                     if verbose:
                         LOGINFO('getting %s' % fullfitsurl)
                     fitsreq = requests.get(fullfitsurl, timeout=timeout)
-                    with open(cachefname,'wb') as outfd:
+                    with gzip.open(cachefname,'wb') as outfd:
                         outfd.write(fitsreq.content)
 
             else:
@@ -818,8 +826,8 @@ def skyview_stamp(ra, decl,
         frame = np.flipud(frame)
 
     if verbose:
-        LOGINFO('fetched stamp successfully for %s'
-                % repr(formposition))
+        LOGINFO('fetched stamp successfully for %s, provenance: %s'
+                % (repr(formposition[0]), provenance))
 
     if convolvewith:
         convolved = aconv.convolve(frame, convolvewith)
