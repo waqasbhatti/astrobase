@@ -26,37 +26,20 @@ from numpy import nan as npnan, median as npmedian, \
 import matplotlib
 matplotlib.use('Agg')
 dispok = False
-
 import matplotlib.pyplot as plt
 
 import logging
 from datetime import datetime
 from traceback import format_exc
 
-try:
-    from urllib import urlretrieve
-except:
-    from urllib.request import urlretrieve
-
-# for downloading DSS stamps from NASA GSFC SkyView
-from astroquery.skyview import SkyView
-
 # for convolving DSS stamps to simulate seeing effects
 import astropy.convolution as aconv
 
-# for internal skyview getter
+# for internal skyview stamp download fn
 import re
 import hashlib
-
-try:
-    from urllib.parse import urlparse, parse_qs, urlencode, urljoin
-except Exception as e:
-    from urlparse import urlparse, parse_qs, urljoin
-    from urllib import urlencode
-
 import requests
 import requests.exceptions
-
 try:
     from astropy.io import fits as pyfits
 except:
@@ -613,54 +596,61 @@ def plot_phased_mag_series(times,
 
 
 
-###################
-## OBJECT STAMPS ##
-###################
+# this is now deprecated, kept around for a while until removed
+try:
 
-def astroquery_skyview_stamp(
-        ra, decl, survey='DSS2 Red',
-        flip=True,
-        convolvewith=None
-):
-    '''This uses astroquery's SkyView connector to get stamps.
+    from astroquery.skyview import SkyView
 
-    flip = True will flip the image top to bottom.
+    def astroquery_skyview_stamp(
+            ra, decl, survey='DSS2 Red',
+            flip=True,
+            convolvewith=None
+    ):
+        '''This uses astroquery's SkyView connector to get stamps.
 
-    if convolvewith is an astropy.convolution kernel:
+        flip = True will flip the image top to bottom.
 
-    http://docs.astropy.org/en/stable/convolution/kernels.html
+        if convolvewith is an astropy.convolution kernel:
 
-    this will return the stamp convolved with that kernel. This can be useful to
-    see effects of wide-field telescopes (like the HATNet and HATSouth lenses)
-    degrading the nominal 1 arcsec/px of DSS, causing blending of targets and
-    any variability.
+        http://docs.astropy.org/en/stable/convolution/kernels.html
+
+        this will return the stamp convolved with that kernel. This can be
+        useful to see effects of wide-field telescopes (like the HATNet and
+        HATSouth lenses) degrading the nominal 1 arcsec/px of DSS, causing
+        blending of targets and any variability.
+
+        '''
+
+        position = '{ra:.3f}d{decl:+.3f}d'.format(ra=ra,decl=decl)
+
+        imglist = SkyView.get_images(position=position,
+                                     survey=[survey],
+                                     coordinates='J2000')
+
+        # this frame is usually upside down (at least for DSS), flip it if asked
+        # for
+        frame = imglist[0][0].data
+
+        if flip:
+            frame = np.flipud(frame)
+
+            for x in imglist:
+                x.close()
+
+            if convolvewith:
+                convolved = aconv.convolve(frame, convolvewith)
+                return frame
+
+            else:
+                return frame
+
+except:
+    pass
 
 
-    '''
-
-    position = '{ra:.3f}d{decl:+.3f}d'.format(ra=ra,decl=decl)
-
-    imglist = SkyView.get_images(position=position,
-                                 survey=[survey],
-                                 coordinates='J2000')
-
-    # this frame is usually upside down (at least for DSS), flip it if asked for
-    frame = imglist[0][0].data
-
-    if flip:
-        frame = np.flipud(frame)
-
-    for x in imglist:
-        x.close()
-
-    if convolvewith:
-        convolved = aconv.convolve(frame, convolvewith)
-        return frame
-
-    else:
-        return frame
-
-
+##############################
+## OBJECT STAMPS FROM HATDS ##
+##############################
 
 def get_dss_stamp(ra, decl, outfile, stampsize=5.0):
     '''This gets a DSS stamp from the HAT data server.
@@ -677,9 +667,12 @@ def get_dss_stamp(ra, decl, outfile, stampsize=5.0):
                  decl=decl,
                  stampsize=stampsize)
 
-    downloaded, msg = urlretrieve(stampsurl, outfile)
+    try:
+        downloaded = requests.get(stampsurl)
+        with open(outfile,'wb') as outfd:
+            outfile.write(downloaded.content)
 
-    return downloaded
+    return outfile
 
 
 #####################################
@@ -708,21 +701,32 @@ SKYVIEW_PARAMS = {
 FITS_REGEX = re.compile(r'(tempspace\/fits\/skv\d{8,20}\.fits)')
 FITS_BASEURL = 'https://skyview.gsfc.nasa.gov'
 
-def internal_skyview_stamp(ra, decl,
-                           survey='DSS2 Red',
-                           scaling='Linear',
-                           flip=True,
-                           convolvewith=None,
-                           forcefetch=False,
-                           cachedir='~/.astrobase/stamp-cache',
-                           timeout=10.0,
-                           verbose=False):
+def skyview_stamp(ra, decl,
+                  survey='DSS2 Red',
+                  scaling='Linear',
+                  flip=True,
+                  convolvewith=None,
+                  forcefetch=False,
+                  cachedir='~/.astrobase/stamp-cache',
+                  timeout=10.0,
+                  verbose=False):
     '''This is the internal version of the astroquery_skyview_stamp function.
 
     Why this exists:
 
     - SkyView queries don't accept timeouts (should put in a PR for this)
     - we can drop the dependency on astroquery (but add another on requests)
+
+    flip = True will flip the image top to bottom.
+
+    if convolvewith is an astropy.convolution kernel:
+
+    http://docs.astropy.org/en/stable/convolution/kernels.html
+
+    this will return the stamp convolved with that kernel. This can be useful to
+    see effects of wide-field telescopes (like the HATNet and HATSouth lenses)
+    degrading the nominal 1 arcsec/px of DSS, causing blending of targets and
+    any variability.
 
     cachedir points to the astrobase stamp-cache directory.
 
