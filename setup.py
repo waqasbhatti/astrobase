@@ -48,7 +48,6 @@ INSTALL_REQUIRES = [
     'Pillow',
     'jplephem',
     'requests',
-    'astroquery',
     'tornado',
     'pyeebls'
 ]

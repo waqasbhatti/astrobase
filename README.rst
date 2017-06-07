@@ -27,13 +27,11 @@ This package requires the following other packages:
 - matplotlib
 - Pillow
 - jplephem
-- astroquery
+- requests
 - tornado
 - pyeebls
 
-You might need to install ``openssl-devel`` or a similar RPM/DEB package for the
-``python-cryptography`` module that gets pulled in as a dependency for
-``astroquery``. For some extra functionality, you'll need the following modules:
+For some extra functionality, you'll need the following modules:
 
 - for ``astrobase.lcdb`` to work, you'll also need psycopg2
 - for some functions in ``astrokep``, you'll need scikit-learn
