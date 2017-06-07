@@ -165,7 +165,8 @@ def _make_periodogram(axes,
                       lspinfo,
                       objectinfo,
                       findercmap,
-                      finderconvolve):
+                      finderconvolve,
+                      verbose=True):
     '''makes the periodogram, objectinfo, and finder tile.
 
     '''
@@ -217,9 +218,10 @@ def _make_periodogram(axes,
         else:
             objectid = objectinfo['objectid']
 
-        LOGINFO('adding in object information and '
-                'finder chart for %s at RA: %.3f, DEC: %.3f' %
-                (objectid, objectinfo['ra'], objectinfo['decl']))
+        if verbose:
+            LOGINFO('adding in object information and '
+                    'finder chart for %s at RA: %.3f, DEC: %.3f' %
+                    (objectid, objectinfo['ra'], objectinfo['decl']))
 
         # FIXME: get mag info from astroquery or HATDS if needed
 
@@ -602,7 +604,8 @@ def checkplot_png(lspinfo,
                   plotxlim=[-0.8,0.8],
                   xliminsetmode=False,
                   plotdpi=100,
-                  bestperiodhighlight=None):
+                  bestperiodhighlight=None,
+                  verbose=True):
     '''This makes a checkplot for an info dict from a period-finding routine.
 
     A checkplot is a 3 x 3 grid of plots like so:
@@ -723,7 +726,8 @@ def checkplot_png(lspinfo,
 
     # get the lspinfo from a pickle file transparently
     if isinstance(lspinfo,str) and os.path.exists(lspinfo):
-        LOGINFO('loading LSP info from pickle %s' % lspinfo)
+        if verbose:
+            LOGINFO('loading LSP info from pickle %s' % lspinfo)
 
         if '.gz' in lspinfo:
             with gzip.open(lspinfo,'rb') as infd:
@@ -767,7 +771,8 @@ def checkplot_png(lspinfo,
     #######################
 
     _make_periodogram(axes[0],lspinfo,objectinfo,
-                      findercmap, finderconvolve)
+                      findercmap, finderconvolve,
+                      verbose=verbose)
 
     ######################################
     ## NOW MAKE THE PHASED LIGHT CURVES ##
@@ -826,7 +831,8 @@ def checkplot_png(lspinfo,
                                                  serrs,
                                                  varperiod,
                                                  sigclip=None,
-                                                 magsarefluxes=magsarefluxes)
+                                                 magsarefluxes=magsarefluxes,
+                                                 verbose=verbose)
                     varepoch = spfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
@@ -834,8 +840,9 @@ def checkplot_png(lspinfo,
                     LOGEXCEPTION('spline fit failed, using min(times) as epoch')
                     varepoch = npmin(stimes)
 
-            LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
-                    (varperiod, varepoch))
+            if verbose:
+                LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
+                        (varperiod, varepoch))
 
             # make sure the best period phased LC plot stands out
             if periodind == 0 and bestperiodhighlight:
@@ -864,7 +871,8 @@ def checkplot_png(lspinfo,
             fig.savefig(plotfpath)
         plt.close('all')
 
-        LOGINFO('checkplot done -> %s' % plotfpath)
+        if verbose:
+            LOGINFO('checkplot done -> %s' % plotfpath)
         return plotfpath
 
     # otherwise, there's no valid data for this plot
@@ -891,7 +899,8 @@ def checkplot_png(lspinfo,
 
         plt.close('all')
 
-        LOGINFO('checkplot done -> %s' % plotfpath)
+        if verbose:
+            LOGINFO('checkplot done -> %s' % plotfpath)
         return plotfpath
 
 
@@ -917,7 +926,8 @@ def twolsp_checkplot_png(lspinfo1,
                          plotxlim=[-0.8,0.8],
                          xliminsetmode=False,
                          plotdpi=100,
-                         bestperiodhighlight=None):
+                         bestperiodhighlight=None,
+                         verbose=True):
     '''This makes a checkplot using results from two independent period-finders.
 
     Adapted from Luke Bouma's implementation of the same. This makes a special
@@ -961,7 +971,8 @@ def twolsp_checkplot_png(lspinfo1,
 
     # get the first LSP from a pickle file transparently
     if isinstance(lspinfo1,str) and os.path.exists(lspinfo1):
-        LOGINFO('loading LSP info from pickle %s' % lspinfo1)
+        if verbose:
+            LOGINFO('loading LSP info from pickle %s' % lspinfo1)
 
         if '.gz' in lspinfo1:
             with gzip.open(lspinfo1,'rb') as infd:
@@ -1026,7 +1037,8 @@ def twolsp_checkplot_png(lspinfo1,
     ######################################################################
 
     _make_periodogram(axes[0], lspinfo1, objectinfo,
-                      findercmap, finderconvolve)
+                      findercmap, finderconvolve,
+                      verbose=verbose)
 
     #####################################
     ## PLOT 2 is the LSP from lspinfo2 ##
@@ -1090,7 +1102,8 @@ def twolsp_checkplot_png(lspinfo1,
                                                  serrs,
                                                  varperiod,
                                                  sigclip=None,
-                                                 magsarefluxes=magsarefluxes)
+                                                 magsarefluxes=magsarefluxes,
+                                                 verbose=verbose)
                     varepoch = spfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
@@ -1098,8 +1111,9 @@ def twolsp_checkplot_png(lspinfo1,
                     LOGEXCEPTION('spline fit failed, using min(times) as epoch')
                     varepoch = npmin(stimes)
 
-            LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
-                    (varperiod, varepoch))
+            if verbose:
+                LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
+                        (varperiod, varepoch))
 
             # make sure the best period phased LC plot stands out
             if periodind == 0 and bestperiodhighlight:
@@ -1141,7 +1155,8 @@ def twolsp_checkplot_png(lspinfo1,
                                                  serrs,
                                                  varperiod,
                                                  magsarefluxes=magsarefluxes,
-                                                 sigclip=None)
+                                                 sigclip=None,
+                                                 verbose=verbose)
                     varepoch = spfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
@@ -1149,8 +1164,9 @@ def twolsp_checkplot_png(lspinfo1,
                     LOGEXCEPTION('spline fit failed, using min(times) as epoch')
                     varepoch = npmin(stimes)
 
-            LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
-                    (varperiod, varepoch))
+            if verbose:
+                LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
+                        (varperiod, varepoch))
 
             # make sure the best period phased LC plot stands out
             if periodind == 0 and bestperiodhighlight:
@@ -1180,7 +1196,8 @@ def twolsp_checkplot_png(lspinfo1,
             fig.savefig(plotfpath)
         plt.close()
 
-        LOGINFO('checkplot done -> %s' % plotfpath)
+        if verbose:
+            LOGINFO('checkplot done -> %s' % plotfpath)
         return plotfpath
 
     # otherwise, there's no valid data for this plot
@@ -1207,7 +1224,8 @@ def twolsp_checkplot_png(lspinfo1,
 
         plt.close()
 
-        LOGINFO('checkplot done -> %s' % plotfpath)
+        if verbose:
+            LOGINFO('checkplot done -> %s' % plotfpath)
         return plotfpath
 
 
@@ -1258,7 +1276,8 @@ def _pkl_finder_objectinfo(objectinfo,
                            sigclip,
                            normto,
                            normmingap,
-                           plotdpi=100):
+                           plotdpi=100,
+                           verbose=True):
     '''This returns the finder chart and object information as a dict.
 
     '''
@@ -1273,9 +1292,10 @@ def _pkl_finder_objectinfo(objectinfo,
         else:
             objectid = objectinfo['objectid']
 
-        LOGINFO('adding in object information and '
-                'finder chart for %s at RA: %.3f, DEC: %.3f' %
-                (objectid, objectinfo['ra'], objectinfo['decl']))
+        if verbose:
+            LOGINFO('adding in object information and '
+                    'finder chart for %s at RA: %.3f, DEC: %.3f' %
+                    (objectid, objectinfo['ra'], objectinfo['decl']))
 
         # get the finder chart
         try:
@@ -1589,7 +1609,8 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                                xliminsetmode=False,
                                magsarefluxes=False,
                                directreturn=False,
-                               overplotfit=None):
+                               overplotfit=None,
+                               verbose=True):
     '''This returns the phased magseries plot PNG as base64 plus info as a dict.
 
     checkplotdict is an existing checkplotdict to update. If it's None or
@@ -1630,7 +1651,8 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                                          serrs,
                                          varperiod,
                                          magsarefluxes=magsarefluxes,
-                                         sigclip=None)
+                                         sigclip=None,
+                                         verbose=verbose)
             varepoch = spfit['fitinfo']['fitepoch']
             if len(varepoch) != 1:
                 varepoch = varepoch[0]
@@ -1638,8 +1660,9 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
             LOGEXCEPTION('spline fit failed, using min(times) as epoch')
             varepoch = npmin(stimes)
 
-    LOGINFO('plotting %s phased LC with period %s: %.6f, epoch: %.5f' %
-            (lspmethod, periodind, varperiod, varepoch))
+    if verbose:
+        LOGINFO('plotting %s phased LC with period %s: %.6f, epoch: %.5f' %
+                (lspmethod, periodind, varperiod, varepoch))
 
     # make the plot title based on the lspmethod
     if periodind == 0:
@@ -1830,7 +1853,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
             inset.set_ylim((inset_ylim[1], inset_ylim[0]))
 
         # set the plot title
-        inset.text(0.5,0.1,'full phased light curve',
+        inset.text(0.5,0.9,'full phased light curve',
                    ha='center',va='center',transform=inset.transAxes)
         # don't show axes labels or ticks
         inset.set_xticks([])
@@ -2024,7 +2047,8 @@ def checkplot_dict(lspinfolist,
                    xliminsetmode=False,
                    plotdpi=100,
                    bestperiodhighlight=None,
-                   xgridlines=None):
+                   xgridlines=None,
+                   verbose=True):
 
     '''This writes a multiple lspinfo checkplot to a dict.
 
@@ -2142,7 +2166,8 @@ def checkplot_dict(lspinfolist,
                                            sigclip,
                                            normto,
                                            normmingap,
-                                           plotdpi=plotdpi)
+                                           plotdpi=plotdpi,
+                                           verbose=verbose)
 
     # if an objectinfo dict is absent, we'll generate a fake objectid based on
     # the second five time and mag array values. this should be OK to ID the
@@ -2198,9 +2223,10 @@ def checkplot_dict(lspinfolist,
 
 
     # report on how sigclip went
-    LOGINFO('sigclip = %s: before = %s observations, '
-            'after = %s observations' %
-            (sigclip, len(times), len(stimes)))
+    if verbose:
+        LOGINFO('sigclip = %s: before = %s observations, '
+                'after = %s observations' %
+                (sigclip, len(times), len(stimes)))
 
 
     # take care of the normalization
@@ -2286,7 +2312,8 @@ def checkplot_dict(lspinfolist,
                     bestperiodhighlight=bestperiodhighlight,
                     magsarefluxes=magsarefluxes,
                     xliminsetmode=xliminsetmode,
-                    xgridlines=xgridlines
+                    xgridlines=xgridlines,
+                    verbose=verbose
                 )
 
         ## update the checkplot dict with some other stuff that's needed by
@@ -2328,8 +2355,9 @@ def checkplot_dict(lspinfolist,
             for externalrow in externalplots:
 
                 if all(os.path.exists(erowfile) for erowfile in externalrow):
-                    LOGINFO('adding external plots: %s to checkplot dict' %
-                            repr(externalrow))
+                    if verbose:
+                        LOGINFO('adding external plots: %s to checkplot dict' %
+                                repr(externalrow))
                     checkplotdict['externalplots'].append(externalrow)
                 else:
                     LOGWARNING('could not add some external '
@@ -2337,10 +2365,12 @@ def checkplot_dict(lspinfolist,
                                % repr(externalrow))
 
         # the checkplotdict now contains everything we need
-        LOGINFO('checkplot dict complete for %s' % checkplotdict['objectid'])
         contents = sorted(list(checkplotdict.keys()))
-        LOGINFO('checkplot dict contents: %s' % contents)
         checkplotdict['status'] = 'ok: contents are %s' % contents
+
+        if verbose:
+            LOGINFO('checkplot dict complete for %s' % checkplotdict['objectid'])
+            LOGINFO('checkplot dict contents: %s' % contents)
 
     # otherwise, we don't have enough LC points, return nothing
     else:
@@ -2388,7 +2418,8 @@ def checkplot_pickle(lspinfolist,
                      returndict=False,
                      pickleprotocol=None,
                      bestperiodhighlight=None,
-                     xgridlines=None):
+                     xgridlines=None,
+                     verbose=True):
 
     '''This writes a multiple lspinfo checkplot to a (gzipped) pickle file.
 
@@ -2564,7 +2595,8 @@ def checkplot_pickle(lspinfolist,
         xliminsetmode=xliminsetmode,
         plotdpi=plotdpi,
         bestperiodhighlight=bestperiodhighlight,
-        xgridlines=xgridlines
+        xgridlines=xgridlines,
+        verbose=verbose
     )
 
 
@@ -2573,8 +2605,9 @@ def checkplot_pickle(lspinfolist,
     if ((sys.version_info[0:2] >= (3,4) and not pickleprotocol) or
         (pickleprotocol == 3)):
         pickleprotocol = 3
-        LOGWARNING('the output pickle uses protocol v3 '
-                   'which IS NOT backwards compatible with Python 2.7')
+        if verbose:
+            LOGWARNING('the output pickle uses protocol v3 '
+                       'which IS NOT backwards compatible with Python 2.7')
 
     # for Python == 2.7; use v2
     elif sys.version_info[0:2] == (2,7) and not pickleprotocol:
@@ -2593,14 +2626,16 @@ def checkplot_pickle(lspinfolist,
 
     # at the end, return the dict and filename if asked for
     if returndict:
-        LOGINFO('checkplot done -> %s' % picklefname)
+        if verbose:
+            LOGINFO('checkplot done -> %s' % picklefname)
         return checkplotdict, picklefname
 
     # otherwise, just return the filename
     else:
         # just to make sure: free up space
         del checkplotdict
-        LOGINFO('checkplot done -> %s' % picklefname)
+        if verbose:
+            LOGINFO('checkplot done -> %s' % picklefname)
         return picklefname
 
 
@@ -2608,7 +2643,8 @@ def checkplot_pickle(lspinfolist,
 def checkplot_pickle_update(currentcp, updatedcp,
                             outfile=None,
                             outgzip=False,
-                            pickleprotocol=None):
+                            pickleprotocol=None,
+                            verbose=True):
     '''This updates the current checkplot dict with updated values provided.
 
     current is either a checkplot dict produced by checkplot_pickle above or a
@@ -2706,8 +2742,9 @@ def checkplot_pickle_update(currentcp, updatedcp,
     if ((sys.version_info[0:2] >= (3,4) and not pickleprotocol) or
         (pickleprotocol > 2)):
         pickleprotocol = 3
-        LOGWARNING('the output pickle uses protocol v3 '
-                   'which IS NOT backwards compatible with Python 2.7')
+        if verbose:
+            LOGWARNING('the output pickle uses protocol v3 '
+                       'which IS NOT backwards compatible with Python 2.7')
 
     # for Python == 2.7; use v2
     elif sys.version_info[0:2] == (2,7) and not pickleprotocol:
