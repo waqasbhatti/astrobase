@@ -44,6 +44,24 @@ from astroquery.skyview import SkyView
 # for convolving DSS stamps to simulate seeing effects
 import astropy.convolution as aconv
 
+# for internal skyview getter
+import re
+import hashlib
+
+try:
+    from urllib.parse import urlparse, parse_qs, urlencode, urljoin
+except Exception as e:
+    from urlparse import urlparse, parse_qs, urljoin
+    from urllib import urlencode
+
+import requests
+import requests.exceptions
+
+try:
+    from astropy.io import fits as pyfits
+except:
+    import pyfits
+
 #############
 ## LOGGING ##
 #############
@@ -662,6 +680,142 @@ def get_dss_stamp(ra, decl, outfile, stampsize=5.0):
     downloaded, msg = urlretrieve(stampsurl, outfile)
 
     return downloaded
+
+
+#####################################
+## INTERNAL SKYVIEW STAMP FUNCTION ##
+#####################################
+
+SKYVIEW_URL = 'https://skyview.gsfc.nasa.gov/current/cgi/runquery.pl'
+SKYVIEW_PARAMS = {
+    'CatalogIDs': ['on'],
+    'Deedger': ['_skip_'],
+    'Position': ['0.0, 0.0'],
+    'Sampler': ['_skip_'],
+    'coordinates': ['J2000'],
+    'ebins': ['null'],
+    'float': ['on'],
+    'grid': ['_skip_'],
+    'gridlabels': ['1'],
+    'lut': ['colortables/b-w-linear.bin'],
+    'pixels': ['300'],
+    'projection': ['Tan'],
+    'resolver': ['SIMBAD-NED'],
+    'scaling': ['Linear'],
+    'survey': ['DSS2 Red', '_skip_', '_skip_', '_skip_']
+}
+
+FITS_REGEX = re.compile(r'(tempspace\/fits\/skv\d{8,20}\.fits)')
+FITS_BASEURL = 'https://skyview.gsfc.nasa.gov'
+
+def internal_skyview_stamp(ra, decl,
+                           survey='DSS2 Red',
+                           scaling='Linear',
+                           flip=True,
+                           convolvewith=None,
+                           forcefetch=False,
+                           cachedir='~/.astrobase/stamp-cache',
+                           timeout=10.0,
+                           verbose=False):
+    '''This is the internal version of the astroquery_skyview_stamp function.
+
+    Why this exists:
+
+    - SkyView queries don't accept timeouts (should put in a PR for this)
+    - we can drop the dependency on astroquery (but add another on requests)
+
+    cachedir points to the astrobase stamp-cache directory.
+
+    '''
+
+    # parse the given params into the correct format for the form
+    formposition = ['%.4f, %.4f' % (ra, decl)]
+    formscaling = [scaling]
+
+    formparams = SKYVIEW_PARAMS.copy()
+    formparams['Position'] = formposition
+    formparams['survey'][0] = survey
+    formparams['scaling'] = formscaling
+
+    # see if the cachedir exists
+    if '~' in cachedir:
+        cachedir = os.path.expanduser(cachedir)
+    if not os.path.exists(cachedir):
+        os.makedirs(cachedir)
+
+    # figure out if we can get this image from the cache
+    cachekey = '%s-%s-%s' % (formposition[0], survey, scaling)
+    cachekey = hashlib.md5(cachekey.encode()).hexdigest()
+    cachefname = os.path.join(cachedir, '%s.fits' % cachekey)
+
+    # if this exists in the cache and we're not refetching, get the frame
+    if forcefetch or (not os.path.exists(cachefname)):
+
+        # fire the request
+        try:
+
+            if verbose:
+                LOGINFO('submitting request for %s, %s, %s' % (formposition[0],
+                                                               survey,
+                                                               scaling))
+            req = requests.get(SKYVIEW_URL, params=formparams, timeout=timeout)
+
+            # get the text of the response, this includes the locations of the
+            # generated FITS on the server
+            resp = req.text
+
+            # find the URLS of the FITS
+            fitsurls = FITS_REGEX.findall(resp)
+
+            # download the URLs
+            if fitsurls:
+                for fitsurl in fitsurls:
+                    fullfitsurl = urljoin(FITS_BASEURL, fitsurl)
+                    if verbose:
+                        LOGINFO('getting %s' % fullfitsurl)
+                    fitsreq = requests.get(fullfitsurl, timeout=timeout)
+                    with open(cachefname,'wb') as outfd:
+                        outfd.write(fitsreq.content)
+
+            else:
+                LOGERROR('no FITS URLs found in query results for %s' %
+                         formposition)
+                return None
+
+        except requests.exceptions.Timeout as e:
+            LOGERROR('SkyView stamp request for '
+                     'coordinates %s did not complete within %s seconds' %
+                     (repr(formposition), timeout))
+            return None
+
+        except Exception as e:
+            LOGEXCEPTION('SkyView stamp request for '
+                         'coordinates %s failed' % repr(formposition))
+            return None
+
+    #
+    # DONE WITH FETCHING STUFF
+    #
+
+    # open the frame
+    stampfits = pyfits.open(cachefname)
+    frame = stampfits[0].data
+    stampfits.close()
+
+    # finally, we can process the frame
+    if flip:
+        frame = np.flipud(frame)
+
+    if verbose:
+        LOGINFO('fetched stamp successfully for %s'
+                % repr(formposition))
+
+    if convolvewith:
+        convolved = aconv.convolve(frame, convolvewith)
+        return frame
+
+    else:
+        return frame
 
 
 ##################
