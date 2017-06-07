@@ -262,7 +262,8 @@ def fourier_fit_magseries(times, mags, errs, period,
                           sigclip=3.0,
                           magsarefluxes=False,
                           plotfit=False,
-                          ignoreinitfail=True):
+                          ignoreinitfail=True,
+                          verbose=True):
     '''This fits a Fourier series to a magnitude time series.
 
     This uses an 8th-order Fourier series by default. This is good for light
@@ -319,13 +320,13 @@ def fourier_fit_magseries(times, mags, errs, period,
                    'using the specified Fourier coeffs')
         fourierorder = int(len(initfourierparams)/2)
 
-
-    LOGINFO('fitting Fourier series of order %s to '
-            'mag series with %s observations, '
-            'using period %.6f, folded at %.6f' % (fourierorder,
-                                                   len(phase),
-                                                   period,
-                                                   mintime))
+    if verbose:
+        LOGINFO('fitting Fourier series of order %s to '
+                'mag series with %s observations, '
+                'using period %.6f, folded at %.6f' % (fourierorder,
+                                                       len(phase),
+                                                       period,
+                                                       mintime))
 
     # initial minimize call to find global minimum in chi-sq
     initialfit = spminimize(_fourier_chisq,
@@ -336,7 +337,8 @@ def fourier_fit_magseries(times, mags, errs, period,
     # make sure this initial fit succeeds before proceeding
     if initialfit.success or ignoreinitfail:
 
-        LOGINFO('initial fit done, refining...')
+        if verbose:
+            LOGINFO('initial fit done, refining...')
 
         leastsqparams = initialfit.x
 
@@ -358,10 +360,11 @@ def fourier_fit_magseries(times, mags, errs, period,
 
             fitredchisq = fitchisq/(len(pmags) - len(finalparams) - 1)
 
-            LOGINFO(
-                'final fit done. chisq = %.5f, reduced chisq = %.5f' %
-                (fitchisq,fitredchisq)
-            )
+            if verbose:
+                LOGINFO(
+                    'final fit done. chisq = %.5f, reduced chisq = %.5f' %
+                    (fitchisq,fitredchisq)
+                )
 
             # figure out the time of light curve minimum (i.e. the fit epoch)
             # this is when the fit mag is maximum (i.e. the faintest)
@@ -448,7 +451,8 @@ def spline_fit_magseries(times, mags, errs, period,
                          sigclip=30.0,
                          plotfit=False,
                          ignoreinitfail=False,
-                         magsarefluxes=False):
+                         magsarefluxes=False,
+                         verbose=True):
 
     '''This fits a univariate cubic spline to the phased light curve.
 
@@ -457,7 +461,8 @@ def spline_fit_magseries(times, mags, errs, period,
 
     The knot fraction is the number of internal knots to use for the spline. A
     value of 0.01 (or 1%) of the total number of non-nan observations appears to
-    work quite well, without over-fitting.
+    work quite well, without over-fitting. maxknots controls the maximum number
+    of knots that will be allowed.
 
     magsarefluxes is a boolean value for setting the ylabel and ylimits of
     plots for either magnitudes (False) or flux units (i.e. normalized to 1, in
@@ -467,9 +472,6 @@ def spline_fit_magseries(times, mags, errs, period,
     this equation below to see if it's right.
 
     reduced_chisq = fit_chisq/(len(pmags) - len(knots) - 1)
-
-    FIXME: this should smooth the initial phased LC before fitting the spline to
-    it. This will probably lead to a better determination of the minepoch.
 
     '''
 
@@ -507,10 +509,12 @@ def spline_fit_magseries(times, mags, errs, period,
 
     fitredchisq = fitchisq/(len(pmags) - nknots - 1)
 
-    LOGINFO(
-        'spline fit done. nknots = %s,  chisq = %.5f, reduced chisq = %.5f' %
-        (nknots, fitchisq, fitredchisq)
-    )
+    if verbose:
+        LOGINFO(
+            'spline fit done. nknots = %s,  '
+            'chisq = %.5f, reduced chisq = %.5f' %
+            (nknots, fitchisq, fitredchisq)
+        )
 
     # figure out the time of light curve minimum (i.e. the fit epoch)
     # this is when the fit mag is maximum (i.e. the faintest)
@@ -563,7 +567,8 @@ def savgol_fit_magseries(times, mags, errs, period,
                          polydeg=2,
                          sigclip=30.0,
                          plotfit=False,
-                         magsarefluxes=False):
+                         magsarefluxes=False,
+                         verbose=True):
 
     '''
     Fit a Savitzky-Golay filter to the magnitude/flux time series.
@@ -622,14 +627,15 @@ def savgol_fit_magseries(times, mags, errs, period,
         if windowlength % 2 == 0:
             windowlength += 1
 
-    LOGINFO('applying Savitzky-Golay filter with '
-            'window length %s and polynomial degree %s to '
-            'mag series with %s observations, '
-            'using period %.6f, folded at %.6f' % (windowlength,
-                                                   polydeg,
-                                                   len(pmags),
-                                                   period,
-                                                   mintime))
+    if verbose:
+        LOGINFO('applying Savitzky-Golay filter with '
+                'window length %s and polynomial degree %s to '
+                'mag series with %s observations, '
+                'using period %.6f, folded at %.6f' % (windowlength,
+                                                       polydeg,
+                                                       len(pmags),
+                                                       period,
+                                                       mintime))
 
     # generate the function values obtained by applying the SG filter. The
     # "wrap" option is best for phase-folded LCs.
@@ -648,10 +654,11 @@ def savgol_fit_magseries(times, mags, errs, period,
     fitredchisq = fitchisq/(len(pmags) - nparams - 1)
     fitredchisq = -99.
 
-    LOGINFO(
-        'SG filter applied. chisq = %.5f, reduced chisq = %.5f' %
-        (fitchisq, fitredchisq)
-    )
+    if verbose:
+        LOGINFO(
+            'SG filter applied. chisq = %.5f, reduced chisq = %.5f' %
+            (fitchisq, fitredchisq)
+        )
 
     # figure out the time of light curve minimum (i.e. the fit epoch)
     # this is when the fit mag is maximum (i.e. the faintest)
@@ -704,7 +711,8 @@ def legendre_fit_magseries(times, mags, errs, period,
                            legendredeg=10,
                            sigclip=30.0,
                            plotfit=False,
-                           magsarefluxes=False):
+                           magsarefluxes=False,
+                           verbose=True):
 
     '''
     Fit an arbitrary-order Legendre series, via least squares, to the
@@ -765,13 +773,14 @@ def legendre_fit_magseries(times, mags, errs, period,
         )
 
 
-    LOGINFO('fitting Legendre series with '
-            'maximum Legendre polynomial order %s to '
-            'mag series with %s observations, '
-            'using period %.6f, folded at %.6f' % (legendredeg,
-                                                   len(pmags),
-                                                   period,
-                                                   mintime))
+    if verbose:
+        LOGINFO('fitting Legendre series with '
+                'maximum Legendre polynomial order %s to '
+                'mag series with %s observations, '
+                'using period %.6f, folded at %.6f' % (legendredeg,
+                                                       len(pmags),
+                                                       period,
+                                                       mintime))
 
     # Least squares fit of Legendre polynomial series to the data. The window
     # and domain (see "Using the Convenience Classes" in the numpy
@@ -790,10 +799,11 @@ def legendre_fit_magseries(times, mags, errs, period,
     nparams = legendredeg + 1
     fitredchisq = fitchisq/(len(pmags) - nparams - 1)
 
-    LOGINFO(
-        'SG filter applied. chisq = %.5f, reduced chisq = %.5f' %
-        (fitchisq, fitredchisq)
-    )
+    if verbose:
+        LOGINFO(
+            'Legendre fit done. chisq = %.5f, reduced chisq = %.5f' %
+            (fitchisq, fitredchisq)
+        )
 
     # figure out the time of light curve minimum (i.e. the fit epoch)
     # this is when the fit mag is maximum (i.e. the faintest)
