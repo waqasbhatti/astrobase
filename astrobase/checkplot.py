@@ -166,7 +166,8 @@ def _make_periodogram(axes,
                       objectinfo,
                       findercmap,
                       finderconvolve,
-                      verbose=True):
+                      verbose=True,
+                      findercachedir='~/.astrobase/stamp-cache'):
     '''makes the periodogram, objectinfo, and finder tile.
 
     '''
@@ -250,7 +251,9 @@ def _make_periodogram(axes,
         try:
             dss = skyview_stamp(objectinfo['ra'],
                                 objectinfo['decl'],
-                                convolvewith=finderconvolve)
+                                convolvewith=finderconvolve,
+                                cachedir=findercachedir,
+                                verbose=verbose)
             stamp = dss
 
             # inset plot it on the current axes
@@ -592,6 +595,7 @@ def checkplot_png(lspinfo,
                   objectinfo=None,
                   findercmap='gray_r',
                   finderconvolve=None,
+                  findercachedir='~/.astrobase/stamp-cache',
                   normto='globalmedian',
                   normmingap=4.0,
                   outfile=None,
@@ -700,6 +704,10 @@ def checkplot_png(lspinfo,
     This can be useful to see effects of wide-field telescopes with large pixel
     sizes (like HAT) on the blending of sources.
 
+    findercachedir is the directory where the downloaded stamp FITS files
+    go. Repeated calls to this function will then use the cached version of the
+    stamp if the finder coordinates don't change.
+
     bestperiodhighlight sets whether user wants a background on the phased light
     curve from each periodogram type to distinguish them from others. this is an
     HTML hex color specification. If this is None, no highlight will be added.
@@ -708,6 +716,9 @@ def checkplot_png(lspinfo,
     portion (set by plotxlim) as the main plot and an inset version of the full
     phased light curve from phase 0.0 to 1.0. This can be useful if searching
     for small dips near phase 0.0 caused by planetary transits for example.
+
+    verbose = False turns off many of the informational messages. Useful for
+    when an external function is driving lots of checkplot calls.
 
     '''
 
@@ -772,7 +783,8 @@ def checkplot_png(lspinfo,
 
     _make_periodogram(axes[0],lspinfo,objectinfo,
                       findercmap, finderconvolve,
-                      verbose=verbose)
+                      verbose=verbose,
+                      findercachedir=findercachedir)
 
     ######################################
     ## NOW MAKE THE PHASED LIGHT CURVES ##
@@ -914,6 +926,7 @@ def twolsp_checkplot_png(lspinfo1,
                          objectinfo=None,
                          findercmap='gray_r',
                          finderconvolve=None,
+                         findercachedir='~/.astrobase/stamp-cache',
                          normto='globalmedian',
                          normmingap=4.0,
                          outfile=None,
@@ -1038,7 +1051,8 @@ def twolsp_checkplot_png(lspinfo1,
 
     _make_periodogram(axes[0], lspinfo1, objectinfo,
                       findercmap, finderconvolve,
-                      verbose=verbose)
+                      verbose=verbose,
+                      findercachedir=findercachedir)
 
     #####################################
     ## PLOT 2 is the LSP from lspinfo2 ##
@@ -1277,6 +1291,7 @@ def _pkl_finder_objectinfo(objectinfo,
                            normto,
                            normmingap,
                            plotdpi=100,
+                           findercachedir='~/.astrobase/stamp-cache',
                            verbose=True):
     '''This returns the finder chart and object information as a dict.
 
@@ -1301,7 +1316,9 @@ def _pkl_finder_objectinfo(objectinfo,
         try:
             finder = skyview_stamp(objectinfo['ra'],
                                    objectinfo['decl'],
-                                   convolvewith=finderconvolve)
+                                   convolvewith=finderconvolve,
+                                   verbose=verbose,
+                                   cachedir=findercachedir)
             finderfig = plt.figure(figsize=(3,3),dpi=plotdpi,frameon=False)
             plt.imshow(finder, cmap=findercmap)
             plt.xticks([])
@@ -2035,6 +2052,7 @@ def checkplot_dict(lspinfolist,
                    externalplots=None,
                    findercmap='gray_r',
                    finderconvolve=None,
+                   findercachedir='~/.astrobase/stamp-cache',
                    normto='globalmedian',
                    normmingap=4.0,
                    sigclip=4.0,
@@ -2167,7 +2185,8 @@ def checkplot_dict(lspinfolist,
                                            normto,
                                            normmingap,
                                            plotdpi=plotdpi,
-                                           verbose=verbose)
+                                           verbose=verbose,
+                                           findercachedir=findercachedir)
 
     # if an objectinfo dict is absent, we'll generate a fake objectid based on
     # the second five time and mag array values. this should be OK to ID the
@@ -2402,6 +2421,7 @@ def checkplot_pickle(lspinfolist,
                      externalplots=None,
                      findercmap='gray_r',
                      finderconvolve=None,
+                     findercachedir='~/.astrobase/stamp-cache',
                      normto='globalmedian',
                      normmingap=4.0,
                      outfile=None,
@@ -2583,6 +2603,7 @@ def checkplot_pickle(lspinfolist,
         externalplots=externalplots,
         findercmap=findercmap,
         finderconvolve=finderconvolve,
+        findercachedir=findercachedir,
         normto=normto,
         normmingap=normmingap,
         sigclip=sigclip,
