@@ -672,7 +672,12 @@ def get_dss_stamp(ra, decl, outfile, stampsize=5.0):
         with open(outfile,'wb') as outfd:
             outfile.write(downloaded.content)
 
-    return outfile
+        return outfile
+
+    except Exception as e:
+        LOGEXCEPTION('could not get a HATDS stamp for %s, %s' % (ra, decl))
+        return None
+
 
 
 #####################################
