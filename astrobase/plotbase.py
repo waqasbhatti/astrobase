@@ -755,9 +755,11 @@ def internal_skyview_stamp(ra, decl,
         try:
 
             if verbose:
-                LOGINFO('submitting request for %s, %s, %s' % (formposition[0],
-                                                               survey,
-                                                               scaling))
+                LOGINFO('submitting stamp request for %s, %s, %s' % (
+                    formposition[0],
+                    survey,
+                    scaling)
+                )
             req = requests.get(SKYVIEW_URL, params=formparams, timeout=timeout)
 
             # get the text of the response, this includes the locations of the
@@ -786,12 +788,12 @@ def internal_skyview_stamp(ra, decl,
             LOGERROR('SkyView stamp request for '
                      'coordinates %s did not complete within %s seconds' %
                      (repr(formposition), timeout))
-            return None
+            raise
 
         except Exception as e:
             LOGEXCEPTION('SkyView stamp request for '
                          'coordinates %s failed' % repr(formposition))
-            return None
+            raise
 
     #
     # DONE WITH FETCHING STUFF
