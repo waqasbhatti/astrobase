@@ -257,8 +257,8 @@ def _fourier_residual(fourierparams,
 
 def fourier_fit_magseries(times, mags, errs, period,
                           fourierorder=None,
-                          initfourierparams=[0.6,0.2,0.2,0.2,0.2,0.2,0.2,0.2,
-                                             0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1],
+                          fourierparams=[0.6,0.2,0.2,0.2,0.2,0.2,0.2,0.2,
+                                         0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1],
                           sigclip=3.0,
                           magsarefluxes=False,
                           plotfit=False,
@@ -272,8 +272,8 @@ def fourier_fit_magseries(times, mags, errs, period,
     your light curves to avoid over-fitting.
 
     Set the Fourier order by using either the fourierorder kwarg OR the
-    initfourierparams kwarg. If fourierorder is None, then initfourierparams is
-    a list of the form for fourier order = N:
+    fourierparams kwarg. If fourierorder is None, then fourierparams is a
+    list of the form for fourier order = N:
 
     [fourier_amp1, fourier_amp2, fourier_amp3,...,fourier_ampN,
      fourier_phase1, fourier_phase2, fourier_phase3,...,fourier_phaseN]
@@ -304,21 +304,21 @@ def fourier_fit_magseries(times, mags, errs, period,
 
 
     # get the fourier order either from the scalar order kwarg...
-    if fourierorder and fourierorder > 0 and not initfourierparams:
+    if fourierorder and fourierorder > 0 and not fourierparams:
 
-        initfourieramps = [0.6] + [0.2]*(fourierorder - 1)
-        initfourierphas = [0.1] + [0.1]*(fourierorder - 1)
-        initfourierparams = initfourieramps + initfourierphas
+        fourieramps = [0.6] + [0.2]*(fourierorder - 1)
+        fourierphas = [0.1] + [0.1]*(fourierorder - 1)
+        fourierparams = fourieramps + fourierphas
 
     # or from the fully specified coeffs vector
-    elif not fourierorder and initfourierparams:
+    elif not fourierorder and fourierparams:
 
-        fourierorder = int(len(initfourierparams)/2)
+        fourierorder = int(len(fourierparams)/2)
 
     else:
         LOGWARNING('specified both Fourier order AND Fourier coeffs, '
                    'using the specified Fourier coeffs')
-        fourierorder = int(len(initfourierparams)/2)
+        fourierorder = int(len(fourierparams)/2)
 
     if verbose:
         LOGINFO('fitting Fourier series of order %s to '
@@ -330,7 +330,7 @@ def fourier_fit_magseries(times, mags, errs, period,
 
     # initial minimize call to find global minimum in chi-sq
     initialfit = spminimize(_fourier_chisq,
-                            initfourierparams,
+                            fourierparams,
                             method='BFGS',
                             args=(phase, pmags, perrs))
 
