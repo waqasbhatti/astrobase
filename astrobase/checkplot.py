@@ -1647,7 +1647,9 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
      'fitinfo':{'fitmags':<ndarray: model mags or fluxes from fit function>},
      'magseries':{'times':<ndarray: times at which the fitmags are evaluated>}}
 
-    for overplotfit: fitmags and times should all be of the same size.
+    fitmags and times should all be of the same size. overplotfit is copied over
+    to the checkplot dict for each specific phased LC plot to save all of this
+    information.
 
     '''
     # open the figure instance
@@ -1769,7 +1771,6 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
 
         plt.legend(loc='upper left', frameon=False)
 
-
     # flip y axis for mags
     if not magsarefluxes:
         plot_ylim = plt.ylim()
@@ -1890,6 +1891,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
     # close the stringio buffer
     phasedseriespng.close()
 
+    # this includes a fitinfo dict if one is provided in overplotfit
     retdict = {
         'plot':phasedseriesb64,
         'period':varperiod,
@@ -1902,7 +1904,8 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
         'phasesort':phasesort,
         'phasebin':phasebin,
         'minbinelems':minbinelems,
-        'plotxlim':plotxlim
+        'plotxlim':plotxlim,
+        'lcfit':overplotfit,
     }
 
     # if we're returning stuff directly, i.e. not being used embedded within
@@ -2122,9 +2125,11 @@ def checkplot_dict(lspinfolist,
      'magseries':{'times':<ndarray: times at which the fitmags are evaluated>}}
 
     additional keys can include ['fitinfo']['finalparams'] for the final model
-    fit parameters, ['fitinfo']['fitepoch'] for the minimum light epoch returned
-    by the model fit, among others. the output dict of lcfitfunc will be copied
-    to the output checkplot dict's ['fitinfo'][<fittype>] key:val dict.
+    fit parameters (this will be used by the checkplotserver if present),
+    ['fitinfo']['fitepoch'] for the minimum light epoch returned by the model
+    fit, among others. in any case, the output dict of lcfitfunc will be copied
+    to the output checkplot pickle's ['lcfit'][<fittype>] key:val dict for each
+    phased light curve.
 
     externalplots is a list of 4-element tuples containing:
 
@@ -2354,15 +2359,6 @@ def checkplot_dict(lspinfolist,
         # checkplotdict['signals']['whiten'] and
         # checkplotdict['signals']['mask'] respectively.
         checkplotdict['signals'] = {}
-
-        # fourth, add a fitinfo key:val. this will be used by checkplotserver's
-        # lcfit functions. these will write to
-        # checkplotdict['fitinfo']['<fitmethod>'] for each fitmethod = 'spline',
-        # 'fourier', 'legendre', 'savgol'
-        checkplotdict['fitinfo'] = {}
-        # put the fit results into the checkplot
-        if overplotfit:
-            checkplotdict['fitinfo'][overplotfit['fittype']] = overplotfit
 
         # finally, add any externalplots if we have them
         checkplotdict['externalplots'] = []
