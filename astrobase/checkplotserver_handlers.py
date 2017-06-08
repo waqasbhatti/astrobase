@@ -189,7 +189,7 @@ CPTOOLMAP = {
         'argtypes':(ndarray, ndarray, ndarray, float),
         'kwargs':('fourierorder','magsarefluxes'),
         'kwargtypes':(int, bool),
-        'kwargdefs':(6,False),
+        'kwargdefs':(6, False),
         'func':lcfit.fourier_fit_magseries,
         'resloc':['fitinfo','fourier'],
     },
@@ -384,7 +384,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                         'magseries':magseries,
                         # fallback in case objectinfo doesn't have ndet
                         'magseries_ndet':cpdict['magseries']['times'].size,
-                        'cpstatus':cpstatus
+                        'cpstatus':cpstatus,
                     }
                 }
 
@@ -935,8 +935,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     CPTOOLMAP[lctool]['kwargtypes'],
                                     CPTOOLMAP[lctool]['kwargdefs']
                             ):
-
-
 
                                 # get the kwarg
                                 wbkwarg = self.get_argument(xkwarg, None)
