@@ -121,7 +121,7 @@ CPTOOLMAP = {
         'argtypes':(ndarray, ndarray, ndarray),
         'kwargs':('startp','endp','magsarefluxes','autofreq','stepsize'),
         'kwargtypes':(float, float, bool, bool, float),
-        'kwargdefs':(None, None, False, True, 1.0e-4),
+        'kwargdefs':(0.1, 100.0, False, True, 1.0e-4),
         'func':kbls.bls_parallel_pfind,
         'resloc':['bls'],
     },
@@ -335,7 +335,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                                   'result':None}
 
                     self.write(resultdict)
-                    self.finish()
+                    raise tornado.web.Finish()
 
                 # this is the async call to the executor
                 cpdict = yield self.executor.submit(
@@ -370,16 +370,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 # into the various elems on the period-search-tools and
                 # variability-tools tabs
 
-                # handle varinfo['features']
-                # change the ndarrays into lists for varinfo['features']
-                if (varinfo and 'features' in varinfo and
-                    isinstance(varinfo['features'], dict)):
-                    for key in varinfo['features']:
-                        if isinstance(varinfo['features'][key], ndarray):
-                            varinfo['features'][key] = (
-                                varinfo['features'][key].tolist()
-                            )
-
+                # this is the initial dict
                 resultdict = {
                     'status':'ok',
                     'message':'found checkplot %s' % self.checkplotfname,
@@ -564,7 +555,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                           'result':None}
             self.set_status(400)
             self.write(resultdict)
-            self.finish()
+            raise tornado.web.Finish()
 
         # now try to update the contents
         try:
@@ -582,7 +573,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                               'result':None}
                 self.set_status(400)
                 self.write(resultdict)
-                self.finish()
+                raise tornado.web.Finish()
 
             cpcontents = json.loads(cpcontents)
 
@@ -610,7 +601,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                               'result':None}
 
                 self.write(resultdict)
-                self.finish()
+                raise tornado.web.Finish()
 
             # dispatch the task
             updated = yield self.executor.submit(checkplot_pickle_update,
@@ -735,7 +726,7 @@ class CheckplotListHandler(tornado.web.RequestHandler):
                           'result':None}
             self.set_status(400)
             self.write(resultdict)
-            self.finish()
+            raise tornado.web.Finish()
 
 
         objectid = self.get_argument('objectid', None)
@@ -743,6 +734,7 @@ class CheckplotListHandler(tornado.web.RequestHandler):
 
         # if either of the above is invalid, return nothing
         if not objectid or not changes:
+
             msg = ("could not parse changes to the checkplot filelist "
                    "from the frontend")
             LOGGER.error(msg)
@@ -752,7 +744,7 @@ class CheckplotListHandler(tornado.web.RequestHandler):
                           'result':None}
 
             self.write(resultdict)
-            self.finish()
+            raise tornado.web.Finish()
 
 
         # otherwise, update the checkplot list JSON
@@ -780,6 +772,7 @@ class CheckplotListHandler(tornado.web.RequestHandler):
                                 'changes':changes}}
 
         self.write(resultdict)
+        self.finish()
 
 
 
@@ -892,8 +885,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                     self.cpfile
                 )
 
-                LOGGER.info('loading %s...' % cpfpath)
-
                 # if we can't find the pickle, quit immediately
                 if not os.path.exists(cpfpath):
 
@@ -901,25 +892,131 @@ class LCToolHandler(tornado.web.RequestHandler):
                     LOGGER.error(msg)
                     resultdict = {'status':'error',
                                   'message':msg,
+                                  'readonly':self.readonly,
                                   'result':None}
 
                     self.write(resultdict)
-                    self.finish()
+                    raise tornado.web.Finish()
+
+                ###########################
+                # now parse the arguments #
+                ###########################
+
+                # check if we have to force-reload
+                forcereload = self.get_argument('forcereload',False)
+                if forcereload and xhtml_escape(forcereload):
+                    forcereload = True if forcereload else False
+
+                # get the light curve tool to use
+                lctool = self.get_argument('lctool', None)
+
+                # preemptive dict to fill out
+                resultdict = {'status':None,
+                              'message':None,
+                              'readonly':self.readonly,
+                              'result':None}
+
+                # check if the lctool arg is provided
+                if lctool:
+
+                    lctool = xhtml_escape(lctool)
+                    lctoolargs = []
+                    lctoolkwargs = {}
+
+                    # check if this lctool is OK and has all the required args
+                    if lctool in CPTOOLMAP:
+
+                        try:
+
+                            # all args should have been parsed
+                            # successfully. parse the kwargs now
+                            for xkwarg, xkwargtype, xkwargdef in zip(
+                                    CPTOOLMAP[lctool]['kwargs'],
+                                    CPTOOLMAP[lctool]['kwargtypes'],
+                                    CPTOOLMAP[lctool]['kwargdefs']
+                            ):
+
+
+
+                                # get the kwarg
+                                wbkwarg = self.get_argument(xkwarg, None)
+
+                                if wbkwarg:
+                                    wbkwarg = url_unescape(
+                                        xhtml_escape(wbkwarg)
+                                    )
+                                LOGGER.info('wbkwarg = %s' % repr(wbkwarg))
+
+                                # if it's None, sub with the default
+                                if wbkwarg is None:
+
+                                    wbkwarg = xkwargdef
+
+                                # otherwise, cast it to the required type
+                                else:
+
+                                    # special handling for lists of floats
+                                    if isinstance(xkwargtype, list):
+                                        wbkwarg = json.loads(wbkwarg)
+                                        wbkwarg = [float(x) for
+                                                   x in wbkwarg]
+                                    # usual casting for other types
+                                    else:
+                                        wbkwarg = xkwargtype(wbkwarg)
+
+                                # update the lctools kwarg dict
+                                lctoolkwargs.update({xkwarg:wbkwarg})
+
+                        except Exception as e:
+
+                            LOGGER.exception('lctool %s, kwarg %s '
+                                             'will not work' %
+                                             (lctool, xkwarg))
+                            resultdict['status'] = 'error'
+                            resultdict['message'] = (
+                                'lctool %s, kwarg %s '
+                                'will not work' %
+                                (lctool, xkwarg)
+                            )
+
+                            self.write(resultdict)
+                            raise tornado.web.Finish()
+
+                    # if the tool is not in the CPTOOLSMAP
+                    else:
+                        LOGGER.error('lctool %s, does not exist' % lctool)
+                        resultdict['status'] = 'error'
+                        resultdict['message'] = (
+                        'lctool %s does not exist' % lctool
+                        )
+                        self.set_status(400)
+                        self.write(resultdict)
+                        raise tornado.web.Finish()
+
+                # if no lctool arg is provided
+                else:
+
+                    LOGGER.error('lctool argument not provided')
+                    resultdict['status'] = 'error'
+                    resultdict['message'] = (
+                    'lctool argument not provided'
+                    )
+                    self.set_status(400)
+                    self.write(resultdict)
+                    raise tornado.web.Finish()
+
+
+                ##############################################
+                ## NOW WE'RE READY TO ACTUALLY DO SOMETHING ##
+                ##############################################
+
+                LOGGER.info('loading %s...' % cpfpath)
 
                 # this is the async call to the executor
                 # this loads the checkplot pickle
                 cpdict = yield self.executor.submit(
                     _read_checkplot_picklefile, cpfpath
                 )
-
-                #####################################
-                ## continue after we're good to go ##
-                #####################################
-
-                # check if we have to force-reload
-                forcereload = self.get_argument('forcereload',False)
-                if forcereload and xhtml_escape(forcereload):
-                    forcereload = True if forcereload == '1' else False
 
                 # get the times, mags, errs out of the pickle. if there's an
                 # existing cpservertemp key in the cpdict, then we were
@@ -948,352 +1045,288 @@ class LCToolHandler(tornado.web.RequestHandler):
                                                cpdict['magseries']['mags'],
                                                cpdict['magseries']['errs'])
 
-                 # now we have the pickle in hand, get the rest of the args and
-                # figure out what to do with them
-                lctool = self.get_argument('lctool', None)
 
-                # preemptive dict to fill out
-                resultdict = {'status':None,
-                              'message':None,
-                              'readonly':self.readonly,
-                              'result':None}
+                # collect the args
+                for xarg, xargtype in zip(CPTOOLMAP[lctool]['args'],
+                                          CPTOOLMAP[lctool]['argtypes']):
 
-                # check if the lctool arg is provided
-                if lctool:
+                    # handle special args
+                    if xarg is None:
+                        lctoolargs.append(None)
+                    elif xarg == 'times':
+                        lctoolargs.append(cptimes)
+                    elif xarg == 'mags':
+                        lctoolargs.append(cpmags)
+                    elif xarg == 'errs':
+                        lctoolargs.append(cperrs)
 
-                    lctool = xhtml_escape(lctool)
-                    lctoolargs = []
-                    lctoolkwargs = {}
+                    # handle other args
+                    else:
 
-                    # check if this lctool is OK and has all the required args
-                    if lctool in CPTOOLMAP:
+                        try:
 
-                        # collect the args
-                        for xarg, xargtype in zip(CPTOOLMAP[lctool]['args'],
-                                                  CPTOOLMAP[lctool]['argtypes']):
-
-                            # handle special args
-                            if xarg is None:
-                                lctoolargs.append(None)
-                            elif xarg == 'times':
-                                lctoolargs.append(cptimes)
-                            elif xarg == 'mags':
-                                lctoolargs.append(cpmags)
-                            elif xarg == 'errs':
-                                lctoolargs.append(cperrs)
-
-                            # handle other args
-                            else:
-
-                                try:
-
-                                    # get the arg
-                                    wbarg = url_unescape(
-                                        xhtml_escape(
-                                            self.get_argument(xarg, None)
-                                        )
-                                    )
-
-                                    # cast the arg to the required type
-
-                                    # special handling for lists
-                                    if isinstance(xargtype, list):
-                                        wbarg = json.loads(wbarg)
-                                        wbarg = [float(x) for x in wbarg]
-                                    # usual casting for other types
-                                    else:
-                                        wbarg = xargtype(wbarg)
-
-                                    lctoolargs.append(wbarg)
-
-                                except Exception as e:
-
-                                    LOGGER.error('lctool %s, arg %s '
-                                                 'will not work' %
-                                                 (lctool, xarg))
-                                    resultdict['status'] = 'error'
-                                    resultdict['message'] = (
-                                        'lctool %s, arg %s '
-                                        'will not work' %
-                                        (lctool, xarg)
-                                    )
-                                    self.write(resultdict)
-                                    self.finish()
-
-                        # all args should have been parsed successfully. parse
-                        # the kwargs now
-                        for xkwarg, xkwargtype, xkwargdef in zip(
-                                CPTOOLMAP[lctool]['kwargs'],
-                                CPTOOLMAP[lctool]['kwargtypes'],
-                                CPTOOLMAP[lctool]['kwargdefs']
-                        ):
-
-                            try:
-
-                                # get the kwarg
-                                wbkwarg = url_unescape(
-                                    xhtml_escape(
-                                        self.get_argument(xkwarg, None)
-                                    )
+                            # get the arg
+                            wbarg = url_unescape(
+                                xhtml_escape(
+                                    self.get_argument(xarg, None)
                                 )
+                            )
 
-                                # if it's None, sub with the default
-                                if wbkwarg is None:
+                            # cast the arg to the required type
 
-                                    wbkwarg = xkwargdef
+                            # special handling for lists
+                            if isinstance(xargtype, list):
+                                wbarg = json.loads(wbarg)
+                                wbarg = [float(x) for x in wbarg]
+                            # usual casting for other types
+                            else:
+                                wbarg = xargtype(wbarg)
 
-                                # otherwise, cast it to the required type
-                                else:
+                            lctoolargs.append(wbarg)
 
-                                    # special handling for lists of floats
-                                    if isinstance(xkwargtype, list):
-                                        wbkwarg = json.loads(wbkwarg)
-                                        wbkwarg = [float(x) for x in wbkwarg]
-                                    # usual casting for other types
-                                    else:
-                                        wbkwarg = xkwargtype(wbkwarg)
+                        except Exception as e:
 
-                                # update the lctools kwarg dict
-                                lctoolkwargs.append(wbkwarg)
-
-                            except Exception as e:
-
-                                LOGGER.error('lctool %s, kwarg %s '
+                            LOGGER.exception('lctool %s, arg %s '
                                              'will not work' %
-                                             (lctool, xkwarg))
-                                resultdict['status'] = 'error'
-                                resultdict['message'] = (
-                                    'lctool %s, kwarg %s '
-                                    'will not work' %
-                                    (lctool, xkwarg)
-                                )
-                                self.write(resultdict)
-                                self.finish()
+                                             (lctool, xarg))
+                            resultdict['status'] = 'error'
+                            resultdict['message'] = (
+                                'lctool %s, arg %s '
+                                'will not work' %
+                                (lctool, xarg)
+                            )
+                            self.write(resultdict)
+                            raise tornado.web.Finish()
 
-                        ##############################################
-                        ## NOW WE'RE READY TO ACTUALLY DO SOMETHING ##
-                        ##############################################
 
-                        # make sure the results aren't there already.
-                        # if they are and force-reload is not True,
-                        # just return them instead.
-                        resloc = CPTOOLMAP[lctool]['resloc']
+                LOGGER.info(lctool)
+                LOGGER.info(lctoolargs)
+                LOGGER.info(lctoolkwargs)
 
-                        # if lctool is a periodogram method
-                        if lctool in ('psearch-gls',
-                                      'psearch-bls',
-                                      'psearch-pdm',
-                                      'psearch-aov'):
+                ############################
+                ## handle the lctools now ##
+                ############################
 
-                            lspmethod = resloc[0]
+                # make sure the results aren't there already.
+                # if they are and force-reload is not True,
+                # just return them instead.
+                resloc = CPTOOLMAP[lctool]['resloc']
 
-                            # if we can return the results from a previous run
-                            if ('cpservertemp' in cpdict and
-                                lspmethod in cpdict['cpservertemp'] and
-                                isinstance(cpdict['cpservertemp'][lspmethod],
-                                           dict) and
-                                (not forcereload)):
+                # if lctool is a periodogram method
+                if lctool in ('psearch-gls',
+                              'psearch-bls',
+                              'psearch-pdm',
+                              'psearch-aov'):
 
-                                # for a periodogram method, we need the
-                                # following items
-                                bestperiod = (
-                                    cpdict[
-                                        'cpservertemp'
-                                    ][lspmethod][
-                                        'bestperiod'
-                                    ]
-                                )
-                                nbestperiods = (
-                                    cpdict[
-                                        'cpservertemp'
-                                    ][lspmethod][
-                                        'nbestperiods'
-                                    ]
-                                )
-                                nbestlspvals = (
-                                    cpdict[
-                                        'cpservertemp'
-                                    ][lspmethod][
-                                        'nbestlspvals'
-                                    ]
-                                )
-                                periodogram = (
-                                    cpdict[
-                                        'cpservertemp'
-                                    ][lspmethod][
-                                        'periodogram'
-                                    ]
-                                )
+                    lspmethod = resloc[0]
 
-                                # get the first phased LC plot and its period
-                                # and epoch
-                                phasedlc0plot = (
-                                    cpdict['cpservertemp'][lspmethod][0]['plot']
-                                )
-                                phasedlc0period = float(
-                                    cpdict['cpservertemp'][lspmethod][0]['period']
-                                )
-                                phasedlc0epoch = float(
-                                    cpdict['cpservertemp'][lspmethod][0]['epoch']
-                                )
+                    # if we can return the results from a previous run
+                    if ('cpservertemp' in cpdict and
+                        lspmethod in cpdict['cpservertemp'] and
+                        isinstance(cpdict['cpservertemp'][lspmethod],
+                                   dict) and
+                        (not forcereload)):
 
-                                resultdict['status'] = 'warning'
-                                resultdict['message'] = (
-                                    'previous '
-                                    'unsaved results from %s' %
-                                    lctool
-                                )
+                        # for a periodogram method, we need the
+                        # following items
+                        bestperiod = (
+                            cpdict[
+                                'cpservertemp'
+                            ][lspmethod][
+                                'bestperiod'
+                            ]
+                        )
+                        nbestperiods = (
+                            cpdict[
+                                'cpservertemp'
+                            ][lspmethod][
+                                'nbestperiods'
+                            ]
+                        )
+                        nbestlspvals = (
+                            cpdict[
+                                'cpservertemp'
+                            ][lspmethod][
+                                'nbestlspvals'
+                            ]
+                        )
+                        periodogram = (
+                            cpdict[
+                                'cpservertemp'
+                            ][lspmethod][
+                                'periodogram'
+                            ]
+                        )
 
-                                resultdict['result'] = {
-                                    lspmethod:{
-                                        'nbestperiods':nbestperiods,
-                                        'periodogram':periodogram,
-                                        'bestperiod':bestperiod,
-                                        'nbestpeaks':nbestlspvals,
-                                        'phasedlc0':{
-                                            'plot':phasedlc0plot,
-                                            'period':phasedlc0period,
-                                            'epoch':phasedlc0epoch,
-                                        }
-                                    }
+                        # get the first phased LC plot and its period
+                        # and epoch
+                        phasedlc0plot = (
+                            cpdict['cpservertemp'][lspmethod][0]['plot']
+                        )
+                        phasedlc0period = float(
+                            cpdict['cpservertemp'][lspmethod][0]['period']
+                        )
+                        phasedlc0epoch = float(
+                            cpdict['cpservertemp'][lspmethod][0]['epoch']
+                        )
+
+                        resultdict['status'] = 'warning'
+                        resultdict['message'] = (
+                            'previous '
+                            'unsaved results from %s' %
+                            lctool
+                        )
+
+                        resultdict['result'] = {
+                            lspmethod:{
+                                'nbestperiods':nbestperiods,
+                                'periodogram':periodogram,
+                                'bestperiod':bestperiod,
+                                'nbestpeaks':nbestlspvals,
+                                'phasedlc0':{
+                                    'plot':phasedlc0plot,
+                                    'period':phasedlc0period,
+                                    'epoch':phasedlc0epoch,
                                 }
+                            }
+                        }
 
-                                self.write(resultdict)
-                                self.finish()
+                        self.write(resultdict)
+                        self.finish()
 
-                            # otherwise, we have to rerun the periodogram method
-                            else:
+                    # otherwise, we have to rerun the periodogram method
+                    else:
 
-                                # run the period finder
-                                lctoolfunction = CPTOOLMAP[lctool]['func']
-                                funcresults = yield self.executor.submit(
-                                    lctoolfunction,
-                                    *lctoolargs,
-                                    **lctoolkwargs,
-                                )
+                        # run the period finder
+                        lctoolfunction = CPTOOLMAP[lctool]['func']
+                        funcresults = yield self.executor.submit(
+                            lctoolfunction,
+                            *lctoolargs,
+                            **lctoolkwargs,
+                        )
 
-                                # get what we need out of funcresults when it
-                                # returns
-                                nbestperiods = funcresults['nbestperiods']
-                                nbestlspvals = funcresults['nbestlspvals']
-                                bestperiod = funcresults['bestperiod']
+                        # get what we need out of funcresults when it
+                        # returns
+                        nbestperiods = funcresults['nbestperiods']
+                        nbestlspvals = funcresults['nbestlspvals']
+                        bestperiod = funcresults['bestperiod']
 
-                                # generate the periodogram png
-                                pgramres = yield self.executor.submit(
-                                    _pkl_periodogram,
-                                    funcresults,
-                                )
+                        # generate the periodogram png
+                        pgramres = yield self.executor.submit(
+                            _pkl_periodogram,
+                            funcresults,
+                        )
 
-                                # generate the phased LC for the best period
-                                # only. we show this in the frontend along with
-                                # the periodogram. the user decides which other
-                                # peaks they want a phased LC for, and we save
-                                # them to the cpdict['cpservertemp'] as
-                                # required. for now, we'll save the best phased
-                                # LC back to cpdict['cpservertemp'].
-                                phasedlcargs = (None,
-                                                lspmethod,
-                                                0,
-                                                cptimes,
-                                                cpmags,
-                                                cperrs,
-                                                bestperiod,
-                                                'min',
-                                                True,
-                                                True,
-                                                0.002,
-                                                7,
-                                                [-0.8,0.8])
-                                phasedlckwargs = {
-                                    'xliminsetmode':False,
-                                    'magsarefluxes':lctoolkwargs['magsarefluxes']
-                                    }
+                        # generate the phased LC for the best period
+                        # only. we show this in the frontend along with
+                        # the periodogram. the user decides which other
+                        # peaks they want a phased LC for, and we save
+                        # them to the cpdict['cpservertemp'] as
+                        # required. for now, we'll save the best phased
+                        # LC back to cpdict['cpservertemp'].
+                        phasedlcargs = (None,
+                                        lspmethod,
+                                        0,
+                                        cptimes,
+                                        cpmags,
+                                        cperrs,
+                                        bestperiod,
+                                        'min',
+                                        True,
+                                        True,
+                                        0.002,
+                                        7,
+                                        [-0.8,0.8])
+                        phasedlckwargs = {
+                            'xliminsetmode':False,
+                            'magsarefluxes':lctoolkwargs['magsarefluxes']
+                        }
 
-                                # dispatch the plot function
-                                phasedlc = yield self.exeecutor.submit(
-                                    _pkl_phased_magseries_plot,
-                                    *phasedlcargs,
-                                    **phasedlckwargs
-                                )
+                        # dispatch the plot function
+                        phasedlc = yield self.executor.submit(
+                            _pkl_phased_magseries_plot,
+                            *phasedlcargs,
+                            **phasedlckwargs
+                        )
 
-                                # save these to the cpservertemp key
-                                # save the pickle only if readonly is not true
-                                if not self.readonly:
+                        # save these to the cpservertemp key
+                        # save the pickle only if readonly is not true
+                        if not self.readonly:
 
-                                    if not 'cpservertemp' in cpdict:
-                                        cpdict['cpservertemp'] = {}
+                            if not 'cpservertemp' in cpdict:
+                                cpdict['cpservertemp'] = {}
 
-                                    cpdict['cpservertemp'][lspmethod] = {
-                                        'periods':funcresults['periods'],
-                                        'lspvals':funcresults['lspvals'],
-                                        'bestperiod':funcresults['bestperiod'],
-                                        'nbestperiods':funcresults['nbestperiods'],
-                                        'nbestlspvals':funcresults['nbestlspvals'],
-                                        'periodogram':pgramres['periodogram'],
-                                        0:phasedlc
-                                    }
+                            cpdict['cpservertemp'][lspmethod] = {
+                                'periods':funcresults['periods'],
+                                'lspvals':funcresults['lspvals'],
+                                'bestperiod':funcresults['bestperiod'],
+                                'nbestperiods':funcresults['nbestperiods'],
+                                'nbestlspvals':funcresults['nbestlspvals'],
+                                'periodogram':pgramres[lspmethod]['periodogram'],
+                                0:phasedlc
+                            }
 
 
-                                    savekwargs = {
-                                        'outfile':cpfpath,
-                                        'protocol':pickle.HIGHEST_PROTOCOL
-                                    }
-                                    savedcpf = yield self.executor.submit(
-                                        _write_checkplot_picklefile,
-                                        cpdict,
-                                        **savekwargs
-                                    )
+                            savekwargs = {
+                                'outfile':cpfpath,
+                                'protocol':pickle.HIGHEST_PROTOCOL
+                            }
+                            savedcpf = yield self.executor.submit(
+                                _write_checkplot_picklefile,
+                                cpdict,
+                                **savekwargs
+                            )
 
-                                    LOGINFO('saved temp results from '
-                                            '%s to checkplot: %s' %
-                                            (lctool, cpfpath))
+                            LOGGER.info('saved temp results from '
+                                    '%s to checkplot: %s' %
+                                    (lctool, cpfpath))
 
-                                else:
+                        else:
 
-                                    LOGWARNING(
-                                        'not saving temp results to checkplot '
-                                        ' because readonly = True'
-                                    )
+                            LOGGER.warning(
+                                'not saving temp results to checkplot '
+                                ' because readonly = True'
+                            )
 
-                                #
-                                # assemble the return dict
-                                #
+                        #
+                        # assemble the return dict
+                        #
 
-                                # the periodogram
-                                periodogram = pgramres['periodogram']
+                        # the periodogram
+                        periodogram = pgramres[lspmethod]['periodogram']
 
-                                # the best period phasedlc plot, period, and
-                                # epoch
-                                phasedlc0plot = phasedlc['plot']
-                                phasedlc0period = float(phasedlc['period'])
-                                phasedlc0epoch = float(phasedlc['epoch'])
+                        # the best period phasedlc plot, period, and
+                        # epoch
+                        phasedlc0plot = phasedlc['plot']
+                        phasedlc0period = float(phasedlc['period'])
+                        phasedlc0epoch = float(phasedlc['epoch'])
 
-                                resultdict['status'] = 'success'
-                                resultdict['message'] = (
-                                    'new results for %s' %
-                                    lctool
-                                )
-                                resultdict['result'] = {
-                                    lspmethod:{
-                                        'nbestperiods':nbestperiods,
-                                        'periodogram':periodogram,
-                                        'bestperiod':bestperiod,
-                                        'nbestpeaks':nbestlspvals,
-                                        'phasedlc0':{
-                                            'plot':phasedlc0plot,
-                                            'period':phasedlc0period,
-                                            'epoch':phasedlc0epoch,
-                                        }
-                                    }
+                        resultdict['status'] = 'success'
+                        resultdict['message'] = (
+                            'new results for %s' %
+                            lctool
+                        )
+                        resultdict['result'] = {
+                            lspmethod:{
+                                'nbestperiods':nbestperiods,
+                                'periodogram':periodogram,
+                                'bestperiod':bestperiod,
+                                'nbestpeaks':nbestlspvals,
+                                'phasedlc0':{
+                                    'plot':phasedlc0plot,
+                                    'period':phasedlc0period,
+                                    'epoch':phasedlc0epoch,
                                 }
+                            }
+                        }
 
-                                # return to frontend
-                                self.write(resultdict)
-                                self.finish()
+                        # return to frontend
+                        self.write(resultdict)
+                        self.finish()
 
 
-                        # if the lctool is a call to the phased LC plot itself
-                        elif lctool == 'phasedlc-newplot':
+                # if the lctool is a call to the phased LC plot itself
+                elif lctool == 'phasedlc-newplot':
 
                             lspmethod = lctoolargs[1]
 
@@ -1318,129 +1351,37 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     **lctoolkwargs,
                                 )
 
-                        # if the lctool is var-varfeatures
-                        elif lctool == 'var-varfeatures':
+                # if the lctool is var-varfeatures
+                elif lctool == 'var-varfeatures':
 
-                            key1, key2 = resloc
+                    key1, key2 = resloc
 
-                            # if we can return the results from a previous run
-                            if ('cpservertemp' in cpdict and
-                                key1 in cpdict['cpservertemp'] and
-                                isinstance(cpdict['cpservertemp'][key1],
-                                           dict) and
-                                key2 in cpdict['cpservertemp'][key1] and
-                                isinstance(cpdict['cpservertemp'][key1][key2],
-                                           dict) and
-                                (not forcereload)):
 
-                                # TODO:
-                                stuff()
+                # if the lctool is var-prewhiten or var-masksig
+                elif lctool in ('var-prewhiten','var-masksig'):
 
-                            # otherwise, we need to dispatch the function
-                            else:
+                    key1, key2 = resloc
 
-                                # run the fit function
-                                lctoolfunction = CPTOOLMAP[lctool]['func']
-                                funcresults = yield self.executor.submit(
-                                    lctoolfunction,
-                                    *lctoolargs,
-                                    **lctoolkwargs,
-                                )
 
-                        # if the lctool is var-prewhiten or var-masksig
-                        elif lctool in ('var-prewhiten','var-masksig'):
+                # if the lctool is a lcfit method
+                elif lctool in ('lcfit-fourier',
+                                'lcfit-spline',
+                                'lcfit-legendre',
+                                'lcfit-savgol'):
 
-                            key1, key2 = resloc
+                    key1, key2 = resloc
 
-                            # if we can return the results from a previous run
-                            if ('cpservertemp' in cpdict and
-                                key1 in cpdict['cpservertemp'] and
-                                isinstance(cpdict['cpservertemp'][key1],
-                                           dict) and
-                                key2 in cpdict['cpservertemp'][key1] and
-                                isinstance(cpdict['cpservertemp'][key1][key2],
-                                           dict) and
-                                (not forcereload)):
-
-                                # TODO:
-                                stuff()
-
-                            # otherwise, we need to dispatch the function
-                            else:
-
-                                # run the fit function
-                                lctoolfunction = CPTOOLMAP[lctool]['func']
-                                funcresults = yield self.executor.submit(
-                                    lctoolfunction,
-                                    *lctoolargs,
-                                    **lctoolkwargs,
-                                )
-
-                        # if the lctool is a lcfit method
-                        elif lctool in ('lcfit-fourier',
-                                        'lcfit-spline',
-                                        'lcfit-legendre',
-                                        'lcfit-savgol'):
-
-                            key1, key2 = resloc
-
-                            # if we can return the results from a previous run
-                            if ('cpservertemp' in cpdict and
-                                key1 in cpdict['cpservertemp'] and
-                                isinstance(cpdict['cpservertemp'][key1],
-                                           dict) and
-                                key2 in cpdict['cpservertemp'][key1] and
-                                isinstance(cpdict['cpservertemp'][key1][key2],
-                                           dict) and
-                                (not forcereload)):
-
-                                # TODO:
-                                stuff()
-
-                            # otherwise, we need to dispatch the function
-                            else:
-
-                                # run the fit function
-                                lctoolfunction = CPTOOLMAP[lctool]['func']
-                                funcresults = yield self.executor.submit(
-                                    lctoolfunction,
-                                    *lctoolargs,
-                                    **lctoolkwargs,
-                                )
-
-                        # otherwise, this is an unrecognized lctool
-                        else:
-
-                            LOGGER.error('lctool %s, does not exist' % lctool)
-                            resultdict['status'] = 'error'
-                            resultdict['message'] = (
-                            'lctool %s does not exist' % lctool
-                            )
-                            self.set_status(400)
-                            self.write(resultdict)
-                            self.finish()
-
-                    # if the tool is not in the CPTOOLSMAP
-                    else:
-                        LOGGER.error('lctool %s, does not exist' % lctool)
-                        resultdict['status'] = 'error'
-                        resultdict['message'] = (
-                        'lctool %s does not exist' % lctool
-                        )
-                        self.set_status(400)
-                        self.write(resultdict)
-                        self.finish()
-
-                # if no lctool arg is provided
+                # otherwise, this is an unrecognized lctool
                 else:
-                    LOGGER.error('lctool argument not provided')
+
+                    LOGGER.error('lctool %s, does not exist' % lctool)
                     resultdict['status'] = 'error'
                     resultdict['message'] = (
-                    'lctool argument not provided'
+                        'lctool %s does not exist' % lctool
                     )
                     self.set_status(400)
                     self.write(resultdict)
-                    self.finish()
+                    raise tornado.web.Finish()
 
             # if the cpfile doesn't exist
             else:
@@ -1453,7 +1394,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                               'result':None}
                 self.set_status(404)
                 self.write(resultdict)
-                self.finish()
+                raise tornado.web.Finish()
 
         # if no checkplot was provided to load
         else:
@@ -1464,7 +1405,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                           'result':None}
             self.set_status(400)
             self.write(resultdict)
-
+            raise tornado.web.Finish()
 
 
     def post(self, cpfile):
