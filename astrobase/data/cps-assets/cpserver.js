@@ -311,6 +311,9 @@ var cpv = {
     totalcps: 0,
     cpfpng: null,
 
+    // this holds the current checkplot's temp results from lctools
+    cptoolresults: {},
+
     // this checks if the server is in readonly mode. disables controls if so.
     readonlymode: false,
 
