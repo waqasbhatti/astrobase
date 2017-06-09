@@ -1296,7 +1296,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                             }
                             savedcpf = yield self.executor.submit(
                                 _write_checkplot_picklefile,
-                                cpdict,
+                                tempcpdict,
                                 **savekwargs
                             )
 
@@ -1431,7 +1431,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                             }
                             savedcpf = yield self.executor.submit(
                                 _write_checkplot_picklefile,
-                                cpdict,
+                                tempcpdict,
                                 **savekwargs
                             )
 
@@ -1469,17 +1469,13 @@ class LCToolHandler(tornado.web.RequestHandler):
                 # if the lctool is var-varfeatures
                 elif lctool == 'var-varfeatures':
 
-                    key1, key2 = resloc
-
                     # see if we can return results from a previous iteration of
                     # this tool
                     if (not forcereload and
-                        key1 in tempcpdict and
-                        isinstance(tempcpdict[key1], dict) and
-                        key2 in tempcpdict[key1] and
-                        isinstance(tempcpdict[key1][key2], dict)):
-
-                        resultdict = tempcpdict[key1][key2]
+                        'varinfo' in tempcpdict and
+                        isinstance(tempcpdict['varinfo'], dict) and
+                        'varfeatures' in tempcpdict['varinfo'] and
+                        isinstance(tempcpdict['varinfo']['varfeatures'], dict)):
 
                         LOGGER.warning(
                             'returning previously unsaved '
@@ -1498,8 +1494,10 @@ class LCToolHandler(tornado.web.RequestHandler):
                             lctool
                         )
                         resultdict['result'] = {
-                            key1: {
-                                key2: resultdict
+                            'varinfo': {
+                                'varfeatures': (
+                                    tempcpdict['varinfo']['varfeatures']
+                                )
                             }
                         }
 
@@ -1520,20 +1518,25 @@ class LCToolHandler(tornado.web.RequestHandler):
                         # save the pickle only if readonly is not true
                         if not self.readonly:
 
-                            if (key1 in tempcpdict and
-                                isinstance(tempcpdict[key1], dict)):
+                            if ('varinfo' in tempcpdict and
+                                isinstance(tempcpdict['varinfo'], dict)):
 
-                                if key2 in tempcpdict[key1]:
+                                if 'varfeatures' in tempcpdict['varinfo']:
 
-                                    tempcpdict[key1][key2] = funcresults
+                                    tempcpdict['varinfo']['varfeatures'] = (
+                                        funcresults
+                                    )
 
                                 else:
 
-                                    tempcpdict[key1].update({key2: funcresults})
+                                    tempcpdict['varinfo'].update(
+                                        {'varfeatures': funcresults}
+                                    )
 
                             else:
 
-                                tempcpdict[key1] = {key2: funcresults}
+                                tempcpdict['varinfo'] = {'varfeatures':
+                                                         funcresults}
 
 
                             savekwargs = {
@@ -1542,7 +1545,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                             }
                             savedcpf = yield self.executor.submit(
                                 _write_checkplot_picklefile,
-                                cpdict,
+                                tempcpdict,
                                 **savekwargs
                             )
 
@@ -1568,8 +1571,8 @@ class LCToolHandler(tornado.web.RequestHandler):
                             lctool
                         )
                         resultdict['result'] = {
-                            lspmethod:{
-                                'phasedlc0':phasedlc
+                            'varinfo':{
+                                'varfeatures':funcresults
                             }
                         }
 
