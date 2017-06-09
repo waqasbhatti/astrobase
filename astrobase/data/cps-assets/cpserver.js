@@ -1881,63 +1881,63 @@ var cptools = {
     // this holds the current checkplot's temp results from lctools
     cptoolresults: {},
 
-    var load_previous_results: function () {
+    load_previous_results: function () {
 
     },
 
-    var save_results_to_checkplot: function (saveelem) {
+    save_results_to_checkplot: function (saveelem) {
 
     },
 
-    var periodogram_gls: function () {
+    periodogram_gls: function () {
 
     },
 
-    var periodogram_bls: function () {
+    periodogram_bls: function () {
 
     },
 
-    var periodogram_pdm: function () {
+    periodogram_pdm: function () {
 
     },
 
-    var periodogram_aov: function () {
+    periodogram_aov: function () {
 
     },
 
-    var get_varfeatures: function () {
+    get_varfeatures: function () {
 
     },
 
-    var prewhiten_lightcurve: function () {
+    prewhiten_lightcurve: function () {
 
     },
 
-    var mask_signal: function () {
+    mask_signal: function () {
 
     },
 
-    var new_phasedlc_plot: function () {
+    new_phasedlc_plot: function () {
 
     },
 
-    var lcfit_fourier: function () {
+    lcfit_fourier: function () {
 
     },
 
-    var lcfit_spline: function () {
+    lcfit_spline: function () {
 
     },
 
-    var lcfit_legendre: function () {
+    lcfit_legendre: function () {
 
     },
 
-    var lcfit_savgol: function () {
+    lcfit_savgol: function () {
 
     },
 
-    var action_setup: function () {
+    action_setup: function () {
 
         $('#get-varfeatures').on('click', function (evt) {
 
