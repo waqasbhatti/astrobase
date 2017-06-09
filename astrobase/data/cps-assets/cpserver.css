@@ -158,3 +158,8 @@ to use this:
 .tool-row-panel {
     margin-top: 5px;
 }
+
+.display-panel {
+    min-height: 300px;
+    max-height: 480px;
+}

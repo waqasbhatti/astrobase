@@ -381,63 +381,124 @@
           <!-- this tab panel contains the period-tools -->
           <div class="tab-pane" id="periodsearch" role="tabpanel">
 
+            <!-- this has the periodogram and phased LC displays -->
             <div class="row tool-header-panel">
 
-              <div class="col-sm-4">
-                <form>
-
-                  <div class="form-group">
-                    <label for="psearchrun">Search method</label>
-                    <select class="custom-select form-control form-control-sm"
-                            id="psearchrun" name="psearchrun">
-                      <option value="0" selected>Generalized Lomb-Scargle</option>
-                      <option value="1">Phase Dispersion Minimization</option>
-                      <option value="2">Box Least-squared Search</option>
-                      <option value="3">Analysis of Variance</option>
-                    </select>
-                  </div>
-
-                  <div class="form-check">
-                    <label class="form-check-label">
-                      <input type="checkbox" id="autofreq"
-                             class="form-check-input" checked>
-                      Use automatic frequency step and time coverage
-                    </label>
-                  </div>
-
-                  <div class="form-group">
-                    <label for="startp">Start period [days]</label>
-                    <input type="text" class="form-control form-control-sm"
-                           id="startp" value="0.1" disabled>
-                  </div>
-
-                  <div class="form-group">
-                    <label for="endp">End period [days]</label>
-                    <input type="text" class="form-control form-control-sm"
-                           id="endp" value="100.0" disabled>
-                  </div>
-
-                  <div class="form-group">
-                    <label for="freqstep">Frequency step [days<sup>-1</sup>]</label>
-                    <input type="text" class="form-control form-control-sm"
-                           id="freqstep" disabled>
-                  </div>
-
-                  <div class="form-check">
-                    <label class="form-check-label">
-                      <input type="checkbox" id="periodsearch-magsarefluxes"
-                             class="form-check-input">
-                      Measurements are fluxes
-                    </label>
-                  </div>
-
-                  <button type="submit" id="start-psearch"
-                          class="btn btn-primary btn-block">Run period search</button>
-
-                </form>
+              <div class="col-sm-6 display-panel"
+                   id="psearch-periodogram-display">
               </div>
 
-              <div class="col-sm-8" id="periodsearch-results">
+              <div class="col-sm-6 display-panel"
+                   id="psearch-phasedlc-display">
+              </div>
+
+            </div>
+
+            <!-- this contains the periodogram and phasedlc display controls -->
+            <div class="row">
+
+              <div class="col-sm-3">
+                <div class="form-group">
+                  <label for="psearch-pgrampeaks">Use periodogram peak</label>
+                  <select class="custom-select form-control"
+                          id="psearch-pgrampeaks" name="psearch-pgrampeaks">
+                  </select>
+                </div>
+              </div>
+
+              <div class="col-sm-4">
+                <div class="form-group">
+                  <label for="psearch-plotperiod">Period [days]</label>
+                  <div class="input-group">
+                    <span class="input-group-btn">
+                      <button class="btn btn-secondary" type="button">1/2</button>
+                    </span>
+                    <input type="text" class="form-control">
+                    <span class="input-group-btn">
+                      <button class="btn btn-secondary" type="button">&times; 2</button>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-sm-3">
+                <div class="form-group">
+                  <label for="psearch-plotepoch"> Epoch [JD]</label>
+                  <input type="text" class="form-control"
+                         id="psearch-plotepoch">
+                </div>
+              </div>
+
+              <div class="col-sm-2">
+                <div class="form-group">
+                  <label for="psearch-makephasedlc">&nbsp;</label>
+                  <button type="submit" id="psearch-makephasedlc"
+                          class="btn btn-secondary form-control">
+                    Plot
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- this contains the periodogram runner controls -->
+            <div class="row">
+
+              <div class="col-sm-6">
+
+                <div class="form-group">
+                  <label for="startp">Start period [days]</label>
+                  <input type="text" class="form-control form-control-sm"
+                         id="startp" value="0.1" disabled>
+                </div>
+
+                <div class="form-group">
+                  <label for="endp">End period [days]</label>
+                  <input type="text" class="form-control form-control-sm"
+                         id="endp" value="100.0" disabled>
+                </div>
+
+                <div class="form-group">
+                  <label for="freqstep">Frequency step [days<sup>-1</sup>]</label>
+                  <input type="text" class="form-control form-control-sm"
+                         id="freqstep" disabled>
+                </div>
+
+              </div>
+
+              <div class="col-sm-6">
+
+                <div class="form-group">
+                  <label for="psearchrun">Search method</label>
+                  <select class="custom-select form-control form-control-sm"
+                          id="psearchrun" name="psearchrun">
+                    <option value="0" selected>Generalized Lomb-Scargle</option>
+                    <option value="1">Phase Dispersion Minimization</option>
+                    <option value="2">Box Least-squared Search</option>
+                    <option value="3">Analysis of Variance</option>
+                  </select>
+                </div>
+
+                <div class="form-check">
+                  <label class="form-check-label">
+                    <input type="checkbox" id="autofreq"
+                           class="form-check-input" checked>
+                    Use automatic frequency step and time coverage
+                  </label>
+                </div>
+
+                <div class="form-check">
+                  <label class="form-check-label">
+                    <input type="checkbox" id="periodsearch-magsarefluxes"
+                           class="form-check-input">
+                    Measurements are fluxes
+                  </label>
+                </div>
+
+                <button type="submit" id="start-psearch"
+                        class="btn btn-primary btn-block">
+                  Run period search
+                </button>
 
               </div>
 
