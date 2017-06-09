@@ -276,7 +276,8 @@ class IndexHandler(tornado.web.RequestHandler):
                     project_checkplots=project_checkplots,
                     project_checkplotbasenames=project_checkplotbasenames,
                     project_checkplotindices=project_checkplotindices,
-                    project_checkplotfile=self.cplistfile)
+                    project_checkplotfile=self.cplistfile,
+                    readonly=self.readonly)
 
 
 
@@ -1351,6 +1352,8 @@ class LCToolHandler(tornado.web.RequestHandler):
 
 
                 # if the lctool is a call to the phased LC plot itself
+                # this requires lots of parameters
+                # these should all be present in the frontend
                 elif lctool == 'phasedlc-newplot':
 
                     lspmethod = lctoolargs[1]
