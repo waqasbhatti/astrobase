@@ -1010,6 +1010,16 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                 LOGGER.info('loading %s...' % cpfpath)
 
+                # we check for the existence of a cpfpath + '-cpserver-temp'
+                # file first. this is where we store stuff before we write it
+                # back to the actual checkplot.
+
+                tempfpath = cpfpath + '-cpserver-temp'
+
+                # FIXME: use the tempfile instead of extra stuff in the actual
+                # checkplot
+
+
                 # this is the async call to the executor
                 # this loads the checkplot pickle
                 cpdict = yield self.executor.submit(
