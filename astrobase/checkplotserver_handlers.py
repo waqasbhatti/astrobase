@@ -905,7 +905,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                 # check if we have to force-reload
                 forcereload = self.get_argument('forcereload',False)
                 if forcereload and xhtml_escape(forcereload):
-                    forcereload = True if forcereload else False
+                    forcereload = True if forcereload == 'true' else False
 
                 # get the light curve tool to use
                 lctool = self.get_argument('lctool', None)
@@ -943,7 +943,8 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     wbkwarg = url_unescape(
                                         xhtml_escape(wbkwarg)
                                     )
-                                LOGGER.info('wbkwarg = %s' % repr(wbkwarg))
+                                LOGGER.info('xkwarg = %s, wbkwarg = %s' %
+                                            (xkwarg, repr(wbkwarg)))
 
                                 # if it's None, sub with the default
                                 if wbkwarg is None:
@@ -1010,41 +1011,46 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                 LOGGER.info('loading %s...' % cpfpath)
 
-                # we check for the existence of a cpfpath + '-cpserver-temp'
-                # file first. this is where we store stuff before we write it
-                # back to the actual checkplot.
-
-                tempfpath = cpfpath + '-cpserver-temp'
-
-                # FIXME: use the tempfile instead of extra stuff in the actual
-                # checkplot
-
-
-                # this is the async call to the executor
-                # this loads the checkplot pickle
+                # this loads the actual checkplot pickle
                 cpdict = yield self.executor.submit(
                     _read_checkplot_picklefile, cpfpath
                 )
 
-                # get the times, mags, errs out of the pickle. if there's an
-                # existing cpservertemp key in the cpdict, then we were
-                # operating on this checkplot previously and have not yet saved
-                # these changes to the actual checkplot. load these times, mags,
-                # errs from the cpdict['cpservertemp']['magseries'] key instead.
-                if ('cpservertemp' in cpdict and
-                    isinstance(cpdict['cpservertemp'], dict) and
-                    'magseries' in cpdict['cpservertemp'] and
-                    isinstance(cpdict['cpservertemp']['magseries'], dict) and
-                    'times' in cpdict['cpservertemp']['magseries'] and
-                    'mags' in cpdict['cpservertemp']['magseries'] and
-                    'errs' in cpdict['cpservertemp']['magseries'] and
-                    (not forcereload)):
+                # we check for the existence of a cpfpath + '-cpserver-temp'
+                # file first. this is where we store stuff before we write it
+                # back to the actual checkplot.
+                tempfpath = cpfpath + '-cpserver-temp'
+
+                # load the temp checkplot if it exists
+                if os.path.exists(tempfpath):
+
+                    tempcpdict = yield self.executor.submit(
+                    _read_checkplot_picklefile, tempfpath
+                    )
+
+                # if it doesn't exist, read the times, mags, errs from the
+                # actual checkplot in prep for working on it
+                else:
+
+                    tempcpdict = {
+                        'objectid':cpdict['objectid'],
+                        'magseries':{
+                            'times':cpdict['magseries']['times'],
+                            'mags':cpdict['magseries']['mags'],
+                            'errs':cpdict['magseries']['errs'],
+                        }
+                    }
+
+
+                # if we're not forcing a rerun from the original checkplot dict
+                if not forcereload:
 
                     cptimes, cpmags, cperrs = (
-                        cpdict['cpservertemp']['magseries']['times'],
-                        cpdict['cpservertemp']['magseries']['mags'],
-                        cpdict['cpservertemp']['magseries']['errs'],
+                        tempcpdict['magseries']['times'],
+                        tempcpdict['magseries']['mags'],
+                        tempcpdict['magseries']['errs'],
                     )
+                    LOGGER.info('forcereload = False')
 
                 # otherwise, reload the original times, mags, errs
                 else:
@@ -1052,6 +1058,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                     cptimes, cpmags, cperrs = (cpdict['magseries']['times'],
                                                cpdict['magseries']['mags'],
                                                cpdict['magseries']['errs'])
+                    LOGGER.info('forcereload = True')
 
 
                 # collect the args
@@ -1129,54 +1136,46 @@ class LCToolHandler(tornado.web.RequestHandler):
                     lspmethod = resloc[0]
 
                     # if we can return the results from a previous run
-                    if ('cpservertemp' in cpdict and
-                        lspmethod in cpdict['cpservertemp'] and
-                        isinstance(cpdict['cpservertemp'][lspmethod],
-                                   dict) and
+                    if (lspmethod in tempcpdict and
+                        isinstance(tempcpdict[lspmethod], dict) and
                         (not forcereload)):
 
                         # for a periodogram method, we need the
                         # following items
                         bestperiod = (
-                            cpdict[
-                                'cpservertemp'
-                            ][lspmethod][
-                                'bestperiod'
-                            ]
+                            tempcpdict[lspmethod]['bestperiod']
                         )
                         nbestperiods = (
-                            cpdict[
-                                'cpservertemp'
-                            ][lspmethod][
-                                'nbestperiods'
-                            ]
+                            tempcpdict[lspmethod]['nbestperiods']
                         )
                         nbestlspvals = (
-                            cpdict[
-                                'cpservertemp'
-                            ][lspmethod][
-                                'nbestlspvals'
-                            ]
+                            tempcpdict[lspmethod]['nbestlspvals']
                         )
                         periodogram = (
-                            cpdict[
-                                'cpservertemp'
-                            ][lspmethod][
-                                'periodogram'
-                            ]
+                            tempcpdict[lspmethod]['periodogram']
                         )
 
                         # get the first phased LC plot and its period
                         # and epoch
                         phasedlc0plot = (
-                            cpdict['cpservertemp'][lspmethod][0]['plot']
+                            tempcpdict[lspmethod][0]['plot']
                         )
                         phasedlc0period = float(
-                            cpdict['cpservertemp'][lspmethod][0]['period']
+                            tempcpdict[lspmethod][0]['period']
                         )
                         phasedlc0epoch = float(
-                            cpdict['cpservertemp'][lspmethod][0]['epoch']
+                            tempcpdict[lspmethod][0]['epoch']
                         )
+
+                        LOGGER.warning(
+                            'returning previously unsaved '
+                            'results for lctool %s from %s' %
+                            (lctool, tempfpath)
+                        )
+
+                        #
+                        # assemble the returndict
+                        #
 
                         resultdict['status'] = 'warning'
                         resultdict['message'] = (
@@ -1184,7 +1183,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                             'unsaved results from %s' %
                             lctool
                         )
-
                         resultdict['result'] = {
                             lspmethod:{
                                 'nbestperiods':nbestperiods,
@@ -1225,13 +1223,12 @@ class LCToolHandler(tornado.web.RequestHandler):
                             funcresults,
                         )
 
-                        # generate the phased LC for the best period
-                        # only. we show this in the frontend along with
-                        # the periodogram. the user decides which other
-                        # peaks they want a phased LC for, and we save
-                        # them to the cpdict['cpservertemp'] as
-                        # required. for now, we'll save the best phased
-                        # LC back to cpdict['cpservertemp'].
+                        # generate the phased LC for the best period only. we
+                        # show this in the frontend along with the
+                        # periodogram. the user decides which other peaks they
+                        # want a phased LC for, and we save them to the
+                        # tempcpdict as required. for now, we'll save only the
+                        # best phased LC back to tempcpdict.
                         phasedlcargs = (None,
                                         lspmethod,
                                         0,
@@ -1245,9 +1242,13 @@ class LCToolHandler(tornado.web.RequestHandler):
                                         0.002,
                                         7,
                                         [-0.8,0.8])
+
+                        # here, we set a bestperiodhighlight to distinguish this
+                        # plot from the ones existing in the checkplot already
                         phasedlckwargs = {
                             'xliminsetmode':False,
-                            'magsarefluxes':lctoolkwargs['magsarefluxes']
+                            'magsarefluxes':lctoolkwargs['magsarefluxes'],
+                            'bestperiodhighlight':'#e1f5fe',
                         }
 
                         # dispatch the plot function
@@ -1261,10 +1262,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                         # save the pickle only if readonly is not true
                         if not self.readonly:
 
-                            if not 'cpservertemp' in cpdict:
-                                cpdict['cpservertemp'] = {}
-
-                            cpdict['cpservertemp'][lspmethod] = {
+                            tempcpdict[lspmethod] = {
                                 'periods':funcresults['periods'],
                                 'lspvals':funcresults['lspvals'],
                                 'bestperiod':funcresults['bestperiod'],
@@ -1276,7 +1274,7 @@ class LCToolHandler(tornado.web.RequestHandler):
 
 
                             savekwargs = {
-                                'outfile':cpfpath,
+                                'outfile':tempfpath,
                                 'protocol':pickle.HIGHEST_PROTOCOL
                             }
                             savedcpf = yield self.executor.submit(
@@ -1285,9 +1283,11 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 **savekwargs
                             )
 
-                            LOGGER.info('saved temp results from '
-                                    '%s to checkplot: %s' %
-                                    (lctool, cpfpath))
+                            LOGGER.info(
+                                'saved temp results from '
+                                '%s to checkplot: %s' %
+                                (lctool, savedcpf)
+                            )
 
                         else:
 
@@ -1336,39 +1336,41 @@ class LCToolHandler(tornado.web.RequestHandler):
                 # if the lctool is a call to the phased LC plot itself
                 elif lctool == 'phasedlc-newplot':
 
-                            lspmethod = lctoolargs[1]
+                    lspmethod = lctoolargs[1]
 
-                            # if we can return the results from a previous run
-                            if ('cpservertemp' in cpdict and
-                                lspmethod in cpdict['cpservertemp'] and
-                                isinstance(cpdict['cpservertemp'][lspmethod],
-                                           dict) and
-                                (not forcereload)):
+                    # if we can return the results from a previous run
+                    if ('cpservertemp' in cpdict and
+                        lspmethod in cpdict['cpservertemp'] and
+                        isinstance(cpdict['cpservertemp'][lspmethod],
+                                   dict) and
+                        (not forcereload)):
 
-                                # TODO:
-                                stuff()
+                        # TODO:
+                        stuff()
 
-                            # otherwise, we need to dispatch the function
-                            else:
+                        # otherwise, we need to dispatch the function
+                    else:
 
-                                # run the phased LC function
-                                lctoolfunction = CPTOOLMAP[lctool]['func']
-                                funcresults = yield self.executor.submit(
-                                    lctoolfunction,
-                                    *lctoolargs,
-                                    **lctoolkwargs,
-                                )
+                        # run the phased LC function
+                        lctoolfunction = CPTOOLMAP[lctool]['func']
+                        funcresults = yield self.executor.submit(
+                            lctoolfunction,
+                            *lctoolargs,
+                            **lctoolkwargs,
+                        )
 
                 # if the lctool is var-varfeatures
                 elif lctool == 'var-varfeatures':
 
                     key1, key2 = resloc
+                    # TODO: stuff
 
 
                 # if the lctool is var-prewhiten or var-masksig
                 elif lctool in ('var-prewhiten','var-masksig'):
 
                     key1, key2 = resloc
+                    # TODO: stuff
 
 
                 # if the lctool is a lcfit method
@@ -1378,6 +1380,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 'lcfit-savgol'):
 
                     key1, key2 = resloc
+                    # TODO: stuff
 
                 # otherwise, this is an unrecognized lctool
                 else:
