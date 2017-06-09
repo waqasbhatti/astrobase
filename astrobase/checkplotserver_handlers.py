@@ -955,12 +955,25 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 else:
 
                                     # special handling for lists of floats
-                                    if isinstance(xkwargtype, list):
+                                    if xkwargtype is list:
+
                                         wbkwarg = json.loads(wbkwarg)
                                         wbkwarg = [float(x) for
                                                    x in wbkwarg]
+
+                                    # special handling for booleans
+                                    elif xkwargtype is bool:
+
+                                        if wbkwarg == 'false':
+                                            wbkwarg = False
+                                        elif wbkwarg == 'true':
+                                            wbkwarg = True
+                                        else:
+                                            wbkwarg = xkwargdef
+
                                     # usual casting for other types
                                     else:
+
                                         wbkwarg = xkwargtype(wbkwarg)
 
                                 # update the lctools kwarg dict
@@ -1339,17 +1352,41 @@ class LCToolHandler(tornado.web.RequestHandler):
                     lspmethod = lctoolargs[1]
 
                     # if we can return the results from a previous run
-                    if ('cpservertemp' in cpdict and
-                        lspmethod in cpdict['cpservertemp'] and
-                        isinstance(cpdict['cpservertemp'][lspmethod],
-                                   dict) and
-                        (not forcereload)):
+                    if (not forcereload and lspmethod in tempcpdict and
+                        isinstance(tempcpdict[lspmethod], dict)):
 
-                        # TODO:
-                        stuff()
+                        # we always get the best phased LC, this is the result
+                        # of a previous run
+                        phasedlc = tempcpdict[lspmethod][0]
 
-                        # otherwise, we need to dispatch the function
+                        LOGGER.warning(
+                            'returning previously unsaved '
+                            'results for lctool %s from %s' %
+                            (lctool, tempfpath)
+                        )
+
+                        #
+                        # assemble the returndict
+                        #
+
+                        resultdict['status'] = 'warning'
+                        resultdict['message'] = (
+                            'previous '
+                            'unsaved results from %s' %
+                            lctool
+                        )
+                        resultdict['result'] = {
+                            lspmethod:{
+                                'phasedlc0':phasedlc
+                            }
+                        }
+
+                        self.write(resultdict)
+                        self.finish()
+
+                    # otherwise, we need to dispatch the function
                     else:
+
 
                         # run the phased LC function
                         lctoolfunction = CPTOOLMAP[lctool]['func']
