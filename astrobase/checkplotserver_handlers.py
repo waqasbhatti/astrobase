@@ -107,6 +107,7 @@ kbls.set_logger_parent(__name__)
 
 # this is the function map for arguments
 CPTOOLMAP = {
+    ## PERIOD SEARCH METHODS ##
     'psearch-gls':{
         'args':('times','mags','errs'),
         'argtypes':(ndarray, ndarray, ndarray),
@@ -143,6 +144,22 @@ CPTOOLMAP = {
         'func':saov.aov_periodfind,
         'resloc':['aov'],
     },
+    ## PLOTTING A NEW PHASED LC ##
+    'phasedlc-newplot':{
+        'args':(None,'lspmethod','periodind',
+                'times','mags','errs','varperiod','varepoch',
+                'phasewrap','phasesort','phasebin','minbinelem',
+                'plotxlim'),
+        'argtypes':(None, str, int,
+                    ndarray, ndarray, ndarray, float, float,
+                    bool, bool, float, int, list),
+        'kwargs':('xliminsetmode','magsarefluxes'),
+        'kwargtypes':(bool, bool),
+        'kwargdefs':(False, False),
+        'func':_pkl_phased_magseries_plot,
+        'resloc':[],
+    },
+    ## VARIABILITY TOOLS ##
     'var-varfeatures':{
         'args':('times','mags','errs'),
         'argtypes':(ndarray,ndarray,ndarray),
@@ -170,20 +187,7 @@ CPTOOLMAP = {
         'func':signals.mask_signal,
         'resloc':['signals','mask'],
     },
-    'phasedlc-newplot':{
-        'args':(None,'lspmethod','periodind',
-                'times','mags','errs','varperiod','varepoch',
-                'phasewrap','phasesort','phasebin','minbinelem',
-                'plotxlim'),
-        'argtypes':(None, str, int,
-                    ndarray, ndarray, ndarray, float, float,
-                    bool, bool, float, int, list),
-        'kwargs':('xliminsetmode','magsarefluxes'),
-        'kwargtypes':(bool, bool),
-        'kwargdefs':(False, False),
-        'func':_pkl_phased_magseries_plot,
-        'resloc':[],
-    },
+    ## FITTING FUNCTIONS TO LIGHT CURVES ##
     'lcfit-fourier':{
         'args':('times','mags','errs','period'),
         'argtypes':(ndarray, ndarray, ndarray, float),
@@ -1387,6 +1391,9 @@ class LCToolHandler(tornado.web.RequestHandler):
                     # otherwise, we need to dispatch the function
                     else:
 
+                        # add the highlight to distinguish this plot from usual
+                        # checkplot plots
+                        lctoolkwargs['bestperiodhighlight'] = '#e1f5fe'
 
                         # run the phased LC function
                         lctoolfunction = CPTOOLMAP[lctool]['func']
@@ -1396,11 +1403,178 @@ class LCToolHandler(tornado.web.RequestHandler):
                             **lctoolkwargs,
                         )
 
+                        # save these to the tempcpdict
+                        # save the pickle only if readonly is not true
+                        if not self.readonly:
+
+                            if (lspmethod in tempcpdict and
+                                isinstance(tempcpdict[lspmethod], dict)):
+
+                                if 0 in tempcpdict[lspmethod]:
+
+                                    tempcpdict[lspmethod][0] = funcresults
+
+                                else:
+
+                                    tempcpdict[lspmethod].update(
+                                        {0: funcresults}
+                                    )
+
+                            else:
+
+                                tempcpdict[lspmethod] = {0: funcresults}
+
+
+                            savekwargs = {
+                                'outfile':tempfpath,
+                                'protocol':pickle.HIGHEST_PROTOCOL
+                            }
+                            savedcpf = yield self.executor.submit(
+                                _write_checkplot_picklefile,
+                                cpdict,
+                                **savekwargs
+                            )
+
+                            LOGGER.info(
+                                'saved temp results from '
+                                '%s to checkplot: %s' %
+                                (lctool, savedcpf)
+                            )
+
+                        else:
+
+                            LOGGER.warning(
+                                'not saving temp results to checkplot '
+                                ' because readonly = True'
+                            )
+
+                        #
+                        # assemble the return dict
+                        #
+                        resultdict['status'] = 'success'
+                        resultdict['message'] = (
+                            'new results for %s' %
+                            lctool
+                        )
+                        resultdict['result'] = {
+                            lspmethod:{
+                                'phasedlc0':funcresults
+                            }
+                        }
+
+                        self.write(resultdict)
+                        self.finish()
+
+
                 # if the lctool is var-varfeatures
                 elif lctool == 'var-varfeatures':
 
                     key1, key2 = resloc
-                    # TODO: stuff
+
+                    # see if we can return results from a previous iteration of
+                    # this tool
+                    if (not forcereload and
+                        key1 in tempcpdict and
+                        isinstance(tempcpdict[key1], dict) and
+                        key2 in tempcpdict[key1] and
+                        isinstance(tempcpdict[key1][key2], dict)):
+
+                        resultdict = tempcpdict[key1][key2]
+
+                        LOGGER.warning(
+                            'returning previously unsaved '
+                            'results for lctool %s from %s' %
+                            (lctool, tempfpath)
+                        )
+
+                        #
+                        # assemble the returndict
+                        #
+
+                        resultdict['status'] = 'warning'
+                        resultdict['message'] = (
+                            'previous '
+                            'unsaved results from %s' %
+                            lctool
+                        )
+                        resultdict['result'] = {
+                            key1: {
+                                key2: resultdict
+                            }
+                        }
+
+                        self.write(resultdict)
+                        self.finish()
+
+                    # otherwise, we need to dispatch the function
+                    else:
+
+                        lctoolfunction = CPTOOLMAP[lctool]['func']
+                        funcresults = yield self.executor.submit(
+                            lctoolfunction,
+                            *lctoolargs,
+                            **lctoolkwargs,
+                        )
+
+                        # save these to the tempcpdict
+                        # save the pickle only if readonly is not true
+                        if not self.readonly:
+
+                            if (key1 in tempcpdict and
+                                isinstance(tempcpdict[key1], dict)):
+
+                                if key2 in tempcpdict[key1]:
+
+                                    tempcpdict[key1][key2] = funcresults
+
+                                else:
+
+                                    tempcpdict[key1].update({key2: funcresults})
+
+                            else:
+
+                                tempcpdict[key1] = {key2: funcresults}
+
+
+                            savekwargs = {
+                                'outfile':tempfpath,
+                                'protocol':pickle.HIGHEST_PROTOCOL
+                            }
+                            savedcpf = yield self.executor.submit(
+                                _write_checkplot_picklefile,
+                                cpdict,
+                                **savekwargs
+                            )
+
+                            LOGGER.info(
+                                'saved temp results from '
+                                '%s to checkplot: %s' %
+                                (lctool, savedcpf)
+                            )
+
+                        else:
+
+                            LOGGER.warning(
+                                'not saving temp results to checkplot '
+                                ' because readonly = True'
+                            )
+
+                        #
+                        # assemble the return dict
+                        #
+                        resultdict['status'] = 'success'
+                        resultdict['message'] = (
+                            'new results for %s' %
+                            lctool
+                        )
+                        resultdict['result'] = {
+                            lspmethod:{
+                                'phasedlc0':phasedlc
+                            }
+                        }
+
+                        self.write(resultdict)
+                        self.finish()
 
 
                 # if the lctool is var-prewhiten or var-masksig
