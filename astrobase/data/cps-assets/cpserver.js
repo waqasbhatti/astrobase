@@ -311,9 +311,6 @@ var cpv = {
     totalcps: 0,
     cpfpng: null,
 
-    // this holds the current checkplot's temp results from lctools
-    cptoolresults: {},
-
     // this checks if the server is in readonly mode. disables controls if so.
     readonlymode: false,
 
@@ -1873,6 +1870,79 @@ var cpv = {
 
         });
 
+
+    }
+
+};
+
+
+var cptools = {
+
+    // this holds the current checkplot's temp results from lctools
+    cptoolresults: {},
+
+    var load_previous_results: function () {
+
+    },
+
+    var save_results_to_checkplot: function (saveelem) {
+
+    },
+
+    var periodogram_gls: function () {
+
+    },
+
+    var periodogram_bls: function () {
+
+    },
+
+    var periodogram_pdm: function () {
+
+    },
+
+    var periodogram_aov: function () {
+
+    },
+
+    var get_varfeatures: function () {
+
+    },
+
+    var prewhiten_lightcurve: function () {
+
+    },
+
+    var mask_signal: function () {
+
+    },
+
+    var new_phasedlc_plot: function () {
+
+    },
+
+    var lcfit_fourier: function () {
+
+    },
+
+    var lcfit_spline: function () {
+
+    },
+
+    var lcfit_legendre: function () {
+
+    },
+
+    var lcfit_savgol: function () {
+
+    },
+
+    var action_setup: function () {
+
+        $('#get-varfeatures').on('click', function (evt) {
+
+
+        });
 
     }
 
