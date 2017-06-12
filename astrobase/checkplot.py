@@ -1634,6 +1634,16 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
     directreturn = True, then the generated dict result for this magseries plot
     will be returned directly.
 
+    lspmethod is a string indicating the type of period-finding algorithm that
+    produced the period. If this is not in METHODSHORTLABELS, it will be used
+    verbatim.
+
+    periodind is the index of the period.
+
+      If == 0  -> best period and bestperiodhighlight is applied if not None
+      If > 0   -> some other peak of the periodogram
+      If == -1 -> special mode w/ no periodogram labels and enabled highlight
+
     overplotfit is a result dict returned from one of the XXXX_fit_magseries
     functions in astrobase.varbase.lcfit. If this is not None, then the fit will
     be overplotted on the phased light curve plot.
@@ -1641,7 +1651,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
     overplotfit must have the following structure and at least the keys below if
     not originally from one of these functions:
 
-    {'fitmethod':<str: name of fit method>,
+    {'fittype':<str: name of fit method>,
      'fitchisq':<float: the chi-squared value of the fit>,
      'fitredchisq':<float: the reduced chi-squared value of the fit>,
      'fitinfo':{'fitmags':<ndarray: model mags or fluxes from fit function>},
@@ -1686,14 +1696,22 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
     # make the plot title based on the lspmethod
     if periodind == 0:
         plottitle = '%s best period: %.6f d - epoch: %.5f' % (
-            METHODSHORTLABELS[lspmethod],
+            (METHODSHORTLABELS[lspmethod] if lspmethod in METHODSHORTLABELS
+             else lspmethod),
             varperiod,
             varepoch
         )
     elif periodind > 0:
         plottitle = '%s peak %s: %.6f d - epoch: %.5f' % (
-            METHODSHORTLABELS[lspmethod],
+            (METHODSHORTLABELS[lspmethod] if lspmethod in METHODSHORTLABELS
+             else lspmethod),
             periodind+1,
+            varperiod,
+            varepoch
+        )
+    elif periodind == -1:
+        plottitle = '%s period: %.6f d - epoch: %.5f' % (
+            lspmethod,
             varperiod,
             varepoch
         )
@@ -1815,7 +1833,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
     plt.title(plottitle)
 
     # make sure the best period phased LC plot stands out
-    if periodind == 0 and bestperiodhighlight:
+    if (periodind == 0 or periodind == -1) and bestperiodhighlight:
         if MPLVERSION >= (2,0,0):
             plt.gca().set_facecolor(bestperiodhighlight)
         else:
@@ -2118,7 +2136,7 @@ def checkplot_dict(lspinfolist,
     function should return a Python dict with the following structure (similar
     to the functions in astrobase.varbase.lcfit) and at least the keys below:
 
-    {'fitmethod':<str: name of fit method>,
+    {'fittype':<str: name of fit method>,
      'fitchisq':<float: the chi-squared value of the fit>,
      'fitredchisq':<float: the reduced chi-squared value of the fit>,
      'fitinfo':{'fitmags':<ndarray: model mags or fluxes from fit function>},
@@ -2483,7 +2501,7 @@ def checkplot_pickle(lspinfolist,
     function should return a Python dict with the following structure (similar
     to the functions in astrobase.varbase.lcfit) and at least the keys below:
 
-    {'fitmethod':<str: name of fit method>,
+    {'fittype':<str: name of fit method>,
      'fitchisq':<float: the chi-squared value of the fit>,
      'fitredchisq':<float: the reduced chi-squared value of the fit>,
      'fitinfo':{'fitmags':<ndarray: model mags or fluxes from fit function>},
