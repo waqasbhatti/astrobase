@@ -94,8 +94,7 @@ def LOGEXCEPTION(message):
 
 def prewhiten_magseries(times, mags, errs,
                         whitenperiod,
-                        fourierorder=3,
-                        whitenparams=None,
+                        whitenparams,
                         sigclip=3.0,
                         magsarefluxes=False,
                         plotfit=None,
@@ -103,19 +102,17 @@ def prewhiten_magseries(times, mags, errs,
     '''Removes a periodic sinusoidal signal generated using whitenparams from
     the input magnitude time series.
 
-    fourierorder is the order of the fourier series to use when pre-whitening
-    the magnitude time series. specify fourierorder or whitenparams (the actual
-    fourier amplitude and phase parameters) but not both.
-
-    whitenparams is like so:
+    whitenparams are the Fourier amplitude and phase coefficients:
 
     [ampl_1, ampl_2, ampl_3, ..., ampl_X,
      pha_1, pha_2, pha_3, ..., pha_X]
 
-    where X is the Fourier order.
+    where X is the Fourier order. These are usually the output of a previous
+    Fourier fit to the light curve (from varbase.lcfit.fourier_fit_magseries for
+    example).
 
     if rescaletomedian is True, then we add back the constant median term of the
-    magnitudes to the final whitened mag series.
+    magnitudes to the final pre-whitened mag series.
 
     '''
 
@@ -145,22 +142,8 @@ def prewhiten_magseries(times, mags, errs,
     # with respect to phase -- the light curve minimum)
     ptimes = stimes[phasesortind]
 
-    # get the fourier order either from the scalar order kwarg...
-    if fourierorder and fourierorder > 0 and (whitenparams is None):
-
-        initfourieramps = [0.6] + [0.2]*(fourierorder - 1)
-        initfourierphas = [0.1] + [0.1]*(fourierorder - 1)
-        whitenparams = initfourieramps + initfourierphas
-
-    # or from the fully specified coeffs vector
-    elif not fourierorder and (whitenparams is not None):
-
-        fourierorder = int(len(whitenparams)/2)
-
-    else:
-        LOGWARNING('specified both Fourier order AND Fourier coeffs, '
-                   'using the specified Fourier coeffs')
-        fourierorder = int(len(whitenparams)/2)
+    # get the Fourier order
+    fourierorder = int(len(whitenparams)/2)
 
     # now subtract the harmonic series from the phased LC
     # these are still in phase order
@@ -279,7 +262,7 @@ def gls_prewhiten(times, mags, errs,
                   sigclip=30.0,
                   magsarefluxes=False,
                   stepsize=1.0e-4,
-                  fourierorder=3, # 3rd order series
+                  fourierorder=3, # 3rd order series to start with
                   initfparams=None,
                   nbestpeaks=5,
                   nworkers=4,
@@ -318,8 +301,7 @@ def gls_prewhiten(times, mags, errs,
                                   smags,
                                   serrs,
                                   wperiod,
-                                  fourierorder=None,
-                                  whitenparams=ffitparams,
+                                  ffitparams,
                                   sigclip=sigclip,
                                   magsarefluxes=magsarefluxes)
 
@@ -379,13 +361,13 @@ def gls_prewhiten(times, mags, errs,
         wperiod = wlsp['bestperiod']
         wfseries = fourier_fit_magseries(wtimes, wmags, werrs, wperiod,
                                          fourierorder=fourierorder,
-                                         fourierparams=None,
+                                         fourierparams=initfparams,
                                          magsarefluxes=magsarefluxes,
                                          sigclip=sigclip)
         wffitparams = wfseries['fitinfo']['finalparams']
-        wseries = prewhiten_magseries(wtimes, wmags, werrs, wperiod,
-                                      fourierorder=None,
-                                      whitenparams=wffitparams,
+        wseries = prewhiten_magseries(wtimes, wmags, werrs,
+                                      wperiod,
+                                      wffitparams,
                                       magsarefluxes=magsarefluxes,
                                       sigclip=sigclip)
 
@@ -411,7 +393,7 @@ def gls_prewhiten(times, mags, errs,
     if plotfits and isinstance(plotfits, str):
 
         plt.subplots_adjust(hspace=0.3,top=0.9)
-        plt.savefig(plotfits,bbox_inches='tight')
+        plt.savefig(plotfits, bbox_inches='tight')
         plt.close()
         return bestperiods, os.path.abspath(plotfits)
 
