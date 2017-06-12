@@ -24,6 +24,11 @@ import logging
 from datetime import time
 import time
 
+try:
+    from cStringIO import StringIO as strio
+except:
+    from io import BytesIO as strio
+
 ######################################
 ## CUSTOM JSON ENCODER FOR FRONTEND ##
 ######################################

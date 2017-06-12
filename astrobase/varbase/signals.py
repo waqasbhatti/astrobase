@@ -31,6 +31,10 @@ matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 
+try:
+    from cStringIO import StringIO as strio
+except:
+    from io import BytesIO as strio
 
 
 ###################
@@ -98,6 +102,7 @@ def prewhiten_magseries(times, mags, errs,
                         sigclip=3.0,
                         magsarefluxes=False,
                         plotfit=None,
+                        plotfitphasedlconly=True,
                         rescaletomedian=True):
     '''Removes a periodic sinusoidal signal generated using whitenparams from
     the input magnitude time series.
@@ -169,87 +174,133 @@ def prewhiten_magseries(times, mags, errs,
 
 
     # make the fit plot if required
-    if plotfit and isinstance(plotfit, str):
+    if plotfit and isinstance(plotfit, str) or isinstance(plotfit, strio):
 
-        plt.figure(figsize=(16,9.6))
-
-        # time series before whitening
-        plt.subplot(221)
-        plt.plot(stimes,smags,
-                 marker='.',
-                 color='k',
-                 linestyle='None',
-                 markersize=2.0,
-                 markeredgewidth=0)
-
-        if not magsarefluxes:
-            plt.gca().invert_yaxis()
-            plt.ylabel('magnitude')
+        if plotfitphasedlconly:
+            plt.figure(figsize=(10,4.8))
         else:
-            plt.ylabel('fluxes')
+            plt.figure(figsize=(16,9.6))
 
-        plt.xlabel('JD')
-        plt.title('LC before pre-whitening')
+        if plotfitphasedlconly:
 
-        # time series after whitening
-        plt.subplot(222)
-        plt.plot(wtimes,wmags,
-                 marker='.',
-                 color='g',
-                 linestyle='None',
-                 markersize=2.0,
-                 markeredgewidth=0)
+            # phased series before whitening
+            plt.subplot(121)
+            plt.plot(phase,pmags,
+                     marker='.',
+                     color='k',
+                     linestyle='None',
+                     markersize=2.0,
+                     markeredgewidth=0)
 
-        if not magsarefluxes:
-            plt.gca().invert_yaxis()
-            plt.ylabel('magnitude')
+            if not magsarefluxes:
+                plt.gca().invert_yaxis()
+                plt.ylabel('magnitude')
+            else:
+                plt.ylabel('fluxes')
+
+            plt.xlabel('phase')
+            plt.title('phased LC before pre-whitening')
+
+            # phased series after whitening
+            plt.subplot(122)
+            plt.plot(wphase,wmags,
+                     marker='.',
+                     color='g',
+                     linestyle='None',
+                     markersize=2.0,
+                     markeredgewidth=0)
+
+            if not magsarefluxes:
+                plt.gca().invert_yaxis()
+                plt.ylabel('magnitude')
+            else:
+                plt.ylabel('fluxes')
+
+            plt.xlabel('phase')
+            plt.title('phased LC after pre-whitening')
+
         else:
-            plt.ylabel('fluxes')
 
-        plt.xlabel('JD')
-        plt.title('LC after pre-whitening with period: %.6f' % whitenperiod)
+            # time series before whitening
+            plt.subplot(221)
+            plt.plot(stimes,smags,
+                     marker='.',
+                     color='k',
+                     linestyle='None',
+                     markersize=2.0,
+                     markeredgewidth=0)
 
-        # phased series before whitening
-        plt.subplot(223)
-        plt.plot(phase,pmags,
-                 marker='.',
-                 color='k',
-                 linestyle='None',
-                 markersize=2.0,
-                 markeredgewidth=0)
+            if not magsarefluxes:
+                plt.gca().invert_yaxis()
+                plt.ylabel('magnitude')
+            else:
+                plt.ylabel('fluxes')
 
-        if not magsarefluxes:
-            plt.gca().invert_yaxis()
-            plt.ylabel('magnitude')
-        else:
-            plt.ylabel('fluxes')
+            plt.xlabel('JD')
+            plt.title('LC before pre-whitening')
 
-        plt.xlabel('phase')
-        plt.title('phased LC before pre-whitening')
+            # time series after whitening
+            plt.subplot(222)
+            plt.plot(wtimes,wmags,
+                     marker='.',
+                     color='g',
+                     linestyle='None',
+                     markersize=2.0,
+                     markeredgewidth=0)
 
-        # phased series after whitening
-        plt.subplot(224)
-        plt.plot(wphase,wmags,
-                 marker='.',
-                 color='g',
-                 linestyle='None',
-                 markersize=2.0,
-                 markeredgewidth=0)
+            if not magsarefluxes:
+                plt.gca().invert_yaxis()
+                plt.ylabel('magnitude')
+            else:
+                plt.ylabel('fluxes')
 
-        if not magsarefluxes:
-            plt.gca().invert_yaxis()
-            plt.ylabel('magnitude')
-        else:
-            plt.ylabel('fluxes')
+            plt.xlabel('JD')
+            plt.title('LC after pre-whitening with period: %.6f' % whitenperiod)
 
-        plt.xlabel('phase')
-        plt.title('phased LC after pre-whitening')
+            # phased series before whitening
+            plt.subplot(223)
+            plt.plot(phase,pmags,
+                     marker='.',
+                     color='k',
+                     linestyle='None',
+                     markersize=2.0,
+                     markeredgewidth=0)
+
+            if not magsarefluxes:
+                plt.gca().invert_yaxis()
+                plt.ylabel('magnitude')
+            else:
+                plt.ylabel('fluxes')
+
+            plt.xlabel('phase')
+            plt.title('phased LC before pre-whitening')
+
+            # phased series after whitening
+            plt.subplot(224)
+            plt.plot(wphase,wmags,
+                     marker='.',
+                     color='g',
+                     linestyle='None',
+                     markersize=2.0,
+                     markeredgewidth=0)
+
+            if not magsarefluxes:
+                plt.gca().invert_yaxis()
+                plt.ylabel('magnitude')
+            else:
+                plt.ylabel('fluxes')
+
+            plt.xlabel('phase')
+            plt.title('phased LC after pre-whitening')
 
         plt.tight_layout()
-        plt.savefig(plotfit)
+        plt.savefig(plotfit, format='png', pad_inches=0.0)
         plt.close()
 
-        returndict['fitplotfile'] = plotfit
+        if isinstance(plotfit, str):
+            returndict['fitplotfile'] = plotfit
+        else:
+            returndict['fitplotfile'] = 'plotted-to-stringio'
 
 
     return returndict
@@ -409,6 +460,8 @@ def mask_signal(times, mags, errs,
                 magsarefluxes=False,
                 maskphases=[0,0,0.5,1.0],
                 maskphaselength=0.1,
+                plotfit=None,
+                plotfitphasedlconly=True,
                 sigclip=30.0):
     '''This removes repeating signals in the magnitude time series.
 
@@ -417,9 +470,9 @@ def mask_signal(times, mags, errs,
 
     '''
 
-    stimes, smags, errs = sigclip_magseries(times, mags, errs,
-                                            sigclip=sigclip,
-                                            magsarefluxes=magsarefluxes)
+    stimes, smags, serrs = sigclip_magseries(times, mags, errs,
+                                             sigclip=sigclip,
+                                             magsarefluxes=magsarefluxes)
 
 
     # now phase the light curve using the period and epoch provided
@@ -441,7 +494,139 @@ def mask_signal(times, mags, errs,
     mmags = smags[masks]
     merrs = serrs[masks]
 
-    return {'mphases':mphases,
-            'mtimes':mtimes,
-            'mmags':mmags,
-            'merrs':merrs}
+    returndict = {'mphases':mphases,
+                  'mtimes':mtimes,
+                  'mmags':mmags,
+                  'merrs':merrs}
+
+    # make the fit plot if required
+    if plotfit and isinstance(plotfit, str) or isinstance(plotfit, strio):
+
+        if plotfitphasedlconly:
+            plt.figure(figsize=(10,4.8))
+        else:
+            plt.figure(figsize=(16,9.6))
+
+        if plotfitphasedlconly:
+
+            # phased series before whitening
+            plt.subplot(121)
+            plt.plot(phases,smags,
+                     marker='.',
+                     color='k',
+                     linestyle='None',
+                     markersize=2.0,
+                     markeredgewidth=0)
+
+            if not magsarefluxes:
+                plt.gca().invert_yaxis()
+                plt.ylabel('magnitude')
+            else:
+                plt.ylabel('fluxes')
+
+            plt.xlabel('phase')
+            plt.title('phased LC before signal masking')
+
+            # phased series after whitening
+            plt.subplot(122)
+            plt.plot(mphases,mmags,
+                     marker='.',
+                     color='g',
+                     linestyle='None',
+                     markersize=2.0,
+                     markeredgewidth=0)
+
+            if not magsarefluxes:
+                plt.gca().invert_yaxis()
+                plt.ylabel('magnitude')
+            else:
+                plt.ylabel('fluxes')
+
+            plt.xlabel('phase')
+            plt.title('phased LC after signal masking')
+
+        else:
+
+            # time series before whitening
+            plt.subplot(221)
+            plt.plot(stimes,smags,
+                     marker='.',
+                     color='k',
+                     linestyle='None',
+                     markersize=2.0,
+                     markeredgewidth=0)
+
+            if not magsarefluxes:
+                plt.gca().invert_yaxis()
+                plt.ylabel('magnitude')
+            else:
+                plt.ylabel('fluxes')
+
+            plt.xlabel('JD')
+            plt.title('LC before signal masking')
+
+            # time series after whitening
+            plt.subplot(222)
+            plt.plot(mtimes,mmags,
+                     marker='.',
+                     color='g',
+                     linestyle='None',
+                     markersize=2.0,
+                     markeredgewidth=0)
+
+            if not magsarefluxes:
+                plt.gca().invert_yaxis()
+                plt.ylabel('magnitude')
+            else:
+                plt.ylabel('fluxes')
+
+            plt.xlabel('JD')
+            plt.title('LC after signal masking')
+
+            # phased series before whitening
+            plt.subplot(223)
+            plt.plot(phases,smags,
+                     marker='.',
+                     color='k',
+                     linestyle='None',
+                     markersize=2.0,
+                     markeredgewidth=0)
+
+            if not magsarefluxes:
+                plt.gca().invert_yaxis()
+                plt.ylabel('magnitude')
+            else:
+                plt.ylabel('fluxes')
+
+            plt.xlabel('phase')
+            plt.title('phased LC before signal masking')
+
+            # phased series after whitening
+            plt.subplot(224)
+            plt.plot(mphases,mmags,
+                     marker='.',
+                     color='g',
+                     linestyle='None',
+                     markersize=2.0,
+                     markeredgewidth=0)
+
+            if not magsarefluxes:
+                plt.gca().invert_yaxis()
+                plt.ylabel('magnitude')
+            else:
+                plt.ylabel('fluxes')
+
+            plt.xlabel('phase')
+            plt.title('phased LC after signal masking')
+
+        plt.tight_layout()
+        plt.savefig(plotfit, format='png', pad_inches=0.0)
+        plt.close()
+
+        if isinstance(plotfit, str):
+            returndict['fitplotfile'] = plotfit
+        else:
+            returndict['fitplotfile'] = 'plotted-to-stringio'
+
+
+    return returndict
