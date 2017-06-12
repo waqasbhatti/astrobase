@@ -358,7 +358,7 @@
               <li class="nav-item">
                 <a class="nav-link"
                    data-toggle="tab"
-                   href="#cpsave" role="tab">Save/Export</a>
+                   href="#cpsave" role="tab">Save/Reset</a>
               </li>
 
               {% end %}
@@ -758,28 +758,8 @@
           <!-- this tab contains save and export tools -->
           <div class="tab-pane" id="cpsave" role="tabpanel">
 
-            <!-- this is the save tool results link -->
-            <div class="row tool-header-panel">
-
-              <div class="col-sm-6">
-                <p>All results from light curve tools applied to this object are
-                  being saved to a temporary location and will kept around until
-                  they are sychronized to the checkplot pickle. Syncing these
-                  results will <strong>overwrite</strong> previous values in the
-                  checkplot pickle.</p>
-              </div>
-
-              <div class="col-sm-6 py-1">
-                <button type="submit" id="save-cptool-results"
-                        class="btn btn-danger btn-block">
-                  Sync current LC tool results to checkplot pickle
-                </button>
-              </div>
-
-            </div>
-
             <!-- this is the save to PNG link -->
-            <div class="row">
+            <div class="row tool-header-panel">
 
               <div class="col-sm-6">
                 <p>All current object information in the checkplot pickle can be
@@ -795,9 +775,32 @@
                   Export object info from checkplot pickle to PNG
                 </button>
               </div>
-        </div>
+            </div>
 
+            <!-- this is the save tool results link -->
+            <div class="row">
 
+              <div class="col-sm-6">
+                <p>All results from light curve tools applied to this object are
+                  being saved to a temporary location and will kept around until
+                  they are sychronized to the checkplot pickle. Syncing these
+                  results will <strong>overwrite</strong> previous values in the
+                  checkplot pickle. Resetting all unsynced results will remove
+                  all current tool results and reload the pickle.</p>
+              </div>
+
+              <div class="col-sm-6 py-1">
+                <button type="submit" id="save-cptool-results"
+                        class="btn btn-danger btn-block">
+                  Sync current LC tool results to checkplot pickle
+                </button>
+                <button type="submit" id="reset-cptool-results"
+                        class="btn btn-warning btn-block">
+                  Reset all unsynced LC tool results
+                </button>
+              </div>
+
+            </div>
 
           </div>
 

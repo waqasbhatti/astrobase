@@ -112,6 +112,17 @@ kbls.set_logger_parent(__name__)
 
 # this is the function map for arguments
 CPTOOLMAP = {
+    # this is a special tool to remove all unsaved lctool results from the
+    # current checkplot pickle
+    'lctool-reset':{
+        'args':(),
+        'argtypes':(),
+        'kwargs':(),
+        'kwargtypes':(),
+        'kwargdefs':(),
+        'func':None,
+        'resloc':[],
+    },
     ## PERIOD SEARCH METHODS ##
     'psearch-gls':{
         'args':('times','mags','errs'),
@@ -193,6 +204,17 @@ CPTOOLMAP = {
         'resloc':['signals','mask'],
     },
     ## FITTING FUNCTIONS TO LIGHT CURVES ##
+    # this is a special call to just subtract an already fit function from the
+    # current light curve
+    'lcfit-subtract':{
+        'args':('fitmethod', 'periodind'),
+        'argtypes':(str, int),
+        'kwargs':(),
+        'kwargtypes':(),
+        'kwargdefs':(),
+        'func':None,
+        'resloc':[],
+    },
     'lcfit-fourier':{
         'args':('times','mags','errs','period'),
         'argtypes':(ndarray, ndarray, ndarray, float),
@@ -229,6 +251,7 @@ CPTOOLMAP = {
         'func':lcfit.savgol_fit_magseries,
         'resloc':['fitinfo','savgol'],
     },
+
 }
 
 
@@ -1989,6 +2012,45 @@ class LCToolHandler(tornado.web.RequestHandler):
                         self.finish()
 
 
+                # if this is the special lcfit subtract tool
+                elif lctool == 'lcfit-subtract':
+
+                    fitmethod, periodind = lctoolargs
+
+                    # find the fit requested
+
+                    # subtract it from the cptimes, cpmags, cperrs
+
+                    # if not readonly, write back to cptimes, cpmags, cperrs
+
+                    # make a new phasedlc plot for the current periodind using
+                    # these new cptimes, cpmags, cperrs
+
+                    # return this plot
+
+
+                # if this is the special full reset tool
+                elif lctool == 'lctool-reset':
+
+                    if os.path.exists(tempfpath):
+                        os.remove(tempfpath)
+                        LOGWARNING('reset all LC tool results '
+                                   'for %s by removing %s' %
+                                   (tempfpath, cpfpath))
+                        resultdict['status'] = 'success'
+                    else:
+                        resultdict['status'] = 'error'
+                        LOGWARNING('tried to reset LC tool results for %s, '
+                                   'but temp checkplot result pickle %s '
+                                   'does not exist' %
+                                   (tempfpath, cpfpath))
+
+                    resultdict['message'] = (
+                        'all unsynced results for this object have been purged'
+                    )
+                    self.write(resultdict)
+                    self.finish()
+
                 # otherwise, this is an unrecognized lctool
                 else:
 
@@ -2026,6 +2088,7 @@ class LCToolHandler(tornado.web.RequestHandler):
             raise tornado.web.Finish()
 
 
+
     def post(self, cpfile):
         '''This handles a POST request.
 
@@ -2035,5 +2098,8 @@ class LCToolHandler(tornado.web.RequestHandler):
         This is only called when the user explicitly clicks on the 'permanently
         update checkplot with results' button. If the server is in readonly
         mode, this has no effect.
+
+        This will copy everything from the '.pkl-cpserver-temp' file to the
+        actual checkplot pickle and then remove that file.
 
         '''
