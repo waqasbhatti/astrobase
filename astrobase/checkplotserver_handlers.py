@@ -1271,7 +1271,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                         phasedlckwargs = {
                             'xliminsetmode':False,
                             'magsarefluxes':lctoolkwargs['magsarefluxes'],
-                            'bestperiodhighlight':'#e1f5fe',
+                            'bestperiodhighlight':'#c0ffee',
                         }
 
                         # dispatch the plot function
@@ -1281,7 +1281,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                             **phasedlckwargs
                         )
 
-                        # save these to the cpservertemp key
+                        # save these to the tempcpdict
                         # save the pickle only if readonly is not true
                         if not self.readonly:
 
@@ -1401,7 +1401,8 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                         # add the highlight to distinguish this plot from usual
                         # checkplot plots
-                        lctoolkwargs['bestperiodhighlight'] = '#e1f5fe'
+                        # full disclosure: http://c0ffee.surge.sh/
+                        lctoolkwargs['bestperiodhighlight'] = '#c0ffee'
 
                         # run the phased LC function
                         lctoolfunction = CPTOOLMAP[lctool]['func']
@@ -1610,7 +1611,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                         #
                         # assemble the returndict
                         #
-
                         resultdict['status'] = 'warning'
                         resultdict['message'] = (
                             'previous '
@@ -1632,11 +1632,22 @@ class LCToolHandler(tornado.web.RequestHandler):
                     else:
 
                         lctoolfunction = CPTOOLMAP[lctool]['func']
+
+                        # this is the input fit plot strio
+                        fitstrio = strio()
+
+                        lctoolkwargs['fitplot'] = fitstrio
                         funcresults = yield self.executor.submit(
                             lctoolfunction,
                             *lctoolargs,
                             **lctoolkwargs,
                         )
+
+                        # we turn the fitplot into a base64 encoded string
+                        fitstrio.seek(0)
+                        fitb64 = base64.base64encode(fitstrio.read())
+                        fitstrio.close()
+                        funcresults['fitplotfile'] = fitb64
 
                         # save these to the tempcpdict
                         # save the pickle only if readonly is not true
@@ -1659,8 +1670,7 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                             else:
 
-                                tempcpdict[key1] = {key2:
-                                                         funcresults}
+                                tempcpdict[key1] = {key2: funcresults}
 
 
                             savekwargs = {
@@ -1689,6 +1699,10 @@ class LCToolHandler(tornado.web.RequestHandler):
                         #
                         # assemble the return dict
                         #
+                        # for this operation, we'll return:
+                        # - fitplotfile
+                        fitreturndict = {'fitplotfile':fitb64}
+
                         resultdict['status'] = 'success'
                         resultdict['message'] = (
                             'new results for %s' %
@@ -1696,7 +1710,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                         )
                         resultdict['result'] = {
                             key1:{
-                                key2:funcresults
+                                key2:fitreturndict
                             }
                         }
 
@@ -1736,10 +1750,33 @@ class LCToolHandler(tornado.web.RequestHandler):
                             'unsaved results from %s' %
                             lctool
                         )
+
+                        # these are the full results
+                        phasedfitlc = tempcpdict[key1][key2]
+
+                        # we only want a few things from them
+                        fitresults = {
+                            'method':phasedfitlc['lcfit']['fittype'],
+                            'chisq':phasedfitlc['lcfit']['fitchisq'],
+                            'redchisq':phasedfitlc['lcfit']['fitredchisq'],
+                            'period':phasedfitlc['period'],
+                            'epoch':phasedfitlc['epoch'],
+                            'plot':phasedfitlc['plot'],
+                        }
+
+                        # add fitparams if there are any
+                        if ('finalparams' in phasedfitlc['lcfit']['fitinfo'] and
+                            phasedfitlc['lcfit']['fitinfo']['finalparams']
+                            is not None):
+                            fitresults['fitparams'] = (
+                                phasedfitlc['lcfit']['fitinfo']['finalparams']
+                            )
+
+                        # this is the final result object
                         resultdict['result'] = {
                             key1: {
                                 key2: (
-                                    tempcpdict[key1][key2]
+                                    fitresults
                                 )
                             }
                         }
@@ -1751,10 +1788,45 @@ class LCToolHandler(tornado.web.RequestHandler):
                     else:
 
                         lctoolfunction = CPTOOLMAP[lctool]['func']
+
                         funcresults = yield self.executor.submit(
                             lctoolfunction,
                             *lctoolargs,
                             **lctoolkwargs,
+                        )
+
+                        # now that we have the fit results, generate a fitplot.
+                        # these args are for the special fitplot mode of
+                        # _pkl_phased_magseries_plot
+                        phasedlcargs = (None,
+                                        'lcfit',
+                                        -1,
+                                        cptimes,
+                                        cpmags,
+                                        cperrs,
+                                        bestperiod,
+                                        'min',
+                                        True,
+                                        True,
+                                        0.002,
+                                        7,
+                                        [-0.8,0.8])
+
+                        # here, we set a bestperiodhighlight to distinguish this
+                        # plot from the ones existing in the checkplot already
+                        # also add the overplotfit information
+                        phasedlckwargs = {
+                            'xliminsetmode':False,
+                            'magsarefluxes':lctoolkwargs['magsarefluxes'],
+                            'bestperiodhighlight':'#c0ffee',
+                            'overplotfit':funcresults
+                        }
+
+                        # dispatch the plot function
+                        phasedlc = yield self.executor.submit(
+                            _pkl_phased_magseries_plot,
+                            *phasedlcargs,
+                            **phasedlckwargs
                         )
 
                         # save these to the tempcpdict
@@ -1767,19 +1839,18 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 if key2 in tempcpdict[key1]:
 
                                     tempcpdict[key1][key2] = (
-                                        funcresults
+                                        phasedlc
                                     )
 
                                 else:
 
                                     tempcpdict[key1].update(
-                                        {key2: funcresults}
+                                        {key2: phasedlc}
                                     )
 
                             else:
 
-                                tempcpdict[key1] = {key2:
-                                                         funcresults}
+                                tempcpdict[key1] = {key2: phasedlc}
 
 
                             savekwargs = {
@@ -1808,6 +1879,23 @@ class LCToolHandler(tornado.web.RequestHandler):
                         #
                         # assemble the return dict
                         #
+                        fitresults = {
+                            'method':phasedlc['lcfit']['fittype'],
+                            'chisq':phasedlc['lcfit']['fitchisq'],
+                            'redchisq':phasedlc['lcfit']['fitredchisq'],
+                            'period':phasedlc['period'],
+                            'epoch':phasedlc['epoch'],
+                            'plot':phasedlc['plot'],
+                        }
+
+                        # add fitparams if there are any
+                        if ('finalparams' in funcresults['fitinfo'] and
+                            funcresults['fitinfo']['finalparams'] is not None):
+                            fitresults['fitparams'] = (
+                                funcresults['fitinfo']['finalparams']
+                            )
+
+
                         resultdict['status'] = 'success'
                         resultdict['message'] = (
                             'new results for %s' %
@@ -1815,7 +1903,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                         )
                         resultdict['result'] = {
                             key1:{
-                                key2:funcresults
+                                key2:fitresults
                             }
                         }
 
