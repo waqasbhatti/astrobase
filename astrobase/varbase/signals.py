@@ -92,14 +92,14 @@ def LOGEXCEPTION(message):
 ## REMOVING SIGNALS FROM MAGNITUDE TIMESERIES ##
 ################################################
 
-def whiten_magseries(times, mags, errs,
-                     whitenperiod,
-                     fourierorder=3,
-                     whitenparams=None,
-                     sigclip=3.0,
-                     magsarefluxes=False,
-                     plotfit=None,
-                     rescaletomedian=True):
+def prewhiten_magseries(times, mags, errs,
+                        whitenperiod,
+                        fourierorder=3,
+                        whitenparams=None,
+                        sigclip=3.0,
+                        magsarefluxes=False,
+                        plotfit=None,
+                        rescaletomedian=True):
     '''Removes a periodic sinusoidal signal generated using whitenparams from
     the input magnitude time series.
 
@@ -206,7 +206,7 @@ def whiten_magseries(times, mags, errs,
             plt.ylabel('fluxes')
 
         plt.xlabel('JD')
-        plt.title('LC before whitening')
+        plt.title('LC before pre-whitening')
 
         # time series after whitening
         plt.subplot(222)
@@ -224,7 +224,7 @@ def whiten_magseries(times, mags, errs,
             plt.ylabel('fluxes')
 
         plt.xlabel('JD')
-        plt.title('LC after whitening with period: %.6f' % whitenperiod)
+        plt.title('LC after pre-whitening with period: %.6f' % whitenperiod)
 
         # phased series before whitening
         plt.subplot(223)
@@ -242,7 +242,7 @@ def whiten_magseries(times, mags, errs,
             plt.ylabel('fluxes')
 
         plt.xlabel('phase')
-        plt.title('phased LC before whitening')
+        plt.title('phased LC before pre-whitening')
 
         # phased series after whitening
         plt.subplot(224)
@@ -260,7 +260,7 @@ def whiten_magseries(times, mags, errs,
             plt.ylabel('fluxes')
 
         plt.xlabel('phase')
-        plt.title('phased LC after whitening')
+        plt.title('phased LC after pre-whitening')
 
         plt.tight_layout()
         plt.savefig(plotfit)
@@ -273,17 +273,18 @@ def whiten_magseries(times, mags, errs,
 
 
 
-def gls_whiten(times, mags, errs,
-               startp=None, endp=None,
-               autofreq=True,
-               sigclip=30.0,
-               magsarefluxes=False,
-               stepsize=1.0e-4,
-               initfparams=[0.6,0.2,0.2,0.1,0.1,0.1], # 3rd order series
-               nbestpeaks=5,
-               nworkers=4,
-               plotfits=None):
-    '''Iterative whitening of a magnitude series using the L-S periodogram.
+def gls_prewhiten(times, mags, errs,
+                  startp=None, endp=None,
+                  autofreq=True,
+                  sigclip=30.0,
+                  magsarefluxes=False,
+                  stepsize=1.0e-4,
+                  fourierorder=3, # 3rd order series
+                  initfparams=None,
+                  nbestpeaks=5,
+                  nworkers=4,
+                  plotfits=None):
+    '''Iterative pre-whitening of a magnitude series using the L-S periodogram.
 
     This finds the best period, fits a fourier series with the best period, then
     whitens the time series with the best period, and repeats until nbestpeaks
@@ -305,20 +306,22 @@ def gls_whiten(times, mags, errs,
                    nworkers=nworkers)
     wperiod = lsp['bestperiod']
     fseries = fourier_fit_magseries(stimes, smags, serrs, wperiod,
-                                    initfourierparams=initfparams,
+                                    fourierorder=fourierorder,
+                                    fourierparams=initfparams,
                                     sigclip=sigclip,
                                     magsarefluxes=magsarefluxes)
     ffitparams = fseries['fitinfo']['finalparams']
 
     # this is the initial whitened series using the initial fourier fit and
     # initial found best period
-    wseries = whiten_magseries(stimes,
-                               smags,
-                               serrs,
-                               wperiod,
-                               ffitparams,
-                               sigclip=sigclip,
-                               magsarefluxes=magsarefluxes)
+    wseries = prewhiten_magseries(stimes,
+                                  smags,
+                                  serrs,
+                                  wperiod,
+                                  fourierorder=None,
+                                  whitenparams=ffitparams,
+                                  sigclip=sigclip,
+                                  magsarefluxes=magsarefluxes)
 
     LOGINFO('round %s: period = %.6f' % (1, wperiod))
     bestperiods = [wperiod]
@@ -375,13 +378,16 @@ def gls_whiten(times, mags, errs,
                         nworkers=nworkers)
         wperiod = wlsp['bestperiod']
         wfseries = fourier_fit_magseries(wtimes, wmags, werrs, wperiod,
-                                         initfourierparams=initfparams,
+                                         fourierorder=fourierorder,
+                                         fourierparams=None,
                                          magsarefluxes=magsarefluxes,
                                          sigclip=sigclip)
         wffitparams = wfseries['fitinfo']['finalparams']
-        wseries = whiten_magseries(wtimes, wmags, werrs, wperiod, wffitparams,
-                                   magsarefluxes=magsarefluxes,
-                                   sigclip=sigclip)
+        wseries = prewhiten_magseries(wtimes, wmags, werrs, wperiod,
+                                      fourierorder=None,
+                                      whitenparams=wffitparams,
+                                      magsarefluxes=magsarefluxes,
+                                      sigclip=sigclip)
 
         LOGINFO('round %s: period = %.6f' % (fitind+2, wperiod))
         bestperiods.append(wperiod)
