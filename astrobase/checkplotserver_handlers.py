@@ -205,9 +205,9 @@ CPTOOLMAP = {
     'lcfit-spline':{
         'args':('times','mags','errs','period'),
         'argtypes':(ndarray, ndarray, ndarray, float),
-        'kwargs':('knotfraction','magsarefluxes'),
-        'kwargtypes':(int, bool),
-        'kwargdefs':(0.01, False),
+        'kwargs':('maxknots','knotfraction','magsarefluxes'),
+        'kwargtypes':(int, float, bool),
+        'kwargdefs':(30, 0.01, False),
         'func':lcfit.spline_fit_magseries,
         'resloc':['fitinfo','spline'],
     },
