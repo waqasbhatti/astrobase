@@ -95,13 +95,17 @@ def LOGEXCEPTION(message):
 def whiten_magseries(times, mags, errs,
                      whitenperiod,
                      fourierorder=3,
-                     whitenparams=[0.6,0.2,0.2,0.1,0.1,0.1],
+                     whitenparams=None,
                      sigclip=3.0,
                      magsarefluxes=False,
                      plotfit=None,
                      rescaletomedian=True):
     '''Removes a periodic sinusoidal signal generated using whitenparams from
     the input magnitude time series.
+
+    fourierorder is the order of the fourier series to use when pre-whitening
+    the magnitude time series. specify fourierorder or whitenparams (the actual
+    fourier amplitude and phase parameters) but not both.
 
     whitenparams is like so:
 
@@ -115,9 +119,12 @@ def whiten_magseries(times, mags, errs,
 
     '''
 
-    stimes, smags, errs = sigclip_magseries(times, mags, errs,
-                                            sigclip=sigclip,
-                                            magsarefluxes=magsarefluxes)
+    stimes, smags, serrs = sigclip_magseries(times, mags, errs,
+                                             sigclip=sigclip,
+                                             magsarefluxes=magsarefluxes)
+
+    median_mag = npmedian(smags)
+
 
     # phase the mag series using the given period and epoch = min(stimes)
     mintime = npmin(stimes)
@@ -139,14 +146,14 @@ def whiten_magseries(times, mags, errs,
     ptimes = stimes[phasesortind]
 
     # get the fourier order either from the scalar order kwarg...
-    if fourierorder and fourierorder > 0 and not whitenparams:
+    if fourierorder and fourierorder > 0 and (whitenparams is None):
 
         initfourieramps = [0.6] + [0.2]*(fourierorder - 1)
         initfourierphas = [0.1] + [0.1]*(fourierorder - 1)
         whitenparams = initfourieramps + initfourierphas
 
     # or from the fully specified coeffs vector
-    elif not fourierorder and whitenparams:
+    elif not fourierorder and (whitenparams is not None):
 
         fourierorder = int(len(whitenparams)/2)
 
@@ -154,7 +161,6 @@ def whiten_magseries(times, mags, errs,
         LOGWARNING('specified both Fourier order AND Fourier coeffs, '
                    'using the specified Fourier coeffs')
         fourierorder = int(len(whitenparams)/2)
-
 
     # now subtract the harmonic series from the phased LC
     # these are still in phase order
@@ -182,37 +188,81 @@ def whiten_magseries(times, mags, errs,
     # make the fit plot if required
     if plotfit and isinstance(plotfit, str):
 
-        plt.figure(figsize=(8,16))
+        plt.figure(figsize=(16,9.6))
 
-        plt.subplot(211)
-        plt.errorbar(stimes,smags,fmt='bo',yerr=serrs,
-                     markersize=2.0,capsize=0)
-        ymin, ymax = plt.ylim()
+        # time series before whitening
+        plt.subplot(221)
+        plt.plot(stimes,smags,
+                 marker='.',
+                 color='k',
+                 linestyle='None',
+                 markersize=2.0,
+                 markeredgewidth=0)
 
         if not magsarefluxes:
-            plt.ylim(ymax,ymin)
+            plt.gca().invert_yaxis()
             plt.ylabel('magnitude')
         else:
-            plt.ylim(ymin,ymax)
-            plt.ylabel('magnitude')
+            plt.ylabel('fluxes')
 
         plt.xlabel('JD')
         plt.title('LC before whitening')
 
-        plt.subplot(212)
-        plt.errorbar(wtimes,wmags,fmt='bo',yerr=werrs,
-                     markersize=2.0,capsize=0)
-
+        # time series after whitening
+        plt.subplot(222)
+        plt.plot(wtimes,wmags,
+                 marker='.',
+                 color='g',
+                 linestyle='None',
+                 markersize=2.0,
+                 markeredgewidth=0)
 
         if not magsarefluxes:
-            plt.ylim(ymax,ymin)
+            plt.gca().invert_yaxis()
             plt.ylabel('magnitude')
         else:
-            plt.ylim(ymin,ymax)
-            plt.ylabel('magnitude')
+            plt.ylabel('fluxes')
+
         plt.xlabel('JD')
         plt.title('LC after whitening with period: %.6f' % whitenperiod)
 
+        # phased series before whitening
+        plt.subplot(223)
+        plt.plot(phase,pmags,
+                 marker='.',
+                 color='k',
+                 linestyle='None',
+                 markersize=2.0,
+                 markeredgewidth=0)
+
+        if not magsarefluxes:
+            plt.gca().invert_yaxis()
+            plt.ylabel('magnitude')
+        else:
+            plt.ylabel('fluxes')
+
+        plt.xlabel('phase')
+        plt.title('phased LC before whitening')
+
+        # phased series after whitening
+        plt.subplot(224)
+        plt.plot(wphase,wmags,
+                 marker='.',
+                 color='g',
+                 linestyle='None',
+                 markersize=2.0,
+                 markeredgewidth=0)
+
+        if not magsarefluxes:
+            plt.gca().invert_yaxis()
+            plt.ylabel('magnitude')
+        else:
+            plt.ylabel('fluxes')
+
+        plt.xlabel('phase')
+        plt.title('phased LC after whitening')
+
+        plt.tight_layout()
         plt.savefig(plotfit)
         plt.close()
 
