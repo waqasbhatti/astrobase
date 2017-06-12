@@ -297,11 +297,8 @@ def prewhiten_magseries(times, mags, errs,
         plt.savefig(plotfit, format='png', pad_inches=0.0)
         plt.close()
 
-        if isinstance(plotfit, str):
+        if isinstance(plotfit, str) or isinstance(plotfit, strio):
             returndict['fitplotfile'] = plotfit
-        else:
-            returndict['fitplotfile'] = 'plotted-to-stringio'
-
 
     return returndict
 
@@ -623,10 +620,8 @@ def mask_signal(times, mags, errs,
         plt.savefig(plotfit, format='png', pad_inches=0.0)
         plt.close()
 
-        if isinstance(plotfit, str):
+        if isinstance(plotfit, str) or isinstance(plotfit, strio):
             returndict['fitplotfile'] = plotfit
-        else:
-            returndict['fitplotfile'] = 'plotted-to-stringio'
 
 
     return returndict
