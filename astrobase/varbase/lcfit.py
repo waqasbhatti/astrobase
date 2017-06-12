@@ -148,7 +148,7 @@ def _make_fit_plot(phase, pmags, perrs, fitmags,
 
     # set up the figure
     plt.close('all')
-    plt.figure(figsize=(8,6))
+    plt.figure(figsize=(8,4.8))
     plt.axvline(0.5,color='g',linestyle='--')
 
     # plot the light curve and the fit
@@ -159,10 +159,9 @@ def _make_fit_plot(phase, pmags, perrs, fitmags,
     # set the y axis limit and label
     ymin, ymax = plt.ylim()
     if not magsarefluxes:
-        plt.ylim(ymax,ymin)
+        plt.gca().invert_yaxis()
         plt.ylabel('magnitude')
     else:
-        plt.ylim(ymin, ymax)
         plt.ylabel('flux')
 
     # set the x axis ticks and label
