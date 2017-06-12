@@ -175,7 +175,7 @@ CPTOOLMAP = {
         'resloc':['varinfo','features'],
     },
     'var-prewhiten':{
-        'args':('times','mags','errs','whitenperiod', 'whitenparams'),
+        'args':('times','mags','errs','whitenperiod', 'whitenparams[]'),
         'argtypes':(ndarray, ndarray, ndarray, float, list),
         'kwargs':('magsarefluxes',),
         'kwargtypes':(bool,),
@@ -186,7 +186,7 @@ CPTOOLMAP = {
     'var-masksig':{
         'args':('times','mags','errs','signalperiod','signalepoch'),
         'argtypes':(ndarray, ndarray, ndarray, float, float),
-        'kwargs':('magsarefluxes','maskphases','maskphaselength'),
+        'kwargs':('magsarefluxes','maskphases[]','maskphaselength'),
         'kwargtypes':(bool, list, float),
         'kwargdefs':(False, [0.0,0.5,1.0], 0.1),
         'func':signals.mask_signal,
@@ -196,9 +196,9 @@ CPTOOLMAP = {
     'lcfit-fourier':{
         'args':('times','mags','errs','period'),
         'argtypes':(ndarray, ndarray, ndarray, float),
-        'kwargs':('fourierorder','magsarefluxes'),
-        'kwargtypes':(int, bool),
-        'kwargdefs':(6, False),
+        'kwargs':('fourierorder','magsarefluxes', 'fourierparams[]'),
+        'kwargtypes':(int, bool, list),
+        'kwargdefs':(6, False, []),
         'func':lcfit.fourier_fit_magseries,
         'resloc':['fitinfo','fourier'],
     },
@@ -947,12 +947,21 @@ class LCToolHandler(tornado.web.RequestHandler):
                             ):
 
                                 # get the kwarg
-                                wbkwarg = self.get_argument(xkwarg, None)
+                                if xkwargtype is list:
+                                    wbkwarg = self.get_arguments(xkwarg)
+                                    if len(wbkwarg) > 0:
+                                        wbkwarg = [url_unescape(xhtml_escape(x))
+                                                   for x in wbkwarg]
+                                    else:
+                                        wbkwarg = None
 
-                                if wbkwarg:
-                                    wbkwarg = url_unescape(
-                                        xhtml_escape(wbkwarg)
-                                    )
+                                else:
+                                    wbkwarg = self.get_argument(xkwarg, None)
+                                    if wbkwarg is not None:
+                                        wbkwarg = url_unescape(
+                                            xhtml_escape(wbkwarg)
+                                        )
+
                                 LOGGER.info('xkwarg = %s, wbkwarg = %s' %
                                             (xkwarg, repr(wbkwarg)))
 
@@ -966,10 +975,7 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                                     # special handling for lists of floats
                                     if xkwargtype is list:
-
-                                        wbkwarg = json.loads(wbkwarg)
-                                        wbkwarg = [float(x) for
-                                                   x in wbkwarg]
+                                        wbkwarg = [float(x) for x in wbkwarg]
 
                                     # special handling for booleans
                                     elif xkwargtype is bool:
@@ -987,6 +993,13 @@ class LCToolHandler(tornado.web.RequestHandler):
                                         wbkwarg = xkwargtype(wbkwarg)
 
                                 # update the lctools kwarg dict
+
+                                # make sure to remove any [] from the kwargs
+                                # this was needed to parse the input query
+                                # string correctly
+                                if xkwarg.endswith('[]'):
+                                    xkwarg = xkwarg.rstrip('[]')
+
                                 lctoolkwargs.update({xkwarg:wbkwarg})
 
                         except Exception as e:
@@ -1103,18 +1116,22 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                         try:
 
-                            # get the arg
-                            wbarg = url_unescape(
-                                xhtml_escape(
-                                    self.get_argument(xarg, None)
+                            if xargtype is list:
+
+                                wbarg = self.get_arguments(xarg)
+
+                            else:
+
+                                wbarg = url_unescape(
+                                    xhtml_escape(
+                                        self.get_argument(xarg, None)
+                                    )
                                 )
-                            )
 
                             # cast the arg to the required type
 
                             # special handling for lists
-                            if isinstance(xargtype, list):
-                                wbarg = json.loads(wbarg)
+                            if xargtype is list:
                                 wbarg = [float(x) for x in wbarg]
                             # usual casting for other types
                             else:
@@ -1235,9 +1252,9 @@ class LCToolHandler(tornado.web.RequestHandler):
                         )
 
                         # get what we need out of funcresults when it
-                        # returns
-                        nbestperiods = funcresults['nbestperiods']
-                        nbestlspvals = funcresults['nbestlspvals']
+                        # returns. we get the first three peaks/periods
+                        nbestperiods = funcresults['nbestperiods'][:3]
+                        nbestlspvals = funcresults['nbestlspvals'][:3]
                         bestperiod = funcresults['bestperiod']
 
                         # generate the periodogram png
@@ -1246,19 +1263,41 @@ class LCToolHandler(tornado.web.RequestHandler):
                             funcresults,
                         )
 
-                        # generate the phased LC for the best period only. we
-                        # show this in the frontend along with the
-                        # periodogram. the user decides which other peaks they
-                        # want a phased LC for, and we save them to the
-                        # tempcpdict as required. for now, we'll save only the
-                        # best phased LC back to tempcpdict.
-                        phasedlcargs = (None,
+                        # generate the phased LCs. we show these in the frontend
+                        # along with the periodogram.
+                        phasedlcargs0 = (None,
                                         lspmethod,
-                                        0,
+                                        -1,
                                         cptimes,
                                         cpmags,
                                         cperrs,
-                                        bestperiod,
+                                        nbestperiods[0],
+                                        'min',
+                                        True,
+                                        True,
+                                        0.002,
+                                        7,
+                                        [-0.8,0.8])
+                        phasedlcargs1 = (None,
+                                        lspmethod,
+                                        -1,
+                                        cptimes,
+                                        cpmags,
+                                        cperrs,
+                                        nbestperiods[1],
+                                        'min',
+                                        True,
+                                        True,
+                                        0.002,
+                                        7,
+                                        [-0.8,0.8])
+                        phasedlcargs2 = (None,
+                                        lspmethod,
+                                        -1,
+                                        cptimes,
+                                        cpmags,
+                                        cperrs,
+                                        nbestperiods[2],
                                         'min',
                                         True,
                                         True,
@@ -1274,12 +1313,25 @@ class LCToolHandler(tornado.web.RequestHandler):
                             'bestperiodhighlight':'#c0ffee',
                         }
 
-                        # dispatch the plot function
-                        phasedlc = yield self.executor.submit(
+                        # dispatch the plot functions
+                        phasedlc0 = yield self.executor.submit(
                             _pkl_phased_magseries_plot,
-                            *phasedlcargs,
+                            *phasedlcargs0,
                             **phasedlckwargs
                         )
+
+                        phasedlc1 = yield self.executor.submit(
+                            _pkl_phased_magseries_plot,
+                            *phasedlcargs1,
+                            **phasedlckwargs
+                        )
+
+                        phasedlc2 = yield self.executor.submit(
+                            _pkl_phased_magseries_plot,
+                            *phasedlcargs2,
+                            **phasedlckwargs
+                        )
+
 
                         # save these to the tempcpdict
                         # save the pickle only if readonly is not true
@@ -1292,7 +1344,9 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 'nbestperiods':funcresults['nbestperiods'],
                                 'nbestlspvals':funcresults['nbestlspvals'],
                                 'periodogram':pgramres[lspmethod]['periodogram'],
-                                0:phasedlc
+                                0:phasedlc0,
+                                1:phasedlc1,
+                                2:phasedlc2,
                             }
 
 
@@ -1326,11 +1380,18 @@ class LCToolHandler(tornado.web.RequestHandler):
                         # the periodogram
                         periodogram = pgramres[lspmethod]['periodogram']
 
-                        # the best period phasedlc plot, period, and
-                        # epoch
-                        phasedlc0plot = phasedlc['plot']
-                        phasedlc0period = float(phasedlc['period'])
-                        phasedlc0epoch = float(phasedlc['epoch'])
+                        # phasedlc plot, period, and epoch for best 3 peaks
+                        phasedlc0plot = phasedlc0['plot']
+                        phasedlc0period = float(phasedlc0['period'])
+                        phasedlc0epoch = float(phasedlc0['epoch'])
+
+                        phasedlc1plot = phasedlc1['plot']
+                        phasedlc1period = float(phasedlc1['period'])
+                        phasedlc1epoch = float(phasedlc1['epoch'])
+
+                        phasedlc2plot = phasedlc2['plot']
+                        phasedlc2period = float(phasedlc2['period'])
+                        phasedlc2epoch = float(phasedlc2['epoch'])
 
                         resultdict['status'] = 'success'
                         resultdict['message'] = (
@@ -1347,6 +1408,16 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     'plot':phasedlc0plot,
                                     'period':phasedlc0period,
                                     'epoch':phasedlc0epoch,
+                                },
+                                'phasedlc1':{
+                                    'plot':phasedlc1plot,
+                                    'period':phasedlc1period,
+                                    'epoch':phasedlc1epoch,
+                                },
+                                'phasedlc2':{
+                                    'plot':phasedlc2plot,
+                                    'period':phasedlc2period,
+                                    'epoch':phasedlc2epoch,
                                 }
                             }
                         }
@@ -1362,14 +1433,16 @@ class LCToolHandler(tornado.web.RequestHandler):
                 elif lctool == 'phasedlc-newplot':
 
                     lspmethod = lctoolargs[1]
+                    periodind = lctoolargs[2]
 
                     # if we can return the results from a previous run
                     if (not forcereload and lspmethod in tempcpdict and
-                        isinstance(tempcpdict[lspmethod], dict)):
+                        isinstance(tempcpdict[lspmethod], dict) and
+                        periodind in tempcpdict[lspmethod] and
+                        isinstance(tempcpdict[lspmethod][periodind], dict)):
 
-                        # we always get the best phased LC, this is the result
-                        # of a previous run
-                        phasedlc = tempcpdict[lspmethod][0]
+                        # we get phased LC at periodind from a previous run
+                        phasedlc = tempcpdict[lspmethod][periodind]
 
                         LOGGER.warning(
                             'returning previously unsaved '
@@ -1387,9 +1460,10 @@ class LCToolHandler(tornado.web.RequestHandler):
                             'unsaved results from %s' %
                             lctool
                         )
+                        retkey = 'phasedlc%s' % periodind
                         resultdict['result'] = {
                             lspmethod:{
-                                'phasedlc0':phasedlc
+                                retkey:phasedlc
                             }
                         }
 
@@ -1419,19 +1493,21 @@ class LCToolHandler(tornado.web.RequestHandler):
                             if (lspmethod in tempcpdict and
                                 isinstance(tempcpdict[lspmethod], dict)):
 
-                                if 0 in tempcpdict[lspmethod]:
+                                if periodind in tempcpdict[lspmethod]:
 
-                                    tempcpdict[lspmethod][0] = funcresults
+                                    tempcpdict[lspmethod][periodind] = (
+                                        funcresults
+                                    )
 
                                 else:
 
                                     tempcpdict[lspmethod].update(
-                                        {0: funcresults}
+                                        {periodind: funcresults}
                                     )
 
                             else:
 
-                                tempcpdict[lspmethod] = {0: funcresults}
+                                tempcpdict[lspmethod] = {periodind: funcresults}
 
 
                             savekwargs = {
@@ -1465,9 +1541,10 @@ class LCToolHandler(tornado.web.RequestHandler):
                             'new results for %s' %
                             lctool
                         )
+                        retkey = 'phasedlc%s' % periodind
                         resultdict['result'] = {
                             lspmethod:{
-                                'phasedlc0':funcresults
+                                retkey:funcresults
                             }
                         }
 
@@ -1633,20 +1710,21 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                         lctoolfunction = CPTOOLMAP[lctool]['func']
 
-                        # this is the input fit plot strio
-                        fitstrio = strio()
-
-                        lctoolkwargs['fitplot'] = fitstrio
+                        # send in a stringio object for the fitplot kwarg
+                        lctoolkwargs['plotfit'] = strio()
                         funcresults = yield self.executor.submit(
                             lctoolfunction,
                             *lctoolargs,
                             **lctoolkwargs,
                         )
 
-                        # we turn the fitplot into a base64 encoded string
-                        fitstrio.seek(0)
-                        fitb64 = base64.base64encode(fitstrio.read())
-                        fitstrio.close()
+                        # we turn the returned fitplotfile fd into a base64
+                        # encoded string after reading it
+                        fitfd = funcresults['fitplotfile']
+                        fitfd.seek(0)
+                        fitbin = fitfd.read()
+                        fitb64 = base64.b64encode(fitbin)
+                        fitfd.close()
                         funcresults['fitplotfile'] = fitb64
 
                         # save these to the tempcpdict
@@ -1804,7 +1882,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                         cptimes,
                                         cpmags,
                                         cperrs,
-                                        bestperiod,
+                                        lctoolargs[3], # this is the fit period
                                         'min',
                                         True,
                                         True,
