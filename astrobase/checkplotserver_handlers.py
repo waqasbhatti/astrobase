@@ -175,8 +175,8 @@ CPTOOLMAP = {
         'kwargs':('magsarefluxes','fourierorder'),
         'kwargtypes':(bool,float),
         'kwargdefs':(False,3),
-        'func':signals.whiten_magseries,
-        'resloc':['signals','whiten'],
+        'func':signals.prewhiten_magseries,
+        'resloc':['signals','prewhiten'],
     },
     'var-masksig':{
         'args':('times','mags','errs','signalperiod','signalepoch'),
@@ -1587,7 +1587,116 @@ class LCToolHandler(tornado.web.RequestHandler):
                 elif lctool in ('var-prewhiten','var-masksig'):
 
                     key1, key2 = resloc
-                    # TODO: stuff
+
+                    # see if we can return results from a previous iteration of
+                    # this tool
+                    if (not forcereload and
+                        key1 in tempcpdict and
+                        isinstance(tempcpdict[key1], dict) and
+                        key2 in tempcpdict[key1] and
+                        isinstance(tempcpdict[key1][key2], dict)):
+
+                        LOGGER.warning(
+                            'returning previously unsaved '
+                            'results for lctool %s from %s' %
+                            (lctool, tempfpath)
+                        )
+
+                        #
+                        # assemble the returndict
+                        #
+
+                        resultdict['status'] = 'warning'
+                        resultdict['message'] = (
+                            'previous '
+                            'unsaved results from %s' %
+                            lctool
+                        )
+                        resultdict['result'] = {
+                            key1: {
+                                key2: (
+                                    tempcpdict[key1][key2]
+                                )
+                            }
+                        }
+
+                        self.write(resultdict)
+                        self.finish()
+
+                    # otherwise, we need to dispatch the function
+                    else:
+
+                        lctoolfunction = CPTOOLMAP[lctool]['func']
+                        funcresults = yield self.executor.submit(
+                            lctoolfunction,
+                            *lctoolargs,
+                            **lctoolkwargs,
+                        )
+
+                        # save these to the tempcpdict
+                        # save the pickle only if readonly is not true
+                        if not self.readonly:
+
+                            if (key1 in tempcpdict and
+                                isinstance(tempcpdict[key1], dict)):
+
+                                if key2 in tempcpdict[key1]:
+
+                                    tempcpdict[key1][key2] = (
+                                        funcresults
+                                    )
+
+                                else:
+
+                                    tempcpdict[key1].update(
+                                        {key2: funcresults}
+                                    )
+
+                            else:
+
+                                tempcpdict[key1] = {key2:
+                                                         funcresults}
+
+
+                            savekwargs = {
+                                'outfile':tempfpath,
+                                'protocol':pickle.HIGHEST_PROTOCOL
+                            }
+                            savedcpf = yield self.executor.submit(
+                                _write_checkplot_picklefile,
+                                tempcpdict,
+                                **savekwargs
+                            )
+
+                            LOGGER.info(
+                                'saved temp results from '
+                                '%s to checkplot: %s' %
+                                (lctool, savedcpf)
+                            )
+
+                        else:
+
+                            LOGGER.warning(
+                                'not saving temp results to checkplot '
+                                ' because readonly = True'
+                            )
+
+                        #
+                        # assemble the return dict
+                        #
+                        resultdict['status'] = 'success'
+                        resultdict['message'] = (
+                            'new results for %s' %
+                            lctool
+                        )
+                        resultdict['result'] = {
+                            key1:{
+                                key2:funcresults
+                            }
+                        }
+
+                        self.write(resultdict)
+                        self.finish()
 
 
                 # if the lctool is a lcfit method
@@ -1597,7 +1706,117 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 'lcfit-savgol'):
 
                     key1, key2 = resloc
-                    # TODO: stuff
+
+                    # see if we can return results from a previous iteration of
+                    # this tool
+                    if (not forcereload and
+                        key1 in tempcpdict and
+                        isinstance(tempcpdict[key1], dict) and
+                        key2 in tempcpdict[key1] and
+                        isinstance(tempcpdict[key1][key2], dict)):
+
+                        LOGGER.warning(
+                            'returning previously unsaved '
+                            'results for lctool %s from %s' %
+                            (lctool, tempfpath)
+                        )
+
+                        #
+                        # assemble the returndict
+                        #
+
+                        resultdict['status'] = 'warning'
+                        resultdict['message'] = (
+                            'previous '
+                            'unsaved results from %s' %
+                            lctool
+                        )
+                        resultdict['result'] = {
+                            key1: {
+                                key2: (
+                                    tempcpdict[key1][key2]
+                                )
+                            }
+                        }
+
+                        self.write(resultdict)
+                        self.finish()
+
+                    # otherwise, we need to dispatch the function
+                    else:
+
+                        lctoolfunction = CPTOOLMAP[lctool]['func']
+                        funcresults = yield self.executor.submit(
+                            lctoolfunction,
+                            *lctoolargs,
+                            **lctoolkwargs,
+                        )
+
+                        # save these to the tempcpdict
+                        # save the pickle only if readonly is not true
+                        if not self.readonly:
+
+                            if (key1 in tempcpdict and
+                                isinstance(tempcpdict[key1], dict)):
+
+                                if key2 in tempcpdict[key1]:
+
+                                    tempcpdict[key1][key2] = (
+                                        funcresults
+                                    )
+
+                                else:
+
+                                    tempcpdict[key1].update(
+                                        {key2: funcresults}
+                                    )
+
+                            else:
+
+                                tempcpdict[key1] = {key2:
+                                                         funcresults}
+
+
+                            savekwargs = {
+                                'outfile':tempfpath,
+                                'protocol':pickle.HIGHEST_PROTOCOL
+                            }
+                            savedcpf = yield self.executor.submit(
+                                _write_checkplot_picklefile,
+                                tempcpdict,
+                                **savekwargs
+                            )
+
+                            LOGGER.info(
+                                'saved temp results from '
+                                '%s to checkplot: %s' %
+                                (lctool, savedcpf)
+                            )
+
+                        else:
+
+                            LOGGER.warning(
+                                'not saving temp results to checkplot '
+                                ' because readonly = True'
+                            )
+
+                        #
+                        # assemble the return dict
+                        #
+                        resultdict['status'] = 'success'
+                        resultdict['message'] = (
+                            'new results for %s' %
+                            lctool
+                        )
+                        resultdict['result'] = {
+                            key1:{
+                                key2:funcresults
+                            }
+                        }
+
+                        self.write(resultdict)
+                        self.finish()
+
 
                 # otherwise, this is an unrecognized lctool
                 else:
