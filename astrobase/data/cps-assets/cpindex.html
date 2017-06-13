@@ -411,7 +411,7 @@
                     <span class="input-group-btn">
                       <button class="btn btn-secondary" type="button" id="psearch-halfperiod">1/2</button>
                     </span>
-                    <input type="text" class="form-control">
+                    <input type="text" id="psearch-plotperiod" class="form-control">
                     <span class="input-group-btn">
                       <button class="btn btn-secondary" type="button" id="psearch-doubleperiod">&times; 2</button>
                     </span>
@@ -483,10 +483,10 @@
                   <label for="psearch-lspmethod">Period search method</label>
                   <select class="custom-select form-control form-control-sm"
                           id="psearch-lspmethod" name="psearch-lspmethod">
-                    <option value="0" selected>Generalized Lomb-Scargle</option>
-                    <option value="1">Phase Dispersion Minimization</option>
-                    <option value="2">Box Least-squared Search</option>
-                    <option value="3">Analysis of Variance</option>
+                    <option value="gls" selected>Generalized Lomb-Scargle</option>
+                    <option value="pdm">Phase Dispersion Minimization</option>
+                    <option value="bls">Box Least-squared Search</option>
+                    <option value="aov">Analysis of Variance</option>
                   </select>
                 </div>
 
