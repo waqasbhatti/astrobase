@@ -1189,6 +1189,14 @@ class LCToolHandler(tornado.web.RequestHandler):
                 # just return them instead.
                 resloc = CPTOOLMAP[lctool]['resloc']
 
+                # get the objectid we'll send this along with every result. this
+                # should handle the case of the current objectid not being the
+                # same as the objectid being looked at by the user. in effect,
+                # this will allow the user to launch a long-running process and
+                # come back to it later since the frontend will load the older
+                # results when they are complete.
+                objectid = cpdict['objectid']
+
                 # if lctool is a periodogram method
                 if lctool in ('psearch-gls',
                               'psearch-bls',
@@ -1246,6 +1254,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                             lctool
                         )
                         resultdict['result'] = {
+                            'objectid':objectid,
                             lspmethod:{
                                 'nbestperiods':nbestperiods,
                                 'periodogram':periodogram,
@@ -1421,6 +1430,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                             lctool
                         )
                         resultdict['result'] = {
+                            'objectid':objectid,
                             lspmethod:{
                                 'nbestperiods':nbestperiods,
                                 'periodogram':periodogram,
@@ -1484,6 +1494,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                         )
                         retkey = 'phasedlc%s' % periodind
                         resultdict['result'] = {
+                            'objectid':objectid,
                             lspmethod:{
                                 retkey:phasedlc
                             }
@@ -1565,6 +1576,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                         )
                         retkey = 'phasedlc%s' % periodind
                         resultdict['result'] = {
+                            'objectid':objectid,
                             lspmethod:{
                                 retkey:funcresults
                             }
@@ -1602,6 +1614,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                             lctool
                         )
                         resultdict['result'] = {
+                            'objectid':objectid,
                             'varinfo': {
                                 'varfeatures': (
                                     tempcpdict['varinfo']['varfeatures']
@@ -1679,6 +1692,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                             lctool
                         )
                         resultdict['result'] = {
+                            'objectid':objectid,
                             'varinfo':{
                                 'varfeatures':funcresults
                             }
@@ -1717,6 +1731,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                             lctool
                         )
                         resultdict['result'] = {
+                            'objectid':objectid,
                             key1: {
                                 key2: (
                                     tempcpdict[key1][key2]
@@ -1809,6 +1824,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                             lctool
                         )
                         resultdict['result'] = {
+                            'objectid':objectid,
                             key1:{
                                 key2:fitreturndict
                             }
@@ -1874,6 +1890,7 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                         # this is the final result object
                         resultdict['result'] = {
+                            'objectid':objectid,
                             key1: {
                                 key2: (
                                     fitresults
@@ -2002,6 +2019,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                             lctool
                         )
                         resultdict['result'] = {
+                            'objectid':objectid,
                             key1:{
                                 key2:fitresults
                             }

@@ -1889,7 +1889,236 @@ var cptools = {
 
     },
 
-    periodogram_gls: function () {
+    run_periodsearch: function () {
+
+        // this tracks if we're ok to proceed
+        var proceed = false;
+
+        // this tracks any errors in input. we join them all with <br>
+        // and show them in the alert box.
+        var messages = [];
+
+        // get which period search to run
+        var lspmethod = $('#psearch-lspmethod').val();
+
+        // see if magsarefluxes is checked
+        var magsarefluxes = $('#psearch-magsarefluxes').prop('checked');
+
+        // see if autofreq is checked
+        var autofreq = $('#psearch-autofreq').prop('checked');
+
+        if ((lspmethod == 'gls') || (lspmethod == 'bls') ||
+            (lspmethod == 'pdm') || (lspmethod == 'aov')) {
+            proceed = true;
+        }
+
+        else {
+            messages.push("unknown periodogram method specified");
+        }
+
+        // if it's not checked, get the startp, endp, and frequency step
+        if (!autofreq) {
+
+            var startp = $('#psearch-startp').val();
+
+            var endp = $('#psearch-endp').val();
+            var freqstep = $('#psearch-freqstep').val();
+
+            startp = parseFloat(startp);
+            endp = parseFloat(endp);
+            freqstep = parseFloat(freqstep);
+
+            // check startp
+            if (startp === NaN) {
+                messages.push("no start period provided");
+            }
+            else if ((startp == 0.0) || (startp < 0.0)) {
+                messages.push("start period cannot be 0.0 or < 0.0");
+            }
+            else if (startp > endp) {
+                messages.push("start period cannot be larger than end period");
+            }
+            else {
+                messages.push("using start period: " + math.format(startp, 5));
+                proceed = true;
+            }
+
+            // check endp
+            if (endp === NaN) {
+                messages.push("no start period provided");
+            }
+            else if ((endp == 0.0) || (endp < 0.0)) {
+                messages.push("end period cannot be 0.0 or < 0.0");
+            }
+            else {
+                messages.push("using end period: " + math.format(endp, 5));
+                proceed = true;
+            }
+
+            // check freqstep
+            if (freqstep === NaN) {
+                messages.push("no frequency step provided");
+            }
+            else if ((freqstep == 0.0) || (freqstep < 0.0)) {
+                messages.push("frequency step cannot be 0.0 or < 0.0");
+            }
+            else {
+                messages.push("using frequency step: " + math.format(endp, 8));
+                proceed = true;
+            }
+
+        }
+
+        // proceed if we can
+        if (proceed) {
+
+            // generate the alert box messages
+            messages.push("running " + lspmethod.toUpperCase());
+            messages = messages.join("<br>");
+            cpv.make_spinner('<span class="text-primary">' +
+                             messages +
+                             '</span><br>');
+
+            // the call to the backend
+            var ajaxurl = '/tools/' + cputils.b64_encode(cpv.currfile);
+
+            // this is the lctool to call
+            var lctooltocall = 'psearch-' + lspmethod;
+
+            if (autofreq) {
+
+                // this is the data object to send to the backend
+                var sentdata = {
+                    lctool: lctooltocall,
+                    forcereload: true,
+                    magsarefluxes: magsarefluxes,
+                    autofreq: autofreq
+                };
+
+
+            }
+
+            else {
+
+                // this is the data object to send to the backend
+                var sentdata = {
+                    lctool: lctooltocall,
+                    forcereload: true,
+                    magsarefluxes: magsarefluxes,
+                    autofreq: autofreq,
+                    startp: startp,
+                    endp: endp,
+                    stepsize: freqstep
+                };
+
+
+            }
+
+            // make the call
+            $.getJSON(ajaxurl, sentdata, function (recvdata) {
+
+                // the received data is in the standard form
+                var reqstatus = recvdata.status;
+                var reqmsg = recvdata.message;
+                var reqresult = recvdata.result;
+
+                if (reqstatus == 'success') {
+
+                    var cpobjectid = reqresult.objectid;
+                    var currobjectid = $('#objectid').text();
+
+                    // only update if the user is still on the object
+                    // we started with
+                    if (cpobjectid == currobjectid) {
+
+                        var lsp = reqresult[lspmethod];
+
+                        // update the select control for the periodogram peaks
+                        // with the best three peaks
+                        $('#psearch-pgrampeaks').empty();
+                        $('#psearch-pgrampeaks').append(
+                            '<option value="' + lsp.phasedlc0.period +
+                                '" selected>' + lsp.phasedlc0.period +
+                                '</option>'
+                        );
+                        $('#psearch-pgrampeaks').append(
+                            '<option value="' + lsp.phasedlc1.period +
+                                '">' + lsp.phasedlc1.period +
+                                '</option>'
+                        );
+                        $('#psearch-pgrampeaks').append(
+                            '<option value="' + lsp.phasedlc2.period +
+                                '">' + lsp.phasedlc2.period +
+                                '</option>'
+                        );
+
+                        // update the period box with the best period
+                        $('#psearch-plotperiod').val(lsp.phasedlc0.period);
+
+                        // update the epoch box with the epoch of the best period
+                        $('#psearch-plotepoch').val(lsp.phasedlc0.epoch);
+
+                        // put the periodogram into #psearch-periodogram-display
+                        cputils.b64_to_image(lsp.periodogram,
+                                             '#psearch-periodogram-display');
+
+                        // put the phased LC for the best period into
+                        // #psearch-phasedlc-display
+                        cputils.b64_to_image(lsp.phasedlc0.plot,
+                                             '#psearch-phasedlc-display');
+
+                    }
+
+                    // if the user has moved on, do nothing
+                    else {
+
+                        console.log('results received for ' + cpobjectid +
+                                    ' but user has moved to ' + currobjectid +
+                                    ', discarding...');
+
+                    }
+
+                }
+
+                else {
+
+                    var errmsg = '<span class="text-danger">' +
+                        reqmsg  + '</span>';
+                    $('#alert-box').html(errmsg);
+
+                }
+
+
+            }).fail(function (xhr) {
+
+                var reqmsg = "could not run periodogram " +
+                    "search because of a server error!";
+                var errmsg = '<span class="text-danger">' +
+                    reqmsg  + '</span>';
+                $('#alert-box').html(errmsg);
+
+
+            }).done(function (xhr) {
+
+                // clear out the alert box
+                $('#alert-box').empty();
+
+            });
+
+
+        }
+
+        // otherwise, bail out and show the error messages
+        else {
+
+            // generate the alert box messages
+            messages = messages.join("<br>");
+            $('#alert-box').html('<span class="text-warning">' +
+                                 messages +
+                                 '</span>');
+
+
+        }
 
     },
 
