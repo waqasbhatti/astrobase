@@ -2038,17 +2038,20 @@ var cptools = {
                         $('#psearch-pgrampeaks').empty();
                         $('#psearch-pgrampeaks').append(
                             '<option value="' + lsp.phasedlc0.period +
-                                '" selected>' + lsp.phasedlc0.period +
+                                '" selected>peak 1: ' +
+                                math.format(lsp.phasedlc0.period, 7) +
                                 '</option>'
                         );
                         $('#psearch-pgrampeaks').append(
                             '<option value="' + lsp.phasedlc1.period +
-                                '">' + lsp.phasedlc1.period +
+                                '">peak 2: ' +
+                                math.format(lsp.phasedlc1.period, 7) +
                                 '</option>'
                         );
                         $('#psearch-pgrampeaks').append(
                             '<option value="' + lsp.phasedlc2.period +
-                                '">' + lsp.phasedlc2.period +
+                                '">peak 3: ' +
+                                math.format(lsp.phasedlc2.period, 7) +
                                 '</option>'
                         );
 
