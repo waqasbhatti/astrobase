@@ -1189,12 +1189,29 @@ class LCToolHandler(tornado.web.RequestHandler):
                 # just return them instead.
                 resloc = CPTOOLMAP[lctool]['resloc']
 
-                # get the objectid we'll send this along with every result. this
-                # should handle the case of the current objectid not being the
-                # same as the objectid being looked at by the user. in effect,
-                # this will allow the user to launch a long-running process and
-                # come back to it later since the frontend will load the older
-                # results when they are complete.
+                # TODO: figure out a way to make the dispatched tasks
+                # cancellable. This can probably be done by having a global
+                # TOOLQUEUE object that gets imported on initialize(). In this
+                # object, we could put in key:vals like so:
+                #
+                # TOOLQUEUE['lctool-<toolname>-cpfpath'] = (
+                #    yield self.executor.submit(blah, *blah_args, **blah_kwargs)
+                # )
+                #
+                # then we probably need some sort of frontend AJAX call that
+                # enqueues things and can then cancel stuff from the queue. see
+                # stuff we need to figure out:
+                # - if the above scheme actually yields so we remain async
+                # - if the Future object supports cancellation
+                # - if the Future object that isn't resolved actually works
+
+
+                # get the objectid. we'll send this along with every
+                # result. this should handle the case of the current objectid
+                # not being the same as the objectid being looked at by the
+                # user. in effect, this will allow the user to launch a
+                # long-running process and come back to it later since the
+                # frontend will load the older results when they are complete.
                 objectid = cpdict['objectid']
 
                 # if lctool is a periodogram method
