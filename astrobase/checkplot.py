@@ -2068,6 +2068,7 @@ def checkplot_dict(lspinfolist,
                    nperiodstouse=3,
                    objectinfo=None,
                    varinfo=None,
+                   getvarfeatures=True,
                    lcfitfunc=None,
                    lcfitparams={},
                    externalplots=None,
@@ -2124,6 +2125,10 @@ def checkplot_dict(lspinfolist,
     if varinfo is None, an initial empty dictionary of this form will be created
     and written to the output pickle. This can be later updated using
     checkplotviewer.py, etc.
+
+    If getvarfeatures is True, will use the function
+    varbase.features.all_nonperiodic_features to calculate several light curve
+    features such as the median, MAD, Stetson J index, CDPP, percentiles, etc.
 
     lcfitfunc is a Python function that is used to fit a model to the light
     curve. This is then overplotted for each phased light curve in the
@@ -2365,12 +2370,14 @@ def checkplot_dict(lspinfolist,
         checkplotdict['comments'] = None
 
         # second, calculate some variability features
-        checkplotdict['varinfo']['features'] = all_nonperiodic_features(
-            stimes,
-            smags,
-            serrs,
-            magsarefluxes=magsarefluxes
-        )
+        if getvarfeatures is True:
+            checkplotdict['varinfo']['features'] = all_nonperiodic_features(
+                stimes,
+                smags,
+                serrs,
+                magsarefluxes=magsarefluxes
+            )
+
 
         # third, add a signals key:val. this will be used by checkplotserver's
         # pre-whitening and masking functions. these will write to
@@ -2432,6 +2439,7 @@ def checkplot_pickle(lspinfolist,
                      lcfitfunc=None,
                      lcfitparams={},
                      varinfo=None,
+                     getvarfeatures=True,
                      externalplots=None,
                      findercmap='gray_r',
                      finderconvolve=None,
@@ -2489,6 +2497,10 @@ def checkplot_pickle(lspinfolist,
     if varinfo is None, an initial empty dictionary of this form will be created
     and written to the output pickle. This can be later updated using
     checkplotviewer.py, etc.
+
+    If getvarfeatures is True, will use the function
+    varbase.features.all_nonperiodic_features to calculate several light curve
+    features such as the median, MAD, Stetson J index, CDPP, percentiles, etc.
 
     lcfitfunc is a Python function that is used to fit a model to the light
     curve. This is then overplotted for each phased light curve in the
@@ -2612,6 +2624,7 @@ def checkplot_pickle(lspinfolist,
         nperiodstouse=nperiodstouse,
         objectinfo=objectinfo,
         varinfo=varinfo,
+        getvarfeatures=getvarfeatures,
         lcfitfunc=lcfitfunc,
         lcfitparams=lcfitparams,
         externalplots=externalplots,
