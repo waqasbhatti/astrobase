@@ -160,6 +160,12 @@ to use this:
 }
 
 .display-panel {
-    min-height: 300px;
+    min-height: 330px;
     max-height: 480px;
+    /* background: #71c7ac; */
+}
+
+.col-centered {
+    float: none;
+    margin: 0 auto;
 }
