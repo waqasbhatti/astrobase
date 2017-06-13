@@ -2125,18 +2125,6 @@ var cptools = {
 
     },
 
-    periodogram_bls: function () {
-
-    },
-
-    periodogram_pdm: function () {
-
-    },
-
-    periodogram_aov: function () {
-
-    },
-
     get_varfeatures: function () {
 
     },
