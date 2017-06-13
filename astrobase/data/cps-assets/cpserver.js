@@ -1878,14 +1878,49 @@ var cpv = {
 
 var cptools = {
 
-    // this holds the current checkplot's temp results from lctools
-    cptoolresults: {},
+    // this holds all session checkplot temp results from lctools
+    // this is indexed by objectid
 
-    load_previous_results: function () {
+    // objects contains objects of the form:
+    // '<objectid>': {various lctool results}
+
+    // processing contains objects of the form:
+    // '<objectid>': {'lctool':name of lctool currently running}
+
+    // failed contains objects of the form:
+    // '<objectid>': {'lctool':name of lctool that failed,
+    //                'message':message from backend explaining what happened}
+    allresults: {
+        'objects':{},
+        'processing':{},
+        'failed':{}
+    },
+
+    // this holds the current checkplot's results for fast review
+    currentresults: {},
+
+
+    // this loads thge current checkplot's results in order of priority:
+    // - from cptools.allresults.objects if objectid is present
+    // - from the checkplot-<objectid>.pkl-cpserver-temp file if that is present
+    // if neither are present, then this object doesn't have any results yet
+
+    // checks the processing list in the allresults for the objectid requested.
+    // if it's found there, then shows the spinner with the current tool
+    // that's running. if it's found in the objects
+    load_results: function () {
 
     },
 
-    save_results_to_checkplot: function (saveelem) {
+    // this fires the POST action to save all outstanding stuff to the
+    // checkplot pickle permanently
+    sync_results: function (saveelem) {
+
+    },
+
+    // this clears out the currentresults and the allresults entry for the
+    // current checkplot and deletes the -cpserver-temp pickle file.
+    reset_results: function () {
 
     },
 
@@ -2022,10 +2057,10 @@ var cptools = {
                 var reqmsg = recvdata.message;
                 var reqresult = recvdata.result;
 
-                if (reqstatus == 'success') {
+                var cpobjectid = reqresult.objectid;
+                var currobjectid = $('#objectid').text();
 
-                    var cpobjectid = reqresult.objectid;
-                    var currobjectid = $('#objectid').text();
+                if (reqstatus == 'success') {
 
                     // only update if the user is still on the object
                     // we started with
@@ -2070,9 +2105,21 @@ var cptools = {
                         cputils.b64_to_image(lsp.phasedlc0.plot,
                                              '#psearch-phasedlc-display');
 
+                        // update the cptools tracker with the results for this
+                        // object
+                        cptools.allresults.objects[objectid] = {};
+
+                        // update the cptools currentresults with these results
+
+                        // update the tool queue
+                        // use U+2714 for a check mark for success
+                        // use U+2717 for a cross mark for failure
+                        // fade out and remove the matching entry
+
                     }
 
-                    // if the user has moved on, do nothing
+                    // if the user has moved on,
+                    // update the tool queue and allresults tracker
                     else {
 
                         console.log('results received for ' + cpobjectid +
@@ -2083,28 +2130,54 @@ var cptools = {
 
                 }
 
-                else {
+                else if (status == 'warning') {
 
+                    // show the error if something exploded
+                    // but only if we're on the right objectid.
                     var errmsg = '<span class="text-danger">' +
                         reqmsg  + '</span>';
                     $('#alert-box').html(errmsg);
+
+
+
+
+                }
+
+                else if (status == 'error') {
+
+                    // show the error if something exploded
+                    // but only if we're on the right objectid.
+                    var errmsg = '<span class="text-danger">' +
+                        reqmsg  + '</span>';
+                    $('#alert-box').html(errmsg);
+
+                    // update the tool queue to show what happened
+
+                    // update the allresults tracker
 
                 }
 
 
             }).fail(function (xhr) {
 
+                // show the error only if we're on the same objectid
                 var reqmsg = "could not run periodogram " +
                     "search because of a server error!";
                 var errmsg = '<span class="text-danger">' +
                     reqmsg  + '</span>';
                 $('#alert-box').html(errmsg);
 
+                // update the tool queue to show what happened
+
+                // update the allresults tracker
+
 
             }).done(function (xhr) {
 
-                // clear out the alert box
+                // clear out the alert box only if we're on the same objectid
                 $('#alert-box').empty();
+
+                // update the tool queue
 
             });
 

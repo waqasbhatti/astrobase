@@ -8,14 +8,21 @@
 }
 
 .sidebar-list {
-    height: 300px;
+    height: 200px;
     overflow-y: auto;
     font-size: small;
     margin-bottom: 10px;
 }
 
 .status-list {
-    height: 300px;
+    height: 200px;
+    overflow-y: auto;
+    font-size: small;
+    margin-bottom: 10px;
+}
+
+.tool-queue {
+    height: 200px;
     overflow-y: auto;
     font-size: small;
     margin-bottom: 10px;
