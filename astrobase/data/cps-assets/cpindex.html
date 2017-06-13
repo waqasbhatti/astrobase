@@ -384,12 +384,10 @@
             <!-- this has the periodogram and phased LC displays -->
             <div class="row tool-header-panel">
 
-              <div class="col-sm-6 display-panel"
-                   id="psearch-periodogram-display">
+              <div class="col-sm-6 display-panel" id="psearch-periodogram-display">
               </div>
 
-              <div class="col-sm-6 display-panel"
-                   id="psearch-phasedlc-display">
+              <div class="col-sm-6 display-panel" id="psearch-phasedlc-display">
               </div>
 
             </div>
@@ -411,11 +409,11 @@
                   <label for="psearch-plotperiod">Modify period [days]</label>
                   <div class="input-group">
                     <span class="input-group-btn">
-                      <button class="btn btn-secondary" type="button">1/2</button>
+                      <button class="btn btn-secondary" type="button" id="psearch-halfperiod">1/2</button>
                     </span>
                     <input type="text" class="form-control">
                     <span class="input-group-btn">
-                      <button class="btn btn-secondary" type="button">&times; 2</button>
+                      <button class="btn btn-secondary" type="button" id="psearch-doubleperiod">&times; 2</button>
                     </span>
                   </div>
                 </div>
@@ -457,7 +455,7 @@
               <div class="col-sm-6">
 
                 <div class="form-group">
-                  <label for="psearch-plotxlim">Overplot a binned light curve using
+                  <label for="psearch-binphase">Overplot a binned light curve using
                   phase bin size</label>
                   <input type="text" class="form-control"
                          id="psearch-binphase" value="0.002">
@@ -482,9 +480,9 @@
                 <h5>Run a new period search</h5>
 
                 <div class="form-group">
-                  <label for="psearchrun">Period search method</label>
+                  <label for="psearch-lspmethod">Period search method</label>
                   <select class="custom-select form-control form-control-sm"
-                          id="psearchrun" name="psearchrun">
+                          id="psearch-lspmethod" name="psearch-lspmethod">
                     <option value="0" selected>Generalized Lomb-Scargle</option>
                     <option value="1">Phase Dispersion Minimization</option>
                     <option value="2">Box Least-squared Search</option>
@@ -494,7 +492,7 @@
 
                 <div class="form-check">
                   <label class="form-check-label">
-                    <input type="checkbox" id="autofreq"
+                    <input type="checkbox" id="psearch-autofreq"
                            class="form-check-input" checked>
                     Use automatic frequency step and period coverage
                   </label>
@@ -502,13 +500,13 @@
 
                 <div class="form-check">
                   <label class="form-check-label">
-                    <input type="checkbox" id="periodsearch-magsarefluxes"
+                    <input type="checkbox" id="psearch-magsarefluxes"
                            class="form-check-input">
                     Light curve measurements are fluxes
                   </label>
                 </div>
 
-                <button type="submit" id="start-psearch"
+                <button type="submit" id="psearch-start"
                         class="btn btn-primary btn-block">
                   Run period search
                 </button>
@@ -518,21 +516,21 @@
               <div class="col-sm-6">
 
                 <div class="form-group">
-                  <label for="startp">Start period [days]</label>
+                  <label for="psearch-startp">Start period [days]</label>
                   <input type="text" class="form-control form-control-sm"
-                         id="startp" value="0.1" disabled>
+                         id="psearch-startp" disabled>
                 </div>
 
                 <div class="form-group">
-                  <label for="endp">End period [days]</label>
+                  <label for="psearch-endp">End period [days]</label>
                   <input type="text" class="form-control form-control-sm"
-                         id="endp" value="100.0" disabled>
+                         id="psearch-endp" disabled>
                 </div>
 
                 <div class="form-group">
-                  <label for="freqstep">Frequency step [days<sup>-1</sup>]</label>
+                  <label for="psearch-freqstep">Frequency step [days<sup>-1</sup>]</label>
                   <input type="text" class="form-control form-control-sm"
-                         id="freqstep" disabled>
+                         id="psearch-freqstep" disabled>
                 </div>
 
               </div>
@@ -549,7 +547,7 @@
             <!-- this has the phased LC display -->
             <div class="row tool-header-panel">
 
-              <div class="col-sm-12 display-panel text-sm-center"
+              <div class="col-sm-8 display-panel text-sm-center col-centered"
                    id="var-phasedlc-display">
               </div>
 
@@ -572,11 +570,11 @@
                   <label for="var-plotperiod">Modify period [days]</label>
                   <div class="input-group">
                     <span class="input-group-btn">
-                      <button class="btn btn-secondary" type="button">1/2</button>
+                      <button class="btn btn-secondary" type="button" id="var-halfperiod">1/2</button>
                     </span>
                     <input type="text" class="form-control">
                     <span class="input-group-btn">
-                      <button class="btn btn-secondary" type="button">&times; 2</button>
+                      <button class="btn btn-secondary" type="button" id="var-doubleperiod">&times; 2</button>
                     </span>
                   </div>
                 </div>
@@ -649,7 +647,7 @@
             <!-- this has the phased LC display -->
             <div class="row tool-header-panel">
 
-              <div class="col-sm-12 display-panel text-sm-center"
+              <div class="col-sm-8 display-panel text-sm-center col-centered"
                    id="lcfit-phasedlc-display">
               </div>
 
