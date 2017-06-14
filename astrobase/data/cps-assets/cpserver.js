@@ -321,9 +321,8 @@ var cpv = {
     // this function generates a spinner
     make_spinner: function (spinnermsg) {
 
-        var spinner =
+        var spinner = spinnermsg +
             '<div class="spinner">' +
-            spinnermsg +
             '<div class="rect1"></div>' +
             '<div class="rect2"></div>' +
             '<div class="rect3"></div>' +
