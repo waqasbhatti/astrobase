@@ -610,6 +610,24 @@ var cpv = {
                     .attr('data-findex')
             );
 
+
+            // FIXME: get this checkplot's cptools results
+            // if no cptools results, then populate the phased LCs
+            // - on the psearch tab, with GLS pgram + phasedlc0
+            // - on the var tab, with phasedlc0
+            // - on the lcfit tab, with phasedlc0
+
+            // FIXME: if the checkplot's cptools results are available in either
+            // the cptools.allresults object or in the temp checkplot, get them
+            // from there. this will probably need a separate call to
+            // cptools.load_results() and an AJAX endpoint
+
+            // FIXME: on the psearch tab, need to populate select with peaks for
+            // each period finding method in the checkplot
+
+            // FIXME: when we load the checkplot, load it's cptools results into
+            // the cptools.currentresults object.
+
             // highlight the file in the sidebar list
             $("a.checkplot-load")
                 .filter("[data-fname='" + filename + "']")
@@ -619,7 +637,6 @@ var cpv = {
             var winheight = $(window).height();
             var docheight = $(document).height();
             var ctrlheight = $('.sidebar-controls').height()
-
             $('.sidebar').css({'height': docheight + 'px'});
 
             // get rid of the spinny thing
@@ -2230,6 +2247,31 @@ var cptools = {
     },
 
     action_setup: function () {
+
+        // FIXME: bind the periodogram select so it looks for existing periods for that periodogram method and loads them into the period select box.
+
+        // periodogram search - half period
+        $('#psearch-halfperiod').on('click', function (evt) {
+
+            evt.preventDefault();
+
+        });
+
+        // periodogram search - 2x period
+        $('#psearch-doubleperiod').on('click', function (evt) {
+
+            evt.preventDefault();
+
+        });
+
+        // periodogram search - start
+        $('#psearch-start').on('click', function (evt) {
+
+            evt.preventDefault();
+            cptools.run_periodsearch()
+
+
+        });
 
         $('#get-varfeatures').on('click', function (evt) {
 
