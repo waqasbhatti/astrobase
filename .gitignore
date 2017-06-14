@@ -39,3 +39,4 @@ _*.c
 .ipynb_checkpoints
 .cache
 notebooks/nb-data/test*.*
+.DS_Store
