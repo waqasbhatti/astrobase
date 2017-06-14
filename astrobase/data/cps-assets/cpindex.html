@@ -6,6 +6,13 @@
   <div class="col-sm-2 sidebar">
 
     <div class="row">
+      <div class="col-sm-12 help-text text-sm-center">
+        <a href="#" id="shortcuts-box" data-toggle="modal"
+           data-target="#help-box">Keyboard shortcuts and help</a>
+      </div>
+    </div>
+
+    <div class="row">
       <div class="col-sm-12">
         <h5 class="text-sm-center">All Checkplots</h5>
       </div>
@@ -142,13 +149,11 @@
     <!-- instructions and nav bar go here -->
     <div class="row">
       <div class="col-sm-12 text-sm-center">
-        <p>Use the <kbd>ctrl</kbd> + <kbd>&larr;</kbd> and the <kbd>ctrl</kbd>
-          + <kbd>&rarr;</kbd> keys to move through the checkplot
-          list. <a href="#" id="shortcuts-box" data-toggle="modal"
-          data-target="#help-box">See more keyboard shortcuts and help.</a><br>
-          <a href="#" class="checkplot-prev">&lt;&lt; previous</a>
-          | <span id="checkplot-current"></span> |
+        <p><kbd>ctrl</kbd> + <kbd>&larr;</kbd>&nbsp;&nbsp;
+          <a href="#" class="checkplot-prev">&lt;&lt; previous</a> |
+          <span id="checkplot-current"></span> |
           <a href="#" class="checkplot-next">next &gt;&gt;</a>
+          &nbsp;&nbsp;<kbd>ctrl</kbd> + <kbd>&rarr;</kbd>
         </p>
       </div>
     </div>
@@ -475,7 +480,7 @@
                   <label for="psearch-binphase">Overplot a binned LC with
                   phase bin size</label>
                   <input type="text" class="form-control"
-                         id="psearch-binphase" value="0.002">
+                         id="psearch-binphase" value="0.01">
                 </div>
 
               </div>
@@ -830,25 +835,6 @@
           <!-- this tab contains save and export tools -->
           <div class="tab-pane" id="cpsave" role="tabpanel">
 
-            <!-- this is the save to PNG link -->
-            <div class="row tool-header-panel">
-
-              <div class="col-sm-6">
-                <p>All current object information in the checkplot pickle can be
-                exported as a PNG file. This will include the object name,
-                finder chart, period and epoch, variability and object tags,
-                comments, the light curve, and finally, periodograms and phased
-                light curves for all period-finding methods used.
-              </div>
-
-              <div class="col-sm-6 py-1">
-                <button type="submit" id="save-to-png"
-                        class="btn btn-secondary btn-block">
-                  Export object info from checkplot pickle to PNG
-                </button>
-              </div>
-            </div>
-
             <!-- this is the save tool results link -->
             <div class="row">
 
@@ -872,6 +858,25 @@
                 </button>
               </div>
 
+            </div>
+
+            <!-- this is the save to PNG link -->
+            <div class="row tool-header-panel">
+
+              <div class="col-sm-6">
+                <p>All synced object information in the checkplot pickle can be
+                exported as a PNG file. This will include the object name,
+                finder chart, period and epoch, variability and object tags,
+                comments, the light curve, and finally, periodograms and phased
+                light curves for all period-finding methods used.
+              </div>
+
+              <div class="col-sm-6 py-1">
+                <button type="submit" id="save-to-png"
+                        class="btn btn-secondary btn-block">
+                  Export synced info from checkplot pickle to PNG
+                </button>
+              </div>
             </div>
 
           </div>

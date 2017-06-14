@@ -1905,7 +1905,7 @@ var cptools = {
 
     // processing contains objects of the form:
     // '<objectid>': {'lctool':name of lctool currently running}
-    processing: {},
+    running: {},
 
     // failed contains objects of the form:
     // '<lctool-objectid>': message from backend explaining what happened
@@ -1986,7 +1986,7 @@ var cptools = {
             freqstep = parseFloat(freqstep);
 
             // check startp
-            if (startp === NaN) {
+            if (isNaN(startp)) {
                 messages.push("no start period provided");
             }
             else if ((startp == 0.0) || (startp < 0.0)) {
@@ -2001,7 +2001,7 @@ var cptools = {
             }
 
             // check endp
-            if (endp === NaN) {
+            if (isNaN(endp)) {
                 messages.push("no start period provided");
             }
             else if ((endp == 0.0) || (endp < 0.0)) {
@@ -2013,7 +2013,7 @@ var cptools = {
             }
 
             // check freqstep
-            if (freqstep === NaN) {
+            if (isNaN(freqstep)) {
                 messages.push("no frequency step provided");
             }
             else if ((freqstep == 0.0) || (freqstep < 0.0)) {
@@ -2095,29 +2095,29 @@ var cptools = {
 
                 if (reqstatus == 'success' || reqstatus == 'warning') {
 
+                    var lsp = reqresult[lspmethod];
+
                     // only update if the user is still on the object
                     // we started with
                     if (cpobjectid == currobjectid) {
-
-                        var lsp = reqresult[lspmethod];
 
                         // update the select control for the periodogram peaks
                         // with the best three peaks
                         $('#psearch-pgrampeaks').empty();
                         $('#psearch-pgrampeaks').append(
-                            '<option value="' + lsp.phasedlc0.period +
+                            '<option value="0|' + lsp.phasedlc0.period +
                                 '" selected>peak 1: ' +
                                 math.format(lsp.phasedlc0.period, 7) +
                                 '</option>'
                         );
                         $('#psearch-pgrampeaks').append(
-                            '<option value="' + lsp.phasedlc1.period +
+                            '<option value="1|' + lsp.phasedlc1.period +
                                 '">peak 2: ' +
                                 math.format(lsp.phasedlc1.period, 7) +
                                 '</option>'
                         );
                         $('#psearch-pgrampeaks').append(
-                            '<option value="' + lsp.phasedlc2.period +
+                            '<option value="2|' + lsp.phasedlc2.period +
                                 '">peak 3: ' +
                                 math.format(lsp.phasedlc2.period, 7) +
                                 '</option>'
@@ -2427,6 +2427,50 @@ var cptools = {
                 // if the user has moved on...
                 else {
 
+                    console.log('results received for ' + cpobjectid +
+                                ' but user has moved to ' + currobjectid +
+                                ', updated tracker...');
+
+                    // if this objectid is in the tracker
+                    if (cpobjectid in cptools.allobjects) {
+
+                        if ('varinfo' in cptools.allobjects[cpobjectid]) {
+
+                            cptools.allobjects[
+                                cpobjectid
+                            ]['varinfo']['varfeatures'] = vfeatures;
+
+                        }
+
+                        else {
+
+                            cptools.allobjects[cpobjectid] = {
+                                varinfo:{
+                                    varfeatures: vfeatures
+                                }
+                            };
+                        }
+
+                    }
+
+                    // if it's not in the tracker, add it
+                    else {
+
+                        cptools.allobjects[cpobjectid] = reqresult;
+                    }
+
+                    // update the tool queue
+                    // fade out and remove the matching entry
+                    var tqsel = '[data-objectid="' + cpobjectid + '"]' +
+                        '[data-lctool="' + lctooltocall + '"]';
+                    var tqboxelem = $('.tq-box').filter(tqsel);
+                    tqboxelem.children('span')
+                        .html('<span class="text-primary">DONE<span>');
+                    tqboxelem.fadeOut(2000, function () {
+                        $(this).remove();
+                    });
+
+
                 }
 
             }
@@ -2711,100 +2755,328 @@ var cptools = {
         // and show them in the alert box.
         var messages = [];
 
-        // generate the alert box messages
-        messages.push("getting variability features...");
-        messages = messages.join("<br>");
-        cpv.make_spinner('<span class="text-primary">' +
-                         messages +
-                         '</span><br>');
+        // this tracks if we're ok to proceed
+        var proceed = true;
 
-        // generate the tool queue box
-        var tqbox = '<div class="tq-box" data-objectid="' + currobjectid +
-            '" data-fname="' + currfname +
-            '" data-lctool="' + lctooltocall +
-            '" data-toolstate="running">' +
-            '<strong>' + currobjectid + '</strong><br>' +
-            lctooltocall + ' &mdash; ' +
-            '<span class="tq-state">running</span></div>';
+        // collect the form values
+        var plotperiod = parseFloat($('#psearch-plotperiod').val());
+        var plotepoch = parseFloat($('#psearch-plotepoch').val());
 
-        $('.tool-queue').append(tqbox);
+        var plotxlim = $('#psearch-plotxlim').val();
+        if (plotxlim != '') {
 
-        // the call to the backend
-        var ajaxurl = '/tools/' + cputils.b64_encode(cpv.currfile);
+            plotxlim = plotxlim.replace(']','').replace('[','').split(', ');
+            plotxlim = [parseFloat(plotxlim[0]), parseFloat(plotxlim[1])];
 
-        // this is the data object to send to the backend
-        var sentdata = {
-            objectid: currobjectid,
-            lctool: lctooltocall,
-            forcereload: true,
-        };
+            // if the plot limits aren't the default, then we probably want
+            // xliminsetmode on
+            if ((plotxlim[1] - plotxlim[0]) > 1.0) {
+                var xliminsetmode = false;
+            }
+            else {
+                var xliminsetmode = true;
+            }
+        }
 
-        // make the call
-        $.getJSON(ajaxurl, sentdata, function (recvdata) {
+        else {
+            var xliminsetmode = false;
+        }
 
-            // the received data is in the standard form
-            var reqstatus = recvdata.status;
-            var reqmsg = recvdata.message;
-            var reqresult = recvdata.result;
-            var cpobjectid = reqresult.objectid;
+        var phasebin = parseFloat($('#psearch-binphase').val());
 
-            // update this after we get back from the AJAX call
-            var currobjectid = $('#objectid').text();
+        var periodind = $('#psearch-pgrampeaks').val();
+        if (periodind === null) {
+            periodind = 0;
+        }
+        else {
+            periodind = parseInt(periodind.split('|')[0]);
+        }
 
-            if (reqstatus == 'success' || reqstatus == 'warning') {
+        var lspmethod = $('#psearch-lspmethod').val();
 
-                // only update if the user is still on the object
-                // we started with
-                if (cpobjectid == currobjectid) {
+        // see if we can proceed
+
+        if ((isNaN(plotperiod)) || (plotperiod < 0.0)) {
+            messages.push("plot period is invalid")
+            proceed = false;
+        }
+
+        if ((isNaN(plotepoch)) || (plotepoch < 0.0)) {
+            messages.push("plot epoch is invalid")
+            proceed = false;
+        }
+
+        if ((isNaN(plotxlim[0])) ||
+            (plotxlim[0] < -1.0) ||
+            (plotxlim[0] > plotxlim[1])) {
+            messages.push("plot x-axis lower limit is invalid")
+            proceed = false;
+        }
+
+        if ((isNaN(plotxlim[1])) ||
+            (plotxlim[1] > 1.0) ||
+            (plotxlim[1] < plotxlim[0])) {
+            messages.push("plot x-axis upper limit is invalid")
+            proceed = false;
+        }
+
+        if ((isNaN(phasebin)) ||
+            (phasebin > 0.25) ||
+            (phasebin < 0.0)) {
+            messages.push("plot phase bin size is invalid")
+            proceed = false;
+        }
+
+
+        // don't go any further if the input is valid
+        if (!proceed) {
+
+            // generate the alert box messages
+            messages = messages.join("<br>");
+            $('#alert-box').html('<span class="text-warning">' +
+                                 messages +
+                                 '</span>');
+
+        }
+
+        // otherwise, we're good to go
+        else {
+
+            // generate the alert box messages
+            messages.push("making phased LC plot...");
+            messages = messages.join("<br>");
+            cpv.make_spinner('<span class="text-primary">' +
+                             messages +
+                             '</span><br>');
+
+            // generate the tool queue box
+            var tqbox = '<div class="tq-box" data-objectid="' + currobjectid +
+                '" data-fname="' + currfname +
+                '" data-lctool="' + lctooltocall +
+                '" data-toolstate="running">' +
+                '<strong>' + currobjectid + '</strong><br>' +
+                lctooltocall + ' &mdash; ' +
+                '<span class="tq-state">running</span></div>';
+
+            $('.tool-queue').append(tqbox);
+
+            // the call to the backend
+            var ajaxurl = '/tools/' + cputils.b64_encode(cpv.currfile);
+
+            // this is the data object to send to the backend
+            var sentdata = {
+                // common stuff
+                objectid: currobjectid,
+                lctool: lctooltocall,
+                forcereload: true,
+                // request values
+                lspmethod: lspmethod,
+                periodind: periodind,
+                varperiod: plotperiod,
+                varepoch: plotepoch,
+                xliminsetmode: xliminsetmode,
+                plotxlim: plotxlim,
+                phasebin: phasebin
+            };
+
+            console.log(sentdata);
+
+            // make the call
+            $.getJSON(ajaxurl, sentdata, function (recvdata) {
+
+                // the received data is in the standard form
+                var reqstatus = recvdata.status;
+                var reqmsg = recvdata.message;
+                var reqresult = recvdata.result;
+                var cpobjectid = reqresult.objectid;
+
+                // update this after we get back from the AJAX call
+                var currobjectid = $('#objectid').text();
+
+                if (reqstatus == 'success' || reqstatus == 'warning') {
+
+                    var lsp = reqresult[lspmethod];
+
+                    // only update if the user is still on the object
+                    // we started with
+                    if (cpobjectid == currobjectid) {
+
+                        var lckey = 'phasedlc' + periodind;
+
+                        // put the phased LC for the best period into
+                        // #psearch-phasedlc-display
+                        cputils.b64_to_image(lsp[lckey]['plot'],
+                                             '#psearch-phasedlc-display');
+
+                        // update the global object period and epoch with the
+                        // period and epoch used here if told to do so
+                        var pupdate = $('#psearch-updateperiod').prop('checked');
+                        var eupdate = $('#psearch-updateepoch').prop('checked');
+
+                        if (pupdate) {
+                            $('#objectperiod').val(plotperiod);
+                        }
+                        if (eupdate) {
+                            $('#objectepoch').val(plotepoch);
+                        }
+
+                        // update current cptools object
+                        if (lspmethod in cptools.current) {
+
+                            cptools.current[lspmethod][lckey] = lsp[lckey];
+
+                        }
+
+                        else {
+                            cptools.current[lspmethod] = {lckey: lsp[lckey]};
+                        }
+
+
+                        // update cptools tracker
+                        if (cpobjectid in cptools.allobjects) {
+
+                            if (lspmethod in cptools.allobjects[cpobjectid]) {
+
+                                cptools.allobjects[
+                                    cpobjectid
+                                ][lspmethod][lckey] = lsp[lckey];
+
+                            }
+
+                            else {
+                                cptools.allobjects[
+                                    cpobjectid
+                                ][lspmethod] = {lckey: lsp[lckey]};
+                            }
+
+                        }
+
+                        else {
+
+                            cptools.allobjects[cpobjectid] = reqresult;
+
+                        }
+
+
+                        // add a warning to the alert box if there was one
+                        if (reqstatus == 'warning') {
+
+                            // show the error if something exploded
+                            // but only if we're on the right objectid.
+                            var errmsg = '<span class="text-warning">' +
+                                reqmsg  + '</span>';
+                            $('#alert-box').html(errmsg);
+
+                        }
+
+                        // update the tool queue
+                        // fade out and remove the matching entry
+                        var tqsel = '[data-objectid="' + cpobjectid + '"]' +
+                            '[data-lctool="' + lctooltocall + '"]';
+                        var tqboxelem = $('.tq-box').filter(tqsel);
+                        tqboxelem.children('span')
+                            .html('<span class="text-primary">DONE<span>');
+                        tqboxelem.fadeOut(2000, function () {
+                            $(this).remove();
+                        });
+
+                        // clear out the alert box only if we're on the same
+                        // objectid
+                        $('#alert-box').empty();
+
+                    }
+
+                    // if the user has moved on...
+                    else {
+
+                        console.log('results received for ' + cpobjectid +
+                                    ' but user has moved to ' + currobjectid +
+                                    ', updated tracker...');
+
+                        // update cptools tracker
+                        if (cpobjectid in cptools.allobjects) {
+
+                            if (lspmethod in cptools.allobjects[cpobjectid]) {
+
+                                cptools.allobjects[
+                                    cpobjectid
+                                ][lspmethod][lckey] = lsp[lckey];
+
+                            }
+
+                            else {
+                                cptools.allobjects[
+                                    cpobjectid
+                                ][lspmethod] = {lckey: lsp[lckey]};
+                            }
+
+                        }
+
+                        else {
+
+                            cptools.allobjects[cpobjectid] = reqresult;
+
+                        }
+
+                        // update the tool queue
+                        // fade out and remove the matching entry
+                        var tqsel = '[data-objectid="' + cpobjectid + '"]' +
+                            '[data-lctool="' + lctooltocall + '"]';
+                        var tqboxelem = $('.tq-box').filter(tqsel);
+                        tqboxelem.children('span')
+                            .html('<span class="text-primary">DONE<span>');
+                        tqboxelem.fadeOut(2000, function () {
+                            $(this).remove();
+                        });
+
+                    }
 
                 }
 
-                // if the user has moved on...
+                // if the request failed
                 else {
 
+                    // show the error if something exploded but only if we're on
+                    // the right objectid.
+                    if (cpobjectid == currobjectid) {
+
+                        var errmsg = '<span class="text-danger">' +
+                            reqmsg  + '</span>';
+                        $('#alert-box').html(errmsg);
+
+                    }
+
+                    // update the tool queue to show what happened
+                    var tqsel = '[data-objectid="' + cpobjectid + '"]' +
+                        '[data-lctool="' + lctooltocall + '"]';
+                    var tqboxelem = $('.tq-box').filter(tqsel);
+                    tqboxelem.children('span')
+                        .html('<span class="text-danger">FAILED<span>');
+                    tqboxelem.fadeOut(2500, function () {
+                        $(this).remove();
+                    });
+
+                    // update the cptools.failed tracker
+                    var failedkey = lctooltocall + '-' + cpobjectid;
+                    cptools.failed[failedkey] = reqmsg;
+
                 }
 
-            }
+            }).fail(function (xhr) {
 
-            // if the request failed
-            else {
+                // show the error - here we don't know which objectid was
+                // returned, so show the error wherever we are
+                var reqmsg = "could not run  " + lctooltocall +
+                    " because of a server error!";
+                var errmsg = '<span class="text-danger">' +
+                    reqmsg  + '</span>';
+                $('#alert-box').html(errmsg);
+            });
 
-                // show the error if something exploded but only if we're on
-                // the right objectid.
-                if (cpobjectid == currobjectid) {
 
-                    var errmsg = '<span class="text-danger">' +
-                        reqmsg  + '</span>';
-                    $('#alert-box').html(errmsg);
+        }
 
-                }
 
-                // update the tool queue to show what happened
-                var tqsel = '[data-objectid="' + cpobjectid + '"]' +
-                    '[data-lctool="' + lctooltocall + '"]';
-                var tqboxelem = $('.tq-box').filter(tqsel);
-                tqboxelem.children('span')
-                    .html('<span class="text-danger">FAILED<span>');
-                tqboxelem.fadeOut(2500, function () {
-                    $(this).remove();
-                });
-
-                // update the cptools.failed tracker
-                var failedkey = lctooltocall + '-' + cpobjectid;
-                cptools.failed[failedkey] = reqmsg;
-
-            }
-
-        }).fail(function (xhr) {
-
-            // show the error - here we don't know which objectid was
-            // returned, so show the error wherever we are
-            var reqmsg = "could not run  " + lctooltocall +
-                " because of a server error!";
-            var errmsg = '<span class="text-danger">' +
-                reqmsg  + '</span>';
-            $('#alert-box').html(errmsg);
-        });
 
     },
 

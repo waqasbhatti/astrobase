@@ -167,10 +167,9 @@ CPTOOLMAP = {
         'argtypes':(None, str, int, ndarray, ndarray, ndarray, float, float),
         'kwargs':('xliminsetmode','magsarefluxes',
                   'phasewrap','phasesort',
-                  'phasebin','minbinelem',
-                  'plotxlim[]'),
-        'kwargtypes':(bool, bool, bool, bool, float, int, list),
-        'kwargdefs':(False, False, True, True, 0.002, 7, [-0.8,0.8]),
+                  'phasebin','plotxlim[]'),
+        'kwargtypes':(bool, bool, bool, bool, float, list),
+        'kwargdefs':(False, False, True, True, 0.002, [-0.8,0.8]),
         'func':_pkl_phased_magseries_plot,
         'resloc':[],
     },
@@ -1328,12 +1327,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                         cpmags,
                                         cperrs,
                                         nbestperiods[0],
-                                        'min',
-                                        True,
-                                        True,
-                                        0.002,
-                                        7,
-                                        [-0.8,0.8])
+                                        'min')
                         phasedlcargs1 = (None,
                                         lspmethod,
                                         -1,
@@ -1341,12 +1335,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                         cpmags,
                                         cperrs,
                                         nbestperiods[1],
-                                        'min',
-                                        True,
-                                        True,
-                                        0.002,
-                                        7,
-                                        [-0.8,0.8])
+                                        'min')
                         phasedlcargs2 = (None,
                                         lspmethod,
                                         -1,
@@ -1354,12 +1343,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                         cpmags,
                                         cperrs,
                                         nbestperiods[2],
-                                        'min',
-                                        True,
-                                        True,
-                                        0.002,
-                                        7,
-                                        [-0.8,0.8])
+                                        'min')
 
                         # here, we set a bestperiodhighlight to distinguish this
                         # plot from the ones existing in the checkplot already
@@ -1947,12 +1931,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                         cpmags,
                                         cperrs,
                                         lctoolargs[3], # this is the fit period
-                                        'min',
-                                        True,
-                                        True,
-                                        0.002,
-                                        7,
-                                        [-0.8,0.8])
+                                        'min')
 
                         # here, we set a bestperiodhighlight to distinguish this
                         # plot from the ones existing in the checkplot already
