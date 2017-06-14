@@ -186,3 +186,8 @@ to use this:
     color: #222;
     font-size: small;
 }
+
+#var-varfeatures-results textarea {
+    overflow-y: auto;
+    font-size: 80%;
+}

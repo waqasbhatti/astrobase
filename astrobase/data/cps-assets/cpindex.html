@@ -120,9 +120,9 @@
         <!-- contains divs of the form: -->
         <!--   objectid (data-objectid, data-cpfname) -->
         <!--   name of lctool running -->
+        <!--   state of lctool running -->
         <div class="row">
           <div class="col-sm-12 text-sm-center">
-            <h5>Tool Queue</h5>
 
             <div class="tool-queue">
 
@@ -459,7 +459,7 @@
             <!-- this contains the plot options -->
             <div class="row">
 
-              <div class="col-sm-4">
+              <div class="col-sm-3">
 
                 <div class="form-group">
                   <label for="psearch-plotxlim">Zoom plot to phase range</label>
@@ -469,10 +469,10 @@
 
               </div>
 
-              <div class="col-sm-6">
+              <div class="col-sm-5">
 
                 <div class="form-group">
-                  <label for="psearch-binphase">Overplot a binned light curve using
+                  <label for="psearch-binphase">Overplot a binned LC with
                   phase bin size</label>
                   <input type="text" class="form-control"
                          id="psearch-binphase" value="0.002">
@@ -480,8 +480,23 @@
 
               </div>
 
-              <div class="col-sm-2">
+              <div class="col-sm-4">
 
+                <div class="form-check">
+                  <label class="form-check-label">
+                    <input type="checkbox" id="psearch-updateperiod"
+                           class="form-check-input">
+                    Update object period from plot
+                  </label>
+                </div>
+
+                <div class="form-check">
+                  <label class="form-check-label">
+                    <input type="checkbox" id="psearch-updateepoch"
+                           class="form-check-input">
+                    Update object epoch from plot
+                  </label>
+                </div>
 
 
               </div>
@@ -633,6 +648,11 @@
                     variability features</button>
                 </form>
 
+                <!-- results go into a table here -->
+                <div id="var-varfeatures-results" class="py-1">
+
+                </div>
+
               </div>
 
               <!-- this pre-whitens a periodic signal from the light curve -->
@@ -730,12 +750,12 @@
                 <div class="form-group">
                   <label for="lcfit-type">Fit method</label>
                   <select class="custom-select form-control form-control-sm"
-                          id="lcfit-type"
-                          name="lcfit-type">
-                    <option value="0" selected>Fourier fit</option>
-                    <option value="1">Spline fit</option>
-                    <option value="2">Legendre polynomial fit</option>
-                    <option value="3">Savitsky-Golay smoothed fit</option>
+                          id="lcfit-fitmethod"
+                          name="lcfit-fitmethod">
+                    <option value="fourier" selected>Fourier fit</option>
+                    <option value="spline">Spline fit</option>
+                    <option value="legendre">Legendre polynomial fit</option>
+                    <option value="savgol">Savitsky-Golay smoothed fit</option>
                   </select>
                 </div>
 
@@ -747,7 +767,7 @@
                   </label>
                 </div>
 
-                <button type="submit" id="start-lcfit"
+                <button type="submit" id="lcfit-start"
                         class="btn btn-primary btn-block">
                   Run light curve fit
                 </button>
@@ -773,27 +793,31 @@
               <div class="col-sm-6">
 
                 <div class="form-group">
-                  <label for="fitorder-fourier">Fourier fit order</label>
+                  <label for="lcfit-fourierfitorder">Fourier fit order</label>
                   <input type="text" class="form-control form-control-sm"
-                         id="fitorder-fourier" value="6">
+                         id="lcfit-fourierfitorder" value="6">
                 </div>
 
                 <div class="form-group">
-                  <label for="fitknots-spline">Spline knot fraction</label>
+                  <label for="lcfit-splinefitknots">Spline knot fraction</label>
                   <input type="text" class="form-control form-control-sm"
-                         id="fitknots-spline" value="0.01">
+                         id="lcfit-splinefitknots" value="0.01">
                 </div>
 
                 <div class="form-group">
-                  <label for="polyorder-legendre">Lengendre polynomial order</label>
+                  <label for="lcfit-legendrepolyorder">
+                    Lengendre polynomial order
+                  </label>
                   <input type="text" class="form-control form-control-sm"
-                         id="polyorder-legendre" value="10">
+                         id="lcfit-legendrepolyorder" value="10">
                 </div>
 
                 <div class="form-group">
-                  <label for="winlength-savgol">Savitsky-Golay window length</label>
+                  <label for="lcfit-savgolwinlength">
+                    Savitsky-Golay window length
+                  </label>
                   <input type="text" class="form-control form-control-sm"
-                         id="winlength-savgol">
+                         id="lcfit-savgolwinlength">
                 </div>
 
               </div>

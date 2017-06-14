@@ -2030,7 +2030,7 @@ var cptools = {
         if (proceed) {
 
             // generate the alert box messages
-            messages.push("running " + lspmethod.toUpperCase());
+            messages.push("running " + lspmethod.toUpperCase() + '...');
             messages = messages.join("<br>");
             cpv.make_spinner('<span class="text-primary">' +
                              messages +
@@ -2038,7 +2038,9 @@ var cptools = {
 
             // generate the tool queue box
             var tqbox = '<div class="tq-box" data-objectid="' + currobjectid +
-                '" data-fname="' + currfname + '" data-toolstate="running">' +
+                '" data-fname="' + currfname +
+                '" data-lctool="' + lctooltocall +
+                '" data-toolstate="running">' +
                 '<strong>' + currobjectid + '</strong><br>' +
                 lctooltocall + ' &mdash; ' +
                 '<span class="tq-state">running</span></div>';
@@ -2168,7 +2170,8 @@ var cptools = {
 
                         // update the tool queue
                         // fade out and remove the matching entry
-                        var tqsel = '[data-objectid="' + cpobjectid + '"]';
+                        var tqsel = '[data-objectid="' + cpobjectid + '"]' +
+                            '[data-lctool="' + lctooltocall + '"]';
                         var tqboxelem = $('.tq-box').filter(tqsel);
                         tqboxelem.children('span')
                             .html('<span class="text-primary">DONE<span>');
@@ -2205,7 +2208,8 @@ var cptools = {
 
                         // update the tool queue
                         // fade out and remove the matching entry
-                        var tqsel = '[data-objectid="' + cpobjectid + '"]';
+                        var tqsel = '[data-objectid="' + cpobjectid + '"]' +
+                            '[data-lctool="' + lctooltocall + '"]';
                         var tqboxelem = $('.tq-box').filter(tqsel);
                         tqboxelem.children('span')
                             .html('<span class="text-primary">DONE<span>');
@@ -2232,7 +2236,8 @@ var cptools = {
                     }
 
                     // update the tool queue to show what happened
-                    var tqsel = '[data-objectid="' + cpobjectid + '"]';
+                    var tqsel = '[data-objectid="' + cpobjectid + '"]' +
+                        '[data-lctool="' + lctooltocall + '"]';
                     var tqboxelem = $('.tq-box').filter(tqsel);
                     tqboxelem.children('span')
                         .html('<span class="text-danger">FAILED<span>');
@@ -2249,8 +2254,9 @@ var cptools = {
 
             }).fail(function (xhr) {
 
-                // show the error only if we're on the same objectid
-                var reqmsg = "could not run periodogram  " +
+                // show the error - here we don't know which objectid was
+                // returned, so show the error wherever we are
+                var reqmsg = "could not run " + lctooltocall +
                     " because of a server error!";
                 var errmsg = '<span class="text-danger">' +
                     reqmsg  + '</span>';
@@ -2278,39 +2284,652 @@ var cptools = {
 
     get_varfeatures: function () {
 
+        // get the current objectid and checkplot filename
+        var currobjectid = $('#objectid').text();
+        var currfname = $('#objectid').attr('data-fname');
+
+        // this is the lctool to call
+        var lctooltocall = 'var-varfeatures';
+
+        // this tracks any errors in input. we join them all with <br>
+        // and show them in the alert box.
+        var messages = [];
+
+        // generate the alert box messages
+        messages.push("getting variability features...");
+        messages = messages.join("<br>");
+        cpv.make_spinner('<span class="text-primary">' +
+                         messages +
+                         '</span><br>');
+
+        // generate the tool queue box
+        var tqbox = '<div class="tq-box" data-objectid="' + currobjectid +
+            '" data-fname="' + currfname +
+            '" data-lctool="' + lctooltocall +
+            '" data-toolstate="running">' +
+            '<strong>' + currobjectid + '</strong><br>' +
+            lctooltocall + ' &mdash; ' +
+            '<span class="tq-state">running</span></div>';
+
+        $('.tool-queue').append(tqbox);
+
+        // the call to the backend
+        var ajaxurl = '/tools/' + cputils.b64_encode(cpv.currfile);
+
+        // this is the data object to send to the backend
+        var sentdata = {
+            objectid: currobjectid,
+            lctool: lctooltocall,
+            forcereload: true,
+        };
+
+        // make the call
+        $.getJSON(ajaxurl, sentdata, function (recvdata) {
+
+            // the received data is in the standard form
+            var reqstatus = recvdata.status;
+            var reqmsg = recvdata.message;
+            var reqresult = recvdata.result;
+            var cpobjectid = reqresult.objectid;
+
+            // update this after we get back from the AJAX call
+            var currobjectid = $('#objectid').text();
+
+            if (reqstatus == 'success' || reqstatus == 'warning') {
+
+                // only update if the user is still on the object
+                // we started with
+                if (cpobjectid == currobjectid) {
+
+                    // this is the target element where we'll make a table
+                    var featreselem = $('#var-varfeatures-results');
+
+                    // these are the results
+                    var vfeatures = reqresult.varinfo.varfeatures;
+
+                    var feat_table = [
+                        '<textarea class="form-control" rows="30" readonly>'
+                    ];
+
+                    feat_table.push(JSON.stringify(vfeatures, null, 2));
+
+                    feat_table = feat_table.join('') + '</textarea>';
+                    featreselem.html(feat_table);
+
+                    // update the cptools tracker with the results for this
+                    // object
+
+                    // if this objectid is in the tracker
+                    if (cpobjectid in cptools.allobjects) {
+
+                        if ('varinfo' in cptools.allobjects[cpobjectid]) {
+
+                            cptools.allobjects[
+                                cpobjectid
+                            ]['varinfo']['varfeatures'] = vfeatures;
+
+                        }
+
+                        else {
+
+                            cptools.allobjects[cpobjectid] = {
+                                varinfo:{
+                                    varfeatures: vfeatures
+                                }
+                            };
+                        }
+
+                    }
+
+                    // if it's not in the tracker, add it
+                    else {
+
+                        cptools.allobjects[cpobjectid] = reqresult;
+                    }
+
+                    // update the cptools currentresults with these results
+                    if ('varinfo' in cptools.current) {
+                        cptools.current['varinfo']['varfeatures'] = vfeatures;
+                    }
+                    else {
+                        cptools.current['varinfo'] = {varfeatures: vfeatures};
+                    }
+
+                    // add a warning to the alert box if there was one
+                    if (reqstatus == 'warning') {
+
+                        // show the error if something exploded
+                        // but only if we're on the right objectid.
+                        var errmsg = '<span class="text-warning">' +
+                            reqmsg  + '</span>';
+                        $('#alert-box').html(errmsg);
+
+                    }
+
+                    // update the tool queue
+                    // fade out and remove the matching entry
+                    var tqsel = '[data-objectid="' + cpobjectid + '"]' +
+                        '[data-lctool="' + lctooltocall + '"]';
+                    var tqboxelem = $('.tq-box').filter(tqsel);
+                    tqboxelem.children('span')
+                        .html('<span class="text-primary">DONE<span>');
+                    tqboxelem.fadeOut(2000, function () {
+                        $(this).remove();
+                    });
+
+                    // clear out the alert box only if we're on the same
+                    // objectid
+                    $('#alert-box').empty();
+
+
+                }
+
+                // if the user has moved on...
+                else {
+
+                }
+
+            }
+
+            // if the request failed
+            else {
+
+                // show the error if something exploded but only if we're on
+                // the right objectid.
+                if (cpobjectid == currobjectid) {
+
+                    var errmsg = '<span class="text-danger">' +
+                        reqmsg  + '</span>';
+                    $('#alert-box').html(errmsg);
+
+                }
+
+                // update the tool queue to show what happened
+                var tqsel = '[data-objectid="' + cpobjectid + '"]' +
+                    '[data-lctool="' + lctooltocall + '"]';
+                var tqboxelem = $('.tq-box').filter(tqsel);
+                tqboxelem.children('span')
+                    .html('<span class="text-danger">FAILED<span>');
+                tqboxelem.fadeOut(2500, function () {
+                    $(this).remove();
+                });
+
+                // update the cptools.failed tracker
+                var failedkey = lctooltocall + '-' + cpobjectid;
+                cptools.failed[failedkey] = reqmsg;
+
+            }
+
+        }).fail(function (xhr) {
+
+            // show the error - here we don't know which objectid was
+            // returned, so show the error wherever we are
+            var reqmsg = "could not run  " + lctooltocall +
+                " because of a server error!";
+            var errmsg = '<span class="text-danger">' +
+                reqmsg  + '</span>';
+            $('#alert-box').html(errmsg);
+        });
+
+
     },
+
 
     prewhiten_lightcurve: function () {
 
+        // get the current objectid and checkplot filename
+        var currobjectid = $('#objectid').text();
+        var currfname = $('#objectid').attr('data-fname');
+
+        // this is the lctool to call
+        var lctooltocall = 'var-prewhiten';
+
+        // this tracks any errors in input. we join them all with <br>
+        // and show them in the alert box.
+        var messages = [];
+
+        // generate the alert box messages
+        messages.push("getting variability features...");
+        messages = messages.join("<br>");
+        cpv.make_spinner('<span class="text-primary">' +
+                         messages +
+                         '</span><br>');
+
+        // generate the tool queue box
+        var tqbox = '<div class="tq-box" data-objectid="' + currobjectid +
+            '" data-fname="' + currfname +
+            '" data-lctool="' + lctooltocall +
+            '" data-toolstate="running">' +
+            '<strong>' + currobjectid + '</strong><br>' +
+            lctooltocall + ' &mdash; ' +
+            '<span class="tq-state">running</span></div>';
+
+        $('.tool-queue').append(tqbox);
+
+        // the call to the backend
+        var ajaxurl = '/tools/' + cputils.b64_encode(cpv.currfile);
+
+        // this is the data object to send to the backend
+        var sentdata = {
+            objectid: currobjectid,
+            lctool: lctooltocall,
+            forcereload: true,
+        };
+
+        // make the call
+        $.getJSON(ajaxurl, sentdata, function (recvdata) {
+
+            // the received data is in the standard form
+            var reqstatus = recvdata.status;
+            var reqmsg = recvdata.message;
+            var reqresult = recvdata.result;
+            var cpobjectid = reqresult.objectid;
+
+            // update this after we get back from the AJAX call
+            var currobjectid = $('#objectid').text();
+
+            if (reqstatus == 'success' || reqstatus == 'warning') {
+
+                // only update if the user is still on the object
+                // we started with
+                if (cpobjectid == currobjectid) {
+
+                }
+
+                // if the user has moved on...
+                else {
+
+                }
+
+            }
+
+            // if the request failed
+            else {
+
+                // show the error if something exploded but only if we're on
+                // the right objectid.
+                if (cpobjectid == currobjectid) {
+
+                    var errmsg = '<span class="text-danger">' +
+                        reqmsg  + '</span>';
+                    $('#alert-box').html(errmsg);
+
+                }
+
+                // update the tool queue to show what happened
+                var tqsel = '[data-objectid="' + cpobjectid + '"]' +
+                    '[data-lctool="' + lctooltocall + '"]';
+                var tqboxelem = $('.tq-box').filter(tqsel);
+                tqboxelem.children('span')
+                    .html('<span class="text-danger">FAILED<span>');
+                tqboxelem.fadeOut(2500, function () {
+                    $(this).remove();
+                });
+
+                // update the cptools.failed tracker
+                var failedkey = lctooltocall + '-' + cpobjectid;
+                cptools.failed[failedkey] = reqmsg;
+
+            }
+
+        }).fail(function (xhr) {
+
+            // show the error - here we don't know which objectid was
+            // returned, so show the error wherever we are
+            var reqmsg = "could not run  " + lctooltocall +
+                " because of a server error!";
+            var errmsg = '<span class="text-danger">' +
+                reqmsg  + '</span>';
+            $('#alert-box').html(errmsg);
+        });
+
     },
+
 
     mask_signal: function () {
 
+        // get the current objectid and checkplot filename
+        var currobjectid = $('#objectid').text();
+        var currfname = $('#objectid').attr('data-fname');
+
+        // this is the lctool to call
+        var lctooltocall = 'var-masksig';
+
+        // this tracks any errors in input. we join them all with <br>
+        // and show them in the alert box.
+        var messages = [];
+
+        // generate the alert box messages
+        messages.push("getting variability features...");
+        messages = messages.join("<br>");
+        cpv.make_spinner('<span class="text-primary">' +
+                         messages +
+                         '</span><br>');
+
+        // generate the tool queue box
+        var tqbox = '<div class="tq-box" data-objectid="' + currobjectid +
+            '" data-fname="' + currfname +
+            '" data-lctool="' + lctooltocall +
+            '" data-toolstate="running">' +
+            '<strong>' + currobjectid + '</strong><br>' +
+            lctooltocall + ' &mdash; ' +
+            '<span class="tq-state">running</span></div>';
+
+        $('.tool-queue').append(tqbox);
+
+        // the call to the backend
+        var ajaxurl = '/tools/' + cputils.b64_encode(cpv.currfile);
+
+        // this is the data object to send to the backend
+        var sentdata = {
+            objectid: currobjectid,
+            lctool: lctooltocall,
+            forcereload: true,
+        };
+
+        // make the call
+        $.getJSON(ajaxurl, sentdata, function (recvdata) {
+
+            // the received data is in the standard form
+            var reqstatus = recvdata.status;
+            var reqmsg = recvdata.message;
+            var reqresult = recvdata.result;
+            var cpobjectid = reqresult.objectid;
+
+            // update this after we get back from the AJAX call
+            var currobjectid = $('#objectid').text();
+
+            if (reqstatus == 'success' || reqstatus == 'warning') {
+
+                // only update if the user is still on the object
+                // we started with
+                if (cpobjectid == currobjectid) {
+
+                }
+
+                // if the user has moved on...
+                else {
+
+                }
+
+            }
+
+            // if the request failed
+            else {
+
+                // show the error if something exploded but only if we're on
+                // the right objectid.
+                if (cpobjectid == currobjectid) {
+
+                    var errmsg = '<span class="text-danger">' +
+                        reqmsg  + '</span>';
+                    $('#alert-box').html(errmsg);
+
+                }
+
+                // update the tool queue to show what happened
+                var tqsel = '[data-objectid="' + cpobjectid + '"]' +
+                    '[data-lctool="' + lctooltocall + '"]';
+                var tqboxelem = $('.tq-box').filter(tqsel);
+                tqboxelem.children('span')
+                    .html('<span class="text-danger">FAILED<span>');
+                tqboxelem.fadeOut(2500, function () {
+                    $(this).remove();
+                });
+
+                // update the cptools.failed tracker
+                var failedkey = lctooltocall + '-' + cpobjectid;
+                cptools.failed[failedkey] = reqmsg;
+
+            }
+
+        }).fail(function (xhr) {
+
+            // show the error - here we don't know which objectid was
+            // returned, so show the error wherever we are
+            var reqmsg = "could not run  " + lctooltocall +
+                " because of a server error!";
+            var errmsg = '<span class="text-danger">' +
+                reqmsg  + '</span>';
+            $('#alert-box').html(errmsg);
+        });
+
+
     },
+
 
     new_phasedlc_plot: function () {
 
+        // get the current objectid and checkplot filename
+        var currobjectid = $('#objectid').text();
+        var currfname = $('#objectid').attr('data-fname');
+
+        // this is the lctool to call
+        var lctooltocall = 'phasedlc-newplot';
+
+        // this tracks any errors in input. we join them all with <br>
+        // and show them in the alert box.
+        var messages = [];
+
+        // generate the alert box messages
+        messages.push("getting variability features...");
+        messages = messages.join("<br>");
+        cpv.make_spinner('<span class="text-primary">' +
+                         messages +
+                         '</span><br>');
+
+        // generate the tool queue box
+        var tqbox = '<div class="tq-box" data-objectid="' + currobjectid +
+            '" data-fname="' + currfname +
+            '" data-lctool="' + lctooltocall +
+            '" data-toolstate="running">' +
+            '<strong>' + currobjectid + '</strong><br>' +
+            lctooltocall + ' &mdash; ' +
+            '<span class="tq-state">running</span></div>';
+
+        $('.tool-queue').append(tqbox);
+
+        // the call to the backend
+        var ajaxurl = '/tools/' + cputils.b64_encode(cpv.currfile);
+
+        // this is the data object to send to the backend
+        var sentdata = {
+            objectid: currobjectid,
+            lctool: lctooltocall,
+            forcereload: true,
+        };
+
+        // make the call
+        $.getJSON(ajaxurl, sentdata, function (recvdata) {
+
+            // the received data is in the standard form
+            var reqstatus = recvdata.status;
+            var reqmsg = recvdata.message;
+            var reqresult = recvdata.result;
+            var cpobjectid = reqresult.objectid;
+
+            // update this after we get back from the AJAX call
+            var currobjectid = $('#objectid').text();
+
+            if (reqstatus == 'success' || reqstatus == 'warning') {
+
+                // only update if the user is still on the object
+                // we started with
+                if (cpobjectid == currobjectid) {
+
+                }
+
+                // if the user has moved on...
+                else {
+
+                }
+
+            }
+
+            // if the request failed
+            else {
+
+                // show the error if something exploded but only if we're on
+                // the right objectid.
+                if (cpobjectid == currobjectid) {
+
+                    var errmsg = '<span class="text-danger">' +
+                        reqmsg  + '</span>';
+                    $('#alert-box').html(errmsg);
+
+                }
+
+                // update the tool queue to show what happened
+                var tqsel = '[data-objectid="' + cpobjectid + '"]' +
+                    '[data-lctool="' + lctooltocall + '"]';
+                var tqboxelem = $('.tq-box').filter(tqsel);
+                tqboxelem.children('span')
+                    .html('<span class="text-danger">FAILED<span>');
+                tqboxelem.fadeOut(2500, function () {
+                    $(this).remove();
+                });
+
+                // update the cptools.failed tracker
+                var failedkey = lctooltocall + '-' + cpobjectid;
+                cptools.failed[failedkey] = reqmsg;
+
+            }
+
+        }).fail(function (xhr) {
+
+            // show the error - here we don't know which objectid was
+            // returned, so show the error wherever we are
+            var reqmsg = "could not run  " + lctooltocall +
+                " because of a server error!";
+            var errmsg = '<span class="text-danger">' +
+                reqmsg  + '</span>';
+            $('#alert-box').html(errmsg);
+        });
+
     },
 
-    lcfit_fourier: function () {
 
-    },
+    lcfit_magseries: function () {
 
-    lcfit_spline: function () {
+        // get the current objectid and checkplot filename
+        var currobjectid = $('#objectid').text();
+        var currfname = $('#objectid').attr('data-fname');
 
-    },
+        // get which period search to run
+        var fitmethod = $('#lcfit-fitmethod').val();
 
-    lcfit_legendre: function () {
+        // this is the lctool to call
+        var lctooltocall = 'lcfit-' + fitmethod;
 
-    },
+        // this tracks any errors in input. we join them all with <br>
+        // and show them in the alert box.
+        var messages = [];
 
-    lcfit_savgol: function () {
+        // this tracks if we're ok to proceed
+        var proceed = false;
+
+        // generate the alert box messages
+        messages.push("getting variability features...");
+        messages = messages.join("<br>");
+        cpv.make_spinner('<span class="text-primary">' +
+                         messages +
+                         '</span><br>');
+
+        // generate the tool queue box
+        var tqbox = '<div class="tq-box" data-objectid="' + currobjectid +
+            '" data-fname="' + currfname +
+            '" data-lctool="' + lctooltocall +
+            '" data-toolstate="running">' +
+            '<strong>' + currobjectid + '</strong><br>' +
+            lctooltocall + ' &mdash; ' +
+            '<span class="tq-state">running</span></div>';
+
+        $('.tool-queue').append(tqbox);
+
+        // the call to the backend
+        var ajaxurl = '/tools/' + cputils.b64_encode(cpv.currfile);
+
+        // this is the data object to send to the backend
+        var sentdata = {
+            objectid: currobjectid,
+            lctool: lctooltocall,
+            forcereload: true,
+        };
+
+        // make the call
+        $.getJSON(ajaxurl, sentdata, function (recvdata) {
+
+            // the received data is in the standard form
+            var reqstatus = recvdata.status;
+            var reqmsg = recvdata.message;
+            var reqresult = recvdata.result;
+            var cpobjectid = reqresult.objectid;
+
+            // update this after we get back from the AJAX call
+            var currobjectid = $('#objectid').text();
+
+            if (reqstatus == 'success' || reqstatus == 'warning') {
+
+                // only update if the user is still on the object
+                // we started with
+                if (cpobjectid == currobjectid) {
+
+                }
+
+                // if the user has moved on...
+                else {
+
+                }
+
+            }
+
+            // if the request failed
+            else {
+
+                // show the error if something exploded but only if we're on
+                // the right objectid.
+                if (cpobjectid == currobjectid) {
+
+                    var errmsg = '<span class="text-danger">' +
+                        reqmsg  + '</span>';
+                    $('#alert-box').html(errmsg);
+
+                }
+
+                // update the tool queue to show what happened
+                var tqsel = '[data-objectid="' + cpobjectid + '"]' +
+                    '[data-lctool="' + lctooltocall + '"]';
+                var tqboxelem = $('.tq-box').filter(tqsel);
+                tqboxelem.children('span')
+                    .html('<span class="text-danger">FAILED<span>');
+                tqboxelem.fadeOut(2500, function () {
+                    $(this).remove();
+                });
+
+                // update the cptools.failed tracker
+                var failedkey = lctooltocall + '-' + cpobjectid;
+                cptools.failed[failedkey] = reqmsg;
+
+            }
+
+        }).fail(function (xhr) {
+
+            // show the error - here we don't know which objectid was
+            // returned, so show the error wherever we are
+            var reqmsg = "could not run  " + lctooltocall +
+                " because of a server error!";
+            var errmsg = '<span class="text-danger">' +
+                reqmsg  + '</span>';
+            $('#alert-box').html(errmsg);
+        });
 
     },
 
     action_setup: function () {
 
-        // FIXME: bind the periodogram select so it looks for existing periods for that periodogram method and loads them into the period select box.
+        // FIXME: bind the periodogram select so it looks for existing periods
+        // for that periodogram method and loads them into the period select
+        // box.
 
         // periodogram search - half period
         $('#psearch-halfperiod').on('click', function (evt) {
@@ -2330,13 +2949,15 @@ var cptools = {
         $('#psearch-start').on('click', function (evt) {
 
             evt.preventDefault();
-            cptools.run_periodsearch()
-
+            cptools.run_periodsearch();
 
         });
 
+        // variability - get variability features
         $('#get-varfeatures').on('click', function (evt) {
 
+            evt.preventDefault();
+            cptools.get_varfeatures();
 
         });
 
