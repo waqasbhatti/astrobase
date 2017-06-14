@@ -2106,18 +2106,21 @@ var cptools = {
                         $('#psearch-pgrampeaks').empty();
                         $('#psearch-pgrampeaks').append(
                             '<option value="0|' + lsp.phasedlc0.period +
+                                '|' + lsp.phasedlc0.epoch +
                                 '" selected>peak 1: ' +
                                 math.format(lsp.phasedlc0.period, 7) +
                                 '</option>'
                         );
                         $('#psearch-pgrampeaks').append(
                             '<option value="1|' + lsp.phasedlc1.period +
+                                '|' + lsp.phasedlc1.epoch +
                                 '">peak 2: ' +
                                 math.format(lsp.phasedlc1.period, 7) +
                                 '</option>'
                         );
                         $('#psearch-pgrampeaks').append(
                             '<option value="2|' + lsp.phasedlc2.period +
+                                '|' + lsp.phasedlc2.epoch +
                                 '">peak 3: ' +
                                 math.format(lsp.phasedlc2.period, 7) +
                                 '</option>'
@@ -3239,8 +3242,10 @@ var cptools = {
         // periodogram search - periodogram peak select
         $('#psearch-pgrampeaks').on('change', function (evt) {
 
-            var newpval = $(this).val().split('|')[1];
-            $('#psearch-plotperiod').val(newpval);
+            var newval = $(this).val().split('|');
+
+            $('#psearch-plotperiod').val(newval[1]);
+            $('#psearch-plotepoch').val(newval[2]);
 
         });
 
