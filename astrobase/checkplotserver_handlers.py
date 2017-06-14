@@ -585,7 +585,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                           'message':msg,
                           'readonly':self.readonly,
                           'result':None}
-            self.set_status(400)
+
             self.write(resultdict)
             raise tornado.web.Finish()
 
@@ -603,7 +603,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                               'message':msg,
                               'readonly':self.readonly,
                               'result':None}
-                self.set_status(400)
+
                 self.write(resultdict)
                 raise tornado.web.Finish()
 
@@ -679,7 +679,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
                               'message':msg,
                               'readonly':self.readonly,
                               'result':None}
-                self.set_status(500)
                 self.write(resultdict)
                 self.finish()
 
@@ -693,7 +692,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
                           'message':msg,
                           'readonly':self.readonly,
                           'result':None}
-            self.set_status(500)
             self.write(resultdict)
             self.finish()
 
@@ -756,7 +754,7 @@ class CheckplotListHandler(tornado.web.RequestHandler):
                           'message':msg,
                           'readonly':self.readonly,
                           'result':None}
-            self.set_status(400)
+
             self.write(resultdict)
             raise tornado.web.Finish()
 
@@ -846,8 +844,10 @@ class LCToolHandler(tornado.web.RequestHandler):
 
         ?lctool=<lctool>&argkey1=argval1&argkey2=argval2&...
 
-        &forcereload=1 <- if this is present, then reload values from original
-        checkplot.
+        &forcereload=true <- if this is present, then reload values from
+        original checkplot.
+
+        &objectid=<objectid>
 
         lctool is one of the functions below
 
@@ -938,6 +938,9 @@ class LCToolHandler(tornado.web.RequestHandler):
                 forcereload = self.get_argument('forcereload',False)
                 if forcereload and xhtml_escape(forcereload):
                     forcereload = True if forcereload == 'true' else False
+
+                # get the objectid
+                cpobjectid = self.get_argument('objectid',None)
 
                 # get the light curve tool to use
                 lctool = self.get_argument('lctool', None)
@@ -1035,6 +1038,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 'will not work' %
                                 (lctool, xkwarg)
                             )
+                            resultdict['result'] = {'objectid':cpobjectid}
 
                             self.write(resultdict)
                             raise tornado.web.Finish()
@@ -1046,7 +1050,8 @@ class LCToolHandler(tornado.web.RequestHandler):
                         resultdict['message'] = (
                         'lctool %s does not exist' % lctool
                         )
-                        self.set_status(400)
+                        resultdict['result'] = {'objectid':cpobjectid}
+
                         self.write(resultdict)
                         raise tornado.web.Finish()
 
@@ -1058,7 +1063,8 @@ class LCToolHandler(tornado.web.RequestHandler):
                     resultdict['message'] = (
                     'lctool argument not provided'
                     )
-                    self.set_status(400)
+                    resultdict['result'] = {'objectid':cpobjectid}
+
                     self.write(resultdict)
                     raise tornado.web.Finish()
 
@@ -1172,6 +1178,8 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 'will not work' %
                                 (lctool, xarg)
                             )
+                            resultdict['result'] = {'objectid':cpobjectid}
+
                             self.write(resultdict)
                             raise tornado.web.Finish()
 
@@ -2082,6 +2090,8 @@ class LCToolHandler(tornado.web.RequestHandler):
                     resultdict['message'] = (
                         'all unsynced results for this object have been purged'
                     )
+                    resultdict['result'] = {'objectid':cpobjectid}
+
                     self.write(resultdict)
                     self.finish()
 
@@ -2093,7 +2103,8 @@ class LCToolHandler(tornado.web.RequestHandler):
                     resultdict['message'] = (
                         'lctool %s does not exist' % lctool
                     )
-                    self.set_status(400)
+                    resultdict['result'] = {'objectid':cpobjectid}
+
                     self.write(resultdict)
                     raise tornado.web.Finish()
 
@@ -2106,7 +2117,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                               'message':"This checkplot doesn't exist.",
                               'readonly':self.readonly,
                               'result':None}
-                self.set_status(404)
+
                 self.write(resultdict)
                 raise tornado.web.Finish()
 
@@ -2117,7 +2128,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                           'message':'No checkplot provided to load.',
                           'readonly':self.readonly,
                           'result':None}
-            self.set_status(400)
+
             self.write(resultdict)
             raise tornado.web.Finish()
 
