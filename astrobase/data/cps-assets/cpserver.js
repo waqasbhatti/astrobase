@@ -2794,6 +2794,8 @@ var cptools = {
 
         var lspmethod = $('#psearch-lspmethod').val();
 
+        var magsarefluxes = $('#psearch-magsarefluxes').prop('checked');
+
         // see if we can proceed
 
         if ((isNaN(plotperiod)) || (plotperiod < 0.0)) {
@@ -2870,6 +2872,7 @@ var cptools = {
                 lctool: lctooltocall,
                 forcereload: true,
                 // request values
+                magsarefluxes: magsarefluxes,
                 lspmethod: lspmethod,
                 periodind: periodind,
                 varperiod: plotperiod,
@@ -3207,6 +3210,10 @@ var cptools = {
         $('#psearch-halfperiod').on('click', function (evt) {
 
             evt.preventDefault();
+            var plotperiod = parseFloat($('#psearch-plotperiod').val());
+            if (!isNaN(plotperiod)) {
+                $('#psearch-plotperiod').val(plotperiod/2.0);
+            }
 
         });
 
@@ -3214,8 +3221,29 @@ var cptools = {
         $('#psearch-doubleperiod').on('click', function (evt) {
 
             evt.preventDefault();
+            var plotperiod = parseFloat($('#psearch-plotperiod').val());
+            if (!isNaN(plotperiod)) {
+                $('#psearch-plotperiod').val(plotperiod*2.0);
+            }
 
         });
+
+        // periodogram search - plot phased LC
+        $('#psearch-makephasedlc').on('click', function (evt) {
+
+            evt.preventDefault();
+            cptools.new_phasedlc_plot();
+
+        });
+
+        // periodogram search - periodogram peak select
+        $('#psearch-pgrampeaks').on('change', function (evt) {
+
+            var newpval = $(this).val().split('|')[1];
+            $('#psearch-plotperiod').val(newpval);
+
+        });
+
 
         // periodogram search - start
         $('#psearch-start').on('click', function (evt) {
