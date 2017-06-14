@@ -1520,6 +1520,11 @@ class LCToolHandler(tornado.web.RequestHandler):
                         # full disclosure: http://c0ffee.surge.sh/
                         lctoolkwargs['bestperiodhighlight'] = '#c0ffee'
 
+                        # set the input periodind to -1 to make sure we still
+                        # have the highlight on the plot. we use the correct
+                        # periodind when returning
+                        lctoolargs[2] = -1
+
                         # run the phased LC function
                         lctoolfunction = CPTOOLMAP[lctool]['func']
                         funcresults = yield self.executor.submit(
