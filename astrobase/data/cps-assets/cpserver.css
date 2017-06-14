@@ -175,3 +175,14 @@ to use this:
     float: none;
     margin: 0 auto;
 }
+
+.tq-box {
+    padding-top: 3px;
+    padding-bottom: 2px;
+    padding-left: 3px;
+    padding-right: 3px;
+    margin: 2px auto;
+    background: #c0ffee;
+    color: #222;
+    font-size: small;
+}

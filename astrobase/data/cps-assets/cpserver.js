@@ -378,6 +378,9 @@ var cpv = {
         // do the AJAX call to get this checkplot
         var ajaxurl = '/cp/' + cputils.b64_encode(filename);
 
+        // add the current object's fname to the objectid data-fname
+        objectidelem.attr('data-fname', filename);
+
         $.getJSON(ajaxurl, function (data) {
 
             cpv.currcp = data.result;
@@ -391,6 +394,7 @@ var cpv = {
 
             // update the objectid header
             objectidelem.html(cpv.currcp.objectid);
+
             // update the twomassid header
             twomassidelem.html('2MASS J' + cpv.currcp.objectinfo.twomassid);
 
@@ -1894,29 +1898,24 @@ var cpv = {
 
 var cptools = {
 
-    // this holds all session checkplot temp results from lctools
-    // this is indexed by objectid
-
-    // objects contains objects of the form:
+    // allobjects contains objects of the form:
     // '<objectid>': {various lctool results}
+    // this is indexed by objectid
+    allobjects: {},
 
     // processing contains objects of the form:
     // '<objectid>': {'lctool':name of lctool currently running}
+    processing: {},
 
     // failed contains objects of the form:
-    // '<objectid>': {'lctool':name of lctool that failed,
-    //                'message':message from backend explaining what happened}
-    allresults: {
-        'objects':{},
-        'processing':{},
-        'failed':{}
-    },
+    // '<lctool-objectid>': message from backend explaining what happened
+    failed: {},
 
     // this holds the current checkplot's results for fast review
-    currentresults: {},
+    current: {},
 
 
-    // this loads thge current checkplot's results in order of priority:
+    // this loads the current checkplot's results in order of priority:
     // - from cptools.allresults.objects if objectid is present
     // - from the checkplot-<objectid>.pkl-cpserver-temp file if that is present
     // if neither are present, then this object doesn't have any results yet
@@ -1942,6 +1941,10 @@ var cptools = {
 
     run_periodsearch: function () {
 
+        // get the current objectid and checkplot filename
+        var currobjectid = $('#objectid').text();
+        var currfname = $('#objectid').attr('data-fname');
+
         // this tracks if we're ok to proceed
         var proceed = false;
 
@@ -1951,6 +1954,9 @@ var cptools = {
 
         // get which period search to run
         var lspmethod = $('#psearch-lspmethod').val();
+
+        // this is the lctool to call
+        var lctooltocall = 'psearch-' + lspmethod;
 
         // see if magsarefluxes is checked
         var magsarefluxes = $('#psearch-magsarefluxes').prop('checked');
@@ -2030,16 +2036,23 @@ var cptools = {
                              messages +
                              '</span><br>');
 
+            // generate the tool queue box
+            var tqbox = '<div class="tq-box" data-objectid="' + currobjectid +
+                '" data-fname="' + currfname + '" data-toolstate="running">' +
+                '<strong>' + currobjectid + '</strong><br>' +
+                lctooltocall + ' &mdash; ' +
+                '<span class="tq-state">running</span></div>';
+
+            $('.tool-queue').append(tqbox);
+
             // the call to the backend
             var ajaxurl = '/tools/' + cputils.b64_encode(cpv.currfile);
-
-            // this is the lctool to call
-            var lctooltocall = 'psearch-' + lspmethod;
 
             if (autofreq) {
 
                 // this is the data object to send to the backend
                 var sentdata = {
+                    objectid: currobjectid,
                     lctool: lctooltocall,
                     forcereload: true,
                     magsarefluxes: magsarefluxes,
@@ -2053,6 +2066,7 @@ var cptools = {
 
                 // this is the data object to send to the backend
                 var sentdata = {
+                    objectid: currobjectid,
                     lctool: lctooltocall,
                     forcereload: true,
                     magsarefluxes: magsarefluxes,
@@ -2072,11 +2086,12 @@ var cptools = {
                 var reqstatus = recvdata.status;
                 var reqmsg = recvdata.message;
                 var reqresult = recvdata.result;
-
                 var cpobjectid = reqresult.objectid;
+
+                // update this after we get back from the AJAX call
                 var currobjectid = $('#objectid').text();
 
-                if (reqstatus == 'success') {
+                if (reqstatus == 'success' || reqstatus == 'warning') {
 
                     // only update if the user is still on the object
                     // we started with
@@ -2123,14 +2138,47 @@ var cptools = {
 
                         // update the cptools tracker with the results for this
                         // object
-                        cptools.allresults.objects[objectid] = {};
+
+                        // if this objectid is in the tracker
+                        if (cpobjectid in cptools.allobjects) {
+
+                            cptools.allobjects[cpobjectid][lspmethod] = lsp;
+
+                        }
+
+                        // if it's not in the tracker, add it
+                        else {
+
+                            cptools.allobjects[cpobjectid] = reqresult;
+                        }
 
                         // update the cptools currentresults with these results
+                        cptools.current[lspmethod] = lsp;
+
+                        // add a warning to the alert box if there was one
+                        if (reqstatus == 'warning') {
+
+                            // show the error if something exploded
+                            // but only if we're on the right objectid.
+                            var errmsg = '<span class="text-warning">' +
+                                reqmsg  + '</span>';
+                            $('#alert-box').html(errmsg);
+
+                        }
 
                         // update the tool queue
-                        // use U+2714 for a check mark for success
-                        // use U+2717 for a cross mark for failure
                         // fade out and remove the matching entry
+                        var tqsel = '[data-objectid="' + cpobjectid + '"]';
+                        var tqboxelem = $('.tq-box').filter(tqsel);
+                        tqboxelem.children('span')
+                            .html('<span class="text-primary">DONE<span>');
+                        tqboxelem.fadeOut(2000, function () {
+                            $(this).remove();
+                        });
+
+                        // clear out the alert box only if we're on the same
+                        // objectid
+                        $('#alert-box').empty();
 
                     }
 
@@ -2140,36 +2188,61 @@ var cptools = {
 
                         console.log('results received for ' + cpobjectid +
                                     ' but user has moved to ' + currobjectid +
-                                    ', discarding...');
+                                    ', updated tracker...');
+
+                        // if this objectid is in the tracker
+                        if (cpobjectid in cptools.allobjects) {
+
+                            cptools.allobjects[cpobjectid][lspmethod] = lsp;
+
+                        }
+
+                        // if it's not in the tracker, add it
+                        else {
+
+                            cptools.allobjects[cpobjectid] = reqresult;
+                        }
+
+                        // update the tool queue
+                        // fade out and remove the matching entry
+                        var tqsel = '[data-objectid="' + cpobjectid + '"]';
+                        var tqboxelem = $('.tq-box').filter(tqsel);
+                        tqboxelem.children('span')
+                            .html('<span class="text-primary">DONE<span>');
+                        tqboxelem.fadeOut(2000, function () {
+                            $(this).remove();
+                        });
 
                     }
 
                 }
 
-                else if (status == 'warning') {
-
-                    // show the error if something exploded
-                    // but only if we're on the right objectid.
-                    var errmsg = '<span class="text-danger">' +
-                        reqmsg  + '</span>';
-                    $('#alert-box').html(errmsg);
+                // if the request failed
+                else {
 
 
+                    // show the error if something exploded but only if we're on
+                    // the right objectid.
+                    if (cpobjectid == currobjectid) {
 
+                        var errmsg = '<span class="text-danger">' +
+                            reqmsg  + '</span>';
+                        $('#alert-box').html(errmsg);
 
-                }
-
-                else if (status == 'error') {
-
-                    // show the error if something exploded
-                    // but only if we're on the right objectid.
-                    var errmsg = '<span class="text-danger">' +
-                        reqmsg  + '</span>';
-                    $('#alert-box').html(errmsg);
+                    }
 
                     // update the tool queue to show what happened
+                    var tqsel = '[data-objectid="' + cpobjectid + '"]';
+                    var tqboxelem = $('.tq-box').filter(tqsel);
+                    tqboxelem.children('span')
+                        .html('<span class="text-danger">FAILED<span>');
+                    tqboxelem.fadeOut(2500, function () {
+                        $(this).remove();
+                    });
 
-                    // update the allresults tracker
+                    // update the cptools.failed tracker
+                    var failedkey = lctooltocall + '-' + cpobjectid;
+                    cptools.failed[failedkey] = reqmsg;
 
                 }
 
@@ -2177,30 +2250,19 @@ var cptools = {
             }).fail(function (xhr) {
 
                 // show the error only if we're on the same objectid
-                var reqmsg = "could not run periodogram " +
-                    "search because of a server error!";
+                var reqmsg = "could not run periodogram  " +
+                    " because of a server error!";
                 var errmsg = '<span class="text-danger">' +
                     reqmsg  + '</span>';
                 $('#alert-box').html(errmsg);
 
-                // update the tool queue to show what happened
-
-                // update the allresults tracker
-
-
-            }).done(function (xhr) {
-
-                // clear out the alert box only if we're on the same objectid
-                $('#alert-box').empty();
-
-                // update the tool queue
 
             });
 
 
         }
 
-        // otherwise, bail out and show the error messages
+        // otherwise we can't proceed, bail out and show the error messages
         else {
 
             // generate the alert box messages
