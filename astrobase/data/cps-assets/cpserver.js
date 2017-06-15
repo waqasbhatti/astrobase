@@ -1266,6 +1266,11 @@ var cpv = {
             $('#alert-box').empty();
         });
 
+        // ctrl+shift+e: save this as a PNG
+        Mousetrap.bind('alt+shift+e', function() {
+            cpv.save_checkplot(undefined, undefined, true);
+        });
+
 
         // ctrl+down: move to the next phased LC and set it as the best
         Mousetrap.bind(['ctrl+shift+down'], function() {
@@ -1988,12 +1993,15 @@ var cptools = {
             // check startp
             if (isNaN(startp)) {
                 messages.push("no start period provided");
+                proceed = false;
             }
             else if ((startp == 0.0) || (startp < 0.0)) {
                 messages.push("start period cannot be 0.0 or < 0.0");
+                proceed = false;
             }
             else if (startp > endp) {
                 messages.push("start period cannot be larger than end period");
+                proceed = false;
             }
             else {
                 messages.push("using start period: " + math.format(startp, 5));
@@ -2002,10 +2010,12 @@ var cptools = {
 
             // check endp
             if (isNaN(endp)) {
-                messages.push("no start period provided");
+                messages.push("no end period provided");
+                proceed = false;
             }
             else if ((endp == 0.0) || (endp < 0.0)) {
                 messages.push("end period cannot be 0.0 or < 0.0");
+                proceed = false;
             }
             else {
                 messages.push("using end period: " + math.format(endp, 5));
@@ -2015,9 +2025,11 @@ var cptools = {
             // check freqstep
             if (isNaN(freqstep)) {
                 messages.push("no frequency step provided");
+                proceed = false;
             }
             else if ((freqstep == 0.0) || (freqstep < 0.0)) {
                 messages.push("frequency step cannot be 0.0 or < 0.0");
+                proceed = false;
             }
             else {
                 messages.push("using frequency step: " + math.format(endp, 8));
@@ -3205,9 +3217,9 @@ var cptools = {
 
     action_setup: function () {
 
-        // FIXME: bind the periodogram select so it looks for existing periods
-        // for that periodogram method and loads them into the period select
-        // box.
+        ///////////////////////
+        // PERIOD SEARCH TAB //
+        ///////////////////////
 
         // periodogram search - half period
         $('#psearch-halfperiod').on('click', function (evt) {
@@ -3258,6 +3270,40 @@ var cptools = {
 
         });
 
+        // periodogram search - handle autofreq
+        $('#psearch-autofreq').on('click', function (evt) {
+
+            var thischecked = $(this).prop('checked');
+
+            if (!thischecked) {
+
+                $('#psearch-startp').prop('disabled',false);
+                $('#psearch-endp').prop('disabled',false);
+                $('#psearch-freqstep').prop('disabled',false);
+
+            }
+
+            else {
+
+                $('#psearch-startp').prop('disabled',true);
+                $('#psearch-endp').prop('disabled',true);
+                $('#psearch-freqstep').prop('disabled',true);
+
+            }
+
+        });
+
+        // FIXME: bind the periodogram select so it looks for existing periods
+        // for that periodogram method and loads them into the period select
+        // box.
+
+
+
+
+        /////////////////////
+        // VARIABILITY TAB //
+        /////////////////////
+
         // variability - get variability features
         $('#get-varfeatures').on('click', function (evt) {
 
@@ -3265,6 +3311,20 @@ var cptools = {
             cptools.get_varfeatures();
 
         });
+
+
+        ////////////////
+        // LC FIT TAB //
+        ////////////////
+
+
+
+
+        ////////////////////
+        // SAVE/RESET TAB //
+        ////////////////////
+
+
 
     }
 
