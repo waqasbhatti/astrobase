@@ -537,10 +537,10 @@ def _make_phased_magseries_plot(axes,
 
         if magsarefluxes:
             axes.set_ylim(axesylim[0],
-                          axesylim[1] + 0.75*npabs(axesylim[1]-axesylim[0]))
+                          axesylim[1] + 0.5*npabs(axesylim[1]-axesylim[0]))
         else:
             axes.set_ylim(axesylim[0],
-                          axesylim[1] - 0.75*npabs(axesylim[1]-axesylim[0]))
+                          axesylim[1] - 0.5*npabs(axesylim[1]-axesylim[0]))
 
         # put the inset axes in
         inset = inset_axes(axes, width="40%", height="40%", loc=1)
@@ -1851,12 +1851,12 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
         if magsarefluxes:
             plt.gca().set_ylim(
                 axesylim[0],
-                axesylim[1] + 0.75*npabs(axesylim[1]-axesylim[0])
+                axesylim[1] + 0.5*npabs(axesylim[1]-axesylim[0])
             )
         else:
             plt.gca().set_ylim(
                 axesylim[0],
-                axesylim[1] - 0.75*npabs(axesylim[1]-axesylim[0])
+                axesylim[1] - 0.5*npabs(axesylim[1]-axesylim[0])
             )
 
         # put the inset axes in
