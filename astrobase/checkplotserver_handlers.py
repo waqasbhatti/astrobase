@@ -1350,7 +1350,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                         phasedlckwargs = {
                             'xliminsetmode':False,
                             'magsarefluxes':lctoolkwargs['magsarefluxes'],
-                            'bestperiodhighlight':'#c0ffee',
+                            'bestperiodhighlight':'#defa75',
                         }
 
                         # dispatch the plot functions
@@ -1518,7 +1518,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                         # add the highlight to distinguish this plot from usual
                         # checkplot plots
                         # full disclosure: http://c0ffee.surge.sh/
-                        lctoolkwargs['bestperiodhighlight'] = '#c0ffee'
+                        lctoolkwargs['bestperiodhighlight'] = '#defa75'
 
                         # set the input periodind to -1 to make sure we still
                         # have the highlight on the plot. we use the correct
@@ -1944,7 +1944,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                         phasedlckwargs = {
                             'xliminsetmode':False,
                             'magsarefluxes':lctoolkwargs['magsarefluxes'],
-                            'bestperiodhighlight':'#c0ffee',
+                            'bestperiodhighlight':'#defa75',
                             'overplotfit':funcresults
                         }
 
