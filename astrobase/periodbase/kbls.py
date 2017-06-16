@@ -756,7 +756,8 @@ def bls_snr(blsdict,
             sigclip=10.0,
             perioddeltapercent=10,
             npeaks=None,
-            assumeserialbls=False):
+            assumeserialbls=False,
+            verbose=True):
     '''Calculates the signal-to-pink noise ratio for each best peak in the BLS
     periodogram.
 
@@ -833,9 +834,10 @@ def bls_snr(blsdict,
     if (npeaks and (0 < npeaks < len(blsdict['nbestperiods']))):
         nperiods = npeaks
     else:
-        LOGWARNING('npeaks not specified or invalid, '
-                   'getting SNR for all %s BLS peaks' %
-                   len(blsdict['nbestperiods']))
+        if verbose:
+            LOGWARNING('npeaks not specified or invalid, '
+                       'getting SNR for all %s BLS peaks' %
+                       len(blsdict['nbestperiods']))
         nperiods = len(blsdict['nbestperiods'])
 
     nbestperiods = blsdict['nbestperiods'][:nperiods]
@@ -852,6 +854,7 @@ def bls_snr(blsdict,
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
 
         nbestsnrs = []
+        nbestasnrs = []
         transitdepth, transitduration = [], []
 
         # get these later
@@ -865,8 +868,6 @@ def bls_snr(blsdict,
         allblsmodels = []
 
         for ind, period in enumerate(nbestperiods):
-
-            LOGINFO('finding SNR for peak %s, period: %.6f' % (ind+1, period))
 
             # get the period interval
             startp = period - perioddeltapercent*period/100.0
@@ -893,21 +894,20 @@ def bls_snr(blsdict,
             # get the minimum light epoch using a spline fit
             spfit = spline_fit_magseries(times, mags, errs,
                                          thisbestperiod,
-                                         magsarefluxes=magsarefluxes)
+                                         magsarefluxes=magsarefluxes,
+                                         verbose=verbose)
 
             thisminepoch = spfit['fitinfo']['fitepoch']
             if isinstance(thisminepoch, np.ndarray):
-                LOGWARNING('minimum epoch is actually an array:\n'
-                           '%s\n'
-                           'instead of a float, '
-                           'are there duplicate time values '
-                           'in the original input? '
-                           'will use the first value in this array.'
-                           % repr(thisminepoch))
+                if verbose:
+                    LOGWARNING('minimum epoch is actually an array:\n'
+                               '%s\n'
+                               'instead of a float, '
+                               'are there duplicate time values '
+                               'in the original input? '
+                               'will use the first value in this array.'
+                               % repr(thisminepoch))
                 thisminepoch = thisminepoch[0]
-
-            LOGINFO('new best period: %.6f, fit center of transit: %.5f' %
-                    (thisbestperiod, thisminepoch))
 
             # phase using this epoch
             phased_magseries = phase_magseries_with_errs(stimes,
@@ -928,16 +928,8 @@ def bls_snr(blsdict,
             # [0.0, transitphase] and [1.0-transitphase, 1.0]
             transitphase = thistransduration*period/2.0
 
-            LOGINFO('transit ingress phase = %.3f to %.3f' % (1.0 -
-                                                              transitphase,
-                                                              1.0))
-            LOGINFO('transit egress phase = %.3f to %.3f' % (0.0,
-                                                             transitphase))
-
-
             transitindices = ((tphase < transitphase) |
                               (tphase > (1.0 - transitphase)))
-            LOGINFO('npoints in transit: %s' % tmags[transitindices].size)
 
             # this is the BLS model
             # constant = median(tmags) outside transit
@@ -962,19 +954,35 @@ def bls_snr(blsdict,
             # the SNR is the transit depth divided by the rms of the residual
             thissnr = npabs(thistransdepth/subtractedrms)
 
-            LOGINFO('peak %s, period: %.6f, '
-                    'transit depth (delta): %.5f, '
-                    'frac transit length (q): %.3f, '
-                    'transit length in phase: %.3f,'
-                    ' SNR: %.3f' %
-                    (ind+1, thisbestperiod,
-                     thistransdepth,
-                     thistransduration,
-                     transitphase*2.0,
-                     thissnr))
+            # alt SNR = expected transit depth / rms of timeseries in transit
+            altsnr = npabs(thistransdepth/npstd(tmags[transitindices]))
+
+            # tell user about stuff if verbose = True
+            if verbose:
+
+                LOGINFO('peak %s: new best period: %.6f, '
+                        'fit center of transit: %.5f' %
+                        (ind+1, thisbestperiod, thisminepoch))
+
+                LOGINFO('transit ingress phase = %.3f to %.3f' % (1.0 -
+                                                                  transitphase,
+                                                                  1.0))
+                LOGINFO('transit egress phase = %.3f to %.3f' % (0.0,
+                                                                 transitphase))
+                LOGINFO('npoints in transit: %s' % tmags[transitindices].size)
+
+                LOGINFO('transit depth (delta): %.5f, '
+                        'frac transit length (q): %.3f, '
+                        'transit length in phase: %.3f,'
+                        ' SNR: %.3f, altSNR: %.3f' %
+                        (thistransdepth,
+                         thistransduration,
+                         transitphase*2.0,
+                         thissnr, altsnr))
 
             # update the lists with results from this peak
             nbestsnrs.append(thissnr)
+            nbestasnrs.append(altsnr)
             transitdepth.append(thistransdepth)
             transitduration.append(thistransduration)
 
@@ -1003,6 +1011,7 @@ def bls_snr(blsdict,
     return {'npeaks':npeaks,
             'period':nbestperiods,
             'snr':nbestsnrs,
+            'altsnr':nbestasnrs,
             'whitenoise':whitenoise,
             'rednoise':rednoise,
             'transitdepth':transitdepth,
