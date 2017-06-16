@@ -123,6 +123,17 @@ CPTOOLMAP = {
         'func':None,
         'resloc':[],
     },
+    # this is a special tool to get all unsaved lctool results from the
+    # current checkplot pickle
+    'lctool-results':{
+        'args':(),
+        'argtypes':(),
+        'kwargs':(),
+        'kwargtypes':(),
+        'kwargdefs':(),
+        'func':None,
+        'resloc':[],
+    },
     ## PERIOD SEARCH METHODS ##
     'psearch-gls':{
         'args':('times','mags','errs'),
@@ -2078,6 +2089,48 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                     self.write(resultdict)
                     self.finish()
+
+
+                # if this is the special load results tool
+                elif lctool == 'lctool-results':
+
+                    target = self.get_argument('resultsfor',None)
+
+                    if target is not None:
+
+                        target = xhtml_escape(target)
+
+                        # get rid of invalid targets
+                        if (target not in CPTOOL or
+                            target == 'lctool-reset' or
+                            target == 'lctool-results' or
+                            target == 'phasedlc-newplot' or
+                            target == 'lcfit-subtract'):
+
+                            LOGGER.error("can't get results for %s" % target)
+                            resultdict['status'] = 'error'
+                            resultdict['message'] = (
+                                "can't get results for %s" % target
+                            )
+                            resultdict['result'] = {'objectid':cpobjectid}
+
+                            self.write(resultdict)
+                            raise tornado.web.Finish()
+
+                        # if we're good to go, get the target location
+                        targetloc = CPTOOLS[target]['resloc']
+
+                        # first, search the cptempdict for this target
+                        # if found, return it
+
+                        # second, search the actual cpdict for this target
+                        # if found, return it
+
+                    # otherwise, we're being asked for everything
+                    # return the whole
+                    else:
+
+
 
                 # otherwise, this is an unrecognized lctool
                 else:
