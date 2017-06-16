@@ -844,3 +844,113 @@ def legendre_fit_magseries(times, mags, errs, period,
         returndict['fitplotfile'] = plotfit
 
     return returndict
+
+
+#################################
+## TRAPEZOID FIT TO MAG SERIES ##
+#################################
+
+
+def _trapezoid_time_func(trapezoidparams, times):
+    '''This returns a trapezoid function in time.
+
+    Suitable for first order modeling of transit signals.
+
+    trapezoidparams = [transitdepth, transitcenter,
+                       transitduration, ingressduration, zerolevel]
+
+    for magnitudes -> transitdepth should be < 0
+    for fluxes     -> transitdepth should be > 0
+
+    '''
+
+    transitdepth, transitcenter, transitduration, ingressduration, zerolevel = (
+        trapezoidparams
+    )
+
+    outmags = npfull_like(times, zerolevel)
+
+    halftransitduration = transitduration/2.0
+    bottomlevel = zerolevel - transitdepth
+    slope = transitdepth/ingressduration
+
+    # the four contact points of the eclipse
+    firstcontact = transitcenter - halftransitduration
+    secondcontact = firstcontact + ingressduration
+    thirdcontact = transitcenter + halftransitduration - ingressduration
+    fourthcontact = transitcenter + halftransitduration
+
+    ## the time indices ##
+
+    # during ingress
+    ingressind = (times > firstcontact) & (times < secondcontact)
+
+    # at transit bottom
+    bottomind = (times > secondcontact) & (times < thirdcontact)
+
+    # during egress
+    egressind = (times > thirdcontact) & (times < fourthcontact)
+
+    # set the mags
+    outmags[ingressind] = zerolevel - slope*(times[ingressind] - firstcontact)
+    outmags[bottomind] = bottomlevel
+    outmags[egressind] = bottomlevel + slope*(times[egressind] - thirdcontact)
+
+    return outmags
+
+
+
+def _trapezoid_phase_func(trapezoidparams, phase):
+    '''This returns a trapezoid function in phase.
+
+    Suitable for first order modeling of transit signals.
+
+    trapezoidparams = [transitdepth, transitduration,
+                       ingressduration, zerolevel]
+
+    for magnitudes -> transitdepth should be < 0
+    for fluxes     -> transitdepth should be > 0
+
+    note that all of these values are in phase units.
+
+    FIXME: implement this
+
+    '''
+
+    transitdepth, transitduration, ingressduration, zerolevel = (
+        trapezoidparams
+    )
+
+    outmags = npfull_like(phase, zerolevel)
+
+    # we're centered about 0.0 as the phase of the transit minimum so we need to
+    # look at stuff from phase [0.0, transitduration/2.0] = egress and
+    # [1.0-transitduration/2.0, 1.0] = ingress
+
+    halftransitduration = transitduration/2.0
+    bottomlevel = zerolevel - transitdepth
+    slope = transitdepth/ingressduration
+
+    # the four contact points of the eclipse
+    firstcontact = transitcenter - halftransitduration
+    secondcontact = firstcontact + ingressduration
+    thirdcontact = transitcenter + halftransitduration - ingressduration
+    fourthcontact = transitcenter + halftransitduration
+
+    ## the time indices ##
+
+    # during ingress
+    ingressind = (phase > firstcontact) & (phase < secondcontact)
+
+    # at transit bottom
+    bottomind = (phase > secondcontact) & (phase < thirdcontact)
+
+    # during egress
+    egressind = (phase > thirdcontact) & (phase < fourthcontact)
+
+    # set the mags
+    outmags[ingressind] = zerolevel - slope*(phase[ingressind] - firstcontact)
+    outmags[bottomind] = bottomlevel
+    outmags[egressind] = bottomlevel + slope*(phase[egressind] - thirdcontact)
+
+    return outmags
