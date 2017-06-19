@@ -116,10 +116,10 @@ except:
 # from https://stackoverflow.com/a/14692747
 # used to walk a checkplotdict for a specific key in the structure
 from functools import reduce  # forward compatibility for Python 3
-import operator
+from operator import getitem
 
 def dict_get(datadict, keylist):
-    return reduce(operator.getitem, keylist, datadict)
+    return reduce(getitem, keylist, datadict)
 
 
 
