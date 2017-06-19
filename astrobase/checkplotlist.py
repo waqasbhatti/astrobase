@@ -189,8 +189,8 @@ def main(args=None):
         # and sortorder is either 'asc' or desc' for ascending/descending sort
         if sortkey and sortorder:
 
-            LOGINFO('sorting checkplot pickles by %s in order: %s...' %
-                    (sortkey, sortorder))
+            print('sorting checkplot pickles by %s in order: %s...' %
+                  (sortkey, sortorder))
 
             from astrobase import checkplot
             import numpy as np
