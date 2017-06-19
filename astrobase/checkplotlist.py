@@ -198,7 +198,7 @@ def main(args=None):
             sortkeys = sortkey.split('.')
 
             pool = mp.Pool()
-            tasks = [(cp, sortkeys) for x in searchresults]
+            tasks = [(x, sortkeys) for x in searchresults]
             sorttargets = pool.map(sortkey_worker, tasks)
 
             pool.close()
