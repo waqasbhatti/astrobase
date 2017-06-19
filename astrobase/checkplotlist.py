@@ -83,13 +83,13 @@ use the optional checkplot file glob argument to checkplotlist to provide
 this. Make sure to use the quotes around this argument, otherwise the shell will
 expand it, e.g.:
 
-$ checkplot png my-project/awesome-objects '*awesome-objects*'
+$ checkplotlist png my-project/awesome-objects '*awesome-objects*'
 
 For checkplot pickles only: If you want to sort the checkplot pickles in some
 special way, e.g. by their existing Stetson J indices in descending order, use
 something like:
 
-$ checkplot pkl my-project/awesome-objects '*awesome-objects*' 'varinfo.varfeatures.stetsonj-desc'
+$ checkplotlist pkl my-project/awesome-objects '*awesome-objects*' 'varinfo.varfeatures.stetsonj-desc'
 
 This requires an arg on the commandline of the form: '<sortkey>-<asc|desc>'
 
