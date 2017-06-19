@@ -108,7 +108,7 @@ import json
 try:
     from tqdm import tqdm
     TQDM = True
-else:
+except:
     TQDM = False
 
 
