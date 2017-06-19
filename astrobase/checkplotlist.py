@@ -31,7 +31,7 @@ Copy checkplot-viewer.html and checkplot-viewer.js to the
 base directory from where you intend to serve your checkplot images from. Then
 invoke this command from that directory:
 
-$ checkplotlist png subdir/containing/the/checkplots
+$ checkplotlist png subdir/containing/the/checkplots 'optional-glob*.png'
 
 This will generate a checkplot-filelist.json file containing the file paths to
 the checkplots.
@@ -54,7 +54,7 @@ If you made checkplots in the pickle format (checkplot-*.pkl)
 
 Invoke this command from that directory like so:
 
-$ checkplotlist pkl subdir/containing/the/checkplots
+$ checkplotlist pkl subdir/containing/the/checkplots 'optional-glob*.pkl'
 
 Then, from that directory, invoke the checkplotserver webapp (make sure the
 astrobase virtualenv is active, so the command below is in your path):
@@ -76,7 +76,7 @@ TL;DR
 This makes a checkplot file list for use with the checkplot-viewer.html (for
 checkplot PNGs) or the checkplotserver.py (for checkplot pickles) webapps.
 
-checkplotlist <pkl|png> <subdir/containing/checkplots/> '[checkplot file glob]'
+checkplotlist <pkl|png> <subdir/containing/checkplots/> '[optional checkplot file glob]' '[optional sort specification]'
 
 If you have checkplots that don't have 'checkplot' somewhere in their file name,
 use the optional checkplot file glob argument to checkplotlist to provide
@@ -85,6 +85,18 @@ expand it, e.g.:
 
 $ checkplot png my-project/awesome-objects '*awesome-objects*'
 
+For checkplot pickles only: If you want to sort the checkplot pickles in some
+special way, e.g. by their existing Stetson J indices in descending order, use
+something like:
+
+$ checkplot pkl my-project/awesome-objects '*awesome-objects*' 'varinfo.varfeatures.stetsonj-desc'
+
+This requires an arg on the commandline of the form: '<sortkey>-<asc|desc>'
+
+where sortkey is some key in the checkplot pickle: this can be a simple key:
+e.g. objectid or it can be a composite key: e.g. varinfo.varfeatures.stetsonj
+and sortorder is either 'asc' or desc' for ascending/descending sort.
+
 '''
 
 import os
@@ -92,6 +104,23 @@ import os.path
 import sys
 import glob
 import json
+
+try:
+    from tqdm import tqdm
+    TQDM = True
+else:
+    TQDM = False
+
+
+# to turn a list of keys into a dict address
+# from https://stackoverflow.com/a/14692747
+# used to walk a checkplotdict for a specific key in the structure
+from functools import reduce  # forward compatibility for Python 3
+import operator
+
+def dict_get(datadict, keylist):
+    return reduce(operator.getitem, keylist, datadict)
+
 
 
 def main(args=None):
@@ -105,10 +134,16 @@ def main(args=None):
             print(docstring)
         else:
             print("Usage: %s <pkl|png> <subdir/containing/the/checkplots/> "
-                  "'[file glob to use]'" % args[0])
+                  "'[file glob to use] [checkplot pickle sort key-sort order]'"
+                  % args[0])
         sys.exit(2)
 
     checkplotbasedir = args[2]
+
+    if len(args) == 5:
+        sortkey, sortorder = args[4].split('-')
+    else:
+        sortkey, sortorder = None, None
 
     if len(args) == 4:
         fileglob = args[3]
@@ -144,6 +179,55 @@ def main(args=None):
             os.path.join(currdir,'checkplot-filelist.json')
         )
 
+
+        # see if we should sort the searchresults in some special order
+        # this requires an arg on the commandline of the form:
+        # '<sortkey>-<asc|desc>'
+        # where sortkey is some key in the checkplot pickle:
+        #   this can be a simple key: e.g. objectid
+        #   or it can be a composite key: e.g. varinfo.varfeatures.stetsonj
+        # and sortorder is either 'asc' or desc' for ascending/descending sort
+        if sortkey and sortorder:
+
+            LOGINFO('sorting checkplot pickles by %s in order: %s...' %
+                    (sortkey, sortorder))
+
+            from astrobase import checkplot
+            import numpy as np
+
+            # dereference the sort key
+            sortkeys = sortkey.split('.')
+
+            sorttargets = []
+
+            # we need to run through the pickles and get their sort keys
+
+            # if tqdm is present
+            if TQDM:
+                listiterator = tqdm(searchresults)
+            else:
+                listiterator = searchresults
+
+            for pkl in listerator:
+
+                cpd = checkplot._read_checkplot_pickle(pkl)
+                sorttargets.append(dict_get(cpd, sortkeys))
+
+            sorttargets = np.array(sorttargets)
+            sortind = np.argsort(sorttargets)
+            if sortorder == 'desc':
+                sortind = sortind[::-1]
+            searchresults = np.array(searchresults)
+            searchresults = searchresults[sortind].tolist()
+
+        # if there's no special sort order defined, use the usual sort order
+        else:
+            LOGWARNING('no special sort key and order specified, '
+                       'sorting checkplot pickles '
+                       'using usual alphanumeric sort...')
+            searchresults = sorted(searchresults)
+
+
         # ask if the checkplot list JSON should be updated
         if os.path.exists(outjson):
 
@@ -157,7 +241,7 @@ def main(args=None):
 
                 with open(outjson,'w') as outfd:
                     print('overwriting existing checkplot list')
-                    outdict = {'checkplots':sorted(searchresults),
+                    outdict = {'checkplots':searchresults,
                                'nfiles':len(searchresults)}
                     json.dump(outdict,outfd)
 
@@ -172,7 +256,7 @@ def main(args=None):
                     indict = json.load(infd)
 
                 # update the checkplot list only
-                indict['checkplots'] = sorted(searchresults)
+                indict['checkplots'] = searchresults
                 indict['nfiles'] = len(searchresults)
                 # write the updated to back to the file
                 with open(outjson,'w') as outfd:
@@ -182,7 +266,7 @@ def main(args=None):
         else:
 
             with open(outjson,'w') as outfd:
-                outdict = {'checkplots':sorted(searchresults),
+                outdict = {'checkplots':searchresults,
                            'nfiles':len(searchresults)}
                 json.dump(outdict,outfd)
 
