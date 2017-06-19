@@ -208,7 +208,7 @@ def main(args=None):
             else:
                 listiterator = searchresults
 
-            for pkl in listerator:
+            for pkl in listiterator:
 
                 cpd = checkplot._read_checkplot_pickle(pkl)
                 sorttargets.append(dict_get(cpd, sortkeys))
