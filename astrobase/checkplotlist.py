@@ -86,16 +86,16 @@ expand it, e.g.:
 $ checkplotlist png my-project/awesome-objects '*awesome-objects*'
 
 For checkplot pickles only: If you want to sort the checkplot pickles in some
-special way, e.g. by their existing Stetson J indices in descending order, use
-something like:
+special way, this requires an arg on the commandline of the form:
+'<sortkey>-<asc|desc>' after the checkplot file glob. Here, sortkey is some key
+in the checkplot pickle: this can be a simple key: e.g. objectid or it can be a
+composite key: e.g. varinfo.varfeatures.stetsonj. sortorder is either 'asc'
+or desc' for ascending/descending sort.
+
+Example: sort checkplots by their already determined Stetson J indices in
+descending order:
 
 $ checkplotlist pkl my-project/awesome-objects '*awesome-objects*' 'varinfo.features.stetsonj-desc'
-
-This requires an arg on the commandline of the form: '<sortkey>-<asc|desc>'
-
-where sortkey is some key in the checkplot pickle: this can be a simple key:
-e.g. objectid or it can be a composite key: e.g. varinfo.varfeatures.stetsonj
-and sortorder is either 'asc' or desc' for ascending/descending sort.
 
 '''
 
