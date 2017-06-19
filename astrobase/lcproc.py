@@ -12,6 +12,10 @@ import pickle
 import gzip
 import glob
 import multiprocessing as mp
+import logging
+from datetime import datetime
+from traceback import format_exc
+
 
 import concurrent.futures
 from concurrent.futures import ProcessPoolExecutor
@@ -20,11 +24,65 @@ import numpy as np
 
 try:
     from tqdm import tqdm
+    TQDM = True
 except:
+    TQDM = False
     pass
+
+
+#############
+## LOGGING ##
+#############
+
+# setup a logger
+LOGGER = None
+
+def set_logger_parent(parent_name):
+    globals()['LOGGER'] = logging.getLogger('%s.lcproc' % parent_name)
+
+def LOGDEBUG(message):
+    if LOGGER:
+        LOGGER.debug(message)
+    elif DEBUG:
+        print('%sZ [DBUG]: %s' % (datetime.utcnow().isoformat(), message))
+
+def LOGINFO(message):
+    if LOGGER:
+        LOGGER.info(message)
+    else:
+        print('%sZ [INFO]: %s' % (datetime.utcnow().isoformat(), message))
+
+def LOGERROR(message):
+    if LOGGER:
+        LOGGER.error(message)
+    else:
+        print('%sZ [ERR!]: %s' % (datetime.utcnow().isoformat(), message))
+
+def LOGWARNING(message):
+    if LOGGER:
+        LOGGER.warning(message)
+    else:
+        print('%sZ [WRN!]: %s' % (datetime.utcnow().isoformat(), message))
+
+def LOGEXCEPTION(message):
+    if LOGGER:
+        LOGGER.exception(message)
+    else:
+        print(
+            '%sZ [EXC!]: %s\nexception was: %s' % (
+                datetime.utcnow().isoformat(),
+                message, format_exc()
+                )
+            )
+
+
+###################
+## LOCAL IMPORTS ##
+###################
 
 from astrobase import hatlc, periodbase, checkplot
 from astrobase.varbase import features
+
 
 
 #######################
@@ -52,7 +110,7 @@ def getlclist(listfile,
 
     goodind = np.where(lclist['ndet'] > minndet)
 
-    print('objects with at least %s detections = %s' % (minndet,
+    LOGINFO('objects with at least %s detections = %s' % (minndet,
                                                         goodind[0].size))
 
     goodlcs = lclist['lcfpath'][goodind[0]].tolist()
@@ -93,7 +151,7 @@ def varfeatures(lcfile,
 
             if mags[finind].size < 1000:
 
-                print('not enough LC points: %s in normalized %s LC: %s' %
+                LOGINFO('not enough LC points: %s in normalized %s LC: %s' %
                       (mags[finind].size, col, os.path.basename(lcfile)))
                 resultdict[col] = None
 
@@ -114,7 +172,7 @@ def varfeatures(lcfile,
 
     except Exception as e:
 
-        print('failed to get LC features for %s because: %s' %
+        LOGINFO('failed to get LC features for %s because: %s' %
               (os.path.basename(lcfile), e))
         return None
 
@@ -171,9 +229,15 @@ def stetson_threshold(featuresdir,
     objmags = []
     objstets = []
 
-    print('getting all objects...')
-    # fancy progress bar with tqdm
-    for pkl in tqdm(pklist):
+    LOGINFO('getting all objects...')
+
+    # fancy progress bar with tqdm if present
+    if TQDM:
+        listiterator = tqdm(pklist)
+    else:
+        listiterator = pklist
+
+    for pkl in listiterator:
 
         with open(pkl,'rb') as infd:
             thisfeatures = pickle.load(infd)
@@ -207,7 +271,7 @@ def stetson_threshold(featuresdir,
 
     goodobjs = objids[threshind]
 
-    print('median %s stetson J = %.5f, stdev = %s, '
+    LOGINFO('median %s stetson J = %.5f, stdev = %s, '
           'total objects %s sigma > median = %s' %
           (magcol, medstet, stdstet, minstetstdev, goodobjs.size))
 
@@ -268,7 +332,7 @@ def runpf(lcfile, resultdir,
 
     except Exception as e:
 
-        print('ERR! failed to run for %s, because: %s' % (lcfile, e))
+        LOGERROR('failed to run for %s, because: %s' % (lcfile, e))
 
 
 
@@ -294,7 +358,7 @@ def runpf_worker(task):
                          nworkers=nworkers)
         return pfresult
     else:
-        print('ERR! LC does not exist for %s' % hatid)
+        LOGERROR('LC does not exist for %s' % hatid)
         return None
 
 
@@ -365,9 +429,9 @@ def runcp(pfpickle,
 
             times, mags, errs = normlc['rjd'], normlc[col], normlc[errcol]
 
-            gls = pfresultdict[col]['gls']
-            pdm = pfresultdict[col]['pdm']
-            bls = pfresultdict[col]['bls']
+            gls = pfresults[col]['gls']
+            pdm = pfresults[col]['pdm']
+            bls = pfresults[col]['bls']
 
             outfile = os.path.join(resultdir,
                                    'checkplot-%s-%s.pkl' % (hatid, col))
@@ -381,12 +445,12 @@ def runcp(pfpickle,
             )
             cpfs.append(cpf)
 
-        print('done with %s -> %s' % (hatid, repr(cpfs)))
+        LOGINFO('done with %s -> %s' % (hatid, repr(cpfs)))
         return cpfs
 
     else:
 
-        print('ERR! LC does not exist for %s' % hatid)
+        LOGERROR('LC does not exist for %s' % hatid)
         return None
 
 
@@ -404,8 +468,8 @@ def runcp_worker(task):
 
     except Exception as e:
 
-        print('ERR! could not make checkplots for %s: %s' % (pfpickle,
-                                                             e))
+        LOGERROR(' could not make checkplots for %s: %s' % (pfpickle,
+                                                            e))
         return None
 
 
@@ -435,18 +499,10 @@ def parallel_cp(pfpickledir,
     # this runs the process pool
     executor = ProcessPoolExecutor(max_workers=nworkers)
 
-    # submit the tasks
-    for task in tasklist:
-        resultfutures.append(executor.submit(runpf_worker, task))
+    with ProcessPoolExecutor(max_workers=nthisworkers) as executor:
+        resultfutures = executor.map(runcp_worker, tasklist)
 
-    # this handles the results
-    for f in concurrent.futures.as_completed(resultfutures):
-        try:
-            thisresult = x.result(timeout=5*60.0)
-            results.append(thisresult)
-        except concurrent.futures.TimeoutError as e:
-            print('ERR! this task is taking too long, skipping...')
-            results.append(None)
+    results = [x.result() for x in resultfutures]
 
     executor.shutdown()
     return results
