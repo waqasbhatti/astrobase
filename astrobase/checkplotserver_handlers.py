@@ -304,7 +304,7 @@ class IndexHandler(tornado.web.RequestHandler):
         '''
 
         # generate the project's list of checkplots
-        project_checkplots = sorted(self.currentproject['checkplots'])
+        project_checkplots = self.currentproject['checkplots']
         project_checkplotbasenames = [os.path.basename(x)
                                       for x in project_checkplots]
         project_checkplotindices = range(len(project_checkplots))
