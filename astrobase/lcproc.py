@@ -496,10 +496,7 @@ def parallel_cp(pfpickledir,
     resultfutures = []
     results = []
 
-    # this runs the process pool
-    executor = ProcessPoolExecutor(max_workers=nworkers)
-
-    with ProcessPoolExecutor(max_workers=nthisworkers) as executor:
+    with ProcessPoolExecutor(max_workers=nworkers) as executor:
         resultfutures = executor.map(runcp_worker, tasklist)
 
     results = [x.result() for x in resultfutures]
