@@ -213,9 +213,9 @@ def main(args=None):
 
         # if there's no special sort order defined, use the usual sort order
         else:
-            LOGWARNING('no special sort key and order specified, '
-                       'sorting checkplot pickles '
-                       'using usual alphanumeric sort...')
+            print('no special sort key and order specified, '
+                  'sorting checkplot pickles '
+                  'using usual alphanumeric sort...')
             searchresults = sorted(searchresults)
 
 
