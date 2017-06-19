@@ -7,3 +7,4 @@ jplephem
 tornado
 pyeebls
 requests
+tqdm

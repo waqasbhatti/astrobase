@@ -49,7 +49,8 @@ INSTALL_REQUIRES = [
     'jplephem',
     'requests',
     'tornado',
-    'pyeebls'
+    'pyeebls',
+    'tqdm',
 ]
 
 EXTRAS_REQUIRE = {
