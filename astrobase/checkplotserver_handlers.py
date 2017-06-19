@@ -2130,6 +2130,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                     # return the whole
                     else:
 
+                        pass
 
 
                 # otherwise, this is an unrecognized lctool
