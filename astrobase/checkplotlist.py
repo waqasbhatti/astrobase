@@ -210,7 +210,7 @@ def main(args=None):
 
             for pkl in listiterator:
 
-                cpd = checkplot._read_checkplot_pickle(pkl)
+                cpd = checkplot._read_checkplot_picklefile(pkl)
                 sorttargets.append(dict_get(cpd, sortkeys))
 
             sorttargets = np.array(sorttargets)
