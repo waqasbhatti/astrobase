@@ -89,7 +89,7 @@ For checkplot pickles only: If you want to sort the checkplot pickles in some
 special way, e.g. by their existing Stetson J indices in descending order, use
 something like:
 
-$ checkplotlist pkl my-project/awesome-objects '*awesome-objects*' 'varinfo.varfeatures.stetsonj-desc'
+$ checkplotlist pkl my-project/awesome-objects '*awesome-objects*' 'varinfo.features.stetsonj-desc'
 
 This requires an arg on the commandline of the form: '<sortkey>-<asc|desc>'
 
@@ -105,21 +105,23 @@ import sys
 import glob
 import json
 
-try:
-    from tqdm import tqdm
-    TQDM = True
-except:
-    TQDM = False
-
-
 # to turn a list of keys into a dict address
 # from https://stackoverflow.com/a/14692747
 # used to walk a checkplotdict for a specific key in the structure
+from astrobase import checkplot
+import numpy as np
+import multiprocessing as mp
+
 from functools import reduce  # forward compatibility for Python 3
 from operator import getitem
 
 def dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
+
+def sortkey_worker(task):
+    cpf, key = task
+    cpd = checkplot._read_checkplot_picklefile(cpf)
+    return dict_get(cpd, key)
 
 
 
@@ -192,26 +194,15 @@ def main(args=None):
             print('sorting checkplot pickles by %s in order: %s...' %
                   (sortkey, sortorder))
 
-            from astrobase import checkplot
-            import numpy as np
-
             # dereference the sort key
             sortkeys = sortkey.split('.')
 
-            sorttargets = []
+            pool = mp.Pool()
+            tasks = [(cp, sortkeys) for x in searchresults]
+            sorttargets = pool.map(sortkey_worker, tasks)
 
-            # we need to run through the pickles and get their sort keys
-
-            # if tqdm is present
-            if TQDM:
-                listiterator = tqdm(searchresults)
-            else:
-                listiterator = searchresults
-
-            for pkl in listiterator:
-
-                cpd = checkplot._read_checkplot_picklefile(pkl)
-                sorttargets.append(dict_get(cpd, sortkeys))
+            pool.close()
+            pool.join()
 
             sorttargets = np.array(sorttargets)
             sortind = np.argsort(sorttargets)
