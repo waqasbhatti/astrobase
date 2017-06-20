@@ -76,7 +76,9 @@ suited to more serious variability searches on large numbers of checkplots.
 PROGDESC = '''\
 This makes a checkplot file list for use with the checkplot-viewer.html (for
 checkplot PNGs) or the checkplotserver.py (for checkplot pickles) webapps.
+'''
 
+PROGEPILOG= '''\
 If you have checkplots that don't have 'checkplot' somewhere in their file name,
 use the optional checkplot file glob argument to checkplotlist to provide
 this:
@@ -143,7 +145,8 @@ def main():
     ####################
 
     aparser = argparse.ArgumentParser(
-        epilog=PROGDESC,
+        epilog=PROGEPILOG,
+        description=PROGDESC,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     aparser.add_argument(
@@ -174,11 +177,22 @@ def main():
         type=str,
         help=("the sort key and order to use when sorting")
     )
+    aparser.add_argument(
+        '--splitout',
+        action='store',
+        type=int,
+        default=5000,
+        help=("if there are more than SPLITOUT objects in "
+              "the target directory (default: %(default)s), "
+              "checkplotlist will split the output JSON into multiple files. "
+              "this helps keep the webapps responsive.")
+    )
 
     args = aparser.parse_args()
 
     checkplotbasedir = args.cpdir
     fileglob = args.search
+    splitout = args.splitout
 
     if args.sortby:
         sortkey, sortorder = args.sortby.split('-')
@@ -213,11 +227,6 @@ def main():
         print('found %s checkplot files in %s, '
               'making checkplot-filelist.json...' %
               (len(searchresults), checkplotbasedir))
-
-        outjson = os.path.abspath(
-            os.path.join(currdir,'checkplot-filelist.json')
-        )
-
 
         # see if we should sort the searchresults in some special order
         # this requires an arg on the commandline of the form:
@@ -262,62 +271,78 @@ def main():
             sortkey = 'filename'
             sortorder = 'asc'
 
+        nchunks = int(len(searchresults)/splitout) + 1
 
-        # ask if the checkplot list JSON should be updated
-        if os.path.exists(outjson):
+        searchchunks = [searchresults[x*splitout:x*splitout+splitout] for x
+                        in range(nchunks)]
 
-            answer = input('There is an existing '
-                           'checkplot list file in this '
-                           'directory:\n    %s\nDo you want to '
-                           'overwrite it completely? (default: no) [y/n] ' %
-                           outjson)
+        for chunkind, chunk in enumerate(searchchunks):
 
-            # if it's OK to overwrite, then do so
-            if answer and answer == 'y':
+            # figure out if we need to split the JSON file
+            outjson = os.path.abspath(
+                os.path.join(
+                    currdir,
+                    'checkplot-filelist%s.json' %
+                    ('-%02i' % chunkind if len(searchchunks) > 1 else '')
+                )
+            )
+
+            # ask if the checkplot list JSON should be updated
+            if os.path.exists(outjson):
+
+                answer = input('There is an existing '
+                               'checkplot list file in this '
+                               'directory:\n    %s\nDo you want to '
+                               'overwrite it completely? (default: no) [y/n] ' %
+                               outjson)
+
+                # if it's OK to overwrite, then do so
+                if answer and answer == 'y':
+
+                    with open(outjson,'w') as outfd:
+                        print('WRN! completely overwriting '
+                              'existing checkplot list %s' % outjson)
+                        outdict = {'checkplots':chunk,
+                                   'nfiles':len(chunk),
+                                   'sortkey':sortkey,
+                                   'sortorder':sortorder}
+                        json.dump(outdict,outfd)
+
+                # if it's not OK to overwrite, then
+                else:
+
+                    # read in the outjson, and add stuff to it for objects that
+                    # don't have an entry
+                    print('only updating existing checkplot list '
+                          'file with any new checkplot pickles')
+
+                    with open(outjson,'r') as infd:
+                        indict = json.load(infd)
+
+                    # update the checkplot list, sortorder, and sortkey only
+                    indict['checkplots'] = chunk
+                    indict['nfiles'] = len(chunk)
+                    indict['sortkey'] = sortkey
+                    indict['sortorder'] = sortorder
+
+                    # write the updated to back to the file
+                    with open(outjson,'w') as outfd:
+                        json.dump(indict, outfd)
+
+            # if this is a new output file
+            else:
 
                 with open(outjson,'w') as outfd:
-                    print('WRN! completely overwriting existing checkplot list')
-                    outdict = {'checkplots':searchresults,
-                               'nfiles':len(searchresults),
+                    outdict = {'checkplots':chunk,
+                               'nfiles':len(chunk),
                                'sortkey':sortkey,
                                'sortorder':sortorder}
                     json.dump(outdict,outfd)
 
-            # if it's not OK to overwrite, then
+            if os.path.exists(outjson):
+                print('checkplot file list written to %s' % outjson)
             else:
-
-                # read in the outjson, and add stuff to it for objects that
-                # don't have an entry
-                print('only updating existing checkplot list '
-                      'file with any new checkplot pickles')
-
-                with open(outjson,'r') as infd:
-                    indict = json.load(infd)
-
-                # update the checkplot list, sortorder, and sortkey only
-                indict['checkplots'] = searchresults
-                indict['nfiles'] = len(searchresults)
-                indict['sortkey'] = sortkey
-                indict['sortorder'] = sortorder
-
-                # write the updated to back to the file
-                with open(outjson,'w') as outfd:
-                    json.dump(indict, outfd)
-
-        # if this is a new output file
-        else:
-
-            with open(outjson,'w') as outfd:
-                outdict = {'checkplots':searchresults,
-                           'nfiles':len(searchresults),
-                           'sortkey':sortkey,
-                           'sortorder':sortorder}
-                json.dump(outdict,outfd)
-
-        if os.path.exists(outjson):
-            print('checkplot file list written to %s' % outjson)
-        else:
-            print('ERR! writing the checkplot file list failed!')
+                print('ERR! writing the checkplot file list failed!')
 
     else:
 
