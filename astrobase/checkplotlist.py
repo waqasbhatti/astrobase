@@ -54,7 +54,7 @@ If you made checkplots in the pickle format (checkplot-*.pkl)
 
 Invoke this command from that directory like so:
 
-$ checkplotlist pkl subdir/containing/the/checkplots 'optional-glob*.pkl'
+$ checkplotlist pkl subdir/containing/the/checkplots
 
 Then, from that directory, invoke the checkplotserver webapp (make sure the
 astrobase virtualenv is active, so the command below is in your path):
@@ -72,33 +72,42 @@ suited to more serious variability searches on large numbers of checkplots.
 
 '''
 
+
 PROGDESC = '''\
 This makes a checkplot file list for use with the checkplot-viewer.html (for
 checkplot PNGs) or the checkplotserver.py (for checkplot pickles) webapps.
 
 If you have checkplots that don't have 'checkplot' somewhere in their file name,
 use the optional checkplot file glob argument to checkplotlist to provide
-this. Make sure to use the quotes around this argument, otherwise the shell will
-expand it, e.g.:
+this:
 
-$ checkplotlist --search '*awesome-objects*' png my-project/awesome-objects
+--search '<filename glob for prefix>'
 
-For checkplot pickles only: If you want to sort the checkplot pickles in some
-special way other than the usual filename sort order, this requires an arg on
-the commandline of the form: --sortby '<sortkey>-<asc|desc>'.
+Make sure to use the quotes around this argument, otherwise the shell will
+expand it.
 
-Here, sortkey is some key in the checkplot pickle: this can be a simple key:
-e.g. objectid or it can be a composite key: e.g. varinfo.varfeatures.stetsonj.
-sortorder is either 'asc' or desc' for ascending/descending sort.
+Example: search for checkplots with awesome-object in their filename:
 
-Example: sort checkplots by their already determined Stetson J indices in
-descending order:
+$ checkplotlist png my-project/awesome-objects --search '*awesome-object*'
 
-$ checkplotlist --sortby 'varinfo.features.stetsonj-desc' pkl my-project/awesome-objects
+For checkplot pickles only: If you want to sort the checkplot pickle files in
+the output list in some special way other than the usual filename sort order,
+this requires an argument on the commandline of the form:
+
+--sortby '<sortkey>-<asc|desc>'.
+
+Here, sortkey is some key in the checkplot pickle. This can be a simple key:
+e.g. objectid or it can be a composite key: e.g. varinfo.features.stetsonj.
+sortorder is either 'asc' or desc' for ascending/descending sort. The sortkey
+must exist in all checkplot pickles.
+
+Example: sort checkplots by their 2MASS J magnitudes in ascending order:
+
+$ checkplotlist pkl my-project/awesome-objects --sortby 'objectinfo.jmag-asc'
 
 Example: sort checkplots by the best peak in their PDM periodograms:
 
-$ checkplotlist --search '*awesome-objects*' --sortby 'pdm.nbestlspvals.0-asc' pkl my-project/awesome-objects
+$ checkplotlist pkl my-project/awesome-objects --sortby 'pdm.nbestlspvals.0-asc'
 '''
 
 import os
@@ -108,16 +117,15 @@ import glob
 import json
 import argparse
 
-
 # to turn a list of keys into a dict address
 # from https://stackoverflow.com/a/14692747
 # used to walk a checkplotdict for a specific key in the structure
+from functools import reduce
+from operator import getitem
+
 from astrobase import checkplot
 import numpy as np
 import multiprocessing as mp
-
-from functools import reduce  # forward compatibility for Python 3
-from operator import getitem
 
 def dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
@@ -261,13 +269,14 @@ def main():
             answer = input('There is an existing '
                            'checkplot list file in this '
                            'directory:\n    %s\nDo you want to '
-                           'overwrite it? (default: no) [y/n] ' % outjson)
+                           'overwrite it completely? (default: no) [y/n] ' %
+                           outjson)
 
             # if it's OK to overwrite, then do so
             if answer and answer == 'y':
 
                 with open(outjson,'w') as outfd:
-                    print('overwriting existing checkplot list')
+                    print('WRN! completely overwriting existing checkplot list')
                     outdict = {'checkplots':searchresults,
                                'nfiles':len(searchresults),
                                'sortkey':sortkey,
@@ -279,7 +288,8 @@ def main():
 
                 # read in the outjson, and add stuff to it for objects that
                 # don't have an entry
-                print('updating existing checkplot list file')
+                print('only updating existing checkplot list '
+                      'file with any new checkplot pickles')
 
                 with open(outjson,'r') as infd:
                     indict = json.load(infd)
@@ -315,8 +325,4 @@ def main():
 
 
 if __name__ == '__main__':
-
     main()
-
-    # args = sys.argv
-    # main(args=args)
