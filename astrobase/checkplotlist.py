@@ -278,7 +278,7 @@ def main():
 
         if nchunks > 1:
             print('WRN! more than %s checkplots in this directory, '
-                  'splitting into %s chunks' % (len(searchresults), nchunks))
+                  'splitting into %s chunks' % (splitout, nchunks))
 
 
         for chunkind, chunk in enumerate(searchchunks):
