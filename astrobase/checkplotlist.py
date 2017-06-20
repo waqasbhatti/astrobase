@@ -135,7 +135,10 @@ def dict_get(datadict, keylist):
 def sortkey_worker(task):
     cpf, key = task
     cpd = checkplot._read_checkplot_picklefile(cpf)
-    return dict_get(cpd, key)
+    try:
+        return dict_get(cpd, key)
+    except:
+        return np.nan
 
 
 def main():
