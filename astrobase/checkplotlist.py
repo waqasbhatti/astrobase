@@ -97,6 +97,10 @@ descending order:
 
 $ checkplotlist pkl my-project/awesome-objects '*awesome-objects*' 'varinfo.features.stetsonj-desc'
 
+Example: sort checkplots by the best peak in their PDM periodograms:
+
+$ checkplotlist pkl my-project/awesome-objects '*awesome-objects*' 'pdm.nbestlspvals.0-asc'
+
 '''
 
 import os
@@ -197,6 +201,11 @@ def main(args=None):
             # dereference the sort key
             sortkeys = sortkey.split('.')
 
+            # if there are any integers in the sortkeys strings, interpret these
+            # to mean actual integer indexes of lists or integer keys for dicts
+            # this allows us to move into arrays easily by indexing them
+            sortkeys = [(int(x) if x.isdecimal() else x) for x in sortkeys]
+
             pool = mp.Pool()
             tasks = [(x, sortkeys) for x in searchresults]
             sorttargets = pool.map(sortkey_worker, tasks)
@@ -217,6 +226,8 @@ def main(args=None):
                   'sorting checkplot pickles '
                   'using usual alphanumeric sort...')
             searchresults = sorted(searchresults)
+            sortkey = 'filename'
+            sortorder = 'asc'
 
 
         # ask if the checkplot list JSON should be updated
@@ -233,7 +244,9 @@ def main(args=None):
                 with open(outjson,'w') as outfd:
                     print('overwriting existing checkplot list')
                     outdict = {'checkplots':searchresults,
-                               'nfiles':len(searchresults)}
+                               'nfiles':len(searchresults),
+                               'sortkey':sortkey,
+                               'sortorder':sortorder}
                     json.dump(outdict,outfd)
 
             # if it's not OK to overwrite, then
@@ -246,9 +259,12 @@ def main(args=None):
                 with open(outjson,'r') as infd:
                     indict = json.load(infd)
 
-                # update the checkplot list only
+                # update the checkplot list, sortorder, and sortkey only
                 indict['checkplots'] = searchresults
                 indict['nfiles'] = len(searchresults)
+                indict['sortkey'] = sortkey
+                indict['sortorder'] = sortorder
+
                 # write the updated to back to the file
                 with open(outjson,'w') as outfd:
                     json.dump(indict, outfd)
@@ -258,7 +274,9 @@ def main(args=None):
 
             with open(outjson,'w') as outfd:
                 outdict = {'checkplots':searchresults,
-                           'nfiles':len(searchresults)}
+                           'nfiles':len(searchresults),
+                           'sortkey':sortkey,
+                           'sortorder':sortorder}
                 json.dump(outdict,outfd)
 
         if os.path.exists(outjson):
