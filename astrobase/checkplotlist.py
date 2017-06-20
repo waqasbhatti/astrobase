@@ -276,6 +276,11 @@ def main():
         searchchunks = [searchresults[x*splitout:x*splitout+splitout] for x
                         in range(nchunks)]
 
+        if nchunks > 1:
+            print('WRN! more than %s checkplots in this directory, '
+                  'splitting into %s chunks' % (len(searchresults), nchunks))
+
+
         for chunkind, chunk in enumerate(searchchunks):
 
             # figure out if we need to split the JSON file
