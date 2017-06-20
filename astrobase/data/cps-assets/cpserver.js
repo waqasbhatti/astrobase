@@ -2032,7 +2032,8 @@ var cptools = {
                 proceed = false;
             }
             else {
-                messages.push("using frequency step: " + math.format(endp, 8));
+                messages.push("using frequency step: " +
+                              math.format(freqstep, 8));
                 proceed = true;
             }
 
