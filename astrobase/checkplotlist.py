@@ -70,37 +70,35 @@ options) to look through or update all your checkplots. Any changes will be
 written back to the checkplot .pkl files, making this method of browsing more
 suited to more serious variability searches on large numbers of checkplots.
 
-TL;DR
-=====
+'''
 
+PROGDESC = '''\
 This makes a checkplot file list for use with the checkplot-viewer.html (for
 checkplot PNGs) or the checkplotserver.py (for checkplot pickles) webapps.
-
-checkplotlist <pkl|png> <subdir/containing/checkplots/> '[optional checkplot file glob]' '[optional sort specification]'
 
 If you have checkplots that don't have 'checkplot' somewhere in their file name,
 use the optional checkplot file glob argument to checkplotlist to provide
 this. Make sure to use the quotes around this argument, otherwise the shell will
 expand it, e.g.:
 
-$ checkplotlist png my-project/awesome-objects '*awesome-objects*'
+$ checkplotlist --search '*awesome-objects*' png my-project/awesome-objects
 
 For checkplot pickles only: If you want to sort the checkplot pickles in some
-special way, this requires an arg on the commandline of the form:
-'<sortkey>-<asc|desc>' after the checkplot file glob. Here, sortkey is some key
-in the checkplot pickle: this can be a simple key: e.g. objectid or it can be a
-composite key: e.g. varinfo.varfeatures.stetsonj. sortorder is either 'asc'
-or desc' for ascending/descending sort.
+special way other than the usual filename sort order, this requires an arg on
+the commandline of the form: --sortby '<sortkey>-<asc|desc>'.
+
+Here, sortkey is some key in the checkplot pickle: this can be a simple key:
+e.g. objectid or it can be a composite key: e.g. varinfo.varfeatures.stetsonj.
+sortorder is either 'asc' or desc' for ascending/descending sort.
 
 Example: sort checkplots by their already determined Stetson J indices in
 descending order:
 
-$ checkplotlist pkl my-project/awesome-objects '*awesome-objects*' 'varinfo.features.stetsonj-desc'
+$ checkplotlist --sortby 'varinfo.features.stetsonj-desc' pkl my-project/awesome-objects
 
 Example: sort checkplots by the best peak in their PDM periodograms:
 
-$ checkplotlist pkl my-project/awesome-objects '*awesome-objects*' 'pdm.nbestlspvals.0-asc'
-
+$ checkplotlist --search '*awesome-objects*' --sortby 'pdm.nbestlspvals.0-asc' pkl my-project/awesome-objects
 '''
 
 import os
@@ -108,6 +106,8 @@ import os.path
 import sys
 import glob
 import json
+import argparse
+
 
 # to turn a list of keys into a dict address
 # from https://stackoverflow.com/a/14692747
@@ -128,43 +128,68 @@ def sortkey_worker(task):
     return dict_get(cpd, key)
 
 
+def main():
 
-def main(args=None):
+    ####################
+    ## PARSE THE ARGS ##
+    ####################
 
-    if not args:
-        args = sys.argv
+    aparser = argparse.ArgumentParser(
+        epilog=PROGDESC,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    aparser.add_argument(
+        'cptype',
+        action='store',
+        choices=['pkl','png'],
+        type=str,
+        help=("type of checkplot to search for: pkl -> checkplot pickles, "
+              "png -> checkplot PNGs")
+    )
+    aparser.add_argument(
+        'cpdir',
+        action='store',
+        type=str,
+        help=("directory containing the checkplots to process")
+    )
+    aparser.add_argument(
+        '--search',
+        action='store',
+        default='*checkplot*',
+        type=str,
+        help=("file glob prefix to use when searching for checkplots "
+              "(the extension is added automatically - .png or .pkl)")
+    )
+    aparser.add_argument(
+        '--sortby',
+        action='store',
+        type=str,
+        help=("the sort key and order to use when sorting")
+    )
 
-    if len(args) < 3:
-        docstring = __doc__
-        if docstring:
-            print(docstring)
-        else:
-            print("Usage: %s <pkl|png> <subdir/containing/the/checkplots/> "
-                  "'[file glob to use] [checkplot pickle sort key-sort order]'"
-                  % args[0])
-        sys.exit(2)
+    args = aparser.parse_args()
 
-    checkplotbasedir = args[2]
+    checkplotbasedir = args.cpdir
+    fileglob = args.search
 
-    if len(args) == 5:
-        sortkey, sortorder = args[4].split('-')
+    if args.sortby:
+        sortkey, sortorder = args.sortby.split('-')
     else:
         sortkey, sortorder = None, None
 
-    if len(args) == 4:
-        fileglob = args[3]
-    else:
-        fileglob = '*checkplot*'
-
-    if args[1] == 'pkl':
+    if args.cptype == 'pkl':
         checkplotext = 'pkl'
-    elif args[1] == 'png':
+    elif args.cptype == 'png':
         checkplotext = 'png'
     else:
         print("unknown format for checkplots: %s! can't continue!"
-              % args[1])
+              % args.cptype)
         sys.exit(1)
 
+
+    #######################
+    ## NOW START WORKING ##
+    #######################
 
     currdir = os.getcwd()
 
@@ -291,5 +316,7 @@ def main(args=None):
 
 if __name__ == '__main__':
 
-    args = sys.argv
-    main(args=args)
+    main()
+
+    # args = sys.argv
+    # main(args=args)
