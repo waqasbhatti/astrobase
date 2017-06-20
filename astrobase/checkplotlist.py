@@ -187,12 +187,21 @@ def main():
               "checkplotlist will split the output JSON into multiple files. "
               "this helps keep the webapps responsive.")
     )
+    aparser.add_argument(
+        '--outprefix',
+        action='store',
+        type=str,
+        default=None,
+        help=("a prefix string to use for the output JSON file(s). "
+              "use this to separate out different sort orders, for example.")
+    )
 
     args = aparser.parse_args()
 
     checkplotbasedir = args.cpdir
     fileglob = args.search
     splitout = args.splitout
+    outprefix = args.outprefix
 
     if args.sortby:
         sortkey, sortorder = args.sortby.split('-')
@@ -287,8 +296,10 @@ def main():
             outjson = os.path.abspath(
                 os.path.join(
                     currdir,
-                    'checkplot-filelist%s.json' %
-                    ('-%02i' % chunkind if len(searchchunks) > 1 else '')
+                    '%scheckplot-filelist%s.json' % (
+                        ('%s-' % outprefix if outprefix is not None else ''),
+                        ('-%02i' % chunkind if len(searchchunks) > 1 else ''),
+                    )
                 )
             )
 
