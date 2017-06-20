@@ -173,6 +173,7 @@ def main():
                        'looking for checkplot-filelist.json in the '
                        'current directory %s ...' % CURRENTDIR)
 
+        # this is for single checkplot lists
         if os.path.exists(os.path.join(CURRENTDIR,'checkplot-filelist.json')):
 
             cplistfile = os.path.join(CURRENTDIR,'checkplot-filelist.json')
@@ -180,16 +181,25 @@ def main():
                 CHECKPLOTLIST = json.load(infd)
             LOGGER.info('using checkplot list file: %s' % cplistfile)
 
+        # this is for chunked checkplot lists
+        elif os.path.exists(os.path.join(CURRENTDIR,
+                                         'checkplot-filelist-00.json')):
+
+            cplistfile = os.path.join(CURRENTDIR,'checkplot-filelist-00.json')
+            with open(cplistfile,'r') as infd:
+                CHECKPLOTLIST = json.load(infd)
+            LOGGER.info('using checkplot list file: %s' % cplistfile)
+
+        # if we can't find a checkplot list, bail out
         else:
 
             helpmsg = (
-                "No checkplot-filelist.json found, "
+                "No checkplot file list JSON found, "
                 "can't continue without one.\n"
                 "Did you make a checkplot list file? "
                 "To make one, try running the following command:\n"
-                "python %s pkl "
-                "/path/to/folder/where/the/checkplot.pkl.gz/files/are" %
-                (os.path.join(modpath,'checkplotlist.py'))
+                "checkplotlist pkl "
+                "/path/to/folder/where/the/checkplot.pkl.gz/files/are"
             )
             LOGGER.error(helpmsg)
             sys.exit(1)
