@@ -191,9 +191,10 @@ def main():
         '--outprefix',
         action='store',
         type=str,
-        default=None,
         help=("a prefix string to use for the output JSON file(s). "
-              "use this to separate out different sort orders, for example.")
+              "use this to separate out different sort orders, for example. "
+              "if this isn't provided, but sortby is, will use that to "
+              "figure out the output files' prefixes")
     )
 
     args = aparser.parse_args()
@@ -201,10 +202,12 @@ def main():
     checkplotbasedir = args.cpdir
     fileglob = args.search
     splitout = args.splitout
-    outprefix = args.outprefix
+    outprefix = args.outprefix if args.outprefix else None
 
     if args.sortby:
         sortkey, sortorder = args.sortby.split('-')
+        if outprefix is None:
+            outprefix = args.sortby.replace('.','-')
     else:
         sortkey, sortorder = None, None
 
