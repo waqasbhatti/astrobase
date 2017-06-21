@@ -476,8 +476,8 @@ def runcp_worker(task):
 
 def parallel_cp(pfpickledir,
                 outdir,
-                pfpickleglob='pfresult*.pkl',
                 lcbasedir,
+                pfpickleglob='pfresult*.pkl',
                 magcols=['aep_000'],
                 errcol='aie_000',
                 nworkers=32):
