@@ -396,6 +396,7 @@ def parallel_pf(hatidlistfile,
 def runcp(pfpickle,
           resultdir,
           lcbasedir,
+          usehatfielddir=False,
           magcols=['aep_000'],
           errcol='aie_000'):
     '''This runs a checkplot for the given period-finding result pickle
@@ -409,10 +410,18 @@ def runcp(pfpickle,
     hatid = pfresults['objectid']
     hatfield = hatid.split('-')[1]
 
-    # find the light curve for this object
-    lcfpath = os.path.join(lcbasedir,
-                           hatfield,
-                           '%s-V0-DR0-hatlc.sqlite.gz' % hatid)
+    if usehatfielddir:
+
+        # find the light curve for this object
+        lcfpath = os.path.join(lcbasedir,
+                               hatfield,
+                               '%s-V0-DR0-hatlc.sqlite.gz' % hatid)
+
+    else:
+
+        lcfpath = os.path.join(lcbasedir,
+                               '%s-V0-DR0-hatlc.sqlite.gz' % hatid)
+
 
     if os.path.exists(lcfpath):
 
