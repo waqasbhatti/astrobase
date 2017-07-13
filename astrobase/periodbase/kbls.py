@@ -190,6 +190,7 @@ def bls_serial_pfind(times, mags, errs,
                      maxtransitduration=0.8,  # maximum transit length in phase
                      nphasebins=200,
                      autofreq=True, # figure out f0, nf, and df automatically
+                     maxnfreq=None, # cap the total number of freqs searched
                      periodepsilon=0.1,
                      nbestpeaks=5,
                      sigclip=10.0,
@@ -216,14 +217,22 @@ def bls_serial_pfind(times, mags, errs,
         # if we're setting up everything automatically
         if autofreq:
 
-            # use heuristic to figure out best timestep
-            # see http://www.astro.princeton.edu/~jhartman/vartools.html
-            stepsize = 0.25*mintransitduration/(stimes.max()-stimes.min())
-
-            # now figure out the frequencies to use
+            # figure out the frequencies to use
             minfreq = 1.0/endp
             maxfreq = 1.0/startp
-            nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
+
+            # cap the number of frequencies searched if maxnfreq is set
+            if maxnfreq is not None and maxnfreq > 0:
+
+                nfreq = maxnfreq
+                stepsize = (maxfreq - minfreq)/nfreq
+
+            # otherwise, use heuristic to figure out best timestep
+            # see http://www.astro.princeton.edu/~jhartman/vartools.html
+            else:
+
+                nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
+                stepsize = 0.25*mintransitduration/(stimes.max()-stimes.min())
 
             # figure out the best number of phasebins to use
             nphasebins = int(np.ceil(2.0/mintransitduration))
@@ -476,6 +485,7 @@ def bls_parallel_pfind(
         maxtransitduration=0.8,  # maximum transit length in phase
         nphasebins=200,
         autofreq=True, # figure out f0, nf, and df automatically
+        maxnfreq=None, # cap number of freqs searched
         nbestpeaks=5,
         periodepsilon=0.1, # 0.1
         nworkers=None,
@@ -512,14 +522,22 @@ def bls_parallel_pfind(
         # if we're setting up everything automatically
         if autofreq:
 
-            # use heuristic to figure out best timestep
-            # see http://www.astro.princeton.edu/~jhartman/vartools.html
-            stepsize = 0.25*mintransitduration/(stimes.max()-stimes.min())
-
-            # now figure out the frequencies to use
+            # figure out the frequencies to use
             minfreq = 1.0/endp
             maxfreq = 1.0/startp
-            nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
+
+            # cap the number of frequencies searched if maxnfreq is set
+            if maxnfreq is not None and maxnfreq > 0:
+
+                nfreq = maxnfreq
+                stepsize = (maxfreq - minfreq)/nfreq
+
+            # otherwise, use heuristic to figure out best timestep
+            # see http://www.astro.princeton.edu/~jhartman/vartools.html
+            else:
+
+                nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
+                stepsize = 0.25*mintransitduration/(stimes.max()-stimes.min())
 
             # figure out the best number of phasebins to use
             # see http://www.astro.princeton.edu/~jhartman/vartools.html
