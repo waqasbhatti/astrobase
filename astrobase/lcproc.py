@@ -7,6 +7,7 @@ processing HAT light curves.
 
 '''
 
+import os
 import os.path
 import pickle
 import gzip
@@ -28,6 +29,14 @@ try:
 except:
     TQDM = False
     pass
+
+# to turn a list of keys into a dict address
+# from https://stackoverflow.com/a/14692747
+from functools import reduce
+from operator import getitem
+def dict_get(datadict, keylist):
+    return reduce(getitem, keylist, datadict)
+
 
 
 #############
@@ -80,18 +89,126 @@ def LOGEXCEPTION(message):
 ## LOCAL IMPORTS ##
 ###################
 
+# LC reading functions
+from astrobase.hatlc import read_and_filter_sqlitecurve, read_csvlc
+from astrobase.hplc import read_hatpi_textlc, read_hatpi_pklc
+from astrobase.astrokep import read_kepler_fitslc, read_kepler_pklc
+
 from astrobase import hatlc, periodbase, checkplot
 from astrobase.varbase import features
 
+
+#############################################
+## MAPS FOR LCFORMAT TO LCREADER FUNCTIONS ##
+#############################################
+
+# LC format -> [default fileglob,  function to read LC format]
+LCFORM = {'hat_sql':['*-hatlc.sqlite.gz', read_and_filter_sqlitecurve],
+          'hat_csv':['*-hatlc.csv.gz', read_csvlc],
+          'hp_txt':['*TF1.gz', read_hatpi_textlc],
+          'hp_pkl':['*-pklc.pkl', read_hatpi_pklc],
+          'kep_fits':['*_llc.fits', read_kepler_fitslc],
+          'kep_pkl':['-keplc.pkl', read_kepler_pklc]}
 
 
 #######################
 ## UTILITY FUNCTIONS ##
 #######################
 
+
+def makelclist(basedir,
+               outfile,
+               lcformat='hat_sql',
+               fileglob=None,
+               recursive=True,
+               columns=['objectid',
+                        'objectinfo.ra','objectinfo.decl',
+                        'objectinfo.ndet','objectinfo.sdssr']):
+    '''This generates a list file compatible with getlclist below.
+
+    Given a base directory where all the files are, and a light curve format,
+    this will find all light curves, pull out the columns requested, and write
+    them to the requested output CSV file.
+
+    fileglob is a shell glob to use to select the filenames. If None, then the
+    default one for the provided lcformat will be used.
+
+    If recursive is True, then the function will search recursively in basedir
+    for any light curves matching the specified criteria. This may take a while,
+    especially on network filesystems.
+
+    '''
+
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR("can't figure out the light curve format")
+        return
+
+    if not fileglob:
+        fileglob = LCFORM[lcformat][0]
+
+    readerfunc = LCFORM[lcformat][1]
+
+    # now find the files
+    LOGINFO('searching for %s light curves in %s ...' % (lcformat, basedir))
+
+    if recursive == False:
+        matching = glob.glob(os.path.join(basedir, fileglob))
+
+    else:
+        # use recursive glob for Python 3.5+
+        if sys.version_info[:2] > (3,4):
+
+            matching = glob.glob(os.path.join(basedir,
+                                              '**',
+                                              fileglob),recursive=True)
+            LOGINFO('found %s files: %s' % (len(matching), repr(matching)))
+
+        # otherwise, use os.walk and glob
+        else:
+
+            # use os.walk to go through the directories
+            walker = os.walk(basedir)
+            matching = []
+
+            for root, dirs, files in walker:
+                for sdir in dirs:
+                    searchpath = os.path.join(root,
+                                              sdir,
+                                              fileglob)
+                    foundfiles = glob.glob(searchpath)
+
+                    if foundfiles:
+                        matching.extend(foundfiles)
+                        LOGINFO(
+                            'found %s in dir: %s' % (repr(foundfiles),
+                                                     os.path.join(root,sdir))
+                        )
+
+    # now that we have all the files, process them
+    if matching and len(matching) > 0:
+
+        LOGINFO('collecting light curve info...')
+
+        if TQDM:
+            lciter = tqdm(matching)
+        else:
+            lciter = matching
+
+        for lcf in lciter:
+
+            FIXME: finish this
+            stuff()
+
+
+
+
+
+
+
 def getlclist(listfile,
               basedir,
               minndet=999):
+
     '''
     This gets the list of HATIDs from the file.
 
