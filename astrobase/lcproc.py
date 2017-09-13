@@ -384,7 +384,7 @@ def varfeatures(lcfile,
                 resultdict[mcol] = lcfeatures
 
         outfile = os.path.join(outdir,
-                               'varfeatures-%s.pkl' % lcd['objectid'])
+                               'varfeatures-%s.pkl' % resultdict['objectid'])
 
         with open(outfile, 'wb') as outfd:
             pickle.dump(resultdict, outfd, protocol=4)
