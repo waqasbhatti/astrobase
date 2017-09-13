@@ -588,56 +588,88 @@ def stetson_threshold(featuresdir,
 ## RUNNING PERIOD SEARCHES ##
 #############################
 
-def runpf(lcfile, resultdir,
-          magcols=['aep_000','atf_000'],
-          errcol='aie_000',
+def runpf(lcfile,
+          outdir,
+          lcformat='hat-sql',
+          bls_startp=1.0,
+          bls_maxtransitduration=0.3,
           nworkers=10):
     '''
     This runs the period-finding for a single LC.
 
     '''
 
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    (readerfunc, timecols, magcols,
+     errcols, magsarefluxes, normfunc) = LCFORM[lcformat][1:]
+
+
     try:
 
-        lcd, msg = hatlc.read_and_filter_sqlitecurve(lcfile)
-        outfile = os.path.join(resultdir, 'pfresult-%s.pkl' % lcd['objectid'])
+        # get the LC into a dict
+        lcdict = readerfunc(lcfile)
+        if isinstance(lcdict, tuple) and isinstance(lcdict[0],dict):
+            lcdict = lcdict[0]
+
+        outfile = os.path.join(outdir, 'periodfinding-%s.pkl' %
+                               lcdict['objectid'])
         resultdict = {'objectid':lcd['objectid']}
 
-        # normalize by instrument
-        normlc = hatlc.normalize_lcdict_byinst(lcd,
-                                               magcols=','.join(magcols),
-                                               normto='sdssr')
+        # normalize using the special function if specified
+        if normfunc is not None:
+           lcdict = normfunc(lcdict)
 
-        for col in magcols:
+        for tcol, mcol, ecol in zip(timecols, magcols, errcols):
 
-            times, mags, errs = normlc['rjd'], normlc[col], normlc[errcol]
+            times, mags, errs = lcdict[tcol], lcdict[mcol], lcdict[ecol]
+
+            # normalize here if not using special normalization
+            if normfunc is None:
+                ntimes, nmags = normalize_magseries(
+                    times, mags,
+                    magsarefluxes=magsarefluxes
+                )
+
+                times, mags, errs = ntimes, nmags, errs
+
+
+            # run the three period-finders
 
             gls = periodbase.pgen_lsp(times, mags, errs,
                                       verbose=False,
                                       nworkers=nworkers)
+
             pdm = periodbase.stellingwerf_pdm(times, mags, errs,
                                               verbose=False,
                                               nworkers=nworkers)
 
             # specifically for planet type signals
-            bls = periodbase.bls_parallel_pfind(times, mags, errs,
-                                                startp=1.0,
-                                                maxtransitduration=0.3,
-                                                verbose=False,
-                                                nworkers=nworkers)
+            bls = periodbase.bls_parallel_pfind(
+                times, mags, errs,
+                startp=bls_startp,
+                maxtransitduration=bls_maxtransitduration,
+                verbose=False,
+                nworkers=nworkers
+            )
 
-            resultdict[col] = {'gls':gls,
-                               'bls':bls,
-                               'pdm':pdm}
+            # save the results
+            resultdict[mcol] = {'gls':gls,
+                                'bls':bls,
+                                'pdm':pdm}
 
+
+        # once all mag cols have been processed, write out the pickle
         with open(outfile, 'wb') as outfd:
-            pickle.dump(resultdict, outfd, protocol=4)
+            pickle.dump(resultdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
 
         return outfile
 
     except Exception as e:
 
-        LOGERROR('failed to run for %s, because: %s' % (lcfile, e))
+        LOGEXCEPTION('failed to run for %s, because: %s' % (lcfile, e))
 
 
 
@@ -647,32 +679,28 @@ def runpf_worker(task):
 
     '''
 
-    hatid, lcbasedir, outdir, magcols, errcol, nworkers = task
+    (lcfile, outdir, lcformat,
+     bls_startp, bls_maxtransitduration, nworkers) = task
 
-    hatfield = hatid.split('-')[1]
-
-    # find the light curve for this object
-    lcfpath = os.path.join(lcbasedir,
-                           hatfield,
-                           '%s-V0-DR0-hatlc.sqlite.gz' % hatid)
-
-    if os.path.exists(lcfpath):
-        pfresult = runpf(lcfpath, outdir,
-                         magcols=magcols,
-                         errcol=errcol,
+    if os.path.exists(lcfile):
+        pfresult = runpf(lcfile,
+                         outdir,
+                         lcformat=lcformat,
+                         bls_startp=bls_startp,
+                         bls_maxtransitduration=bls_maxtransitduration,
                          nworkers=nworkers)
         return pfresult
     else:
-        LOGERROR('LC does not exist for %s' % hatid)
+        LOGERROR('LC does not exist for requested file %s' % lcfile)
         return None
 
 
 
-def parallel_pf(hatidlistfile,
+def parallel_pf(lclist,
                 outdir,
-                lcbasedir,
-                magcols=['aep_000'],
-                errcol='aie_000',
+                lcformat='hat-sql',
+                bls_startp=1.0,
+                bls_maxtransitduration=0.3,
                 nperiodworkers=10,
                 nthisworkers=4):
     '''
@@ -680,12 +708,9 @@ def parallel_pf(hatidlistfile,
 
     '''
 
-    with open(hatidlistfile,'r') as infd:
-        hatidlist = infd.readlines()
-        hatidlist = [x.strip('\n') for x in hatidlist]
-
-    tasklist = [(x, lcbasedir, outdir, magcols, errcol, nperiodworkers) for
-                x in hatidlist]
+    tasklist = [(x, outdir, lcformat,
+                 bls_startp, bls_maxtransitduration, nperiodworkers)
+                for x in hatidlist]
 
     with ProcessPoolExecutor(max_workers=nthisworkers) as executor:
         resultfutures = executor.map(runpf_worker, tasklist)
@@ -694,12 +719,83 @@ def parallel_pf(hatidlistfile,
     return results
 
 
+
+def parallel_pf_lcdir(lcdir,
+                      outdir,
+                      recursive=True,
+                      lcformat='hat-sql',
+                      bls_startp=1.0,
+                      bls_maxtransitduration=0.3,
+                      nperiodworkers=10,
+                      nthisworkers=4):
+    '''
+    This runs parallel light curve period finding for directory of LCs.
+
+    '''
+
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    fileglob = LCFORM[lcformat][0]
+
+    # now find the files
+    LOGINFO('searching for %s light curves in %s ...' % (lcformat, lcdir))
+
+    if recursive == False:
+        matching = glob.glob(os.path.join(lcdir, fileglob))
+
+    else:
+        # use recursive glob for Python 3.5+
+        if sys.version_info[:2] > (3,4):
+
+            matching = glob.glob(os.path.join(lcdir,
+                                              '**',
+                                              fileglob),recursive=True)
+
+        # otherwise, use os.walk and glob
+        else:
+
+            # use os.walk to go through the directories
+            walker = os.walk(lcdir)
+            matching = []
+
+            for root, dirs, files in walker:
+                for sdir in dirs:
+                    searchpath = os.path.join(root,
+                                              sdir,
+                                              fileglob)
+                    foundfiles = glob.glob(searchpath)
+
+                    if foundfiles:
+                        matching.extend(foundfiles)
+
+
+    # now that we have all the files, process them
+    if matching and len(matching) > 0:
+
+        return parallel_pf(matching,
+                           outdir,
+                           lcformat=lcformat,
+                           bls_startp=bls_startp,
+                           bls_maxtransitduration=bls_maxtransitduration,
+                           nperiodworkers=periodworkers,
+                           nthisworkers=nthisworkers)
+
+    else:
+
+        LOGERROR('no light curve files in %s format found in %s' % (lcformat,
+                                                                    lcdir))
+        return None
+
+
+
 ########################
 ## RUNNING CHECKPLOTS ##
 ########################
 
 def runcp(pfpickle,
-          resultdir,
+          outdir,
           lcbasedir,
           usehatfielddir=False,
           magcols=['aep_000'],
@@ -747,7 +843,7 @@ def runcp(pfpickle,
             pdm = pfresults[col]['pdm']
             bls = pfresults[col]['bls']
 
-            outfile = os.path.join(resultdir,
+            outfile = os.path.join(outdir,
                                    'checkplot-%s-%s.pkl' % (hatid, col))
 
             cpf = checkplot.checkplot_pickle(
@@ -774,11 +870,11 @@ def runcp_worker(task):
 
     '''
 
-    pfpickle, resultdir, kwargs = task
+    pfpickle, outdir, kwargs = task
 
     try:
 
-        return runcp(pfpickle, resultdir, **kwargs)
+        return runcp(pfpickle, outdir, **kwargs)
 
     except Exception as e:
 
