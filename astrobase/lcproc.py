@@ -130,7 +130,7 @@ LCFORM = {
         read_hatpi_textlc,
         ['rjd','rjd'],
         ['iep1','itf1'],
-        ['ire1','ire3'],
+        ['ire1','ire1'],
         False,
         None,
     ],
@@ -139,7 +139,7 @@ LCFORM = {
         read_hatpi_pklc,
         ['rjd','rjd'],
         ['iep1','itf1'],
-        ['ire1','ire3'],
+        ['ire1','ire1'],
         False,
         None,
     ],
@@ -563,8 +563,10 @@ def stetson_threshold(featuresdir,
         )
         stdstet = 1.483*madstet
 
-        threshind = (allobjects[magcol]['stetsonj'] >
-                     (minstetstdev*stdstet + medstet))
+        threshind = (
+            (np.isfinite(allobjects[magcol]['stetsonj']) &
+             (allobjects[magcol]['stetsonj'] > (minstetstdev*stdstet + medstet)))
+        )
 
         allobjects[magcol]['thresholdobjects'] = (
             allobjects[magcol]['objectid'][threshind]
