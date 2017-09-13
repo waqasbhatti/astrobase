@@ -91,12 +91,14 @@ def LOGEXCEPTION(message):
 ###################
 
 # LC reading functions
-from astrobase.hatlc import read_and_filter_sqlitecurve, read_csvlc
+from astrobase.hatlc import read_and_filter_sqlitecurve, read_csvlc, \
+    normalize_lcdict_byinst
 from astrobase.hplc import read_hatpi_textlc, read_hatpi_pklc
 from astrobase.astrokep import read_kepler_fitslc, read_kepler_pklc
 
 from astrobase import hatlc, periodbase, checkplot
 from astrobase.varbase import features
+from astrobase.lcmath import normalize_magseries
 
 
 #############################################
@@ -104,12 +106,62 @@ from astrobase.varbase import features
 #############################################
 
 # LC format -> [default fileglob,  function to read LC format]
-LCFORM = {'hat_sql':['*-hatlc.sqlite.gz', read_and_filter_sqlitecurve],
-          'hat_csv':['*-hatlc.csv.gz', read_csvlc],
-          'hp_txt':['*TF1.gz', read_hatpi_textlc],
-          'hp_pkl':['*-pklc.pkl', read_hatpi_pklc],
-          'kep_fits':['*_llc.fits', read_kepler_fitslc],
-          'kep_pkl':['-keplc.pkl', read_kepler_pklc]}
+LCFORM = {
+    'hat_sql':[
+        '*-hatlc.sqlite.gz',           # default fileglob
+        read_and_filter_sqlitecurve,   # function to read this LC
+        ['rjd','rjd'],                 # default timecols to use for period/var
+        ['aep_000','atf_000'],         # default magcols to use for period/var
+        ['aie_000','aie_000'],         # default errcols to use for period/var
+        False,                         # default magsarefluxes = False
+        normalize_lcdict_byinst,      # default special normalize function
+    ],
+    'hat_csv':[
+        '*-hatlc.csv.gz',
+        read_csvlc,
+        ['rjd','rjd'],
+        ['aep_000','atf_000'],
+        ['aie_000','aie_000'],
+        False,
+        normalize_lcdict_by_inst,
+    ],
+    'hp_txt':[
+        '*TF1.gz',
+        read_hatpi_textlc,
+        ['rjd','rjd'],
+        ['iep1','itf1'],
+        ['ire1','ire3'],
+        False,
+        None,
+    ],
+    'hp_pkl':[
+        '*-pklc.pkl',
+        read_hatpi_pklc,
+        ['rjd','rjd'],
+        ['iep1','itf1'],
+        ['ire1','ire3'],
+        False,
+        None,
+    ],
+    'kep_fits':[
+        '*_llc.fits',
+        read_kepler_fitslc,
+        ['time','time'],
+        ['sap.sap_flux','pdc.pdc_sapflux'],
+        ['sap.sap_flux_err','pdc.pdc_sapflux_err'],
+        True,
+        None,
+    ],
+    'kep_pkl':[
+        '-keplc.pkl',
+        read_kepler_pklc,
+        ['time','time'],
+        ['sap.sap_flux','pdc.pdc_sapflux'],
+        ['sap.sap_flux_err','pdc.pdc_sapflux_err'],
+        True,
+        None,
+    ]
+}
 
 
 #######################
@@ -271,42 +323,65 @@ def getlclist(listfile,
 
 def varfeatures(lcfile,
                 outdir,
-                magcols=['aep_000','atf_000'],
-                errcol='aie_000'):
+                mindet=1000,
+                lcformat='hat_sql'):
     '''
     This runs varfeatures on a single LC file.
 
     '''
 
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    (readerfunc, timecols, magcols,
+     errcols, magsarefluxes, normfunc) = LCFORM[lcformat][1:]
+
     try:
 
-        lcd, msg = hatlc.read_and_filter_sqlitecurve(lcfile)
+        # get the LC into a dict
+        lcdict = readerfunc(lcfile)
+        if isinstance(lcdict, tuple) and isinstance(lcdict[0],dict):
+            lcdict = lcdict[0]
 
-        resultdict = {'objectid':lcd['objectid'],
-                      'info':lcd['objectinfo']}
+        resultdict = {'objectid':lcdict['objectid'],
+                      'info':lcdict['objectinfo']}
 
-        # normalize by instrument
-        normlc = hatlc.normalize_lcdict_byinst(lcd,
-                                               magcols=','.join(magcols),
-                                               normto='sdssr')
 
-        for col in magcols:
+        # normalize using the special function if specified
+        if normfunc is not None:
+           lcdict = normfunc(lcdict)
 
-            times, mags, errs = normlc['rjd'], normlc[col], normlc[errcol]
+        for tcol, mcol, ecol in zip(timecols, magcols, errcols):
+
+            times, mags, errs = lcdict[tcol], lcdict[mcol], lcdict[ecol]
+
+            # normalize here if not using special normalization
+            if normfunc is None:
+                ntimes, nmags = normalized_magseries(
+                    times, mags,
+                    magsarefluxes=magsarefluxes
+                )
+
+                times, mags, errs = ntimes, nmags, errs
+
+
+            # make sure we have finite values
             finind = np.isfinite(times) & np.isfinite(mags) & np.isfinite(errs)
 
-            if mags[finind].size < 1000:
+            # make sure we have enough finite values
+            if mags[finind].size < mindet:
 
                 LOGINFO('not enough LC points: %s in normalized %s LC: %s' %
                       (mags[finind].size, col, os.path.basename(lcfile)))
-                resultdict[col] = None
+                resultdict[mcol] = None
 
             else:
 
                 lcfeatures = features.all_nonperiodic_features(
                     times, mags, errs
                 )
-                resultdict[col] = lcfeatures
+                resultdict[mcol] = lcfeatures
 
         outfile = os.path.join(outdir,
                                'varfeatures-%s.pkl' % lcd['objectid'])
@@ -318,7 +393,7 @@ def varfeatures(lcfile,
 
     except Exception as e:
 
-        LOGINFO('failed to get LC features for %s because: %s' %
+        LOGEXCEPTION('failed to get LC features for %s because: %s' %
               (os.path.basename(lcfile), e))
         return None
 
