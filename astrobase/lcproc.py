@@ -163,7 +163,6 @@ def makelclist(basedir,
             matching = glob.glob(os.path.join(basedir,
                                               '**',
                                               fileglob),recursive=True)
-            LOGINFO('found %s files: %s' % (len(matching), repr(matching)))
 
         # otherwise, use os.walk and glob
         else:
@@ -181,10 +180,6 @@ def makelclist(basedir,
 
                     if foundfiles:
                         matching.extend(foundfiles)
-                        LOGINFO(
-                            'found %s in dir: %s' % (repr(foundfiles),
-                                                     os.path.join(root,sdir))
-                        )
 
 
     # now that we have all the files, process them
@@ -214,7 +209,7 @@ def makelclist(basedir,
                 if '.' in colkey:
                     getkey = colkey.split('.')
                 else:
-                    getkey = colkey
+                    getkey = [colkey]
                 thiscolval = dict_get(lcdict, getkey)
                 thisline.append(thiscolval)
 
