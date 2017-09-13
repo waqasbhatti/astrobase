@@ -541,7 +541,7 @@ def stetson_threshold(featuresdir,
             with open(pkl,'rb') as infd:
                 thisfeatures = pickle.load(infd)
 
-            objectid = thisfeatures['info']['objectid']
+            objectid = thisfeatures['objectid']
 
             if (magcol in thisfeatures and
                 thisfeatures[magcol] and
