@@ -123,7 +123,7 @@ def makelclist(basedir,
                recursive=True,
                columns=['objectid',
                         'objectinfo.ra','objectinfo.decl',
-                        'objectinfo.ndet','objectinfo.sdssr']
+                        'objectinfo.ndet','objectinfo.sdssr'],
                colformats=['%s','%.5f','%.5f','%d','%.3f']):
     '''This generates a list file compatible with getlclist below.
 
