@@ -9,6 +9,7 @@ processing HAT light curves.
 
 import os
 import os.path
+import sys
 import pickle
 import gzip
 import glob
