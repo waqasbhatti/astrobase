@@ -571,6 +571,9 @@ def stetson_threshold(featuresdir,
         allobjects[magcol]['thresholdobjects'] = (
             allobjects[magcol]['objectid'][threshind]
         )
+        allobjects[magcol]['median_stetj'] = medstet
+        allobjects[magcol]['mad_stetj'] = madstet
+        allobjects[magcol]['stdev_stetj'] = stdstet
 
         LOGINFO('median %s stetson J = %.5f, stdev = %s, '
               'total objects %s sigma > median = %s' %
