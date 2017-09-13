@@ -210,7 +210,12 @@ def makelclist(basedir,
                     getkey = colkey.split('.')
                 else:
                     getkey = [colkey]
-                thiscolval = dict_get(lcdict, getkey)
+
+                try:
+                    thiscolval = dict_get(lcdict, getkey)
+                except:
+                    thiscolval = None
+
                 thisline.append(thiscolval)
 
             outfd.write('%s %s\n' % (lineform % tuple(thisline),
