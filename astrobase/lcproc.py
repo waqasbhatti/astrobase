@@ -214,7 +214,7 @@ def makelclist(basedir,
                 try:
                     thiscolval = dict_get(lcdict, getkey)
                 except:
-                    thiscolval = None
+                    thiscolval = np.nan
 
                 thisline.append(thiscolval)
 
