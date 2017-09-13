@@ -436,7 +436,7 @@ def parallel_varfeatures(lclist,
 
 def parallel_varfeatures_lcdir(lcdir,
                                outdir,
-                               recursive=True,,
+                               recursive=True,
                                mindet=1000,
                                lcformat='hat-sql',
                                nworkers=None):
