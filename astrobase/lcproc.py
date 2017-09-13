@@ -218,7 +218,7 @@ def makelclist(basedir,
                 thisline.append(thiscolval)
 
             outfd.write('%s %s\n' % (lineform % tuple(thisline),
-                                     os.path.basename(lcf))
+                                     os.path.basename(lcf)))
 
         # done with collecting info
         outfd.close()
