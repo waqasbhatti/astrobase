@@ -123,7 +123,8 @@ def makelclist(basedir,
                recursive=True,
                columns=['objectid',
                         'objectinfo.ra','objectinfo.decl',
-                        'objectinfo.ndet','objectinfo.sdssr']):
+                        'objectinfo.ndet','objectinfo.sdssr']
+               colformats=['%s','%.5f','%.5f','%d','%.3f']):
     '''This generates a list file compatible with getlclist below.
 
     Given a base directory where all the files are, and a light curve format,
@@ -184,10 +185,18 @@ def makelclist(basedir,
                                                      os.path.join(root,sdir))
                         )
 
+
     # now that we have all the files, process them
     if matching and len(matching) > 0:
 
         LOGINFO('collecting light curve info...')
+
+        # open the output file
+        outfd = open(outfile, 'w')
+        outfd.write(' '.join(columns) + ' lcfpath\n')
+
+        # generate the column format for each line
+        lineform = ' '.join(colformats)
 
         if TQDM:
             lciter = tqdm(matching)
@@ -196,12 +205,31 @@ def makelclist(basedir,
 
         for lcf in lciter:
 
-            FIXME: finish this
-            stuff()
+            lcdict = readerfunc(lcf)
 
+            thisline = []
 
+            for colkey in columns:
+                if '.' in colkey:
+                    getkey = colkey.split('.')
+                else:
+                    getkey = colkey
+                thiscolval = dict_get(lcdict, getkey)
+                thisline.append(thiscolval)
 
+            outfd.write('%s %s\n' % (lineform % tuple(thisline),
+                                     os.path.basename(lcf))
 
+        # done with collecting info
+        outfd.close()
+
+        LOGINFO('done. LC info -> %s' % outfile)
+        return outfile
+
+    else:
+
+        LOGERROR('no files found in %s matching %s' % (basedir, fileglob))
+        return None
 
 
 
