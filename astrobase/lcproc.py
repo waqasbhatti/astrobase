@@ -358,7 +358,7 @@ def varfeatures(lcfile,
 
             # normalize here if not using special normalization
             if normfunc is None:
-                ntimes, nmags = normalized_magseries(
+                ntimes, nmags = normalize_magseries(
                     times, mags,
                     magsarefluxes=magsarefluxes
                 )
