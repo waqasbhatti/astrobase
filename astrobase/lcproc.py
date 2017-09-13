@@ -123,7 +123,7 @@ LCFORM = {
         ['aep_000','atf_000'],
         ['aie_000','aie_000'],
         False,
-        normalize_lcdict_by_inst,
+        normalize_lcdict_byinst,
     ],
     'hp_txt':[
         '*TF1.gz',
