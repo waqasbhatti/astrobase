@@ -107,7 +107,7 @@ from astrobase.lcmath import normalize_magseries
 
 # LC format -> [default fileglob,  function to read LC format]
 LCFORM = {
-    'hat_sql':[
+    'hat-sql':[
         '*-hatlc.sqlite.gz',           # default fileglob
         read_and_filter_sqlitecurve,   # function to read this LC
         ['rjd','rjd'],                 # default timecols to use for period/var
@@ -116,7 +116,7 @@ LCFORM = {
         False,                         # default magsarefluxes = False
         normalize_lcdict_byinst,      # default special normalize function
     ],
-    'hat_csv':[
+    'hat-csv':[
         '*-hatlc.csv.gz',
         read_csvlc,
         ['rjd','rjd'],
@@ -125,7 +125,7 @@ LCFORM = {
         False,
         normalize_lcdict_byinst,
     ],
-    'hp_txt':[
+    'hp-txt':[
         '*TF1.gz',
         read_hatpi_textlc,
         ['rjd','rjd'],
@@ -134,7 +134,7 @@ LCFORM = {
         False,
         None,
     ],
-    'hp_pkl':[
+    'hp-pkl':[
         '*-pklc.pkl',
         read_hatpi_pklc,
         ['rjd','rjd'],
@@ -143,7 +143,7 @@ LCFORM = {
         False,
         None,
     ],
-    'kep_fits':[
+    'kep-fits':[
         '*_llc.fits',
         read_kepler_fitslc,
         ['time','time'],
@@ -152,7 +152,7 @@ LCFORM = {
         True,
         None,
     ],
-    'kep_pkl':[
+    'kep-pkl':[
         '-keplc.pkl',
         read_kepler_pklc,
         ['time','time'],
@@ -171,7 +171,7 @@ LCFORM = {
 
 def makelclist(basedir,
                outfile,
-               lcformat='hat_sql',
+               lcformat='hat-sql',
                fileglob=None,
                recursive=True,
                columns=['objectid',
@@ -324,7 +324,7 @@ def getlclist(listfile,
 def varfeatures(lcfile,
                 outdir,
                 mindet=1000,
-                lcformat='hat_sql'):
+                lcformat='hat-sql'):
     '''
     This runs varfeatures on a single LC file.
 
@@ -405,13 +405,15 @@ def varfeatures_worker(task):
 
     '''
 
-    lcfile, outdir = task
-    return varfeatures(lcfile, outdir)
+    lcfile, outdir, mindet, lcformat = task
+    return varfeatures(lcfile, outdir, mindet=mindet, lcformat=lcformat)
 
 
 
 def parallel_varfeatures(lclist,
                          outdir,
+                         mindet=1000,
+                         lcformat='hat-sql',
                          nworkers=None):
     '''
     This runs varfeatures in parallel for all light curves in lclist.
@@ -420,7 +422,7 @@ def parallel_varfeatures(lclist,
 
     pool = mp.Pool(nworkers)
 
-    tasks = [(x,outdir) for x in lclist]
+    tasks = [(x,outdir, mindet, lcformat) for x in lclist]
 
     results = pool.map(varfeatures_worker, tasks)
     pool.close()
@@ -432,8 +434,74 @@ def parallel_varfeatures(lclist,
 
 
 
+def parallel_varfeatures_lcdir(lcdir,
+                               outdir
+                               recursive=True,,
+                               mindet=1000,
+                               lcformat='hat-sql',
+                               nworkers=None):
+    '''
+    This runs parallel variable feature extraction for a directory of LCs.
+
+    '''
+
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    fileglob = LCFORM[lcformat][0]
+
+    # now find the files
+    LOGINFO('searching for %s light curves in %s ...' % (lcformat, lcdir))
+
+    if recursive == False:
+        matching = glob.glob(os.path.join(lcdir, fileglob))
+
+    else:
+        # use recursive glob for Python 3.5+
+        if sys.version_info[:2] > (3,4):
+
+            matching = glob.glob(os.path.join(lcdir,
+                                              '**',
+                                              fileglob),recursive=True)
+
+        # otherwise, use os.walk and glob
+        else:
+
+            # use os.walk to go through the directories
+            walker = os.walk(lcdir)
+            matching = []
+
+            for root, dirs, files in walker:
+                for sdir in dirs:
+                    searchpath = os.path.join(root,
+                                              sdir,
+                                              fileglob)
+                    foundfiles = glob.glob(searchpath)
+
+                    if foundfiles:
+                        matching.extend(foundfiles)
+
+
+    # now that we have all the files, process them
+    if matching and len(matching) > 0:
+
+        return parallel_varfeatures(matching,
+                                    outdir,
+                                    mindet=mindet,
+                                    lcformat=lcformat,
+                                    nworkers=nworkers)
+
+    else:
+
+        LOGERROR('no light curve files in %s format found in %s' % (lcformat,
+                                                                    lcdir))
+        return None
+
+
+
 def stetson_threshold(featuresdir,
-                      magcol='aep_000',
+                      lcformat='hat-sql',
                       minstetstdev=2.0,
                       outfile=None):
     '''This generates a list of objects with J > minstetj.
@@ -443,60 +511,71 @@ def stetson_threshold(featuresdir,
 
     '''
 
-    pklist = glob.glob(os.path.join(featuresdir, 'varfeatures-HAT*.pkl'))
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
 
-    varfeatures = {}
-    objids = []
-    objmags = []
-    objstets = []
+    # get the magnitude columns to use from the lcformat
+    magcols = LCFORM[lcformat][3]
 
-    LOGINFO('getting all objects...')
+    # list of input pickles generated by varfeatures functions above
+    pklist = glob.glob(os.path.join(featuresdir, 'varfeatures-*.pkl'))
 
-    # fancy progress bar with tqdm if present
-    if TQDM:
-        listiterator = tqdm(pklist)
-    else:
-        listiterator = pklist
+    allobjects = {}
 
-    for pkl in listiterator:
+    for magcol in magcols:
 
-        with open(pkl,'rb') as infd:
-            thisfeatures = pickle.load(infd)
+        LOGINFO('getting all objects with stet J > %s x sigma for %s' %
+                (minstetstdev, magcol))
 
-        hatid = thisfeatures['info']['hatid']
-        varfeatures[hatid] = thisfeatures
-        objids.append(hatid)
+        allobjects[magcol] = {'objectid':[], 'stetsonj':[]}
 
-        if thisfeatures['info']['sdssr']:
-            objmags.append(thisfeatures['info']['sdssr'])
+        # fancy progress bar with tqdm if present
+        if TQDM:
+            listiterator = tqdm(pklist)
         else:
-            objmags.append(np.nan)
+            listiterator = pklist
 
-        if (magcol in thisfeatures and
-            thisfeatures[magcol] and
-            thisfeatures[magcol]['stetsonj']):
-            objstets.append(thisfeatures[magcol]['stetsonj'])
-        else:
-            objstets.append(np.nan)
+        for pkl in listiterator:
 
+            with open(pkl,'rb') as infd:
+                thisfeatures = pickle.load(infd)
 
-    objids = np.array(objids)
-    objmags = np.array(objmags)
-    objstets = np.array(objstets)
+            objectid = thisfeatures['info']['objectid']
 
-    medstet = np.nanmedian(objstets)
-    madstet = np.nanmedian(np.abs(objstets - np.nanmedian(objstets)))
-    stdstet = 1.483*madstet
+            if (magcol in thisfeatures and
+                thisfeatures[magcol] and
+                thisfeatures[magcol]['stetsonj']):
+                stetsonj = thisfeatures[magcol]['stetsonj']
+            else:
+                stetsonj = np.nan
 
-    threshind = objstets > (minstetstdev*stdstet + medstet)
+            allobjects[magcol]['objectid'].append(objectid)
+            allobjects[magcol]['stetsonj'].append(stetsonj)
 
-    goodobjs = objids[threshind]
+        allobjects[magcol]['objectid'] = np.array(allobjects[magcol]['objectid'])
+        allobjects[magcol]['stetsonj'] = np.array(allobjects[magcol]['stetsonj'])
 
-    LOGINFO('median %s stetson J = %.5f, stdev = %s, '
-          'total objects %s sigma > median = %s' %
-          (magcol, medstet, stdstet, minstetstdev, goodobjs.size))
+        medstet = np.nanmedian(allobjects[magcol]['stetsonj'])
+        madstet = np.nanmedian(
+            np.abs(allobjects[magcol]['stetsonj'] -
+                   np.nanmedian(allobjects[magcol]['stetsonj']))
+        )
+        stdstet = 1.483*madstet
 
-    return varfeatures, objmags, objstets, goodobjs
+        threshind = (allobjects[magcol]['stetsonj'] >
+                     (minstetstdev*stdstet + medstet))
+
+        allobjects[magcol]['thresholdobjects'] = (
+            allobjects[magcol]['objectid'][threshind]
+        )
+
+        LOGINFO('median %s stetson J = %.5f, stdev = %s, '
+              'total objects %s sigma > median = %s' %
+              (magcol, medstet, stdstet, minstetstdev,
+               allobjects[magcol]['thresholdobjects'].size))
+
+    return allobjects
 
 
 
