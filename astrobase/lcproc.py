@@ -837,9 +837,9 @@ def runcp(pfpickle,
           outdir,
           lcbasedir,
           lcformat='hat-sql',
-          timecols=['rjd'],
-          magcols=['aep_000'],
-          errcols=['aie_000']):
+          timecols=None,
+          magcols=None,
+          errcols=None):
     '''This runs a checkplot for the given period-finding result pickle
     produced by runpf.
 
