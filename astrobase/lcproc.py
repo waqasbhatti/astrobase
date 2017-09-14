@@ -919,7 +919,7 @@ def runcp(pfpickle,
         cpf = checkplot.checkplot_pickle(
             [gls,pdm,bls],
             times, mags, errs,
-            objectinfo=lcd['objectinfo'],
+            objectinfo=lcdict['objectinfo'],
             outfile=outfile,
             verbose=False
         )
