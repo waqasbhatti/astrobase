@@ -862,7 +862,7 @@ def runcp(pfpickle,
         timecols = dtimecols
     if magcols is None:
         magcols = dmagcols
-    if timecols is None:
+    if errcols is None:
         errcols = derrcols
 
     objectid = pfresults['objectid']
