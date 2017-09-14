@@ -710,7 +710,7 @@ def parallel_pf(lclist,
 
     tasklist = [(x, outdir, lcformat,
                  bls_startp, bls_maxtransitduration, nperiodworkers)
-                for x in hatidlist]
+                for x in lclist]
 
     with ProcessPoolExecutor(max_workers=nthisworkers) as executor:
         resultfutures = executor.map(runpf_worker, tasklist)
