@@ -779,7 +779,7 @@ def parallel_pf_lcdir(lcdir,
                            lcformat=lcformat,
                            bls_startp=bls_startp,
                            bls_maxtransitduration=bls_maxtransitduration,
-                           nperiodworkers=periodworkers,
+                           nperiodworkers=nperiodworkers,
                            nthisworkers=nthisworkers)
 
     else:
