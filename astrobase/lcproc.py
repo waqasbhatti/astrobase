@@ -940,16 +940,15 @@ def runcp_worker(task):
 
     '''
 
-    pfpickle, outdir, kwargs = task
+    pfpickle, outdir, lcbasedir, kwargs = task
 
     try:
 
-        return runcp(pfpickle, outdir, **kwargs)
+        return runcp(pfpickle, outdir, lcbasedir, **kwargs)
 
     except Exception as e:
 
-        LOGERROR(' could not make checkplots for %s: %s' % (pfpickle,
-                                                            e))
+        LOGEXCEPTION(' could not make checkplots for %s: %s' % (pfpickle, e))
         return None
 
 
@@ -957,9 +956,11 @@ def runcp_worker(task):
 def parallel_cp(pfpickledir,
                 outdir,
                 lcbasedir,
-                pfpickleglob='pfresult*.pkl',
-                magcols=['aep_000'],
-                errcol='aie_000',
+                pfpickleglob='periodfinding-*.pkl',
+                lcformat='hat-sql',
+                timecols=None,
+                magcols=None,
+                errcols=None,
                 nworkers=32):
     '''
     This drives the parallel execution of runcp.
@@ -968,9 +969,11 @@ def parallel_cp(pfpickledir,
 
     pfpicklelist = sorted(glob.glob(os.path.join(pfpickledir, pfpickleglob)))
 
-    tasklist = [(x, outdir, {'lcbasedir':lcbasedir,
-                             'magcols':magcols,
-                             'errcol':errcol}) for
+    tasklist = [(x, outdir, lcbasedir,
+                 {'lcformat':lcbasedir,
+                  'timecols':timecols,
+                  'magcols':magcols,
+                  'errcols':errcols}) for
                 x in pfpicklelist]
 
     resultfutures = []
@@ -979,7 +982,7 @@ def parallel_cp(pfpickledir,
     with ProcessPoolExecutor(max_workers=nworkers) as executor:
         resultfutures = executor.map(runcp_worker, tasklist)
 
-    results = [x.result() for x in resultfutures]
+    results = [x for x in resultfutures]
 
     executor.shutdown()
     return results
