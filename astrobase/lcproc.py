@@ -916,6 +916,10 @@ def runcp(pfpickle,
         outfile = os.path.join(outdir,
                                'checkplot-%s-%s.pkl' % (objectid, mcol))
 
+        # make sure the checkplot has a valid objectid
+        if 'objectid' not in lcdict['objectinfo']:
+            lcdict['objectinfo']['objectid'] = objectid
+
         cpf = checkplot.checkplot_pickle(
             [gls,pdm,bls],
             times, mags, errs,
@@ -925,7 +929,7 @@ def runcp(pfpickle,
         )
         cpfs.append(cpf)
 
-    LOGINFO('done with %s -> %s' % (hatid, repr(cpfs)))
+    LOGINFO('done with %s -> %s' % (objectid, repr(cpfs)))
     return cpfs
 
 
