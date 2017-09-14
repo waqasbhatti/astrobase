@@ -345,7 +345,8 @@ def varfeatures(lcfile,
             lcdict = lcdict[0]
 
         resultdict = {'objectid':lcdict['objectid'],
-                      'info':lcdict['objectinfo']}
+                      'info':lcdict['objectinfo'],
+                      'lcfbasename':os.path.basename(lcfile)}
 
 
         # normalize using the special function if specified
@@ -354,7 +355,24 @@ def varfeatures(lcfile,
 
         for tcol, mcol, ecol in zip(timecols, magcols, errcols):
 
-            times, mags, errs = lcdict[tcol], lcdict[mcol], lcdict[ecol]
+            # dereference the columns and get them from the lcdict
+            if '.' in tcol:
+                tcolget = tcol.split('.')
+            else:
+                tcolget = [tcol]
+            times = dict_get(lcdict, tcolget)
+
+            if '.' in mcol:
+                mcolget = mcol.split('.')
+            else:
+                mcolget = [mcol]
+            mags = dict_get(lcdict, mcolget)
+
+            if '.' in ecol:
+                ecolget = ecol.split('.')
+            else:
+                ecolget = [ecol]
+            errs = dict_get(lcdict, ecolget)
 
             # normalize here if not using special normalization
             if normfunc is None:
@@ -616,7 +634,8 @@ def runpf(lcfile,
 
         outfile = os.path.join(outdir, 'periodfinding-%s.pkl' %
                                lcdict['objectid'])
-        resultdict = {'objectid':lcdict['objectid']}
+        resultdict = {'objectid':lcdict['objectid'],
+                      'lcfbasename':os.path.basename(lcfile)}
 
         # normalize using the special function if specified
         if normfunc is not None:
@@ -624,7 +643,25 @@ def runpf(lcfile,
 
         for tcol, mcol, ecol in zip(timecols, magcols, errcols):
 
-            times, mags, errs = lcdict[tcol], lcdict[mcol], lcdict[ecol]
+            # dereference the columns and get them from the lcdict
+            if '.' in tcol:
+                tcolget = tcol.split('.')
+            else:
+                tcolget = [tcol]
+            times = dict_get(lcdict, tcolget)
+
+            if '.' in mcol:
+                mcolget = mcol.split('.')
+            else:
+                mcolget = [mcol]
+            mags = dict_get(lcdict, mcolget)
+
+            if '.' in ecol:
+                ecolget = ecol.split('.')
+            else:
+                ecolget = [ecol]
+            errs = dict_get(lcdict, ecolget)
+
 
             # normalize here if not using special normalization
             if normfunc is None:
@@ -637,14 +674,15 @@ def runpf(lcfile,
 
 
             # run the three period-finders
-
             gls = periodbase.pgen_lsp(times, mags, errs,
                                       verbose=False,
-                                      nworkers=nworkers)
+                                      nworkers=nworkers,
+                                      magsarefluxes=magsarefluxes)
 
             pdm = periodbase.stellingwerf_pdm(times, mags, errs,
                                               verbose=False,
-                                              nworkers=nworkers)
+                                              nworkers=nworkers,
+                                              magsarefluxes=magsarefluxes)
 
             # specifically for planet type signals
             bls = periodbase.bls_parallel_pfind(
@@ -652,7 +690,8 @@ def runpf(lcfile,
                 startp=bls_startp,
                 maxtransitduration=bls_maxtransitduration,
                 verbose=False,
-                nworkers=nworkers
+                nworkers=nworkers,
+                magsarefluxes=magsarefluxes
             )
 
             # save the results
@@ -715,7 +754,7 @@ def parallel_pf(lclist,
     with ProcessPoolExecutor(max_workers=nthisworkers) as executor:
         resultfutures = executor.map(runpf_worker, tasklist)
 
-    results = [x.result() for x in resultfutures]
+    results = [x for x in resultfutures]
     return results
 
 
@@ -797,71 +836,98 @@ def parallel_pf_lcdir(lcdir,
 def runcp(pfpickle,
           outdir,
           lcbasedir,
-          usehatfielddir=False,
+          lcformat='hat-sql',
+          timecols=['rjd'],
           magcols=['aep_000'],
-          errcol='aie_000'):
+          errcols=['aie_000']):
     '''This runs a checkplot for the given period-finding result pickle
     produced by runpf.
 
     '''
 
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    # get the pickled period-finding results
     with open(pfpickle,'rb') as infd:
         pfresults = pickle.load(infd)
 
-    hatid = pfresults['objectid']
-    hatfield = hatid.split('-')[1]
+    (fileglob, readerfunc, dtimecols, dmagcols,
+     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
 
-    if usehatfielddir:
+    # override the default timecols, magcols, and errcols
+    # using the ones provided to the function
+    if timecols is None:
+        timecols = dtimecols
+    if magcols is None:
+        magcols = dmagcols
+    if timecols is None:
+        errcols = derrcols
 
-        # find the light curve for this object
-        lcfpath = os.path.join(lcbasedir,
-                               hatfield,
-                               '%s-V0-DR0-hatlc.sqlite.gz' % hatid)
+    objectid = pfresults['objectid']
 
+
+    # find the light curve in lcbasedir
+    lcfsearchpath = os.path.join(lcbasedir,
+                                 '%s-%s' % (objectid, fileglob))
+
+    matching = glob.glob(lcfsearchpath)
+
+    if matching and len(matching) > 0:
+        lcfpath = matching[0]
     else:
-
-        lcfpath = os.path.join(lcbasedir,
-                               '%s-V0-DR0-hatlc.sqlite.gz' % hatid)
-
-
-    if os.path.exists(lcfpath):
-
-        lcd, msg = hatlc.read_and_filter_sqlitecurve(lcfpath)
-
-        # normalize by instrument
-        normlc = hatlc.normalize_lcdict_byinst(lcd,
-                                               magcols=','.join(magcols),
-                                               normto='sdssr')
-
-        cpfs = []
-
-        for col in magcols:
-
-            times, mags, errs = normlc['rjd'], normlc[col], normlc[errcol]
-
-            gls = pfresults[col]['gls']
-            pdm = pfresults[col]['pdm']
-            bls = pfresults[col]['bls']
-
-            outfile = os.path.join(outdir,
-                                   'checkplot-%s-%s.pkl' % (hatid, col))
-
-            cpf = checkplot.checkplot_pickle(
-                [gls,pdm,bls],
-                times, mags, errs,
-                objectinfo=lcd['objectinfo'],
-                outfile=outfile,
-                verbose=False
-            )
-            cpfs.append(cpf)
-
-        LOGINFO('done with %s -> %s' % (hatid, repr(cpfs)))
-        return cpfs
-
-    else:
-
-        LOGERROR('LC does not exist for %s' % hatid)
+        LOGERROR('could not find light curve for pfresult %s, objectid %s' %
+                 (pfpickle, objectid))
         return None
+
+
+    lcdict = readerfunc(lcfpath)
+    if isinstance(lcdict, tuple) and isinstance(lcdict[0], dict):
+        lcdict = lcdict[0]
+
+    cpfs = []
+
+    for tcol, mcol, ecol in zip(timecols, magcols, errcols):
+
+        # dereference the columns and get them from the lcdict
+        if '.' in tcol:
+            tcolget = tcol.split('.')
+        else:
+            tcolget = [tcol]
+        times = dict_get(lcdict, tcolget)
+
+        if '.' in mcol:
+            mcolget = mcol.split('.')
+        else:
+            mcolget = [mcol]
+        mags = dict_get(lcdict, mcolget)
+
+        if '.' in ecol:
+            ecolget = ecol.split('.')
+        else:
+            ecolget = [ecol]
+        errs = dict_get(lcdict, ecolget)
+
+        gls = pfresults[mcol]['gls']
+        pdm = pfresults[mcol]['pdm']
+        bls = pfresults[mcol]['bls']
+
+        outfile = os.path.join(outdir,
+                               'checkplot-%s-%s.pkl' % (objectid, mcol))
+
+        cpf = checkplot.checkplot_pickle(
+            [gls,pdm,bls],
+            times, mags, errs,
+            objectinfo=lcd['objectinfo'],
+            outfile=outfile,
+            verbose=False
+        )
+        cpfs.append(cpf)
+
+    LOGINFO('done with %s -> %s' % (hatid, repr(cpfs)))
+    return cpfs
+
 
 
 def runcp_worker(task):
