@@ -616,7 +616,7 @@ def runpf(lcfile,
 
         outfile = os.path.join(outdir, 'periodfinding-%s.pkl' %
                                lcdict['objectid'])
-        resultdict = {'objectid':lcd['objectid']}
+        resultdict = {'objectid':lcdict['objectid']}
 
         # normalize using the special function if specified
         if normfunc is not None:
