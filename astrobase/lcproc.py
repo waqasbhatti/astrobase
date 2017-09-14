@@ -970,7 +970,7 @@ def parallel_cp(pfpickledir,
     pfpicklelist = sorted(glob.glob(os.path.join(pfpickledir, pfpickleglob)))
 
     tasklist = [(x, outdir, lcbasedir,
-                 {'lcformat':lcbasedir,
+                 {'lcformat':lcformat,
                   'timecols':timecols,
                   'magcols':magcols,
                   'errcols':errcols}) for
