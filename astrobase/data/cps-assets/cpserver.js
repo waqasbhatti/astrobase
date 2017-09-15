@@ -396,7 +396,12 @@ var cpv = {
             objectidelem.html(cpv.currcp.objectid);
 
             // update the twomassid header
-            twomassidelem.html('2MASS J' + cpv.currcp.objectinfo.twomassid);
+            if (cpv.currcp.objectinfo.twomassid != undefined) {
+                twomassidelem.html('2MASS J' + cpv.currcp.objectinfo.twomassid);
+            }
+            else {
+                twomassidelem.html('');
+            }
 
             // update the finder chart
             cputils.b64_to_image(cpv.currcp.finderchart,
