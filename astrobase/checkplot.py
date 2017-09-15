@@ -3381,6 +3381,14 @@ def checkplot_pickle_to_png(checkplotin,
     #####################
     ## WRITE FINAL PNG ##
     #####################
+
+    # check if we've stupidly copied over the same filename as the input pickle
+    # to expected output file
+    if outfile.endswith('pkl'):
+        LOGWARNING('expected output PNG filename ends with .pkl, '
+                   'changed to .png')
+        outfile.replace('.pkl','.png')
+
     outimg.save(outfile)
 
     if os.path.exists(outfile):
