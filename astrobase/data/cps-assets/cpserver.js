@@ -404,9 +404,10 @@ var cpv = {
 
 
             var hatstations = cpv.currcp.objectinfo.stations;
-            if (hatstations != undefined) {
+            if (hatstations != undefined && hatstations) {
+
                 var splitstations =
-                    (cpv.currcp.objectinfo.stations.split(',')).join(', ');
+                    (String(hatstations).split(',')).join(', ');
             }
             else {
                 var splitstations = 'no HAT observations';
