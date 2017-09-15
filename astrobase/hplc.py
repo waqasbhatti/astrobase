@@ -203,7 +203,10 @@ def read_hatpi_textlc(lcfile):
         lcdict['columns'].extend(['stf','cfn','cfs','ccd'])
 
         # add more objectinfo: 'stations', etc.
-        lcdict['objectinfo']['stations'] = np.unique(lcdict['stf']).tolist()
+        lcdict['objectinfo']['network'] = 'HP'
+        lcdict['objectinfo']['stations'] = [
+            'HP%s' % x for x in np.unique(lcdict['stf']).tolist()
+        ]
 
 
     return lcdict
@@ -373,7 +376,9 @@ def concatenate_textlcs(lclist,
     lcdict['objectinfo']['ndet'] = lcdict[lcdict['columns'][0]].size
 
     # update the stations
-    lcdict['objectinfo']['stations'] = np.unique(lcdict['stf']).tolist()
+    lcdict['objectinfo']['stations'] = [
+            'HP%s' % x for x in np.unique(lcdict['stf']).tolist()
+        ]
 
     # update the total LC count
     lcdict['nconcatenated'] = lccounter + 1
