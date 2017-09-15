@@ -575,7 +575,7 @@ def pklc_fovcatalog_objectinfo(
                            names=fovcatalog_colnames,
                            dtype=fovcatalog_colformats)
 
-    pklclist = sorted(glob.glob(os.path.join(pklcdir, 'HAT*-pklc.pkl')))
+    pklclist = sorted(glob.glob(os.path.join(pklcdir, '*HAT*-pklc.pkl')))
 
     updatedpklcs, failedpklcs = [], []
 
