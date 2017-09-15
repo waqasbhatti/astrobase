@@ -570,7 +570,7 @@ def pklc_fovcatalog_objectinfo(
 
     # read the catalog using the colformats, etc.
     fovcat = np.genfromtxt(fovcatalog,
-                           cols=fovcatalog_columns,
+                           usecols=fovcatalog_columns,
                            names=fovcatalog_colnames,
                            dtype=fovcatalog_colformats)
 
