@@ -22,6 +22,7 @@ import gzip
 import re
 import glob
 import sys
+import shutil
 
 try:
     import cPickle as pickle
@@ -591,7 +592,7 @@ def pklc_fovcatalog_objectinfo(
             lcdict['objectinfo'].update(
                 {x:y for x,y in zip(
                     fovcatalog_colnames,
-                    [fovcat[z][catind] for z in fovcatalog_colnames]
+                    [np.asscalar(fovcat[z][catind]) for z in fovcatalog_colnames]
                 )
                 }
             )
@@ -602,7 +603,7 @@ def pklc_fovcatalog_objectinfo(
 
             # overwrite previous once we know it exists
             if os.path.exists(pklc+'-tmp'):
-                os.move(pklc+'-tmp',pklc)
+                shutil.move(pklc+'-tmp',pklc)
 
                 LOGINFO('updated %s with catalog info for %s at %.3f, %.3f OK' %
                         (pklc, objectid,
