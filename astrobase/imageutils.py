@@ -897,11 +897,11 @@ def frame_radecbox_to_jpeg(
     # make sure we take care of edges
     if xmin < 0:
         xmin = 0
-    if xmax > img.shape[1]:
+    if xmax >= img.shape[1]:
         xmax = img.shape[1] - 1
     if ymin < 0:
         ymin = 0
-    if ymax > img.shape[0]:
+    if ymax >= img.shape[0]:
         ymax = img.shape[0] - 1
 
     # numpy is y,x so make sure to reverse the order
