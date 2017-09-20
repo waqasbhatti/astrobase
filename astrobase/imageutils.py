@@ -797,7 +797,8 @@ def frame_radecbox_to_jpeg(
     '''This cuts out a box centered at RA/DEC and width from the FITS to JPEG.
 
     wcsfrom indicates that the frame WCS should be taken from the specified file
-    (usually a .wcs in our pipeline).
+    (usually a separate .wcs file in our pipeline). if None, will attempt to get
+    the WCS from the image itself.
 
     if radecbox and not radeccenter:
         radecbox = [rmin, rmax, dmin, dmax] of box to cut out of FITS
@@ -928,24 +929,24 @@ def frame_radecbox_to_jpeg(
             )
 
         if radecbox and not radeccenter:
-            out_fname = '%s-R%sR%s-D%sD%s.jpg' % (
+            out_fname = '%s-R%.3fR%.3f-D%.3fD%.3f.jpg' % (
                 out_fname.rstrip('.jpg'),
                 radecbox[0], radecbox[1],
                 radecbox[2], radecbox[3]
             )
 
         elif radeccenter and not radecbox:
-            out_fname = '%s-RC%sDC%s-RW%sDW%s.jpg' % (
+            out_fname = '%s-RC%.3fDC%.3f-RW%.2fDW%.2f.jpg' % (
                 out_fname.rstrip('.jpg'),
                 radeccenter[0], radeccenter[1],
                 radeccenter[2], radeccenter[3]
             )
 
-    # save the image
-
+    # flip the image if told to do so
     if flip:
         scaled_img = np.flipud(scaled_img)
 
+    # save the image
     scipy.misc.imsave(out_fname, scaled_img)
 
     # annotate the image if told to do so
@@ -957,12 +958,6 @@ def frame_radecbox_to_jpeg(
             os.path.basename(fits_image).rstrip('.fits.fz'),
         )
         draw.text((4,2),annotation,fill=255)
-
-        # make a circle at the center of the frame
-        lx, ly = outimg.size[0], outimg.size[1]
-        bx0, bx1 = int(lx/2 - 15), int(lx/2 + 15)
-        by0, by1 = int(ly/2 - 15), int(ly/2 + 15)
-        draw.ellipse([bx0,by0,bx1,by1], outline=255)
 
         del draw
         outimg.save(out_fname)
