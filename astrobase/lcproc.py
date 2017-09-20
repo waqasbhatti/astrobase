@@ -391,7 +391,7 @@ def varfeatures(lcfile,
             if mags[finind].size < mindet:
 
                 LOGINFO('not enough LC points: %s in normalized %s LC: %s' %
-                      (mags[finind].size, col, os.path.basename(lcfile)))
+                      (mags[finind].size, mcol, os.path.basename(lcfile)))
                 resultdict[mcol] = None
 
             else:
