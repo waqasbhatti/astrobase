@@ -99,6 +99,7 @@ from astrobase.astrokep import read_kepler_fitslc, read_kepler_pklc
 from astrobase import hatlc, periodbase, checkplot
 from astrobase.varbase import features
 from astrobase.lcmath import normalize_magseries
+from astrobase.periodbase.kbls import bls_snr
 
 
 #############################################
@@ -694,11 +695,23 @@ def runpf(lcfile,
                 magsarefluxes=magsarefluxes
             )
 
+            # calculate the SNR for the BLS as well
+            blssnr = bls_snr(bls, times, mags, errs,
+                             magsarefluxes=magsarefluxes,
+                             verbose=False)
+
             # save the results
             resultdict[mcol] = {'gls':gls,
                                 'bls':bls,
                                 'pdm':pdm}
 
+            # add the SNR results to the BLS result dict
+            resultdict[mcol]['bls'] = {
+                'snr':blssnr['snr'],
+                'altsnr':blssnr['altsnr'],
+                'transitdepth':blssnr['transitdepth'],
+                'transitduration':blssnr['transitduration'],
+            }
 
         # once all mag cols have been processed, write out the pickle
         with open(outfile, 'wb') as outfd:

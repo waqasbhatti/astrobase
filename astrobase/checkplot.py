@@ -2367,6 +2367,11 @@ def checkplot_dict(lspinfolist,
                     verbose=verbose
                 )
 
+            # if there's an snr key for this lspmethod, add the info in it to
+            # the checkplotdict as well
+            if 'snr' in lspinfo:
+                checkplotdict[lspinfo['method']]['snr'] = lspinfo['snr']
+
         ## update the checkplot dict with some other stuff that's needed by
         ## checkplotserver
 
