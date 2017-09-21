@@ -604,8 +604,8 @@ def stetson_threshold(featuresdir,
 
     for magcol in magcols[1:]:
         allobjects['overallthreshold'] = (
-            np.intersect(allobjects['overallthreshold'],
-                         allobjects[magcol]['thresholdobjects'])
+            np.intersect1d(allobjects['overallthreshold'],
+                           allobjects[magcol]['thresholdobjects'])
         )
 
     LOGINFO('objects above stetson threshold across all magcols: %s' %
