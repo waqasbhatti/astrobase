@@ -599,6 +599,18 @@ def stetson_threshold(featuresdir,
               (magcol, medstet, stdstet, minstetstdev,
                allobjects[magcol]['thresholdobjects'].size))
 
+    # get the overall stetson threshold objects too
+    allobjects['overallthreshold'] = allobjects[magcols[0]]['thresholdobjects']
+
+    for magcol in magcols[1:]:
+        allobjects['overallthreshold'] = (
+            np.intersect(allobjects['overallthreshold'],
+                         allobjects[magcol]['thresholdobjects'])
+        )
+
+    LOGINFO('objects above stetson threshold across all magcols: %s' %
+            allobjects['overallthreshold'].size)
+
     return allobjects
 
 
