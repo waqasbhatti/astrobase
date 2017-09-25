@@ -393,8 +393,6 @@ def main():
 
             # now that we have keys, we need to use them
             # keys will be returned in the order we put them into keystoget
-
-
             if len(keystoget) == 2:
 
                 sorttargets = [x[0] for x in keytargets]
@@ -428,6 +426,8 @@ def main():
                 searchresults = searchresults[sortind]
 
             # second, take care of any filters
+            filterok = False
+
             if filtertargets:
 
                 filtertargets = np.ravel(np.array(filtertargets))
@@ -459,34 +459,36 @@ def main():
                         print('filter applied: %s -> objects found: %s ' %
                               (args.filterby, filterresults.size))
                         searchresults = filterresults
+                        filterok = True
 
                     else:
-                        print('filter failed! %s -> ZERO objects found!' %
+                        print('WRN! filter failed! %s -> ZERO objects found!' %
                               (args.filterby, ))
-                        print('not applying broken filter')
+                        print('WRN! not applying failed filter')
 
                 except Exception as e:
 
-                    print('could not understand filter spec: %s,'
-                          '\nexception: %s' %
+                    print('ERR! could not understand filter spec: %s'
+                          '\nexception was: %s' %
                           (args.filterby, e))
-                    print('not applying broken filter')
-                    raise
-
+                    print('WRN! not applying broken filter')
 
             # all done with sorting and filtering
             # turn the searchresults back into a list
             searchresults = searchresults.tolist()
 
-        # if there's no special sort order defined, use the usual sort order
-        else:
-            print('no special sort key and order/'
-                  'filter key and condition specified, '
-                  'sorting checkplot pickles '
-                  'using usual alphanumeric sort...')
-            searchresults = sorted(searchresults)
-            sortkey = 'filename'
-            sortorder = 'asc'
+            # if there's no special sort order defined, use the usual sort order
+            if not(sortkey and sortorder):
+
+                print('WRN! no special sort key and order/'
+                      'filter key and condition specified, '
+                      'sorting checkplot pickles '
+                      'using usual alphanumeric sort...')
+
+                searchresults = sorted(searchresults)
+                sortkey = 'filename'
+                sortorder = 'asc'
+
 
         nchunks = int(len(searchresults)/splitout) + 1
 
@@ -497,6 +499,13 @@ def main():
             print('WRN! more than %s checkplots in final list, '
                   'splitting into %s chunks' % (splitout, nchunks))
 
+
+        # if the filter failed, zero out filterkey
+        if not filterok:
+            filterkey = None
+            foperator, foperand = None, None
+
+        # generate the output
         for chunkind, chunk in enumerate(searchchunks):
 
             # figure out if we need to split the JSON file
@@ -530,7 +539,8 @@ def main():
                                    'sortkey':sortkey,
                                    'sortorder':sortorder,
                                    'filterkey':filterkey,
-                                   'filtercondition':filtercondition}
+                                   'filtercondition':'%s %s' % (foperator,
+                                                                foperand)}
                         json.dump(outdict,outfd)
 
                 # if it's not OK to overwrite, then
@@ -550,7 +560,8 @@ def main():
                     indict['sortkey'] = sortkey
                     indict['sortorder'] = sortorder
                     indict['filterkey'] = filterkey
-                    indict['filtercondition'] = filtercondition
+                    indict['filtercondition'] = '%s %s' % (foperator,
+                                                           foperand)
 
                     # write the updated to back to the file
                     with open(outjson,'w') as outfd:
@@ -565,7 +576,8 @@ def main():
                                'sortkey':sortkey,
                                'sortorder':sortorder,
                                'filterkey':filterkey,
-                               'filtercondition':filtercondition}
+                               'filtercondition':'%s %s' % (foperator,
+                                                            foperand)}
                     json.dump(outdict,outfd)
 
             if os.path.exists(outjson):

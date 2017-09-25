@@ -309,18 +309,23 @@ class IndexHandler(tornado.web.RequestHandler):
                                       for x in project_checkplots]
         project_checkplotindices = range(len(project_checkplots))
 
+        # get the sortkey and order
         project_cpsortkey = self.currentproject['sortkey']
-
         if self.currentproject['sortorder'] == 'asc':
             project_cpsortorder = 'ascending'
         elif self.currentproject['sortorder'] == 'desc':
             project_cpsortorder = 'descending'
 
+        # get the filterkey and condition
+        project_cpfilterkey = self.currentproject['filterkey']
+        project_cpfiltercondition = self.currentproject['filtercondition']
 
         self.render('cpindex.html',
                     project_checkplots=project_checkplots,
                     project_cpsortorder=project_cpsortorder,
                     project_cpsortkey=project_cpsortkey,
+                    project_cpfilterkey=project_cpfilterkey,
+                    project_cpfiltercondition=project_cpfiltercondition,
                     project_checkplotbasenames=project_checkplotbasenames,
                     project_checkplotindices=project_checkplotindices,
                     project_checkplotfile=self.cplistfile,
