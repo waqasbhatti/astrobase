@@ -79,6 +79,8 @@ checkplot PNGs) or the checkplotserver.py (for checkplot pickles) webapps.
 '''
 
 PROGEPILOG= '''\
+SEARCHING FOR CHECKPLOT PNGS OR PICKLES
+---------------------------------------
 If you have checkplots that don't have 'checkplot' somewhere in their file name,
 use the optional checkplot file glob argument to checkplotlist to provide
 this:
@@ -92,9 +94,11 @@ Example: search for checkplots with awesome-object in their filename:
 
 $ checkplotlist png my-project/awesome-objects --search '*awesome-object*'
 
-For checkplot pickles only: If you want to sort the checkplot pickle files in
-the output list in some special way other than the usual filename sort order,
-this requires an argument on the commandline of the form:
+SORTING CHECKPLOT PICKLES
+-------------------------
+If you want to sort checkplot pickle files in the output list in some special
+way other than the usual filename sort order, this requires an argument on the
+commandline of the form:
 
 --sortby '<sortkey>-<asc|desc>'.
 
@@ -107,9 +111,36 @@ Example: sort checkplots by their 2MASS J magnitudes in ascending order:
 
 $ checkplotlist pkl my-project/awesome-objects --sortby 'objectinfo.jmag-asc'
 
-Example: sort checkplots by the best peak in their PDM periodograms:
+Example: sort checkplots by the power of the best peak in their PDM
+periodograms:
 
 $ checkplotlist pkl my-project/awesome-objects --sortby 'pdm.nbestlspvals.0-asc'
+
+FILTERING CHECKPLOT PICKLES
+---------------------------
+You can filter the checkplot pickle files in the output list by using the
+--filterby argument. Provide a filterkey, filteroperator, and filteroperand in
+the form:
+
+--filterby '<filterkey>-<filteroperator>@<filteroperand>'
+
+Here, filterkey is some key in the checkplot pickle, specified as the sortkey
+discussed above. filteroperator is one of the following 2-character strings:
+
+'gt' -> greater than, 'lt' -> less than, 'ge' -> greater than or equal to,
+'le' -> less than or equal to, 'eq' -> equal to
+
+filteroperand is the appropriate integer, float, or string for the filterkey and
+operator.
+
+Example: get only those checkplots with Stetson J > 0.2:
+
+checkplotlist pkl my-project/awesome-objects --filterby 'varinfo.features.stetsonj-gt@0.2'
+
+Example: get only those checkplots for objects with r < 12.0 and sort these by
+power of the best peak in their Lomb-Scargle periodogram:
+
+checkplot pkl my-project/awesome-objects --filterby 'objectinfo.sdssr-lt@12.0' --sortby 'gls.nbestlspvals.0-desc'
 '''
 
 import os
@@ -118,6 +149,10 @@ import sys
 import glob
 import json
 import argparse
+
+# suppress warnings
+import warnings
+warnings.filterwarnings('ignore')
 
 # to turn a list of keys into a dict address
 # from https://stackoverflow.com/a/14692747
@@ -257,7 +292,7 @@ def main():
     if args.sortby:
         sortkey, sortorder = args.sortby.split('-')
         if outprefix is None:
-            outprefix = args.sortby.replace('.','-')
+            outprefix = args.sortby
     else:
         sortkey, sortorder = None, None
 
@@ -265,9 +300,9 @@ def main():
     if args.filterby:
         filterkey, filtercondition = args.filterby.split('-')
         if outprefix is None:
-            outprefix = args.filterby.replace('.','-')
+            outprefix = args.filterby
         else:
-            outprefix = '%s-%s' % (args.filterby.replace('.','-'), outprefix)
+            outprefix = '%s-%s' % (args.filterby, outprefix)
     else:
         filterkey, filtercondition = None, None
 
@@ -310,7 +345,7 @@ def main():
         # and sortorder is either 'asc' or desc' for ascending/descending sort
 
         # we only support a single condition conditions are of the form:
-        # '<filterkey>-<condition>:<operand>' where <condition> is one of: 'ge',
+        # '<filterkey>-<condition>@<operand>' where <condition> is one of: 'ge',
         # 'gt', 'le', 'lt', 'eq' and <operand> is a string, float, or int to use
         # when applying <condition>
         if (sortkey and sortorder) or (filterkey and filtercondition):
@@ -391,43 +426,48 @@ def main():
             # second, take care of any filters
             if filtertargets:
 
-                filtertargets = np.array(filtertargets)
+                filtertargets = np.ravel(np.array(filtertargets))
 
-                # figure out the filter condition: <condition>:<operand> where
+                # figure out the filter condition: <condition>@<operand> where
                 # <condition> is one of: 'ge', 'gt', 'le', 'lt', 'eq' and
                 # <operand> is a string, float, or int to use when applying
                 # <condition>
 
                 try:
 
-                    foperator, foperand = filtercondition.split(':')
+                    foperator, foperand = filtercondition.split('@')
                     foperator = FILTEROPS[foperator]
 
                     # we'll do a straight eval of the filter
                     # yes: this is unsafe
-                    evalstr = (
-                        'filterind = np.where(sorttargets %s %s)' %
+
+                    filterstr = (
+                        'filtertargets %s %s' %
                         (foperator, foperand)
                     )
-                    eval(evalstr)
+                    filterind = eval(filterstr)
 
-                    if filterind and len(filterind[0]) > 0:
+                    # apply the filter
+                    filterresults = searchresults[filterind]
 
-                        print('filter applied: %s -> %s objects found' %
-                              (filterby, len(filterind[0])))
+                    if filterresults.size > 0:
 
-                        # apply the filter
-                        searchresults = searchresults[filterind]
+                        print('filter applied: %s -> objects found: %s ' %
+                              (args.filterby, filterresults.size))
+                        searchresults = filterresults
 
                     else:
                         print('filter failed! %s -> ZERO objects found!' %
-                              (filterby, len(filterind[0])))
+                              (args.filterby, ))
                         print('not applying broken filter')
 
-                except:
+                except Exception as e:
 
-                    print('could not understand filter spec: %s' % filterby)
+                    print('could not understand filter spec: %s,'
+                          '\nexception: %s' %
+                          (args.filterby, e))
                     print('not applying broken filter')
+                    raise
 
 
             # all done with sorting and filtering
