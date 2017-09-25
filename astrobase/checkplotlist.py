@@ -129,17 +129,57 @@ from astrobase import checkplot
 import numpy as np
 import multiprocessing as mp
 
+
+######################
+## HELPER FUNCTIONS ##
+######################
+
 def dict_get(datadict, keylist):
+    '''
+    This gets the requested key by walking the datadict.
+
+    '''
     return reduce(getitem, keylist, datadict)
 
-def sortkey_worker(task):
-    cpf, key = task
-    cpd = checkplot._read_checkplot_picklefile(cpf)
-    try:
-        return dict_get(cpd, key)
-    except:
-        return np.nan
 
+
+def key_worker(task):
+    '''
+    This gets the required keys from the requested file.
+
+    '''
+    cpf, keys = task
+
+
+    cpd = checkplot._read_checkplot_picklefile(cpf)
+
+    resultkeys = []
+
+    for k in keys:
+
+        try:
+            resultkeys.append(dict_get(cpd, k))
+        except:
+            resultkeys.append(np.nan)
+
+    return resultkeys
+
+
+############
+## CONFIG ##
+############
+
+FILTEROPS = {'eq':'==',
+             'gt':'>',
+             'ge':'>=',
+             'lt':'<',
+             'le':'<='}
+
+
+
+##########
+## MAIN ##
+##########
 
 def main():
 
@@ -181,6 +221,12 @@ def main():
         help=("the sort key and order to use when sorting")
     )
     aparser.add_argument(
+        '--filterby',
+        action='store',
+        type=str,
+        help=("the filter key and condition to use when filtering")
+    )
+    aparser.add_argument(
         '--splitout',
         action='store',
         type=int,
@@ -207,12 +253,24 @@ def main():
     splitout = args.splitout
     outprefix = args.outprefix if args.outprefix else None
 
+    # see if there's a sorting order
     if args.sortby:
         sortkey, sortorder = args.sortby.split('-')
         if outprefix is None:
             outprefix = args.sortby.replace('.','-')
     else:
         sortkey, sortorder = None, None
+
+    # see if there's a filter condition
+    if args.filterby:
+        filterkey, filtercondition = args.filterby.split('-')
+        if outprefix is None:
+            outprefix = args.filterby.replace('.','-')
+        else:
+            outprefix = '%s-%s' % (args.filterby.replace('.','-'), outprefix)
+    else:
+        filterkey, filtercondition = None, None
+
 
     if args.cptype == 'pkl':
         checkplotext = 'pkl'
@@ -250,36 +308,136 @@ def main():
         #   this can be a simple key: e.g. objectid
         #   or it can be a composite key: e.g. varinfo.varfeatures.stetsonj
         # and sortorder is either 'asc' or desc' for ascending/descending sort
-        if sortkey and sortorder:
 
-            print('sorting checkplot pickles by %s in order: %s...' %
-                  (sortkey, sortorder))
+        # we only support a single condition conditions are of the form:
+        # '<filterkey>-<condition>:<operand>' where <condition> is one of: 'ge',
+        # 'gt', 'le', 'lt', 'eq' and <operand> is a string, float, or int to use
+        # when applying <condition>
+        if (sortkey and sortorder) or (filterkey and filtercondition):
 
-            # dereference the sort key
-            sortkeys = sortkey.split('.')
+            keystoget = []
 
-            # if there are any integers in the sortkeys strings, interpret these
-            # to mean actual integer indexes of lists or integer keys for dicts
-            # this allows us to move into arrays easily by indexing them
-            sortkeys = [(int(x) if x.isdecimal() else x) for x in sortkeys]
+            # handle sorting
+            if (sortkey and sortorder):
 
+                print('sorting checkplot pickles by %s in order: %s...' %
+                      (sortkey, sortorder))
+
+                # dereference the sort key
+                sortkeys = sortkey.split('.')
+
+                # if there are any integers in the sortkeys strings, interpret
+                # these to mean actual integer indexes of lists or integer keys
+                # for dicts this allows us to move into arrays easily by
+                # indexing them
+                sortkeys = [(int(x) if x.isdecimal() else x) for x in sortkeys]
+
+                keystoget.append(sortkeys)
+
+            # handle filtering
+            if (filterkey and filtercondition):
+
+                print('filtering checkplot pickles by %s using: %s...' %
+                      (filterkey, filtercondition))
+
+                # dereference the filter key
+                filterkeys = filterkey.split('.')
+                filterkeys = [(int(x) if x.isdecimal() else x)
+                              for x in filterkeys]
+
+                keystoget.append(filterkeys)
+
+
+            # launch the key retrieval
             pool = mp.Pool()
-            tasks = [(x, sortkeys) for x in searchresults]
-            sorttargets = pool.map(sortkey_worker, tasks)
+            tasks = [(x, keystoget) for x in searchresults]
+            keytargets = pool.map(key_worker, tasks)
 
             pool.close()
             pool.join()
 
-            sorttargets = np.array(sorttargets)
-            sortind = np.argsort(sorttargets)
-            if sortorder == 'desc':
-                sortind = sortind[::-1]
+            # now that we have keys, we need to use them
+            # keys will be returned in the order we put them into keystoget
+
+            if len(keystoget) == 2:
+                sorttargets, filtertargets = keytargets
+            elif (len(keystoget) == 1 and
+                  (sortkey and sortorder) and
+                  (not(filterkey and filtercondition))):
+                sorttargets = keytargets
+                filtertargets = None
+            elif (len(keystoget) == 1 and
+                  (filterkey and filtercondition) and
+                  (not(sortkey and sortorder))):
+                sorttargets = None
+                filtertargets = keytargets
+
+
+            # turn the search results into an np.array before we do
+            # sorting/filtering
             searchresults = np.array(searchresults)
-            searchresults = searchresults[sortind].tolist()
+
+            # first, take care of sort keys
+            if sorttargets:
+
+                sorttargets = np.array(sorttargets)
+                sortind = np.argsort(sorttargets)
+                if sortorder == 'desc':
+                    sortind = sortind[::-1]
+
+                # sort the search results in the requested order
+                searchresults = searchresults[sortind]
+
+            # second, take care of any filters
+            if filtertargets:
+
+                filtertargets = np.array(filtertargets)
+
+                # figure out the filter condition: <condition>:<operand> where
+                # <condition> is one of: 'ge', 'gt', 'le', 'lt', 'eq' and
+                # <operand> is a string, float, or int to use when applying
+                # <condition>
+
+                try:
+
+                    foperator, foperand = filtercondition.split(':')
+                    foperator = FILTEROPS[foperator]
+
+                    # we'll do a straight eval of the filter
+                    # yes: this is unsafe
+                    evalstr = (
+                        'filterind = np.where(sorttargets %s %s)' %
+                        (foperator, foperand)
+                    )
+                    eval(evalstr)
+
+                    if filterind and len(filterind[0]) > 0:
+
+                        print('filter applied: %s -> %s objects found' %
+                              (filterby, len(filterind[0])))
+
+                        # apply the filter
+                        searchresults = searchresults[filterind]
+
+                    else:
+                        print('filter failed! %s -> ZERO objects found!' %
+                              (filterby, len(filterind[0])))
+                        print('not applying broken filter')
+
+                except:
+
+                    print('could not understand filter spec: %s' % filterby)
+                    print('not applying broken filter')
+
+
+            # all done with sorting and filtering
+            # turn the searchresults back into a list
+            searchresults = searchresults.tolist()
 
         # if there's no special sort order defined, use the usual sort order
         else:
-            print('no special sort key and order specified, '
+            print('no special sort key and order/'
+                  'filter key and condition specified, '
                   'sorting checkplot pickles '
                   'using usual alphanumeric sort...')
             searchresults = sorted(searchresults)
@@ -292,9 +450,8 @@ def main():
                         in range(nchunks)]
 
         if nchunks > 1:
-            print('WRN! more than %s checkplots in this directory, '
+            print('WRN! more than %s checkplots in final list, '
                   'splitting into %s chunks' % (splitout, nchunks))
-
 
         for chunkind, chunk in enumerate(searchchunks):
 
@@ -327,7 +484,9 @@ def main():
                         outdict = {'checkplots':chunk,
                                    'nfiles':len(chunk),
                                    'sortkey':sortkey,
-                                   'sortorder':sortorder}
+                                   'sortorder':sortorder,
+                                   'filterkey':filterkey,
+                                   'filtercondition':filtercondition}
                         json.dump(outdict,outfd)
 
                 # if it's not OK to overwrite, then
@@ -346,6 +505,8 @@ def main():
                     indict['nfiles'] = len(chunk)
                     indict['sortkey'] = sortkey
                     indict['sortorder'] = sortorder
+                    indict['filterkey'] = filterkey
+                    indict['filtercondition'] = filtercondition
 
                     # write the updated to back to the file
                     with open(outjson,'w') as outfd:
@@ -358,7 +519,9 @@ def main():
                     outdict = {'checkplots':chunk,
                                'nfiles':len(chunk),
                                'sortkey':sortkey,
-                               'sortorder':sortorder}
+                               'sortorder':sortorder,
+                               'filterkey':filterkey,
+                               'filtercondition':filtercondition}
                     json.dump(outdict,outfd)
 
             if os.path.exists(outjson):
