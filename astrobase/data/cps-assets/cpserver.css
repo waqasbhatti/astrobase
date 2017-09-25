@@ -11,6 +11,7 @@
     height: 300px;
     overflow-y: auto;
     font-size: 75%;
+    margin-top: 10px;
     margin-bottom: 10px;
 }
 
@@ -196,4 +197,8 @@ to use this:
 .help-text {
     font-size: 80%;
     padding-bottom: 5px;
+}
+
+.sidebar-label {
+    font-size: 75%;
 }

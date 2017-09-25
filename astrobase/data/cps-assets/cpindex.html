@@ -14,21 +14,20 @@
 
     <div class="row">
       <div class="col-sm-12">
-        <h5 class="text-sm-center">All Checkplots</h5>
+        <h5 class="text-sm-center">Checkplot Pickles</h5>
       </div>
     </div>
 
     <div class="row">
-      <div class="col-sm-12">
-        <div class="help-text">
-          Sorted by: <code>{{ project_cpsortkey }} &mdash; {{ project_cpsortorder }}</code></div>
+      <div class="col-sm-12 sidebar-label">
+          <strong>Sorted:</strong> {{ project_cpsortkey }} &mdash; {{ project_cpsortorder }}
       </div>
     </div>
+
     {% if project_cpfilterkey %}
     <div class="row">
-      <div class="col-sm-12">
-        <div class="help-text">
-          Filtered by: <code>{{ project_cpfilterkey }} {{ project_cpfiltercondition }}</code></div>
+      <div class="col-sm-12 sidebar-label">
+          <strong>Filtered:</strong> {{ project_cpfilterkey }} {{ project_cpfiltercondition }}
       </div>
     </div>
     {% end %}
