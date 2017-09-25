@@ -415,7 +415,8 @@ def main():
             # first, take care of sort keys
             if sorttargets:
 
-                sorttargets = np.array(sorttargets)
+                sorttargets = np.ravel(np.array(sorttargets))
+
                 sortind = np.argsort(sorttargets)
                 if sortorder == 'desc':
                     sortind = sortind[::-1]
