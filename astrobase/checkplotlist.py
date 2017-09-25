@@ -100,7 +100,7 @@ If you want to sort checkplot pickle files in the output list in some special
 way other than the usual filename sort order, this requires an argument on the
 commandline of the form:
 
---sortby '<sortkey>-<asc|desc>'.
+--sortby '<sortkey>-<asc|desc>'
 
 Here, sortkey is some key in the checkplot pickle. This can be a simple key:
 e.g. objectid or it can be a composite key: e.g. varinfo.features.stetsonj.
@@ -119,8 +119,8 @@ $ checkplotlist pkl my-project/awesome-objects --sortby 'pdm.nbestlspvals.0-asc'
 FILTERING CHECKPLOT PICKLES
 ---------------------------
 You can filter the checkplot pickle files in the output list by using the
---filterby argument. Provide a filterkey, filteroperator, and filteroperand in
-the form:
+--filterby argument. Note that filtering takes place after any requested
+sorting.  Provide a filterkey, filteroperator, and filteroperand in the form:
 
 --filterby '<filterkey>-<filteroperator>@<filteroperand>'
 
@@ -394,8 +394,11 @@ def main():
             # now that we have keys, we need to use them
             # keys will be returned in the order we put them into keystoget
 
+
             if len(keystoget) == 2:
-                sorttargets, filtertargets = keytargets
+
+                sorttargets = [x[0] for x in keytargets]
+                filtertargets = [x[1] for x in keytargets]
             elif (len(keystoget) == 1 and
                   (sortkey and sortorder) and
                   (not(filterkey and filtercondition))):
