@@ -458,7 +458,7 @@ def main():
 
                         print('filter applied: %s -> objects found: %s ' %
                               (args.filterby, filterresults.size))
-                        searchresults = filterresults
+                        searchresults = filterresults[::]
                         filterok = True
 
                     else:
