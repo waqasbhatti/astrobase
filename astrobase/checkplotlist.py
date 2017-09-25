@@ -408,12 +408,14 @@ def main():
                 sorttargets = None
                 filtertargets = keytargets
 
-
             # turn the search results into an np.array before we do
             # sorting/filtering
             searchresults = np.array(searchresults)
 
+
             # first, take care of sort keys
+            sortdone = False
+
             if sorttargets:
 
                 sorttargets = np.ravel(np.array(sorttargets))
@@ -424,6 +426,7 @@ def main():
 
                 # sort the search results in the requested order
                 searchresults = searchresults[sortind]
+                sortdone = True
 
             # second, take care of any filters
             filterok = False
@@ -431,6 +434,11 @@ def main():
             if filtertargets:
 
                 filtertargets = np.ravel(np.array(filtertargets))
+
+                # don't forget to also sort the filtertargets in the same order
+                # as sorttargets so we can get the correct objects to filter.
+                if (sortdone):
+                    filtertargets = filtertargets[sortind]
 
                 # figure out the filter condition: <condition>@<operand> where
                 # <condition> is one of: 'ge', 'gt', 'le', 'lt', 'eq' and
@@ -458,7 +466,7 @@ def main():
 
                         print('filter applied: %s -> objects found: %s ' %
                               (args.filterby, filterresults.size))
-                        searchresults = filterresults[::]
+                        searchresults = filterresults
                         filterok = True
 
                     else:
@@ -478,6 +486,7 @@ def main():
             searchresults = searchresults.tolist()
 
             # if there's no special sort order defined, use the usual sort order
+            # at the end after filtering
             if not(sortkey and sortorder):
 
                 print('WRN! no special sort key and order/'
