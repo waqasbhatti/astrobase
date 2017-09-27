@@ -571,8 +571,9 @@ def concat_write_pklc(lcbasedir,
 
     if not outdir:
         outdir = 'pklcs'
-        if not os.path.exists(outdir):
-            os.mkdir(outdir)
+
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
 
     outfpath = os.path.join(outdir, '%s-%s-pklc.pkl' % (concatlcd['objectid'],
                                                         aperture))
