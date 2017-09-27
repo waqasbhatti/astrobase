@@ -249,7 +249,7 @@ def merge_hatpi_textlc_apertures(lclist):
     # uniqify the framekeys
     framekeys = sorted(list(set(framekeys)))
 
-
+    # FIXME: finish this
 
 
 
@@ -618,11 +618,17 @@ def pklc_fovcatalog_objectinfo(
 
     '''
 
+    if fovcatalog.endswith('.gz'):
+        catfd = gzip.open(fovcatalog)
+    else:
+        catfd = open(fovcatalog)
+
     # read the catalog using the colformats, etc.
-    fovcat = np.genfromtxt(fovcatalog,
+    fovcat = np.genfromtxt(catfd,
                            usecols=fovcatalog_columns,
                            names=fovcatalog_colnames,
                            dtype=fovcatalog_colformats)
+    catfd.close()
 
     pklclist = sorted(glob.glob(os.path.join(pklcdir, '*HAT*-pklc.pkl')))
 
