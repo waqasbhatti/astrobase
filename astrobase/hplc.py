@@ -220,6 +220,21 @@ def read_hatpi_textlc(lcfile):
 
 
 
+def read_hatpi_binnedlc(binnedpkl, unbinnedtextlc):
+    '''This reads a binnedlc pickle produced by the HATPI prototype pipeline.
+
+    Converts it into a standard lcdict as produced by the read_hatpi_textlc
+    function above by using the information in unbinnedtextlc for the same
+    object.
+
+    Adds a 'binned' key to the standard lcdict containing the binned mags, etc.
+
+    '''
+
+
+
+
+
 def merge_hatpi_textlc_apertures(lclist):
     '''This merges all TFA text LCs with separate apertures for a single object.
 
