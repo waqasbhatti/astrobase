@@ -544,7 +544,7 @@ def time_bin_magseries_with_errs(times, mags, errs,
                                         binned_finite_timeseries_indices]
 
     collected_binned_mags['jdbins_indices'] = binned_finite_timeseries_indices
-    collected_binned_mags['jdbins'] = jdbins
+    collected_binned_mags['jdbins'] = np.array(jdbins)
     collected_binned_mags['nbins'] = len(binned_finite_timeseries_indices)
 
     # collect the finite_times
