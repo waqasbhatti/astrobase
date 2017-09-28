@@ -1154,6 +1154,7 @@ def timebinlc_worker(task):
 
 def parallel_timebin_lclist(lclist,
                             binsizesec,
+                            maxobjects=None,
                             outdir=None,
                             lcformat='hat-sql',
                             timecols=None,
@@ -1169,6 +1170,9 @@ def parallel_timebin_lclist(lclist,
 
     if outdir and not os.path.exists(outdir):
         os.mkdir(outdir)
+
+    if maxobjects is not None:
+        lclist = lclist[:maxobjects]
 
     tasks = [(x, binsizesec, {'outdir':outdir,
                               'lcformat':lcformat,
@@ -1190,6 +1194,7 @@ def parallel_timebin_lclist(lclist,
 
 def parallel_timebin_lcdir(lcdir,
                            binsizesec,
+                           maxobjects=None,
                            outdir=None,
                            lcformat='hat-sql',
                            timecols=None,
@@ -1215,6 +1220,7 @@ def parallel_timebin_lcdir(lcdir,
 
     return parallel_timebin_lclist(lclist,
                                    binsizesec,
+                                   maxobjects=maxobjects,
                                    outdir=outdir,
                                    lcformat=lcformat,
                                    timecols=timecols,
