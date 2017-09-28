@@ -1097,7 +1097,7 @@ def bin_lc(lcfile,
         if 'binned' not in lcdict:
             lcdict['binned'] = {mcol: {'times':binned['binnedtimes'],
                                        'mags':binned['binnedmags'],
-                                       'errs':binned['binnederrs']
+                                       'errs':binned['binnederrs'],
                                        'nbins':binned['nbins'],
                                        'timebins':binned['jdbins'],
                                        'ndet':binned['binnedtimes'].size,
@@ -1106,7 +1106,7 @@ def bin_lc(lcfile,
         else:
             lcdict['binned'][mcol] = {'times':binned['binnedtimes'],
                                       'mags':binned['binnedmags'],
-                                      'errs':binned['binnederrs']
+                                      'errs':binned['binnederrs'],
                                       'nbins':binned['nbins'],
                                       'timebins':binned['jdbins'],
                                       'ndet':binned['binnedtimes'].size,
