@@ -161,13 +161,57 @@ LCFORM = {
         ['sap.sap_flux_err','pdc.pdc_sapflux_err'],
         True,
         None,
-    ]
+    ],
+    # binned light curve format
+    'binned-hat-sql':[
+        '*binned-*hat*.pkl',
+        read_pklc,
+        ['binned.aep_000.times','binned.atf_000.times'],
+        ['binned.aep_000.mags','binned.atf_000.mags'],
+        ['binned.aep_000.errs','binned.atf_000.errs'],
+        False,
+        None,
+    ],
+    'binned-hp':[
+        '*binned-*hp*.pkl',
+        read_pklc,
+        ['binned.iep1.times','binned.itf1.times'],
+        ['binned.iep1.mags','binned.itf1.mags'],
+        ['binned.iep1.errs','binned.itf1.errs'],
+        False,
+        None,
+    ],
+    'binned-kep':[
+        '*binned-*kep*.pkl',
+        read_pklc,
+        ['binned.sap_flux.times','binned.pdc_sapflux.times'],
+        ['binned.sap_flux.mags','binned.pdc_sapflux.mags'],
+        ['binned.sap_flux.errs','binned.pdc_sapflux.errs'],
+        True,
+        None,
+    ],
 }
 
 
 #######################
 ## UTILITY FUNCTIONS ##
 #######################
+
+def read_pklc(lcfile):
+    '''
+    This just reads a pickle.
+
+    '''
+
+    try:
+        with open(lcfile,'rb') as infd:
+            lcdict = pickle.load(infd)
+    except UnicodeDecodeError:
+        with open(lcfile,'rb') as infd:
+            lcdict = pickle.load(infd, encoding='latin1')
+
+    return lcdict
+
 
 
 def makelclist(basedir,
@@ -405,14 +449,14 @@ def varfeatures(lcfile,
 
                 LOGINFO('not enough LC points: %s in normalized %s LC: %s' %
                       (mags[finind].size, mcol, os.path.basename(lcfile)))
-                resultdict[mcol] = None
+                resultdict[mcolget[-1]] = None
 
             else:
 
                 lcfeatures = features.all_nonperiodic_features(
                     times, mags, errs
                 )
-                resultdict[mcol] = lcfeatures
+                resultdict[mcolget[-1]] = lcfeatures
 
         outfile = os.path.join(outdir,
                                'varfeatures-%s.pkl' % resultdict['objectid'])
@@ -768,12 +812,12 @@ def runpf(lcfile,
                              verbose=False)
 
             # save the results
-            resultdict[mcol] = {'gls':gls,
+            resultdict[mcolget[-1]] = {'gls':gls,
                                 'bls':bls,
                                 'pdm':pdm}
 
             # add the SNR results to the BLS result dict
-            resultdict[mcol]['bls'].update({
+            resultdict[mcolget[-1]]['bls'].update({
                 'snr':blssnr['snr'],
                 'altsnr':blssnr['altsnr'],
                 'transitdepth':blssnr['transitdepth'],
@@ -1001,9 +1045,9 @@ def runcp(pfpickle,
             ecolget = [ecol]
         errs = dict_get(lcdict, ecolget)
 
-        gls = pfresults[mcol]['gls']
-        pdm = pfresults[mcol]['pdm']
-        bls = pfresults[mcol]['bls']
+        gls = pfresults[mcolget[-1]]['gls']
+        pdm = pfresults[mcolget[-1]]['pdm']
+        bls = pfresults[mcolget[-1]]['bls']
 
         outfile = os.path.join(outdir,
                                'checkplot-%s-%s.pkl' % (objectid, mcol))
@@ -1161,21 +1205,24 @@ def timebinlc(lcfile,
                                               minbinelems=minbinelems)
 
         # put this into the special binned key of the lcdict
+
+        # we use mcolget[-1] here so we can deal with dereferenced magcols like
+        # sap.sap_flux or pdc.pdc_sapflux
         if 'binned' not in lcdict:
-            lcdict['binned'] = {mcol: {'times':binned['binnedtimes'],
-                                       'mags':binned['binnedmags'],
-                                       'errs':binned['binnederrs'],
-                                       'nbins':binned['nbins'],
-                                       'timebins':binned['jdbins'],
-                                       'binsizesec':binsizesec}}
+            lcdict['binned'] = {mcolget[-1]: {'times':binned['binnedtimes'],
+                                              'mags':binned['binnedmags'],
+                                              'errs':binned['binnederrs'],
+                                              'nbins':binned['nbins'],
+                                              'timebins':binned['jdbins'],
+                                              'binsizesec':binsizesec}}
 
         else:
-            lcdict['binned'][mcol] = {'times':binned['binnedtimes'],
-                                      'mags':binned['binnedmags'],
-                                      'errs':binned['binnederrs'],
-                                      'nbins':binned['nbins'],
-                                      'timebins':binned['jdbins'],
-                                      'binsizesec':binsizesec}
+            lcdict['binned'][mcolget[-1]] = {'times':binned['binnedtimes'],
+                                             'mags':binned['binnedmags'],
+                                             'errs':binned['binnederrs'],
+                                             'nbins':binned['nbins'],
+                                             'timebins':binned['jdbins'],
+                                             'binsizesec':binsizesec}
 
 
     # done with binning for all magcols, now generate the output file
@@ -1191,7 +1238,6 @@ def timebinlc(lcfile,
         pickle.dump(lcdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
 
     return outfile
-
 
 
 def timebinlc_worker(task):
