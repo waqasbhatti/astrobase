@@ -718,12 +718,12 @@ def runpf(lcfile,
                                 'pdm':pdm}
 
             # add the SNR results to the BLS result dict
-            resultdict[mcol]['bls'] = {
+            resultdict[mcol]['bls'].update({
                 'snr':blssnr['snr'],
                 'altsnr':blssnr['altsnr'],
                 'transitdepth':blssnr['transitdepth'],
                 'transitduration':blssnr['transitduration'],
-            }
+            })
 
         # once all mag cols have been processed, write out the pickle
         with open(outfile, 'wb') as outfd:
