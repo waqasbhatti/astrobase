@@ -505,7 +505,7 @@ def parallel_varfeatures(lclist,
     '''
 
     if maxobjects:
-        lclist = lcist[:maxobjects]
+        lclist = lclist[:maxobjects]
 
     pool = mp.Pool(nworkers)
 
@@ -966,6 +966,7 @@ def parallel_pf_lcdir(lcdir,
 
         return parallel_pf(matching,
                            outdir,
+                           maxobjects=maxobjects,
                            timecols=timecols,
                            magcols=magcols,
                            errcols=errcols,
