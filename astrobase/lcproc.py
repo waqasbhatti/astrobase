@@ -180,7 +180,7 @@ LCFORM = {
         None,
     ],
     # binned light curve format
-    'binned-hat-sql':[
+    'binned-hat':[
         '*binned-*hat*.pkl',
         read_pklc,
         ['binned.aep_000.times','binned.atf_000.times'],
