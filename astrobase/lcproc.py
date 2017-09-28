@@ -1017,14 +1017,14 @@ def parallel_cp(pfpickledir,
 ## BINNING LIGHT CURVES ##
 ##########################
 
-def bin_lc(lcfile,
-           binsizesec,
-           outdir=None,
-           lcformat='hat-sql',
-           timecols=None,
-           magcols=None,
-           errcols=None,
-           minbinelems=7):
+def timebinlc(lcfile,
+              binsizesec,
+              outdir=None,
+              lcformat='hat-sql',
+              timecols=None,
+              magcols=None,
+              errcols=None,
+              minbinelems=7):
     '''
     This bins the given light curve file in time using binsizesec.
 
@@ -1126,3 +1126,100 @@ def bin_lc(lcfile,
         pickle.dump(lcdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
 
     return outfile
+
+
+
+def timebinlc_worker(task):
+    '''
+    This is a parallel worker for the function below.
+
+    task[0] = lcfile
+    task[1] = binsizesec
+    task[3] = {'outdir','lcformat','timecols','magcols','errcols','minbinelems'}
+
+    '''
+
+    lcfile, binsizesec, kwargs = task
+
+    try:
+        binnedlc = timebinlc(lcfile, binsizesec, **kwargs)
+        LOGINFO('%s binned using %s sec -> %s OK' %
+                (lcfile, binsizesec, binnedlc))
+    except Exception as e:
+        LOGEXCEPTION('failed to bin %s using binsizesec = %s' % (lcfile,
+                                                                 binsizesec))
+        return None
+
+
+
+def parallel_timebin_lclist(lclist,
+                            binsizesec,
+                            outdir=None,
+                            lcformat='hat-sql',
+                            timecols=None,
+                            magcols=None,
+                            errcols=None,
+                            minbinelems=7,
+                            nworkers=32,
+                            maxworkertasks=1000):
+    '''
+    This bins all the light curves in lclist using binsizesec.
+
+    '''
+
+    if outdir and not os.path.exists(outdir):
+        os.mkdir(outdir)
+
+    tasks = [(x, binsizesec, {'outdir':outdir,
+                              'lcformat':lcformat,
+                              'timecols':timecols,
+                              'magcols':magcols,
+                              'errcols':errcols,
+                              'minbinelems':minbinelems}) for x in lclist]
+
+    pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
+    results = pool.map(timebinlc_worker, tasks)
+    pool.close()
+    pool.join()
+
+    resdict = {os.path.basename(x):y for (x,y) in zip(lclist, results)}
+
+    return resdict
+
+
+
+def parallel_timebin_lcdir(lcdir,
+                           binsizesec,
+                           outdir=None,
+                           lcformat='hat-sql',
+                           timecols=None,
+                           magcols=None,
+                           errcols=None,
+                           minbinelems=7,
+                           nworkers=32,
+                           maxworkertasks=1000):
+    '''
+    This bins all the light curves in lcdir using binsizesec.
+
+    '''
+
+    # get the light curve glob associated with specified lcformat
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    (fileglob, readerfunc, dtimecols, dmagcols,
+     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+    lclist = sorted(glob.glob(os.path.join(lcdir, fileglob)))
+
+    return parallel_timebin_lclist(lclist,
+                                   binsizesec,
+                                   outdir=outdir,
+                                   lcformat=lcformat,
+                                   timecols=timecols,
+                                   magcols=magcols,
+                                   errcols=errcols,
+                                   minbinelems=minbinelems,
+                                   nworkers=nworkers,
+                                   maxworkertasks=maxworkertasks)
