@@ -106,6 +106,23 @@ from astrobase.periodbase.kbls import bls_snr
 ## MAPS FOR LCFORMAT TO LCREADER FUNCTIONS ##
 #############################################
 
+def read_pklc(lcfile):
+    '''
+    This just reads a pickle.
+
+    '''
+
+    try:
+        with open(lcfile,'rb') as infd:
+            lcdict = pickle.load(infd)
+    except UnicodeDecodeError:
+        with open(lcfile,'rb') as infd:
+            lcdict = pickle.load(infd, encoding='latin1')
+
+    return lcdict
+
+
+
 # LC format -> [default fileglob,  function to read LC format]
 LCFORM = {
     'hat-sql':[
@@ -196,23 +213,6 @@ LCFORM = {
 #######################
 ## UTILITY FUNCTIONS ##
 #######################
-
-def read_pklc(lcfile):
-    '''
-    This just reads a pickle.
-
-    '''
-
-    try:
-        with open(lcfile,'rb') as infd:
-            lcdict = pickle.load(infd)
-    except UnicodeDecodeError:
-        with open(lcfile,'rb') as infd:
-            lcdict = pickle.load(infd, encoding='latin1')
-
-    return lcdict
-
-
 
 def makelclist(basedir,
                outfile,
