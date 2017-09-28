@@ -210,6 +210,90 @@ LCFORM = {
 }
 
 
+
+def register_custom_lcformat(formatkey,
+                             fileglob,
+                             readerfunc,
+                             timecols,
+                             magcols,
+                             errcols,
+                             magsarefluxes=False,
+                             specialnormfunc=None):
+    '''This adds a custom format LC to the dict above.
+
+    Allows handling of custom format light curves for astrobase lcproc
+    drivers. Once the format is successfully registered, light curves should
+    work transparently with all of the functions below, by simply calling them
+    with the formatkey in the lcformat keyword argument.
+
+    Args
+    ----
+
+    formatkey: <string>: what to use as the key for your light curve format
+
+
+    fileglob: <string>: the default fileglob to use to search for light curve
+    files in this custom format. This is a string like
+    '*-whatever-???-*.*??-.lc'.
+
+
+    readerfunc: <function>: this is the function to use to read light curves in
+    the custom format. This should return a dictionary (the 'lcdict') with the
+    following signature (the keys listed below are required, but others are
+    allowed):
+
+    {'objectid':'<this object's name>',
+     'objectinfo':{'ra':<this object's right ascension>
+                   'decl':<this object's declination>},
+     ...time columns, mag columns, etc.}
+
+
+    timecols, magcols, errcols: <list>: these are all lists of strings
+    indicating which keys in the lcdict to use for processing. The lists must
+    all have the same dimensions, e.g. if timecols = ['timecol1','timecol2'],
+    then magcols must be something like ['magcol1','magcol2'] and errcols must
+    be something like ['errcol1', 'errcol2']. This allows you to process
+    multiple apertures or multiple types of measurements in one go.
+
+    Each element in these lists can be a simple key, e.g. 'time' (which would
+    correspond to lcdict['time']), or a composite key,
+    e.g. 'aperture1.times.rjd' (which would correspond to
+    lcdict['aperture1']['times']['rjd']). See the LCFORM dict above for
+    examples.
+
+
+    magsarefluxes: <boolean>: if this is True, then all functions will treat the
+    magnitude columns as flux instead, so things like default normalization and
+    sigma-clipping will be done correctly. If this is False, magnitudes will be
+    treated as magnitudes.
+
+
+    specialnormfunc: <function>: if you intend to use a special normalization
+    function for your lightcurves, indicate it here. If None, the default
+    normalization method used by lcproc is to find gaps in the time-series,
+    normalize measurements grouped by these gaps to zero, then normalize the
+    entire magnitude time series to global time series median using the
+    astrobase.lcmath.normalize_magseries function. The function should take and
+    return an lcdict of the same form as that produced by readerfunc above. For
+    an example of a special normalization function, see normalize_lcdict_by_inst
+    in the astrobase.hatlc module.
+
+    '''
+
+    globals()['LCFORM'][formatkey] = [
+        fileglob,
+        readerfunc,
+        timecols,
+        magcols,
+        errcols,
+        magsarefluxes,
+        specialnormfunc
+    ]
+
+    LOGINFO('added %s to registry' % formatkey)
+
+
+
 #######################
 ## UTILITY FUNCTIONS ##
 #######################
@@ -223,6 +307,7 @@ def makelclist(basedir,
                         'objectinfo.ra','objectinfo.decl',
                         'objectinfo.ndet','objectinfo.sdssr'],
                colformats=['%s','%.5f','%.5f','%d','%.3f']):
+
     '''This generates a list file compatible with getlclist below.
 
     Given a base directory where all the files are, and a light curve format,
