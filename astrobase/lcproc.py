@@ -98,7 +98,7 @@ from astrobase.astrokep import read_kepler_fitslc, read_kepler_pklc
 
 from astrobase import hatlc, periodbase, checkplot
 from astrobase.varbase import features
-from astrobase.lcmath import normalize_magseries
+from astrobase.lcmath import normalize_magseries, time_bin_magseries_with_errs
 from astrobase.periodbase.kbls import bls_snr
 
 
@@ -115,7 +115,7 @@ LCFORM = {
         ['aep_000','atf_000'],         # default magcols to use for period/var
         ['aie_000','aie_000'],         # default errcols to use for period/var
         False,                         # default magsarefluxes = False
-        normalize_lcdict_byinst,      # default special normalize function
+        normalize_lcdict_byinst,       # default special normalize function
     ],
     'hat-csv':[
         '*-hatlc.csv.gz',
@@ -1011,3 +1011,118 @@ def parallel_cp(pfpickledir,
 
     executor.shutdown()
     return results
+
+
+##########################
+## BINNING LIGHT CURVES ##
+##########################
+
+def bin_lc(lcfile,
+           binsizesec,
+           outdir=None,
+           lcformat='hat-sql',
+           timecols=None,
+           magcols=None,
+           errcols=None,
+           minbinelems=7):
+    '''
+    This bins the given light curve file in time using binsizesec.
+
+    '''
+
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    (fileglob, readerfunc, dtimecols, dmagcols,
+     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+    # override the default timecols, magcols, and errcols
+    # using the ones provided to the function
+    if timecols is None:
+        timecols = dtimecols
+    if magcols is None:
+        magcols = dmagcols
+    if errcols is None:
+        errcols = derrcols
+
+    # get the LC into a dict
+    lcdict = readerfunc(lcfile)
+    if isinstance(lcdict, tuple) and isinstance(lcdict[0],dict):
+        lcdict = lcdict[0]
+
+    # skip already binned light curves
+    if 'binned' in lcdict:
+        LOGERROR('this light curve appears to be binned already, skipping...')
+        return None
+
+    for tcol, mcol, ecol in zip(timecols, magcols, errcols):
+
+        # dereference the columns and get them from the lcdict
+        if '.' in tcol:
+            tcolget = tcol.split('.')
+        else:
+            tcolget = [tcol]
+        times = dict_get(lcdict, tcolget)
+
+        if '.' in mcol:
+            mcolget = mcol.split('.')
+        else:
+            mcolget = [mcol]
+        mags = dict_get(lcdict, mcolget)
+
+        if '.' in ecol:
+            ecolget = ecol.split('.')
+        else:
+            ecolget = [ecol]
+        errs = dict_get(lcdict, ecolget)
+
+        # normalize here if not using special normalization
+        if normfunc is None:
+            ntimes, nmags = normalize_magseries(
+                times, mags,
+                magsarefluxes=magsarefluxes
+            )
+
+            times, mags, errs = ntimes, nmags, errs
+
+        # now bin the mag series as requested
+        binned = time_bin_magseries_with_errs(times,
+                                              mags,
+                                              errs,
+                                              binsize=binsizesec,
+                                              minbinelems=minbinelems)
+
+        # put this into the special binned key of the lcdict
+        if 'binned' not in lcdict:
+            lcdict['binned'] = {mcol: {'times':binned['binnedtimes'],
+                                       'mags':binned['binnedmags'],
+                                       'errs':binned['binnederrs']
+                                       'nbins':binned['nbins'],
+                                       'timebins':binned['jdbins'],
+                                       'ndet':binned['binnedtimes'].size,
+                                       'binsizesec':binsizsec}}
+
+        else:
+            lcdict['binned'][mcol] = {'times':binned['binnedtimes'],
+                                      'mags':binned['binnedmags'],
+                                      'errs':binned['binnederrs']
+                                      'nbins':binned['nbins'],
+                                      'timebins':binned['jdbins'],
+                                      'ndet':binned['binnedtimes'].size,
+                                      'binsizesec':binsizsec}
+
+
+    # done with binning for all magcols, now generate the output file
+    # this will always be a pickle
+
+    if outdir is None:
+        outdir = os.path.dirname(lcfile)
+
+    outfile = os.path.join(outdir, '%s-binned%.1fsec-%s.pkl' %
+                           (lcdict['objectid'], binsizesec, lcformat))
+
+    with open(outfile, 'wb') as outfd:
+        pickle.dump(lcdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
+
+    return outfile
