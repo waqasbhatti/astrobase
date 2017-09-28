@@ -220,59 +220,6 @@ def read_hatpi_textlc(lcfile):
 
 
 
-def read_hatpi_binnedlc(binnedpkl, unbinnedtextlc):
-    '''This reads a binnedlc pickle produced by the HATPI prototype pipeline.
-
-    Converts it into a standard lcdict as produced by the read_hatpi_textlc
-    function above by using the information in unbinnedtextlc for the same
-    object.
-
-    Adds a 'binned' key to the standard lcdict containing the binned mags, etc.
-
-    '''
-
-
-
-
-
-def merge_hatpi_textlc_apertures(lclist):
-    '''This merges all TFA text LCs with separate apertures for a single object.
-
-    The framekey column will be used as the join column across all light curves
-    in lclist. Missing values will be filled in with nans. This function assumes
-    all light curves are in the format specified in COLDEFS above and readable
-    by read_hatpi_textlc above (i.e. have a single column for TFA mags for a
-    specific aperture at the end).
-
-    '''
-
-    lcaps = {}
-    framekeys = []
-
-    for lc in lclist:
-
-        lcd = read_hatpi_textlc(lc)
-
-        # figure what aperture this is and put it into the lcdict. if two LCs
-        # with the same aperture (i.e. TF1 and TF1) are provided, the later one
-        # in the lclist will overwrite the previous one,
-        for col in lcd['columns']:
-            if col.startswith('itf'):
-                lcaps[col] = lcd
-        thisframekeys = lcd['frk'].tolist()
-        framekeys.extend(thisframekeys)
-
-    # uniqify the framekeys
-    framekeys = sorted(list(set(framekeys)))
-
-    # FIXME: finish this
-
-
-
-
-
-
-
 def lcdict_to_pickle(lcdict, outfile=None):
     '''This just writes the lcdict to a pickle.
 
@@ -283,7 +230,7 @@ def lcdict_to_pickle(lcdict, outfile=None):
     '''
 
     if not outfile and lcdict['objectid']:
-        outfile = '%s-hpc.pkl' % lcdict['objectid']
+        outfile = '%s-hplc.pkl' % lcdict['objectid']
     elif not outfile and not lcdict['objectid']:
         outfile = 'hplc.pkl'
 
@@ -323,7 +270,6 @@ def read_hatpi_pklc(lcfile):
                    'http://stackoverflow.com/q/11305790' % lcfile)
 
         return lcdict
-
 
 
 
@@ -656,6 +602,217 @@ def parallel_concat_lcdir(lcbasedir,
     return {x:y for (x,y) in zip(objectidlist, results)}
 
 
+
+##############################################
+## MERGING APERTURES FOR HATPI LIGHT CURVES ##
+##############################################
+
+def merge_hatpi_textlc_apertures(lclist):
+    '''This merges all TFA text LCs with separate apertures for a single object.
+
+    The framekey column will be used as the join column across all light curves
+    in lclist. Missing values will be filled in with nans. This function assumes
+    all light curves are in the format specified in COLDEFS above and readable
+    by read_hatpi_textlc above (i.e. have a single column for TFA mags for a
+    specific aperture at the end).
+
+    '''
+
+    lcaps = {}
+    framekeys = []
+
+    for lc in lclist:
+
+        lcd = read_hatpi_textlc(lc)
+
+        # figure what aperture this is and put it into the lcdict. if two LCs
+        # with the same aperture (i.e. TF1 and TF1) are provided, the later one
+        # in the lclist will overwrite the previous one,
+        for col in lcd['columns']:
+            if col.startswith('itf'):
+                lcaps[col] = lcd
+        thisframekeys = lcd['frk'].tolist()
+        framekeys.extend(thisframekeys)
+
+    # uniqify the framekeys
+    framekeys = sorted(list(set(framekeys)))
+
+    # FIXME: finish this
+
+
+
+#######################################
+## READING BINNED HATPI LIGHT CURVES ##
+#######################################
+
+def read_hatpi_binnedlc(binnedpklf, textlcf, timebinsec):
+    '''This reads a binnedlc pickle produced by the HATPI prototype pipeline.
+
+    Converts it into a standard lcdict as produced by the read_hatpi_textlc
+    function above by using the information in unbinnedtextlc for the same
+    object.
+
+    Adds a 'binned' key to the standard lcdict containing the binned mags, etc.
+
+    '''
+
+    LOGINFO('reading binned LC %s' % binnedpklf)
+
+    # read the textlc
+    lcdict = read_hatpi_textlc(textlcf)
+
+    # read the binned LC
+
+    infd = open(binnedpklf,'rb')
+    try:
+        binned = pickle.load(infd)
+    except:
+        infd.seek(0)
+        binned = pickle.load(infd, encoding='latin1')
+    infd.close()
+
+    # now that we have both, pull out the required columns from the binnedlc
+    blckeys = binned.keys()
+
+    lcdict['binned'] = {}
+
+    for key in blckeys:
+
+        # get EPD stuff
+        if (key == 'epdlc' and
+            'AP0' in binned[key] and
+            'AP1' in binned[key] and
+            'AP2' in binned[key]):
+
+            # we'll have to generate errors because we don't have any in the
+            # generated binned LC.
+
+            ap0mad = np.nanmedian(np.abs(binned[key]['AP0'] -
+                                         np.nanmedian(binned[key]['AP0'])))
+            ap1mad = np.nanmedian(np.abs(binned[key]['AP1'] -
+                                         np.nanmedian(binned[key]['AP1'])))
+            ap2mad = np.nanmedian(np.abs(binned[key]['AP2'] -
+                                         np.nanmedian(binned[key]['AP2'])))
+
+
+            lcdict['binned']['iep1'] = {'times':binned[key]['RJD'],
+                                        'mags':binned[key]['AP0'],
+                                        'errs':np.full_like(binned[key]['AP0'],
+                                                            ap0mad),
+                                        'nbins':binned[key]['nbins'],
+                                        'timebins':binned[key]['jdbins'],
+                                        'timebinsec':timebinsec}
+            lcdict['binned']['iep2'] = {'times':binned[key]['RJD'],
+                                        'mags':binned[key]['AP1'],
+                                        'errs':np.full_like(binned[key]['AP1'],
+                                                            ap1mad),
+                                        'nbins':binned[key]['nbins'],
+                                        'timebins':binned[key]['jdbins'],
+                                        'timebinsec':timebinsec}
+            lcdict['binned']['iep3'] = {'times':binned[key]['RJD'],
+                                        'mags':binned[key]['AP2'],
+                                        'errs':np.full_like(binned[key]['AP2'],
+                                                            ap2mad),
+                                        'nbins':binned[key]['nbins'],
+                                        'timebins':binned[key]['jdbins'],
+                                        'timebinsec':timebinsec}
+
+        # get TFA stuff for aperture 1
+        if ((key == 'tfalc.TF1' or key == 'tfalc.TF1.gz') and
+            'AP0' in binned[key]):
+
+            # we'll have to generate errors because we don't have any in the
+            # generated binned LC.
+
+            ap0mad = np.nanmedian(np.abs(binned[key]['AP0'] -
+                                         np.nanmedian(binned[key]['AP0'])))
+
+
+            lcdict['binned']['itf1'] = {'times':binned[key]['RJD'],
+                                        'mags':binned[key]['AP0'],
+                                        'errs':np.full_like(binned[key]['AP0'],
+                                                            ap0mad),
+                                        'nbins':binned[key]['nbins'],
+                                        'timebins':binned[key]['jdbins'],
+                                        'timebinsec':timebinsec}
+
+        # get TFA stuff for aperture 1
+        if ((key == 'tfalc.TF2' or key == 'tfalc.TF2.gz') and
+            'AP0' in binned[key]):
+
+            # we'll have to generate errors because we don't have any in the
+            # generated binned LC.
+
+            ap0mad = np.nanmedian(np.abs(binned[key]['AP0'] -
+                                         np.nanmedian(binned[key]['AP0'])))
+
+
+            lcdict['binned']['itf2'] = {'times':binned[key]['RJD'],
+                                        'mags':binned[key]['AP0'],
+                                        'errs':np.full_like(binned[key]['AP0'],
+                                                            ap0mad),
+                                        'nbins':binned[key]['nbins'],
+                                        'timebins':binned[key]['jdbins'],
+                                        'timebinsec':timebinsec}
+
+        # get TFA stuff for aperture 1
+        if ((key == 'tfalc.TF3' or key == 'tfalc.TF3.gz') and
+            'AP0' in binned[key]):
+
+            # we'll have to generate errors because we don't have any in the
+            # generated binned LC.
+
+            ap0mad = np.nanmedian(np.abs(binned[key]['AP0'] -
+                                         np.nanmedian(binned[key]['AP0'])))
+
+
+            lcdict['binned']['itf3'] = {'times':binned[key]['RJD'],
+                                        'mags':binned[key]['AP0'],
+                                        'errs':np.full_like(binned[key]['AP0'],
+                                                            ap0mad),
+                                        'nbins':binned[key]['nbins'],
+                                        'timebins':binned[key]['jdbins'],
+                                        'timebinsec':timebinsec}
+
+    # all done, check if we succeeded
+    if lcdict['binned']:
+
+        return lcdict
+
+    else:
+
+        LOGERROR('no binned measurements found in %s!' % binnedpklf)
+        return None
+
+
+
+def generate_hatpi_binnedlc_pkl(binnedpklf, textlcf, timebinsec,
+                                outfile=None):
+    '''
+    This reads the binned LC and writes it out to a pickle.
+
+    '''
+
+    binlcdict = read_hatpi_binnedlc(binnedpklf, textlcf, timebinsec)
+
+    if binlcdict:
+        if outfile is None:
+            outfile = os.path.join(
+                os.path.dirname(binnedpklf),
+                '%s-hplc.pkl' % (
+                    os.path.basename(binnedpklf).rstrip('sec-lc.pkl.gz')
+                )
+            )
+
+        return lcdict_to_pickle(binlcdict, outfile=outfile)
+    else:
+        LOGERROR('could not read binned HATPI LC: %s' % binnedpklf)
+        return None
+
+
+#####################
+## POST-PROCESSING ##
+#####################
 
 def pklc_fovcatalog_objectinfo(
         pklcdir,

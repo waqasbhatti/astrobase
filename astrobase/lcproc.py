@@ -1167,7 +1167,6 @@ def timebinlc(lcfile,
                                        'errs':binned['binnederrs'],
                                        'nbins':binned['nbins'],
                                        'timebins':binned['jdbins'],
-                                       'ndet':binned['binnedtimes'].size,
                                        'binsizesec':binsizesec}}
 
         else:
@@ -1176,7 +1175,6 @@ def timebinlc(lcfile,
                                       'errs':binned['binnederrs'],
                                       'nbins':binned['nbins'],
                                       'timebins':binned['jdbins'],
-                                      'ndet':binned['binnedtimes'].size,
                                       'binsizesec':binsizesec}
 
 
