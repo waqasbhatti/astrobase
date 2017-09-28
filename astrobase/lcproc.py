@@ -1101,7 +1101,7 @@ def bin_lc(lcfile,
                                        'nbins':binned['nbins'],
                                        'timebins':binned['jdbins'],
                                        'ndet':binned['binnedtimes'].size,
-                                       'binsizesec':binsizsec}}
+                                       'binsizesec':binsizesec}}
 
         else:
             lcdict['binned'][mcol] = {'times':binned['binnedtimes'],
@@ -1110,7 +1110,7 @@ def bin_lc(lcfile,
                                       'nbins':binned['nbins'],
                                       'timebins':binned['jdbins'],
                                       'ndet':binned['binnedtimes'].size,
-                                      'binsizesec':binsizsec}
+                                      'binsizesec':binsizesec}
 
 
     # done with binning for all magcols, now generate the output file
