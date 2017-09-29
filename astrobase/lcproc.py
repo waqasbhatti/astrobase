@@ -908,8 +908,8 @@ def runpf(lcfile,
 
             # save the results
             resultdict[mcolget[-1]] = {'gls':gls,
-                                'bls':bls,
-                                'pdm':pdm}
+                                       'bls':bls,
+                                       'pdm':pdm}
 
             # add the SNR results to the BLS result dict
             resultdict[mcolget[-1]]['bls'].update({
