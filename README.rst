@@ -16,6 +16,12 @@ Sphinx works), but the docstrings are fairly good and an overview is provided at
 https://github.com/waqasbhatti/astrobase, along with Jupyter notebooks that
 demonstrate some of the functionality.
 
+Changelog
+---------
+
+Please see https://github.com/waqasbhatti/astrobase/blob/master/CHANGELOG.md for
+the latest changelog for tagged versions.
+
 Installation
 ------------
 
