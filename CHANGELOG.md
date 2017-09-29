@@ -1,0 +1,123 @@
+# Changelog for v0.1.22 -> HEAD
+
+## Fixes
+
+- checkplot: add check for overwritten pkl when converting to png
+- checkplot: added kwarg for findercachedir to checkplot fns
+- checkplot: added verbose kwarg
+- checkplot: add in extra BLS info if available
+- checkplot: add in markeredgewidth for older matplotlibs
+- checkplot: astroquery_skyview_stamp -> internal_skyview_stamp
+- checkplot: calculate varfeatures, add other keys required by cpserver tools
+- checkplot.checkplot_pickle: can now overplot external LC fit fn
+- checkplot: direct return mode for _pkl_phased_magseries_plot
+- checkplot: docstring fixes
+- checkplot: handle case of no explicitly provided lspmethod
+- checkplotlist: added chunked output if too many checkplots
+- checkplotlist: add optional prefixes to output JSON filelists
+- checkplotlist: auto-add output JSON prefix if sortby is provided
+- checkplotlist: better messaging if more than 1 output JSON
+- checkplotlist: can now index into arrays when sorting on cpd properties
+- checkplotlist: can now specify sortkey/sortorder when making the pkl list
+- checkplotlist: faster custom sorting with mp.Pool
+- checkplotlist: fix docstring
+- checkplotlist: guard against missing sortkey items
+- checkplotlist: remove non-finite vals from filters
+- checkplotlist: use argparse instead of hacked together cmdline parsing
+- checkplot: make varfeatures optional
+- checkplot, plotbase: astroquery_skyview_stamp -> skyview_stamp
+- checkplot: pyplot.scatter -> pyplot.plot for speed, also use rasterized=True
+- checkplot: return lcfit per phased LC, not just the last one
+- checkplot: slightly smaller marker size for binned mag series
+- checkplot: turn off bestperiodhighlight by default
+- checkplot.twolsp_checkplot_png: don't break if bestperiodhighlight is None
+- cplist: added filtering options for checkplotserver input JSON
+- cplist: fix incorrect filtering because we didn't take sort order into account
+- cpserver: add check for checkplot-filelist-00.json as default
+- cpserver: added sortorder/sortkey UI elem in sidebar list
+- cpserver/cplist: add support for filtered list JSONs
+- cpserver: enable gzip
+- cpserver.js: fix case where observing stations aren't strings
+- cpserver: slightly better display of sortkey/sortorder
+- cpserver: turn off cplist sorting since checkplotlist handles it
+- cpserver UI: add a filter control to the reviewed checkplot sidebar list
+- cpserver UI: disable bokeh; will use server-side plotting for now
+- hplc: added HPX binned LC reader functions
+- hplc: added parallel LC concatenator
+- hplc: added pklc_fovcatalog_objectinfo to fill in objectinfo
+- hplc: fix station names
+- hplc: use gzipped fovcatalogs if available
+- imageutils: added frame_radecbox_to_jpeg function
+- imageutils: handle weird input better
+- imageutils: various fixes
+- kbls: add alternate SNR calculation
+- kbls: add support for max number of frequencies to search
+- kbls: don't crash if spline fit to find a minimum fails
+- lcfit: fourier_fit_magseries now accepts fourierorder as a scalar
+- lcfit: initfourierparams -> fourierparams
+- lcfit.spline_fit...: maxknots reduced to 30 for better min-finding
+- lcmath.time_bin_magseries_with_errs: return jdbins as array
+- lcproc: add a LC binning function
+- lcproc: added maxobjects to be processed per driver invocation
+- lcproc: added pf driver for all LC formats
+- lcproc: adding makelclist
+- lcproc: adding support for multiple lc types
+- lcproc: add overrideable time, mag, err cols for all function drivers
+- lcproc: add parallel LC binning functions
+- lcproc: add register func for custom LC format
+- lcproc: also get objects above stetson threshold across all magcols
+- lcproc: bugfixes
+- lcproc/checkplot: add in BLS snr if available
+- lcproc: dereference columns for different lctypes correctly
+- lcproc: fix bug where bls result was replaced instead of updated
+- lcproc: more bug fixes
+- lcproc: more fixes
+- lcproc: use last deferenced mcol val to correctly process astrokep lcs
+- plotbase: added internal_skyview_stamp fn to remove astroquery dep
+- plotbase: plot the binned plot over the unbinned one
+- plotbase.skyview_stamp: add provenance, use sha256 instead of md5
+- README.rst: add pointer to CHANGELOG.md
+- signals: fix mask_signal
+- signals: more fixes
+- signals: return a BytesIO/StringIO object as fitplotfile if provided
+- signals: whiten_magseries now accepts fourierorder as a scalar
+- varbase.lcfit: added verbose kwarg
+- varbase.signals: fix gls_prewhiten
+- varbase.signals: fix various horrendous problems in prewhiten_magseries
+
+
+## Work that may be in progress
+
+- [WIP] added lcproc.py to drive large HAT LC processing jobs
+- [WIP] cpserver: added some TODOs
+- [WIP] cpserver, checkplot: some plot fixes
+- [WIP] cpserver: continuing work
+- [WIP] cpserver: finishing up backend work, to be tested
+- [WIP] cpserver: fix async err handling, some lctools now working
+- [WIP] cpserver: fixed various lctool bugs after testing
+- [WIP] cpserver: fix parsing of argument types
+- [WIP] cpserver: fix saving to tempfpath, fix circular ref in var-varfeatures
+- [WIP] cpserver: implemented lctools: phasedlc-newplot, var-varfeatures
+- [WIP] cpserver.js: added skeleton for cptools
+- [WIP] cpserver lctools: added a reset function and a lcfit subtract function
+- [WIP] cpserver: more fixes
+- [WIP] cpserver: more work on UI
+- [WIP] cpserver: screenshot updated with near-final UI for v0.2
+- [WIP] cpserver: some notes for stuff
+- [WIP] cpserver: still WIP
+- [WIP] cpserver: still working on LC tools backend
+- [WIP] cpserver UI: added period-search, variability-tools, lcfit tabs
+- [WIP] cpserver UI: added some phased LC plot options
+- [WIP] cpserver UI: adding controls to JS, working on periodsearch
+- [WIP] cpserver UI: phasedlc-newplot, var-varfeatures, work queues
+- [WIP] cpserver UI: still working on JS for lctools
+- [WIP] cpserver UI: various CSS fixes
+- [WIP] cpserver: various fixes to JSON decoding and checkplot loading
+- [WIP] cpserver: various fixes to UI
+- [WIP] cpserver: various UI fixes
+- [WIP] cpserver: working on hooking up signal and fitting functions
+- [WIP] cpserver: working on LC tools handlers
+- [WIP] cpserver: write tool results to temp pkl, keep orig pkl load fast
+- [WIP] lcfit: add a simple trapezoid function for eclipses
+
+
