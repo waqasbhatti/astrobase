@@ -454,7 +454,7 @@ def main():
                     # yes: this is unsafe
 
                     filterstr = (
-                        'filtertargets %s %s' %
+                        'np.isfinite(filtertargets) & (filtertargets %s %s)' %
                         (foperator, foperand)
                     )
                     filterind = eval(filterstr)
