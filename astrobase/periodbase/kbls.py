@@ -892,12 +892,26 @@ def bls_snr(blsdict,
             thisbestperiod = blsres['bestperiod']
 
             # get the minimum light epoch using a spline fit
-            spfit = spline_fit_magseries(times, mags, errs,
-                                         thisbestperiod,
-                                         magsarefluxes=magsarefluxes,
-                                         verbose=verbose)
+            try:
 
-            thisminepoch = spfit['fitinfo']['fitepoch']
+                spfit = spline_fit_magseries(times, mags, errs,
+                                             thisbestperiod,
+                                             magsarefluxes=magsarefluxes,
+                                             verbose=verbose)
+                thisminepoch = spfit['fitinfo']['fitepoch']
+
+            except ValueError:
+
+                LOGEXCEPTION('could not fit a spline to find a minimum of '
+                             'the phased LC, trying SavGol fit instead...')
+                # fit a Savitsky-Golay instead and get its minimum
+                savfit = savgol_fit_magseries(times, mags, errs,
+                                              thisbestperiod,
+                                              magsarefluxes=magsarefluxes,
+                                              verbose=verbose)
+                thisminepoch = savfit['fitinfo']['fitepoch']
+
+
             if isinstance(thisminepoch, np.ndarray):
                 if verbose:
                     LOGWARNING('minimum epoch is actually an array:\n'
