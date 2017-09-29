@@ -2371,6 +2371,16 @@ def checkplot_dict(lspinfolist,
             # the checkplotdict as well
             if 'snr' in lspinfo:
                 checkplotdict[lspinfo['method']]['snr'] = lspinfo['snr']
+            if 'altsnr' in lspinfo:
+                checkplotdict[lspinfo['method']]['altsnr'] = lspinfo['altsnr']
+            if 'transitdepth' in lspinfo:
+                checkplotdict[lspinfo['method']]['transitdepth'] = (
+                    lspinfo['transitdepth']
+                )
+            if 'transitduration' in lspinfo:
+                checkplotdict[lspinfo['method']]['transitduration'] = (
+                    lspinfo['transitduration']
+                )
 
         ## update the checkplot dict with some other stuff that's needed by
         ## checkplotserver
