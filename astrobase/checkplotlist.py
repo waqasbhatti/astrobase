@@ -288,7 +288,7 @@ def main():
         action='store',
         type=int,
         default=8,
-        help=("the number of parallel workers that will launched "
+        help=("the number of parallel workers that will be launched "
               "to retrieve checkplot key values used for "
               "sorting and filtering ")
     )
