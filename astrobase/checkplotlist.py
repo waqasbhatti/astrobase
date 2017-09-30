@@ -608,7 +608,9 @@ def main():
                                    'nfiles':len(chunk),
                                    'sortkey':sortkey,
                                    'sortorder':sortorder,
-                                   'filterstatements':filterstatements}
+                                   'filterstatements':filterstatements,
+                                   'sortkeyvals':sorttargets,
+                                   'filterkeyvals':filtertargets}
                         json.dump(outdict,outfd)
 
                 # if it's not OK to overwrite, then
@@ -627,9 +629,9 @@ def main():
                     indict['nfiles'] = len(chunk)
                     indict['sortkey'] = sortkey
                     indict['sortorder'] = sortorder
-                    indict['filterkey'] = filterkey
-                    indict['filtercondition'] = '%s %s' % (foperator,
-                                                           foperand)
+                    indict['filterstatements'] = filterstatements
+                    indict['sortkeyvals'] = sorttargets
+                    indict['filterkeyvals'] = filtertargets
 
                     # write the updated to back to the file
                     with open(outjson,'w') as outfd:
@@ -643,9 +645,9 @@ def main():
                                'nfiles':len(chunk),
                                'sortkey':sortkey,
                                'sortorder':sortorder,
-                               'filterkey':filterkey,
-                               'filtercondition':'%s %s' % (foperator,
-                                                            foperand)}
+                               'filterstatements':filterstatements,
+                               'sortkeyvals':sorttargets,
+                               'filterkeyvals':filtertargets}
                     json.dump(outdict,outfd)
 
             if os.path.exists(outjson):
