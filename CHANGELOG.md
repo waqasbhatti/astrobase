@@ -1,3 +1,14 @@
+# Changelog for v0.2.1 -> v0.2.2
+
+## Fixes
+
+- cplist: add 'ne' -> not-equal-to filter operator for --filter arg
+- cplist/cpserver: now takes multiple filters to be ANDed together; yet to test
+- cplist: fix docstring
+- cplist: fixed multiple filter keyword arguments
+- cplist: fix incorrect filtering
+- cplist: fixing multiple filter args
+
 # Changelog for v0.1.22 -> v0.2.0
 
 ## Fixes
