@@ -135,12 +135,26 @@ operator.
 
 Example: get only those checkplots with Stetson J > 0.2:
 
-checkplotlist pkl my-project/awesome-objects --filterby 'varinfo.features.stetsonj_gt@0.2'
+checkplotlist pkl my-project/awesome-objects \
+    --filterby 'varinfo.features.stetsonj_gt@0.2'
 
 Example: get only those checkplots for objects with r < 12.0 and sort these by
 power of the best peak in their Lomb-Scargle periodogram:
 
-checkplot pkl my-project/awesome-objects --filterby 'objectinfo.sdssr_lt@12.0' --sortby 'gls.nbestlspvals.0_desc'
+checkplot pkl my-project/awesome-objects \
+    --filterby 'objectinfo.sdssr_lt@12.0' \
+    --sortby 'gls.nbestlspvals.0_desc'
+
+Example: get only those checkplots for objects that have transit depths between
+1 mmag and 10 mmag and sort these by the SNR of the best peak in the BLS
+spectrum in descending order:
+
+checkplot pkl my-project/awesome-objects \
+    --sortby 'bls.snr.0_desc'
+    --filterby 'bls.transitdepth_lt@-0.001' \
+    --filterby 'bls.transitdepth_gt@-0.01'
+
+
 '''
 
 import os
@@ -355,8 +369,7 @@ def main():
 
     if searchresults:
 
-        print('found %s checkplot files in %s, '
-              'making checkplot-filelist.json...' %
+        print('found %s checkplot files in dir: %s' %
               (len(searchresults), checkplotbasedir))
 
         # see if we should sort the searchresults in some special order
@@ -616,14 +629,12 @@ def main():
                     with open(outjson,'w') as outfd:
                         print('WRN! completely overwriting '
                               'existing checkplot list %s' % outjson)
-                        outdict = {'checkplots':chunk,
-                                   'nfiles':len(chunk),
-                                   'sortkey':sortkey,
-                                   'sortorder':sortorder,
-                                   'filterstatements':filterstatements,
-                                   'sortkeyvals':sorttargets.tolist(),
-                                   'filterkeyvals':filtertargets.tolist(),
-                                   'filtermatchind':finalfilterind.tolist()}
+                        outdict = {
+                            'checkplots':chunk,
+                            'nfiles':len(chunk),
+                            'sortkey':sortkey,
+                            'sortorder':sortorder,
+                            'filterstatements':filterstatements,
                         json.dump(outdict,outfd)
 
                 # if it's not OK to overwrite, then
@@ -643,9 +654,6 @@ def main():
                     indict['sortkey'] = sortkey
                     indict['sortorder'] = sortorder
                     indict['filterstatements'] = filterstatements
-                    indict['sortkeyvals'] = sorttargets.tolist()
-                    indict['filterkeyvals'] = filtertargets.tolist()
-                    indict['filtermatchind'] = finalfilterind.tolist()
 
                     # write the updated to back to the file
                     with open(outjson,'w') as outfd:
@@ -659,10 +667,7 @@ def main():
                                'nfiles':len(chunk),
                                'sortkey':sortkey,
                                'sortorder':sortorder,
-                               'filterstatements':filterstatements,
-                               'sortkeyvals':sorttargets.tolist(),
-                               'filterkeyvals':filtertargets.tolist(),
-                               'filtermatchind':finalfilterind.tolist()}
+                               'filterstatements':filterstatements}
                     json.dump(outdict,outfd)
 
             if os.path.exists(outjson):
