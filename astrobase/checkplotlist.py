@@ -415,7 +415,7 @@ def main():
             # if keystoget is more than 1 element, then it's either sorting
             # followed by filtering (multiple)...
             if (len(keystoget) > 1 and
-                (sortkey and sortcondition) and
+                (sortkey and sortorder) and
                 (filterkeys and filterconditions)):
 
                 # the first elem is sort key targets
@@ -426,7 +426,7 @@ def main():
 
             # otherwise, it's just multiple filters
             elif (len(keystoget) > 1 and
-                  (not (sortkey and sortcondition)) and
+                  (not (sortkey and sortorder)) and
                   (filterkeys and filterconditions)):
 
                 sorttargets = None
