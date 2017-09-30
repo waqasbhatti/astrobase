@@ -426,7 +426,8 @@ def main():
                     keystoget.append(fdictkeys)
 
 
-            print('retrieving checkplot info...')
+            print('retrieving checkplot info using %s workers...'
+                  % args.maxkeyworkers)
             # launch the key retrieval
             pool = mp.Pool(args.maxkeyworkers)
             tasks = [(x, keystoget) for x in searchresults]
