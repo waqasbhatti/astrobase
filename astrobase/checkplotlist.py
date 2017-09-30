@@ -283,6 +283,17 @@ def main():
               "if this isn't provided, but sortby is, will use that to "
               "figure out the output files' prefixes")
     )
+    aparser.add_argument(
+        '--maxkeyworkers',
+        action='store',
+        type=int,
+        default=8,
+        help=("the number of parallel workers that will launched "
+              "to retrieve checkplot key values used for "
+              "sorting and filtering ")
+    )
+
+
 
     args = aparser.parse_args()
 
@@ -370,7 +381,7 @@ def main():
             # handle sorting
             if (sortkey and sortorder):
 
-                print('sorting checkplot pickles by %s in order: %s...' %
+                print('sorting checkplot pickles by %s in order: %s' %
                       (sortkey, sortorder))
 
                 # dereference the sort key
@@ -387,7 +398,7 @@ def main():
             # handle filtering
             if (filterkeys and filterconditions):
 
-                print('filtering checkplot pickles by %s using: %s...' %
+                print('filtering checkplot pickles by %s using: %s' %
                       (filterkeys, filterconditions))
 
                 # add all the filtkeys to the list of keys to get
@@ -401,8 +412,9 @@ def main():
                     keystoget.append(fdictkeys)
 
 
+            print('retrieving checkplot info...')
             # launch the key retrieval
-            pool = mp.Pool()
+            pool = mp.Pool(args.maxkeyworkers)
             tasks = [(x, keystoget) for x in searchresults]
             keytargets = pool.map(key_worker, tasks)
 
@@ -609,8 +621,9 @@ def main():
                                    'sortkey':sortkey,
                                    'sortorder':sortorder,
                                    'filterstatements':filterstatements,
-                                   'sortkeyvals':sorttargets,
-                                   'filterkeyvals':filtertargets}
+                                   'sortkeyvals':sorttargets.tolist(),
+                                   'filterkeyvals':filtertargets.tolist(),
+                                   'filtermatchind':finalfilterind.tolist()}
                         json.dump(outdict,outfd)
 
                 # if it's not OK to overwrite, then
@@ -630,8 +643,9 @@ def main():
                     indict['sortkey'] = sortkey
                     indict['sortorder'] = sortorder
                     indict['filterstatements'] = filterstatements
-                    indict['sortkeyvals'] = sorttargets
-                    indict['filterkeyvals'] = filtertargets
+                    indict['sortkeyvals'] = sorttargets.tolist()
+                    indict['filterkeyvals'] = filtertargets.tolist()
+                    indict['filtermatchind'] = finalfilterind.tolist()
 
                     # write the updated to back to the file
                     with open(outjson,'w') as outfd:
@@ -646,8 +660,9 @@ def main():
                                'sortkey':sortkey,
                                'sortorder':sortorder,
                                'filterstatements':filterstatements,
-                               'sortkeyvals':sorttargets,
-                               'filterkeyvals':filtertargets}
+                               'sortkeyvals':sorttargets.tolist(),
+                               'filterkeyvals':filtertargets.tolist(),
+                               'filtermatchind':finalfilterind.tolist()}
                     json.dump(outdict,outfd)
 
             if os.path.exists(outjson):
