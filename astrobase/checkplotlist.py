@@ -100,7 +100,7 @@ If you want to sort checkplot pickle files in the output list in some special
 way other than the usual filename sort order, this requires an argument on the
 commandline of the form:
 
---sortby '<sortkey>-<asc|desc>'
+--sortby '<sortkey>_<asc|desc>'
 
 Here, sortkey is some key in the checkplot pickle. This can be a simple key:
 e.g. objectid or it can be a composite key: e.g. varinfo.features.stetsonj.
@@ -109,12 +109,12 @@ must exist in all checkplot pickles.
 
 Example: sort checkplots by their 2MASS J magnitudes in ascending order:
 
-$ checkplotlist pkl my-project/awesome-objects --sortby 'objectinfo.jmag-asc'
+$ checkplotlist pkl my-project/awesome-objects --sortby 'objectinfo.jmag_asc'
 
 Example: sort checkplots by the power of the best peak in their PDM
 periodograms:
 
-$ checkplotlist pkl my-project/awesome-objects --sortby 'pdm.nbestlspvals.0-asc'
+$ checkplotlist pkl my-project/awesome-objects --sortby 'pdm.nbestlspvals.0_asc'
 
 FILTERING CHECKPLOT PICKLES
 ---------------------------
@@ -122,7 +122,7 @@ You can filter the checkplot pickle files in the output list by using the
 --filterby argument. Note that filtering takes place after any requested
 sorting.  Provide a filterkey, filteroperator, and filteroperand in the form:
 
---filterby '<filterkey>-<filteroperator>@<filteroperand>'
+--filterby '<filterkey>_<filteroperator>@<filteroperand>'
 
 Here, filterkey is some key in the checkplot pickle, specified as the sortkey
 discussed above. filteroperator is one of the following 2-character strings:
@@ -135,12 +135,12 @@ operator.
 
 Example: get only those checkplots with Stetson J > 0.2:
 
-checkplotlist pkl my-project/awesome-objects --filterby 'varinfo.features.stetsonj-gt@0.2'
+checkplotlist pkl my-project/awesome-objects --filterby 'varinfo.features.stetsonj_gt@0.2'
 
 Example: get only those checkplots for objects with r < 12.0 and sort these by
 power of the best peak in their Lomb-Scargle periodogram:
 
-checkplot pkl my-project/awesome-objects --filterby 'objectinfo.sdssr-lt@12.0' --sortby 'gls.nbestlspvals.0-desc'
+checkplot pkl my-project/awesome-objects --filterby 'objectinfo.sdssr_lt@12.0' --sortby 'gls.nbestlspvals.0_desc'
 '''
 
 import os
@@ -293,7 +293,7 @@ def main():
 
     # see if there's a sorting order
     if args.sortby:
-        sortkey, sortorder = args.sortby.split('-')
+        sortkey, sortorder = args.sortby.split('_')
         if outprefix is None:
             outprefix = args.sortby
     else:
@@ -307,7 +307,7 @@ def main():
         # load all the filters
         for filt in args.filterby:
 
-            f = filt.split('-')
+            f = filt.split('_')
             filterkeys.append(f[0])
             filterconditions.append(f[1])
 
