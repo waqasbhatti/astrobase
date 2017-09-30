@@ -634,7 +634,8 @@ def main():
                             'nfiles':len(chunk),
                             'sortkey':sortkey,
                             'sortorder':sortorder,
-                            'filterstatements':filterstatements,
+                            'filterstatements':filterstatements
+                        }
                         json.dump(outdict,outfd)
 
                 # if it's not OK to overwrite, then
