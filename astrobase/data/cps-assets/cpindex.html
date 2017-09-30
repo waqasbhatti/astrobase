@@ -24,10 +24,12 @@
       </div>
     </div>
 
-    {% if project_cpfilterkey %}
+    {% if project_cpfilterstatements %}
     <div class="row">
       <div class="col-sm-12 sidebar-label">
-          <strong>Filtered:</strong> {{ project_cpfilterkey }} {{ project_cpfiltercondition }}
+        {% for filt in project_cpfilterstatements %}
+        <strong>Filtered:</strong> {{ filt }}<br>
+        {% end %}
       </div>
     </div>
     {% end %}
