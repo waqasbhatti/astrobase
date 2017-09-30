@@ -478,7 +478,6 @@ def main():
             # sorting/filtering
             searchresults = np.array(searchresults)
 
-
             # first, take care of sort keys
             sortdone = False
 
@@ -515,7 +514,7 @@ def main():
                     thisftarget = np.array([x[ind] for x in filtertargets])
 
                     if (sortdone):
-                        filtertargets = thisftarget[sortind]
+                        thisftarget = thisftarget[sortind]
 
                     try:
 
