@@ -145,14 +145,14 @@ checkplot pkl my-project/awesome-objects
     --filterby 'objectinfo.sdssr_lt@12.0'
     --sortby 'gls.nbestlspvals.0_desc'
 
-Example: get only those checkplots for objects that have transit depths between
-1 mmag and 10 mmag and sort these by the SNR of the best peak in the BLS
-spectrum in descending order:
+Example: get only those checkplots for objects that have best-period transit
+depths between 1 mmag and 10 mmag and sort these by the SNR of the best peak in
+the BLS spectrum in descending order:
 
 checkplot pkl my-project/awesome-objects
     --sortby 'bls.snr.0_desc'
-    --filterby 'bls.transitdepth_lt@-0.001'
-    --filterby 'bls.transitdepth_gt@-0.01'
+    --filterby 'bls.transitdepth.0_lt@-0.001'
+    --filterby 'bls.transitdepth.0_gt@-0.01'
 
 
 '''
@@ -463,13 +463,13 @@ def main():
             # sort target...
             elif (len(keystoget) == 1 and
                   (sortkey and sortorder) and
-                  (not(filterkey and filtercondition))):
+                  (not(filterkeys and filterconditions))):
                 sorttargets = keytargets
                 filtertargets = None
 
             # or it's just a filter target
             elif (len(keystoget) == 1 and
-                  (filterkey and filtercondition) and
+                  (filterkeys and filterconditions) and
                   (not(sortkey and sortorder))):
                 sorttargets = None
                 filtertargets = keytargets
