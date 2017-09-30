@@ -257,9 +257,12 @@ def main():
     )
     aparser.add_argument(
         '--filterby',
-        action='store',
+        action='append',
         type=str,
-        help=("the filter key and condition to use when filtering")
+        help=("the filter key and condition to use when filtering. "
+              "you can specify this multiple times to filter by "
+              "several keys at once. all filters are joined with a "
+              "logical AND operation in the order they're given.")
     )
     aparser.add_argument(
         '--splitout',
@@ -298,14 +301,23 @@ def main():
 
     # see if there's a filter condition
     if args.filterby:
-        filterkey, filtercondition = args.filterby.split('-')
-        if outprefix is None:
-            outprefix = args.filterby
-        else:
-            outprefix = '%s-%s' % (args.filterby, outprefix)
-    else:
-        filterkey, filtercondition = None, None
 
+        filterkeys, filterconditions = [], []
+
+        # load all the filters
+        for filt in args.filterby:
+
+            f = filt.split('-')
+            filterkeys.append(f[0])
+            filterconditions.append(f[1])
+
+        # generate the output file's prefix
+        if outprefix is None:
+            outprefix = '-'.join(args.filterby)
+        else:
+            outprefix = '%s-%s' % ('-'.join(args.filterby), outprefix)
+    else:
+        filterkeys, filterconditions = None, None
 
     if args.cptype == 'pkl':
         checkplotext = 'pkl'
@@ -348,7 +360,10 @@ def main():
         # '<filterkey>-<condition>@<operand>' where <condition> is one of: 'ge',
         # 'gt', 'le', 'lt', 'eq' and <operand> is a string, float, or int to use
         # when applying <condition>
-        if (sortkey and sortorder) or (filterkey and filtercondition):
+
+        # make sure we only run these operations on checkplot pickles
+        if ((args.cptype == 'pkl') and
+            ((sortkey and sortorder) or (filterkey and filtercondition))):
 
             keystoget = []
 
@@ -370,17 +385,20 @@ def main():
                 keystoget.append(sortkeys)
 
             # handle filtering
-            if (filterkey and filtercondition):
+            if (filterkeys and filterconditions):
 
                 print('filtering checkplot pickles by %s using: %s...' %
-                      (filterkey, filtercondition))
+                      (filterkeys, filterconditions))
 
-                # dereference the filter key
-                filterkeys = filterkey.split('.')
-                filterkeys = [(int(x) if x.isdecimal() else x)
-                              for x in filterkeys]
+                # add all the filtkeys to the list of keys to get
+                for fdk in filterkeys:
 
-                keystoget.append(filterkeys)
+                    # dereference the filter dict key
+                    fdictkeys = fdk.split('.')
+                    fdictkeys = [(int(x) if x.isdecimal() else x)
+                                 for x in fdictkeys]
+
+                    keystoget.append(fdictkeys)
 
 
             # launch the key retrieval
@@ -393,15 +411,36 @@ def main():
 
             # now that we have keys, we need to use them
             # keys will be returned in the order we put them into keystoget
-            if len(keystoget) == 2:
 
+            # if keystoget is more than 1 element, then it's either sorting
+            # followed by filtering (multiple)...
+            if (len(keystoget) > 1 and
+                (sortkey and sortcondition) and
+                (filterkeys and filterconditions)):
+
+                # the first elem is sort key targets
                 sorttargets = [x[0] for x in keytargets]
-                filtertargets = [x[1] for x in keytargets]
+
+                # all of the rest are filter targets
+                filtertargets = [x[1:] for x in keytargets]
+
+            # otherwise, it's just multiple filters
+            elif (len(keystoget) > 1 and
+                  (not (sortkey and sortcondition)) and
+                  (filterkeys and filterconditions)):
+
+                sorttargets = None
+                filtertargets = keytargets
+
+            # if there's only one element in keytoget, then it's either just a
+            # sort target...
             elif (len(keystoget) == 1 and
                   (sortkey and sortorder) and
                   (not(filterkey and filtercondition))):
                 sorttargets = keytargets
                 filtertargets = None
+
+            # or it's just a filter target
             elif (len(keystoget) == 1 and
                   (filterkey and filtercondition) and
                   (not(sortkey and sortorder))):
@@ -430,56 +469,80 @@ def main():
 
             # second, take care of any filters
             filterok = False
+            filterstatements = []
 
             if filtertargets:
 
-                filtertargets = np.ravel(np.array(filtertargets))
-
                 # don't forget to also sort the filtertargets in the same order
                 # as sorttargets so we can get the correct objects to filter.
-                if (sortdone):
-                    filtertargets = filtertargets[sortind]
 
-                # figure out the filter condition: <condition>@<operand> where
-                # <condition> is one of: 'ge', 'gt', 'le', 'lt', 'eq' and
+                # now figure out the filter conditions: <condition>@<operand>
+                # where <condition> is one of: 'ge', 'gt', 'le', 'lt', 'eq' and
                 # <operand> is a string, float, or int to use when applying
                 # <condition>
 
-                try:
+                finalfilterind = []
 
-                    foperator, foperand = filtercondition.split('@')
-                    foperator = FILTEROPS[foperator]
+                for ind, fcond in enumerate(filterconditions):
 
-                    # we'll do a straight eval of the filter
-                    # yes: this is unsafe
+                    thisftarget = np.array([x[ind] for x in filtertargets])
 
-                    filterstr = (
-                        'np.isfinite(filtertargets) & (filtertargets %s %s)' %
-                        (foperator, foperand)
-                    )
-                    filterind = eval(filterstr)
+                    if (sortdone):
+                        filtertargets = thisftarget[sortind]
 
-                    # apply the filter
-                    filterresults = searchresults[filterind]
+                    try:
 
-                    if filterresults.size > 0:
+                        foperator, foperand = fcond.split('@')
+                        foperator = FILTEROPS[foperator]
 
-                        print('filter applied: %s -> objects found: %s ' %
-                              (args.filterby, filterresults.size))
-                        searchresults = filterresults
-                        filterok = True
+                        # we'll do a straight eval of the filter
+                        # yes: this is unsafe
+                        filterstr = (
+                            'np.isfinite(thisftarget) & (thisftarget %s %s)' %
+                            (foperator, foperand)
+                        )
+                        filterind = eval(filterstr)
 
-                    else:
-                        print('WRN! filter failed! %s -> ZERO objects found!' %
-                              (args.filterby, ))
-                        print('WRN! not applying failed filter')
+                        # add this filter to the finalfilterind
+                        finalfilterind.append(filterind)
 
-                except Exception as e:
+                        # update the filterstatements
+                        filterstatements.append('%s %s %s' % (filterkeys[ind],
+                                                              foperator,
+                                                              foperand))
 
-                    print('ERR! could not understand filter spec: %s'
-                          '\nexception was: %s' %
-                          (args.filterby, e))
-                    print('WRN! not applying broken filter')
+                    except Exception as e:
+
+                        print('ERR! could not understand filter spec: %s'
+                              '\nexception was: %s' %
+                              (args.filterby[ind], e))
+                        print('WRN! not applying broken filter')
+
+                #
+                # DONE with evaluating each filter, get final results below
+                #
+                # column stack the overall filter ind
+                finalfilterind = np.column_stack(finalfilterind)
+
+                # do a logical AND across the rows
+                finalfilterind = np.all(finalfilterind, axis=1)
+
+                # these are the final results after ANDing all the filters
+                filterresults = searchresults[finalfilterind]
+
+                # make sure we got some results
+                if filterresults.size > 0:
+
+                    print('filters applied: %s -> objects found: %s ' %
+                          (repr(args.filterby), filterresults.size))
+                    searchresults = filterresults
+                    filterok = True
+
+                # otherwise, applying all of the filters killed everything
+                else:
+                    print('WRN! filtering failed! %s -> ZERO objects found!' %
+                          (repr(args.filterby), ))
+                    print('WRN! not applying any filters')
 
             # all done with sorting and filtering
             # turn the searchresults back into a list
@@ -498,7 +561,6 @@ def main():
                 sortkey = 'filename'
                 sortorder = 'asc'
 
-
         nchunks = int(len(searchresults)/splitout) + 1
 
         searchchunks = [searchresults[x*splitout:x*splitout+splitout] for x
@@ -511,8 +573,7 @@ def main():
 
         # if the filter failed, zero out filterkey
         if not filterok:
-            filterkey = None
-            foperator, foperand = None, None
+            filterstatements = []
 
         # generate the output
         for chunkind, chunk in enumerate(searchchunks):
@@ -547,9 +608,7 @@ def main():
                                    'nfiles':len(chunk),
                                    'sortkey':sortkey,
                                    'sortorder':sortorder,
-                                   'filterkey':filterkey,
-                                   'filtercondition':'%s %s' % (foperator,
-                                                                foperand)}
+                                   'filterstatements':filterstatements}
                         json.dump(outdict,outfd)
 
                 # if it's not OK to overwrite, then
