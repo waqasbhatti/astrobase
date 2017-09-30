@@ -128,7 +128,7 @@ Here, filterkey is some key in the checkplot pickle, specified as the sortkey
 discussed above. filteroperator is one of the following 2-character strings:
 
 'gt' -> greater than, 'lt' -> less than, 'ge' -> greater than or equal to,
-'le' -> less than or equal to, 'eq' -> equal to
+'le' -> less than or equal to, 'eq' -> equal to, 'ne' -> not equal to
 
 filteroperand is the appropriate integer, float, or string for the filterkey and
 operator.
@@ -222,7 +222,8 @@ FILTEROPS = {'eq':'==',
              'gt':'>',
              'ge':'>=',
              'lt':'<',
-             'le':'<='}
+             'le':'<=',
+             'ne':'!='}
 
 
 
