@@ -135,23 +135,23 @@ operator.
 
 Example: get only those checkplots with Stetson J > 0.2:
 
-checkplotlist pkl my-project/awesome-objects \
+checkplotlist pkl my-project/awesome-objects \\
     --filterby 'varinfo.features.stetsonj_gt@0.2'
 
 Example: get only those checkplots for objects with r < 12.0 and sort these by
 power of the best peak in their Lomb-Scargle periodogram:
 
-checkplot pkl my-project/awesome-objects \
-    --filterby 'objectinfo.sdssr_lt@12.0' \
+checkplot pkl my-project/awesome-objects \\
+    --filterby 'objectinfo.sdssr_lt@12.0' \\
     --sortby 'gls.nbestlspvals.0_desc'
 
 Example: get only those checkplots for objects that have transit depths between
 1 mmag and 10 mmag and sort these by the SNR of the best peak in the BLS
 spectrum in descending order:
 
-checkplot pkl my-project/awesome-objects \
+checkplot pkl my-project/awesome-objects \\
     --sortby 'bls.snr.0_desc'
-    --filterby 'bls.transitdepth_lt@-0.001' \
+    --filterby 'bls.transitdepth_lt@-0.001' \\
     --filterby 'bls.transitdepth_gt@-0.01'
 
 
