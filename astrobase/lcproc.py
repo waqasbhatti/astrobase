@@ -900,24 +900,39 @@ def runpf(lcfile,
                 nworkers=nworkers,
                 magsarefluxes=magsarefluxes
             )
-
-            # calculate the SNR for the BLS as well
-            blssnr = bls_snr(bls, times, mags, errs,
-                             magsarefluxes=magsarefluxes,
-                             verbose=False)
-
             # save the results
             resultdict[mcolget[-1]] = {'gls':gls,
                                        'bls':bls,
                                        'pdm':pdm}
 
-            # add the SNR results to the BLS result dict
-            resultdict[mcolget[-1]]['bls'].update({
-                'snr':blssnr['snr'],
-                'altsnr':blssnr['altsnr'],
-                'transitdepth':blssnr['transitdepth'],
-                'transitduration':blssnr['transitduration'],
-            })
+
+            try:
+
+                # calculate the SNR for the BLS as well
+                blssnr = bls_snr(bls, times, mags, errs,
+                                 magsarefluxes=magsarefluxes,
+                                 verbose=False)
+
+                # add the SNR results to the BLS result dict
+                resultdict[mcolget[-1]]['bls'].update({
+                    'snr':blssnr['snr'],
+                    'altsnr':blssnr['altsnr'],
+                    'transitdepth':blssnr['transitdepth'],
+                    'transitduration':blssnr['transitduration'],
+                })
+
+            except Exception as e:
+
+                LOGEXCEPTION('could not calculate BLS SNR for %s' %
+                             lcfile)
+                # add the SNR null results to the BLS result dict
+                resultdict[mcolget[-1]]['bls'].update({
+                    'snr':[np.nan,np.nan,np.nan,np.nan,np.nan],
+                    'altsnr':[np.nan,np.nan,np.nan,np.nan,np.nan],
+                    'transitdepth':[np.nan,np.nan,np.nan,np.nan,np.nan],
+                    'transitduration':[np.nan,np.nan,np.nan,np.nan,np.nan],
+                })
+
 
         # once all mag cols have been processed, write out the pickle
         with open(outfile, 'wb') as outfd:
