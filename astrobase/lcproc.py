@@ -600,7 +600,7 @@ def getlclist(listpickle,
             if kdtindices and len(kdtindices) > 0:
 
                 LOGINFO('objects found within %.4f deg of (%.3f, %.3f): %s' %
-                        (searchradius, racenter, declcenter, kdtindices.size))
+                        (searchradius, racenter, declcenter, len(kdtindices)))
 
                 matchingind = kdtindices
 
@@ -610,7 +610,7 @@ def getlclist(listpickle,
 
                 LOGERROR('no objects were found within '
                          '%.4f deg of (%.3f, %.3f): %s' %
-                        (searchradius, racenter, declcenter, kdtindices.size))
+                        (searchradius, racenter, declcenter, len(kdtindices)))
                 return None
 
 
