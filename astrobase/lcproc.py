@@ -504,7 +504,7 @@ def makelclist(basedir,
             except Exception as e:
                 LOGEXCEPTION('could not make kdtree for (ra, decl): %s' %
                              makecoordindex)
-                lclistdict['kdtree'] = None
+                raise
 
 
         # write the pickle
