@@ -13,6 +13,7 @@ import sys
 import pickle
 import gzip
 import glob
+import shutil
 import multiprocessing as mp
 import logging
 from datetime import datetime
