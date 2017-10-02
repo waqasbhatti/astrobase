@@ -400,7 +400,7 @@ def makelclist(basedir,
             # dereference the column
             thiscol = col.split('.')
             thiscol = thiscol[-1]
-            lclistdict['objects'][col] = []
+            lclistdict['objects'][thiscol] = []
 
         # add a column for the filename as well
         lclistdict['objects']['lcfname'] = []
