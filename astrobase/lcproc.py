@@ -481,7 +481,8 @@ def makelclist(basedir,
                 declcol = declcol.split('.')[-1]
 
                 # get the ras and decls
-                objra, objdecl = lclistdict[racol], lclistdict[declcol]
+                objra, objdecl = (lclistdict['objects'][racol],
+                                  lclistdict['objects'][declcol])
 
                 # get the xyz unit vectors from ra,decl
                 # since i had to remind myself:
