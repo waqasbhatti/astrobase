@@ -597,7 +597,7 @@ def getlclist(listpickle,
                                               xyzdist,
                                               n_jobs=conesearchworkers)
 
-            if kdtindices and kdtindices.size > 0:
+            if kdtindices and len(kdtindices) > 0:
 
                 LOGINFO('objects found within %.4f deg of (%.3f, %.3f): %s' %
                         (searchradius, racenter, declcenter, kdtindices.size))
