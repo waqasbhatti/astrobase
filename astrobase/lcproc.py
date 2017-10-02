@@ -684,8 +684,6 @@ def getlclist(listpickle,
     filteredlcfnames = [os.path.join(lclist['basedir'], x)
                         for x in lclist['objects']['lcfname'][finalfilterind]]
 
-    LOGINFO('done. objects matching all filters: %s' % filteredobjectids.size)
-
 
     # if copylcsto is not None, copy LCs over to it
     if copylcsto is not None:
@@ -702,6 +700,9 @@ def getlclist(listpickle,
 
         for lc in lciter:
             shutil.copy(lc, copylcsto)
+
+
+    LOGINFO('done. objects matching all filters: %s' % filteredobjectids.size)
 
 
     return filteredlcfnames, filteredobjectids
