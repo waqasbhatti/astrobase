@@ -1,3 +1,9 @@
+# Changelog for v0.2.2 -> v0.2.3
+
+## Fixes
+
+- lcproc: don't crash runpf if BLS SNR fails
+
 # Changelog for v0.2.1 -> v0.2.2
 
 ## Fixes
