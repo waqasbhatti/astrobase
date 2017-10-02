@@ -630,7 +630,9 @@ def getlclist(listpickle,
     # generate a numpy array of the matching object indexes. we do it this way
     # so we can AND everything at the end, instead of having to look up the
     # objects at these indices and running the columnfilter on them
-    matchingobject_index = np.full_like(lclist['objects'][objectidcol],False)
+    matchingobject_index = np.full_like(lclist['objects'][objectidcol],
+                                        False,
+                                        dtype=np.bool)
     matchingobject_index[np.array(matchingind)] = True
 
 
@@ -669,7 +671,7 @@ def getlclist(listpickle,
         finalfilterind = np.all(finalfilterind, axis=1)
 
     # get the filtered object light curves and object names
-    filterobjectids = lclist['objects'][objectidcol][finalfilterind]
+    filteredobjectids = lclist['objects'][objectidcol][finalfilterind]
     filteredlcfnames = [os.path.join(lclist['basedir'], x)
                         for x in lclist['objects']['lcfname'][finalfilterind]]
 
