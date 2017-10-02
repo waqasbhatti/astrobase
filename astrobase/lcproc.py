@@ -535,6 +535,8 @@ def getlclist(listpickle,
     curves. Use this function to generate input lists for the
     parallel_varfeatures, parallel_pf, and parallel_timebin functions below.
 
+    Returns a two elem tuple: (matching_object_lcfiles, matching_objectids).
+
     objectidcol is the name of the object ID column in the listpickle file.
 
     conesearch is a three-element list:
@@ -611,7 +613,7 @@ def getlclist(listpickle,
                 LOGERROR('no objects were found within '
                          '%.4f deg of (%.3f, %.3f): %s' %
                         (searchradius, racenter, declcenter, len(kdtindices)))
-                return None
+                return None, None
 
 
         except Exception as e:
@@ -650,8 +652,8 @@ def getlclist(listpickle,
 
                 # generate the evalstring
                 filterstr = (
-                    "np.isfinite(lclist['objects'][%s]) & "
-                    "(lclist['objects'][%s] %s %s)"
+                    "np.isfinite(lclist['objects']['%s']) & "
+                    "(lclist['objects']['%s'] %s %s)"
                     ) % (fcol, fcol, foperator, foperand)
                 filterind = eval(filterstr)
                 allfilterinds.append(filterind)
