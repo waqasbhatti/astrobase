@@ -685,6 +685,24 @@ def getlclist(listpickle,
 
     LOGINFO('done. objects matching all filters: %s' % filteredobjectids.size)
 
+
+    # if copylcsto is not None, copy LCs over to it
+    if copylcsto is not None:
+
+        if not os.path.exists(copylcsto):
+            os.mkdir(copylcsto)
+
+        if TQDM:
+            lciter = tqdm(filteredlcfnames)
+        else:
+            lciter = filteredlcfnames
+
+        LOGINFO('copying matching light curves to %s' % copylcsto)
+
+        for lc in lciter:
+            shutil.copy(lc, copylcsto)
+
+
     return filteredlcfnames, filteredobjectids
 
 
