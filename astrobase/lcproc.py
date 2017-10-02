@@ -656,6 +656,10 @@ def getlclist(listpickle,
                     "(lclist['objects']['%s'] %s %s)"
                     ) % (fcol, fcol, foperator, foperand)
                 filterind = eval(filterstr)
+
+                ngood = lclist['objects'][objectidcol][filterind].size
+                LOGINFO('filter: %s -> %s remaining objects' % (cfilt, ngood))
+
                 allfilterinds.append(filterind)
 
             except Exception as e:
@@ -677,6 +681,7 @@ def getlclist(listpickle,
     filteredlcfnames = [os.path.join(lclist['basedir'], x)
                         for x in lclist['objects']['lcfname'][finalfilterind]]
 
+    LOGINFO('done. matching objects found: %s' % filteredobjectids.size)
 
     return filteredlcfnames, filteredobjectids
 
