@@ -601,7 +601,8 @@ def getlclist(listpickle,
 
             if kdtindices and len(kdtindices) > 0:
 
-                LOGINFO('objects found within %.4f deg of (%.3f, %.3f): %s' %
+                LOGINFO('cone search: objects within %.4f deg '
+                        'of (%.3f, %.3f): %s' %
                         (searchradius, racenter, declcenter, len(kdtindices)))
 
                 matchingind = kdtindices
@@ -610,7 +611,7 @@ def getlclist(listpickle,
             # cares more about the cone-search than the regular column filters
             else:
 
-                LOGERROR('no objects were found within '
+                LOGERROR('cone-search: no objects were found within '
                          '%.4f deg of (%.3f, %.3f): %s' %
                         (searchradius, racenter, declcenter, len(kdtindices)))
                 return None, None
@@ -618,7 +619,7 @@ def getlclist(listpickle,
 
         except Exception as e:
 
-            LOGEXCEPTION('could not run a cone-search, '
+            LOGEXCEPTION('cone-search: could not run a cone-search, '
                          'is there a kdtree present in %s?' % listpickle)
             raise
 
@@ -658,14 +659,15 @@ def getlclist(listpickle,
                 filterind = eval(filterstr)
 
                 ngood = lclist['objects'][objectidcol][filterind].size
-                LOGINFO('filter: %s -> %s remaining objects' % (cfilt, ngood))
+                LOGINFO('filter: %s -> objects matching: %s ' % (cfilt, ngood))
 
                 allfilterinds.append(filterind)
 
             except Exception as e:
 
-                LOGEXCEPTION('could not understand filter spec: %s' % cfilt)
-                LOGWARNING('not applying this broken filter')
+                LOGEXCEPTION('filter: could not understand filter spec: %s'
+                             % cfilt)
+                LOGWARNING('filter: not applying this broken filter')
 
 
     # now that we have all the filter indices good to go
@@ -681,7 +683,7 @@ def getlclist(listpickle,
     filteredlcfnames = [os.path.join(lclist['basedir'], x)
                         for x in lclist['objects']['lcfname'][finalfilterind]]
 
-    LOGINFO('done. matching objects found: %s' % filteredobjectids.size)
+    LOGINFO('done. objects matching all filters: %s' % filteredobjectids.size)
 
     return filteredlcfnames, filteredobjectids
 
