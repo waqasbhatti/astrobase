@@ -525,33 +525,59 @@ def makelclist(basedir,
 
 def getlclist(listpickle,
               objectidcol='objectid',
+              xmatchexternal=None,
               conesearch=None,
-              conesearchworkers=1,
               columnfilters=None,
+              conesearchworkers=1,
               copylcsto=None):
 
     '''This is used to collect light curves based on selection criteria.
 
     Uses the output of makelclist above. This function returns a list of light
-    curves. Use this function to generate input lists for the
-    parallel_varfeatures, parallel_pf, and parallel_timebin functions below.
+    curves matching various criteria speciifed by the xmatchexternal,
+    conesearch, and columnfilters kwargs. Use this function to generate input
+    lists for the parallel_varfeatures, parallel_pf, and parallel_timebin
+    functions below.
+
+    The filter operations are applied in this order if more than one is
+    specified: xmatchexternal -> conesearch -> columnfilters. All results from
+    these filter operations are joined using a logical AND operation.
 
     Returns a two elem tuple: (matching_object_lcfiles, matching_objectids).
 
+    Args
+    ----
+
     objectidcol is the name of the object ID column in the listpickle file.
+
+
+    If not None, xmatchexternal is a four-element list:
+
+    ['/path/to/external/object/list.txt',
+     '<column separator char>' or None (in which case, blank space is used),
+     (<objectid col num>, <ra col num>, <decl col num>),
+     <match distance arcsec>]
+
+    This is used to match the objects in the lclist pickle to a text file
+    containing objectids, ras, decls in columns. The columns are specified by
+    their zero-indexed column numbers in the text file and a column separator
+    character.
+
 
     conesearch is a three-element list:
 
     [center_ra_deg, center_decl_deg, search_radius_deg]
 
     This is used with the kdtree in the lclist pickle to only return objects
-    that are in the specified region. This is applied before any column
-    filter. consearchworkers specifies the number of parallel workers that can
-    be launched by scipy to search for objects in the kdtree.
+    that are in the specified region. consearchworkers specifies the number of
+    parallel workers that can be launched by scipy to search for objects in the
+    kdtree.
+
 
     columnfilters is a list of strings indicating how to filter on columns in
-    the lclist pickle. All filters are applied in sequence and are combined with
-    a logical AND operator. The format of each filter string should be:
+    the lclist pickle. All column filters are applied in the specified sequence
+    and are combined with a logical AND operator. The format of each filter
+    string should be:
 
     '<lclist column>|<operator>|<operand>'
 
@@ -564,9 +590,6 @@ def getlclist(listpickle,
 
     <operand> is a float, int, or string.
 
-    If conesearch is None, all objects in the lclist will be returned, subject
-    to columnfilters. If columnfilters is None as well, all objects from the
-    lclist will be returned.
 
     If copylcsto is not None, it is interpreted as a directory target to copy
     all the light curves that match the specified conditions.
@@ -576,29 +599,99 @@ def getlclist(listpickle,
     with open(listpickle,'rb') as infd:
         lclist = pickle.load(infd)
 
+    # generate numpy arrays of the matching object indexes. we do it this way so
+    # we can AND everything at the end, instead of having to look up the objects
+    # at these indices and running the columnfilter on them
+    xmatch_matching_index = np.full_like(lclist['objects'][objectidcol],
+                                         False,
+                                         dtype=np.bool)
+    conesearch_matching_index = np.full_like(lclist['objects'][objectidcol],
+                                             False,
+                                             dtype=np.bool)
 
-    # do the cone search first
-    if conesearch and isinstance(conesearch, list) and len(conesearch) == 3:
 
-        racenter, declcenter, searchradius = conesearch
-        cosdecl = np.cos(np.radians(declcenter))
-        sindecl = np.sin(np.radians(declcenter))
-        cosra = np.cos(np.radians(racenter))
-        sinra = np.sin(np.radians(racenter))
-
-        # this is the search distance in xyz unit vectors
-        xyzdist = 2.0 * np.sin(np.radians(searchradius)/2.0)
+    # do the xmatch first
+    if (xmatchexternal and
+        isinstance(xmatchexternal, list) and
+        len(xmatchexternal) == 4):
 
         try:
+
+            extfile, extcolsep, extcols, extmatchdist = xmatchexternal
+
+            # read in the external file
+            extcat = np.genfromtxt(extfile,
+                                   usecols=extcols,
+                                   delimiter=colsep,
+                                   names=['objectid','ra','decl'],
+                                   dtype=['S20,f8,f8'])
+
+            ext_cosdecl = np.cos(np.radians(extcat['decl']))
+            ext_sindecl = np.sin(np.radians(extcat['decl']))
+            ext_cosra = np.cos(np.radians(extcat['ra']))
+            ext_sinra = np.sin(np.radians(extcat['decl']))
+
+            ext_xyz = np.column_stack((ext_cosra*ext_cosdecl,
+                                       ext_sinra*ext_cosdecl,
+                                       ext_sindecl))
+            ext_xyzdist = 2.0 * np.sin(np.radians(extmatchdist/3600.0)/2.0)
+
+            # get our kdtree
+            our_kdt = lclist['kdtree']
+
+            # do a query_ball_tree
+            extkd_dists, extkd_matchinds = our_kdt.query_ball(ext_xyz)
+
+            # find all matching objects
+            ext_matches = extkd_matchinds[
+                (np.isfinite(extkd_dists)) & (extkd_dists < ext_xydist)
+            ]
+
+            if ext_matches.size > 0:
+
+                # update the xmatch_matching_index
+                xmatch_matching_index[ext_matches] = True
+
+                LOGINFO('xmatch: objects matched to %s within %.1f arcsec: %s' %
+                        (extfile, extmatchdist, ext_matches.size))
+
+            else:
+
+                LOGERROR("xmatch: no objects were cross-matched to external "
+                         "catalog spec: %s, can't continue" % xmatchexternal)
+                return None, None
+
+
+        except Exception as e:
+
+            LOGEXCEPTION('could not match to external catalog spec: %s' %
+                         repr(xmatchexternal))
+            raise
+
+
+    # do the cone search next
+    if (conesearch and isinstance(conesearch, list) and len(conesearch) == 3):
+
+        try:
+
+            racenter, declcenter, searchradius = conesearch
+            cosdecl = np.cos(np.radians(declcenter))
+            sindecl = np.sin(np.radians(declcenter))
+            cosra = np.cos(np.radians(racenter))
+            sinra = np.sin(np.radians(racenter))
+
+            # this is the search distance in xyz unit vectors
+            xyzdist = 2.0 * np.sin(np.radians(searchradius)/2.0)
+
             # get the kdtree
-            kdt = lclist['kdtree']
+            our_kdt = lclist['kdtree']
 
             # look up the coordinates
-            kdtindices = kdt.query_ball_point([cosra*cosdecl,
-                                               sinra*cosdecl,
-                                               sindecl],
-                                              xyzdist,
-                                              n_jobs=conesearchworkers)
+            kdtindices = our_kdt.query_ball_point([cosra*cosdecl,
+                                                   sinra*cosdecl,
+                                                   sindecl],
+                                                  xyzdist,
+                                                  n_jobs=conesearchworkers)
 
             if kdtindices and len(kdtindices) > 0:
 
@@ -606,14 +699,16 @@ def getlclist(listpickle,
                         'of (%.3f, %.3f): %s' %
                         (searchradius, racenter, declcenter, len(kdtindices)))
 
+                # update the conesearch_matching_index
                 matchingind = kdtindices
+                conesearch_matching_index[np.array(matchingind)] = True
 
             # we fail immediately if we found nothing. this assumes the user
             # cares more about the cone-search than the regular column filters
             else:
 
-                LOGERROR('cone-search: no objects were found within '
-                         '%.4f deg of (%.3f, %.3f): %s' %
+                LOGERROR("cone-search: no objects were found within "
+                         "%.4f deg of (%.3f, %.3f): %s, can't continue" %
                         (searchradius, racenter, declcenter, len(kdtindices)))
                 return None, None
 
@@ -624,23 +719,8 @@ def getlclist(listpickle,
                          'is there a kdtree present in %s?' % listpickle)
             raise
 
-    # if no conesearch params are given, return all of the objects in the lclist
-    # as matching
-    else:
 
-        matchingind = range(lclist['objects'][objectidcol].size)
-
-
-    # generate a numpy array of the matching object indexes. we do it this way
-    # so we can AND everything at the end, instead of having to look up the
-    # objects at these indices and running the columnfilter on them
-    matchingobject_index = np.full_like(lclist['objects'][objectidcol],
-                                        False,
-                                        dtype=np.bool)
-    matchingobject_index[np.array(matchingind)] = True
-
-
-    # now that we're done with cone-search, do the other bits
+    # now that we're done with cone-search, do the column filtering
     allfilterinds = []
     if columnfilters and isinstance(columnfilters, list):
 
@@ -673,16 +753,35 @@ def getlclist(listpickle,
 
     # now that we have all the filter indices good to go
     # logical-AND all the things
-    if len(allfilterinds) == 0:
-        finalfilterind = matchingobject_index
-    else:
-        finalfilterind = np.column_stack([matchingobject_index] + allfilterinds)
+
+    # make sure we only do filtering if we were told to do so
+    if (xmatchexternal or conesearch or columnfilters):
+
+        filterstack = []
+        if xmatchexternal:
+            filterstack.append(xmatch_matching_index)
+        if conesearch:
+            filterstack.append(conesearch_matching_index)
+        if columnfilters:
+            filterstack.extend(allfilterinds)
+
+        finalfilterind = np.column_stack(filterstack)
         finalfilterind = np.all(finalfilterind, axis=1)
 
-    # get the filtered object light curves and object names
-    filteredobjectids = lclist['objects'][objectidcol][finalfilterind]
-    filteredlcfnames = [os.path.join(lclist['basedir'], x)
-                        for x in lclist['objects']['lcfname'][finalfilterind]]
+        # get the filtered object light curves and object names
+        filteredobjectids = lclist['objects'][objectidcol][finalfilterind]
+        filteredlcfnames = [
+            os.path.join(lclist['basedir'], x)
+            for x in lclist['objects']['lcfname'][finalfilterind]
+        ]
+
+    else:
+
+        filteredobjectids = lclist['objects'][objectidcol]
+        filteredlcfnames = [
+            os.path.join(lclist['basedir'], x)
+            for x in lclist['objects']['lcfname']
+        ]
 
 
     # if copylcsto is not None, copy LCs over to it
