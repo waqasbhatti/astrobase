@@ -553,7 +553,7 @@ def getlclist(listpickle,
 
     If not None, xmatchexternal is a four-element list:
 
-    ['/path/to/external/object/list.txt',
+    ['/path/to/external/objectid-radec-list.txt',
      '<column separator char>' or None (in which case, blank space is used),
      (<objectid col num>, <ra col num>, <decl col num>),
      <match distance arcsec>]
@@ -622,7 +622,7 @@ def getlclist(listpickle,
             # read in the external file
             extcat = np.genfromtxt(extfile,
                                    usecols=extcols,
-                                   delimiter=colsep,
+                                   delimiter=extcolsep,
                                    names=['objectid','ra','decl'],
                                    dtype=['S20,f8,f8'])
 
