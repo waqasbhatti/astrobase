@@ -647,6 +647,8 @@ def getlclist(listpickle,
                 (np.isfinite(extkd_dists)) & (extkd_dists < ext_xyzdist)
             ]
 
+            print(ext_matches)
+
             if ext_matches.size > 0:
 
                 # update the xmatch_matching_index
