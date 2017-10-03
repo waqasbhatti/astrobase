@@ -66,7 +66,7 @@ details.
 '''
 
 # put this in here because hatds can be used as a standalone module
-__version__ = '0.2.3'
+__version__ = '0.2.4'
 
 #####################
 ## THE DATA SERVER ##
