@@ -1596,6 +1596,9 @@ def parallel_cp_lcdir(pfpickledir,
 
     '''
 
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+
     pfpicklelist = sorted(glob.glob(os.path.join(pfpickledir, pfpickleglob)))
 
     if maxobjects:
