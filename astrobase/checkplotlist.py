@@ -256,6 +256,23 @@ def main():
         type=str,
         help=("directory containing the checkplots to process")
     )
+
+    # TODO: here, make the --search kwarg an array (i.e. allow multiple search
+    # statements). the use of this will be to make checkplotserver able to load
+    # more than one checkplot per object (i.e. different mag types -- epd
+    # vs. tfa -- or different bands -- r vs. i -- at the SAME time).
+
+    # TODO: we'll fix checkplotserver and its js so there's a vertical tab row
+    # between the left period/epoch/tags panel and main periodogram/phased-LCs
+    # panel on the right. the user will be able to flip between tabs to look at
+    # the object in all loaded alternative checkplots.
+
+    # TODO: need to also think about to sort/filter; for now let's make it so
+    # the sorting works on a chosen checkplot search list (e.g. if we give
+    # --search 'checkplot*iep1' and --search 'checkplot*itf1', specify
+    # --sortpkls and --filterpkls kwargs, which match the given globs for the
+    # --search kwargs. e.g. we'd specify --sortpkls 'checkplot*iep1' to sort
+    # everything by the specified --sortby values in those pickles.
     aparser.add_argument(
         '--search',
         action='store',
