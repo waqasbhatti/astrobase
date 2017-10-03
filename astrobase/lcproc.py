@@ -647,7 +647,7 @@ def getlclist(listpickle,
                 (np.isfinite(extkd_dists)) & (extkd_dists < ext_xyzdist)
             ]
 
-            print(ext_matches)
+            raise Exception('testing')
 
             if ext_matches.size > 0:
 
