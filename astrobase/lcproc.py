@@ -564,7 +564,8 @@ def getlclist(listpickle,
     This is used to match the objects in the lclist pickle to a text file
     containing objectids, ras, decls in columns. The columns are specified by
     their zero-indexed column numbers in the text file and a column separator
-    character.
+    character. The columns should be in this order in the external file:
+    objectid, ra, decl.
 
 
     conesearch is a three-element list:
@@ -629,7 +630,7 @@ def getlclist(listpickle,
                                    usecols=extcols,
                                    delimiter=extcolsep,
                                    names=['objectid','ra','decl'],
-                                   dtype='S20,f8,f8')
+                                   dtype='U20,f8,f8')
 
             ext_cosdecl = np.cos(np.radians(extcat['decl']))
             ext_sindecl = np.sin(np.radians(extcat['decl']))
