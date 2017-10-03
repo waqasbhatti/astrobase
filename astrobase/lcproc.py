@@ -652,8 +652,6 @@ def getlclist(listpickle,
 
             ext_matches = np.array(ext_matches)
 
-            raise Exception('testing')
-
             if ext_matches.size > 0:
 
                 # update the xmatch_matching_index
