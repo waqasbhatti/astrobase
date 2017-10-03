@@ -624,7 +624,7 @@ def getlclist(listpickle,
                                    usecols=extcols,
                                    delimiter=extcolsep,
                                    names=['objectid','ra','decl'],
-                                   dtype=['S20,f8,f8'])
+                                   dtype='S20,f8,f8')
 
             ext_cosdecl = np.cos(np.radians(extcat['decl']))
             ext_sindecl = np.sin(np.radians(extcat['decl']))
