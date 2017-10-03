@@ -543,7 +543,10 @@ def getlclist(listpickle,
     specified: xmatchexternal -> conesearch -> columnfilters. All results from
     these filter operations are joined using a logical AND operation.
 
-    Returns a two elem tuple: (matching_object_lcfiles, matching_objectids).
+    Returns a two elem tuple: (matching_object_lcfiles, matching_objectids) if
+    conesearch and/or column filters are used. If xmatchexternal is also used, a
+    three-elem tuple is returned: (matching_object_lcfiles, matching_objectids,
+    extcat_matched_objectids).
 
     Args
     ----
@@ -609,8 +612,10 @@ def getlclist(listpickle,
                                              False,
                                              dtype=np.bool)
 
-
     # do the xmatch first
+    ext_matches = []
+    ext_matching_objects = []
+
     if (xmatchexternal and
         isinstance(xmatchexternal, list) and
         len(xmatchexternal) == 4):
@@ -645,10 +650,10 @@ def getlclist(listpickle,
             # do a query_ball_tree
             extkd_matchinds = ext_kdt.query_ball_tree(our_kdt, ext_xyzdist)
 
-            ext_matches = []
-            for mind in extkd_matchinds:
+            for extind, mind in enumerate(extkd_matchinds):
                 if len(mind) > 0:
                     ext_matches.append(mind[0])
+                    ext_matching_objects.append(extcat['objectid'][extind])
 
             ext_matches = np.array(ext_matches)
 
@@ -664,7 +669,7 @@ def getlclist(listpickle,
 
                 LOGERROR("xmatch: no objects were cross-matched to external "
                          "catalog spec: %s, can't continue" % xmatchexternal)
-                return None, None
+                return None, None, None
 
 
         except Exception as e:
@@ -808,8 +813,10 @@ def getlclist(listpickle,
 
     LOGINFO('done. objects matching all filters: %s' % filteredobjectids.size)
 
-
-    return filteredlcfnames, filteredobjectids
+    if xmatchexternal and len(ext_matching_objects) > 0:
+        return filteredlcfnames, filteredobjectids, ext_matching_objects
+    else:
+        return filteredlcfnames, filteredobjectids
 
 
 ##################################
