@@ -639,13 +639,18 @@ def getlclist(listpickle,
             # get our kdtree
             our_kdt = lclist['kdtree']
 
-            # do a query_ball_tree
-            extkd_dists, extkd_matchinds = our_kdt.query(ext_xyz)
+            # get the external kdtree
+            ext_kdt = sps.cKDTree(ext_xyz)
 
-            # find all matching objects
-            ext_matches = extkd_matchinds[
-                (np.isfinite(extkd_dists)) & (extkd_dists < ext_xyzdist)
-            ]
+            # do a query_ball_tree
+            extkd_matchinds = ext_kdt.query_ball_tree(our_kdt, ext_xyzdist)
+
+            ext_matches = []
+            for mind in extkd_matchinds:
+                if len(mind) > 0:
+                    ext_matches.append(mind[0])
+
+            ext_matches = np.array(ext_matches)
 
             raise Exception('testing')
 
