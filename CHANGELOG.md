@@ -1,3 +1,11 @@
+# Changelog for v0.2.3 -> v0.2.4
+
+## Fixes
+
+- lcproc: add external cross-matching to getlclist
+- lcproc.getlclist: also copy matching light curves to requested dir
+- lcproc: getlclist, makelclist now have column-filtering and cone-search
+
 # Changelog for v0.2.2 -> v0.2.3
 
 ## Fixes
