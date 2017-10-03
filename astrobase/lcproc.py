@@ -640,7 +640,7 @@ def getlclist(listpickle,
             our_kdt = lclist['kdtree']
 
             # do a query_ball_tree
-            extkd_dists, extkd_matchinds = our_kdt.query_ball(ext_xyz)
+            extkd_dists, extkd_matchinds = our_kdt.query(ext_xyz)
 
             # find all matching objects
             ext_matches = extkd_matchinds[
