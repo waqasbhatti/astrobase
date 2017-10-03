@@ -629,7 +629,7 @@ def getlclist(listpickle,
             ext_cosdecl = np.cos(np.radians(extcat['decl']))
             ext_sindecl = np.sin(np.radians(extcat['decl']))
             ext_cosra = np.cos(np.radians(extcat['ra']))
-            ext_sinra = np.sin(np.radians(extcat['decl']))
+            ext_sinra = np.sin(np.radians(extcat['ra']))
 
             ext_xyz = np.column_stack((ext_cosra*ext_cosdecl,
                                        ext_sinra*ext_cosdecl,
