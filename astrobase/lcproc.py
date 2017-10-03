@@ -644,7 +644,7 @@ def getlclist(listpickle,
 
             # find all matching objects
             ext_matches = extkd_matchinds[
-                (np.isfinite(extkd_dists)) & (extkd_dists < ext_xydist)
+                (np.isfinite(extkd_dists)) & (extkd_dists < ext_xyzdist)
             ]
 
             if ext_matches.size > 0:
