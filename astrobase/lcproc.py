@@ -1465,7 +1465,8 @@ def parallel_pf_lcdir(lcdir,
 ###################################
 
 # for the neighbors tab in checkplotserver: show a 5 row per neighbor x 3 col
-# panel. Each col will have in order: best phased LC of target with
+# panel. Each col will have in order: best phased LC of target, phased LC of
+# neighbor with same period and epoch, unphased LC of neighbor
 
 def update_checkplotdict_nbrlcs(
         checkplotdict,
@@ -1570,6 +1571,9 @@ def update_checkplotdict_nbrlcs(
         for lspt in ('pdm','gls','bls','aov'):
 
             if lspt in checkplotdict:
+
+                # initialize this lspmethod entry
+                nbr[lspt] = {}
 
                 # we only care about the best period and its options
                 operiod, oepoch = (checkplot[lspt][0]['period'],
