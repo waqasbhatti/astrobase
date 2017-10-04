@@ -1717,7 +1717,7 @@ def runcp(pfpickle,
             cpd,
             tcol, mcol, ecol,
             lcformat=lcformat,
-            verbose=verbose
+            verbose=False
         )
 
         cpf = checkplot._write_checkplot_picklefile(
