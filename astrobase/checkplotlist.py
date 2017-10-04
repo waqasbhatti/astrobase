@@ -262,17 +262,17 @@ def main():
     # more than one checkplot per object (i.e. different mag types -- epd
     # vs. tfa -- or different bands -- r vs. i -- at the SAME time).
 
-    # TODO: we'll fix checkplotserver and its js so there's a vertical tab row
-    # between the left period/epoch/tags panel and main periodogram/phased-LCs
-    # panel on the right. the user will be able to flip between tabs to look at
-    # the object in all loaded alternative checkplots.
+    # TODO: we'll fix checkplotserver and its js so there's a vertical tab
+    # column between the left period/epoch/tags panel and main
+    # periodogram/phased-LCs panel on the right. the user will be able to flip
+    # between tabs to look at the object in all loaded alternative checkplots.
 
     # TODO: need to also think about to sort/filter; for now let's make it so
-    # the sorting works on a chosen checkplot search list (e.g. if we give
-    # --search 'checkplot*iep1' and --search 'checkplot*itf1', specify
-    # --sortpkls and --filterpkls kwargs, which match the given globs for the
-    # --search kwargs. e.g. we'd specify --sortpkls 'checkplot*iep1' to sort
-    # everything by the specified --sortby values in those pickles.
+    # the sorting works on a chosen checkplot search list, if we give --search
+    # 'checkplot*iep1' and --search 'checkplot*itf1', specify --sortpkls and
+    # --filterpkls kwargs, which match the given globs for the --search
+    # kwargs. e.g. we'd specify --sortpkls 'checkplot*iep1' to sort everything
+    # by the specified --sortby values in those pickles.
     aparser.add_argument(
         '--search',
         action='store',
@@ -281,6 +281,7 @@ def main():
         help=("file glob prefix to use when searching for checkplots "
               "(the extension is added automatically - .png or .pkl)")
     )
+
     aparser.add_argument(
         '--sortby',
         action='store',
@@ -323,6 +324,33 @@ def main():
         help=("the number of parallel workers that will be launched "
               "to retrieve checkplot key values used for "
               "sorting and filtering ")
+    )
+    # TODO: implement this. will be useful for checking blends immediately. if
+    # --lclistpkl is provided, we'll look up everything within --nbrradarcsec to
+    # potentially get their light curves if requested. this will be the last tab
+    # in the tab bar containing the checkplot types per object. by default, in
+    # this tab, we'll show phased light curves using the target object's period
+    # for all of them and put these into the 'neighbors' key: {'objectid',
+    # 'distance_arcsec', 'lcfpath'} for each object listed in the output JSON
+    # file. this will probably require a /cp/neighbors URL endpoint in
+    # checkplotserver.
+    # FIXME: should this actually be in the checkplot.checkplot_pickle function?
+    aparser.add_argument(
+        '--lclistpkl',
+        action='store',
+        type=str,
+        help=("the path to an lclist pickle file created by lcproc.makelclist. "
+              "this will be used to look up neighbors and their light curves, "
+              "etc. if requested by the frontend.")
+    )
+    aparser.add_argument(
+        '--maxnbrrad',
+        action='store',
+        type=float,
+        default=30.0,
+        help=("the radius around each object to look for neighbors if "
+              "--uselclist is provided. this is in arcseconds and is 30.0 "
+              "arcsec by default.")
     )
 
 
