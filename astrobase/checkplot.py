@@ -1394,9 +1394,9 @@ def _pkl_finder_objectinfo(objectinfo,
                     )
 
                     # sort by matchdist
-                    mdsorted = np.argsort(matchdists)
-                    matchdists = matchdists[mdsorted]
-                    matchinds = matchinds[mdsorted]
+                    mdsorted = np.argsort(matchdists[0])
+                    matchdists = matchdists[0][mdsorted]
+                    matchinds = matchinds[0][mdsorted]
 
                     # luckily, the indices to the kdtree are the same as that
                     # for the objects (I think)
@@ -1405,7 +1405,7 @@ def _pkl_finder_objectinfo(objectinfo,
                     # initialize the finder WCS
                     finderwcs = WCS(finderheader)
 
-                    for md, mi in matchdists[0], matchinds[0]:
+                    for md, mi in matchdists, matchinds:
 
                         if np.isfinite(md) and md > 0.0:
 
