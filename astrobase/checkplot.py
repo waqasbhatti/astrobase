@@ -1405,7 +1405,7 @@ def _pkl_finder_objectinfo(objectinfo,
                     # initialize the finder WCS
                     finderwcs = WCS(finderheader)
 
-                    for md, mi in matchdists, matchinds:
+                    for md, mi in zip(matchdists, matchinds):
 
                         if np.isfinite(md) and md > 0.0:
 
