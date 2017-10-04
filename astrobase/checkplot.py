@@ -1432,13 +1432,13 @@ def _pkl_finder_objectinfo(objectinfo,
                             annotatey = 300.0 - pixcoords[0,1]
 
                             if ((300.0 - annotatex) > 50.0):
-                                offx = annotatex + 20.0
+                                offx = annotatex + 30.0
                             else:
-                                offx = annotatex - 20.0
+                                offx = annotatex - 30.0
                             if ((300.0 - annotatey) > 50.0):
-                                offy = annotatey + 20.0
+                                offy = annotatey + 30.0
                             else:
-                                offy = annotatey - 20.0
+                                offy = annotatey - 30.0
 
                             plt.annotate('N%s' % nbrind,
                                          (annotatex, annotatey),
