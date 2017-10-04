@@ -1393,8 +1393,6 @@ def _pkl_finder_objectinfo(objectinfo,
                         distance_upper_bound=match_xyzdist
                     )
 
-                    import ipdb; ipdb.set_trace()
-
                     # sort by matchdist
                     mdsorted = np.argsort(matchdists)
                     matchdists = matchdists[mdsorted]
