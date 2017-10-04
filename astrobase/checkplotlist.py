@@ -273,6 +273,10 @@ def main():
     # --filterpkls kwargs, which match the given globs for the --search
     # kwargs. e.g. we'd specify --sortpkls 'checkplot*iep1' to sort everything
     # by the specified --sortby values in those pickles.
+
+    # TODO: we'll have to change the output JSON so it's primarily by objectid
+    # instead of checkplot filenames. each objectid will have its own list of
+    # checkplots to use for the frontend.
     aparser.add_argument(
         '--search',
         action='store',
@@ -325,35 +329,6 @@ def main():
               "to retrieve checkplot key values used for "
               "sorting and filtering ")
     )
-    # TODO: implement this. will be useful for checking blends immediately. if
-    # --lclistpkl is provided, we'll look up everything within --nbrradarcsec to
-    # potentially get their light curves if requested. this will be the last tab
-    # in the tab bar containing the checkplot types per object. by default, in
-    # this tab, we'll show phased light curves using the target object's period
-    # for all of them and put these into the 'neighbors' key: {'objectid',
-    # 'distance_arcsec', 'lcfpath'} for each object listed in the output JSON
-    # file. this will probably require a /cp/neighbors URL endpoint in
-    # checkplotserver.
-    # FIXME: should this actually be in the checkplot.checkplot_pickle function?
-    aparser.add_argument(
-        '--lclistpkl',
-        action='store',
-        type=str,
-        help=("the path to an lclist pickle file created by lcproc.makelclist. "
-              "this will be used to look up neighbors and their light curves, "
-              "etc. if requested by the frontend.")
-    )
-    aparser.add_argument(
-        '--maxnbrrad',
-        action='store',
-        type=float,
-        default=30.0,
-        help=("the radius around each object to look for neighbors if "
-              "--uselclist is provided. this is in arcseconds and is 30.0 "
-              "arcsec by default.")
-    )
-
-
 
     args = aparser.parse_args()
 

@@ -276,9 +276,6 @@ class IndexHandler(tornado.web.RequestHandler):
 
     This page shows the current project.
 
-    FUTURE: this should show a list of all projects the server knows about and
-    then allow loading them, etc.
-
     '''
 
     def initialize(self, currentdir, assetpath, cplist,
@@ -298,8 +295,14 @@ class IndexHandler(tornado.web.RequestHandler):
 
 
     def get(self):
-        '''
-        This handles GET requests to the index page.
+        '''This handles GET requests to the index page.
+
+        TODO: fix this so it loads a modified version of the usual index.html
+        template for readonly mode. This should replace all of the text boxes
+        with readonly versions.
+
+        TODO: maybe also provide the correct baseurl from the checkplotserver
+        options dict, so the frontend JS can just read that off immediately.
 
         '''
 
