@@ -1428,10 +1428,21 @@ def _pkl_finder_objectinfo(objectinfo,
 
                             # put in a nice marker for this neighbor into the
                             # overall finder chart
+                            annotatex = pixcoords[0,0]
+                            annotatey = 300.0 - pixcoords[0,1]
+
+                            if ((300.0 - annotatex) > 50.0):
+                                anoffx = annotatex + 20.0
+                            else:
+                                anoffx = annotatex - 20.0
+                            if ((300.0 - annotatey) > 50.0):
+                                anoffy = annotatey + 20.0
+                            else:
+                                anoffy = annotatey - 20.0
+
                             plt.annotate('N%s' % nbrind,
-                                         (pixcoords[0,0],
-                                          300.0 - pixcoords[0,1]),
-                                         xytext=(250,290-50*(nbrind-1)),
+                                         (annotatex, annotatey),
+                                         xytext=(annofx, annofy),
                                          arrowprops={'arrowstyle':'-'})
 
             #
