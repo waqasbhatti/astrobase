@@ -1580,11 +1580,11 @@ def update_checkplotdict_nbrlcs(
                                    checkplot[lspt][0]['epoch'])
                 (ophasewrap, ophasesort, ophasebin,
                  ominbinelems, oplotxlim) = (
-                     checkplot[lspt][0]['phasewrap'],
-                     checkplot[lspt][0]['phasesort'],
-                     checkplot[lspt][0]['phasebin'],
-                     checkplot[lspt][0]['minbinelems'],
-                     checkplot[lspt][0]['plotxlim'],
+                     checkplotdict[lspt][0]['phasewrap'],
+                     checkplotdict[lspt][0]['phasesort'],
+                     checkplotdict[lspt][0]['phasebin'],
+                     checkplotdict[lspt][0]['minbinelems'],
+                     checkplotdict[lspt][0]['plotxlim'],
                  )
 
                 # make the phasedlc plot for this period
