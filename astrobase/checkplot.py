@@ -1336,6 +1336,7 @@ def _pkl_finder_objectinfo(objectinfo,
                                                  verbose=verbose,
                                                  cachedir=findercachedir)
             finderfig = plt.figure(figsize=(3,3),dpi=plotdpi,frameon=False)
+
             plt.imshow(finder, cmap=findercmap)
 
             # skip down to after nbr stuff for the rest of the finderchart...
@@ -1414,8 +1415,8 @@ def _pkl_finder_objectinfo(objectinfo,
                                 'objectid':lclist['objects']['objectid'][mi],
                                 'ra':lclist['objects']['ra'][mi],
                                 'decl':lclist['objects']['decl'][mi],
-                                'xpix':pixcoords[0,1],
-                                'ypix':pixcoords[0,0],
+                                'xpix':pixcoords[0,0],
+                                'ypix':300.0 - pixcoords[0,1],
                                 'dist':_xyzdist_to_distarcsec(md),
                                 'lcfpath':os.path.join(
                                     lclist['basedir'],
@@ -1429,8 +1430,8 @@ def _pkl_finder_objectinfo(objectinfo,
                             # overall finder chart
                             plt.annotate('N%s' % nbrind,
                                          (pixcoords[0,0],
-                                          pixcoords[0,1]),
-                                         xytext=(250,250-50*(nbrind-1)),
+                                          300.0 - pixcoords[0,1]),
+                                         xytext=(250,290-50*(nbrind-1)),
                                          arrowprops={'arrowstyle':'-'})
 
             #
