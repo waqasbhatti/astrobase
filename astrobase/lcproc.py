@@ -1617,6 +1617,8 @@ def update_checkplotdict_nbrlcs(
 def runcp(pfpickle,
           outdir,
           lcbasedir,
+          lclistpkl=None,
+          nbrradiusarcsec=30.0,
           lcformat='hat-sql',
           timecols=None,
           magcols=None,
@@ -1701,13 +1703,23 @@ def runcp(pfpickle,
         if 'objectid' not in lcdict['objectinfo']:
             lcdict['objectinfo']['objectid'] = objectid
 
-        cpf = checkplot.checkplot_pickle(
+        # generate the checkplotdict including neighbor information
+        cpd = checkplot.checkplot_dict(
             [gls,pdm,bls],
             times, mags, errs,
             objectinfo=lcdict['objectinfo'],
-            outfile=outfile,
+            lclistpkl=lclistpkl,
+            nbrradiusarc=nbrradiusarcsec,
             verbose=False
         )
+
+        cpf = checkplot._write_checkplot_picklefile(
+            cpd,
+            outfile=outfile,
+            protocol=pickle.HIGHEST_PROTOCOL,
+            outgzip=False
+        )
+
         cpfs.append(cpf)
 
     LOGINFO('done with %s -> %s' % (objectid, repr(cpfs)))
@@ -1737,6 +1749,8 @@ def runcp_worker(task):
 def parallel_cp_lcdir(pfpickledir,
                       outdir,
                       lcbasedir,
+                      lclistpkl=None,
+                      nbrradiusarcsec=30.0,
                       maxobjects=None,
                       pfpickleglob='periodfinding-*.pkl',
                       lcformat='hat-sql',
@@ -1761,7 +1775,9 @@ def parallel_cp_lcdir(pfpickledir,
                  {'lcformat':lcformat,
                   'timecols':timecols,
                   'magcols':magcols,
-                  'errcols':errcols}) for
+                  'errcols':errcols,
+                  'lclistpkl':lclistpkl,
+                  'nbrradiusarcsec':nbrradiusarcsec}) for
                 x in pfpicklelist]
 
     resultfutures = []
@@ -1774,6 +1790,7 @@ def parallel_cp_lcdir(pfpickledir,
 
     executor.shutdown()
     return results
+
 
 
 ##########################
