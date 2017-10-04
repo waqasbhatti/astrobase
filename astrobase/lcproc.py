@@ -1562,7 +1562,7 @@ def update_checkplotdict_nbrlcs(
         nbrdict = _pkl_magseries_plot(xtimes,
                                       xmags,
                                       xerrs,
-                                      magsareflux=magsarefluxes)
+                                      magsarefluxes=magsarefluxes)
         # update the nbr
         nbr.update(nbrdict)
 
