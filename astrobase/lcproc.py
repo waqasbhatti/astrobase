@@ -1709,12 +1709,19 @@ def runcp(pfpickle,
             times, mags, errs,
             objectinfo=lcdict['objectinfo'],
             lclistpkl=lclistpkl,
-            nbrradiusarc=nbrradiusarcsec,
+            nbrradiusarcsec=nbrradiusarcsec,
             verbose=False
         )
 
-        cpf = checkplot._write_checkplot_picklefile(
+        cpdupdated = update_checkplotdict_nbrlcs(
             cpd,
+            tcol, mcol, ecol,
+            lcformat=lcformat,
+            verbose=verbose
+        )
+
+        cpf = checkplot._write_checkplot_picklefile(
+            cpdupdated,
             outfile=outfile,
             protocol=pickle.HIGHEST_PROTOCOL,
             outgzip=False
