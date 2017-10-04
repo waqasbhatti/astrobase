@@ -87,6 +87,9 @@ from traceback import format_exc
 # import this to check if stimes, smags, serrs are Column objects
 from astropy.table import Column as astcolumn
 
+# import this to get neighbors and their x,y coords from the Skyview FITS
+from astropy.wcs import WCS
+
 # import from Pillow to generate pngs from checkplot dicts
 from PIL import Image, ImageDraw, ImageFont
 
@@ -1247,6 +1250,15 @@ def twolsp_checkplot_png(lspinfo1,
 ## PICKLE CHECKPLOT UTILITY FUNCTIONS  ##
 #########################################
 
+def _xyzdist_to_distarcsec(xyzdist):
+    '''
+    This just inverts the xyz unit vector distance -> angular distance relation.
+
+    '''
+
+    return np.degrees(2.0*np.arcsin(xyzdist/2.0))*3600.0
+
+
 def _base64_to_file(b64str, outfpath, writetostrio=False):
     '''
     This converts the base64 encoded string to a file.
@@ -1290,6 +1302,8 @@ def _pkl_finder_objectinfo(objectinfo,
                            sigclip,
                            normto,
                            normmingap,
+                           lclistpkl=None,
+                           nbrradiusarcsec=30.0,
                            plotdpi=100,
                            findercachedir='~/.astrobase/stamp-cache',
                            verbose=True):
@@ -1314,11 +1328,11 @@ def _pkl_finder_objectinfo(objectinfo,
 
         # get the finder chart
         try:
-            finder = skyview_stamp(objectinfo['ra'],
-                                   objectinfo['decl'],
-                                   convolvewith=finderconvolve,
-                                   verbose=verbose,
-                                   cachedir=findercachedir)
+            finder, finderheader = skyview_stamp(objectinfo['ra'],
+                                                 objectinfo['decl'],
+                                                 convolvewith=finderconvolve,
+                                                 verbose=verbose,
+                                                 cachedir=findercachedir)
             finderfig = plt.figure(figsize=(3,3),dpi=plotdpi,frameon=False)
             plt.imshow(finder, cmap=findercmap)
             plt.xticks([])
@@ -1341,12 +1355,96 @@ def _pkl_finder_objectinfo(objectinfo,
             # close the stringio buffer
             finderpng.close()
 
+            # search around the target's location and get its neighbors if
+            # lclistpkl is provided and it exists
+            if (lclistpkl is not None and
+                os.path.exists(lclistpkl) and
+                nbrradiusarcsec is not None and
+                nbrradiusarcsec > 0.0):
+
+                with open(lclistpkl,'rb') as infd:
+                    lclist = pickle.load(infd)
+
+                if not 'kdtree' in lclist:
+
+                    LOGERROR('neighbors within %.1f arcsec for %s could '
+                             'not be found, no kdtree in lclistpkl: %s'
+                             % (objectid, lclistpkl))
+                    objectinfo['neighbors'] = None
+
+                else:
+
+                    kdt = lclist['kdtree']
+
+                    obj_cosdecl = np.cos(np.radians(objectinfo['decl']))
+                    obj_sindecl = np.sin(np.radians(objectinfo['decl']))
+                    obj_cosra = np.cos(np.radians(objectinfo['ra']))
+                    obj_sinra = np.sin(np.radians(objectinfo['ra']))
+
+                    obj_xyz = np.column_stack((obj_cosra*obj_cosdecl,
+                                               obj_sinra*obj_cosdecl,
+                                               obj_sindecl))
+                    match_xyzdist = (
+                        2.0 * np.sin(np.radians(nbrradiusarcsec/3600.0)/2.0)
+                    )
+                    matchdists, matchinds = kdt.query(
+                        obj_xyz,
+                        k=6, # get closest 5 neighbors + tgt
+                        distance_upper_bound=match_xyzdist
+                    )
+
+                    # sort by matchdist
+                    mdsorted = np.argsort(matchdists)
+                    matchdists = matchdists[mdsorted]
+                    matchinds = matchinds[mdsorted]
+
+                    # luckily, the indices to the kdtree are the same as that
+                    # for the objects (I think)
+                    neighbors = []
+
+                    # initialize the finder WCS
+                    finderwcs = WCS(finderheader)
+
+                    for md, mi in matchdists, matchind:
+
+                        if np.isfinite(md) and md > 0.0:
+
+                            # generate the xy for the finder we'll use a HTML5
+                            # canvas and these pixcoords to highlight each
+                            # neighbor when we mouse over its row in the
+                            # neighbors tab
+                            pixcoords = finderwcs.all_world2pix(
+                                np.array([[lclist['objects']['ra'][mi],
+                                           lclist['objects']['decl'][mi]]]),
+                                1
+                            )
+
+                            # each elem is {'objectid',
+                            #               'ra','decl',
+                            #               'xpix','ypix',
+                            #               'dist','lcfpath'}
+                            thisnbr = {
+                                'objectid':lclist['objects']['objectid'][mi],
+                                'ra':lclist['objects']['ra'][mi],
+                                'decl':lclist['objects']['decl'][mi],
+                                'xpix':pixcoords[0,1],
+                                'ypix':pixcoords[0,0],
+                                'dist':_xyzdist_to_arcsec(md),
+                                'lcfpath':os.path.join(
+                                    lclist['basedir'],
+                                    lclist['objects'][mi]['lcfname']
+                                )
+                            }
+                            neighbors.append(thisnbr)
+
+
         except Exception as e:
 
             LOGEXCEPTION('could not fetch a DSS stamp for this '
                          'object %s using coords (%.3f,%.3f)' %
                          (objectid, objectinfo['ra'], objectinfo['decl']))
             finderb64 = None
+            neighbors = None
 
         # now that we have the finder chart, get the rest of the object
         # information
@@ -1398,6 +1496,7 @@ def _pkl_finder_objectinfo(objectinfo,
         # this will be updated by the functions below as appropriate
         # and will written out as a gzipped pickle at the end of processing
         checkplotdict = {'objectid':objectid,
+                         'neighbors':neighbors,
                          'objectinfo':objectinfo,
                          'finderchart':finderb64,
                          'sigclip':sigclip,
@@ -1414,6 +1513,7 @@ def _pkl_finder_objectinfo(objectinfo,
         # this will be updated by the functions below as appropriate
         # and will written out as a gzipped pickle at the end of processing
         checkplotdict = {'objectid':None,
+                         'neighbors':None,
                          'objectinfo':{'bmag':None,
                                        'bvcolor':None,
                                        'decl':None,
@@ -2071,6 +2171,8 @@ def checkplot_dict(lspinfolist,
                    objectinfo=None,
                    varinfo=None,
                    getvarfeatures=True,
+                   lclistpkl=None,
+                   nbrradiusarcsec=30.0,
                    lcfitfunc=None,
                    lcfitparams={},
                    externalplots=None,
@@ -2205,8 +2307,7 @@ def checkplot_dict(lspinfolist,
 
     '''
 
-    # first, get the objectinfo and finder chart
-    # and initialize the checkplotdict
+    # 0. get the objectinfo and finder chart and initialize the checkplotdict
     checkplotdict = _pkl_finder_objectinfo(objectinfo,
                                            varinfo,
                                            findercmap,
@@ -2214,6 +2315,8 @@ def checkplot_dict(lspinfolist,
                                            sigclip,
                                            normto,
                                            normmingap,
+                                           lclistpkl=lclistpkl,
+                                           nbrradiusarcsec=nbrradiusarcsec,
                                            plotdpi=plotdpi,
                                            verbose=verbose,
                                            findercachedir=findercachedir)
@@ -2288,8 +2391,7 @@ def checkplot_dict(lspinfolist,
     # make sure we have some lightcurve points to plot after sigclip
     if len(stimes) > 49:
 
-        # next, get the mag series plot using these filtered stimes, smags,
-        # serrs
+        # 1. get the mag series plot using these filtered stimes, smags, serrs
         magseriesdict = _pkl_magseries_plot(stimes, smags, serrs,
                                             plotdpi=plotdpi,
                                             magsarefluxes=magsarefluxes)
@@ -2297,7 +2399,7 @@ def checkplot_dict(lspinfolist,
         # update the checkplotdict
         checkplotdict.update(magseriesdict)
 
-        # next, for each lspinfo in lspinfolist, read it in (from pkl or pkl.gz
+        # 2. for each lspinfo in lspinfolist, read it in (from pkl or pkl.gz
         # if necessary), make the periodogram, make the phased mag series plots
         # for each of the nbestperiods in each lspinfo dict
         for lspinfo in lspinfolist:
@@ -2385,10 +2487,10 @@ def checkplot_dict(lspinfolist,
         ## update the checkplot dict with some other stuff that's needed by
         ## checkplotserver
 
-        # first, add a comments key:val
+        # 3. add a comments key:val
         checkplotdict['comments'] = None
 
-        # second, calculate some variability features
+        # 4. calculate some variability features
         if getvarfeatures is True:
             checkplotdict['varinfo']['features'] = all_nonperiodic_features(
                 stimes,
@@ -2398,13 +2500,13 @@ def checkplot_dict(lspinfolist,
             )
 
 
-        # third, add a signals key:val. this will be used by checkplotserver's
+        # 5. add a signals key:val. this will be used by checkplotserver's
         # pre-whitening and masking functions. these will write to
         # checkplotdict['signals']['whiten'] and
         # checkplotdict['signals']['mask'] respectively.
         checkplotdict['signals'] = {}
 
-        # finally, add any externalplots if we have them
+        # 6. add any externalplots if we have them
         checkplotdict['externalplots'] = []
 
         if (externalplots and
@@ -2459,6 +2561,8 @@ def checkplot_pickle(lspinfolist,
                      lcfitparams={},
                      varinfo=None,
                      getvarfeatures=True,
+                     lclistpkl=None,
+                     nbrradiusarcsec=30.0,
                      externalplots=None,
                      findercmap='gray_r',
                      finderconvolve=None,
@@ -2644,6 +2748,8 @@ def checkplot_pickle(lspinfolist,
         objectinfo=objectinfo,
         varinfo=varinfo,
         getvarfeatures=getvarfeatures,
+        lclistpkl=lclistpkl,
+        nbrradiusarcsec=nbrradiusarcsec,
         lcfitfunc=lcfitfunc,
         lcfitparams=lcfitparams,
         externalplots=externalplots,
