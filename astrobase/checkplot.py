@@ -1432,7 +1432,7 @@ def _pkl_finder_objectinfo(objectinfo,
                                 'dist':_xyzdist_to_distarcsec(md),
                                 'lcfpath':os.path.join(
                                     lclist['basedir'],
-                                    lclist['objects'][mi]['lcfname']
+                                    lclist['objects']['lcfname'][mi]
                                 )
                             }
                             neighbors.append(thisnbr)
