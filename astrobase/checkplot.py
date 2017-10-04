@@ -1429,7 +1429,7 @@ def _pkl_finder_objectinfo(objectinfo,
                                 'decl':lclist['objects']['decl'][mi],
                                 'xpix':pixcoords[0,1],
                                 'ypix':pixcoords[0,0],
-                                'dist':_xyzdist_to_arcsec(md),
+                                'dist':_xyzdist_to_distarcsec(md),
                                 'lcfpath':os.path.join(
                                     lclist['basedir'],
                                     lclist['objects'][mi]['lcfname']
