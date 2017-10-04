@@ -1530,7 +1530,7 @@ def update_checkplotdict_nbrlcs(
             magcolget = [magcol]
         mags = dict_get(lcdict, magcolget)
 
-        if '.' in ecol:
+        if '.' in errcol:
             errcolget = errcol.split('.')
         else:
             errcolget = [errcol]
