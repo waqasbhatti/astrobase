@@ -719,6 +719,7 @@ def skyview_stamp(ra, decl,
                   forcefetch=False,
                   cachedir='~/.astrobase/stamp-cache',
                   timeout=10.0,
+                  savewcsheader=True,
                   verbose=False):
     '''This is the internal version of the astroquery_skyview_stamp function.
 
@@ -818,6 +819,7 @@ def skyview_stamp(ra, decl,
 
     # open the frame
     stampfits = pyfits.open(cachefname)
+    header = stampfits[0].header
     frame = stampfits[0].data
     stampfits.close()
 
@@ -831,10 +833,16 @@ def skyview_stamp(ra, decl,
 
     if convolvewith:
         convolved = aconv.convolve(frame, convolvewith)
-        return frame
+        if savewcsheader:
+            return frame, header
+        else:
+            return frame
 
     else:
-        return frame
+        if savewcsheader:
+            return frame, header
+        else:
+            return frame
 
 
 ##################
