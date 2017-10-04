@@ -1328,6 +1328,8 @@ def _pkl_finder_objectinfo(objectinfo,
 
         # get the finder chart
         try:
+
+            # generate the finder chart
             finder, finderheader = skyview_stamp(objectinfo['ra'],
                                                  objectinfo['decl'],
                                                  convolvewith=finderconvolve,
@@ -1335,25 +1337,8 @@ def _pkl_finder_objectinfo(objectinfo,
                                                  cachedir=findercachedir)
             finderfig = plt.figure(figsize=(3,3),dpi=plotdpi,frameon=False)
             plt.imshow(finder, cmap=findercmap)
-            plt.xticks([])
-            plt.yticks([])
-            # grid lines pointing to the center of the frame
-            plt.axvline(x=150,ymin=0.2,ymax=0.4,linewidth=2.0,color='k')
-            plt.axhline(y=149,xmin=0.2,xmax=0.4,linewidth=2.0,color='k')
-            plt.gca().set_frame_on(False)
-            # this is the output instance
-            finderpng = strio()
-            finderfig.savefig(finderpng,
-                              bbox_inches='tight',
-                              pad_inches=0.0, format='png')
-            plt.close()
 
-            # encode the finderpng instance to base64
-            finderpng.seek(0)
-            finderb64 = base64.b64encode(finderpng.read())
-
-            # close the stringio buffer
-            finderpng.close()
+            # skip down to after nbr stuff for the rest of the finderchart...
 
             # search around the target's location and get its neighbors if
             # lclistpkl is provided and it exists
@@ -1405,6 +1390,8 @@ def _pkl_finder_objectinfo(objectinfo,
                     # initialize the finder WCS
                     finderwcs = WCS(finderheader)
 
+                    nbrind = 0
+
                     for md, mi in zip(matchdists, matchinds):
 
                         if np.isfinite(md) and md > 0.0:
@@ -1436,7 +1423,39 @@ def _pkl_finder_objectinfo(objectinfo,
                                 )
                             }
                             neighbors.append(thisnbr)
+                            nbrind = nbrind+1
 
+                            # put in a nice marker for this neighbor into the
+                            # overall finder chart
+                            plt.annotate('N%s' % nbrind,
+                                         (pixcoords[0,0],
+                                          pixcoords[0,1]),
+                                         xytext=(250,250-50*(nbrind-1)),
+                                         arrowprops={'arrowstyle':'-'})
+
+            #
+            # finish up the finder chart after neighbors are processed
+            #
+            plt.xticks([])
+            plt.yticks([])
+            # grid lines pointing to the center of the frame
+            plt.axvline(x=150,ymin=0.2,ymax=0.4,linewidth=2.0,color='k')
+            plt.axhline(y=149,xmin=0.2,xmax=0.4,linewidth=2.0,color='k')
+            plt.gca().set_frame_on(False)
+
+            # this is the output instance
+            finderpng = strio()
+            finderfig.savefig(finderpng,
+                              bbox_inches='tight',
+                              pad_inches=0.0, format='png')
+            plt.close()
+
+            # encode the finderpng instance to base64
+            finderpng.seek(0)
+            finderb64 = base64.b64encode(finderpng.read())
+
+            # close the stringio buffer
+            finderpng.close()
 
         except Exception as e:
 
