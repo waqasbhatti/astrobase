@@ -214,6 +214,14 @@ def main():
     ## URL HANDLERS ##
     ##################
 
+    # TODO: the index page should not be at the root and should be chooseable at
+    # the command-line. this will allow us to run many checkplotservers for
+    # different projects and reverse-proxy them using nginx
+
+    # TODO: we'll have to fix the frontend JS so it knows how to POST stuff to
+    # the right URL. this'll probably involve parsing the URL in the address bar
+    # and getting the relative URL off that.
+
     HANDLERS = [
         # index page
         (r'/',
