@@ -1576,8 +1576,8 @@ def update_checkplotdict_nbrlcs(
                 nbr[lspt] = {}
 
                 # we only care about the best period and its options
-                operiod, oepoch = (checkplot[lspt][0]['period'],
-                                   checkplot[lspt][0]['epoch'])
+                operiod, oepoch = (checkplotdict[lspt][0]['period'],
+                                   checkplotdict[lspt][0]['epoch'])
                 (ophasewrap, ophasesort, ophasebin,
                  ominbinelems, oplotxlim) = (
                      checkplotdict[lspt][0]['phasewrap'],
