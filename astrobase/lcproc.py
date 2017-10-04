@@ -100,8 +100,11 @@ from astrobase.astrokep import read_kepler_fitslc, read_kepler_pklc
 
 from astrobase import hatlc, periodbase, checkplot
 from astrobase.varbase import features
-from astrobase.lcmath import normalize_magseries, time_bin_magseries_with_errs
+from astrobase.lcmath import normalize_magseries, \
+    time_bin_magseries_with_errs, sigclip_magseries
 from astrobase.periodbase.kbls import bls_snr
+
+from astrobase.checkplot import _pkl_magseries_plot, _pkl_phased_magseries_plot
 
 
 #############################################
@@ -1454,6 +1457,152 @@ def parallel_pf_lcdir(lcdir,
         LOGERROR('no light curve files in %s format found in %s' % (lcformat,
                                                                     lcdir))
         return None
+
+
+
+###################################
+## CHECKPLOT NEIGHBOR OPERATIONS ##
+###################################
+
+# for the neighbors tab in checkplotserver: show a 5 row per neighbor x 3 col
+# panel. Each col will have in order: best phased LC of target with
+
+def update_checkplotdict_nbrlcs(
+        checkplotdict,
+        timecol, magcol, errcol,
+        lcformat='hat-sql',
+        verbose=True,
+):
+    '''For all neighbors in checkplotdict, make LCs and phased LCs.
+
+    Here, we specify the timecol, magcol, errcol explicitly because we're doing
+    this per checkplot, which is for a single timecol-magcol-errcol combination.
+
+    '''
+
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return checkplotdict
+
+    if not ('neighbors' in checkplotdict and
+            checkplotdict['neighbors'] and
+            len(checkplotdict['neighbors']) > 0):
+
+        LOGERROR('no neighbors for %s, not updating...' %
+                 (checkplotdict['objectid']))
+        return checkplotdict
+
+
+    # get the lcformat specific info
+    (fileglob, readerfunc, dtimecols, dmagcols,
+     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+    # if there are actually neighbors, go through them in order
+    for nbr in checkplotdict['neighbors']:
+
+        objectid, ra, decl, dist, lcfpath = (nbr['objectid'],
+                                             nbr['ra'],
+                                             nbr['decl'],
+                                             nbr['dist'],
+                                             nbr['lcfpath'])
+
+        # get the light curve
+        lcdict = readerfunc(lcfpath)
+        if isinstance(lcdict, tuple) and isinstance(lcdict[0],dict):
+            lcdict = lcdict[0]
+
+        # normalize using the special function if specified
+        if normfunc is not None:
+           lcdict = normfunc(lcdict)
+
+        # get the times, mags, and errs
+        # dereference the columns and get them from the lcdict
+        if '.' in timecol:
+            timecolget = timecol.split('.')
+        else:
+            timecolget = [timecol]
+        times = dict_get(lcdict, timecolget)
+
+        if '.' in magcol:
+            magcolget = magcol.split('.')
+        else:
+            magcolget = [magcol]
+        mags = dict_get(lcdict, magcolget)
+
+        if '.' in ecol:
+            errcolget = errcol.split('.')
+        else:
+            errcolget = [errcol]
+        errs = dict_get(lcdict, errcolget)
+
+
+        # filter the input times, mags, errs; do sigclipping and normalization
+        stimes, smags, serrs = sigclip_magseries(times,
+                                                 mags,
+                                                 errs,
+                                                 magsarefluxes=magsarefluxes,
+                                                 sigclip=4.0)
+
+        # normalize here if not using special normalization
+        if normfunc is None:
+            ntimes, nmags = normalize_magseries(
+                stimes, smags,
+                magsarefluxes=magsarefluxes
+            )
+            xtimes, xmags, xerrs = ntimes, nmags, serrs
+        else:
+            xtimes, xmags, xerrs = xtimes, smags, serrs
+
+        #
+        # now we can start doing stuff
+        #
+
+        # 1. make an unphased mag-series plot
+        nbrdict = _pkl_magseries_plot(xtimes,
+                                      xmags,
+                                      xerrs,
+                                      magsareflux=magsarefluxes)
+        # update the nbr
+        nbr.update(nbrdict)
+
+        # for each lspmethod in the checkplot, make a corresponding plot for
+        # this neighbor
+        for lspt in ('pdm','gls','bls','aov'):
+
+            if lspt in checkplotdict:
+
+                # we only care about the best period and its options
+                operiod, oepoch = (checkplot[lspt][0]['period'],
+                                   checkplot[lspt][0]['epoch'])
+                (ophasewrap, ophasesort, ophasebin,
+                 ominbinelems, oplotxlim) = (
+                     checkplot[lspt][0]['phasewrap'],
+                     checkplot[lspt][0]['phasesort'],
+                     checkplot[lspt][0]['phasebin'],
+                     checkplot[lspt][0]['minbinelems'],
+                     checkplot[lspt][0]['plotxlim'],
+                 )
+
+                # make the phasedlc plot for this period
+                nbr = _pkl_phased_magseries_plot(
+                    nbr,
+                    lspt,
+                    0,
+                    xtimes, xmags, xerrs,
+                    operiod, oepoch,
+                    phasewrap=ophasewrap,
+                    phasesort=ophasesort,
+                    phasebin=ophasebin,
+                    minbinelems=ominbinelems,
+                    plotxlim=oplotxlim,
+                    magsarefluxes=magsarefluxes,
+                    verbose=verbose
+                )
+
+    # at this point, this neighbor's dict should be up to date with all
+    # info, magseries plot, and all phased LC plots
+    # return the updated checkplotdict
+    return checkplotdict
 
 
 
