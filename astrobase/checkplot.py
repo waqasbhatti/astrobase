@@ -1433,16 +1433,16 @@ def _pkl_finder_objectinfo(objectinfo,
 
                             if ((300.0 - annotatex) > 50.0):
                                 offx = annotatex + 25.0
-                                xha = 'right'
+                                xha = 'left'
                             else:
                                 offx = annotatex - 25.0
-                                xha = 'left'
+                                xha = 'right'
                             if ((300.0 - annotatey) > 50.0):
                                 offy = annotatey - 25.0
-                                yha = 'top'
+                                yha = 'bottom'
                             else:
                                 offy = annotatey + 25.0
-                                yha = 'bottom'
+                                yha = 'top'
 
                             plt.annotate('N%s' % nbrind,
                                          (annotatex, annotatey),
@@ -1452,7 +1452,7 @@ def _pkl_finder_objectinfo(objectinfo,
                                                      'width':1.0,
                                                      'headwidth':1.0,
                                                      'headlength':0.1,
-                                                     'shrink':0.1},
+                                                     'shrink':0.0},
                                          color='blue',
                                          horizontalalignment=xha,
                                          verticalalignment=yha)
