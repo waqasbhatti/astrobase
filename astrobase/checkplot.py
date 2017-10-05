@@ -1356,7 +1356,7 @@ def _pkl_finder_objectinfo(objectinfo,
                     LOGERROR('neighbors within %.1f arcsec for %s could '
                              'not be found, no kdtree in lclistpkl: %s'
                              % (objectid, lclistpkl))
-                    objectinfo['neighbors'] = None
+                    neighbors = None
 
                 else:
 
@@ -1456,6 +1456,11 @@ def _pkl_finder_objectinfo(objectinfo,
                                          color='blue',
                                          horizontalalignment=xha,
                                          verticalalignment=yha)
+
+            # if there are no neighbors, set the 'neighbors' key to None
+            else:
+
+                neighbors = None
 
             #
             # finish up the finder chart after neighbors are processed
