@@ -1433,16 +1433,16 @@ def _pkl_finder_objectinfo(objectinfo,
 
                             if ((300.0 - annotatex) > 50.0):
                                 offx = annotatex + 25.0
-                                xha = 'left'
+                                xha = 'center'
                             else:
                                 offx = annotatex - 25.0
-                                xha = 'right'
+                                xha = 'center'
                             if ((300.0 - annotatey) > 50.0):
                                 offy = annotatey - 25.0
-                                yha = 'bottom'
+                                yha = 'center'
                             else:
                                 offy = annotatey + 25.0
-                                yha = 'top'
+                                yha = 'center'
 
                             plt.annotate('N%s' % nbrind,
                                          (annotatex, annotatey),
