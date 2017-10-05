@@ -218,12 +218,16 @@ def key_worker(task):
 ## CONFIG ##
 ############
 
-FILTEROPS = {'eq':'==',
-             'gt':'>',
-             'ge':'>=',
-             'lt':'<',
-             'le':'<=',
-             'ne':'!='}
+FILTEROPS = {
+    'eq':'==',
+    'gt':'>',
+    'ge':'>=',
+    'lt':'<',
+    'le':'<=',
+    'ne':'!=',
+    'cb':'closed-interval-between',
+    'ob':'open-interval-between',
+}
 
 
 
