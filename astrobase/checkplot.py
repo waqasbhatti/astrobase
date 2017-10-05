@@ -1436,9 +1436,9 @@ def _pkl_finder_objectinfo(objectinfo,
                             else:
                                 offx = annotatex - 25.0
                             if ((300.0 - annotatey) > 50.0):
-                                offy = annotatey + 25.0
-                            else:
                                 offy = annotatey - 25.0
+                            else:
+                                offy = annotatey + 25.0
 
                             plt.annotate('N%s' % nbrind,
                                          (annotatex, annotatey),
@@ -1448,7 +1448,7 @@ def _pkl_finder_objectinfo(objectinfo,
                                                      'width':1.5,
                                                      'headwidth':1.5,
                                                      'headlength':0.1,
-                                                     'shrink':0.15},
+                                                     'shrink':0.1},
                                          color='blue')
 
             #
