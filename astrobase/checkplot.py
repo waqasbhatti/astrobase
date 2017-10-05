@@ -1444,8 +1444,8 @@ def _pkl_finder_objectinfo(objectinfo,
                                          (annotatex, annotatey),
                                          xytext=(offx, offy),
                                          arrowprops={'facecolor':'red',
-                                                     'headwidth':None,
-                                                     'headlength':None},
+                                                     'headwidth':0.0,
+                                                     'headlength':0.0},
                                          color='red')
 
             #
