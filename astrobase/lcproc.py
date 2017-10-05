@@ -21,7 +21,7 @@ from traceback import format_exc
 
 
 import concurrent.futures
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 import numpy as np
 import scipy.spatial as sps
@@ -311,6 +311,64 @@ FILTEROPS = {'eq':'==',
              'ne':'!='}
 
 
+def lclist_thread_worker(task):
+    '''
+    This is a concurrent worker for makelclist.
+
+    task[0] = lcf
+    task[1] = columns
+    task[2] = lclistdict
+
+    '''
+
+    lcf, column, lclistdict = task
+
+    # insert the light curve's filename
+    lclistdict['objects']['lcfname'].append(os.path.basename(lcf))
+
+    try:
+
+        # read the light curve in
+        lcdict = readerfunc(lcf)
+        if len(lcdict) == 2:
+            lcdict = lcdict[0]
+
+        # insert all of the columns
+        for colkey in columns:
+
+            if '.' in colkey:
+                getkey = colkey.split('.')
+            else:
+                getkey = [colkey]
+
+            try:
+                thiscolval = dict_get(lcdict, getkey)
+            except:
+                LOGWARNING('column %s does not exist for %s' %
+                           (colkey, lcf))
+                thiscolval = np.nan
+
+            # update the lclistdict with this value
+            lclistdict['objects'][getkey[-1]].append(thiscolval)
+
+    except Exception as e:
+
+        LOGEXCEPTION('could not figure out columns for %s' % lcf)
+
+        # insert all of the columns as nans
+        for colkey in columns:
+
+            if '.' in colkey:
+                getkey = colkey.split('.')
+            else:
+                getkey = [colkey]
+
+            thiscolval = np.nan
+
+            # update the lclistdict with this value
+            lclistdict['objects'][getkey[-1]].append(thiscolval)
+
+
 
 def makelclist(basedir,
                outfile,
@@ -417,54 +475,10 @@ def makelclist(basedir,
         else:
             lciter = matching
 
-        # go through the light curves
-        for lcf in lciter:
+        tasks = [(x, columns, lclistdict) for x in matching]
 
-            # insert the light curve's filename
-            lclistdict['objects']['lcfname'].append(os.path.basename(lcf))
-
-            try:
-
-                # read the light curve in
-                lcdict = readerfunc(lcf)
-                if len(lcdict) == 2:
-                    lcdict = lcdict[0]
-
-                # insert all of the columns
-                for colkey in columns:
-
-                    if '.' in colkey:
-                        getkey = colkey.split('.')
-                    else:
-                        getkey = [colkey]
-
-                    try:
-                        thiscolval = dict_get(lcdict, getkey)
-                    except:
-                        LOGWARNING('column %s does not exist for %s' %
-                                   (colkey, lcf))
-                        thiscolval = np.nan
-
-                    # update the lclistdict with this value
-                    lclistdict['objects'][getkey[-1]].append(thiscolval)
-
-            except Exception as e:
-
-                LOGEXCEPTION('could not figure out columns for %s' % lcf)
-
-                # insert all of the columns as nans
-                for colkey in columns:
-
-                    if '.' in colkey:
-                        getkey = colkey.split('.')
-                    else:
-                        getkey = [colkey]
-
-                    thiscolval = np.nan
-
-                    # update the lclistdict with this value
-                    lclistdict['objects'][getkey[-1]].append(thiscolval)
-
+        with ThreadPoolExecutor(max_workers=nworkers) as executor:
+            resultfutures = executor.map(lclist_thread_worker, tasks)
 
         # done with collecting info
         # turn all of the lists in the lclistdict into arrays
