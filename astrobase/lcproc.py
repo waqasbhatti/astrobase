@@ -328,9 +328,7 @@ def lclist_parallel_worker(task):
         LOGERROR("can't figure out the light curve format")
         return
 
-    if not fileglob:
-        fileglob = LCFORM[lcformat][0]
-
+    fileglob = LCFORM[lcformat][0]
     readerfunc = LCFORM[lcformat][1]
 
     lcobjdict = {'lcfname':os.path.basename(lcf)}
