@@ -378,7 +378,8 @@ def makelclist(basedir,
                columns=['objectid',
                         'objectinfo.ra','objectinfo.decl',
                         'objectinfo.ndet','objectinfo.sdssr'],
-               makecoordindex=['objectinfo.ra','objectinfo.decl']):
+               makecoordindex=['objectinfo.ra','objectinfo.decl'],
+               nworkers=20):
 
     '''This generates a list file compatible with getlclist below.
 
@@ -469,11 +470,6 @@ def makelclist(basedir,
 
         # start collecting info
         LOGINFO('collecting light curve info...')
-
-        if TQDM:
-            lciter = tqdm(matching)
-        else:
-            lciter = matching
 
         tasks = [(x, columns, lclistdict) for x in matching]
 
