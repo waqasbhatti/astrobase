@@ -3641,7 +3641,7 @@ def checkplot_pickle_to_png(checkplotin,
     if outfile.endswith('pkl'):
         LOGWARNING('expected output PNG filename ends with .pkl, '
                    'changed to .png')
-        outfile.replace('.pkl','.png')
+        outfile = outfile.replace('.pkl','.png')
 
     outimg.save(outfile)
 
