@@ -317,19 +317,12 @@ def lclist_parallel_worker(task):
 
     task[0] = lcf
     task[1] = columns
-    task[2] = lclistdict
-    task[3] = lcformat
+    task[3] = fileglob
+    task[4] = readerfunc
 
     '''
 
-    lcf, columns, lclistdict, lcformat = task
-
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR("can't figure out the light curve format")
-        return
-
-    fileglob = LCFORM[lcformat][0]
-    readerfunc = LCFORM[lcformat][1]
+    lcf, columns, fileglob, readerfunc = task
 
     lcobjdict = {'lcfname':os.path.basename(lcf)}
 
@@ -483,7 +476,7 @@ def makelclist(basedir,
         # start collecting info
         LOGINFO('collecting light curve info...')
 
-        tasks = [(x, columns, lclistdict, lcformat) for x in matching]
+        tasks = [(x, columns, fileglob, readerfunc) for x in matching]
 
         with ProcessPoolExecutor(max_workers=nworkers) as executor:
             results = executor.map(lclist_parallel_worker, tasks)
