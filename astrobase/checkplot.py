@@ -3085,6 +3085,12 @@ def checkplot_pickle_to_png(checkplotin,
             cplspmethods.append(lspmethod)
             cprows = cprows + 1
 
+    # add in any extra rows from neighbors
+    if 'neighbors' in cpd and cpd['neighbors'] and len(cpd['neighbors']) > 0:
+        nbrrows = len(cpd['neighbors'])
+    else:
+        nbrrows = 0
+
     # add in any extra rows from keyword arguments
     if extrarows and len(extrarows) > 0:
         erows = len(extrarows)
@@ -3100,7 +3106,7 @@ def checkplot_pickle_to_png(checkplotin,
         cpderows = 0
 
     totalwidth = 3000
-    totalheight = 480 + (cprows + erows + cpderows)*480
+    totalheight = 480 + (cprows + erows + nbrrows + cpderows)*480
 
     # this is the output PNG
     outimg = Image.new('RGBA',(totalwidth, totalheight),(255,255,255,255))
@@ -3542,6 +3548,84 @@ def checkplot_pickle_to_png(checkplotin,
                 outimg.paste(cpdeplotresized,
                              (750*cpdecolind,
                               (cprows+1)*480 + (erows*480) + 480*cpderowind))
+
+
+    # from neighbors:
+    if nbrrows > 0:
+
+        # we have four tiles
+        # tile 1: neighbor objectid, ra, decl, distance, unphased LC
+        # tile 2: phased LC for gls
+        # tile 3: phased LC for pdm
+        # tile 4: phased LC for bls
+
+        for nbrind, nbr in enumerate(cpd['neighbors']):
+
+            # first panel: neighbor objectid, ra, decl, distance, unphased LC
+            nbrlc = Image.open(
+                _base64_to_file(
+                    nbr['magseries']['plot'], None, writetostrio=True
+                )
+            )
+            outimg.paste(nbrlc,
+                         (750*0,
+                          (cprows+1)*480 + (erows*480) + (cpderows*480) +
+                          480*nbrind))
+
+            # overlay the objectinfo
+            objinfodraw.text(
+                (98,
+                 (cprows+1)*480 + (erows*480) + (cpderows*480) +
+                 480*nbrind + 15),
+                ('N%s: %s' % (nbrind + 1, nbr['objectid'])),
+                font=cpfontlarge,
+                fill=(0,0,255,255)
+            )
+            # overlay the objectinfo
+            objinfodraw.text(
+                (98,
+                 (cprows+1)*480 + (erows*480) + (cpderows*480) +
+                 480*nbrind + 50),
+                ('(RA, DEC) = (%.3f, %.3f), distance: %.1f arcsec' %
+                 (nbr['ra'], nbr['decl'], nbr['dist'])),
+                font=cpfontnormal,
+                fill=(0,0,255,255)
+            )
+
+
+            # second panel: phased LC for gls
+            glslc = Image.open(
+                _base64_to_file(
+                    nbr['gls'][0]['plot'], None, writetostrio=True
+                )
+            )
+            outimg.paste(glslc,
+                         (750*1,
+                          (cprows+1)*480 + (erows*480) + (cpderows*480) +
+                          480*nbrind))
+
+            # second panel: phased LC for gls
+            pdmlc = Image.open(
+                _base64_to_file(
+                    nbr['pdm'][0]['plot'], None, writetostrio=True
+                )
+            )
+            outimg.paste(pdmlc,
+                         (750*2,
+                          (cprows+1)*480 + (erows*480) + (cpderows*480) +
+                          480*nbrind))
+
+            # second panel: phased LC for gls
+            blslc = Image.open(
+                _base64_to_file(
+                    nbr['bls'][0]['plot'], None, writetostrio=True
+                )
+            )
+            outimg.paste(blslc,
+                         (750*3,
+                          (cprows+1)*480 + (erows*480) + (cpderows*480) +
+                          480*nbrind))
+
 
     #####################
     ## WRITE FINAL PNG ##
