@@ -1445,11 +1445,11 @@ def _pkl_finder_objectinfo(objectinfo,
                                          xytext=(offx, offy),
                                          arrowprops={'facecolor':'blue',
                                                      'edgecolor':'blue',
-                                                     'width':2.0,
-                                                     'headwidth':2.0,
-                                                     'headlength':1.0,
+                                                     'width':1.5,
+                                                     'headwidth':1.5,
+                                                     'headlength':0.1,
                                                      'shrink':0.15},
-                                         color='red')
+                                         color='blue')
 
             #
             # finish up the finder chart after neighbors are processed
