@@ -1450,7 +1450,7 @@ def _pkl_finder_objectinfo(objectinfo,
                                          arrowprops={'facecolor':'blue',
                                                      'edgecolor':'blue',
                                                      'width':1.0,
-                                                     'headwidth':1.0
+                                                     'headwidth':1.0,
                                                      'headlength':0.1,
                                                      'shrink':0.1},
                                          color='blue',
