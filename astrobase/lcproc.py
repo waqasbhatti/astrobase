@@ -318,10 +318,20 @@ def lclist_thread_worker(task):
     task[0] = lcf
     task[1] = columns
     task[2] = lclistdict
+    task[3] = lcformat
 
     '''
 
-    lcf, column, lclistdict = task
+    lcf, columns, lclistdict, lcformat = task
+
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR("can't figure out the light curve format")
+        return
+
+    if not fileglob:
+        fileglob = LCFORM[lcformat][0]
+
+    readerfunc = LCFORM[lcformat][1]
 
     # insert the light curve's filename
     lclistdict['objects']['lcfname'].append(os.path.basename(lcf))
@@ -471,7 +481,7 @@ def makelclist(basedir,
         # start collecting info
         LOGINFO('collecting light curve info...')
 
-        tasks = [(x, columns, lclistdict) for x in matching]
+        tasks = [(x, columns, lclistdict, lcformat) for x in matching]
 
         with ThreadPoolExecutor(max_workers=nworkers) as executor:
             resultfutures = executor.map(lclist_thread_worker, tasks)
