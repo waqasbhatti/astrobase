@@ -311,9 +311,9 @@ FILTEROPS = {'eq':'==',
              'ne':'!='}
 
 
-def lclist_thread_worker(task):
+def lclist_parallel_worker(task):
     '''
-    This is a concurrent worker for makelclist.
+    This is a parallel worker for makelclist.
 
     task[0] = lcf
     task[1] = columns
@@ -333,8 +333,7 @@ def lclist_thread_worker(task):
 
     readerfunc = LCFORM[lcformat][1]
 
-    # insert the light curve's filename
-    lclistdict['objects']['lcfname'].append(os.path.basename(lcf))
+    lcobjdict = {'lcfname':os.path.basename(lcf)}
 
     try:
 
@@ -358,8 +357,8 @@ def lclist_thread_worker(task):
                            (colkey, lcf))
                 thiscolval = np.nan
 
-            # update the lclistdict with this value
-            lclistdict['objects'][getkey[-1]].append(thiscolval)
+            # update the lcobjdict with this value
+            lcobjdict[getkey[-1]] = thiscolval
 
     except Exception as e:
 
@@ -376,7 +375,9 @@ def lclist_thread_worker(task):
             thiscolval = np.nan
 
             # update the lclistdict with this value
-            lclistdict['objects'][getkey[-1]].append(thiscolval)
+            lcobjdict[getkey[-1]] = thiscolval
+
+    return lcobjdict
 
 
 
@@ -467,6 +468,8 @@ def makelclist(basedir,
             }
         }
 
+        derefcols = ['lcfname']
+
         # fill in the lclist columns from the columns kwarg
         for col in columns:
 
@@ -474,6 +477,7 @@ def makelclist(basedir,
             thiscol = col.split('.')
             thiscol = thiscol[-1]
             lclistdict['objects'][thiscol] = []
+            derefcols.append(thiscol)
 
         # add a column for the filename as well
         lclistdict['objects']['lcfname'] = []
@@ -483,14 +487,21 @@ def makelclist(basedir,
 
         tasks = [(x, columns, lclistdict, lcformat) for x in matching]
 
-        with ThreadPoolExecutor(max_workers=nworkers) as executor:
-            resultfutures = executor.map(lclist_thread_worker, tasks)
+        with ProcessPoolExecutor(max_workers=nworkers) as executor:
+            results = executor.map(lclist_parallel_worker, tasks)
+
+        # update the columns in the overall dict from the results of the
+        # parallel map
+        for result in results:
+            for xcol in derefcols:
+                lclistdict['objects'][xcol].append(result[xcol])
+
+        executor.shutdown()
 
         # done with collecting info
         # turn all of the lists in the lclistdict into arrays
         for col in lclistdict['objects']:
             lclistdict['objects'][col] = np.array(lclistdict['objects'][col])
-
 
         # if we're supposed to make a spatial index, do so
         if (makecoordindex and
