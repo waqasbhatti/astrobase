@@ -1443,10 +1443,11 @@ def _pkl_finder_objectinfo(objectinfo,
                             plt.annotate('N%s' % nbrind,
                                          (annotatex, annotatey),
                                          xytext=(offx, offy),
-                                         arrowprops={'facecolor':'red',
+                                         arrowprops={'facecolor':'#d4ac0d',
+                                                     'width':2.0,
                                                      'headwidth':0.0,
                                                      'headlength':0.0},
-                                         color='red')
+                                         color='#d4ac0d')
 
             #
             # finish up the finder chart after neighbors are processed
