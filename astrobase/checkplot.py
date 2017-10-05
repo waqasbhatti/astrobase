@@ -1433,12 +1433,16 @@ def _pkl_finder_objectinfo(objectinfo,
 
                             if ((300.0 - annotatex) > 50.0):
                                 offx = annotatex + 25.0
+                                xha = 'right'
                             else:
                                 offx = annotatex - 25.0
+                                xha = 'left'
                             if ((300.0 - annotatey) > 50.0):
                                 offy = annotatey - 25.0
+                                yha = 'top'
                             else:
                                 offy = annotatey + 25.0
+                                yha = 'bottom'
 
                             plt.annotate('N%s' % nbrind,
                                          (annotatex, annotatey),
@@ -1446,12 +1450,12 @@ def _pkl_finder_objectinfo(objectinfo,
                                          arrowprops={'facecolor':'blue',
                                                      'edgecolor':'blue',
                                                      'width':1.0,
-                                                     'headwidth':1.5,
+                                                     'headwidth':1.0
                                                      'headlength':0.1,
                                                      'shrink':0.1},
                                          color='blue',
-                                         horizontalalignment='center',
-                                         verticalalignment='center')
+                                         horizontalalignment=xha,
+                                         verticalalignment=yha)
 
             #
             # finish up the finder chart after neighbors are processed
