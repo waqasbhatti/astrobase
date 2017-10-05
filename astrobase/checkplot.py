@@ -1432,18 +1432,20 @@ def _pkl_finder_objectinfo(objectinfo,
                             annotatey = 300.0 - pixcoords[0,1]
 
                             if ((300.0 - annotatex) > 50.0):
-                                offx = annotatex + 30.0
+                                offx = annotatex + 25.0
                             else:
-                                offx = annotatex - 30.0
+                                offx = annotatex - 25.0
                             if ((300.0 - annotatey) > 50.0):
-                                offy = annotatey + 30.0
+                                offy = annotatey + 25.0
                             else:
-                                offy = annotatey - 30.0
+                                offy = annotatey - 25.0
 
                             plt.annotate('N%s' % nbrind,
                                          (annotatex, annotatey),
                                          xytext=(offx, offy),
-                                         arrowprops={'arrowstyle':'-'},
+                                         arrowprops={'facecolor':'red',
+                                                     'headwidth':None,
+                                                     'headlength':None},
                                          color='red')
 
             #
@@ -1452,8 +1454,8 @@ def _pkl_finder_objectinfo(objectinfo,
             plt.xticks([])
             plt.yticks([])
             # grid lines pointing to the center of the frame
-            plt.axvline(x=150,ymin=0.2,ymax=0.4,linewidth=2.0,color='k')
-            plt.axhline(y=149,xmin=0.2,xmax=0.4,linewidth=2.0,color='k')
+            plt.axvline(x=150,ymin=0.2,ymax=0.4,linewidth=2.0,color='b')
+            plt.axhline(y=149,xmin=0.2,xmax=0.4,linewidth=2.0,color='b')
             plt.gca().set_frame_on(False)
 
             # this is the output instance
