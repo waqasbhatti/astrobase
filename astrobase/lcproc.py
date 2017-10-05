@@ -131,7 +131,7 @@ def read_pklc(lcfile):
 # LC format -> [default fileglob,  function to read LC format]
 LCFORM = {
     'hat-sql':[
-        '*-hatlc.sqlite.gz',           # default fileglob
+        '*-hatlc.sqlite*',           # default fileglob
         read_and_filter_sqlitecurve,   # function to read this LC
         ['rjd','rjd'],                 # default timecols to use for period/var
         ['aep_000','atf_000'],         # default magcols to use for period/var
@@ -140,7 +140,7 @@ LCFORM = {
         normalize_lcdict_byinst,       # default special normalize function
     ],
     'hat-csv':[
-        '*-hatlc.csv.gz',
+        '*-hatlc.csv*',
         read_csvlc,
         ['rjd','rjd'],
         ['aep_000','atf_000'],
@@ -149,7 +149,7 @@ LCFORM = {
         normalize_lcdict_byinst,
     ],
     'hp-txt':[
-        '*TF1.gz',
+        'HAT-*tfalc.TF1*',
         read_hatpi_textlc,
         ['rjd','rjd'],
         ['iep1','itf1'],
