@@ -1443,11 +1443,12 @@ def _pkl_finder_objectinfo(objectinfo,
                             plt.annotate('N%s' % nbrind,
                                          (annotatex, annotatey),
                                          xytext=(offx, offy),
-                                         arrowprops={'facecolor':'red',
-                                                     'edgecolor':'red',
+                                         arrowprops={'facecolor':'blue',
+                                                     'edgecolor':'blue',
                                                      'width':2.0,
                                                      'headwidth':2.0,
-                                                     'headlength':0.0},
+                                                     'headlength':1.0,
+                                                     'shrink':0.15},
                                          color='red')
 
             #
