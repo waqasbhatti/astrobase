@@ -1208,6 +1208,7 @@ def runpf(lcfile,
           lcformat='hat-sql',
           bls_startp=1.0,
           bls_maxtransitduration=0.3,
+          getblssnr=True,
           nworkers=10):
     '''
     This runs the period-finding for a single LC.
@@ -1304,32 +1305,44 @@ def runpf(lcfile,
                                        'pdm':pdm}
 
 
-            try:
+            if getblssnr:
+            
+                try:
+                
+                    # calculate the SNR for the BLS as well
+                    blssnr = bls_snr(bls, times, mags, errs,
+                                     magsarefluxes=magsarefluxes,
+                                     verbose=False)
 
-                # calculate the SNR for the BLS as well
-                blssnr = bls_snr(bls, times, mags, errs,
-                                 magsarefluxes=magsarefluxes,
-                                 verbose=False)
+                    # add the SNR results to the BLS result dict
+                    resultdict[mcolget[-1]]['bls'].update({
+                        'snr':blssnr['snr'],
+                        'altsnr':blssnr['altsnr'],
+                        'transitdepth':blssnr['transitdepth'],
+                        'transitduration':blssnr['transitduration'],
+                    })
 
-                # add the SNR results to the BLS result dict
-                resultdict[mcolget[-1]]['bls'].update({
-                    'snr':blssnr['snr'],
-                    'altsnr':blssnr['altsnr'],
-                    'transitdepth':blssnr['transitdepth'],
-                    'transitduration':blssnr['transitduration'],
-                })
+                except Exception as e:
+                    
+                    LOGEXCEPTION('could not calculate BLS SNR for %s' %
+                                 lcfile)
+                    # add the SNR null results to the BLS result dict
+                    resultdict[mcolget[-1]]['bls'].update({
+                        'snr':[np.nan,np.nan,np.nan,np.nan,np.nan],
+                        'altsnr':[np.nan,np.nan,np.nan,np.nan,np.nan],
+                        'transitdepth':[np.nan,np.nan,np.nan,np.nan,np.nan],
+                        'transitduration':[np.nan,np.nan,np.nan,np.nan,np.nan],
+                    })
 
-            except Exception as e:
+            else:
 
-                LOGEXCEPTION('could not calculate BLS SNR for %s' %
-                             lcfile)
                 # add the SNR null results to the BLS result dict
                 resultdict[mcolget[-1]]['bls'].update({
                     'snr':[np.nan,np.nan,np.nan,np.nan,np.nan],
                     'altsnr':[np.nan,np.nan,np.nan,np.nan,np.nan],
                     'transitdepth':[np.nan,np.nan,np.nan,np.nan,np.nan],
                     'transitduration':[np.nan,np.nan,np.nan,np.nan,np.nan],
-                })
+                })                
 
 
         # once all mag cols have been processed, write out the pickle
