@@ -982,14 +982,17 @@ def varfeatures_worker(task):
 
     '''
 
-    lcfile, outdir, timecols, magcols, errcols, mindet, lcformat = task
-    return varfeatures(lcfile, outdir,
-                       timecols=timecols,
-                       magcols=magcols,
-                       errcols=errcols,
-                       mindet=mindet,
-                       lcformat=lcformat)
+    try:
+        lcfile, outdir, timecols, magcols, errcols, mindet, lcformat = task
+        return varfeatures(lcfile, outdir,
+                           timecols=timecols,
+                           magcols=magcols,
+                           errcols=errcols,
+                           mindet=mindet,
+                           lcformat=lcformat)
 
+    except:
+        return None
 
 
 def parallel_varfeatures(lclist,
