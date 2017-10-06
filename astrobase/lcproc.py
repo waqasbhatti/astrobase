@@ -317,12 +317,11 @@ def lclist_parallel_worker(task):
 
     task[0] = lcf
     task[1] = columns
-    task[3] = fileglob
-    task[4] = readerfunc
+    task[2] = readerfunc
 
     '''
 
-    lcf, columns, fileglob, readerfunc = task
+    lcf, columns, readerfunc = task
 
     lcobjdict = {'lcfname':os.path.basename(lcf)}
 
@@ -476,7 +475,7 @@ def makelclist(basedir,
         # start collecting info
         LOGINFO('collecting light curve info...')
 
-        tasks = [(x, columns, fileglob, readerfunc) for x in matching]
+        tasks = [(x, columns, readerfunc) for x in matching]
 
         with ProcessPoolExecutor(max_workers=nworkers) as executor:
             results = executor.map(lclist_parallel_worker, tasks)
@@ -1306,9 +1305,9 @@ def runpf(lcfile,
 
 
             if getblssnr:
-            
+
                 try:
-                
+
                     # calculate the SNR for the BLS as well
                     blssnr = bls_snr(bls, times, mags, errs,
                                      magsarefluxes=magsarefluxes,
@@ -1323,7 +1322,7 @@ def runpf(lcfile,
                     })
 
                 except Exception as e:
-                    
+
                     LOGEXCEPTION('could not calculate BLS SNR for %s' %
                                  lcfile)
                     # add the SNR null results to the BLS result dict
@@ -1342,7 +1341,7 @@ def runpf(lcfile,
                     'altsnr':[np.nan,np.nan,np.nan,np.nan,np.nan],
                     'transitdepth':[np.nan,np.nan,np.nan,np.nan,np.nan],
                     'transitduration':[np.nan,np.nan,np.nan,np.nan,np.nan],
-                })                
+                })
 
 
         # once all mag cols have been processed, write out the pickle
