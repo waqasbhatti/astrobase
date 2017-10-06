@@ -1364,7 +1364,7 @@ def runpf_worker(task):
     '''
 
     (lcfile, outdir, timecols, magcols, errcols, lcformat,
-     bls_startp, bls_maxtransitduration, nworkers) = task
+     bls_startp, bls_maxtransitduration, getblssnr, nworkers) = task
 
     if os.path.exists(lcfile):
         pfresult = runpf(lcfile,
@@ -1375,6 +1375,7 @@ def runpf_worker(task):
                          lcformat=lcformat,
                          bls_startp=bls_startp,
                          bls_maxtransitduration=bls_maxtransitduration,
+                         getblssnr=getblssnr,
                          nworkers=nworkers)
         return pfresult
     else:
@@ -1392,6 +1393,7 @@ def parallel_pf(lclist,
                 lcformat='hat-sql',
                 bls_startp=1.0,
                 bls_maxtransitduration=0.3,
+                getblssnr=True,
                 nperiodworkers=10,
                 nthisworkers=4):
     '''
@@ -1403,7 +1405,7 @@ def parallel_pf(lclist,
         lclist = lclist[:maxobjects]
 
     tasklist = [(x, outdir, timecols, magcols, errcols, lcformat,
-                 bls_startp, bls_maxtransitduration, nperiodworkers)
+                 bls_startp, bls_maxtransitduration, getblssnr, nperiodworkers)
                 for x in lclist]
 
     with ProcessPoolExecutor(max_workers=nthisworkers) as executor:
@@ -1424,6 +1426,7 @@ def parallel_pf_lcdir(lcdir,
                       lcformat='hat-sql',
                       bls_startp=1.0,
                       bls_maxtransitduration=0.3,
+                      getblssnr=True,
                       nperiodworkers=10,
                       nthisworkers=4):
     '''
@@ -1484,6 +1487,7 @@ def parallel_pf_lcdir(lcdir,
                            lcformat=lcformat,
                            bls_startp=bls_startp,
                            bls_maxtransitduration=bls_maxtransitduration,
+                           getblssnr=getblssnr,
                            nperiodworkers=nperiodworkers,
                            nthisworkers=nthisworkers)
 
