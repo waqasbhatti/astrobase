@@ -39,7 +39,7 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
     where as npwhere, linspace as nplinspace, \
     zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
-    correlate as npcorrelate
+    correlate as npcorrelate, npnonzero
 
 from scipy.optimize import leastsq as spleastsq, minimize as spminimize
 from scipy.interpolate import LSQUnivariateSpline
@@ -297,6 +297,10 @@ def fourier_fit_magseries(times, mags, errs, period,
                                              sigclip=sigclip,
                                              magsarefluxes=magsarefluxes)
 
+    # get rid of zero errs
+    nzind = npnonzero(serrs)
+    stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
+
     phase, pmags, perrs, ptimes, mintime = (
             _get_phased_quantities(stimes, smags, serrs, period)
         )
@@ -482,6 +486,9 @@ def spline_fit_magseries(times, mags, errs, period,
     stimes, smags, serrs = sigclip_magseries(times, mags, errs,
                                              sigclip=sigclip,
                                              magsarefluxes=magsarefluxes)
+    # get rid of zero errs
+    nzind = npnonzero(serrs)
+    stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
 
     # phase the mag series
     phase, pmags, perrs, ptimes, mintime = (
@@ -613,6 +620,10 @@ def savgol_fit_magseries(times, mags, errs, period,
     stimes, smags, serrs = sigclip_magseries(times, mags, errs,
                                              sigclip=sigclip,
                                              magsarefluxes=magsarefluxes)
+
+    # get rid of zero errs
+    nzind = npnonzero(serrs)
+    stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
 
     phase, pmags, perrs, ptimes, mintime = (
             _get_phased_quantities(stimes, smags, serrs, period)
@@ -766,6 +777,11 @@ def legendre_fit_magseries(times, mags, errs, period,
     stimes, smags, serrs = sigclip_magseries(times, mags, errs,
                                              sigclip=sigclip,
                                              magsarefluxes=magsarefluxes)
+
+    # get rid of zero errs
+    nzind = npnonzero(serrs)
+    stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
+
 
     phase, pmags, perrs, ptimes, mintime = (
             _get_phased_quantities(stimes, smags, serrs, period)
