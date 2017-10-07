@@ -995,6 +995,27 @@ def varfeatures_worker(task):
         return None
 
 
+def serial_varfeatures(lclist,
+                       outdir,
+                       maxobjects=None,
+                       timecols=None,
+                       magcols=None,
+                       errcols=None,
+                       mindet=1000,
+                       lcformat='hat-sql',
+                       nworkers=None):
+
+    if maxobjects:
+        lclist = lclist[:maxobjects]
+
+    tasks = [(x, outdir, timecols, magcols, errcols, mindet, lcformat)
+             for x in lclist]
+
+    for task in tqdm(tasks):
+        result = varfeatures_worker(task)
+
+
+
 def parallel_varfeatures(lclist,
                          outdir,
                          maxobjects=None,
