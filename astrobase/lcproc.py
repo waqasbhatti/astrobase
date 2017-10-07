@@ -1017,10 +1017,10 @@ def parallel_varfeatures(lclist,
     tasks = [(x, outdir, timecols, magcols, errcols, mindet, lcformat)
              for x in lclist]
 
-    results = pool.map(varfeatures_worker, tasks)
-    pool.close()
-    pool.join()
+    with ProcessPoolExecutor(max_workers=nworkers) as executor:
+        resultfutures = executor.map(varfeatures_worker, tasks)
 
+    results = [x for x in resultfutures]
     resdict = {os.path.basename(x):y for (x,y) in zip(lclist, results)}
 
     return resdict
