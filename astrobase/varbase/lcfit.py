@@ -39,7 +39,7 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
     where as npwhere, linspace as nplinspace, \
     zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
-    correlate as npcorrelate, npnonzero
+    correlate as npcorrelate, nonzero as npnonzero
 
 from scipy.optimize import leastsq as spleastsq, minimize as spminimize
 from scipy.interpolate import LSQUnivariateSpline
