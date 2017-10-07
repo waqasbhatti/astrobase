@@ -94,6 +94,11 @@ def stetson_jindex(mags, errs):
     # remove nans first
     finiteind = npisfinite(mags) & npisfinite(errs)
     fmags, ferrs = mags[finiteind], errs[finiteind]
+
+    # also remove zeros in ferrs
+    nzind = np.nonzero(ferrs)
+    fmags, ferrs = fmags[nzind], ferrs[nzind]
+
     ndet = len(fmags)
 
     if ndet >= 10:
@@ -135,6 +140,10 @@ def stetson_kindex(mags, errs):
     # remove nans first
     finiteind = npisfinite(mags) & npisfinite(errs)
     fmags, ferrs = mags[finiteind], errs[finiteind]
+
+    # also remove zeros in ferrs
+    nzind = np.nonzero(ferrs)
+    fmags, ferrs = fmags[nzind], ferrs[nzind]
 
     ndet = len(fmags)
 
@@ -191,12 +200,17 @@ def nonperiodic_lightcurve_features(times, mags, errs):
     # remove nans first
     finiteind = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
     ftimes, fmags, ferrs = times[finiteind], mags[finiteind], errs[finiteind]
+
+    # remove zero errors
+    nzind = np.nonzero(ferrs)
+    ftimes, fmags, ferrs = ftimes[nzind], fmags[nzind], ferrs[nzind]
+
     ndet = len(fmags)
 
     if ndet >= 10:
 
         # get the length in time
-        mintime, maxtime = npmin(times), npmax(times)
+        mintime, maxtime = npmin(ftimes), npmax(ftimes)
         timelength = maxtime - mintime
 
         # get the amplitude
