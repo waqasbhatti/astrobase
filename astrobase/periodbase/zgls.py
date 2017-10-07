@@ -160,6 +160,10 @@ def pgen_lsp(
                                              magsarefluxes=magsarefluxes,
                                              sigclip=sigclip)
 
+    # get rid of zero errs
+    nzind = np.nonzero(serrs)
+    stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
+
 
     # make sure there are enough points to calculate a spectrum
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
