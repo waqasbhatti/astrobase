@@ -20,7 +20,7 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
     where as npwhere, linspace as nplinspace, \
     zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
-    correlate as npcorrelate, nonzero and npnonzero
+    correlate as npcorrelate, nonzero as npnonzero
 
 from scipy.stats import skew as spskew, kurtosis as spkurtosis
 from scipy.signal import savgol_filter
