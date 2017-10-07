@@ -20,7 +20,7 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
     where as npwhere, linspace as nplinspace, \
     zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
-    correlate as npcorrelate
+    correlate as npcorrelate, nonzero and npnonzero
 
 from scipy.stats import skew as spskew, kurtosis as spkurtosis
 from scipy.signal import savgol_filter
@@ -96,7 +96,7 @@ def stetson_jindex(mags, errs):
     fmags, ferrs = mags[finiteind], errs[finiteind]
 
     # also remove zeros in ferrs
-    nzind = np.nonzero(ferrs)
+    nzind = npnonzero(ferrs)
     fmags, ferrs = fmags[nzind], ferrs[nzind]
 
     ndet = len(fmags)
@@ -142,7 +142,7 @@ def stetson_kindex(mags, errs):
     fmags, ferrs = mags[finiteind], errs[finiteind]
 
     # also remove zeros in ferrs
-    nzind = np.nonzero(ferrs)
+    nzind = npnonzero(ferrs)
     fmags, ferrs = fmags[nzind], ferrs[nzind]
 
     ndet = len(fmags)
@@ -202,7 +202,7 @@ def nonperiodic_lightcurve_features(times, mags, errs):
     ftimes, fmags, ferrs = times[finiteind], mags[finiteind], errs[finiteind]
 
     # remove zero errors
-    nzind = np.nonzero(ferrs)
+    nzind = npnonzero(ferrs)
     ftimes, fmags, ferrs = ftimes[nzind], fmags[nzind], ferrs[nzind]
 
     ndet = len(fmags)
