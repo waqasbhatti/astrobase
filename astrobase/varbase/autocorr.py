@@ -152,7 +152,8 @@ def autocorr_magseries(times, mags, errs,
     series_stdev = 1.483*npmedian(npabs(imags))
 
     # get the autocorrelation as a function of the lag of the mag series
-    autocorr = [func(imags, x, len(imags), 0.0, series_stdev) for x in lags]
+    autocorr = np.array([func(imags, x, len(imags), 0.0, series_stdev)
+                         for x in lags])
 
     return {'itimes':itimes,
             'imags':imags,
