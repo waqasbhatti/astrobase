@@ -97,7 +97,7 @@ def _autocorr_func3(mags, lag, maglen, magmed, magstd):
 
 
 
-def auto_correlation(mags, func=_autocorr_func1):
+def auto_correlation(mags, func=_autocorr_func2):
     '''Returns the auto correlation of the mag series as a function of the lag.
 
     Returns the lags array and the calculated associated autocorrelations.
@@ -115,16 +115,23 @@ def auto_correlation(mags, func=_autocorr_func1):
 
     lags = nparange(1,len(fmags))
 
-    # get the autocorrelation as a function of the lag of the mag series
-    autocorr = [func(fmags, x, len(fmags),
-                     series_median, series_stdev) for x in lags]
+    if func != _autocorr_func3:
+
+        # get the autocorrelation as a function of the lag of the mag series
+        autocorr = [func(fmags, x, len(fmags),
+                         series_median, series_stdev) for x in lags]
+
+    elif func == _autocorr_func3:
+        autocorr = _autocorr_func3(fmags, lag, fmags.size,
+                                   series_median, series_stdev)
+
     return lags, nparray(autocorr)
 
 
 
 def autocorr_magseries(times, mags, errs,
                        maxlags=1000,
-                       func=_autocorr_func2,
+                       func=_autocorr_func3,
                        fillgaps='noiselevel',
                        sigclip=3.0,
                        magsarefluxes=False,
@@ -151,9 +158,18 @@ def autocorr_magseries(times, mags, errs,
 
     series_stdev = 1.483*npmedian(npabs(imags))
 
-    # get the autocorrelation as a function of the lag of the mag series
-    autocorr = nparray([func(imags, x, len(imags), 0.0, series_stdev)
-                        for x in lags])
+    if func != _autocorr_func3:
+
+        # get the autocorrelation as a function of the lag of the mag series
+        autocorr = nparray([func(imags, x, imags.size, 0.0, series_stdev)
+                            for x in lags])
+
+    # this doesn't need a lags array
+    else:
+
+        autocorr = _autocorr_func3(imags, lags[0], imags.size,
+                                   0.0, series_stdev)
+        autocorr = autocorr[:maxlags]
 
     return {'itimes':itimes,
             'imags':imags,
