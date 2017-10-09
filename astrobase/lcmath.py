@@ -24,6 +24,9 @@ from scipy.optimize import curve_fit
 import scipy.stats
 import numpy.random as nprand
 
+from scipy.signal import savgol_filter
+
+
 #############
 ## LOGGING ##
 #############
@@ -847,3 +850,144 @@ def epd_magseries(mag, fsv, fdv, fkv, xcc, ycc, bgv, bge,
         LOGEXCEPTION('%sZ: EPD solution did not converge! Error was: %s' %
                      (datetime.utcnow().isoformat(), e))
         return None
+
+
+
+#############################
+## FILLING TIMESERIES GAPS ##
+#############################
+
+def fill_magseries_gaps(times, mags, errs,
+                        fillgaps='noiselevel',
+                        sigclip=3.0,
+                        magsarefluxes=False,
+                        filterwindow=11,
+                        verbose=True):
+    '''This fills in gaps in a light curve.
+
+    This is mainly intended for use in ACF period-finding, but maybe useful
+    otherwise (i.e. when we figure out ARMA stuff for LCs). The main steps here
+    are:
+
+    - normalize the light curve to zero
+    - remove giant outliers
+    - interpolate gaps in the light curve
+      (since ACF requires evenly spaced sampling)
+
+    From McQuillian+ 2011 (https://doi.org/10.1093/mnras/stt536):
+
+    "The ACF calculation requires the light curves to be regularly sampled and
+    normalized to zero. We divided the flux in each quarter by its median and
+    subtracted unity. Gaps in the light curve longer than the Kepler long
+    cadence were filled using linear interpolation with added white Gaussian
+    noise. This noise level was estimated using the variance of the residuals
+    following subtraction of a smoothed version of the flux. To smooth the flux,
+    we applied an iterative non-linear filter which consists of a median filter
+    followed by a boxcar filter, both with 11-point windows, with iterative 3σ
+    clipping of outliers."
+
+    If fillgaps == 'noiselevel', fills the gaps with the noise level obtained
+    via the procedure above. If fillgaps == 'nan', fills the gaps with np..nan.
+
+    '''
+
+    if fillgaps not in ('noiselevel','nan'):
+        LOGERROR("fillgaps must be either 'noiselevel' or 'nan'")
+        return None, None, None
+
+    # remove nans
+    finind = np.isfinite(times) & np.isfinite(mags) & np.isfinite(errs)
+    ftimes, fmags, ferrs = times[finind], mags[finind], errs[finind]
+
+    # remove zero errs
+    nzind = np.nonzero(errs)
+    ftimes, fmags, ferrs = ftimes[nzind], fmags[nzind], ferrs[nzind]
+
+    # sigma-clip
+    stimes, smags, serrs = sigclip_magseries(ftimes, fmags, ferrs,
+                                             magsarefluxes=magsarefluxes,
+                                             sigclip=sigclip)
+
+    # normalize to zero
+    smags = smags - np.median(smags)
+
+    if fillgaps == 'noiselevel':
+
+        # figure out the gaussian noise level by subtracting a Savitsky-Golay
+        # filtered version of the light curve
+        smoothed = smags - savgol_filter(smags, filterwindow, 2)
+        noiselevel = 1.483 * np.median(np.abs(smoothed - np.median(smoothed)))
+        gapfiller = noiselevel
+
+    elif fillgaps == 'nan':
+
+        gapfiller = np.nan
+
+    # figure out the gap size and where to interpolate. we do this by figuring
+    # out the most common gap (this should be the cadence). to do this, we need
+    # to calculate the mode of the gap distribution. from wikipedia:
+    # https://en.wikipedia.org/wiki/Mode_(statistics)
+
+    # get the gaps
+    gaps = np.diff(stimes)
+
+    # sort the gaps
+    sortedgaps = np.sort(gaps)
+
+    # calculate the derivative of sorted gap series and find indices where it is
+    # positive
+    diffsortedpositive = np.where(np.diff(sortedgaps) > 0.0)[0]
+
+    if diffsortedpositive.size > 0:
+
+        # take another derivative of the diff series
+        diffdiffsortedpositive = np.diff(diffsortedpositive)
+
+        # get the max of this array. this corresponds to index of the mode of the
+        # gap size distribution in the sorted gap series
+        gapmode = sortedgaps[np.max(diffdiffsortedpositive)]
+
+        if verbose:
+            LOGINFO('gap mode of time series = %.5f' % gapmode)
+
+        starttime, endtime = np.min(stimes), np.max(stimes)
+        ntimes = int(np.ceil((endtime - starttime)/gapmode) + 1)
+
+        if verbose:
+            LOGINFO('generating new time series with %s measurements' % ntimes)
+
+        # we will interpolate where gap indices are more than the gap mode
+
+        # first, generate the full time series
+        interpolated_times = np.linspace(starttime, endtime, ntimes)
+        interpolated_mags = np.full_like(interpolated_times, gapfiller)
+        interpolated_errs = np.full_like(interpolated_times, gapfiller)
+
+        for ind, itime in enumerate(interpolated_times[:-1]):
+
+            nextitime = itime + gapmode
+            # find the mags between this and the next time bin
+            itimeind = np.where((stimes > itime) & (stimes < nextitime))
+
+            # if there's more than one elem in this time bin, median them
+            if itimeind[0] and itimeind[0].size > 1:
+
+                interpolated_mags[ind] = np.median(smags[itimeind[0]])
+                interpolated_errs[ind] = np.median(serrs[itimeind[0]])
+
+            # otherwise, if there's only one elem in this time bin, take it
+            elif itimeind[0] and itimeind[0].size == 1:
+
+                interpolated_mags[ind] = smags[itimeind[0]]
+                interpolated_errs[ind] = serrs[itimeind[0]]
+
+            # if there aren't any elems in this time bin (i.e. this looks like a
+            # gap), then leave it at whatever the gapfiller value is
+            else:
+                continue
+
+        return interpolated_times, interpolated_mags, interpolated_errs
+
+    else:
+        LOGWARNING('this mag series appears to have no gaps')
+        return stimes, smags, serrs
