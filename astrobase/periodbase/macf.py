@@ -30,7 +30,7 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     digitize as npdigitize, unique as npunique, \
     argmax as npargmax, argmin as npargmin
 
-from scipy.signal import argrelmax
+from scipy.signal import argrelmax, argrelmin
 from astropy.convolution import convolve, Gaussian1DKernel
 
 
@@ -116,7 +116,7 @@ def _smooth_acf(acf, windowfwhm=7):
 
 
 
-def _get_acf_peakheights(lags, smoothedacf, npeaks=10):
+def _get_acf_peakheights(lags, acf, npeaks=10):
     '''This calculates the relative peak heights for first npeaks in ACF.
 
     Usually, the first peak or the second peak (if its peak height > first peak)
@@ -124,4 +124,13 @@ def _get_acf_peakheights(lags, smoothedacf, npeaks=10):
 
     '''
 
-    acfx = smoothedacf[1:] # ignore 1 in the first element
+    maxinds = argrelmax(acf)
+    mininds = argrelmin(acf)
+
+    # TODO:
+    # - go through each max
+    # - find the two mininds on either side of each maxind
+    # - calculate the relative peak height:
+    #   hp = acf[maxind]/np.mean(acf[leftminind],acf[rightminind])
+    # - calculate up to npeaks relative heights
+    # - return them
