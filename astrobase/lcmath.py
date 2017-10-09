@@ -913,8 +913,11 @@ def fill_magseries_gaps(times, mags, errs,
     else:
         smags = smags - np.median(smags)
 
+    if isinstance(fillgaps, float):
 
-    if fillgaps == 'noiselevel':
+        gapfiller = fillgaps
+
+    elif isinstance(fillgaps, str) and fillgaps == 'noiselevel':
 
         # figure out the gaussian noise level by subtracting a Savitsky-Golay
         # filtered version of the light curve
@@ -922,12 +925,9 @@ def fill_magseries_gaps(times, mags, errs,
         noiselevel = 1.483 * np.median(np.abs(smoothed - np.median(smoothed)))
         gapfiller = noiselevel
 
-    elif fillgaps == 'nan':
+    elif isinstance(fillgaps, str) and fillgaps == 'nan':
 
         gapfiller = np.nan
-
-    elif isinstance(fillgaps, float):
-        gapfiller = fillgaps
 
     # figure out the gap size and where to interpolate. we do this by figuring
     # out the most common gap (this should be the cadence). to do this, we need

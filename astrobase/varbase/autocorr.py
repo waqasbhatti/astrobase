@@ -132,7 +132,7 @@ def auto_correlation(mags, func=_autocorr_func2):
 def autocorr_magseries(times, mags, errs,
                        maxlags=1000,
                        func=_autocorr_func3,
-                       fillgaps='noiselevel',
+                       fillgaps=0.0,
                        sigclip=3.0,
                        magsarefluxes=False,
                        filterwindow=11,
