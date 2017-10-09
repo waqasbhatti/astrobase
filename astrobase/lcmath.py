@@ -858,7 +858,7 @@ def epd_magseries(mag, fsv, fdv, fkv, xcc, ycc, bgv, bge,
 #############################
 
 def fill_magseries_gaps(times, mags, errs,
-                        fillgaps='noiselevel',
+                        fillgaps=0.0,
                         sigclip=3.0,
                         magsarefluxes=False,
                         filterwindow=11,
@@ -887,13 +887,11 @@ def fill_magseries_gaps(times, mags, errs,
     clipping of outliers."
 
     If fillgaps == 'noiselevel', fills the gaps with the noise level obtained
-    via the procedure above. If fillgaps == 'nan', fills the gaps with np..nan.
+    via the procedure above. If fillgaps == 'nan', fills the gaps with
+    np.nan. Otherwise, if fillgaps is a float, will use that value to fill the
+    gaps. The default is to fill the gaps with 0.0.
 
     '''
-
-    if fillgaps not in ('noiselevel','nan'):
-        LOGERROR("fillgaps must be either 'noiselevel' or 'nan'")
-        return None, None, None
 
     # remove nans
     finind = np.isfinite(times) & np.isfinite(mags) & np.isfinite(errs)
@@ -909,7 +907,7 @@ def fill_magseries_gaps(times, mags, errs,
                                              sigclip=sigclip)
 
     # normalize to zero
-    if magsareflux:
+    if magsarefluxes:
         smags = smags / np.median(smags) - 1.0
     else:
         smags = smags - np.median(smags)
@@ -925,6 +923,9 @@ def fill_magseries_gaps(times, mags, errs,
     elif fillgaps == 'nan':
 
         gapfiller = np.nan
+
+    elif isinstance(fillgaps, float):
+        gapfiller = fillgaps
 
     # figure out the gap size and where to interpolate. we do this by figuring
     # out the most common gap (this should be the cadence). to do this, we need
