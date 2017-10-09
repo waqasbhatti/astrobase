@@ -16,13 +16,14 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
     where as npwhere, linspace as nplinspace, \
     zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
-    correlate as npcorrelate
+    correlate as npcorrelate, nonzero as npnonzero, diff as npdiff, \
+    sort as npsort, ceil as npceil, int64 as npint64
 
+from ..lcmath import sigclip_magseries, fill_magseries_gaps
 
 #####################
 ## AUTOCORRELATION ##
 #####################
-
 
 def _autocorr_func1(mags, lag, maglen, magmed, magstd):
     '''Calculates the autocorr of mag series for specific lag.
@@ -65,15 +66,16 @@ def _autocorr_func2(mags, lag, maglen, magmed, magstd):
 
     '''
 
-    lagindex = nparange(1,maglen-lag)
+    lagindex = nparange(0,maglen-lag)
     products = (mags[lagindex] - magmed) * (mags[lagindex+lag] - magmed)
 
-    autocovarfunc = npsum(products)/maglen
-    varfunc = npsum((mags[lagindex] - magmed)*(mags[lagindex] - magmed))/maglen
+    autocovarfunc = npsum(products)/lagindex.size
+    varfunc = npsum((mags[lagindex] - magmed)*(mags[lagindex] - magmed))/mags.size
 
     acorr = autocovarfunc/varfunc
 
     return acorr
+
 
 
 def _autocorr_func3(mags, lag, maglen, magmed, magstd):
@@ -91,7 +93,7 @@ def _autocorr_func3(mags, lag, maglen, magmed, magstd):
     # from http://tinyurl.com/afz57c4
     result = npcorrelate(mags, mags, mode='full')
     result = result / npmax(result)
-    return result[result.size / 2:]
+    return result[int(result.size / 2):]
 
 
 
@@ -117,3 +119,43 @@ def auto_correlation(mags, func=_autocorr_func1):
     autocorr = [func(fmags, x, len(fmags),
                      series_median, series_stdev) for x in lags]
     return lags, nparray(autocorr)
+
+
+
+def autocorr_magseries(times, mags, errs,
+                       maxlags=1000,
+                       func=_autocorr_func2,
+                       fillgaps='noiselevel',
+                       sigclip=3.0,
+                       magsarefluxes=False,
+                       filterwindow=11,
+                       verbose=True):
+    '''This calculates the ACF of a light curve.
+
+    This will pre-process the light curve to fill in all the gaps and normalize
+    everything to zero. If fillgaps == 'noiselevel', fills the gaps with the
+    noise level obtained via the procedure above. If fillgaps == 'nan', fills
+    the gaps with np.nan.
+
+    '''
+
+    # get the gap-filled timeseries
+    itimes, imags, ierrs = fill_magseries_gaps(times, mags, errs,
+                                               fillgaps=fillgaps,
+                                               sigclip=sigclip,
+                                               magsarefluxes=magsarefluxes,
+                                               filterwindow=filterwindow,
+                                               verbose=verbose)
+    # calculate the lags up to maxlags
+    lags = nparange(0, maxlags)
+
+    series_stdev = 1.483*npmedian(npabs(imags))
+
+    # get the autocorrelation as a function of the lag of the mag series
+    autocorr = [func(imags, x, len(imags), 0.0, series_stdev) for x in lags]
+
+    return {'itimes':itimes,
+            'imags':imags,
+            'ierrs':ierrs,
+            'lags':lags,
+            'acf':autocorr}
