@@ -909,7 +909,10 @@ def fill_magseries_gaps(times, mags, errs,
                                              sigclip=sigclip)
 
     # normalize to zero
-    smags = smags - np.median(smags)
+    if magsareflux:
+        smags = smags / np.median(smags) - 1.0
+    else:
+        smags = smags - np.median(smags)
 
     if fillgaps == 'noiselevel':
 
