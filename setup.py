@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 '''setup.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Nov 2016
 
 This sets up the package.

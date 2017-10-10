@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 '''hatds.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Apr 2017
 License: MIT - see LICENSE for the full text.
 

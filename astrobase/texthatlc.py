@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 '''texthatlc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2016
 License: MIT - see LICENSE for the full text.
 

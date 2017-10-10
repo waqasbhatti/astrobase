@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 '''
 lcmath.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2015
