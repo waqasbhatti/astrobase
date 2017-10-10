@@ -97,38 +97,6 @@ def _autocorr_func3(mags, lag, maglen, magmed, magstd):
 
 
 
-def auto_correlation(mags, func=_autocorr_func2):
-    '''Returns the auto correlation of the mag series as a function of the lag.
-
-    Returns the lags array and the calculated associated autocorrelations.
-
-    '''
-
-    # remove all nans
-    finiteind = npisfinite(mags)
-    fmags = mags[finiteind]
-
-    # calculate the median, MAD, and stdev
-    series_median = npmedian(fmags)
-    series_mad = npmedian(npabs(fmags - series_median))
-    series_stdev = series_mad * 1.483
-
-    lags = nparange(1,len(fmags))
-
-    if func != _autocorr_func3:
-
-        # get the autocorrelation as a function of the lag of the mag series
-        autocorr = [func(fmags, x, len(fmags),
-                         series_median, series_stdev) for x in lags]
-
-    elif func == _autocorr_func3:
-        autocorr = _autocorr_func3(fmags, lag, fmags.size,
-                                   series_median, series_stdev)
-
-    return lags, nparray(autocorr)
-
-
-
 def autocorr_magseries(times, mags, errs,
                        maxlags=1000,
                        func=_autocorr_func3,
@@ -154,7 +122,10 @@ def autocorr_magseries(times, mags, errs,
                                                filterwindow=filterwindow,
                                                verbose=verbose)
     # calculate the lags up to maxlags
-    lags = nparange(0, maxlags)
+    if maxlags:
+        lags = nparange(0, maxlags)
+    else:
+        lags = nparange(itimes.size)
 
     series_stdev = 1.483*npmedian(npabs(imags))
 
@@ -169,7 +140,6 @@ def autocorr_magseries(times, mags, errs,
 
         autocorr = _autocorr_func3(imags, lags[0], imags.size,
                                    0.0, series_stdev)
-        autocorr = autocorr[:maxlags]
 
     return {'itimes':itimes,
             'imags':imags,
