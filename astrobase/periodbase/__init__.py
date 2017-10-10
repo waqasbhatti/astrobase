@@ -12,11 +12,12 @@ periodbase.spdm -> Stellingwerf (1978) phase-dispersion minimization
 periodbase.saov -> Schwarzenberg-Cerny (1989) analysis of variance
 periodbase.zgls -> Zechmeister & Kurster (2009) generalized Lomb-Scargle
 periodbase.kbls -> Kovacs et al. (2002) Box-Least-Squares search
+periodbase.macf -> McQuillian et al. (2013a, 2014) ACF period search
 
 TO BE IMPLEMENTED:
 
-periodbase.smav -> Schwarzenberg-Cerny (1996) multi-harmonic AoV
-periodbase.pfch -> Palmer (2002) fast-chi periodogram
+periodbase.smav -> Schwarzenberg-Cerny (1996) multi-harmonic AoV period search
+periodbase.gcep -> Graham et al. (2013) conditional entropy period search
 
 '''
 
@@ -146,6 +147,7 @@ from .zgls import pgen_lsp
 from .spdm import stellingwerf_pdm
 from .saov import aov_periodfind
 from .kbls import bls_serial_pfind, bls_parallel_pfind
+from .macf import macf_period_find
 
 
 
@@ -157,7 +159,8 @@ from .kbls import bls_serial_pfind, bls_parallel_pfind
 LSPMETHODS = {'bls':bls_parallel_pfind,
               'gls':pgen_lsp,
               'aov':aov_periodfind,
-              'pdm':stellingwerf_pdm}
+              'pdm':stellingwerf_pdm,
+              'acf':macf_period_find}
 
 
 
@@ -165,7 +168,7 @@ def bootstrap_falsealarmprob(lspdict,
                              times,
                              mags,
                              errs,
-                             nbootstrap=100,
+                             nbootstrap=250,
                              magsarefluxes=False,
                              sigclip=10.0,
                              npeaks=None):
@@ -185,7 +188,7 @@ def bootstrap_falsealarmprob(lspdict,
     distribution of these trial best peaks is obtained after scrambling the mag
     values and rerunning the specified periodogram method for a bunch of trials.
 
-    The total number of trials is nbootstrap. This is set to 100 by default, but
+    The total number of trials is nbootstrap. This is set to 250 by default, but
     should probably be around 1000 for realistic results.
 
     lspdict is the output dict from a periodbase periodogram function and MUST
@@ -197,7 +200,9 @@ def bootstrap_falsealarmprob(lspdict,
     during the bootstrap runs. If this is missing, default values will be used.
 
     FIXME: this may not be strictly correct; must look more into bootstrap
-    significance testing. Also look into if we're doing resampling correctly.
+    significance testing. Also look into if we're doing resampling correctly for
+    time series because the samples are not iid. Look into moving block
+    bootstrap.
 
     '''
 
