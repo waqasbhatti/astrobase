@@ -235,7 +235,7 @@ def macf_period_find(
         fity = [0.0]
 
         for fitind, fitlag in enumerate(peakres['relpeaklags']):
-            fity.append(acfres['itimes'][acfres['lags'] == fitlag])
+            fity.append(acfres['itimes'][xlags == fitlag])
         fity = np.array(fity)
 
         fitcoeffs, fitcovar = np.polyfit(fitx, fity, 1, cov=True)
@@ -254,7 +254,7 @@ def macf_period_find(
 
     # calculate the naive best period using bestperiod = time[lags == bestlag] -
     # time[0]
-    naivebestperiod = (acfres['itimes'][acfres['lags'] == peakres['bestlag']] -
+    naivebestperiod = (acfres['itimes'][xlags == peakres['bestlag']] -
                        acfres['itimes'][0])
 
     if np.isfinite(fitbestperiod):
@@ -265,8 +265,8 @@ def macf_period_find(
     return {'bestperiod':bestperiod,
             'bestlspval':bestlspval,
             'nbestpeaks':maxacfpeaks,
-            'lspvals':acfres['acf'],
-            'periods':acfres['lags'],
+            'lspvals':xacf,
+            'periods':xlags,
             'method':'acf',
             'naivebestperiod':naivebestperiod,
             'fitbestperiod':fitbestperiod,
