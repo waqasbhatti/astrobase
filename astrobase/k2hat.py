@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 '''
 k2hat.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - 07/15
