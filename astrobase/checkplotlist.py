@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 '''checkplotlist.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2016
 License: MIT. See LICENSE for full text.
 

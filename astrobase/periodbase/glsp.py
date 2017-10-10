@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 '''glsp.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - 02/2016
 

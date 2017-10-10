@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 '''hplc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - May 2017
 License: MIT. See LICENSE for full text.
 
