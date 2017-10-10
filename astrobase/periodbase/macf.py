@@ -87,6 +87,8 @@ def LOGEXCEPTION(message):
 from ..lcmath import phase_magseries, sigclip_magseries, time_bin_magseries, \
     phase_bin_magseries, fill_magseries_gaps
 
+from ..varbase.autocorr import autocorr_magseries
+
 
 ############
 ## CONFIG ##
@@ -120,17 +122,162 @@ def _get_acf_peakheights(lags, acf, npeaks=10):
     '''This calculates the relative peak heights for first npeaks in ACF.
 
     Usually, the first peak or the second peak (if its peak height > first peak)
-    corresponds to the correct period.
+    corresponds to the correct lag. When we know the correct lag, the period is
+    then:
+
+    bestperiod = time[lags == bestlag] - time[0]
 
     '''
 
-    maxinds = argrelmax(acf)
-    mininds = argrelmin(acf)
+    maxinds = argrelmax(acf)[0]
+    maxacfs = acf[maxinds]
+    maxlags = lags[maxinds]
+    mininds = argrelmin(acf)[0]
+    minacfs = acf[mininds]
+    minlags = lags[mininds]
 
-    # TODO:
-    # - go through each max
-    # - find the two mininds on either side of each maxind
-    # - calculate the relative peak height:
-    #   hp = acf[maxind]/np.mean(acf[leftminind],acf[rightminind])
-    # - calculate up to npeaks relative heights
-    # - return them
+    relpeakheights = np.zeros(npeaks)
+    relpeaklags = np.zeros(npeaks,dtype=np.int64)
+    peakindices = np.zeros(npeaks,dtype=np.int64)
+
+    for peakind, mxi in enumerate(maxinds[:npeaks]):
+
+        leftminind = mininds[mininds < mxi][-1] # the last index to the left
+        rightminind = mininds[mininds > mxi][0] # the first index to the right
+        relpeakheights[peakind] = (
+            acf[mxi] - (acf[leftminind] + acf[rightminind])/2.0
+        )
+        relpeaklags[peakind] = lags[mxi]
+        peakindices[peakind] = peakind
+
+    # figure out the bestperiod if possible
+    if relpeakheights[0] > relpeakheights[1]:
+        bestlag = relpeaklags[0]
+        bestpeakheight = relpeakheights[0]
+    else:
+        bestlag = relpeaklags[1]
+        bestpeakheight = relpeakheights[1]
+
+    return {'maxinds':maxinds,
+            'maxacfs':maxacfs,
+            'maxlags':maxlags,
+            'mininds':mininds,
+            'minacfs':minacfs,
+            'minlags':minlags,
+            'relpeakheights':relpeakheights,
+            'relpeaklags':relpeaklags,
+            'peakindices':peakindices,
+            'bestlag':bestlag,
+            'bestpeakheight':bestpeakheight}
+
+
+############################
+## PERIOD FINDER FUNCTION ##
+############################
+
+def macf_period_find(
+        times,
+        mags,
+        errs,
+        maxlags=None,
+        maxacfpeaks=10,
+        fillgaps=0.0,
+        filterwindow=11,
+        smoothacf=None,
+        magsarefluxes=False,
+        sigclip=3.0,
+        verbose=True
+):
+    '''This finds periods using the McQuillian+ (2013a, 2014) method.
+
+    If smoothacf is not None, will smooth ACF using the given smoothing window
+    FWHM.
+
+    '''
+
+    # get the ACF
+    acfres = autocorr_magseries(
+        times,
+        mags,
+        errs,
+        maxlags=maxlags,
+        fillgaps=fillgaps,
+        sigclip=sigclip,
+        magsarefluxes=magsarefluxes,
+        filterwindow=filterwindow,
+        verbose=verbose
+    )
+
+    xlags = acfres['lags']
+
+    # smooth the ACF if requested
+    if smoothacf and isinstance(smoothacf, int) and smoothacf > 0:
+
+        xacf = _smooth_acf(acfres['acf'], windowfwhm=smoothacf)
+
+    else:
+
+        xacf = acfres['acf']
+
+
+    # get the relative peak heights and fit best lag
+    peakres = _get_acf_peakheights(xlags, xacf, npeaks=maxacfpeaks)
+
+    # this is the best period's best ACF peak height
+    bestlspval = peakres['bestpeakheight']
+
+    try:
+
+        # get the fit best lag from a linear fit to the peak index vs time(peak
+        # lag) function as in McQillian+ (2014)
+        fitx = np.concatenate(([0.0], peakres['peakindices'] + 1))
+        fity = [0.0]
+
+        for fitind, fitlag in enumerate(peakres['relpeaklags']):
+            fity.append(acfres['itimes'][acfres['lags'] == fitlag])
+        fity = np.array(fity)
+
+        fitcoeffs, fitcovar = np.polyfit(fitx, fity, 1, cov=True)
+        fitbestperiod = fitcoeffs[0] # fit best lag is the gradient of fit
+        bestperiodrms = np.sqrt(fitcovar[0,0]) # from the covariance matrix
+
+    except:
+
+        LOGWARNING('linear fit to time at each peak lag '
+                   'value vs. peak number failed, '
+                   'naively calculated ACF period may not be accurate')
+        fitcoeffs = np.array([np.nan, np.nan])
+        fitcovar = np.array([[np.nan, np.nan], [np.nan, np.nan]])
+        fitbestperiod = np.nan
+        bestperiodrms = np.nan
+
+    # calculate the naive best period using bestperiod = time[lags == bestlag] -
+    # time[0]
+    naivebestperiod = (acfres['itimes'][acfres['lags'] == peakres['bestlag']] -
+                       acfres['itimes'][0])
+
+    if np.isfinite(fitbestperiod):
+        bestperiod = fitbestperiod
+    else:
+        bestperiod = naivebestperiod
+
+    return {'bestperiod':bestperiod,
+            'bestlspval':bestlspval,
+            'nbestpeaks':maxacfpeaks,
+            'lspvals':acfres['acf'],
+            'periods':acfres['lags'],
+            'method':'acf',
+            'naivebestperiod':naivebestperiod,
+            'fitbestperiod':fitbestperiod,
+            'fitperiodrms':bestperiodrms,
+            'periodfitcoeffs':fitcoeffs,
+            'periodfitcovar':fitcovar,
+            'kwargs':{'maxlags':maxlags,
+                      'maxacfpeaks':maxacfpeaks,
+                      'fillgaps':fillgaps,
+                      'filterwindow':filterwindow,
+                      'smoothacf':smoothacf,
+                      'magsarefluxes':magsarefluxes,
+                      'sigclip':sigclip},
+            'acfresults':acfres,
+            'acfpeaks':peakres}
