@@ -863,6 +863,7 @@ def fill_magseries_gaps(times, mags, errs,
                         sigclip=3.0,
                         magsarefluxes=False,
                         filterwindow=11,
+                        forcetimebin=None,
                         verbose=True):
     '''This fills in gaps in a light curve.
 
@@ -893,6 +894,13 @@ def fill_magseries_gaps(times, mags, errs,
     gaps. The default is to fill the gaps with 0.0 (as in McQuillian+ 2014) to
     "...prevent them contributing to the ACF".
 
+    If forcetimebin is a float, this value will be used to generate the
+    interpolated time series, effectively binning the light curve to this
+    cadence.
+
+    NOTE: forcetimebin must be in the same units as times; e.g. if times are JD
+    then forcetimebin must be in days.
+
     '''
 
     # remove nans
@@ -900,7 +908,7 @@ def fill_magseries_gaps(times, mags, errs,
     ftimes, fmags, ferrs = times[finind], mags[finind], errs[finind]
 
     # remove zero errs
-    nzind = np.nonzero(errs)
+    nzind = np.nonzero(ferrs)
     ftimes, fmags, ferrs = ftimes[nzind], fmags[nzind], ferrs[nzind]
 
     # sigma-clip
@@ -950,51 +958,56 @@ def fill_magseries_gaps(times, mags, errs,
         # take another derivative of the diff series
         diffdiffsortedpositive = np.diff(diffsortedpositive)
 
-        # get the max of this array. this corresponds to index of the mode of the
-        # gap size distribution in the sorted gap series
+        # get the max of this array. this corresponds to index of the mode of
+        # the gap size distribution in the sorted gap series
         gapmode = sortedgaps[np.max(diffdiffsortedpositive)]
 
+        # we will interpolate where gap indices are more than the gap mode
         if verbose:
             LOGINFO('gap mode of time series = %.5f' % gapmode)
 
-        starttime, endtime = np.min(stimes), np.max(stimes)
-        ntimes = int(np.ceil((endtime - starttime)/gapmode) + 1)
-
-        if verbose:
-            LOGINFO('generating new time series with %s measurements' % ntimes)
-
-        # we will interpolate where gap indices are more than the gap mode
-
-        # first, generate the full time series
-        interpolated_times = np.linspace(starttime, endtime, ntimes)
-        interpolated_mags = np.full_like(interpolated_times, gapfiller)
-        interpolated_errs = np.full_like(interpolated_times, gapfiller)
-
-        for ind, itime in enumerate(interpolated_times[:-1]):
-
-            nextitime = itime + gapmode
-            # find the mags between this and the next time bin
-            itimeind = np.where((stimes > itime) & (stimes < nextitime))
-
-            # if there's more than one elem in this time bin, median them
-            if itimeind[0] and itimeind[0].size > 1:
-
-                interpolated_mags[ind] = np.median(smags[itimeind[0]])
-                interpolated_errs[ind] = np.median(serrs[itimeind[0]])
-
-            # otherwise, if there's only one elem in this time bin, take it
-            elif itimeind[0] and itimeind[0].size == 1:
-
-                interpolated_mags[ind] = smags[itimeind[0]]
-                interpolated_errs[ind] = serrs[itimeind[0]]
-
-            # if there aren't any elems in this time bin (i.e. this looks like a
-            # gap), then leave it at whatever the gapfiller value is
-            else:
-                continue
-
-        return interpolated_times, interpolated_mags, interpolated_errs
-
     else:
         LOGWARNING('this mag series appears to have no gaps')
-        return stimes, smags, serrs
+        return {'itimes':stimes,
+                'imags':smags,
+                'ierrs':serrs,
+                'cadence':gaps[0]}
+
+    if forcetimebin:
+        LOGWARNING('forcetimebin is set, forcing cadence to %.5f' %
+                   forcetimebin)
+        gapmode = forcetimebin
+
+    starttime, endtime = np.min(stimes), np.max(stimes)
+    ntimes = int(np.ceil((endtime - starttime)/gapmode) + 1)
+    if verbose:
+        LOGINFO('generating new time series with %s measurements' % ntimes)
+
+    # first, generate the full time series
+    interpolated_times = np.linspace(starttime, endtime, ntimes)
+    interpolated_mags = np.full_like(interpolated_times, gapfiller)
+    interpolated_errs = np.full_like(interpolated_times, gapfiller)
+
+    for ind, itime in enumerate(interpolated_times[:-1]):
+
+        nextitime = itime + gapmode
+        # find the mags between this and the next time bin
+        itimeind = np.where((stimes > itime) & (stimes < nextitime))
+
+        # if there's more than one elem in this time bin, median them
+        if itimeind[0].size > 1:
+
+            interpolated_mags[ind] = np.median(smags[itimeind[0]])
+            interpolated_errs[ind] = np.median(serrs[itimeind[0]])
+
+        # otherwise, if there's only one elem in this time bin, take it
+        elif itimeind[0].size == 1:
+
+            interpolated_mags[ind] = smags[itimeind[0]]
+            interpolated_errs[ind] = serrs[itimeind[0]]
+
+
+    return {'itimes':interpolated_times,
+            'imags':interpolated_mags,
+            'ierrs':interpolated_errs,
+            'cadence':gapmode}
