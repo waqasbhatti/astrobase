@@ -102,6 +102,7 @@ def autocorr_magseries(times, mags, errs,
                        maxlags=1000,
                        func=_autocorr_func3,
                        fillgaps=0.0,
+                       forcetimebin=None,
                        sigclip=3.0,
                        magsarefluxes=False,
                        filterwindow=11,
@@ -116,12 +117,18 @@ def autocorr_magseries(times, mags, errs,
     '''
 
     # get the gap-filled timeseries
-    itimes, imags, ierrs = fill_magseries_gaps(times, mags, errs,
-                                               fillgaps=fillgaps,
-                                               sigclip=sigclip,
-                                               magsarefluxes=magsarefluxes,
-                                               filterwindow=filterwindow,
-                                               verbose=verbose)
+    interpolated = fill_magseries_gaps(times, mags, errs,
+                                       fillgaps=fillgaps,
+                                       forcetimebin=forcetimebin,
+                                       sigclip=sigclip,
+                                       magsarefluxes=magsarefluxes,
+                                       filterwindow=filterwindow,
+                                       verbose=verbose)
+
+    itimes, imags, ierrs = (interpolated['itimes'],
+                            interpolated['imags'],
+                            interpolated['ierrs'])
+
     # calculate the lags up to maxlags
     if maxlags:
         lags = nparange(0, maxlags)
@@ -142,8 +149,8 @@ def autocorr_magseries(times, mags, errs,
         autocorr = _autocorr_func3(imags, lags[0], imags.size,
                                    0.0, series_stdev)
 
-    return {'itimes':itimes,
-            'imags':imags,
-            'ierrs':ierrs,
-            'lags':lags,
-            'acf':autocorr}
+    interpolated.update({'minitime':itimes.min(),
+                         'lags':lags,
+                         'acf':autocorr})
+
+    return interpolated

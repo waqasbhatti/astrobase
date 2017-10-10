@@ -31,7 +31,7 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     digitize as npdigitize, unique as npunique, \
     argmax as npargmax, argmin as npargmin
 
-from scipy.signal import argrelmax, argrelmin
+from scipy.signal import argrelmax, argrelmin, savgol_filter
 from astropy.convolution import convolve, Gaussian1DKernel
 
 
@@ -104,7 +104,7 @@ NCPUS = cpu_count()
 ######################
 
 
-def _smooth_acf(acf, windowfwhm=7):
+def _smooth_acf(acf, windowfwhm=7, windowsize=21):
     '''
     This returns a smoothed version of the ACF.
 
@@ -112,14 +112,27 @@ def _smooth_acf(acf, windowfwhm=7):
 
     '''
 
-    convkernel = Gaussian1DKernel(windowfwhm)
+    convkernel = Gaussian1DKernel(windowfwhm, x_size=windowsize)
     smoothed = convolve(acf, convkernel, boundary='extend')
 
     return smoothed
 
 
+def _smooth_acf_savgol(acf, windowsize=21, polyorder=2):
+    '''
+    This returns a smoothed version of the ACF.
 
-def _get_acf_peakheights(lags, acf, npeaks=10):
+    This version uses the Savitsky-Golay smoothing filter
+
+    '''
+
+    smoothed = savgol_filter(acf, windowsize, polyorder)
+
+    return smoothed
+
+
+
+def _get_acf_peakheights(lags, acf, npeaks=20):
     '''This calculates the relative peak heights for first npeaks in ACF.
 
     Usually, the first peak or the second peak (if its peak height > first peak)
@@ -155,9 +168,11 @@ def _get_acf_peakheights(lags, acf, npeaks=10):
     if relpeakheights[0] > relpeakheights[1]:
         bestlag = relpeaklags[0]
         bestpeakheight = relpeakheights[0]
+        bestpeakindex = peakindices[0]
     else:
         bestlag = relpeaklags[1]
         bestpeakheight = relpeakheights[1]
+        bestpeakindex = peakindices[1]
 
     return {'maxinds':maxinds,
             'maxacfs':maxacfs,
@@ -169,7 +184,8 @@ def _get_acf_peakheights(lags, acf, npeaks=10):
             'relpeaklags':relpeaklags,
             'peakindices':peakindices,
             'bestlag':bestlag,
-            'bestpeakheight':bestpeakheight}
+            'bestpeakheight':bestpeakheight,
+            'bestpeakindex':bestpeakindex}
 
 
 ############################
@@ -183,8 +199,11 @@ def macf_period_find(
         maxlags=None,
         maxacfpeaks=10,
         fillgaps=0.0,
+        forcetimebin=None,
         filterwindow=11,
-        smoothacf=None,
+        smoothacf=21,
+        smoothfunc=_smooth_acf_savgol,
+        smoothfunckwargs={},
         magsarefluxes=False,
         sigclip=3.0,
         verbose=True
@@ -203,6 +222,7 @@ def macf_period_find(
         errs,
         maxlags=maxlags,
         fillgaps=fillgaps,
+        forcetimebin=forcetimebin,
         sigclip=sigclip,
         magsarefluxes=magsarefluxes,
         filterwindow=filterwindow,
@@ -214,7 +234,8 @@ def macf_period_find(
     # smooth the ACF if requested
     if smoothacf and isinstance(smoothacf, int) and smoothacf > 0:
 
-        xacf = _smooth_acf(acfres['acf'], windowfwhm=smoothacf)
+        smoothfunckwargs.update({'windowsize':smoothacf})
+        xacf = smoothfunc(acfres['acf'], **smoothfunckwargs)
 
     else:
 
@@ -231,11 +252,22 @@ def macf_period_find(
 
         # get the fit best lag from a linear fit to the peak index vs time(peak
         # lag) function as in McQillian+ (2014)
-        fitx = np.concatenate(([0.0], peakres['peakindices'] + 1))
         fity = [0.0]
 
-        for fitind, fitlag in enumerate(peakres['relpeaklags']):
-            fity.append(acfres['itimes'][xlags == fitlag])
+        # if the first peak is the highest one, then use it and the next integer
+        # multiples to fit for the period
+        if peakres['bestpeakindex'] == 0:
+            fitx = np.concatenate(([0.0], peakres['peakindices'] + 1))
+            for fitlag in peakres['relpeaklags']:
+                fity.append(xlags[xlags == fitlag]*acfres['cadence'])
+
+        # otherwise, the second peak is the highest one, use it and the next
+        # integer multiples to fit for period
+        elif peakres['bestpeakindex'] == 1:
+            fitx = peakres['peakindices']
+            for fitlag in peakres['relpeaklags'][1:]:
+                fity.append(xlags[xlags == fitlag]*acfres['cadence'])
+
         fity = np.array(fity)
 
         fitcoeffs, fitcovar = np.polyfit(fitx, fity, 1, cov=True)
@@ -251,6 +283,7 @@ def macf_period_find(
         fitcovar = np.array([[np.nan, np.nan], [np.nan, np.nan]])
         fitbestperiod = np.nan
         bestperiodrms = np.nan
+        raise
 
     # calculate the naive best period using bestperiod = time[lags == bestlag] -
     # time[0]
@@ -267,6 +300,8 @@ def macf_period_find(
             'nbestpeaks':maxacfpeaks,
             'lspvals':xacf,
             'periods':xlags,
+            'acf':xacf,
+            'lags':xlags,
             'method':'acf',
             'naivebestperiod':naivebestperiod,
             'fitbestperiod':fitbestperiod,
