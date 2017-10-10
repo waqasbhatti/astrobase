@@ -252,26 +252,17 @@ def macf_period_find(
 
         # get the fit best lag from a linear fit to the peak index vs time(peak
         # lag) function as in McQillian+ (2014)
-        fity = [0.0]
-
-        # if the first peak is the highest one, then use it and the next integer
-        # multiples to fit for the period
-        if peakres['bestpeakindex'] == 0:
-            fitx = np.concatenate(([0.0], peakres['peakindices'] + 1))
-            for fitlag in peakres['relpeaklags']:
-                fity.append(xlags[xlags == fitlag]*acfres['cadence'])
-
-        # otherwise, the second peak is the highest one, use it and the next
-        # integer multiples to fit for period
-        elif peakres['bestpeakindex'] == 1:
-            fitx = peakres['peakindices']
-            for fitlag in peakres['relpeaklags'][1:]:
-                fity.append(xlags[xlags == fitlag]*acfres['cadence'])
-
-        fity = np.array(fity)
+        fity = np.concatenate((
+            [0.0, peakres['bestlag']],
+            peakres['relpeaklags'][peakres['relpeaklags'] > peakres['bestlag']]
+        ))
+        fity = fity*acfres['cadence']
+        fitx = np.arange(fity.size)
 
         fitcoeffs, fitcovar = np.polyfit(fitx, fity, 1, cov=True)
-        fitbestperiod = fitcoeffs[0] # fit best lag is the gradient of fit
+
+        # fit best period is the gradient of fit
+        fitbestperiod = fitcoeffs[0]
         bestperiodrms = np.sqrt(fitcovar[0,0]) # from the covariance matrix
 
     except:
@@ -285,15 +276,19 @@ def macf_period_find(
         bestperiodrms = np.nan
         raise
 
-    # calculate the naive best period using bestperiod = time[lags == bestlag] -
-    # time[0]
-    naivebestperiod = (acfres['itimes'][xlags == peakres['bestlag']] -
-                       acfres['itimes'][0])
+    # calculate the naive best period using delta_tau = lag * cadence
+    naivebestperiod = peakres['bestlag']*acfres['cadence']
+
+    if fitbestperiod < naivebestperiod:
+        LOGWARNING('fit bestperiod = %.5f may be an alias, '
+                   'naively calculated bestperiod is = %.5f' %
+                   (bestperiod, naivebestperiod))
 
     if np.isfinite(fitbestperiod):
         bestperiod = fitbestperiod
     else:
         bestperiod = naivebestperiod
+
 
     return {'bestperiod':bestperiod,
             'bestlspval':bestlspval,
