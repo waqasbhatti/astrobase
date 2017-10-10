@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 '''lcproc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - May 2017
 

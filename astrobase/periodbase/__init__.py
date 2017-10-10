@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 '''
 periodbase - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017

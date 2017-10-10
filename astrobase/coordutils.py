@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 '''
 coordutils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - 07/13

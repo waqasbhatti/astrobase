@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 '''
 lcdb.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - 05/13

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 '''macf.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
 
