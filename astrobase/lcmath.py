@@ -967,7 +967,7 @@ def fill_magseries_gaps(times, mags, errs,
             LOGINFO('gap mode of time series = %.5f' % gapmode)
 
     else:
-        LOGWARNING('this mag series appears to have no gaps')
+        LOGWARNING('this mag series appears to have no gaps to fill')
         return {'itimes':stimes,
                 'imags':smags,
                 'ierrs':serrs,
@@ -977,6 +977,13 @@ def fill_magseries_gaps(times, mags, errs,
         LOGWARNING('forcetimebin is set, forcing cadence to %.5f' %
                    forcetimebin)
         gapmode = forcetimebin
+
+
+    if gapmode == 0.0:
+        LOGERROR('the smallest cadence of this light curve appears to be 0.0, '
+                 'the automatic cadence finder probably failed. '
+                 'try setting forcetimebin?')
+        return None
 
     starttime, endtime = np.min(stimes), np.max(stimes)
     ntimes = int(np.ceil((endtime - starttime)/gapmode) + 1)
