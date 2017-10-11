@@ -28,6 +28,7 @@ import numpy.random as nprand
 from scipy.signal import savgol_filter
 
 
+
 #############
 ## LOGGING ##
 #############
@@ -940,44 +941,19 @@ def fill_magseries_gaps(times, mags, errs,
 
     # figure out the gap size and where to interpolate. we do this by figuring
     # out the most common gap (this should be the cadence). to do this, we need
-    # to calculate the mode of the gap distribution. from wikipedia:
-    # https://en.wikipedia.org/wiki/Mode_(statistics)
+    # to calculate the mode of the gap distribution.
 
     # get the gaps
     gaps = np.diff(stimes)
 
+    # just use scipy.stats.mode instead of our hacked together nonsense earlier.
+    gapmode = scipy.stats.mode(gaps)
+
     # sort the gaps
-    sortedgaps = np.sort(gaps)
-
-    # calculate the derivative of sorted gap series and find indices where it is
-    # positive
-    diffsortedpositive = np.where(np.diff(sortedgaps) > 0.0)[0]
-
-    if diffsortedpositive.size > 0:
-
-        # take another derivative of the diff series
-        diffdiffsortedpositive = np.diff(diffsortedpositive)
-
-        # get the max of this array. this corresponds to index of the mode of
-        # the gap size distribution in the sorted gap series
-        gapmode = sortedgaps[np.max(diffdiffsortedpositive)]
-
-        # we will interpolate where gap indices are more than the gap mode
-        if verbose:
-            LOGINFO('gap mode of time series = %.5f' % gapmode)
-
-    else:
-        LOGWARNING('this mag series appears to have no gaps to fill')
-        return {'itimes':stimes,
-                'imags':smags,
-                'ierrs':serrs,
-                'cadence':gaps[0]}
-
     if forcetimebin:
         LOGWARNING('forcetimebin is set, forcing cadence to %.5f' %
                    forcetimebin)
         gapmode = forcetimebin
-
 
     if gapmode == 0.0:
         LOGERROR('the smallest cadence of this light curve appears to be 0.0, '
