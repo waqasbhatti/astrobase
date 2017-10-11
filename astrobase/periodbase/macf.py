@@ -194,6 +194,57 @@ def _get_acf_peakheights(lags, acf, npeaks=20, searchinterval=1):
             'bestpeakindex':bestpeakindex}
 
 
+def plot_acf_results(acfp, outfile, maxlags=5000, yrange=[-0.4,0.4]):
+    '''
+    This plots the unsmoothed/smoothed ACF vs lag.
+
+    acfp is the resultdict from macf_period_find below.
+
+    '''
+
+    import matplotlib.pyplot as plt
+
+    lags = acfp['acfresults']['lags'][:maxlags]
+    smoothedacf = acfp['acf'][:maxlags]
+    unsmoothedacf = acfp['acfresults']['acf'][:maxlags]
+
+    acfparams = acfp['kwargs']['smoothfunckwargs']
+    acfparams.update({'peakinterval': int(acfp['kwargs']['smoothacf']/2.0)})
+
+    # plot the ACFs
+    plt.plot(lags, unsmoothedacf, label='unsmoothed ACF')
+    plt.plot(lags, smoothedacf, label='smoothed ACF')
+
+    # overplot the identified peaks
+    acfmaxinds = acfp['acfpeaks']['maxinds']
+
+    for i, maxind in enumerate(acfmaxinds):
+        if i == 0:
+            plt.axvline(maxind,
+                        linewidth=2.0,
+                        color='red',
+                        ymin=0.2, ymax=0.3,
+                        label='identified ACF peaks')
+        else:
+            plt.axvline(maxind,
+                        linewidth=2.0,
+                        color='red',
+                        ymin=0.2, ymax=0.3)
+
+    plt.xlim((0,maxlags))
+    plt.ylim(yrange)
+
+    plt.legend()
+    plt.xlabel('lags')
+    plt.ylabel('ACF')
+    plt.title('%s' % repr(acfparams))
+    plt.savefig(outfile)
+    plt.close('all')
+
+    return outfile
+
+
+
 ############################
 ## PERIOD FINDER FUNCTION ##
 ############################
@@ -246,10 +297,10 @@ def macf_period_find(
     data, much larger values may be necessary: between 1001 and 2001 seem to
     work best for the HAT surveys. This is dependent on cadence, RMS of the
     light curve, the periods of the objects you're looking for, and finally, any
-    correlated noise in the light curve. Make a plot of the unsmoothed ACF in
-    returned dict['acfresults']['lags'] vs dict['acfresults']['acf'] and
-    overplot the smoothed ACF from returned dict['lags'] vs. dict['acf'] to see
-    what kind of smoothing might be needed.
+    correlated noise in the light curve. Make a plot of the smoothed/unsmoothed
+    ACF vs. lag using the result dict of this function and the plot_acf_results
+    function above to see the identified ACF peaks and what kind of smoothing
+    might be needed.
 
     The value of smoothacf will also be used to figure out the interval to use
     when searching for local peaks in the ACF: this interval is 1/2 of the
