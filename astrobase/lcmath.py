@@ -947,7 +947,10 @@ def fill_magseries_gaps(times, mags, errs,
     gaps = np.diff(stimes)
 
     # just use scipy.stats.mode instead of our hacked together nonsense earlier.
-    gapmode = scipy.stats.mode(gaps)
+    gapmoderes = scipy.stats.mode(gaps)
+    gapmode = np.asscalar(gapmoderes[0])
+
+    LOGINFO('auto-cadence for mag series: %.5f' % gapmode)
 
     # sort the gaps
     if forcetimebin:
