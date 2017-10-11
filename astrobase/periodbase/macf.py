@@ -240,14 +240,20 @@ def macf_period_find(
     smoothacf is the number of points to use as the window size when smoothing
     the acf with the smoothfunc. This should be an odd integer value. If this is
     None, will not smooth the ACF, but this will probably lead to finding
-    spurious peaks in a generally noisy ACF. For Kepler, a value between 21 and
-    51 seems to work fine. For ground based data, much larger values may be
-    necessary: between 1001 and 2001 seem to work best for the HAT surveys. This
-    is dependent on cadence, RMS of the light curve, the periods of the objects
-    you're looking for, and finally, any correlated noise in the light
-    curve. The value of smoothacf will also be used to figure out the interval
-    to use when searching for local peaks in the ACF: this interval is 1/2 of
-    the smoothacf value.
+    spurious peaks in a generally noisy ACF.
+
+    For Kepler, a value between 21 and 51 seems to work fine. For ground based
+    data, much larger values may be necessary: between 1001 and 2001 seem to
+    work best for the HAT surveys. This is dependent on cadence, RMS of the
+    light curve, the periods of the objects you're looking for, and finally, any
+    correlated noise in the light curve. Make a plot of the unsmoothed ACF in
+    returned dict['acfresults']['lags'] vs dict['acfresults']['acf'] and
+    overplot the smoothed ACF from returned dict['lags'] vs. dict['acf'] to see
+    what kind of smoothing might be needed.
+
+    The value of smoothacf will also be used to figure out the interval to use
+    when searching for local peaks in the ACF: this interval is 1/2 of the
+    smoothacf value.
 
     smoothfunc is a function to use when smoothing the ACF. This should take at
     least one kwarg: 'windowsize'. Other kwargs can be passed in using a dict
