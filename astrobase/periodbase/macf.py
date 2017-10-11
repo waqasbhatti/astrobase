@@ -196,11 +196,11 @@ def macf_period_find(
         times,
         mags,
         errs,
+        fillgaps=0.0,
+        filterwindow=11,
+        forcetimebin=None,
         maxlags=None,
         maxacfpeaks=10,
-        fillgaps=0.0,
-        forcetimebin=None,
-        filterwindow=11,
         smoothacf=21,
         smoothfunc=_smooth_acf_savgol,
         smoothfunckwargs={},
@@ -210,8 +210,68 @@ def macf_period_find(
 ):
     '''This finds periods using the McQuillian+ (2013a, 2014) method.
 
-    If smoothacf is not None, will smooth ACF using the given smoothing window
-    FWHM.
+    Args
+    ----
+
+    times, mags, errs are np.arrays.
+
+    fillgaps is what to use to fill in gaps in the time series. If this is
+    'noiselevel', will smooth the light curve using a point window size of
+    filterwindow, subtract the smoothed LC from the actual LC and estimate the
+    RMS. This RMS will be used to fill in the gaps. Other useful values here are
+    0.0, and np.nan.
+
+    forcetimebin is used to force a particular cadence in the light curve other
+    than the automatically determined cadence. This effectively rebins the light
+    curve to this cadence.
+
+    maxlags is maximum number of lags to calculate. If None, will calculate all
+    lags.
+
+    maxacfpeaks is the maximum number of ACF peaks to use when finding the
+    highest peak and obtaining a fit period.
+
+    smoothacf is the number of points to use as the window size when smoothing
+    the acf with the smoothfunc. This should be an odd integer value. If this is
+    None, will not smooth the ACF, but this will probably lead to finding
+    spurious peaks in a generally noisy ACF. For Kepler, a value between 21 and
+    51 seems to work fine. For ground based data, much larger values may be
+    necessary: between 501 and 2001 seem to work best for the HAT surveys. This
+    is dependent on cadence, RMS of the light curve, as well as any correlated
+    noise in the light curve. The value of smoothacf will also be used to figure
+    out the interval to use when searching for local peaks in the ACF: this
+    interval is 1/2 of the smoothacf value.
+
+    smoothfunc is a function to use when smoothing the ACF. This should take at
+    least one kwarg: 'windowsize'. Other kwargs can be passed in using a dict
+    provided in smoothfunckwargs.
+
+    magarefluxes is True if the measurements provided in mags are actually
+    fluxes, False otherwise.
+
+    sigclip is the sigma to use when sigma-clipping the magnitude time series.
+
+
+    Returns
+    -------
+
+    Returns a dictionary with results. dict['bestperiod'] is the estimated best
+    period and dict['fitperiodrms'] is its estimated error. Other interesting
+    things in the output include:
+
+    - dict['acfresults']: all results from calculating the ACF. in particular,
+      the unsmoothed ACF might be of interest: dict['acfresults']['acf'] and
+      dict['acfresults']['lags'].
+
+    - dict['lags'] and dict['acf'] contain the ACF after smoothing was applied.
+
+    - dict['periods'] and dict['lspvals'] can be used to construct a
+      pseudo-periodogram.
+
+    - dict['naivebestperiod'] is obtained by multiplying the lag at the highest
+      ACF peak with the cadence. This is usually close to the fit period
+      (dict['fitbestperiod']), which is calculated by doing a fit to the lags
+      vs. peak index relation as in McQuillian+ 2014.
 
     '''
 
