@@ -125,6 +125,10 @@ def autocorr_magseries(times, mags, errs,
                                        filterwindow=filterwindow,
                                        verbose=verbose)
 
+    if not interpolated:
+        LOGERROR('failed to interpolate light curve to minimum cadence!')
+        return None
+
     itimes, imags, ierrs = (interpolated['itimes'],
                             interpolated['imags'],
                             interpolated['ierrs'])
