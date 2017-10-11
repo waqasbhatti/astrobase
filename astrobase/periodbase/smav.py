@@ -41,7 +41,7 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
 LOGGER = None
 
 def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.spdm' % parent_name)
+    globals()['LOGGER'] = logging.getLogger('%s.smav' % parent_name)
 
 def LOGDEBUG(message):
     if LOGGER:
@@ -99,3 +99,41 @@ NCPUS = cpu_count()
 ###################################################################
 ## MULTIHARMONIC ANALYSIS of VARIANCE (Schwarzenberg-Cerny 1996) ##
 ###################################################################
+
+
+def harmonic_aov_theta(times, mags, errs, frequency, nharmonics,
+                       binsize=0.05, minbin=9):
+    '''
+    This calculates the harmonic AoV theta for a frequency.
+
+    Schwarzenberg-Cerny 1996 equation 11:
+
+    theta_prefactor = (K - 2N - 1)/(2N)
+    theta_top = sum(c_n*c_n) (from n=0 to n=2N)
+    theta_bot = variance(timeseries) - sum(c_n*c_n) (from n=0 to n=2N)
+
+    theta = theta_prefactor * (theta_top/theta_bot)
+
+    N = number of harmonics (nharmonics)
+    K = length of time series
+
+    times, mags, errs should all be free of nans/infs and be normalized to zero.
+
+    z_k = e^(i*w*t_k), where k is the time index, 1 -> N
+
+    z^n = e^(i*n*w*t), where n is the harmonic index, 1 -> N
+
+
+    recurrence relation for successive orders (SC96 eqn 6):
+
+    phi_tilde_(n+1)(z) =
+         z * phi_tilde_n - alpha_n * z^n * conjugate(phi_tilde_n(z))
+
+
+    SC96 equation 2:
+
+    scalar_product(phi, psi) =
+           sum_k^K(weights_k * phi(z_k) * conjugate(psi(z_k)))
+
+
+    '''
