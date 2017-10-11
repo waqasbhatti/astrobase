@@ -156,6 +156,12 @@ def _get_acf_peakheights(lags, acf, npeaks=20, searchinterval=1):
 
     for peakind, mxi in enumerate(maxinds[:npeaks]):
 
+        # check if there are no mins to the left
+        # throw away this peak because it's probably spurious
+        # (FIXME: is this OK?)
+        if np.all(mxi < mininds):
+            continue
+
         leftminind = mininds[mininds < mxi][-1] # the last index to the left
         rightminind = mininds[mininds > mxi][0] # the first index to the right
         relpeakheights[peakind] = (
@@ -217,9 +223,9 @@ def macf_period_find(
 
     fillgaps is what to use to fill in gaps in the time series. If this is
     'noiselevel', will smooth the light curve using a point window size of
-    filterwindow, subtract the smoothed LC from the actual LC and estimate the
-    RMS. This RMS will be used to fill in the gaps. Other useful values here are
-    0.0, and np.nan.
+    filterwindow (this should be an odd integer), subtract the smoothed LC from
+    the actual LC and estimate the RMS. This RMS will be used to fill in the
+    gaps. Other useful values here are 0.0, and np.nan.
 
     forcetimebin is used to force a particular cadence in the light curve other
     than the automatically determined cadence. This effectively rebins the light
@@ -236,15 +242,19 @@ def macf_period_find(
     None, will not smooth the ACF, but this will probably lead to finding
     spurious peaks in a generally noisy ACF. For Kepler, a value between 21 and
     51 seems to work fine. For ground based data, much larger values may be
-    necessary: between 501 and 2001 seem to work best for the HAT surveys. This
-    is dependent on cadence, RMS of the light curve, as well as any correlated
-    noise in the light curve. The value of smoothacf will also be used to figure
-    out the interval to use when searching for local peaks in the ACF: this
-    interval is 1/2 of the smoothacf value.
+    necessary: between 1001 and 2001 seem to work best for the HAT surveys. This
+    is dependent on cadence, RMS of the light curve, the periods of the objects
+    you're looking for, and finally, any correlated noise in the light
+    curve. The value of smoothacf will also be used to figure out the interval
+    to use when searching for local peaks in the ACF: this interval is 1/2 of
+    the smoothacf value.
 
     smoothfunc is a function to use when smoothing the ACF. This should take at
     least one kwarg: 'windowsize'. Other kwargs can be passed in using a dict
-    provided in smoothfunckwargs.
+    provided in smoothfunckwargs. By default, this uses a Savitsky-Golay filter,
+    a Gaussian filter is also provided but not used. Another good option would
+    be an actual low-pass filter (generated using scipy.signal?) to remove all
+    high frequency noise from the ACF.
 
     magarefluxes is True if the measurements provided in mags are actually
     fluxes, False otherwise.
