@@ -132,7 +132,7 @@ def _smooth_acf_savgol(acf, windowsize=21, polyorder=2):
 
 
 
-def _get_acf_peakheights(lags, acf, npeaks=20):
+def _get_acf_peakheights(lags, acf, npeaks=20, searchinterval=1):
     '''This calculates the relative peak heights for first npeaks in ACF.
 
     Usually, the first peak or the second peak (if its peak height > first peak)
@@ -143,10 +143,10 @@ def _get_acf_peakheights(lags, acf, npeaks=20):
 
     '''
 
-    maxinds = argrelmax(acf)[0]
+    maxinds = argrelmax(acf, order=searchinterval)[0]
     maxacfs = acf[maxinds]
     maxlags = lags[maxinds]
-    mininds = argrelmin(acf)[0]
+    mininds = argrelmin(acf, order=searchinterval)[0]
     minacfs = acf[mininds]
     minlags = lags[mininds]
 
@@ -243,7 +243,8 @@ def macf_period_find(
 
 
     # get the relative peak heights and fit best lag
-    peakres = _get_acf_peakheights(xlags, xacf, npeaks=maxacfpeaks)
+    peakres = _get_acf_peakheights(xlags, xacf, npeaks=maxacfpeaks,
+                                   searchinterval=int(smoothacf/2))
 
     # this is the best period's best ACF peak height
     bestlspval = peakres['bestpeakheight']
@@ -282,7 +283,7 @@ def macf_period_find(
     if fitbestperiod < naivebestperiod:
         LOGWARNING('fit bestperiod = %.5f may be an alias, '
                    'naively calculated bestperiod is = %.5f' %
-                   (bestperiod, naivebestperiod))
+                   (fitbestperiod, naivebestperiod))
 
     if np.isfinite(fitbestperiod):
         bestperiod = fitbestperiod
@@ -294,7 +295,7 @@ def macf_period_find(
             'bestlspval':bestlspval,
             'nbestpeaks':maxacfpeaks,
             'lspvals':xacf,
-            'periods':xlags,
+            'periods':xlags*acfres['cadence'],
             'acf':xacf,
             'lags':xlags,
             'method':'acf',
@@ -308,6 +309,7 @@ def macf_period_find(
                       'fillgaps':fillgaps,
                       'filterwindow':filterwindow,
                       'smoothacf':smoothacf,
+                      'smoothfunckwargs':smoothfunckwargs,
                       'magsarefluxes':magsarefluxes,
                       'sigclip':sigclip},
             'acfresults':acfres,
