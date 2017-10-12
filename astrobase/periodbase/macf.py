@@ -263,7 +263,8 @@ def macf_period_find(
         smoothfunckwargs={},
         magsarefluxes=False,
         sigclip=3.0,
-        verbose=True
+        verbose=True,
+        nworkers=None, # doesn't do anything, but for consistent external API
 ):
     '''This finds periods using the McQuillian+ (2013a, 2014) method.
 
