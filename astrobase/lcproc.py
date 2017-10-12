@@ -126,6 +126,25 @@ def read_pklc(lcfile):
 
 
 
+# these translate filter operators given as strings to Python operators
+FILTEROPS = {'eq':'==',
+             'gt':'>',
+             'ge':'>=',
+             'lt':'<',
+             'le':'<=',
+             'ne':'!='}
+
+
+
+# used to figure out which period finder to run given a list of methods
+PFMETHODS = {'bls':periodbase.bls_parallel_pfind,
+             'gls':periodbase.pgen_lsp,
+             'aov':periodbase.aov_periodfind,
+             'pdm':periodbase.stellingwerf_pdm,
+             'acf':periodbase.macf_period_find}
+
+
+
 # LC format -> [default fileglob,  function to read LC format]
 LCFORM = {
     'hat-sql':[
@@ -300,14 +319,6 @@ def register_custom_lcformat(formatkey,
 #######################
 ## UTILITY FUNCTIONS ##
 #######################
-
-FILTEROPS = {'eq':'==',
-             'gt':'>',
-             'ge':'>=',
-             'lt':'<',
-             'le':'<=',
-             'ne':'!='}
-
 
 def lclist_parallel_worker(task):
     '''
@@ -1260,12 +1271,18 @@ def runpf(lcfile,
           magcols=None,
           errcols=None,
           lcformat='hat-sql',
-          bls_startp=1.0,
-          bls_maxtransitduration=0.3,
+          pfmethods=['gls','pdm','bls'],
+          pfkwargs=[{},{},{'startp':1.0,'maxtransitduration':0.3}],
+          sigclip=5.0,
           getblssnr=True,
           nworkers=10):
-    '''
-    This runs the period-finding for a single LC.
+    '''This runs the period-finding for a single LC.
+
+    pfmethods is a list of period finding methods to run. Each element is a
+    string matching the keys of the PFMETHODS dict above.
+
+    pfkwargs are any special kwargs to pass along to each period-finding method
+    function.
 
     '''
 
@@ -1332,34 +1349,32 @@ def runpf(lcfile,
 
                 times, mags, errs = ntimes, nmags, errs
 
+            # run each of the requested period-finder functions
+            resultdict[mcolget[-1]] = {}
+            for pfm, pfkw in zip(pfmethods, pfkwargs):
 
-            # run the three period-finders
-            gls = periodbase.pgen_lsp(times, mags, errs,
-                                      verbose=False,
-                                      nworkers=nworkers,
-                                      magsarefluxes=magsarefluxes)
+                pf_func = PFMETHODS[pfm]
 
-            pdm = periodbase.stellingwerf_pdm(times, mags, errs,
-                                              verbose=False,
-                                              nworkers=nworkers,
-                                              magsarefluxes=magsarefluxes)
+                # get any optional kwargs for this function
+                pf_kwargs = pfkw
+                pf_kwargs.update({'verbose':False,
+                                  'nworkers':nworkers,
+                                  'magsarefluxes':magsarefluxes,
+                                  'sigclip':sigclip})
 
-            # specifically for planet type signals
-            bls = periodbase.bls_parallel_pfind(
-                times, mags, errs,
-                startp=bls_startp,
-                maxtransitduration=bls_maxtransitduration,
-                verbose=False,
-                nworkers=nworkers,
-                magsarefluxes=magsarefluxes
-            )
-            # save the results
-            resultdict[mcolget[-1]] = {'gls':gls,
-                                       'bls':bls,
-                                       'pdm':pdm}
+                # run this period-finder and save its results to the output dict
+                resultdict[mcolget[-1]][pfm] = pf_func(
+                    times, mags, errs,
+                    **pf_kwargs
+                )
 
 
-            if getblssnr:
+            #
+            # done with running the period finders
+            #
+
+            # check if we need to get the SNR for BLS
+            if 'bls' in pfmethods and getblssnr:
 
                 try:
 
@@ -1388,7 +1403,7 @@ def runpf(lcfile,
                         'transitduration':[np.nan,np.nan,np.nan,np.nan,np.nan],
                     })
 
-            else:
+            elif 'bls' in pfmethods:
 
                 # add the SNR null results to the BLS result dict
                 resultdict[mcolget[-1]]['bls'].update({
@@ -1418,7 +1433,7 @@ def runpf_worker(task):
     '''
 
     (lcfile, outdir, timecols, magcols, errcols, lcformat,
-     bls_startp, bls_maxtransitduration, getblssnr, nworkers) = task
+     pfmethods, pfkwargs, getblssnr, sigclip, nworkers) = task
 
     if os.path.exists(lcfile):
         pfresult = runpf(lcfile,
@@ -1427,9 +1442,10 @@ def runpf_worker(task):
                          magcols=magcols,
                          errcols=errcols,
                          lcformat=lcformat,
-                         bls_startp=bls_startp,
-                         bls_maxtransitduration=bls_maxtransitduration,
+                         pfmethods=pfmethods,
+                         pfkwargs=pfkwargs,
                          getblssnr=getblssnr,
+                         sigclip=sigclip,
                          nworkers=nworkers)
         return pfresult
     else:
@@ -1445,9 +1461,10 @@ def parallel_pf(lclist,
                 magcols=None,
                 errcols=None,
                 lcformat='hat-sql',
-                bls_startp=1.0,
-                bls_maxtransitduration=0.3,
+                pfmethods=['gls','pdm','bls'],
+                pfkwargs=[{},{},{'startp':1.0,'maxtransitduration':0.3}],
                 getblssnr=True,
+                sigclip=5.0,
                 nperiodworkers=10,
                 nthisworkers=4):
     '''
@@ -1459,7 +1476,7 @@ def parallel_pf(lclist,
         lclist = lclist[:maxobjects]
 
     tasklist = [(x, outdir, timecols, magcols, errcols, lcformat,
-                 bls_startp, bls_maxtransitduration, getblssnr, nperiodworkers)
+                 pfmethods, pfkwargs, getblssnr, sigclip, nperiodworkers)
                 for x in lclist]
 
     with ProcessPoolExecutor(max_workers=nthisworkers) as executor:
@@ -1478,10 +1495,11 @@ def parallel_pf_lcdir(lcdir,
                       magcols=None,
                       errcols=None,
                       lcformat='hat-sql',
-                      bls_startp=1.0,
-                      bls_maxtransitduration=0.3,
+                      pfmethods=['gls','pdm','bls'],
+                      pfkwargs=[{},{},{'startp':1.0,'maxtransitduration':0.3}],
                       getblssnr=True,
                       nperiodworkers=10,
+                      sigclip=5.0,
                       nthisworkers=4):
     '''
     This runs parallel light curve period finding for directory of LCs.
@@ -1539,10 +1557,11 @@ def parallel_pf_lcdir(lcdir,
                            magcols=magcols,
                            errcols=errcols,
                            lcformat=lcformat,
-                           bls_startp=bls_startp,
-                           bls_maxtransitduration=bls_maxtransitduration,
+                           pfmethods=pfmethods,
+                           pfkwargs=pfkwargs,
                            getblssnr=getblssnr,
                            nperiodworkers=nperiodworkers,
+                           sigclip=sigcip,
                            nthisworkers=nthisworkers)
 
     else:
@@ -1661,7 +1680,7 @@ def update_checkplotdict_nbrlcs(
 
         # for each lspmethod in the checkplot, make a corresponding plot for
         # this neighbor
-        for lspt in ('pdm','gls','bls','aov'):
+        for lspt in PFMETHODS:
 
             if lspt in checkplotdict:
 
@@ -1785,10 +1804,16 @@ def runcp(pfpickle,
             ecolget = [ecol]
         errs = dict_get(lcdict, ecolget)
 
-        gls = pfresults[mcolget[-1]]['gls']
-        pdm = pfresults[mcolget[-1]]['pdm']
-        bls = pfresults[mcolget[-1]]['bls']
 
+        pflist = []
+
+        # pick up all of the period-finding methods in this pfresults pkl
+        for pfmethod in PFMETHODS:
+            if pfmethod in pfresults[mcolget[-1]]:
+                pflist.append(pfresults[mcolget[-1]][pfmethod])
+
+
+        # generate the output filename
         outfile = os.path.join(outdir,
                                'checkplot-%s-%s.pkl' % (objectid, mcol))
 
@@ -1796,9 +1821,9 @@ def runcp(pfpickle,
         if 'objectid' not in lcdict['objectinfo']:
             lcdict['objectinfo']['objectid'] = objectid
 
-        # generate the checkplotdict including neighbor information
+        # generate the checkplotdict
         cpd = checkplot.checkplot_dict(
-            [gls,pdm,bls],
+            pflist,
             times, mags, errs,
             objectinfo=lcdict['objectinfo'],
             lclistpkl=lclistpkl,
@@ -1806,6 +1831,7 @@ def runcp(pfpickle,
             verbose=False
         )
 
+        # include any neighbor information as well
         cpdupdated = update_checkplotdict_nbrlcs(
             cpd,
             tcol, mcol, ecol,
@@ -1813,6 +1839,7 @@ def runcp(pfpickle,
             verbose=False
         )
 
+        # write the update checkplot dict to disk
         cpf = checkplot._write_checkplot_picklefile(
             cpdupdated,
             outfile=outfile,
