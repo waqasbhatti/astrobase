@@ -1378,6 +1378,8 @@ def runpf(lcfile,
 
                 try:
 
+                    bls = resultdict[mcolget[-1]]['bls']
+
                     # calculate the SNR for the BLS as well
                     blssnr = bls_snr(bls, times, mags, errs,
                                      magsarefluxes=magsarefluxes,
