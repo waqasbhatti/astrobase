@@ -146,6 +146,7 @@ def get_frequency_grid(times,
 from .zgls import pgen_lsp
 from .spdm import stellingwerf_pdm
 from .saov import aov_periodfind
+from .smav import aovhm_periodfind
 from .kbls import bls_serial_pfind, bls_parallel_pfind
 from .macf import macf_period_find
 
@@ -159,6 +160,7 @@ from .macf import macf_period_find
 LSPMETHODS = {'bls':bls_parallel_pfind,
               'gls':pgen_lsp,
               'aov':aov_periodfind,
+              'mav':aovhm_periodfind,
               'pdm':stellingwerf_pdm,
               'acf':macf_period_find}
 
