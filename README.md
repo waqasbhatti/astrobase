@@ -133,15 +133,23 @@ for your purposes.
 
 - **[periodbase](astrobase/periodbase)**: parallelized functions (using
   `multiprocessing.map`) to run fast period searches on light curves, including:
-  the generalized Lomb-Scargle algorithm from Zechmeister & Kurster (2008;
+  the generalized Lomb-Scargle algorithm from Zechmeister & Kurster
+  ([2008](http://adsabs.harvard.edu/abs/2009A%26A...496..577Z);
   **[periodbase.zgls](astrobase/periodbase/zgls.py)**), the phase dispersion
-  minimization algorithm from Stellingwerf (1978, 2011;
+  minimization algorithm from Stellingwerf
+  ([1978](http://adsabs.harvard.edu/abs/1978ApJ...224..953S),
+  [2011](http://adsabs.harvard.edu/abs/2011rrls.conf...47S);
   **[periodbase.spdm](astrobase/periodbase/spdm.py)**), the AoV and
-  AoV-multiharmonic algorithms from Schwarzenberg-Czerny (1989, 1996;
+  AoV-multiharmonic algorithms from Schwarzenberg-Czerny
+  ([1989](http://adsabs.harvard.edu/abs/1989MNRAS.241..153S),
+  [1996](http://adsabs.harvard.edu/abs/1996ApJ...460L.107S);
   **[periodbase.saov](astrobase/periodbase/saov.py)**,
   **[periodbase.smav](astrobase/periodbase/smav.py)**), the BLS algorithm from
-  Kovacs et al. (2002; **[periodbase.kbls](astrobase/periodbase/kbls.py)**), the
-  ACF period-finding algorithm from McQuillian et al. (2013a, 2014;
+  Kovacs et al. ([2002](http://adsabs.harvard.edu/abs/2002A%26A...391..369K);
+  **[periodbase.kbls](astrobase/periodbase/kbls.py)**), and the ACF
+  period-finding algorithm from McQuillan et
+  al. ([2013a](http://adsabs.harvard.edu/abs/2013MNRAS.432.1203M),
+  [2014](http://adsabs.harvard.edu/abs/2014ApJS..211...24M);
   **[periodbase.macf](astrobase/periodbase/macf.py)**).
 
 - **[plotbase](astrobase/plotbase.py)**: functions to plot light curves, phased

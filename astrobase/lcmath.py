@@ -877,7 +877,7 @@ def fill_magseries_gaps(times, mags, errs,
     - interpolate gaps in the light curve
       (since ACF requires evenly spaced sampling)
 
-    From McQuillian+ 2013a (https://doi.org/10.1093/mnras/stt536):
+    From McQuillan+ 2013a (https://doi.org/10.1093/mnras/stt536):
 
     "The ACF calculation requires the light curves to be regularly sampled and
     normalized to zero. We divided the flux in each quarter by its median and
@@ -892,7 +892,7 @@ def fill_magseries_gaps(times, mags, errs,
     If fillgaps == 'noiselevel', fills the gaps with the noise level obtained
     via the procedure above. If fillgaps == 'nan', fills the gaps with
     np.nan. Otherwise, if fillgaps is a float, will use that value to fill the
-    gaps. The default is to fill the gaps with 0.0 (as in McQuillian+ 2014) to
+    gaps. The default is to fill the gaps with 0.0 (as in McQuillan+ 2014) to
     "...prevent them contributing to the ACF".
 
     If forcetimebin is a float, this value will be used to generate the
