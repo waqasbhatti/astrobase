@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/75150575.svg)](https://zenodo.org/badge/latestdoi/75150575)
+
 This is a bunch of Python modules I wrote for my astronomy work with the HAT
 surveys, mostly focused on handling light curves and characterizing variable
 stars. Module functions that deal with light curves (e.g. in the modules
