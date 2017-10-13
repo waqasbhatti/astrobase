@@ -208,7 +208,7 @@ def plot_acf_results(acfp, outfile, maxlags=5000, yrange=[-0.4,0.4]):
     smoothedacf = acfp['acf'][:maxlags]
     unsmoothedacf = acfp['acfresults']['acf'][:maxlags]
 
-    acfparams = acfp['kwargs']['smoothfunckwargs']
+    acfparams = acfp['kwargs']['smoothfunckwargs'].copy()
     acfparams.update({'peakinterval': int(acfp['kwargs']['smoothacf']/2.0)})
 
     # plot the ACFs
@@ -362,8 +362,10 @@ def macf_period_find(
     # smooth the ACF if requested
     if smoothacf and isinstance(smoothacf, int) and smoothacf > 0:
 
-        smoothfunckwargs.update({'windowsize':smoothacf})
-        xacf = smoothfunc(acfres['acf'], **smoothfunckwargs)
+        sfkwargs = smoothfunckwargs.copy()
+
+        sfkwargs.update({'windowsize':smoothacf})
+        xacf = smoothfunc(acfres['acf'], **sfkwargs)
 
     else:
 
@@ -437,7 +439,7 @@ def macf_period_find(
                       'fillgaps':fillgaps,
                       'filterwindow':filterwindow,
                       'smoothacf':smoothacf,
-                      'smoothfunckwargs':smoothfunckwargs,
+                      'smoothfunckwargs':sfkwargs,
                       'magsarefluxes':magsarefluxes,
                       'sigclip':sigclip},
             'acfresults':acfres,
