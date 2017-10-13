@@ -242,7 +242,7 @@ def aovhm_theta_worker(task):
 def aovhm_periodfind(times,
                      mags,
                      errs,
-                     nharmonics=6,
+                     nharmonics=4,
                      magsarefluxes=False,
                      autofreq=True,
                      startp=None,
@@ -323,14 +323,14 @@ def aovhm_periodfind(times,
 
         # figure out the weighted variance
         # www.itl.nist.gov/div898/software/dataplot/refman2/ch2/weighvar.pdf
-        magvariance_top = npsum(nmags/(errs*errs))
-        magvariance_bot = (nmags.size - 1)*npsum(1.0/(errs*errs)) / nmags.size
+        magvariance_top = npsum(nmags/(serrs*serrs))
+        magvariance_bot = (nmags.size - 1)*npsum(1.0/(serrs*serrs)) / nmags.size
         magvariance = magvariance_top/magvariance_bot
 
         tasks = [(stimes, nmags, serrs, x, nharmonics, magvariance)
                  for x in frequencies]
 
-        lsp = pool.map(aovhm_worker, tasks)
+        lsp = pool.map(aovhm_theta_worker, tasks)
 
         pool.close()
         pool.join()
