@@ -140,6 +140,7 @@ FILTEROPS = {'eq':'==',
 PFMETHODS = {'bls':periodbase.bls_parallel_pfind,
              'gls':periodbase.pgen_lsp,
              'aov':periodbase.aov_periodfind,
+             'mav':periodbase.aovhm_periodfind,
              'pdm':periodbase.stellingwerf_pdm,
              'acf':periodbase.macf_period_find}
 
