@@ -1,4 +1,65 @@
-# Changelog for v0.2.3 -> v0.2.4
+# v0.2.5
+
+## Fixes
+
+- checkplot: add neighbor stuff to checkplot png as well
+- checkplot.checkplot_pickle_to_png: actually fix mistaken pkl outfile ext
+- checkplot: fix handling of no neighbors case
+- checkplot: get neighbors of target, their radecs, xys, and lcfpaths
+- checkplotlist: added some TODOs for multi-checkplot-per-object stuff
+- checkplotlist: more notes on planned features
+- finally added coding: utf-8 to everything
+- glsp: remove because all moved to zgls.py
+- lcmath: added a fill_magseries_gaps function
+- lcmath, autocorr: add some guards against weirdness
+- lcmath.fill_magseries_gaps: fix normalization of fluxes
+- lcmath.fill_magseries_gaps: use 0.0 to fill gaps instead of noiselevel by default
+- lcmath.fill_magseries_gaps: use scipy's perfectly cromulent mode fn
+- lcmath.fill_magseries_gaps: use scipy's perfectly cromulent mode fn instead
+- lcproc: added update_checkplotdict_nbrlcs to get neighbor LCs
+- lcproc: add neighbor stuff to parallel_cp workers and driver
+- lcproc: add serial_varfeatures
+- lcproc: better kwargs for xmatchexternal
+- lcproc: fix default fileglobs for HAT and HPX LCs
+- lcproc.makelclist: do concurrent (threaded) info collection instead
+- lcproc.makelclist: do parallel info collection instead
+- lcproc.makelclist: get actual ndets per magnitude column
+- lcproc.makelclist: remove useless fileglob from tasklist
+- lcproc.parallel_cp_lcdir: make output directory if it's doesn't exist
+- lcproc.parallel_varfeatures: use ProcessPoolExecutor instead of mp.Pool
+- lcproc.runpf: bugfix
+- lcproc.runpf: make BLS SNR optional because it takes forever
+- lcproc.runpf/runcp: allow any of the period-finders from periodbase
+- lcproc: simplify parallel task list for makelclist
+- macf: added macf_period_find; seems to work, TODO: more testing
+- macf: added plot_acf_results to see smoothed/unsmoothed ACF and peaks
+- macf: fixed, tested; reproduces McQuillian+ (2014) results on KeplerLCs
+- macf: fix handling of kwargs
+- macf: fix peak detection
+- macf: search interval for ACF peaks now depends on smoothing
+- macf: some more docstring work
+- macf: update docstrings
+- periodbase: add a make_combined_periodogram fn
+- periodbase: add macf to base namespace
+- periodbase.macf: initial bits for McQuillian+ (2013a, 2014) period-finder
+- plotbase: get the FITS header for the cutout for WCS purposes later
+- README: updated for some new stuff
+- README, various: add links to ADS for period-finders, fix spelling of names
+- smav: bugs fixed, seems to be working OK
+- smav: implemented aovhm_periodfind, to be tested
+- smav: initial bits
+- smav: some more progress
+- varbase.autocorr: actually return acf as np.array
+- varbase.autocorr: autocorr_magseries fn using lcmath.fill_magseries_gaps
+- varbase.autocorr: fix _autocorr_func3 and set as default
+- varbase.autocorr: return acf as np.array
+- varbase.autocorr: use 0.0 to fill gaps instead of noiselevel by default
+- varbase.features: fix annoyingly subtle bug causing np.polyfit crashes
+- varbase.features: np.nonzero -> npnonzero
+- zgls, lcfit: guard against zero errors here too
+- zgls: move the glsp functions into here
+
+# v0.2.4
 
 ## Fixes
 
@@ -6,13 +67,13 @@
 - lcproc.getlclist: also copy matching light curves to requested dir
 - lcproc: getlclist, makelclist now have column-filtering and cone-search
 
-# Changelog for v0.2.2 -> v0.2.3
+# v0.2.3
 
 ## Fixes
 
 - lcproc: don't crash runpf if BLS SNR fails
 
-# Changelog for v0.2.1 -> v0.2.2
+# v0.2.2
 
 ## Fixes
 
@@ -23,7 +84,7 @@
 - cplist: fix incorrect filtering
 - cplist: fixing multiple filter args
 
-# Changelog for v0.1.22 -> v0.2.0
+# v0.2.0
 
 ## Fixes
 
@@ -144,13 +205,13 @@
 - [WIP] cpserver: write tool results to temp pkl, keep orig pkl load fast
 - [WIP] lcfit: add a simple trapezoid function for eclipses
 
-# Changelog for v0.1.21 -> v0.1.22
+# v0.1.22
 
 ## Fixes
 
 - checkplot.checkplot_pickle_to_png: fix breakage if pickle has no objectinfo
 
-# Changelog for v0.1.20 -> v0.1.21
+# v0.1.21
 
 ## Fixes
 
@@ -198,7 +259,7 @@
 - __init__: add a __version__
 - varbase.features: added a roll-up function
 
-# Changelog for v0.1.19 -> v0.1.20
+# v0.1.20
 
 ## Fixes
 
@@ -209,7 +270,7 @@
 - README.md: some more fixes
 - setup.py: require astropy>=1.3 and numpy>=1.4
 
-# Changelog for v0.1.18 -> v0.1.19
+# v0.1.19
 
 ## Fixes
 
@@ -223,14 +284,14 @@
 - astrokep: pickle export now uses HIGHEST_PROTOCOL, docstring fixes
 - astrokep: stitch_lightcurve -> stitch_kepler_lcdict (TBD)
 
-# Changelog for v0.1.17 -> v0.1.18
+# v0.1.18
 
 ## Fixes
 
 - checkplot: added minbinelems kwarg
 - varbase/features: implemented CDPP as in Gilliland+ 2011
 
-# Changelog for v0.1.13 -> v0.1.15
+# v0.1.15
 
 ## Fixes
 
@@ -245,7 +306,7 @@
 - lcmath: fixed import for datetime
 - notebooks: updated lightcurves-and-checkplots for latest checkplot version
 
-# Changelog for v0.1.12 -> v0.1.13
+# v0.1.13
 
 ## Fixes
 
@@ -255,7 +316,7 @@
 - README.md: add fancy test status icons
 - tests: added a case for checkplot_pickle_update
 
-# Changelog for v0.1.11 -> v0.1.12
+# v0.1.12
 
 ## Fixes
 
@@ -266,7 +327,7 @@
 - test_endtoend: updated test procedure docstring
 - tests: added test_endtoend.py
 
-# Changelog for v0.1.9 -> v0.1.10
+# v0.1.10
 
 ## Fixes
 
@@ -275,26 +336,26 @@
 - periodbase: return a dict of results instead
 - periodbase: return bootstrap trial values for diagnostics, etc.
 
-# Changelog for v0.1.8 -> v0.1.9
+# v0.1.9
 
 ## Fixes
 
 - checkplot: fix issue with pickles breaking if times, mags, errs are astropy.table.Column objects
 
-# Changelog for v0.1.7 -> v0.1.8
+# v0.1.8
 
 ## Fixes
 
 - periodbase: handle cases where there are no finite periodogram values
 
-# Changelog for 0.1.6 -> v0.1.7
+# v0.1.7
 
 ## Fixes
 
 - checkplot: better random objectid generation
 - checkplot: fixed some docstrings
 
-# Changelog for 0.1.5 -> 0.1.6
+# 0.1.6
 
 ## Fixes
 
