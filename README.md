@@ -119,6 +119,13 @@ for your purposes.
   as phasing, normalization, binning (in time and phase), sigma-clipping,
   external parameter decorrelation (EPD), etc.
 
+- **[lcproc](astrobase/lcproc.py)**: driver functions for running an end-to-end
+    pipeline including: (i) object selection from a collection of light curves
+    by position, cross-matching to external catalogs, or light curve objectinfo
+    keys, (ii) running variability feature calculation and detection, (iii)
+    running period-finding, and (iv) object review using the checkplotserver
+    webapp for variability classification.
+
 - **[oldhatlc](astrobase/oldhatlc.py)**: functions to read light curves in the
   older HAT light curve format (i.e. those from http://hatnet.org and
   http://hatsouth.org); the format is described here:
@@ -129,14 +136,16 @@ for your purposes.
   the generalized Lomb-Scargle algorithm from Zechmeister & Kurster (2008;
   **[periodbase.zgls](astrobase/periodbase/zgls.py)**), the phase dispersion
   minimization algorithm from Stellingwerf (1978, 2011;
-  **[periodbase.spdm](astrobase/periodbase/spdm.py)**), the AoV algorithm from
-  Schwarzenberg-Cerny (1989;
-  **[periodbase.saov](astrobase/periodbase/saov.py)**), and the BLS algorithm
-  from Kovacs et al. (2002;
-  **[periodbase.kbls](astrobase/periodbase/kbls.py)**).
+  **[periodbase.spdm](astrobase/periodbase/spdm.py)**), the AoV and
+  AoV-multiharmonic algorithms from Schwarzenberg-Czerny (1989, 1996;
+  **[periodbase.saov](astrobase/periodbase/saov.py)**,
+  **[periodbase.smav](astrobase/periodbase/smav.py)**), the BLS algorithm from
+  Kovacs et al. (2002; **[periodbase.kbls](astrobase/periodbase/kbls.py)**), the
+  ACF period-finding algorithm from McQuillian et al. (2013a, 2014;
+  **[periodbase.macf](astrobase/periodbase/macf.py)**).
 
 - **[plotbase](astrobase/plotbase.py)**: functions to plot light curves, phased
-  light curves, periodograms, and download cutouts using `astroquery` and the
+  light curves, periodograms, and download Digitized Sky Survey cutouts from the
   NASA SkyView service.
 
 - **[texthatlc](astrobase/texthatlc.py)**: contains a function to read some
