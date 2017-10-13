@@ -3,9 +3,9 @@
 
 '''saov.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 
-Contains the Schwarzenberg-Cerny Analysis of Variance period-search algorithm
+Contains the Schwarzenberg-Czerny Analysis of Variance period-search algorithm
 implementation for periodbase. This uses the multi-harmonic version presented in
-Schwarzenberg-Cerny (1996).
+Schwarzenberg-Czerny (1996).
 
 '''
 
@@ -83,8 +83,8 @@ def LOGEXCEPTION(message):
 ## LOCAL IMPORTS ##
 ###################
 
-from ..lcmath import phase_magseries, sigclip_magseries, time_bin_magseries, \
-    phase_bin_magseries
+from ..lcmath import phase_magseries_with_errs, sigclip_magseries, \
+    time_bin_magseries, phase_bin_magseries
 
 from . import get_frequency_grid
 
@@ -97,16 +97,15 @@ NCPUS = cpu_count()
 
 
 ###################################################################
-## MULTIHARMONIC ANALYSIS of VARIANCE (Schwarzenberg-Cerny 1996) ##
+## MULTIHARMONIC ANALYSIS of VARIANCE (Schwarzenberg-Czerny 1996) ##
 ###################################################################
 
 
-def harmonic_aov_theta(times, mags, errs, frequency, nharmonics,
-                       binsize=0.05, minbin=9):
-    '''
-    This calculates the harmonic AoV theta for a frequency.
+def harmonic_aov_theta(times, mags, errs, frequency,
+                       nharmonics, magvariance):
+    '''This calculates the harmonic AoV theta for a frequency.
 
-    Schwarzenberg-Cerny 1996 equation 11:
+    Schwarzenberg-Czerny 1996 equation 11:
 
     theta_prefactor = (K - 2N - 1)/(2N)
     theta_top = sum(c_n*c_n) (from n=0 to n=2N)
@@ -115,25 +114,97 @@ def harmonic_aov_theta(times, mags, errs, frequency, nharmonics,
     theta = theta_prefactor * (theta_top/theta_bot)
 
     N = number of harmonics (nharmonics)
-    K = length of time series
+    K = length of time series (times.size)
 
     times, mags, errs should all be free of nans/infs and be normalized to zero.
 
-    z_k = e^(i*w*t_k), where k is the time index, 1 -> N
+    nharmonics is the number of harmonics to calculate up to. The recommended
+    range is 4 to 8.
 
-    z^n = e^(i*n*w*t), where n is the harmonic index, 1 -> N
+    magvariance is the (weighted by errors) variance of the magnitude time
+    series.
 
+    This is a mostly faithful translation of the inner loop in aovper.f90.
 
-    recurrence relation for successive orders (SC96 eqn 6):
+    See http://users.camk.edu.pl/alex/ and Schwarzenberg-Czerny (1996).
 
-    phi_tilde_(n+1)(z) =
-         z * phi_tilde_n - alpha_n * z^n * conjugate(phi_tilde_n(z))
-
-
-    SC96 equation 2:
-
-    scalar_product(phi, psi) =
-           sum_k^K(weights_k * phi(z_k) * conjugate(psi(z_k)))
-
+    http://iopscience.iop.org/article/10.1086/309985/meta
 
     '''
+
+    period = 1.0/frequency
+
+    ndet = times.size
+    two_nharmonics = nharmonics + nharmonics
+
+    # phase with test period
+    phasedseries = phase_magseries_with_errs(
+        times, mags, errs, period, times[0],
+        sort=True, wrap=False
+    )
+
+    # get the phased quantities
+    phase = phasedseries['phase']
+    pmags = phasedseries['mags']
+    perrs = phasedseries['errs']
+
+    # this is sqrt(1.0/errs^2) -> the weights
+    pweights = 1.0/perrs
+
+    # multiply by 2.0*PI (for omega*time)
+    phase = phase * 2.0 * MPI
+
+    # this is the z complex vector
+    z = np.cos(phase) + 1.0j*np.sin(phase)
+
+    # multiply phase with N
+    phase = nharmonics * phase
+
+    # this is the psi complex vector
+    psi = pmags * pweights * (np.cos(phase) + 1j*np.sin(phase))
+
+    # this is the initial value of z^n
+    zn = 1.0 + 0.0j
+
+    # this is the initial value of phi
+    phi = pweights + 0.0j
+
+    # initialize theta to zero
+    theta_aov = 0.0
+
+    # go through all the harmonics now up to 2N
+    for n in range(two_nharmonics):
+
+        # this is <phi, phi>
+        phi_dot_phi = np.sum(phi * phi.conjugate())
+
+        # this is the alpha_n numerator
+        alpha = np.sum(pweights * z * phi)
+
+        # this is <phi, psi>
+        phi_dot_psi = np.dot(phi, psi)
+
+        # make sure phi_dot_phi is not zero
+        phi_dot_phi = np.max([phi_dot_phi, 10.0e-9])
+
+        # this is the expression for alpha_n
+        alpha = alpha / phi_dot_phi
+
+        # update theta_aov for this harmonic
+        theta_aov = (theta_aov +
+                     np.abs(phi_dot_psi) * np.abs(phi_dot_psi) / phi_dot_phi)
+
+        # use the recurrence relation to find the next phi
+        phi = phi * z - alpha * zn * phi.conjugate()
+
+        # update z^n
+        zn = zn * z
+
+
+    # done with all harmonics, calculate the theta_aov for this freq
+    # the max below makes sure that magvariance - theta_aov > zero
+    theta_aov = ( (ndet - two_nharmonics - 1.0) * theta_aov /
+                  (two_nharmonics * np.max([magvariance - theta_aov,
+                                            1.0e-9])) )
+
+    return theta_aov
