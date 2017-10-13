@@ -852,19 +852,24 @@ def skyview_stamp(ra, decl,
 
 PLOTYLABELS = {'gls':'Generalized Lomb-Scargle normalized power',
                'pdm':'Stellingwerf PDM $\Theta$',
-               'aov':'Schwarzenberg-Cerny AoV $\Theta$',
+               'aov':'Schwarzenberg-Czerny AoV $\Theta$',
+               'mav':'Schwarzenberg-Czerny AoVMH $\Theta$',
                'bls':'Box Least-squared Search SR',
+               'acf':'Autocorrelation Function',
                'sls':'Lomb-Scargle normalized power'}
 
 METHODLABELS = {'gls':'Generalized Lomb-Scargle periodogram',
                 'pdm':'Stellingwerf phase-dispersion minimization',
-                'aov':'Schwarzenberg-Cerny analysis of variance',
+                'aov':'Schwarzenberg-Czerny analysis of variance',
                 'bls':'Box Least-squared Search',
+                'acf':'McQuillian+ ACF Period Search',
                 'sls':'Lomb-Scargle periodogram (Scipy)'}
 
 METHODSHORTLABELS = {'gls':'Generalized L-S',
                      'pdm':'Stellingwerf PDM',
-                     'aov':'Schwarzenberg-Cerny AoV',
+                     'aov':'Schwarzenberg-Czerny AoV',
+                     'mav':'Schwarzenberg-Czerny AoVMH',
+                     'acf':'McQuillian+ ACF',
                      'bls':'BLS',
                      'sls':'L-S (Scipy)'}
 

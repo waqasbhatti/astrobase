@@ -9,14 +9,14 @@ Contains various useful tools for period finding.
 CURRENT:
 
 periodbase.spdm -> Stellingwerf (1978) phase-dispersion minimization
-periodbase.saov -> Schwarzenberg-Cerny (1989) analysis of variance
+periodbase.saov -> Schwarzenberg-Czerny (1989) analysis of variance
 periodbase.zgls -> Zechmeister & Kurster (2009) generalized Lomb-Scargle
 periodbase.kbls -> Kovacs et al. (2002) Box-Least-Squares search
 periodbase.macf -> McQuillian et al. (2013a, 2014) ACF period search
 
 TO BE IMPLEMENTED:
 
-periodbase.smav -> Schwarzenberg-Cerny (1996) multi-harmonic AoV period search
+periodbase.smav -> Schwarzenberg-Czerny (1996) multi-harmonic AoV period search
 periodbase.gcep -> Graham et al. (2013) conditional entropy period search
 
 '''

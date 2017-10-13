@@ -3,7 +3,7 @@
 
 '''saov.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 
-Contains the Schwarzenberg-Cerny Analysis of Variance period-search algorithm
+Contains the Schwarzenberg-Czerny Analysis of Variance period-search algorithm
 implementation for periodbase.
 
 '''
@@ -96,12 +96,12 @@ NCPUS = cpu_count()
 
 
 #####################################################
-## ANALYSIS of VARIANCE (Schwarzenberg-Cerny 1989) ##
+## ANALYSIS of VARIANCE (Schwarzenberg-Czerny 1989) ##
 #####################################################
 
 def aov_theta(times, mags, errs, frequency,
               binsize=0.05, minbin=9):
-    '''Calculates the Schwarzenberg-Cerny AoV statistic at a test frequency.
+    '''Calculates the Schwarzenberg-Czerny AoV statistic at a test frequency.
 
     '''
 
@@ -221,7 +221,7 @@ def aov_periodfind(times,
                    verbose=True):
     '''This runs a parallel AoV period search.
 
-    NOTE: normalize = True here as recommended by Schwarzenberg-Cerny 1996,
+    NOTE: normalize = True here as recommended by Schwarzenberg-Czerny 1996,
     i.e. mags will be normalized to zero and rescaled so their variance = 1.0
 
     '''
