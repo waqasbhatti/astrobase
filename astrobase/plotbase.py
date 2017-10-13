@@ -860,16 +860,17 @@ PLOTYLABELS = {'gls':'Generalized Lomb-Scargle normalized power',
 
 METHODLABELS = {'gls':'Generalized Lomb-Scargle periodogram',
                 'pdm':'Stellingwerf phase-dispersion minimization',
-                'aov':'Schwarzenberg-Czerny analysis of variance',
+                'aov':'Schwarzenberg-Czerny AoV',
+                'mav':'Schwarzenberg-Czerny AoV multi-harmonic',
                 'bls':'Box Least-squared Search',
-                'acf':'McQuillian+ ACF Period Search',
+                'acf':'McQuillan+ ACF Period Search',
                 'sls':'Lomb-Scargle periodogram (Scipy)'}
 
 METHODSHORTLABELS = {'gls':'Generalized L-S',
                      'pdm':'Stellingwerf PDM',
                      'aov':'Schwarzenberg-Czerny AoV',
                      'mav':'Schwarzenberg-Czerny AoVMH',
-                     'acf':'McQuillian+ ACF',
+                     'acf':'McQuillan+ ACF',
                      'bls':'BLS',
                      'sls':'L-S (Scipy)'}
 

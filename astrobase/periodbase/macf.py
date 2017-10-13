@@ -3,8 +3,8 @@
 
 '''macf.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
 
-This contains the ACF period-finding algorithm from McQuillian+ 2013a and
-McQuillian+ 2014.
+This contains the ACF period-finding algorithm from McQuillan+ 2013a and
+McQuillan+ 2014.
 
 '''
 
@@ -266,7 +266,7 @@ def macf_period_find(
         verbose=True,
         nworkers=None, # doesn't do anything, but for consistent external API
 ):
-    '''This finds periods using the McQuillian+ (2013a, 2014) method.
+    '''This finds periods using the McQuillan+ (2013a, 2014) method.
 
     Args
     ----
@@ -339,7 +339,7 @@ def macf_period_find(
     - dict['naivebestperiod'] is obtained by multiplying the lag at the highest
       ACF peak with the cadence. This is usually close to the fit period
       (dict['fitbestperiod']), which is calculated by doing a fit to the lags
-      vs. peak index relation as in McQuillian+ 2014.
+      vs. peak index relation as in McQuillan+ 2014.
 
     '''
 
