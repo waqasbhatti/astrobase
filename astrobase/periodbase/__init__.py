@@ -297,3 +297,43 @@ def bootstrap_falsealarmprob(lspdict,
     else:
         LOGERROR('not enough mag series points to calculate periodogram')
         return None
+
+
+############################################
+## FUNCTIONS FOR COMPARING PERIOD-FINDERS ##
+############################################
+
+
+def make_combined_periodogram(pflist, outfile):
+    '''
+    This just puts all of the period-finders on a single periodogram.
+
+    '''
+
+    import matplotlib.pyplot as plt
+
+    for pf in pflist:
+
+        if pf['method'] == 'pdm':
+
+            plt.plot(pf['periods'],
+                     np.max(pf['lspvals'])/pf['lspvals'] - 1.0,
+                     label='%s P=%.5f' % (pf['method'], pf['bestperiod']))
+
+        else:
+
+            plt.plot(pf['periods'],
+                     pf['lspvals']/np.max(pf['lspvals']),
+                     label='%s P=%.5f' % (pf['method'], pf['bestperiod']))
+
+
+    plt.xlabel('period [days]')
+    plt.ylabel('normalized periodogram power')
+
+    plt.xscale('log')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(outfile)
+    plt.close('all')
+
+    return outfile
