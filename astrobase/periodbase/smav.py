@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''saov.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
+'''smav.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 
 Contains the Schwarzenberg-Czerny Analysis of Variance period-search algorithm
 implementation for periodbase. This uses the multi-harmonic version presented in
