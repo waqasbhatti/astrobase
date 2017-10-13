@@ -655,7 +655,7 @@ def checkplot_png(lspinfo,
 
     'gls' -> generalized Lomb-Scargle (e.g., from periodbase.pgen_lsp)
     'pdm' -> Stellingwerf PDM (e.g., from periodbase.stellingwerf_pdm)
-    'aov' -> Schwarzenberg-Cerny AoV (e.g., from periodbase.aov_periodfind)
+    'aov' -> Schwarzenberg-Czerny AoV (e.g., from periodbase.aov_periodfind)
     'bls' -> Box Least-squared Search (e.g., from periodbase.bls_parallel_pfind)
     'sls' -> Lomb-Scargle from Scipy (e.g., from periodbase.scipylsp_parallel)
 
@@ -951,7 +951,7 @@ def twolsp_checkplot_png(lspinfo1,
     Adapted from Luke Bouma's implementation of the same. This makes a special
     checkplot that uses two lspinfo dictionaries, from two independent
     period-finding methods. For EBs, it's probably best to use Stellingwerf PDM
-    or Schwarzenberg-Cerny AoV as one of these, and the Box Least-squared Search
+    or Schwarzenberg-Czerny AoV as one of these, and the Box Least-squared Search
     method as the other one.
 
     The checkplot layout in this case is:
