@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''
-varbase/lcfit.py
+'''varbase/lcfit.py
 Waqas Bhatti and Luke Bouma - Feb 2017
 (wbhatti@astro.princeton.edu and luke@astro.princeton.edu)
 
@@ -21,9 +20,12 @@ Fitting routines for light curves. Includes:
 - legendre_fit_magseries: fit a Legendre function of the specified order to the
                           magnitude/flux time series.
 
+- traptransit_fit_magseries: fit a trapezoid-shaped transit signal to the
+                             magnitude/flux time series
+
 TODO:
-- Find correct dof for reduced chi squared in spline_fit_magseries
 - Find correct dof for reduced chi squared in savgol_fit_magseries
+
 '''
 
 import logging
@@ -415,6 +417,31 @@ def fourier_fit_magseries(times, mags, errs, period,
                 returndict['fitplotfile'] = plotfit
 
             return returndict
+
+        # if the leastsq fit did not succeed, return Nothing
+        else:
+            LOGERROR('least-squared fit to the light curve failed')
+            return {
+                'fittype':'fourier',
+                'fitinfo':{
+                    'fourierorder':fourierorder,
+                    'finalparams':None,
+                    'initialfit':initialfit,
+                    'leastsqfit':None,
+                    'fitmags':None,
+                    'fitepoch':None
+                },
+                'fitchisq':None,
+                'fitredchisq':None,
+                'fitplotfile':None,
+                'magseries':{
+                    'times':ptimes,
+                    'phase':phase,
+                    'mags':pmags,
+                    'errs':perrs,
+                    'magsarefluxes':magsarefluxes
+                }
+            }
 
 
     # if the fit didn't succeed, we can't proceed
@@ -1010,10 +1037,35 @@ def traptransit_fit_magseries(times, mags, errs,
 
         # if everything failed, then bail out and ask for the transitepoch
         finally:
+
             if transitepoch is None:
                 LOGERROR("couldn't automatically figure out the transit epoch, "
                          "can't continue. please provide it in transitparams.")
-                return None
+
+                # assemble the returndict
+                returndict =  {
+                    'fittype':'traptransit',
+                    'fitinfo':{
+                        'initialparams':transitparams,
+                        'finalparams':None,
+                        'leastsqfit':None,
+                        'fitmags':None,
+                        'fitepoch':None,
+                    },
+                    'fitchisq':np.nan,
+                    'fitredchisq':np.nan,
+                    'fitplotfile':None,
+                    'magseries':{
+                        'phase':None,
+                        'times':None,
+                        'mags':None,
+                        'errs':None,
+                        'magsarefluxes':magsarefluxes,
+                    },
+                }
+
+                return returndict
+
             else:
                 if verbose:
                     LOGWARNING(
@@ -1093,5 +1145,34 @@ def traptransit_fit_magseries(times, mags, errs,
                            magsarefluxes=magsarefluxes)
 
             returndict['fitplotfile'] = plotfit
+
+        return returndict
+
+    # if the leastsq fit failed, return nothing
+    else:
+
+        LOGERROR('the least squared fit to the light curve failed!')
+
+        # assemble the returndict
+        returndict =  {
+            'fittype':'traptransit',
+            'fitinfo':{
+                'initialparams':transitparams,
+                'finalparams':None,
+                'leastsqfit':leastsqfit,
+                'fitmags':None,
+                'fitepoch':None,
+            },
+            'fitchisq':np.nan,
+            'fitredchisq':np.nan,
+            'fitplotfile':None,
+            'magseries':{
+                'phase':None,
+                'times':None,
+                'mags':None,
+                'errs':None,
+                'magsarefluxes':magsarefluxes,
+            },
+        }
 
         return returndict
