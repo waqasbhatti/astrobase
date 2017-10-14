@@ -42,7 +42,7 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
     where as npwhere, linspace as nplinspace, \
     zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
-    correlate as npcorrelate, nonzero as npnonzero
+    correlate as npcorrelate, nonzero as npnonzero, diag as npdiag
 
 from scipy.optimize import leastsq as spleastsq, minimize as spminimize
 from scipy.interpolate import LSQUnivariateSpline
@@ -1086,24 +1086,33 @@ def traptransit_fit_magseries(times, mags, errs,
     # finally, do the fit
     leastsqfit = spleastsq(_trapezoid_transit_residual,
                            transitparams,
-                           args=(stimes, smags, serrs))
+                           args=(stimes, smags, serrs),
+                           full_output=True)
 
     # if the fit succeeded, then we can return the final parameters
     if leastsqfit[-1] in (1,2,3,4):
 
         finalparams = leastsqfit[0]
+        covxmatrix = leastsqfit[1]
 
         # calculate the chisq and reduced chisq
         fitmags, phase, ptimes, pmags, perrs = _trapezoid_transit_func(
             finalparams,
             stimes, smags, serrs
         )
-
         fitchisq = npsum(
             ((fitmags - pmags)*(fitmags - pmags)) / (perrs*perrs)
         )
-
         fitredchisq = fitchisq/(len(pmags) - len(finalparams) - 1)
+
+        # get the residual variance and calculate the formal 1-sigma errs on the
+        # final parameters
+        residuals = leastsqfit[2]['fvec']
+        residualvariance = (
+            npsum(residuals*residuals)/(pmags.size - finalparams.size)
+        )
+        covmatrix = residualvariance*covxmatrix
+        stderrs = npsqrt(npdiag(covmatrix))
 
         if verbose:
             LOGINFO(
@@ -1120,6 +1129,7 @@ def traptransit_fit_magseries(times, mags, errs,
             'fitinfo':{
                 'initialparams':transitparams,
                 'finalparams':finalparams,
+                'finalparamerrs':stderrs,
                 'leastsqfit':leastsqfit,
                 'fitmags':fitmags,
                 'fitepoch':fepoch,
