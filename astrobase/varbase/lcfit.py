@@ -150,12 +150,14 @@ def _make_fit_plot(phase, pmags, perrs, fitmags,
     # set up the figure
     plt.close('all')
     plt.figure(figsize=(8,4.8))
-    plt.axvline(0.5,color='g',linestyle='--')
 
     # plot the light curve and the fit
-    plt.errorbar(phase,pmags,fmt='bo',yerr=perrs,
-                 markersize=2.0,capsize=0)
-    plt.plot(phase,fitmags, 'r-',linewidth=2.0)
+    plt.plot(phase,pmags,
+             marker='o',
+             markersize=1.0,
+             linestyle='none',
+             rasterized=True)
+    plt.plot(phase, fitmags, linewidth=2.0)
 
     # set the y axis limit and label
     ymin, ymax = plt.ylim()
@@ -892,12 +894,9 @@ def _trapezoid_transit_func(transitparams, times, mags, errs):
 
     # generate the phases
     iphase = (times - transitepoch)/transitperiod
-    iphase = phase - npfloor(phase)
+    iphase = iphase - npfloor(iphase)
 
-    # shift phase by -0.5 to keep the transit center at 0.0
-    iphase = phase - 0.5
     phasesortind = npargsort(iphase)
-
     phase = iphase[phasesortind]
     ptimes = times[phasesortind]
     pmags = mags[phasesortind]
@@ -908,11 +907,10 @@ def _trapezoid_transit_func(transitparams, times, mags, errs):
 
     halftransitduration = transitduration/2.0
     bottomlevel = zerolevel - transitdepth
-
     slope = transitdepth/ingressduration
 
     # the four contact points of the eclipse
-    firstcontact = -halftransitduration
+    firstcontact = 1.0 - halftransitduration
     secondcontact = firstcontact + ingressduration
     thirdcontact = halftransitduration - ingressduration
     fourthcontact = halftransitduration
@@ -923,7 +921,7 @@ def _trapezoid_transit_func(transitparams, times, mags, errs):
     ingressind = (phase > firstcontact) & (phase < secondcontact)
 
     # at transit bottom
-    bottomind = (phase > secondcontact) & (phase < thirdcontact)
+    bottomind = (phase > secondcontact) | (phase < thirdcontact)
 
     # during egress
     egressind = (phase > thirdcontact) & (phase < fourthcontact)
@@ -943,8 +941,8 @@ def _trapezoid_transit_residual(transitparams, times, mags, errs):
 
     '''
 
-    modelmags, _, pmags, _, _ = (
-        _trapezoid_transit_func(transitparams, times, mags)
+    modelmags, _, _, pmags, _ = (
+        _trapezoid_transit_func(transitparams, times, mags, errs)
     )
     return pmags - modelmags
 
@@ -1046,7 +1044,7 @@ def traptransit_fit_magseries(times, mags, errs,
         # calculate the chisq and reduced chisq
         fitmags, phase, ptimes, pmags, perrs = _trapezoid_transit_func(
             finalparams,
-            stimes, smags
+            stimes, smags, serrs
         )
 
         fitchisq = npsum(
@@ -1062,7 +1060,7 @@ def traptransit_fit_magseries(times, mags, errs,
             )
 
         # get the fit epoch
-        fepoch = finalparams[1]
+        fperiod, fepoch = finalparams[:2]
 
         # assemble the returndict
         returndict =  {
@@ -1090,7 +1088,7 @@ def traptransit_fit_magseries(times, mags, errs,
         if plotfit and isinstance(plotfit, str):
 
             _make_fit_plot(phase, pmags, perrs, fitmags,
-                           period, ptimes.min(), fepoch,
+                           fperiod, ptimes.min(), fepoch,
                            plotfit,
                            magsarefluxes=magsarefluxes)
 
