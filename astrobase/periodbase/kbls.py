@@ -87,7 +87,8 @@ from ..lcmath import phase_magseries, sigclip_magseries, \
 
 from pyeebls import eebls
 
-from ..varbase.lcfit import spline_fit_magseries, savgol_fit_magseries
+from ..varbase.lcfit import spline_fit_magseries, savgol_fit_magseries, \
+    traptransit_fit_magseries
 
 
 ############
