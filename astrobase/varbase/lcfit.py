@@ -863,98 +863,61 @@ def legendre_fit_magseries(times, mags, errs, period,
     return returndict
 
 
-#################################
-## TRAPEZOID FIT TO MAG SERIES ##
-#################################
+###############################################
+## TRAPEZOID TRANSIT MODEL FIT TO MAG SERIES ##
+###############################################
 
-
-def _trapezoid_time_func(trapezoidparams, times):
-    '''This returns a trapezoid function in time.
-
-    Suitable for first order modeling of transit signals.
-
-    trapezoidparams = [transitdepth, transitcenter,
-                       transitduration, ingressduration, zerolevel]
-
-    for magnitudes -> transitdepth should be < 0
-    for fluxes     -> transitdepth should be > 0
-
-    '''
-
-    transitdepth, transitcenter, transitduration, ingressduration, zerolevel = (
-        trapezoidparams
-    )
-
-    outmags = npfull_like(times, zerolevel)
-
-    halftransitduration = transitduration/2.0
-    bottomlevel = zerolevel - transitdepth
-    slope = transitdepth/ingressduration
-
-    # the four contact points of the eclipse
-    firstcontact = transitcenter - halftransitduration
-    secondcontact = firstcontact + ingressduration
-    thirdcontact = transitcenter + halftransitduration - ingressduration
-    fourthcontact = transitcenter + halftransitduration
-
-    ## the time indices ##
-
-    # during ingress
-    ingressind = (times > firstcontact) & (times < secondcontact)
-
-    # at transit bottom
-    bottomind = (times > secondcontact) & (times < thirdcontact)
-
-    # during egress
-    egressind = (times > thirdcontact) & (times < fourthcontact)
-
-    # set the mags
-    outmags[ingressind] = zerolevel - slope*(times[ingressind] - firstcontact)
-    outmags[bottomind] = bottomlevel
-    outmags[egressind] = bottomlevel + slope*(times[egressind] - thirdcontact)
-
-    return outmags
-
-
-
-def _trapezoid_phase_func(trapezoidparams, phase):
-    '''This returns a trapezoid function in phase.
+def _trapezoid_transit_func(transitparams, times, mags, errs):
+    '''This returns a trapezoid transit-shaped function.
 
     Suitable for first order modeling of transit signals.
 
-    trapezoidparams = [transitdepth, transitduration,
-                       ingressduration, zerolevel]
+    transitparams = [transitperiod (time),
+                     transitepoch (time),
+                     transitdepth (flux or mags),
+                     transitduration (phase),
+                     ingressduration (phase)]
+
+    All of these will then have fitted values after the fit is done.
 
     for magnitudes -> transitdepth should be < 0
     for fluxes     -> transitdepth should be > 0
-
-    note that all of these values are in phase units.
-
-    FIXME: implement this
-
     '''
 
-    transitdepth, transitduration, ingressduration, zerolevel = (
-        trapezoidparams
-    )
+    (transitperiod,
+     transitepoch,
+     transitdepth,
+     transitduration,
+     ingressduration) = transitparams
 
-    outmags = npfull_like(phase, zerolevel)
+    # generate the phases
+    iphase = (times - transitepoch)/transitperiod
+    iphase = phase - npfloor(phase)
 
-    # we're centered about 0.0 as the phase of the transit minimum so we need to
-    # look at stuff from phase [0.0, transitduration/2.0] = egress and
-    # [1.0-transitduration/2.0, 1.0] = ingress
+    # shift phase by -0.5 to keep the transit center at 0.0
+    iphase = phase - 0.5
+    phasesortind = npargsort(iphase)
+
+    phase = iphase[phasesortind]
+    ptimes = times[phasesortind]
+    pmags = mags[phasesortind]
+    perrs = errs[phasesortind]
+
+    zerolevel = npmedian(pmags)
+    modelmags = npfull_like(phase, zerolevel)
 
     halftransitduration = transitduration/2.0
     bottomlevel = zerolevel - transitdepth
+
     slope = transitdepth/ingressduration
 
     # the four contact points of the eclipse
-    firstcontact = transitcenter - halftransitduration
+    firstcontact = -halftransitduration
     secondcontact = firstcontact + ingressduration
-    thirdcontact = transitcenter + halftransitduration - ingressduration
-    fourthcontact = transitcenter + halftransitduration
+    thirdcontact = halftransitduration - ingressduration
+    fourthcontact = halftransitduration
 
-    ## the time indices ##
+    ## the phase indices ##
 
     # during ingress
     ingressind = (phase > firstcontact) & (phase < secondcontact)
@@ -966,8 +929,171 @@ def _trapezoid_phase_func(trapezoidparams, phase):
     egressind = (phase > thirdcontact) & (phase < fourthcontact)
 
     # set the mags
-    outmags[ingressind] = zerolevel - slope*(phase[ingressind] - firstcontact)
-    outmags[bottomind] = bottomlevel
-    outmags[egressind] = bottomlevel + slope*(phase[egressind] - thirdcontact)
+    modelmags[ingressind] = zerolevel - slope*(phase[ingressind] - firstcontact)
+    modelmags[bottomind] = bottomlevel
+    modelmags[egressind] = bottomlevel + slope*(phase[egressind] - thirdcontact)
 
-    return outmags
+    return modelmags, phase, ptimes, pmags, perrs
+
+
+
+def _trapezoid_transit_residual(transitparams, times, mags, errs):
+    '''
+    This returns the residual between the modelmags and the actual mags.
+
+    '''
+
+    modelmags, _, pmags, _, _ = (
+        _trapezoid_transit_func(transitparams, times, mags)
+    )
+    return pmags - modelmags
+
+
+
+def traptransit_fit_magseries(times, mags, errs,
+                              transitparams,
+                              sigclip=10.0,
+                              plotfit=False,
+                              magsarefluxes=False,
+                              verbose=True):
+    '''This fits a trapezoid transit model to a magnitude time series.
+
+    transitparams = [transitperiod (time),
+                     transitepoch (time),
+                     transitdepth (flux or mags),
+                     transitduration (phase),
+                     ingressduration (phase)]
+
+    for magnitudes -> transitdepth should be < 0
+    for fluxes     -> transitdepth should be > 0
+
+    if transitepoch is None, this function will do an initial spline fit to find
+    an approximate minimum of the phased light curve using the given period.
+
+    the transitdepth provided is checked against the value of magsarefluxes. if
+    magsarefluxes = True, the transitdepth is forced to be > 0; if magsarefluxes
+    = False, the transitdepth is forced to be < 0.
+
+    '''
+
+    stimes, smags, serrs = sigclip_magseries(times, mags, errs,
+                                             sigclip=sigclip,
+                                             magsarefluxes=magsarefluxes)
+
+    # get rid of zero errs
+    nzind = npnonzero(serrs)
+    stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
+
+
+    # check the transitparams
+    transitperiod, transitepoch, transitdepth = transitparams[0:3]
+
+    # check if we have a transitepoch to use
+    if transitepoch is None:
+
+        if verbose:
+            LOGWARNING('no transitepoch given in transitparams, '
+                       'trying to figure it out automatically...')
+        # do a spline fit to figure out the approximate min of the LC
+        try:
+            spfit = spline_fit_magseries(times, mags, errs, transitperiod,
+                                         sigclip=sigclip,
+                                         magsarefluxes=magsarefluxes,
+                                         verbose=verbose)
+            transitepoch = spfit['fitinfo']['fitepoch']
+
+        # if the spline-fit fails, try a savgol fit instead
+        except:
+            sgfit = savgol_fit_magseries(times, mags, errs, transitperiod,
+                                         sigclip=sigclip,
+                                         magsarefluxes=magsarefluxes,
+                                         verbose=verbose)
+            transitepoch = sgfit['fitinfo']['fitepoch']
+
+        # if everything failed, then bail out and ask for the transitepoch
+        finally:
+            if transitepoch is None:
+                LOGERROR("couldn't automatically figure out the transit epoch, "
+                         "can't continue. please provide it in transitparams.")
+                return None
+            else:
+                if verbose:
+                    LOGWARNING(
+                        'using automatically determined transitepoch = %.5f'
+                        % transitepoch
+                    )
+                transitparams[1] = transitepoch
+
+    # next, check the transitdepth and fix it to the form required
+    if magsarefluxes:
+        if transitdepth < 0.0:
+            transitparams[2] = -transitdepth[2]
+
+    else:
+        if transitdepth > 0.0:
+            transitparams[2] = -transitdepth[2]
+
+    # finally, do the fit
+    leastsqfit = spleastsq(_trapezoid_transit_residual,
+                           transitparams,
+                           args=(stimes, smags, serrs))
+
+    # if the fit succeeded, then we can return the final parameters
+    if leastsqfit[-1] in (1,2,3,4):
+
+        finalparams = leastsqfit[0]
+
+        # calculate the chisq and reduced chisq
+        fitmags, phase, ptimes, pmags, perrs = _trapezoid_transit_func(
+            finalparams,
+            stimes, smags
+        )
+
+        fitchisq = npsum(
+            ((fitmags - pmags)*(fitmags - pmags)) / (perrs*perrs)
+        )
+
+        fitredchisq = fitchisq/(len(pmags) - len(finalparams) - 1)
+
+        if verbose:
+            LOGINFO(
+                'final fit done. chisq = %.5f, reduced chisq = %.5f' %
+                (fitchisq, fitredchisq)
+            )
+
+        # get the fit epoch
+        fepoch = finalparams[1]
+
+        # assemble the returndict
+        returndict =  {
+            'fittype':'traptransit',
+            'fitinfo':{
+                'initialparams':transitparams,
+                'finalparams':finalparams,
+                'leastsqfit':leastsqfit,
+                'fitmags':fitmags,
+                'fitepoch':fepoch,
+            },
+            'fitchisq':fitchisq,
+            'fitredchisq':fitredchisq,
+            'fitplotfile':None,
+            'magseries':{
+                'phase':phase,
+                'times':ptimes,
+                'mags':pmags,
+                'errs':perrs,
+                'magsarefluxes':magsarefluxes,
+            },
+        }
+
+        # make the fit plot if required
+        if plotfit and isinstance(plotfit, str):
+
+            _make_fit_plot(phase, pmags, perrs, fitmags,
+                           period, ptimes.min(), fepoch,
+                           plotfit,
+                           magsarefluxes=magsarefluxes)
+
+            returndict['fitplotfile'] = plotfit
+
+        return returndict
