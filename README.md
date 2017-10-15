@@ -43,7 +43,7 @@ package. Also contains other useful notes-to-self.
 
 - **[lightcurves-and-checkplots](notebooks/lightcurves-and-checkplots.ipynb)**:
     demonstrates usage of the [hatlc](astrobase/hatlc.py),
-    [periodbase](astrobase/periodbase.py), [checkplot](astrobase/checkplot.py)
+    [periodbase](astrobase/periodbase), [checkplot](astrobase/checkplot.py)
     modules, and the [checkplotserver](astrobase/checkplotserver.py) for doing
     period-finding and variability-classification work on a collection of light
     curves.
