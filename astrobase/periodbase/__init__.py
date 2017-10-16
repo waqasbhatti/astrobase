@@ -315,8 +315,12 @@ def bootstrap_falsealarmprob(lspdict,
 ############################################
 
 
-def make_combined_periodogram(pflist, outfile):
+def make_combined_periodogram(pflist, outfile, addmethods=False):
     '''This just puts all of the period-finders on a single periodogram.
+
+    This will renormalize all of the periodograms so their values lie between 0
+    and 1, with values lying closer to 1 being more significant. Periodograms
+    that give the same best periods will have their peaks line up together.
 
     Args
     ----
@@ -326,6 +330,10 @@ def make_combined_periodogram(pflist, outfile):
 
     outfile is a file to write the output to. NOTE: EPS/PS won't work because we
     use alpha to better distinguish between the various periodograms.
+
+    if addmethods = True, will add all of the normalized periodograms together,
+    then renormalize them to between 0 and 1. In this way, if all of the
+    period-finders agree on something, it'll stand out easily.
 
     '''
 
