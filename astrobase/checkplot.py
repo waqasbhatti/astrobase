@@ -1420,10 +1420,7 @@ def _pkl_finder_objectinfo(objectinfo,
                                 'xpix':pixcoords[0,0],
                                 'ypix':300.0 - pixcoords[0,1],
                                 'dist':_xyzdist_to_distarcsec(md),
-                                'lcfpath':os.path.join(
-                                    lclist['basedir'],
-                                    lclist['objects']['lcfname'][mi]
-                                )
+                                'lcfpath': lclist['objects']['lcfname'][mi]
                             }
                             neighbors.append(thisnbr)
                             nbrind = nbrind+1
