@@ -279,10 +279,19 @@ def bootstrap_falsealarmprob(lspdict,
 
             # calculate the FAP for a trial peak j = FAP[j] =
             # (1.0 + sum(trialbestpeaks[i] > peak[j]))/(ntrialbestpeaks + 1)
-            falsealarmprob = (
-                (1.0 + trialbestpeaks[trialbestpeaks > peak].size) /
-                (trialbestpeaks.size + 1.0)
-            )
+            if lspdict['method'] != 'pdm':
+                falsealarmprob = (
+                    (1.0 + trialbestpeaks[trialbestpeaks > peak].size) /
+                    (trialbestpeaks.size + 1.0)
+                )
+            # for PDM, we're looking for a peak smaller than the best peak
+            # because values closer to 0.0 are more significant
+            else:
+                falsealarmprob = (
+                    (1.0 + trialbestpeaks[trialbestpeaks < peak].size) /
+                    (trialbestpeaks.size + 1.0)
+                )
+
             LOGINFO('FAP for peak %s, period: %.6f = %.3g' % (ind+1,
                                                               period,
                                                               falsealarmprob))
