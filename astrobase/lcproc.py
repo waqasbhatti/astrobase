@@ -535,6 +535,8 @@ def makelclist(basedir,
     # now that we have all the files, process them
     if matching and len(matching) > 0:
 
+        LOGINFO('found %s light curves' % len(matching))
+
         # cut down matching to maxlcs
         if maxlcs:
             matching = matching[:maxlcs]
@@ -554,6 +556,7 @@ def makelclist(basedir,
 
         # columns that will always be present in the output lclistdict
         derefcols = ['lcfname']
+        derefcols.extend(['ndet_%s' % x.split('.')[-1] for x in lcndetkey])
 
         # fill in the rest of the lclist columns from the columns kwarg
         for col in columns:
@@ -571,6 +574,8 @@ def makelclist(basedir,
 
         with ProcessPoolExecutor(max_workers=nworkers) as executor:
             results = executor.map(lclist_parallel_worker, tasks)
+
+        results = [x for x in results]
 
         # update the columns in the overall dict from the results of the
         # parallel map
