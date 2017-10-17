@@ -558,6 +558,9 @@ def makelclist(basedir,
         derefcols = ['lcfname']
         derefcols.extend(['ndet_%s' % x.split('.')[-1] for x in lcndetkey])
 
+        for dc in derefcols:
+            lclistdict['objects'][dc] = []
+
         # fill in the rest of the lclist columns from the columns kwarg
         for col in columns:
 
