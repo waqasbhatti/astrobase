@@ -410,6 +410,7 @@ def makelclist(basedir,
                         'objectinfo.ra','objectinfo.decl',
                         'objectinfo.ndet','objectinfo.sdssr'],
                makecoordindex=['objectinfo.ra','objectinfo.decl'],
+               maxlcs=None,
                nworkers=20):
 
     '''This generates a list file compatible with getlclist below.
@@ -530,8 +531,13 @@ def makelclist(basedir,
                             matching.extend(foundfiles)
 
 
+
     # now that we have all the files, process them
     if matching and len(matching) > 0:
+
+        # cut down matching to maxlcs
+        if maxlcs:
+            matching = matching[:maxlcs]
 
         # prepare the output dict
         lclistdict = {
