@@ -181,8 +181,9 @@ def aovhm_theta(times, mags, errs, frequency,
         # this is the alpha_n numerator
         alpha = np.sum(pweights * z * phi)
 
-        # this is <phi, psi>
-        phi_dot_psi = np.dot(phi, psi)
+        # this is <phi, psi>. make sure to use np.vdot and NOT np.dot to get
+        # complex conjugate of first vector as expected for complex vectors
+        phi_dot_psi = np.vdot(phi, psi)
 
         # make sure phi_dot_phi is not zero
         phi_dot_phi = np.max([phi_dot_phi, 10.0e-9])
