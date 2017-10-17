@@ -243,7 +243,7 @@ def aovhm_theta_worker(task):
 def aovhm_periodfind(times,
                      mags,
                      errs,
-                     nharmonics=4,
+                     nharmonics=6,
                      magsarefluxes=False,
                      autofreq=True,
                      startp=None,
