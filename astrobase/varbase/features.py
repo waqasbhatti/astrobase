@@ -228,10 +228,11 @@ def nonperiodic_lightcurve_features(times, mags, errs):
         series_kurtosis = spkurtosis(fmags)
 
         # get the beyond1std fraction
-        series_above1std = len(fmags[fmags > (fmags + series_stdev)])
-        series_below1std = len(fmags[fmags < (fmags - series_stdev)])
-        series_beyond1std = int((series_above1std +
-                                 series_below1std)/float(ndet))
+        series_above1std = len(fmags[fmags > (series_median + series_stdev)])
+        series_below1std = len(fmags[fmags < (series_median - series_stdev)])
+
+        # this is the fraction beyond 1 stdev
+        series_beyond1std = (series_above1std + series_below1std)/float(ndet)
 
         # get the magnitude percentiles
         series_mag_percentiles = nppercentile(
