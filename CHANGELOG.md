@@ -1,3 +1,23 @@
+# v0.2.6
+
+## Fixes
+
+- lcfit: fix error handling
+- lcfit: implement traptransit_fit_magseries, to be tested
+- lcfit: tested/fixed traptransit_fit_magseries, seems to work OK
+- lcfit.traptransit_fit_magseries: get formal 1-sig errs for final params
+- lcfit.traptransit_fit_magseries: get formal 1-sig errs for fit as well
+- lcproc/checkplot: use full lcfpath in makelclist, getlclist, nbr procs
+- lcproc, features: fix broken beyond1std, add bestmagcol to results
+- lcproc.makelclist: add maxlcs kwarg
+- lcproc.makelclist: fixing bugs
+- lcproc, periodbase: update period-finder registry dicts
+- periodbase: fix falsealarmprob for PDM
+- periodbase.make_combined_periodogram: addmethods kwarg
+- README: added zenodo DOI badge
+- smav: bump up default nharmonics to 6 from 4
+- smav: use correct dot product function (np.vdot not np.dot)
+
 # v0.2.5
 
 ## Fixes
