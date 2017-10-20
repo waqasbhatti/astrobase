@@ -80,7 +80,7 @@ MPLVERSION = tuple([int(x) for x in matplotlib.__version__.split('.')])
 matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid.inset_locator import inset_axes
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 import logging
 from datetime import datetime as dtime
