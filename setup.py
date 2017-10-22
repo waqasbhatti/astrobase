@@ -53,10 +53,11 @@ INSTALL_REQUIRES = [
     'tornado',
     'pyeebls',
     'tqdm',
+    'scikit-learn',
 ]
 
 EXTRAS_REQUIRE = {
-    'all':['psycopg2','scikit-learn'],
+    'all':['psycopg2'],
 }
 
 # add extra stuff needed if we're running Python 2.7
@@ -89,7 +90,11 @@ setup(
     author='Waqas Bhatti',
     author_email='waqas.afzal.bhatti@gmail.com',
     license='MIT',
-    packages=['astrobase','astrobase.periodbase','astrobase.varbase'],
+    packages=['astrobase',
+              'astrobase.periodbase',
+              'astrobase.varbase',
+              'astrobase.varclass',
+              'astrobase.lcmodels'],
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
     tests_require=['pytest',],

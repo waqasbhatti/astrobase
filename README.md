@@ -189,12 +189,12 @@ This package requires the following other packages:
 - requests
 - tornado
 - pyeebls
+- tqdm
+- scikit-learn
 
 For some extra functionality:
 
 - for `astrobase.lcdb` to work, you'll also need psycopg2
-- for the `astrobase.astrokep.rfepd_kepler_lightcurve` function to work, you'll
-  need scikit-learn
 
 ## Installing with pip
 

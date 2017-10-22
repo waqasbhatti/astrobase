@@ -36,11 +36,12 @@ This package requires the following other packages:
 - requests
 - tornado
 - pyeebls
+- tqdm
+- scikit-learn
 
 For some extra functionality, you'll need the following modules:
 
 - for ``astrobase.lcdb`` to work, you'll also need psycopg2
-- for some functions in ``astrokep``, you'll need scikit-learn
 
 First, make sure numpy and a Fortran compiler are installed ::
 
