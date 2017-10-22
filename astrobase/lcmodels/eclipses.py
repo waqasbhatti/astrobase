@@ -55,16 +55,20 @@ def invgauss_eclipses_func(ebparams, times, mags, errs):
 
     Suitable for first order modeling of eclipsing binaries.
 
-    FIXME: maybe convert prim/sec to ratios
-    FIXME: we need a detached vs. contact parameter
+    FIXME: maybe convert prim/sec depths to ratios of radii
 
-    transitparams = [period (time),
-                     epoch (time),
-                     eccentricity,
-                     primdepth (mags or flux),
-                     primduration (time),
-                     secdepth (mags or flux),
-                     secduration (phase)]
+    ebparams = [period (time),
+                epoch (time),
+                eccentricity,
+                primdepth (mags or flux),
+                primduration (time),
+                secdepth (mags or flux),
+                secduration (phase),
+                starradsum_over_semimajaxis]
+
+    starradsum_over_semimajaxis ratio controls the "detachedness" of the
+    binary: (r1 + r2)/a -> 1 means more contact-like, -> 0 means more
+    detached-like.
 
     All of these will then have fitted values after the fit is done.
 
