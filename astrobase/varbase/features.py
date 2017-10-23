@@ -14,14 +14,14 @@ from time import time as unixtime
 
 from numpy import nan as npnan, sum as npsum, abs as npabs, \
     roll as nproll, isfinite as npisfinite, std as npstd, \
-    sign as npsign, sqrt as npsqrt, median as npmedian, \
+    sign as npsign, sqrt as npsqrt, mean as npmean, median as npmedian, \
     array as nparray, percentile as nppercentile, \
     polyfit as nppolyfit, var as npvar, max as npmax, min as npmin, \
     log10 as nplog10, arange as nparange, pi as MPI, floor as npfloor, \
     argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
     where as npwhere, linspace as nplinspace, \
     zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
-    correlate as npcorrelate, nonzero as npnonzero
+    correlate as npcorrelate, nonzero as npnonzero, diff as npdiff, exp as npexp
 
 from scipy.stats import skew as spskew, kurtosis as spkurtosis
 from scipy.signal import savgol_filter
@@ -84,25 +84,24 @@ from ..lcmath import sigclip_magseries, \
 ## BASE VARIABILITY FEATURE COMPUTATION ##
 ##########################################
 
-def stetson_jindex(mags, errs):
-    '''
-    This calculates the Stetson index for the magseries, based on consecutive
+def stetson_jindex(ftimes, fmags, ferrs, weightbytimediff=False):
+    '''This calculates the Stetson index for the magseries, based on consecutive
     pairs of observations. Based on Nicole Loncke's work for her Planets and
     Life certificate at Princeton.
 
+    This requires finite times, mags, and errs.
+
+    If weightbytimediff is True, the Stetson index for any pair of mags will be
+    reweighted by the difference in times between them using the scheme in
+    Fruth+ 2012 and Zhange+ 2003 (as seen in Sokolovsky+ 2017).
+
+    w_i = exp(- (t_i+1 - t_i)/ delta_t )
+
     '''
-
-    # remove nans first
-    finiteind = npisfinite(mags) & npisfinite(errs)
-    fmags, ferrs = mags[finiteind], errs[finiteind]
-
-    # also remove zeros in ferrs
-    nzind = npnonzero(ferrs)
-    fmags, ferrs = fmags[nzind], ferrs[nzind]
 
     ndet = len(fmags)
 
-    if ndet >= 10:
+    if ndet > 9:
 
         # get the median and ndet
         medmag = npmedian(fmags)
@@ -112,8 +111,19 @@ def stetson_jindex(mags, errs):
         sigma_i = delta_prefactor*(fmags - medmag)/ferrs
         sigma_j = nproll(sigma_i,1) # Nicole's clever trick to advance indices
                                     # by 1 and do x_i*x_(i+1)
-        products = (sigma_i*sigma_j)[1:] # ignore first elem since it's
-                                         # actually x_0*x_n
+
+        if weightbytimediff:
+
+            time_i = ftimes
+            time_j = nproll(ftimes,1)
+            difft = npdiff(ftimes)
+            deltat = npmedian(difft)
+
+            weights_i = npexp(- difft/deltat )
+            products = (weights_i*sigma_i[1:]*sigma_j[1:])
+        else:
+            # ignore first elem since it's actually x_0*x_n
+            products = (sigma_i*sigma_j)[1:]
 
         stetsonj = (
             npsum(npsign(products) * npsqrt(npabs(products)))
@@ -128,27 +138,22 @@ def stetson_jindex(mags, errs):
         return npnan
 
 
-def stetson_kindex(mags, errs):
+
+def stetson_kindex(fmags, ferrs):
     '''
     This calculates the Stetson K index (robust measure of the kurtosis).
+
+    Requires finite mags and errs.
 
     '''
 
     # use a fill in value for the errors if they're none
-    if errs is None:
-        errs = npfull_like(mags, 0.005)
-
-    # remove nans first
-    finiteind = npisfinite(mags) & npisfinite(errs)
-    fmags, ferrs = mags[finiteind], errs[finiteind]
-
-    # also remove zeros in ferrs
-    nzind = npnonzero(ferrs)
-    fmags, ferrs = fmags[nzind], ferrs[nzind]
+    if ferrs is None:
+        ferrs = npfull_like(mags, 0.005)
 
     ndet = len(fmags)
 
-    if ndet >= 10:
+    if ndet > 9:
 
         # get the median and ndet
         medmag = npmedian(fmags)
@@ -172,50 +177,15 @@ def stetson_kindex(mags, errs):
 
 
 
-def nonperiodic_lightcurve_features(times, mags, errs):
-    '''This calculates the following nonperiodic features of the light curve,
-    listed in Richards, et al. 2011):
-
-    amplitude
-    beyond1std
-    flux_percentile_ratio_mid20
-    flux_percentile_ratio_mid35
-    flux_percentile_ratio_mid50
-    flux_percentile_ratio_mid65
-    flux_percentile_ratio_mid80
-    linear_trend
-    max_slope
-    median_absolute_deviation
-    median_buffer_range_percentage
-    pair_slope_trend
-    percent_amplitude
-    percent_difference_flux_percentile
-    skew
-    stdev
-    timelength
-    mintime
-    maxtime
+def lightcurve_moments(ftimes, fmags, ferrs):
+    '''This calculates the weighted mean, stdev, median, MAD, percentiles, skew,
+    kurtosis, fraction of LC beyond 1-stdev, and IQR.
 
     '''
 
-    # remove nans first
-    finiteind = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
-    ftimes, fmags, ferrs = times[finiteind], mags[finiteind], errs[finiteind]
-
-    # remove zero errors
-    nzind = npnonzero(ferrs)
-    ftimes, fmags, ferrs = ftimes[nzind], fmags[nzind], ferrs[nzind]
-
     ndet = len(fmags)
 
-    if ndet >= 10:
-
-        # get the length in time
-        mintime, maxtime = npmin(ftimes), npmax(ftimes)
-        timelength = maxtime - mintime
-
-        # get the amplitude
-        series_amplitude = 0.5*(npmax(fmags) - npmin(fmags))
+    if ndet > 9:
 
         # now calculate the various things we need
         series_median = npmedian(fmags)
@@ -239,6 +209,36 @@ def nonperiodic_lightcurve_features(times, mags, errs):
             fmags,
             [5.0,10,17.5,25,32.5,40,60,67.5,75,82.5,90,95]
         )
+
+        return {
+            'median':series_median,
+            'wmean':series_wmean,
+            'mad':series_mad,
+            'stdev':series_stdev,
+            'skew':series_skew,
+            'kurtosis':series_kurtosis,
+            'beyond1std':series_beyond1std,
+            'mag_percentiles':series_mag_percentiles,
+            'mag_iqr': series_mag_percentiles[8] - series_mag_percentiles[3],
+        }
+
+
+    else:
+        LOGERROR('not enough detections in this magseries '
+                 'to calculate light curve moments')
+        return None
+
+
+
+def lightcurve_flux_measures(ftimes, fmags, ferrs):
+    '''
+    This calculates percentiles of the flux.
+
+    '''
+
+    ndet = len(fmags)
+
+    if ndet > 9:
 
         # get the fluxes
         series_fluxes = 10.0**(-0.4*fmags)
@@ -288,47 +288,7 @@ def nonperiodic_lightcurve_features(times, mags, errs):
             series_percent_difference_flux_percentile
         )
 
-        # calculate the linear fit to the entire mag series
-        fitcoeffs = nppolyfit(ftimes, fmags, 1, w=1.0/(ferrs*ferrs))
-        series_linear_slope = fitcoeffs[1]
-
-        # roll fmags by 1
-        rolled_fmags = nproll(fmags,1)
-
-        # calculate the point to point measures
-        p2p_abs_magdiffs = npabs((rolled_fmags - fmags)[1:])
-        p2p_squared_magdiffs = ((rolled_fmags - fmags)[1:])**2.0
-
-        p2p_scatter_over_mad = npmedian(p2p_abs_magdiffs)/series_mad
-        p2p_sqrdiff_over_var = npsum(p2p_squared_magdiffs)/npvar(fmags)
-
-        # calculate the magnitude ratio (from the WISE paper)
-        series_magratio = (
-            (npmax(fmags) - series_median) / (npmax(fmags) - npmin(fmags) )
-        )
-
-        # calculate the abrupt-robust skew
-        # (med(m) - med(m[0:p])) + (med(m) - med(m[p:1])), p chosen as 0.03
-        # WTF is p supposed to be; stride?
-        # FIXME: actually implement this later
-
-        # this is the dictionary returned containing all the measures
-        measures = {
-            'ndet':fmags.size,
-            'mintime':mintime,
-            'maxtime':maxtime,
-            'timelength':timelength,
-            'ndetobslength_ratio':ndet/timelength,
-            'ndet':ndet,
-            'median':series_median,
-            'wmean':series_wmean,
-            'mad':series_mad,
-            'stdev':series_stdev,
-            'amplitude':series_amplitude,
-            'skew':series_skew,
-            'kurtosis':series_kurtosis,
-            'beyond1std':series_beyond1std,
-            'mag_percentiles':series_mag_percentiles,
+        return {
             'flux_median':series_flux_median,
             'flux_percent_amplitude':series_flux_percent_amplitude,
             'flux_percentiles':series_flux_percentiles,
@@ -338,11 +298,172 @@ def nonperiodic_lightcurve_features(times, mags, errs):
             'flux_percentile_ratio_mid65':series_flux_percentile_ratio_mid65,
             'flux_percentile_ratio_mid80':series_flux_percentile_ratio_mid80,
             'percent_difference_flux_percentile':series_percentile_magdiff,
+        }
+
+
+    else:
+
+        LOGERROR('not enough detections in this magseries '
+                 'to calculate flux measures')
+        return None
+
+
+
+def lightcurve_ptp_measures(ftimes, fmags, ferrs):
+    '''
+    This calculates various point-to-point measures (eta in Kim+ 2014).
+
+    '''
+
+    ndet = len(fmags)
+
+    if ndet > 9:
+
+        timediffs = npdiff(ftimes)
+
+        # get rid of stuff with time diff = 0.0
+        nzind = npnonzero(timediffs)
+        ftimes, fmags, ferrs = ftimes[nzind], fmags[nzind], ferrs[nzind]
+
+        # recalculate ndet and diffs
+        ndet = ftimes.size
+        timediffs = npdiff(ftimes)
+
+        # calculate the point to point measures
+        p2p_abs_magdiffs = npabs(npdiff(fmags))
+        p2p_squared_magdiffs = npdiff(fmags)*npdiff(fmags)
+
+        robstd = npmedian(npabs(fmags - npmedian(fmags)))*1.483
+        robvar = robstd*robstd
+
+        # these are eta from the Kim+ 2014 paper - ratio of point-to-point
+        # difference to the variance of the entire series
+
+        # this is the robust version
+        eta_robust = npmedian(p2p_abs_magdiffs)/robvar
+        eta_robust = eta_robust/(ndet - 1.0)
+
+        # this is the usual version
+        eta_normal = npsum(p2p_squared_magdiffs)/npvar(fmags)
+        eta_normal = eta_normal/(ndet - 1.0)
+
+
+        timeweights = 1.0/(timediffs*timediffs)
+
+        # this is eta_e modified for uneven sampling from the Kim+ 2014 paper
+        eta_uneven_normal = (
+            (npsum(timeweights*p2p_squared_magdiffs) /
+             (npvar(fmags) * npsum(timeweights)) ) *
+            npmean(timeweights) *
+            (ftimes.max() - ftimes.min())*(ftimes.max() - ftimes.min())
+        )
+
+        # this is robust eta_e modified for uneven sampling from the Kim+ 2014
+        # paper
+        eta_uneven_robust = (
+            (npsum(timeweights*p2p_abs_magdiffs) /
+             (robvar * npsum(timeweights)) ) *
+            npmedian(timeweights) *
+            (ftimes[-1] - ftimes[0])*(ftimes[-1] - ftimes[0])
+        )
+
+        return {
+            'eta_normal':eta_normal,
+            'eta_robust':eta_robust,
+            'eta_uneven_normal':eta_uneven_normal,
+            'eta_uneven_robust':eta_uneven_robust
+        }
+
+    else:
+
+        return None
+
+
+
+def nonperiodic_lightcurve_features(times, mags, errs):
+    '''This calculates the following nonperiodic features of the light curve,
+    listed in Richards, et al. 2011):
+
+    amplitude
+    beyond1std
+    flux_percentile_ratio_mid20
+    flux_percentile_ratio_mid35
+    flux_percentile_ratio_mid50
+    flux_percentile_ratio_mid65
+    flux_percentile_ratio_mid80
+    linear_trend
+    max_slope
+    median_absolute_deviation
+    median_buffer_range_percentage
+    pair_slope_trend
+    percent_amplitude
+    percent_difference_flux_percentile
+    skew
+    stdev
+    timelength
+    mintime
+    maxtime
+
+    '''
+
+    # remove nans first
+    finiteind = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
+    ftimes, fmags, ferrs = times[finiteind], mags[finiteind], errs[finiteind]
+
+    # remove zero errors
+    nzind = npnonzero(ferrs)
+    ftimes, fmags, ferrs = ftimes[nzind], fmags[nzind], ferrs[nzind]
+
+    ndet = len(fmags)
+
+    if ndet > 9:
+
+        # calculate the moments
+        moments = lightcurve_moments(ftimes, fmags, ferrs)
+
+        # calculate the flux measures
+        fluxmeasures = lightcurve_flux_measures(ftimes, fmags, ferrs)
+
+        # calculate the point-to-point measures
+        ptpmeasures = lightcurve_ptp_measures(ftimes, fmags, ferrs)
+
+        # get the length in time
+        mintime, maxtime = npmin(ftimes), npmax(ftimes)
+        timelength = maxtime - mintime
+
+        # get the amplitude
+        series_amplitude = 0.5*(npmax(fmags) - npmin(fmags))
+
+        # calculate the linear fit to the entire mag series
+        fitcoeffs = nppolyfit(ftimes, fmags, 1, w=1.0/(ferrs*ferrs))
+        series_linear_slope = fitcoeffs[1]
+
+        # roll fmags by 1
+        rolled_fmags = nproll(fmags,1)
+
+        # calculate the magnitude ratio (from the WISE paper)
+        series_magratio = (
+            (npmax(fmags) - moments['median']) / (npmax(fmags) - npmin(fmags) )
+        )
+
+        # this is the dictionary returned containing all the measures
+        measures = {
+            'ndet':fmags.size,
+            'mintime':mintime,
+            'maxtime':maxtime,
+            'timelength':timelength,
+            'amplitude':series_amplitude,
+            'ndetobslength_ratio':ndet/timelength,
+            'ndet':ndet,
             'linear_fit_slope':series_linear_slope,
-            'p2p_scatter_over_mad':p2p_scatter_over_mad,
-            'p2p_sqrdiff_over_var':p2p_sqrdiff_over_var,
             'magnitude_ratio':series_magratio,
         }
+        if moments:
+            measures.update(moments)
+        if ptpmeasures:
+            measures.update(ptpmeasures)
+        if fluxmeasures:
+            measures.update(fluxmeasures)
 
         return measures
 
@@ -350,35 +471,6 @@ def nonperiodic_lightcurve_features(times, mags, errs):
 
         LOGERROR('not enough detections in this magseries '
                  'to calculate non-periodic features')
-        return None
-
-
-
-def qso_variability_metrics(times, mags, errs, weights=None):
-    '''
-    This calculates the QSO variability and non-quasar variability metric.
-
-    From Butler and Bloom (2011).
-
-    FIXME: implement this
-
-    '''
-
-    # remove nans first
-    finiteind = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
-    ftimes, fmags, ferrs = times[finiteind], mags[finiteind], errs[finiteind]
-    ndet = len(fmags)
-
-    if ndet >= 10:
-
-        # get the amplitude
-        amplitude = 0.5*(npmax(mags) - npmin(mags))
-
-
-    else:
-
-        LOGERROR('not enough detections in this magseries '
-                 'to calculate QSO variability metrics')
         return None
 
 
@@ -472,30 +564,29 @@ def gilliland_cdpp(times, mags, errs,
 #####################
 
 
-def all_nonperiodic_features(times, mags, errs,
-                             cdpp_windowlength=97,
-                             cdpp_polyorder=2,
-                             cdpp_binsize=23400,
-                             cdpp_sigclip=5.0,
-                             magsarefluxes=False):
+def all_nonperiodic_features(times, mags, errs, stetson_weightbytimediff=True):
     '''
     This rolls up the functions above and returns a single dict.
 
+    NOTE: this doesn't calculate the CDPP; that's a separate function.
+
     '''
 
-    stetj = stetson_jindex(mags, errs)
-    stetk = stetson_kindex(mags, errs)
+    # remove nans first
+    finiteind = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
+    ftimes, fmags, ferrs = times[finiteind], mags[finiteind], errs[finiteind]
+
+    # remove zero errors
+    nzind = npnonzero(ferrs)
+    ftimes, fmags, ferrs = ftimes[nzind], fmags[nzind], ferrs[nzind]
+
     xfeatures = nonperiodic_lightcurve_features(times, mags, errs)
-    cdpp = gilliland_cdpp(times, mags, errs,
-                          windowlength=cdpp_windowlength,
-                          polyorder=cdpp_polyorder,
-                          binsize=cdpp_binsize,
-                          sigclip=cdpp_sigclip,
-                          magsarefluxes=magsarefluxes)
+    stetj = stetson_jindex(ftimes, fmags, ferrs,
+                           weightbytimediff=stetson_weightbytimediff)
+    stetk = stetson_kindex(fmags, ferrs)
 
     xfeatures.update({'stetsonj':stetj,
-                      'stetsonk':stetk,
-                      'cdpp':cdpp})
+                      'stetsonk':stetk})
 
     return xfeatures
 
