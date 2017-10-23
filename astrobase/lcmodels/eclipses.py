@@ -44,8 +44,8 @@ def _double_inverted_gaussian(x,
 
     '''
 
-    gaussian1 = -_gaussian(x,amp1,loc1,stdev1)
-    gaussian2 = -_gaussian(x,amp2,loc2,stdev2)
+    gaussian1 = -_gaussian(x,amp1,loc1,std1)
+    gaussian2 = -_gaussian(x,amp2,loc2,std2)
     return gaussian1 + gaussian2
 
 
@@ -55,29 +55,86 @@ def invgauss_eclipses_func(ebparams, times, mags, errs):
 
     Suitable for first order modeling of eclipsing binaries.
 
-    FIXME: maybe convert prim/sec depths to ratios of radii
-
     ebparams = [period (time),
                 epoch (time),
-                eccentricity,
-                primdepth (mags or flux),
-                primduration (time),
-                secdepth (mags or flux),
-                secduration (phase),
-                starradsum_over_semimajaxis]
+                pdepth (mags),
+                pduration (phase),
+                psradratio]
 
-    starradsum_over_semimajaxis ratio controls the "detachedness" of the
-    binary: (r1 + r2)/a -> 1 means more contact-like, -> 0 means more
-    detached-like.
+    period is the period in days
+
+    epoch is the time of minimum in JD
+
+    pdepth is the depth of the primary eclipse
+    - for magnitudes -> transitdepth should be < 0
+    - for fluxes     -> transitdepth should be > 0
+
+    pduration is the length of the primary eclipse in phase
+
+    psradratio is the ratio of the secondary radius to primary radius. this is
+    equal the ratio in the eclipse depths.
 
     All of these will then have fitted values after the fit is done.
 
-    for magnitudes -> transitdepth should be < 0
-    for fluxes     -> transitdepth should be > 0
-
-    TODO: finish this up
-
     '''
+
+    (period, epoch, pdepth, pduration, psradratio) = ebparams
+
+    # generate the phases
+    iphase = (times - epoch)/period
+    iphase = iphase - npfloor(iphase)
+
+    phasesortind = npargsort(iphase)
+    phase = iphase[phasesortind]
+    ptimes = times[phasesortind]
+    pmags = mags[phasesortind]
+    perrs = errs[phasesortind]
+
+    zerolevel = npmedian(pmags)
+    modelmags = npfull_like(phase, zerolevel)
+
+    primaryecl_amp = -pdepth
+    secondaryecl_amp = -pdepth * psradratio
+
+    primaryecl_std = pduration/5.0 # we use 5-sigma as full-width -> duration
+    secondaryecl_std = pduration/5.0 # secondary eclipse has the same duration
+
+    halfduration = pduration/2.0
+
+
+    # phase indices
+    primary_eclipse_ingress = (
+        (phase >= (1.0 - halfduration)) & (phase <= 1.0)
+    )
+    primary_eclipse_egress = (
+        (phase >= 0.0) & (phase <= halfduration)
+    )
+
+    secondary_eclipse_phase = (
+        (phase >= (0.5 - halfduration)) & (phase <= (0.5 + halfduration))
+    )
+
+    # put in the eclipses
+    modelmags[primary_eclipse_ingress] = (
+        zerolevel + _gaussian(phase[primary_eclipse_ingress],
+                              primaryecl_amp,
+                              1.0,
+                              primaryecl_std)
+    )
+    modelmags[primary_eclipse_egress] = (
+        zerolevel + _gaussian(phase[primary_eclipse_egress],
+                              primaryecl_amp,
+                              0.0,
+                              primaryecl_std)
+    )
+    modelmags[secondary_eclipse_phase] = (
+        zerolevel + _gaussian(phase[secondary_eclipse_phase],
+                              secondaryecl_amp,
+                              0.5,
+                              secondaryecl_std)
+    )
+
+    return modelmags, phase, ptimes, pmags, perrs
 
 
 

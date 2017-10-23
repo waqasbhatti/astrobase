@@ -55,6 +55,10 @@ import matplotlib.pyplot as plt
 
 from ..lcmath import sigclip_magseries
 
+# import the models
+from ..lcmodels import eclipses, transits
+
+
 
 #############
 ## LOGGING ##
@@ -159,7 +163,7 @@ def _make_fit_plot(phase, pmags, perrs, fitmags,
              markersize=1.0,
              linestyle='none',
              rasterized=True)
-    plt.plot(phase, fitmags, linewidth=2.0)
+    plt.plot(phase, fitmags, linewidth=3.0)
 
     # set the y axis limit and label
     ymin, ymax = plt.ylim()
@@ -896,87 +900,6 @@ def legendre_fit_magseries(times, mags, errs, period,
 ## TRAPEZOID TRANSIT MODEL FIT TO MAG SERIES ##
 ###############################################
 
-def _trapezoid_transit_func(transitparams, times, mags, errs):
-    '''This returns a trapezoid transit-shaped function.
-
-    Suitable for first order modeling of transit signals.
-
-    transitparams = [transitperiod (time),
-                     transitepoch (time),
-                     transitdepth (flux or mags),
-                     transitduration (phase),
-                     ingressduration (phase)]
-
-    All of these will then have fitted values after the fit is done.
-
-    for magnitudes -> transitdepth should be < 0
-    for fluxes     -> transitdepth should be > 0
-    '''
-
-    (transitperiod,
-     transitepoch,
-     transitdepth,
-     transitduration,
-     ingressduration) = transitparams
-
-    # generate the phases
-    iphase = (times - transitepoch)/transitperiod
-    iphase = iphase - npfloor(iphase)
-
-    phasesortind = npargsort(iphase)
-    phase = iphase[phasesortind]
-    ptimes = times[phasesortind]
-    pmags = mags[phasesortind]
-    perrs = errs[phasesortind]
-
-    zerolevel = npmedian(pmags)
-    modelmags = npfull_like(phase, zerolevel)
-
-    halftransitduration = transitduration/2.0
-    bottomlevel = zerolevel - transitdepth
-    slope = transitdepth/ingressduration
-
-    # the four contact points of the eclipse
-    firstcontact = 1.0 - halftransitduration
-    secondcontact = firstcontact + ingressduration
-    thirdcontact = halftransitduration - ingressduration
-    fourthcontact = halftransitduration
-
-    ## the phase indices ##
-
-    # during ingress
-    ingressind = (phase > firstcontact) & (phase < secondcontact)
-
-    # at transit bottom
-    bottomind = (phase > secondcontact) | (phase < thirdcontact)
-
-    # during egress
-    egressind = (phase > thirdcontact) & (phase < fourthcontact)
-
-    # set the mags
-    modelmags[ingressind] = zerolevel - slope*(phase[ingressind] - firstcontact)
-    modelmags[bottomind] = bottomlevel
-    modelmags[egressind] = bottomlevel + slope*(phase[egressind] - thirdcontact)
-
-    return modelmags, phase, ptimes, pmags, perrs
-
-
-
-def _trapezoid_transit_residual(transitparams, times, mags, errs):
-    '''
-    This returns the residual between the modelmags and the actual mags.
-
-    '''
-
-    modelmags, phase, ptimes, pmags, perrs = (
-        _trapezoid_transit_func(transitparams, times, mags, errs)
-    )
-
-    # this is now a weighted residual taking into account the measurement err
-    return (pmags - modelmags)/perrs
-
-
-
 def traptransit_fit_magseries(times, mags, errs,
                               transitparams,
                               sigclip=10.0,
@@ -1086,7 +1009,7 @@ def traptransit_fit_magseries(times, mags, errs,
             transitparams[2] = -transitdepth[2]
 
     # finally, do the fit
-    leastsqfit = spleastsq(_trapezoid_transit_residual,
+    leastsqfit = spleastsq(transits.trapezoid_transit_residual,
                            transitparams,
                            args=(stimes, smags, serrs),
                            full_output=True)
@@ -1098,7 +1021,7 @@ def traptransit_fit_magseries(times, mags, errs,
         covxmatrix = leastsqfit[1]
 
         # calculate the chisq and reduced chisq
-        fitmags, phase, ptimes, pmags, perrs = _trapezoid_transit_func(
+        fitmags, phase, ptimes, pmags, perrs = transits.trapezoid_transit_func(
             finalparams,
             stimes, smags, serrs
         )
@@ -1170,6 +1093,234 @@ def traptransit_fit_magseries(times, mags, errs,
             'fittype':'traptransit',
             'fitinfo':{
                 'initialparams':transitparams,
+                'finalparams':None,
+                'leastsqfit':leastsqfit,
+                'fitmags':None,
+                'fitepoch':None,
+            },
+            'fitchisq':np.nan,
+            'fitredchisq':np.nan,
+            'fitplotfile':None,
+            'magseries':{
+                'phase':None,
+                'times':None,
+                'mags':None,
+                'errs':None,
+                'magsarefluxes':magsarefluxes,
+            },
+        }
+
+        return returndict
+
+
+
+############################################
+## DOUBLE INVERTED GAUSSIAN ECLIPSE MODEL ##
+############################################
+
+def gaussianeb_fit_magseries(times, mags, errs,
+                             ebparams,
+                             sigclip=10.0,
+                             plotfit=False,
+                             magsarefluxes=False,
+                             verbose=True):
+    '''This fits a double inverted gaussian EB model to a magnitude time series.
+
+    ebparams = [period (time),
+                epoch (time),
+                pdepth (mags),
+                pduration (phase),
+                psradratio]
+
+    period is the period in days
+
+    epoch is the time of minimum in JD
+
+    pdepth is the depth of the primary eclipse
+    - for magnitudes -> ebdepth should be < 0
+    - for fluxes     -> ebdepth should be > 0
+
+    pduration is the length of the primary eclipse in phase
+
+    psradratio is the ratio of the secondary radius to primary radius. this is
+    equal the ratio in the eclipse depths.
+
+    if epoch is None, this function will do an initial spline fit to find an
+    approximate minimum of the phased light curve using the given period.
+
+    the pdepth provided is checked against the value of magsarefluxes. if
+    magsarefluxes = True, the ebdepth is forced to be > 0; if magsarefluxes
+    = False, the ebdepth is forced to be < 0.
+
+    '''
+
+    stimes, smags, serrs = sigclip_magseries(times, mags, errs,
+                                             sigclip=sigclip,
+                                             magsarefluxes=magsarefluxes)
+
+    # get rid of zero errs
+    nzind = npnonzero(serrs)
+    stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
+
+
+    # check the ebparams
+    ebperiod, ebepoch, ebdepth = ebparams[0:3]
+
+    # check if we have a ebepoch to use
+    if ebepoch is None:
+
+        if verbose:
+            LOGWARNING('no ebepoch given in ebparams, '
+                       'trying to figure it out automatically...')
+        # do a spline fit to figure out the approximate min of the LC
+        try:
+            spfit = spline_fit_magseries(times, mags, errs, ebperiod,
+                                         sigclip=sigclip,
+                                         magsarefluxes=magsarefluxes,
+                                         verbose=verbose)
+            ebepoch = spfit['fitinfo']['fitepoch']
+
+        # if the spline-fit fails, try a savgol fit instead
+        except:
+            sgfit = savgol_fit_magseries(times, mags, errs, ebperiod,
+                                         sigclip=sigclip,
+                                         magsarefluxes=magsarefluxes,
+                                         verbose=verbose)
+            ebepoch = sgfit['fitinfo']['fitepoch']
+
+        # if everything failed, then bail out and ask for the ebepoch
+        finally:
+
+            if ebepoch is None:
+                LOGERROR("couldn't automatically figure out the eb epoch, "
+                         "can't continue. please provide it in ebparams.")
+
+                # assemble the returndict
+                returndict =  {
+                    'fittype':'gaussianeb',
+                    'fitinfo':{
+                        'initialparams':ebparams,
+                        'finalparams':None,
+                        'leastsqfit':None,
+                        'fitmags':None,
+                        'fitepoch':None,
+                    },
+                    'fitchisq':np.nan,
+                    'fitredchisq':np.nan,
+                    'fitplotfile':None,
+                    'magseries':{
+                        'phase':None,
+                        'times':None,
+                        'mags':None,
+                        'errs':None,
+                        'magsarefluxes':magsarefluxes,
+                    },
+                }
+
+                return returndict
+
+            else:
+                if verbose:
+                    LOGWARNING(
+                        'using automatically determined ebepoch = %.5f'
+                        % ebepoch
+                    )
+                ebparams[1] = ebepoch
+
+    # next, check the ebdepth and fix it to the form required
+    if magsarefluxes:
+        if ebdepth < 0.0:
+            ebparams[2] = -ebdepth[2]
+
+    else:
+        if ebdepth > 0.0:
+            ebparams[2] = -ebdepth[2]
+
+    # finally, do the fit
+    leastsqfit = spleastsq(eclipses.invgauss_eclipses_residual,
+                           ebparams,
+                           args=(stimes, smags, serrs),
+                           full_output=True)
+
+    # if the fit succeeded, then we can return the final parameters
+    if leastsqfit[-1] in (1,2,3,4):
+
+        finalparams = leastsqfit[0]
+        covxmatrix = leastsqfit[1]
+
+        # calculate the chisq and reduced chisq
+        fitmags, phase, ptimes, pmags, perrs = eclipses.invgauss_eclipses_func(
+            finalparams,
+            stimes, smags, serrs
+        )
+        fitchisq = npsum(
+            ((fitmags - pmags)*(fitmags - pmags)) / (perrs*perrs)
+        )
+        fitredchisq = fitchisq/(len(pmags) - len(finalparams) - 1)
+
+        # get the residual variance and calculate the formal 1-sigma errs on the
+        # final parameters
+        residuals = leastsqfit[2]['fvec']
+        residualvariance = (
+            npsum(residuals*residuals)/(pmags.size - finalparams.size)
+        )
+        covmatrix = residualvariance*covxmatrix
+        stderrs = npsqrt(npdiag(covmatrix))
+
+        if verbose:
+            LOGINFO(
+                'final fit done. chisq = %.5f, reduced chisq = %.5f' %
+                (fitchisq, fitredchisq)
+            )
+
+        # get the fit epoch
+        fperiod, fepoch = finalparams[:2]
+
+        # assemble the returndict
+        returndict =  {
+            'fittype':'gaussianeb',
+            'fitinfo':{
+                'initialparams':ebparams,
+                'finalparams':finalparams,
+                'finalparamerrs':stderrs,
+                'leastsqfit':leastsqfit,
+                'fitmags':fitmags,
+                'fitepoch':fepoch,
+            },
+            'fitchisq':fitchisq,
+            'fitredchisq':fitredchisq,
+            'fitplotfile':None,
+            'magseries':{
+                'phase':phase,
+                'times':ptimes,
+                'mags':pmags,
+                'errs':perrs,
+                'magsarefluxes':magsarefluxes,
+            },
+        }
+
+        # make the fit plot if required
+        if plotfit and isinstance(plotfit, str):
+
+            _make_fit_plot(phase, pmags, perrs, fitmags,
+                           fperiod, ptimes.min(), fepoch,
+                           plotfit,
+                           magsarefluxes=magsarefluxes)
+
+            returndict['fitplotfile'] = plotfit
+
+        return returndict
+
+    # if the leastsq fit failed, return nothing
+    else:
+
+        LOGERROR('the least squared fit to the light curve failed!')
+
+        # assemble the returndict
+        returndict =  {
+            'fittype':'gaussianeb',
+            'fitinfo':{
+                'initialparams':ebparams,
                 'finalparams':None,
                 'leastsqfit':leastsqfit,
                 'fitmags':None,
