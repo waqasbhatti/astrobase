@@ -1589,15 +1589,6 @@ def variability_threshold(featuresdir,
         allobjects[magcol]['objectids_iqr_thresh_all_magbins'] = np.unique(
             np.concatenate(allobjects[magcol]['binned_objectids_thresh_iqr'])
         )
-        LOGINFO(
-            '%s: stetsonj selected: %s, iqr selected: %s, '
-            'inveta selected: %s, stetsonj AND iqr AND inveta selected: %s'
-            (magcol,
-             allobjects[magcol]['objectids_stetsonj_thresh_all_magbins'].size,
-             allobjects[magcol]['objectids_iqr_thresh_all_magbins'].size,
-             allobjects[magcol]['objectids_inveta_thresh_all_magbins'].size,
-             allobjects[magcol]['objectids_all_thresh_all_magbins'].size)
-        )
 
     #
     # done with all magcols
