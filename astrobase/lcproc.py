@@ -1403,6 +1403,8 @@ def variability_threshold(featuresdir,
 
         binned_objectids = []
         binned_sdssr = []
+        binned_sdssr_median = []
+
         binned_lcmad = []
         binned_stetsonj = []
         binned_iqr = []
@@ -1429,7 +1431,8 @@ def variability_threshold(featuresdir,
                                  range(len(magbins)-1)):
 
             thisbinind = np.where(magbininds == mbinind)
-            thisbin_sdssr = (magbins[magi] + magbins[magi+1])/2.0
+            thisbin_sdssr_median = (magbins[magi] + magbins[magi+1])/2.0
+            binned_sdssr_median.append(thisbin_sdssr_median)
 
             thisbin_objectids = allobjects[magcol]['objectid'][thisbinind]
             thisbin_sdssr = allobjects[magcol]['sdssr'][thisbinind]
@@ -1546,6 +1549,7 @@ def variability_threshold(featuresdir,
         # update the output dict for this magcol
         allobjects[magcol]['magbins'] = magbins
         allobjects[magcol]['binned_objectids'] = binned_objectids
+        allobjects[magcol]['binned_sdssr_median'] = binned_sdssr_median
         allobjects[magcol]['binned_sdssr'] = binned_sdssr
         allobjects[magcol]['binned_lcmad'] = binned_lcmad
         allobjects[magcol]['binned_count'] = binned_count
@@ -1638,7 +1642,7 @@ def variability_threshold(featuresdir,
                      allobjects[magcol]['binned_eta_median'],
                      linewidth=3.0)
             plt.plot(
-                allobjects[magcol]['binned_sdssr'],
+                allobjects[magcol]['magbins'],
                 np.array(allobjects[magcol]['binned_eta_median']) +
                 min_eta_stdev*allobjects[magcol]['binned_eta_stdev'],
                 linewidth=3.0, linestyle='dashed'
@@ -1650,6 +1654,7 @@ def variability_threshold(featuresdir,
             plt.savefig('varfeatures-%s-%s-distributions.png' % (outfile,
                                                                  magcol),
                         bbox_inches='tight')
+            plt.close('all')
 
 
     with open(outfile,'wb') as outfd:
