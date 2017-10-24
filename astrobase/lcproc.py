@@ -1337,8 +1337,8 @@ def variability_threshold(featuresdir,
             # IQR
             if (magcol in thisfeatures and
                 thisfeatures[magcol] and
-                thisfeatures[magcol]['mad_iqr']):
-                iqr = thisfeatures[magcol]['mad_iqr']
+                thisfeatures[magcol]['mag_iqr']):
+                iqr = thisfeatures[magcol]['mag_iqr']
             else:
                 iqr = np.nan
 
