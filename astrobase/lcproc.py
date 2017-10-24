@@ -1237,7 +1237,8 @@ def variability_threshold(featuresdir,
                           lcformat='hat-sql',
                           min_stetj_stdev=2.0,
                           min_iqr_stdev=2.0,
-                          min_eta_stdev=2.0):
+                          min_eta_stdev=2.0,
+                          plotdists=True):
     '''This generates a list of objects with stetson J, IQR, and eta above some
     threshold value to select them as potential variable stars.
 
@@ -1579,6 +1580,77 @@ def variability_threshold(featuresdir,
     #
     # done with all magcols
     #
+
+    # if we're going to plot the distributions, do so
+    if plotdists:
+
+        import matplotlib.pyplot as plt
+
+        for magcol in magcols:
+
+            fig = plt.figure(figsize=(20,16))
+
+            # the mag vs stetsonj
+            plt.subplot(311)
+            plt.plot(allobjects[magcol]['sdssr'],
+                     allobjects[magcol]['stetsonj'],
+                     marker='.',ms=1.0, linestyle='none',
+                     rasterized=True)
+            plt.plot(allobjects[magcol]['binned_sdssr'],
+                     allobjects[magcol]['binned_stetsonj_median'],
+                     linewidth=3.0)
+            plt.plot(
+                allobjects[magcol]['binned_sdssr'],
+                np.array(allobjects[magcol]['binned_stetsonj_median']) +
+                min_stetj_stdev*allobjects[magcol]['binned_stetsonj_stdev'],
+                linewidth=3.0, linestyle='dashed'
+            )
+            plt.xlabel('SDSS r')
+            plt.ylabel('Stetson J index')
+            plt.title('%s - SDSS r vs. Stetson J index' % magcol)
+
+            # the mag vs IQR
+            plt.subplot(312)
+            plt.plot(allobjects[magcol]['sdssr'],
+                     allobjects[magcol]['iqr'],
+                     marker='.',ms=1.0, linestyle='none',
+                     rasterized=True)
+            plt.plot(allobjects[magcol]['binned_sdssr'],
+                     allobjects[magcol]['binned_iqr_median'],
+                     linewidth=3.0)
+            plt.plot(
+                allobjects[magcol]['binned_sdssr'],
+                np.array(allobjects[magcol]['binned_iqr_median']) +
+                min_iqr_stdev*allobjects[magcol]['binned_iqr_stdev'],
+                linewidth=3.0, linestyle='dashed'
+            )
+            plt.xlabel('SDSS r')
+            plt.ylabel('IQR')
+            plt.title('%s - SDSS r vs. IQR' % magcol)
+
+            # the mag vs IQR
+            plt.subplot(313)
+            plt.plot(allobjects[magcol]['sdssr'],
+                     allobjects[magcol]['eta'],
+                     marker='.',ms=1.0, linestyle='none',
+                     rasterized=True)
+            plt.plot(allobjects[magcol]['binned_sdssr'],
+                     allobjects[magcol]['binned_eta_median'],
+                     linewidth=3.0)
+            plt.plot(
+                allobjects[magcol]['binned_sdssr'],
+                np.array(allobjects[magcol]['binned_eta_median']) +
+                min_eta_stdev*allobjects[magcol]['binned_eta_stdev'],
+                linewidth=3.0, linestyle='dashed'
+            )
+            plt.xlabel('SDSS r')
+            plt.ylabel(r'$\eta$')
+            plt.title(r'%s - SDSS r vs. $\eta$' % magcol)
+
+            plt.savefig('varfeatures-%s-%s-distributions.png' % (outfile,
+                                                                 magcol),
+                        bbox_inches='tight')
+
 
     with open(outfile,'wb') as outfd:
         pickle.dump(allobjects, outfd, protocol=pickle.HIGHEST_PROTOCOL)
