@@ -1690,7 +1690,7 @@ def plot_variability_thresholds(varthreshpkl,
         plt.ylabel('IQR')
         plt.title('%s - SDSS r vs. IQR' % magcol)
         plt.xlim((magbins.min()-0.25, magbins.max()))
-        plt.ylim((-0.1,0.5))
+        plt.ylim((0.0,0.5))
         plt.tight_layout()
 
         # the mag vs IQR
