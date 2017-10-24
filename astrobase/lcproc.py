@@ -1227,18 +1227,27 @@ def parallel_varfeatures_lcdir(lcdir,
 
 
 
-def stetson_threshold(featuresdir,
-                      maxobjects=None,
-                      timecols=None,
-                      magcols=None,
-                      errcols=None,
-                      lcformat='hat-sql',
-                      minstetstdev=2.0,
-                      outfile=None):
-    '''This generates a list of objects with J > minstetj.
+def variability_threshold(featuresdir,
+                          outfile,
+                          magbins=np.arange(8.0,16.25,0.25),
+                          maxobjects=None,
+                          timecols=None,
+                          magcols=None,
+                          errcols=None,
+                          lcformat='hat-sql',
+                          min_stetj_stdev=2.0,
+                          min_iqr_stdev=2.0,
+                          min_eta_stdev=2.0
+                          outfile=None):
+    '''This generates a list of objects with stetson J, IQR, and eta above some
+    threshold value to select them as potential variable stars.
 
     Use this to pare down the objects to review and put through
-    period-finding.
+    period-finding. This does the thresholding per magnitude bin; this should be
+    better than one single cut through the entire magnitude range. Set the
+    magnitude bins using the magbins kwarg.
+
+    outfile is a pickle file that will contain all the info.
 
     '''
 
@@ -1268,10 +1277,17 @@ def stetson_threshold(featuresdir,
 
     for magcol in magcols:
 
-        LOGINFO('getting all objects with stet J > %s x sigma for %s' %
-                (minstetstdev, magcol))
+        LOGINFO('getting all object sdssr, LC MAD, stet J, IQR, eta...')
 
-        allobjects[magcol] = {'objectid':[], 'stetsonj':[]}
+        # we'll calculate the sigma per magnitude bin, so get the mags as well
+        allobjects[magcol] = {
+            'objectid':[],
+            'sdssr':[],
+            'lcmad':[],
+            'stetsonj':[],
+            'iqr':[],
+            'eta':[]
+        }
 
         # fancy progress bar with tqdm if present
         if TQDM:
@@ -1286,6 +1302,32 @@ def stetson_threshold(featuresdir,
 
             objectid = thisfeatures['objectid']
 
+            # the object magnitude
+            if ('info' in thisfeatures and
+                thisfeatures['info'] and
+                'sdssr' in thisfeatures['info']):
+
+                if thisfeatures['info']['sdssr']:
+                    sdssr = thisfeatures['info']['sdssr']
+                elif (magcol in thisfeatures and
+                      thisfeatures[magcol] and
+                      'median' in thisfeatures[magcol] and
+                      thisfeatures[magcol]['median']):
+                    sdssr = thisfeatures[magcol]['median']
+                else:
+                    sdssr = np.nan
+            else:
+                sdssr = np.nan
+
+            # the MAD of the light curve
+            if (magcol in thisfeatures and
+                thisfeatures[magcol] and
+                thisfeatures[magcol]['mad']):
+                lcmad = thisfeatures[magcol]['mad']
+            else:
+                lcmad = np.nan
+
+            # stetson index
             if (magcol in thisfeatures and
                 thisfeatures[magcol] and
                 thisfeatures[magcol]['stetsonj']):
@@ -1293,52 +1335,227 @@ def stetson_threshold(featuresdir,
             else:
                 stetsonj = np.nan
 
-            allobjects[magcol]['objectid'].append(objectid)
-            allobjects[magcol]['stetsonj'].append(stetsonj)
+            # IQR
+            if (magcol in thisfeatures and
+                thisfeatures[magcol] and
+                thisfeatures[magcol]['mad_iqr']):
+                iqr = thisfeatures[magcol]['mad_iqr']
+            else:
+                iqr = np.nan
 
+            # eta
+            if (magcol in thisfeatures and
+                thisfeatures[magcol] and
+                thisfeatures[magcol]['eta_normal']):
+                eta = thisfeatures[magcol]['eta_normal']
+            else:
+                eta = np.nan
+
+            allobjects[magcol]['objectid'].append(objectid)
+            allobjects[magcol]['sdssr'].append(objectid)
+            allobjects[magcol]['lcmad'].append(objectid)
+            allobjects[magcol]['stetsonj'].append(stetsonj)
+            allobjects[magcol]['iqr'].append(iqr)
+            allobjects[magcol]['eta'].append(eta)
+
+        #
+        # done with collection of info
+        #
+        LOGINFO('finding objects above thresholds per magbin...')
+
+        # turn the info into arrays
         allobjects[magcol]['objectid'] = np.array(
             allobjects[magcol]['objectid']
+        )
+        allobjects[magcol]['sdssr'] = np.array(
+            allobjects[magcol]['sdssr']
+        )
+        allobjects[magcol]['lcmad'] = np.array(
+            allobjects[magcol]['lcmad']
         )
         allobjects[magcol]['stetsonj'] = np.array(
             allobjects[magcol]['stetsonj']
         )
-
-        medstet = np.nanmedian(allobjects[magcol]['stetsonj'])
-        madstet = np.nanmedian(
-            np.abs(allobjects[magcol]['stetsonj'] -
-                   np.nanmedian(allobjects[magcol]['stetsonj']))
+        allobjects[magcol]['iqr'] = np.array(
+            allobjects[magcol]['iqr']
         )
-        stdstet = 1.483*madstet
-
-        threshind = (
-            (np.isfinite(allobjects[magcol]['stetsonj']) &
-             (allobjects[magcol]['stetsonj'] >
-              (minstetstdev*stdstet + medstet)))
+        allobjects[magcol]['eta'] = np.array(
+            allobjects[magcol]['eta']
         )
 
-        allobjects[magcol]['thresholdobjects'] = (
-            allobjects[magcol]['objectid'][threshind]
+        # only get finite elements everywhere
+        thisfinind = (
+            np.isfinite(allobjects[magcol]['sdssr']) &
+            np.isfinite(allobjects[magcol]['lcmad']) &
+            np.isfinite(allobjects[magcol]['stetsonj']) &
+            np.isfinite(allobjects[magcol]['iqr']) &
+            np.isfinite(allobjects[magcol]['eta'])
         )
-        allobjects[magcol]['median_stetj'] = medstet
-        allobjects[magcol]['mad_stetj'] = madstet
-        allobjects[magcol]['stdev_stetj'] = stdstet
+        allobjects[magcol]['objectid'] = allobjects[magcol]['objectid'][finind]
+        allobjects[magcol]['sdssr'] = allobjects[magcol]['sdssr'][finind]
+        allobjects[magcol]['lcmad'] = allobjects[magcol]['lcmad'][finind]
+        allobjects[magcol]['stetsonj'] = allobjects[magcol]['stetsonj'][finind]
+        allobjects[magcol]['iqr'] = allobjects[magcol]['iqr'][finind]
+        allobjects[magcol]['eta'] = allobjects[magcol]['eta'][finind]
 
-        LOGINFO('median %s stetson J = %.5f, stdev = %s, '
-              'total objects %s sigma > median = %s' %
-              (magcol, medstet, stdstet, minstetstdev,
-               allobjects[magcol]['thresholdobjects'].size))
+        # do the thresholding by magnitude bin
+        magbininds = np.digitize(allobjects[magcol]['sdssr'], magbins)
 
-    # get the overall stetson threshold objects too
-    allobjects['overallthreshold'] = allobjects[magcols[0]]['thresholdobjects']
+        binned_objectids = []
+        binned_sdssr = []
+        binned_lcmad = []
+        binned_stetsonj = []
+        binned_iqr = []
+        binned_eta = []
+        binned_count = []
 
-    for magcol in magcols[1:]:
-        allobjects['overallthreshold'] = (
-            np.intersect1d(allobjects['overallthreshold'],
-                           allobjects[magcol]['thresholdobjects'])
+        binned_objectids_thresh_stetsonj = []
+        binned_objectids_thresh_iqr = []
+        binned_objectids_thresh_eta = []
+
+        binned_objectids_thresh_all = []
+
+        # go through all the mag bins and get the thresholds for J, eta, IQR
+        for mbinind, magi in zip(np.unique(magbininds),
+                                 range(len(magbins)-1)):
+
+            thisbinind = np.where(magbininds == mbinind)
+            thisbin_sdssr = (magbins[magi] + magbins[magi+1])/2.0
+
+            thisbin_objectids = allobjects[magcol]['objectid'][thisbinind]
+            thisbin_sdssr = allobjects[magcol]['sdssr'][thisbinind]
+            thisbin_lcmad = allobjects[magcol]['lcmad'][thisbinind]
+            thisbin_stetsonj = allobjects[magcol]['stetsonj'][thisbinind]
+            thisbin_iqr = allobjects[magcol]['iqr'][thisbinind]
+            thisbin_eta = allobjects[magcol]['eta'][thisbinind]
+            thisbin_count = thisbin_objectids.size
+
+            if thisbin_count > 4:
+
+                thisbin_stetsonj_median = np.median(thisbin_stetsonj)
+                thisbin_stetsonj_stdev = np.median(
+                    np.abs(thisbin_stetsonj - thisbin_stetsonj_median)
+                ) * 1.483
+                thisbin_objectids_thresh_stetsonj = thisbin_objectids[
+                    thisbin_stetsonj > (min_stetj_stdev*thisbin_stetsonj_stdev)
+                ]
+                LOGINFO(
+                    '%s: objects > threshold for %s in mag bin: (%s,%s) = %s' %
+                    (magcol, 'stetsonj',
+                     magbins[magi], magbins[magi+1],
+                     thisbin_objectids_thresh_stetsonj.size)
+                )
+
+                thisbin_iqr_median = np.median(thisbin_iqr)
+                thisbin_iqr_stdev = np.median(
+                    np.abs(thisbin_iqr - thisbin_iqr_median)
+                ) * 1.483
+                thisbin_objectids_thresh_iqr = thisbin_objectids[
+                    thisbin_iqr > (min_iqr_stdev*thisbin_iqr_stdev)
+                ]
+                LOGINFO(
+                    '%s: objects > threshold for %s in mag bin: (%s,%s) = %s' %
+                    (magcol, 'IQR',
+                     magbins[magi], magbins[magi+1],
+                     thisbin_objectids_thresh_iqr.size)
+                )
+
+                thisbin_eta_median = np.median(thisbin_eta)
+                thisbin_eta_stdev = np.median(
+                    np.abs(thisbin_eta - thisbin_eta_median)
+                ) * 1.483
+                thisbin_objectids_thresh_eta = thisbin_objectids[
+                    thisbin_eta > (min_eta_stdev*thisbin_eta_stdev)
+                ]
+                LOGINFO(
+                    '%s: objects > threshold for %s in mag bin: (%s,%s) = %s' %
+                    (magcol, 'eta',
+                     magbins[magi], magbins[magi+1],
+                     thisbin_objectids_thresh_eta.size)
+                )
+
+                thisbin_objectids_thresh_all = reduce(
+                    np.intersect1d,
+                    (thisbin_objectids_thresh_stetsonj,
+                     thisbin_objectids_thresh_iqr,
+                     thisbin_objectids_thresh_eta)
+                )
+                LOGINFO(
+                    '%s: objects > all thresholds in mag bin: (%s,%s) = %s' %
+                    (magcol, magbins[magi], magbins[magi+1],
+                     thisbin_objectids_thresh_all.size)
+                )
+
+            else:
+
+                thisbin_objectids_thresh_stetsonj = (
+                    np.array([],dtype=np.unicode_)
+                )
+                thisbin_objectids_thresh_iqr = (
+                    np.array([],dtype=np.unicode_)
+                )
+                thisbin_objectids_thresh_eta = (
+                    np.array([],dtype=np.unicode_)
+                )
+
+
+            binned_objectids.append(thisbin_objectids)
+            binned_sdssr.append(thisbin_sdssr)
+            binned_lcmad.append(thisbin_lcmad)
+            binned_stetsonj.append(thisbin_stetsonj)
+            binned_iqr.append(thisbin_iqr)
+            binned_eta.append(thisbin_eta)
+            binned_count.append(thisbin_objectids.size)
+
+            binned_objectids_thresh_stetsonj.append(
+                thisbin_objectids_thresh_stetsonj
+            )
+            binned_objectids_thresh_iqr.append(
+                thisbin_objectids_thresh_iqr
+            )
+            binned_objectids_thresh_eta.append(
+                thisbin_objectids_thresh_eta
+            )
+            binned_objectids_thresh_all.append(
+                thisbin_objectids_thresh_all
+            )
+
+
+        #
+        # done with magbins
+        #
+
+        # update the output dict for this magcol
+        allobjects[magcol]['magbins'] = magbins
+        allobjects[magcol]['binned_objectids'] = binned_objectids
+        allobjects[magcol]['binned_sdssr'] = binned_sdssr
+        allobjects[magcol]['binned_lcmad'] = binned_lcmad
+        allobjects[magcol]['binned_stetsonj'] = binned_stetsonj
+        allobjects[magcol]['binned_iqr'] = binned_iqr
+        allobjects[magcol]['binned_eta'] = binned_eta
+        allobjects[magcol]['binned_count'] = binned_count
+
+        allobjects[magcol]['binned_objectids_thresh_stetsonj'] = (
+            binned_objectids_thresh_stetsonj
+        )
+        allobjects[magcol]['binned_objectids_thresh_iqr'] = (
+            binned_objectids_thresh_iqr
+        )
+        allobjects[magcol]['binned_objectids_thresh_eta'] = (
+            binned_objectids_thresh_eta
+        )
+        allobjects[magcol]['binned_objectids_thresh_all'] = (
+            binned_objectids_thresh_all
         )
 
-    LOGINFO('objects above stetson threshold across all magcols: %s' %
-            allobjects['overallthreshold'].size)
+
+
+    #
+    # done with all magcols
+    #
+
+    with open(outfile,'wb') as outfd:
+        pickle.dump(allobjects, outfd, protocol=pickle.HIGHEST_PROTOCOL)
 
     return allobjects
 
