@@ -1309,14 +1309,14 @@ def variability_threshold(featuresdir,
                 'sdssr' in thisfeatures['info']):
 
                 if (thisfeatures['info']['sdssr'] and
-                    thisfeatures['info']['sdssr'] > 5.0):
+                    thisfeatures['info']['sdssr'] > 3.0):
 
                     sdssr = thisfeatures['info']['sdssr']
 
                 elif (magcol in thisfeatures and
                       thisfeatures[magcol] and
                       'median' in thisfeatures[magcol] and
-                      thisfeatures[magcol]['median'] > 5.0):
+                      thisfeatures[magcol]['median'] > 3.0):
 
                     sdssr = thisfeatures[magcol]['median']
 
@@ -1333,13 +1333,6 @@ def variability_threshold(featuresdir,
 
             else:
                 sdssr = np.nan
-
-            if sdssr < 5.0:
-                print(thisfeatures['info']['sdssr'],
-                      thisfeatures[magcol]['median'],
-                      thisfeatures['info']['jmag'],
-                      thisfeatures['info']['hmag'],
-                      thisfeatures['info']['kmag'])
 
             # the MAD of the light curve
             if (magcol in thisfeatures and
@@ -1633,9 +1626,11 @@ def variability_threshold(featuresdir,
                 ),
                 linewidth=3.0, linestyle='dashed'
             )
+            plt.xlim((magbins.min()-0.25, magbins.max()))
             plt.xlabel('SDSS r')
             plt.ylabel('Stetson J index')
             plt.title('%s - SDSS r vs. Stetson J index' % magcol)
+            plt.tight_layout()
 
             # the mag vs IQR
             plt.subplot(312)
@@ -1657,6 +1652,8 @@ def variability_threshold(featuresdir,
             plt.xlabel('SDSS r')
             plt.ylabel('IQR')
             plt.title('%s - SDSS r vs. IQR' % magcol)
+            plt.xlim((magbins.min()-0.25, magbins.max()))
+            plt.tight_layout()
 
             # the mag vs IQR
             plt.subplot(313)
@@ -1678,6 +1675,8 @@ def variability_threshold(featuresdir,
             plt.xlabel('SDSS r')
             plt.ylabel(r'$\eta$')
             plt.title(r'%s - SDSS r vs. $\eta$' % magcol)
+            plt.xlim((magbins.min()-0.25, magbins.max()))
+            plt.tight_layout()
 
             plt.savefig('varfeatures-%s-%s-distributions.png' % (outfile,
                                                                  magcol),
