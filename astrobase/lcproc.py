@@ -1600,97 +1600,117 @@ def variability_threshold(featuresdir,
     # done with all magcols
     #
 
-    # if we're going to plot the distributions, do so
-    if plotdists:
-
-        import matplotlib.pyplot as plt
-
-        for magcol in magcols:
-
-            fig = plt.figure(figsize=(10,20))
-
-            # the mag vs stetsonj
-            plt.subplot(311)
-            plt.plot(allobjects[magcol]['sdssr'],
-                     allobjects[magcol]['stetsonj'],
-                     marker='.',ms=1.0, linestyle='none',
-                     rasterized=True)
-            plt.plot(allobjects[magcol]['binned_sdssr_median'],
-                     allobjects[magcol]['binned_stetsonj_median'],
-                     linewidth=3.0)
-            plt.plot(
-                allobjects[magcol]['binned_sdssr_median'],
-                np.array(allobjects[magcol]['binned_stetsonj_median']) +
-                min_stetj_stdev*np.array(
-                    allobjects[magcol]['binned_stetsonj_stdev']
-                ),
-                linewidth=3.0, linestyle='dashed'
-            )
-            plt.xlim((magbins.min()-0.25, magbins.max()))
-            plt.ylim((-1.0,20.0))
-            plt.xlabel('SDSS r')
-            plt.ylabel('Stetson J index')
-            plt.title('%s - SDSS r vs. Stetson J index' % magcol)
-            plt.tight_layout()
-
-            # the mag vs IQR
-            plt.subplot(312)
-            plt.plot(allobjects[magcol]['sdssr'],
-                     allobjects[magcol]['iqr'],
-                     marker='.',ms=1.0, linestyle='none',
-                     rasterized=True)
-            plt.plot(allobjects[magcol]['binned_sdssr_median'],
-                     allobjects[magcol]['binned_iqr_median'],
-                     linewidth=3.0)
-            plt.plot(
-                allobjects[magcol]['binned_sdssr_median'],
-                np.array(allobjects[magcol]['binned_iqr_median']) +
-                min_iqr_stdev*np.array(
-                    allobjects[magcol]['binned_iqr_stdev']
-                ),
-                linewidth=3.0, linestyle='dashed'
-            )
-            plt.xlabel('SDSS r')
-            plt.ylabel('IQR')
-            plt.title('%s - SDSS r vs. IQR' % magcol)
-            plt.xlim((magbins.min()-0.25, magbins.max()))
-            plt.ylim((-0.1,1.0))
-            plt.tight_layout()
-
-            # the mag vs IQR
-            plt.subplot(313)
-            plt.plot(allobjects[magcol]['sdssr'],
-                     allobjects[magcol]['eta'],
-                     marker='.',ms=1.0, linestyle='none',
-                     rasterized=True)
-            plt.plot(allobjects[magcol]['binned_sdssr_median'],
-                     allobjects[magcol]['binned_eta_median'],
-                     linewidth=3.0)
-            plt.plot(
-                allobjects[magcol]['binned_sdssr_median'],
-                np.array(allobjects[magcol]['binned_eta_median']) +
-                min_eta_stdev*np.array(
-                    allobjects[magcol]['binned_eta_stdev']
-                ),
-                linewidth=3.0, linestyle='dashed'
-            )
-            plt.xlabel('SDSS r')
-            plt.ylabel(r'$\eta$')
-            plt.title(r'%s - SDSS r vs. $\eta$' % magcol)
-            plt.xlim((magbins.min()-0.25, magbins.max()))
-            plt.ylim((-0.1,4.0))
-            plt.tight_layout()
-
-            plt.savefig('varfeatures-%s-%s-distributions.png' % (outfile,
-                                                                 magcol),
-                        bbox_inches='tight')
-            plt.close('all')
-
-
     with open(outfile,'wb') as outfd:
         pickle.dump(allobjects, outfd, protocol=pickle.HIGHEST_PROTOCOL)
 
     return allobjects
+
+
+def plot_variability_thresholds(varthreshpkl,
+                                lcformat='hat-sql',
+                                magcols=None):
+    '''
+    This makes plots for the variability threshold distributions.
+
+    '''
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    (fileglob, readerfunc, dtimecols, dmagcols,
+     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+    if magcols is None:
+        magcols = dmagcols
+
+    with open(varthreshpkl,'rb') as infd:
+        allobjects = pickle.load(infd)
+
+    import matplotlib.pyplot as plt
+
+    for magcol in magcols:
+
+        fig = plt.figure(figsize=(10,20))
+
+        # the mag vs stetsonj
+        plt.subplot(311)
+        plt.plot(allobjects[magcol]['sdssr'],
+                 allobjects[magcol]['stetsonj'],
+                 marker='.',ms=1.0, linestyle='none',
+                 rasterized=True)
+        plt.plot(allobjects[magcol]['binned_sdssr_median'],
+                 allobjects[magcol]['binned_stetsonj_median'],
+                 linewidth=3.0)
+        plt.plot(
+            allobjects[magcol]['binned_sdssr_median'],
+            np.array(allobjects[magcol]['binned_stetsonj_median']) +
+            min_stetj_stdev*np.array(
+                allobjects[magcol]['binned_stetsonj_stdev']
+            ),
+            linewidth=3.0, linestyle='dashed'
+        )
+        plt.xlim((magbins.min()-0.25, magbins.max()))
+        plt.ylim((-0.1,3.0))
+        plt.xlabel('SDSS r')
+        plt.ylabel('Stetson J index')
+        plt.title('%s - SDSS r vs. Stetson J index' % magcol)
+        plt.tight_layout()
+
+        # the mag vs IQR
+        plt.subplot(312)
+        plt.plot(allobjects[magcol]['sdssr'],
+                 allobjects[magcol]['iqr'],
+                 marker='.',ms=1.0, linestyle='none',
+                 rasterized=True)
+        plt.plot(allobjects[magcol]['binned_sdssr_median'],
+                 allobjects[magcol]['binned_iqr_median'],
+                 linewidth=3.0)
+        plt.plot(
+            allobjects[magcol]['binned_sdssr_median'],
+            np.array(allobjects[magcol]['binned_iqr_median']) +
+            min_iqr_stdev*np.array(
+                allobjects[magcol]['binned_iqr_stdev']
+            ),
+            linewidth=3.0, linestyle='dashed'
+        )
+        plt.xlabel('SDSS r')
+        plt.ylabel('IQR')
+        plt.title('%s - SDSS r vs. IQR' % magcol)
+        plt.xlim((magbins.min()-0.25, magbins.max()))
+        plt.ylim((-0.1,0.5))
+        plt.tight_layout()
+
+        # the mag vs IQR
+        plt.subplot(313)
+        plt.plot(allobjects[magcol]['sdssr'],
+                 allobjects[magcol]['eta'],
+                 marker='.',ms=1.0, linestyle='none',
+                 rasterized=True)
+        plt.plot(allobjects[magcol]['binned_sdssr_median'],
+                 allobjects[magcol]['binned_eta_median'],
+                 linewidth=3.0)
+        plt.plot(
+            allobjects[magcol]['binned_sdssr_median'],
+            np.array(allobjects[magcol]['binned_eta_median']) +
+            min_eta_stdev*np.array(
+                allobjects[magcol]['binned_eta_stdev']
+            ),
+            linewidth=3.0, linestyle='dashed'
+        )
+        plt.xlabel('SDSS r')
+        plt.ylabel(r'$\eta$')
+        plt.title(r'%s - SDSS r vs. $\eta$' % magcol)
+        plt.xlim((magbins.min()-0.25, magbins.max()))
+        plt.ylim((-0.1,3.0))
+        plt.tight_layout()
+
+        plt.savefig('varfeatures-%s-%s-distributions.png' % (outfile,
+                                                             magcol),
+                    bbox_inches='tight')
+        plt.close('all')
+
+
+
 
 
 
