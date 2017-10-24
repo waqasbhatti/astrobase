@@ -1308,14 +1308,15 @@ def variability_threshold(featuresdir,
                 thisfeatures['info'] and
                 'sdssr' in thisfeatures['info']):
 
-                if thisfeatures['info']['sdssr']:
+                if (thisfeatures['info']['sdssr'] and
+                    thisfeatures['info']['sdssr'] > 5.0):
 
                     sdssr = thisfeatures['info']['sdssr']
 
                 elif (magcol in thisfeatures and
                       thisfeatures[magcol] and
                       'median' in thisfeatures[magcol] and
-                      thisfeatures[magcol]['median'] > 0.0):
+                      thisfeatures[magcol]['median'] > 5.0):
 
                     sdssr = thisfeatures[magcol]['median']
 
@@ -1333,7 +1334,7 @@ def variability_threshold(featuresdir,
             else:
                 sdssr = np.nan
 
-            if sdssr == 0.0:
+            if sdssr < 5.0:
                 print(thisfeatures['info']['sdssr'],
                       thisfeatures[magcol]['median'],
                       thisfeatures['info']['jmag'],
