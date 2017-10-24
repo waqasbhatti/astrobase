@@ -1390,12 +1390,12 @@ def variability_threshold(featuresdir,
             np.isfinite(allobjects[magcol]['iqr']) &
             np.isfinite(allobjects[magcol]['eta'])
         )
-        allobjects[magcol]['objectid'] = allobjects[magcol]['objectid'][finind]
-        allobjects[magcol]['sdssr'] = allobjects[magcol]['sdssr'][finind]
-        allobjects[magcol]['lcmad'] = allobjects[magcol]['lcmad'][finind]
-        allobjects[magcol]['stetsonj'] = allobjects[magcol]['stetsonj'][finind]
-        allobjects[magcol]['iqr'] = allobjects[magcol]['iqr'][finind]
-        allobjects[magcol]['eta'] = allobjects[magcol]['eta'][finind]
+        allobjects[magcol]['objectid'] = allobjects[magcol]['objectid'][thisfinind]
+        allobjects[magcol]['sdssr'] = allobjects[magcol]['sdssr'][thisfinind]
+        allobjects[magcol]['lcmad'] = allobjects[magcol]['lcmad'][thisfinind]
+        allobjects[magcol]['stetsonj'] = allobjects[magcol]['stetsonj'][thisfinind]
+        allobjects[magcol]['iqr'] = allobjects[magcol]['iqr'][thisfinind]
+        allobjects[magcol]['eta'] = allobjects[magcol]['eta'][thisfinind]
 
         # do the thresholding by magnitude bin
         magbininds = np.digitize(allobjects[magcol]['sdssr'], magbins)
