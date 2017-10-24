@@ -1411,8 +1411,17 @@ def variability_threshold(featuresdir,
         binned_objectids_thresh_stetsonj = []
         binned_objectids_thresh_iqr = []
         binned_objectids_thresh_eta = []
-
         binned_objectids_thresh_all = []
+
+        binned_stetsonj_median = []
+        binned_stetsonj_stdev = []
+
+        binned_eta_median = []
+        binned_eta_stdev = []
+
+        binned_iqr_median = []
+        binned_iqr_stdev = []
+
 
         # go through all the mag bins and get the thresholds for J, eta, IQR
         for mbinind, magi in zip(np.unique(magbininds),
@@ -1435,6 +1444,9 @@ def variability_threshold(featuresdir,
                 thisbin_stetsonj_stdev = np.median(
                     np.abs(thisbin_stetsonj - thisbin_stetsonj_median)
                 ) * 1.483
+                binned_stetsonj_median.append(thisbin_stetsonj_median)
+                binned_stetsonj_median.stdev(thisbin_stetsonj_stdev)
+
                 thisbin_objectids_thresh_stetsonj = thisbin_objectids[
                     thisbin_stetsonj > (min_stetj_stdev*thisbin_stetsonj_stdev)
                 ]
@@ -1449,6 +1461,9 @@ def variability_threshold(featuresdir,
                 thisbin_iqr_stdev = np.median(
                     np.abs(thisbin_iqr - thisbin_iqr_median)
                 ) * 1.483
+                binned_iqr_median.append(thisbin_iqr_median)
+                binned_iqr_median.stdev(thisbin_iqr_stdev)
+
                 thisbin_objectids_thresh_iqr = thisbin_objectids[
                     thisbin_iqr > (min_iqr_stdev*thisbin_iqr_stdev)
                 ]
@@ -1463,6 +1478,9 @@ def variability_threshold(featuresdir,
                 thisbin_eta_stdev = np.median(
                     np.abs(thisbin_eta - thisbin_eta_median)
                 ) * 1.483
+                binned_eta_median.append(thisbin_eta_median)
+                binned_eta_median.stdev(thisbin_eta_stdev)
+
                 thisbin_objectids_thresh_eta = thisbin_objectids[
                     thisbin_eta > (min_eta_stdev*thisbin_eta_stdev)
                 ]
@@ -1529,10 +1547,20 @@ def variability_threshold(featuresdir,
         allobjects[magcol]['binned_objectids'] = binned_objectids
         allobjects[magcol]['binned_sdssr'] = binned_sdssr
         allobjects[magcol]['binned_lcmad'] = binned_lcmad
-        allobjects[magcol]['binned_stetsonj'] = binned_stetsonj
-        allobjects[magcol]['binned_iqr'] = binned_iqr
-        allobjects[magcol]['binned_eta'] = binned_eta
         allobjects[magcol]['binned_count'] = binned_count
+
+
+        allobjects[magcol]['binned_stetsonj'] = binned_stetsonj
+        allobjects[magcol]['binned_stetsonj_median'] = binned_stetsonj_median
+        allobjects[magcol]['binned_stetsonj_stdev'] = binned_stetsonj_stdev
+
+        allobjects[magcol]['binned_iqr'] = binned_iqr
+        allobjects[magcol]['binned_iqr_median'] = binned_iqr_median
+        allobjects[magcol]['binned_iqr_stdev'] = binned_iqr_stdev
+
+        allobjects[magcol]['binned_eta'] = binned_eta
+        allobjects[magcol]['binned_eta_median'] = binned_eta_median
+        allobjects[magcol]['binned_eta_stdev'] = binned_eta_stdev
 
         allobjects[magcol]['binned_objectids_thresh_stetsonj'] = (
             binned_objectids_thresh_stetsonj
@@ -1546,7 +1574,6 @@ def variability_threshold(featuresdir,
         allobjects[magcol]['binned_objectids_thresh_all'] = (
             binned_objectids_thresh_all
         )
-
 
 
     #
