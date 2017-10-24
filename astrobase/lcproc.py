@@ -1600,6 +1600,11 @@ def variability_threshold(featuresdir,
     # done with all magcols
     #
 
+    allobjects['magbins'] = magbins
+    allobjects['min_stetj_stdev'] = min_stetj_stdev
+    allobjects['min_iqr_stdev'] = min_iqr_stdev
+    allobjects['min_eta_stdev'] = min_eta_stdev
+
     with open(outfile,'wb') as outfd:
         pickle.dump(allobjects, outfd, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -1607,15 +1612,17 @@ def variability_threshold(featuresdir,
 
 
 def plot_variability_thresholds(varthreshpkl,
-                                min_stetj_stdev=2.0,
-                                min_iqr_stdev=2.0,
-                                min_eta_stdev=2.0,
+                                xmin_stetj_stdev=2.0,
+                                xmin_iqr_stdev=2.0,
+                                xmin_eta_stdev=2.0,
                                 lcformat='hat-sql',
                                 magcols=None):
     '''
     This makes plots for the variability threshold distributions.
 
     '''
+    import matplotlib.pyplot as plt
+
     if lcformat not in LCFORM or lcformat is None:
         LOGERROR('unknown light curve format specified: %s' % lcformat)
         return None
@@ -1629,7 +1636,10 @@ def plot_variability_thresholds(varthreshpkl,
     with open(varthreshpkl,'rb') as infd:
         allobjects = pickle.load(infd)
 
-    import matplotlib.pyplot as plt
+    magbins = allobjects['magbins']
+    min_stetj_stdev = xmin_stetj_stdev or allobjects['min_stetj_stdev']
+    min_iqr_stdev = xmin_iqr_stdev or allobjects['min_iqr_stdev']
+    min_eta_stdev = xmin_eta_stdev or allobjects['min_eta_stdev']
 
     for magcol in magcols:
 
