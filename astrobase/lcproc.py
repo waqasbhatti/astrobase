@@ -1721,9 +1721,8 @@ def plot_variability_thresholds(varthreshpkl,
         )
         plt.xlabel('SDSS r')
         plt.ylabel(r'$1/\eta$')
-        plt.title(r'%s - SDSS r vs. $\inveta$' % magcol)
+        plt.title(r'%s - SDSS r vs. $1/\eta$' % magcol)
         plt.xlim((magbins.min()-0.25, magbins.max()))
-        plt.ylim((-0.1,3.0))
         plt.tight_layout()
 
         plt.savefig('varfeatures-%s-%s-distributions.png' % (varthreshpkl,
