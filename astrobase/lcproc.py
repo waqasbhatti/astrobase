@@ -1238,9 +1238,9 @@ def variability_threshold(featuresdir,
                           lcformat='hat-sql',
                           min_stetj_stdev=2.0,
                           min_iqr_stdev=2.0,
-                          min_eta_stdev=2.0):
-    '''This generates a list of objects with stetson J, IQR, and eta above some
-    threshold value to select them as potential variable stars.
+                          min_inveta_stdev=2.0):
+    '''This generates a list of objects with stetson J, IQR, and 1.0/eta
+    above some threshold value to select them as potential variable stars.
 
     Use this to pare down the objects to review and put through
     period-finding. This does the thresholding per magnitude bin; this should be
@@ -1416,6 +1416,9 @@ def variability_threshold(featuresdir,
         allobjects[magcol]['iqr'] = allobjects[magcol]['iqr'][thisfinind]
         allobjects[magcol]['eta'] = allobjects[magcol]['eta'][thisfinind]
 
+        # invert eta so we can threshold the same way as the others
+        allobjects[magcol]['inveta'] = 1.0/allobjects[magcol]['eta']
+
         # do the thresholding by magnitude bin
         magbininds = np.digitize(allobjects[magcol]['sdssr'],
                                  magbins)
@@ -1427,25 +1430,25 @@ def variability_threshold(featuresdir,
         binned_lcmad = []
         binned_stetsonj = []
         binned_iqr = []
-        binned_eta = []
+        binned_inveta = []
         binned_count = []
 
         binned_objectids_thresh_stetsonj = []
         binned_objectids_thresh_iqr = []
-        binned_objectids_thresh_eta = []
+        binned_objectids_thresh_inveta = []
         binned_objectids_thresh_all = []
 
         binned_stetsonj_median = []
         binned_stetsonj_stdev = []
 
-        binned_eta_median = []
-        binned_eta_stdev = []
+        binned_inveta_median = []
+        binned_inveta_stdev = []
 
         binned_iqr_median = []
         binned_iqr_stdev = []
 
 
-        # go through all the mag bins and get the thresholds for J, eta, IQR
+        # go through all the mag bins and get the thresholds for J, inveta, IQR
         for mbinind, magi in zip(np.unique(magbininds),
                                  range(len(magbins)-1)):
 
@@ -1458,7 +1461,7 @@ def variability_threshold(featuresdir,
             thisbin_lcmad = allobjects[magcol]['lcmad'][thisbinind]
             thisbin_stetsonj = allobjects[magcol]['stetsonj'][thisbinind]
             thisbin_iqr = allobjects[magcol]['iqr'][thisbinind]
-            thisbin_eta = allobjects[magcol]['eta'][thisbinind]
+            thisbin_inveta = allobjects[magcol]['inveta'][thisbinind]
             thisbin_count = thisbin_objectids.size
 
             if thisbin_count > 4:
@@ -1499,29 +1502,29 @@ def variability_threshold(featuresdir,
                      thisbin_objectids_thresh_iqr.size)
                 )
 
-                thisbin_eta_median = np.median(thisbin_eta)
-                thisbin_eta_stdev = np.median(
-                    np.abs(thisbin_eta - thisbin_eta_median)
+                thisbin_inveta_median = np.median(thisbin_inveta)
+                thisbin_inveta_stdev = np.median(
+                    np.abs(thisbin_inveta - thisbin_inveta_median)
                 ) * 1.483
-                binned_eta_median.append(thisbin_eta_median)
-                binned_eta_stdev.append(thisbin_eta_stdev)
+                binned_inveta_median.append(thisbin_inveta_median)
+                binned_inveta_stdev.append(thisbin_inveta_stdev)
 
-                thisbin_objectids_thresh_eta = thisbin_objectids[
-                    thisbin_eta > (thisbin_eta_median +
-                                   min_eta_stdev*thisbin_eta_stdev)
+                thisbin_objectids_thresh_inveta = thisbin_objectids[
+                    thisbin_inveta > (thisbin_inveta_median +
+                                   min_inveta_stdev*thisbin_inveta_stdev)
                 ]
                 LOGINFO(
                     '%s: objects > threshold for %s in mag bin: (%s,%s) = %s' %
-                    (magcol, 'eta',
+                    (magcol, 'inveta',
                      magbins[magi], magbins[magi+1],
-                     thisbin_objectids_thresh_eta.size)
+                     thisbin_objectids_thresh_inveta.size)
                 )
 
                 thisbin_objectids_thresh_all = reduce(
                     np.intersect1d,
                     (thisbin_objectids_thresh_stetsonj,
                      thisbin_objectids_thresh_iqr,
-                     thisbin_objectids_thresh_eta)
+                     thisbin_objectids_thresh_inveta)
                 )
                 LOGINFO(
                     '%s: objects > all thresholds in mag bin: (%s,%s) = %s' %
@@ -1537,17 +1540,16 @@ def variability_threshold(featuresdir,
                 thisbin_objectids_thresh_iqr = (
                     np.array([],dtype=np.unicode_)
                 )
-                thisbin_objectids_thresh_eta = (
+                thisbin_objectids_thresh_inveta = (
                     np.array([],dtype=np.unicode_)
                 )
-
 
             binned_objectids.append(thisbin_objectids)
             binned_sdssr.append(thisbin_sdssr)
             binned_lcmad.append(thisbin_lcmad)
             binned_stetsonj.append(thisbin_stetsonj)
             binned_iqr.append(thisbin_iqr)
-            binned_eta.append(thisbin_eta)
+            binned_inveta.append(thisbin_inveta)
             binned_count.append(thisbin_objectids.size)
 
             binned_objectids_thresh_stetsonj.append(
@@ -1556,13 +1558,12 @@ def variability_threshold(featuresdir,
             binned_objectids_thresh_iqr.append(
                 thisbin_objectids_thresh_iqr
             )
-            binned_objectids_thresh_eta.append(
-                thisbin_objectids_thresh_eta
+            binned_objectids_thresh_inveta.append(
+                thisbin_objectids_thresh_inveta
             )
             binned_objectids_thresh_all.append(
                 thisbin_objectids_thresh_all
             )
-
 
         #
         # done with magbins
@@ -1585,9 +1586,9 @@ def variability_threshold(featuresdir,
         allobjects[magcol]['binned_iqr_median'] = binned_iqr_median
         allobjects[magcol]['binned_iqr_stdev'] = binned_iqr_stdev
 
-        allobjects[magcol]['binned_eta'] = binned_eta
-        allobjects[magcol]['binned_eta_median'] = binned_eta_median
-        allobjects[magcol]['binned_eta_stdev'] = binned_eta_stdev
+        allobjects[magcol]['binned_inveta'] = binned_inveta
+        allobjects[magcol]['binned_inveta_median'] = binned_inveta_median
+        allobjects[magcol]['binned_inveta_stdev'] = binned_inveta_stdev
 
         allobjects[magcol]['binned_objectids_thresh_stetsonj'] = (
             binned_objectids_thresh_stetsonj
@@ -1595,8 +1596,8 @@ def variability_threshold(featuresdir,
         allobjects[magcol]['binned_objectids_thresh_iqr'] = (
             binned_objectids_thresh_iqr
         )
-        allobjects[magcol]['binned_objectids_thresh_eta'] = (
-            binned_objectids_thresh_eta
+        allobjects[magcol]['binned_objectids_thresh_inveta'] = (
+            binned_objectids_thresh_inveta
         )
         allobjects[magcol]['binned_objectids_thresh_all'] = (
             binned_objectids_thresh_all
@@ -1610,7 +1611,7 @@ def variability_threshold(featuresdir,
     allobjects['magbins'] = magbins
     allobjects['min_stetj_stdev'] = min_stetj_stdev
     allobjects['min_iqr_stdev'] = min_iqr_stdev
-    allobjects['min_eta_stdev'] = min_eta_stdev
+    allobjects['min_inveta_stdev'] = min_inveta_stdev
 
     with open(outfile,'wb') as outfd:
         pickle.dump(allobjects, outfd, protocol=pickle.HIGHEST_PROTOCOL)
@@ -1622,7 +1623,7 @@ def variability_threshold(featuresdir,
 def plot_variability_thresholds(varthreshpkl,
                                 xmin_stetj_stdev=2.0,
                                 xmin_iqr_stdev=2.0,
-                                xmin_eta_stdev=2.0,
+                                xmin_inveta_stdev=2.0,
                                 lcformat='hat-sql',
                                 magcols=None):
     '''
@@ -1647,7 +1648,7 @@ def plot_variability_thresholds(varthreshpkl,
     magbins = allobjects['magbins']
     min_stetj_stdev = xmin_stetj_stdev or allobjects['min_stetj_stdev']
     min_iqr_stdev = xmin_iqr_stdev or allobjects['min_iqr_stdev']
-    min_eta_stdev = xmin_eta_stdev or allobjects['min_eta_stdev']
+    min_inveta_stdev = xmin_inveta_stdev or allobjects['min_inveta_stdev']
 
     for magcol in magcols:
 
@@ -1704,23 +1705,23 @@ def plot_variability_thresholds(varthreshpkl,
         # the mag vs IQR
         plt.subplot(313)
         plt.plot(allobjects[magcol]['sdssr'],
-                 allobjects[magcol]['eta'],
+                 allobjects[magcol]['inveta'],
                  marker='.',ms=1.0, linestyle='none',
                  rasterized=True)
         plt.plot(allobjects[magcol]['binned_sdssr_median'],
-                 allobjects[magcol]['binned_eta_median'],
+                 allobjects[magcol]['binned_inveta_median'],
                  linewidth=3.0)
         plt.plot(
             allobjects[magcol]['binned_sdssr_median'],
-            np.array(allobjects[magcol]['binned_eta_median']) +
-            min_eta_stdev*np.array(
-                allobjects[magcol]['binned_eta_stdev']
+            np.array(allobjects[magcol]['binned_inveta_median']) +
+            min_inveta_stdev*np.array(
+                allobjects[magcol]['binned_inveta_stdev']
             ),
             linewidth=3.0, linestyle='dashed'
         )
         plt.xlabel('SDSS r')
-        plt.ylabel(r'$\eta$')
-        plt.title(r'%s - SDSS r vs. $\eta$' % magcol)
+        plt.ylabel(r'$1/\eta$')
+        plt.title(r'%s - SDSS r vs. $\inveta$' % magcol)
         plt.xlim((magbins.min()-0.25, magbins.max()))
         plt.ylim((-0.1,3.0))
         plt.tight_layout()
