@@ -1047,18 +1047,23 @@ def varfeatures(lcfile,
         # now that we've collected all the magcols, we can choose which is the
         # "best" magcol. this is defined as the magcol that gives us the
         # smallest LC MAD.
-        magmads = np.zeros(len(magcols))
-        for mind, mcol in enumerate(magcols):
-            if '.' in mcol:
-                mcolget = mcol.split('.')
-            else:
-                mcolget = [mcol]
 
-            magmads[mind] = resultdict[mcolget[-1]]['mad']
+        try:
+            magmads = np.zeros(len(magcols))
+            for mind, mcol in enumerate(magcols):
+                if '.' in mcol:
+                    mcolget = mcol.split('.')
+                else:
+                    mcolget = [mcol]
 
-        # smallest MAD index
-        bestmagcolind = np.where(magmads == np.min(magmads))[0]
-        resultdict['bestmagcol'] = magcols[bestmagcolind]
+                magmads[mind] = resultdict[mcolget[-1]]['mad']
+
+            # smallest MAD index
+            bestmagcolind = np.where(magmads == np.min(magmads))[0]
+            resultdict['bestmagcol'] = magcols[bestmagcolind]
+
+        except:
+            resultdict['bestmagcol'] = None
 
         outfile = os.path.join(outdir,
                                'varfeatures-%s.pkl' % resultdict['objectid'])
