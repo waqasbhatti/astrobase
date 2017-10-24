@@ -1351,8 +1351,8 @@ def variability_threshold(featuresdir,
                 eta = np.nan
 
             allobjects[magcol]['objectid'].append(objectid)
-            allobjects[magcol]['sdssr'].append(objectid)
-            allobjects[magcol]['lcmad'].append(objectid)
+            allobjects[magcol]['sdssr'].append(sdssr)
+            allobjects[magcol]['lcmad'].append(lcmad)
             allobjects[magcol]['stetsonj'].append(stetsonj)
             allobjects[magcol]['iqr'].append(iqr)
             allobjects[magcol]['eta'].append(eta)
