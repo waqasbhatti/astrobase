@@ -1277,12 +1277,12 @@ def variability_threshold(featuresdir,
 
     for magcol in magcols:
 
-        LOGINFO('getting all object sdssr, LC MAD, stet J, IQR, eta...')
+        LOGINFO('getting all object jmag, LC MAD, stet J, IQR, eta...')
 
         # we'll calculate the sigma per magnitude bin, so get the mags as well
         allobjects[magcol] = {
             'objectid':[],
-            'sdssr':[],
+            'jmag':[],
             'lcmad':[],
             'stetsonj':[],
             'iqr':[],
@@ -1305,19 +1305,19 @@ def variability_threshold(featuresdir,
             # the object magnitude
             if ('info' in thisfeatures and
                 thisfeatures['info'] and
-                'sdssr' in thisfeatures['info']):
+                'jmag' in thisfeatures['info']):
 
-                if thisfeatures['info']['sdssr']:
-                    sdssr = thisfeatures['info']['sdssr']
+                if thisfeatures['info']['jmag']:
+                    jmag = thisfeatures['info']['jmag']
                 elif (magcol in thisfeatures and
                       thisfeatures[magcol] and
                       'median' in thisfeatures[magcol] and
                       thisfeatures[magcol]['median']):
-                    sdssr = thisfeatures[magcol]['median']
+                    jmag = thisfeatures[magcol]['median']
                 else:
-                    sdssr = np.nan
+                    jmag = np.nan
             else:
-                sdssr = np.nan
+                jmag = np.nan
 
             # the MAD of the light curve
             if (magcol in thisfeatures and
@@ -1352,7 +1352,7 @@ def variability_threshold(featuresdir,
                 eta = np.nan
 
             allobjects[magcol]['objectid'].append(objectid)
-            allobjects[magcol]['sdssr'].append(sdssr)
+            allobjects[magcol]['jmag'].append(jmag)
             allobjects[magcol]['lcmad'].append(lcmad)
             allobjects[magcol]['stetsonj'].append(stetsonj)
             allobjects[magcol]['iqr'].append(iqr)
@@ -1367,8 +1367,8 @@ def variability_threshold(featuresdir,
         allobjects[magcol]['objectid'] = np.array(
             allobjects[magcol]['objectid']
         )
-        allobjects[magcol]['sdssr'] = np.array(
-            allobjects[magcol]['sdssr']
+        allobjects[magcol]['jmag'] = np.array(
+            allobjects[magcol]['jmag']
         )
         allobjects[magcol]['lcmad'] = np.array(
             allobjects[magcol]['lcmad']
@@ -1385,25 +1385,25 @@ def variability_threshold(featuresdir,
 
         # only get finite elements everywhere
         thisfinind = (
-            np.isfinite(allobjects[magcol]['sdssr']) &
+            np.isfinite(allobjects[magcol]['jmag']) &
             np.isfinite(allobjects[magcol]['lcmad']) &
             np.isfinite(allobjects[magcol]['stetsonj']) &
             np.isfinite(allobjects[magcol]['iqr']) &
             np.isfinite(allobjects[magcol]['eta'])
         )
         allobjects[magcol]['objectid'] = allobjects[magcol]['objectid'][thisfinind]
-        allobjects[magcol]['sdssr'] = allobjects[magcol]['sdssr'][thisfinind]
+        allobjects[magcol]['jmag'] = allobjects[magcol]['jmag'][thisfinind]
         allobjects[magcol]['lcmad'] = allobjects[magcol]['lcmad'][thisfinind]
         allobjects[magcol]['stetsonj'] = allobjects[magcol]['stetsonj'][thisfinind]
         allobjects[magcol]['iqr'] = allobjects[magcol]['iqr'][thisfinind]
         allobjects[magcol]['eta'] = allobjects[magcol]['eta'][thisfinind]
 
         # do the thresholding by magnitude bin
-        magbininds = np.digitize(allobjects[magcol]['sdssr'], magbins)
+        magbininds = np.digitize(allobjects[magcol]['jmag'], magbins)
 
         binned_objectids = []
-        binned_sdssr = []
-        binned_sdssr_median = []
+        binned_jmag = []
+        binned_jmag_median = []
 
         binned_lcmad = []
         binned_stetsonj = []
@@ -1431,11 +1431,11 @@ def variability_threshold(featuresdir,
                                  range(len(magbins)-1)):
 
             thisbinind = np.where(magbininds == mbinind)
-            thisbin_sdssr_median = (magbins[magi] + magbins[magi+1])/2.0
-            binned_sdssr_median.append(thisbin_sdssr_median)
+            thisbin_jmag_median = (magbins[magi] + magbins[magi+1])/2.0
+            binned_jmag_median.append(thisbin_jmag_median)
 
             thisbin_objectids = allobjects[magcol]['objectid'][thisbinind]
-            thisbin_sdssr = allobjects[magcol]['sdssr'][thisbinind]
+            thisbin_jmag = allobjects[magcol]['jmag'][thisbinind]
             thisbin_lcmad = allobjects[magcol]['lcmad'][thisbinind]
             thisbin_stetsonj = allobjects[magcol]['stetsonj'][thisbinind]
             thisbin_iqr = allobjects[magcol]['iqr'][thisbinind]
@@ -1521,7 +1521,7 @@ def variability_threshold(featuresdir,
 
 
             binned_objectids.append(thisbin_objectids)
-            binned_sdssr.append(thisbin_sdssr)
+            binned_jmag.append(thisbin_jmag)
             binned_lcmad.append(thisbin_lcmad)
             binned_stetsonj.append(thisbin_stetsonj)
             binned_iqr.append(thisbin_iqr)
@@ -1549,8 +1549,8 @@ def variability_threshold(featuresdir,
         # update the output dict for this magcol
         allobjects[magcol]['magbins'] = magbins
         allobjects[magcol]['binned_objectids'] = binned_objectids
-        allobjects[magcol]['binned_sdssr_median'] = binned_sdssr_median
-        allobjects[magcol]['binned_sdssr'] = binned_sdssr
+        allobjects[magcol]['binned_jmag_median'] = binned_jmag_median
+        allobjects[magcol]['binned_jmag'] = binned_jmag
         allobjects[magcol]['binned_lcmad'] = binned_lcmad
         allobjects[magcol]['binned_count'] = binned_count
 
@@ -1592,19 +1592,19 @@ def variability_threshold(featuresdir,
 
         for magcol in magcols:
 
-            fig = plt.figure(figsize=(20,16))
+            fig = plt.figure(figsize=(15,12))
 
             # the mag vs stetsonj
             plt.subplot(311)
-            plt.plot(allobjects[magcol]['sdssr'],
+            plt.plot(allobjects[magcol]['jmag'],
                      allobjects[magcol]['stetsonj'],
                      marker='.',ms=1.0, linestyle='none',
                      rasterized=True)
-            plt.plot(allobjects[magcol]['binned_sdssr_median'],
+            plt.plot(allobjects[magcol]['binned_jmag_median'],
                      allobjects[magcol]['binned_stetsonj_median'],
                      linewidth=3.0)
             plt.plot(
-                allobjects[magcol]['binned_sdssr_median'],
+                allobjects[magcol]['binned_jmag_median'],
                 np.array(allobjects[magcol]['binned_stetsonj_median']) +
                 min_stetj_stdev*np.array(
                     allobjects[magcol]['binned_stetsonj_stdev']
@@ -1613,19 +1613,19 @@ def variability_threshold(featuresdir,
             )
             plt.xlabel('SDSS r')
             plt.ylabel('Stetson J index')
-            plt.title('%s - SDSS r vs. Stetson J index' % magcol)
+            plt.title('%s - 2MASS J vs. Stetson J index' % magcol)
 
             # the mag vs IQR
             plt.subplot(312)
-            plt.plot(allobjects[magcol]['sdssr'],
+            plt.plot(allobjects[magcol]['jmag'],
                      allobjects[magcol]['iqr'],
                      marker='.',ms=1.0, linestyle='none',
                      rasterized=True)
-            plt.plot(allobjects[magcol]['binned_sdssr_median'],
+            plt.plot(allobjects[magcol]['binned_jmag_median'],
                      allobjects[magcol]['binned_iqr_median'],
                      linewidth=3.0)
             plt.plot(
-                allobjects[magcol]['binned_sdssr_median'],
+                allobjects[magcol]['binned_jmag_median'],
                 np.array(allobjects[magcol]['binned_iqr_median']) +
                 min_iqr_stdev*np.array(
                     allobjects[magcol]['binned_iqr_stdev']
@@ -1634,19 +1634,19 @@ def variability_threshold(featuresdir,
             )
             plt.xlabel('SDSS r')
             plt.ylabel('IQR')
-            plt.title('%s - SDSS r vs. IQR' % magcol)
+            plt.title('%s - 2MASS J vs. IQR' % magcol)
 
             # the mag vs IQR
             plt.subplot(313)
-            plt.plot(allobjects[magcol]['sdssr'],
+            plt.plot(allobjects[magcol]['jmag'],
                      allobjects[magcol]['eta'],
                      marker='.',ms=1.0, linestyle='none',
                      rasterized=True)
-            plt.plot(allobjects[magcol]['binned_sdssr_median'],
+            plt.plot(allobjects[magcol]['binned_jmag_median'],
                      allobjects[magcol]['binned_eta_median'],
                      linewidth=3.0)
             plt.plot(
-                allobjects[magcol]['binned_sdssr_median'],
+                allobjects[magcol]['binned_jmag_median'],
                 np.array(allobjects[magcol]['binned_eta_median']) +
                 min_eta_stdev*np.array(
                     allobjects[magcol]['binned_eta_stdev']
@@ -1655,7 +1655,7 @@ def variability_threshold(featuresdir,
             )
             plt.xlabel('SDSS r')
             plt.ylabel(r'$\eta$')
-            plt.title(r'%s - SDSS r vs. $\eta$' % magcol)
+            plt.title(r'%s - 2MASS J vs. $\eta$' % magcol)
 
             plt.savefig('varfeatures-%s-%s-distributions.png' % (outfile,
                                                                  magcol),
