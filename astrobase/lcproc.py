@@ -1237,7 +1237,7 @@ def variability_threshold(featuresdir,
                           lcformat='hat-sql',
                           min_stetj_stdev=2.0,
                           min_iqr_stdev=2.0,
-                          min_eta_stdev=2.0
+                          min_eta_stdev=2.0,
                           outfile=None):
     '''This generates a list of objects with stetson J, IQR, and eta above some
     threshold value to select them as potential variable stars.
