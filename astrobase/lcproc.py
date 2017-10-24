@@ -1057,7 +1057,7 @@ def varfeatures(lcfile,
             magmads[mind] = resultdict[mcolget[-1]]['mad']
 
         # smallest MAD index
-        bestmagcolind = np.asscalar(np.where(magmads == np.min(magmads))[0])
+        bestmagcolind = np.where(magmads == np.min(magmads))[0]
         resultdict['bestmagcol'] = magcols[bestmagcolind]
 
         outfile = os.path.join(outdir,
