@@ -1606,7 +1606,9 @@ def variability_threshold(featuresdir,
             plt.plot(
                 allobjects[magcol]['binned_sdssr_median'],
                 np.array(allobjects[magcol]['binned_stetsonj_median']) +
-                min_stetj_stdev*allobjects[magcol]['binned_stetsonj_stdev'],
+                min_stetj_stdev*np.array(
+                    allobjects[magcol]['binned_stetsonj_stdev']
+                ),
                 linewidth=3.0, linestyle='dashed'
             )
             plt.xlabel('SDSS r')
@@ -1625,7 +1627,9 @@ def variability_threshold(featuresdir,
             plt.plot(
                 allobjects[magcol]['binned_sdssr_median'],
                 np.array(allobjects[magcol]['binned_iqr_median']) +
-                min_iqr_stdev*allobjects[magcol]['binned_iqr_stdev'],
+                min_iqr_stdev*np.array(
+                    allobjects[magcol]['binned_iqr_stdev']
+                ),
                 linewidth=3.0, linestyle='dashed'
             )
             plt.xlabel('SDSS r')
@@ -1644,7 +1648,9 @@ def variability_threshold(featuresdir,
             plt.plot(
                 allobjects[magcol]['binned_sdssr_median'],
                 np.array(allobjects[magcol]['binned_eta_median']) +
-                min_eta_stdev*allobjects[magcol]['binned_eta_stdev'],
+                min_eta_stdev*np.array(
+                    allobjects[magcol]['binned_eta_stdev']
+                ),
                 linewidth=3.0, linestyle='dashed'
             )
             plt.xlabel('SDSS r')
