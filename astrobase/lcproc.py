@@ -1238,8 +1238,7 @@ def variability_threshold(featuresdir,
                           lcformat='hat-sql',
                           min_stetj_stdev=2.0,
                           min_iqr_stdev=2.0,
-                          min_eta_stdev=2.0,
-                          plotdists=True):
+                          min_eta_stdev=2.0):
     '''This generates a list of objects with stetson J, IQR, and eta above some
     threshold value to select them as potential variable stars.
 
@@ -1611,6 +1610,7 @@ def variability_threshold(featuresdir,
     return allobjects
 
 
+
 def plot_variability_thresholds(varthreshpkl,
                                 xmin_stetj_stdev=2.0,
                                 xmin_iqr_stdev=2.0,
@@ -1717,7 +1717,7 @@ def plot_variability_thresholds(varthreshpkl,
         plt.ylim((-0.1,3.0))
         plt.tight_layout()
 
-        plt.savefig('varfeatures-%s-%s-distributions.png' % (outfile,
+        plt.savefig('varfeatures-%s-%s-distributions.png' % (varthreshpkl,
                                                              magcol),
                     bbox_inches='tight')
         plt.close('all')
