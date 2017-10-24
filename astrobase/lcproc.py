@@ -1607,7 +1607,7 @@ def variability_threshold(featuresdir,
 
         for magcol in magcols:
 
-            fig = plt.figure(figsize=(20,16))
+            fig = plt.figure(figsize=(10,20))
 
             # the mag vs stetsonj
             plt.subplot(311)
@@ -1627,6 +1627,7 @@ def variability_threshold(featuresdir,
                 linewidth=3.0, linestyle='dashed'
             )
             plt.xlim((magbins.min()-0.25, magbins.max()))
+            plt.ylim((-1.0,20.0))
             plt.xlabel('SDSS r')
             plt.ylabel('Stetson J index')
             plt.title('%s - SDSS r vs. Stetson J index' % magcol)
@@ -1653,6 +1654,7 @@ def variability_threshold(featuresdir,
             plt.ylabel('IQR')
             plt.title('%s - SDSS r vs. IQR' % magcol)
             plt.xlim((magbins.min()-0.25, magbins.max()))
+            plt.ylim((-0.1,1.0))
             plt.tight_layout()
 
             # the mag vs IQR
@@ -1676,6 +1678,7 @@ def variability_threshold(featuresdir,
             plt.ylabel(r'$\eta$')
             plt.title(r'%s - SDSS r vs. $\eta$' % magcol)
             plt.xlim((magbins.min()-0.25, magbins.max()))
+            plt.ylim((-0.1,4.0))
             plt.tight_layout()
 
             plt.savefig('varfeatures-%s-%s-distributions.png' % (outfile,
