@@ -1600,11 +1600,11 @@ def variability_threshold(featuresdir,
                      allobjects[magcol]['stetsonj'],
                      marker='.',ms=1.0, linestyle='none',
                      rasterized=True)
-            plt.plot(allobjects[magcol]['binned_sdssr'],
+            plt.plot(allobjects[magcol]['binned_sdssr_median'],
                      allobjects[magcol]['binned_stetsonj_median'],
                      linewidth=3.0)
             plt.plot(
-                allobjects[magcol]['binned_sdssr'],
+                allobjects[magcol]['binned_sdssr_median'],
                 np.array(allobjects[magcol]['binned_stetsonj_median']) +
                 min_stetj_stdev*allobjects[magcol]['binned_stetsonj_stdev'],
                 linewidth=3.0, linestyle='dashed'
@@ -1619,11 +1619,11 @@ def variability_threshold(featuresdir,
                      allobjects[magcol]['iqr'],
                      marker='.',ms=1.0, linestyle='none',
                      rasterized=True)
-            plt.plot(allobjects[magcol]['binned_sdssr'],
+            plt.plot(allobjects[magcol]['binned_sdssr_median'],
                      allobjects[magcol]['binned_iqr_median'],
                      linewidth=3.0)
             plt.plot(
-                allobjects[magcol]['binned_sdssr'],
+                allobjects[magcol]['binned_sdssr_median'],
                 np.array(allobjects[magcol]['binned_iqr_median']) +
                 min_iqr_stdev*allobjects[magcol]['binned_iqr_stdev'],
                 linewidth=3.0, linestyle='dashed'
@@ -1638,11 +1638,11 @@ def variability_threshold(featuresdir,
                      allobjects[magcol]['eta'],
                      marker='.',ms=1.0, linestyle='none',
                      rasterized=True)
-            plt.plot(allobjects[magcol]['binned_sdssr'],
+            plt.plot(allobjects[magcol]['binned_sdssr_median'],
                      allobjects[magcol]['binned_eta_median'],
                      linewidth=3.0)
             plt.plot(
-                allobjects[magcol]['magbins'],
+                allobjects[magcol]['binned_sdssr_median'],
                 np.array(allobjects[magcol]['binned_eta_median']) +
                 min_eta_stdev*allobjects[magcol]['binned_eta_stdev'],
                 linewidth=3.0, linestyle='dashed'
