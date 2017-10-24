@@ -1333,6 +1333,13 @@ def variability_threshold(featuresdir,
             else:
                 sdssr = np.nan
 
+            if sdssr == 0.0:
+                print(thisfeatures['info']['sdssr'],
+                      thisfeatures[magcol]['median'],
+                      thisfeatures['info']['jmag'],
+                      thisfeatures['info']['hmag'],
+                      thisfeatures['info']['kmag'])
+
             # the MAD of the light curve
             if (magcol in thisfeatures and
                 thisfeatures[magcol] and
@@ -1606,7 +1613,7 @@ def variability_threshold(featuresdir,
 
         for magcol in magcols:
 
-            fig = plt.figure(figsize=(15,12))
+            fig = plt.figure(figsize=(20,16))
 
             # the mag vs stetsonj
             plt.subplot(311)
