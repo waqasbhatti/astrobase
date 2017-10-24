@@ -1607,6 +1607,9 @@ def variability_threshold(featuresdir,
 
 
 def plot_variability_thresholds(varthreshpkl,
+                                min_stetj_stdev=2.0,
+                                min_iqr_stdev=2.0,
+                                min_eta_stdev=2.0,
                                 lcformat='hat-sql',
                                 magcols=None):
     '''
