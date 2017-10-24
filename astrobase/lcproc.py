@@ -1477,13 +1477,6 @@ def variability_threshold(featuresdir,
                     thisbin_stetsonj > (thisbin_stetsonj_median +
                                         min_stetj_stdev*thisbin_stetsonj_stdev)
                 ]
-                LOGINFO(
-                    '%s: objects > threshold for %s in mag bin: (%s,%s) = %s' %
-                    (magcol, 'stetsonj',
-                     magbins[magi], magbins[magi+1],
-                     thisbin_objectids_thresh_stetsonj.size)
-                )
-
                 thisbin_iqr_median = np.median(thisbin_iqr)
                 thisbin_iqr_stdev = np.median(
                     np.abs(thisbin_iqr - thisbin_iqr_median)
@@ -1495,13 +1488,6 @@ def variability_threshold(featuresdir,
                     thisbin_iqr > (thisbin_iqr_median +
                                    min_iqr_stdev*thisbin_iqr_stdev)
                 ]
-                LOGINFO(
-                    '%s: objects > threshold for %s in mag bin: (%s,%s) = %s' %
-                    (magcol, 'IQR',
-                     magbins[magi], magbins[magi+1],
-                     thisbin_objectids_thresh_iqr.size)
-                )
-
                 thisbin_inveta_median = np.median(thisbin_inveta)
                 thisbin_inveta_stdev = np.median(
                     np.abs(thisbin_inveta - thisbin_inveta_median)
@@ -1513,25 +1499,12 @@ def variability_threshold(featuresdir,
                     thisbin_inveta > (thisbin_inveta_median +
                                    min_inveta_stdev*thisbin_inveta_stdev)
                 ]
-                LOGINFO(
-                    '%s: objects > threshold for %s in mag bin: (%s,%s) = %s' %
-                    (magcol, 'inveta',
-                     magbins[magi], magbins[magi+1],
-                     thisbin_objectids_thresh_inveta.size)
-                )
-
                 thisbin_objectids_thresh_all = reduce(
                     np.intersect1d,
                     (thisbin_objectids_thresh_stetsonj,
                      thisbin_objectids_thresh_iqr,
                      thisbin_objectids_thresh_inveta)
                 )
-                LOGINFO(
-                    '%s: objects > all thresholds in mag bin: (%s,%s) = %s' %
-                    (magcol, magbins[magi], magbins[magi+1],
-                     thisbin_objectids_thresh_all.size)
-                )
-
             else:
 
                 thisbin_objectids_thresh_stetsonj = (
@@ -1603,6 +1576,28 @@ def variability_threshold(featuresdir,
             binned_objectids_thresh_all
         )
 
+        # get the common selected objects thru all measures
+        allobjects[magcol]['objectids_all_thresh_all_magbins'] = np.unique(
+            np.concatenate(allobjects[magcol]['binned_objectids_thresh_all'])
+        )
+        allobjects[magcol]['objectids_stetsonj_thresh_all_magbins'] = np.unique(
+            np.concatenate(allobjects[magcol]['binned_objectids_thresh_stetsonj'])
+        )
+        allobjects[magcol]['objectids_inveta_thresh_all_magbins'] = np.unique(
+            np.concatenate(allobjects[magcol]['binned_objectids_thresh_inveta'])
+        )
+        allobjects[magcol]['objectids_iqr_thresh_all_magbins'] = np.unique(
+            np.concatenate(allobjects[magcol]['binned_objectids_thresh_iqr'])
+        )
+        LOGINFO(
+            '%s: stetsonj selected: %s, iqr selected: %s, '
+            'inveta selected: %s, stetsonj AND iqr AND inveta selected: %s'
+            (magcol,
+             allobjects[magcol]['objectids_stetsonj_thresh_all_magbins'].size,
+             allobjects[magcol]['objectids_iqr_thresh_all_magbins'].size,
+             allobjects[magcol]['objectids_inveta_thresh_all_magbins'].size,
+             allobjects[magcol]['objectids_all_thresh_all_magbins'].size)
+        )
 
     #
     # done with all magcols
