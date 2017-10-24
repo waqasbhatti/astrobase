@@ -1405,15 +1405,20 @@ def variability_threshold(featuresdir,
             np.isfinite(allobjects[magcol]['iqr']) &
             np.isfinite(allobjects[magcol]['eta'])
         )
-        allobjects[magcol]['objectid'] = allobjects[magcol]['objectid'][thisfinind]
+        allobjects[magcol]['objectid'] = allobjects[magcol]['objectid'][
+            thisfinind
+        ]
         allobjects[magcol]['sdssr'] = allobjects[magcol]['sdssr'][thisfinind]
         allobjects[magcol]['lcmad'] = allobjects[magcol]['lcmad'][thisfinind]
-        allobjects[magcol]['stetsonj'] = allobjects[magcol]['stetsonj'][thisfinind]
+        allobjects[magcol]['stetsonj'] = allobjects[magcol]['stetsonj'][
+            thisfinind
+        ]
         allobjects[magcol]['iqr'] = allobjects[magcol]['iqr'][thisfinind]
         allobjects[magcol]['eta'] = allobjects[magcol]['eta'][thisfinind]
 
         # do the thresholding by magnitude bin
-        magbininds = np.digitize(allobjects[magcol]['sdssr'], magbins)
+        magbininds = np.digitize(allobjects[magcol]['sdssr'],
+                                 magbins)
 
         binned_objectids = []
         binned_sdssr = []
@@ -1466,7 +1471,8 @@ def variability_threshold(featuresdir,
                 binned_stetsonj_stdev.append(thisbin_stetsonj_stdev)
 
                 thisbin_objectids_thresh_stetsonj = thisbin_objectids[
-                    thisbin_stetsonj > (min_stetj_stdev*thisbin_stetsonj_stdev)
+                    thisbin_stetsonj > (thisbin_stetsonj_median +
+                                        min_stetj_stdev*thisbin_stetsonj_stdev)
                 ]
                 LOGINFO(
                     '%s: objects > threshold for %s in mag bin: (%s,%s) = %s' %
@@ -1483,7 +1489,8 @@ def variability_threshold(featuresdir,
                 binned_iqr_stdev.append(thisbin_iqr_stdev)
 
                 thisbin_objectids_thresh_iqr = thisbin_objectids[
-                    thisbin_iqr > (min_iqr_stdev*thisbin_iqr_stdev)
+                    thisbin_iqr > (thisbin_iqr_median +
+                                   min_iqr_stdev*thisbin_iqr_stdev)
                 ]
                 LOGINFO(
                     '%s: objects > threshold for %s in mag bin: (%s,%s) = %s' %
@@ -1500,7 +1507,8 @@ def variability_threshold(featuresdir,
                 binned_eta_stdev.append(thisbin_eta_stdev)
 
                 thisbin_objectids_thresh_eta = thisbin_objectids[
-                    thisbin_eta > (min_eta_stdev*thisbin_eta_stdev)
+                    thisbin_eta > (thisbin_eta_median +
+                                   min_eta_stdev*thisbin_eta_stdev)
                 ]
                 LOGINFO(
                     '%s: objects > threshold for %s in mag bin: (%s,%s) = %s' %
