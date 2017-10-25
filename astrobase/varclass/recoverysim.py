@@ -884,7 +884,7 @@ def make_fakelc_collection(lclist,
     with open(dboutfname, 'wb') as outfd:
         pickle.dump(fakedb, outfd)
 
-    LOGINFO('wrote %s fake LCs to: %s' % simbasedir)
+    LOGINFO('wrote %s fake LCs to: %s' % (len(fakeresults), simbasedir))
     LOGINFO('fake LC info written to: %s' % dboutfname)
 
     return dboutfname
