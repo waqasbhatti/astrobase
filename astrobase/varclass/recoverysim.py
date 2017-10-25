@@ -722,11 +722,9 @@ def make_fakelc_collection(lclist,
     if not isinstance(lclist, np.ndarray):
         lclist = np.array(lclist)
 
-    randomlcindex = npr.choice(lclist, maxlcs, replace=False)
-    chosenlcs = lclist[randomlcindex]
+    chosenlcs = npr.choice(lclist, maxlcs, replace=False)
 
     fakelcdir = os.path.join(simbasedir, 'lightcurves')
-
     if not os.path.exists(fakelcdir):
         os.makedirs(fakelcdir)
 
