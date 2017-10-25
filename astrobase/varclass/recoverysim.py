@@ -662,7 +662,7 @@ def collection_worker(task):
             **kwargs
         )
 
-        return fakelcsresults
+        return fakelcresults
 
     except Exception as e:
 
@@ -718,6 +718,22 @@ def make_fakelc_collection(lclist,
     variability recovery simulation.
 
     '''
+
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    (fileglob, readerfunc, dtimecols, dmagcols,
+     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+    # override the default timecols, magcols, and errcols
+    # using the ones provided to the function
+    if timecols is None:
+        timecols = dtimecols
+    if magcols is None:
+        magcols = dmagcols
+    if errcols is None:
+        errcols = derrcols
 
     if not isinstance(lclist, np.ndarray):
         lclist = np.array(lclist)
