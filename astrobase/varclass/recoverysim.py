@@ -744,11 +744,11 @@ def make_fakelc_collection(lclist,
     if not os.path.exists(fakelcdir):
         os.makedirs(fakelcdir)
 
-    tasks = [(x, simbasedir, {'lcformat':lcformat,
-                              'timecols':timecols,
-                              'magcols':magcols,
-                              'errcols':errcols,
-                              'randomizeinfo':randomizeinfo})
+    tasks = [(x, fakelcdir, {'lcformat':lcformat,
+                             'timecols':timecols,
+                             'magcols':magcols,
+                             'errcols':errcols,
+                             'randomizeinfo':randomizeinfo})
              for x in chosenlcs]
 
     # process these light curves into fake light curves
@@ -757,8 +757,6 @@ def make_fakelc_collection(lclist,
 
     fakeresults = [x for x in results]
     executor.shutdown()
-
-    LOGINFO('collecting info...')
 
     fakedb = {'simbasedir':simbasedir,
               'lcformat':lcformat,
@@ -792,6 +790,8 @@ def make_fakelc_collection(lclist,
 
     # now go through the collection and get the mag/rms and err/rms for each
     # star. these will be used later to add noise to light curves
+    LOGINFO('collecting info...')
+
     for fr in fakeresults:
 
         if fr is not None:
@@ -807,11 +807,11 @@ def make_fakelc_collection(lclist,
 
             fmags.append(finfo['sdssr'])
             # this is per magcol
-            fmagmads.append([fr['moments'][x]['mad'] for x in magcols])
+            fmagmads.append([fmoments[x]['mad'] for x in magcols])
 
             # these are per errcol
-            ferrmeds.append([fr['moments'][x]['median'] for x in errcols])
-            ferrmads.append([fr['moments'][x]['mad'] for x in errcols])
+            ferrmeds.append([fmoments[x]['median'] for x in errcols])
+            ferrmads.append([fmoments[x]['mad'] for x in errcols])
 
 
     # convert to nparrays
