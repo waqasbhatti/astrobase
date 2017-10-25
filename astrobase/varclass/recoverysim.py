@@ -38,15 +38,16 @@ run period searches and see recovery rate by period, amplitude, magnitude,
 number of observations, etc.
 
 '''
+import os
+import os.path
+import pickle
+
 import multiprocessing as mp
 import logging
 from datetime import datetime
 from traceback import format_exc
 from concurrent.futures import ProcessPoolExecutor
-
-import numpy as np
-import numpy.random as npr
-import scipy.stats as sps
+from hashlib import md5
 
 # to turn a list of keys into a dict address
 # from https://stackoverflow.com/a/14692747
@@ -54,6 +55,18 @@ from functools import reduce
 from operator import getitem
 def dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
+
+import numpy as np
+import numpy.random as npr
+# seed the numpy random generator
+npr.seed(0xdecaff)
+
+import scipy.stats as sps
+
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
 
 #############
 ## LOGGING ##
@@ -114,10 +127,27 @@ from astrobase.astrokep import read_kepler_fitslc, read_kepler_pklc
 from ..lcmodels import transits, eclipses, flares, sinusoidal
 from ..varbase.features import all_nonperiodic_features
 
+from ..magnitudes import jhk_to_sdssr
 
 #######################
 ## LC FORMATS SET UP ##
 #######################
+
+def read_pklc(lcfile):
+    '''
+    This just reads a pickle.
+
+    '''
+
+    try:
+        with open(lcfile,'rb') as infd:
+            lcdict = pickle.load(infd)
+    except UnicodeDecodeError:
+        with open(lcfile,'rb') as infd:
+            lcdict = pickle.load(infd, encoding='latin1')
+
+    return lcdict
+
 
 # LC format -> [default fileglob,  function to read LC format]
 LCFORM = {
@@ -289,22 +319,393 @@ def register_custom_lcformat(formatkey,
     LOGINFO('added %s to registry' % formatkey)
 
 
+#############################################
+## FUNCTIONS TO GENERATE FAKE LIGHT CURVES ##
+#############################################
+
+def generate_transit_lightcurve(fakelcfile, transitparams):
+    '''
+    This generates fake transit light curves.
+
+    '''
+
+
+def generate_eb_lightcurve(fakelcfile, ebparams):
+    '''
+    This generates fake EB light curves.
+
+    '''
+
+
+def generate_flare_lightcurve(fakelcfile, flareparams):
+    '''
+    This generates fake flare light curves.
+
+    '''
+
+
+def generate_sinusoidal_lightcurve(fakelcfile,
+                                   sintype,
+                                   fourierparams):
+    '''This generates fake sinusoidal light curves.
+
+    sintype is 'RRab', 'RRc', 'HADS', 'rotation', which sets the fourier order
+    and period limits like so:
+
+    type        fourier order limits        period limit
+
+    RRab        5 to 8                      0.45 to 0.80 days
+    RRc         2 to 4                      0.10 to 0.40 days
+    HADS        5 to 8                      0.04 to 0.10 days
+    rotation    1 to 3                      0.8 to 120.0 days
+    LPV         1 to 3                      250 to 500.0 days
+
+    '''
+
+def generate_rrab_lightcurve(fakelcfile, rrabparams):
+    '''This wraps generate_sinusoidal_lightcurves for RRab LCs.
+
+    '''
+
+def generate_rrc_lightcurve(fakelcfile, rrcparams):
+    '''This wraps generate_sinusoidal_lightcurves for RRc LCs.
+
+    '''
+
+def generate_hads_lightcurve(fakelcfile, hadsparams):
+    '''This wraps generate_sinusoidal_lightcurves for HADS LCs.
+
+    '''
+
+def generate_rotation_lightcurve(fakelcfile, rotparams):
+    '''This wraps generate_sinusoidal_lightcurves for rotation LCs.
+
+    '''
+
+def generate_lpv_lightcurve(fakelcfile, lpvparams):
+    '''This wraps generate_sinusoidal_lightcurves for LPV LCs.
+
+    '''
+
+
+# this maps functions to generate light curves to their vartype codes as put
+# into the make_fakelc_collection function.
+VARTYPE_LCGEN_MAP = {
+    'EB': generate_eb_lightcurve,
+    'RRAB': generate_rrab_lightcurve,
+    'RRC': generate_rrc_lightcurve,
+    'ROT': generate_rotation_lightcurve,
+    'FLR': generate_flare_lightcurve,
+    'HADS': generate_hads_lightcurve,
+    'PLT': generate_transit_lightcurve,
+    'LPV': generate_lpv_lightcurve,
+}
+
 
 
 ###############################################
 ## FUNCTIONS TO COLLECT LIGHT CURVES FOR SIM ##
 ###############################################
 
-def collect_and_index_examplelcs(lclist,
-                                 simbasedir,
-                                 maxlcs=1000,
-                                 lcformat='hat-sql',
-                                 fileglob=None,
-                                 recursive=True,
-                                 timecols=None,
-                                 magcols=None,
-                                 errcols=None):
+def make_fakelc(lcfile,
+                outdir,
+                lcformat='hat-sql',
+                timecols=None,
+                magcols=None,
+                errcols=None,
+                randomizeinfo=False):
+    '''This preprocesses the light curve and sets it up to be a sim light curve.
+
+    If randomizeinfo is True, will generate random RA, DEC, and SDSS r in the
+    output fakelc even if these values are available from the input LC.
+
+    '''
+
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    (fileglob, readerfunc, dtimecols, dmagcols,
+     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+    # override the default timecols, magcols, and errcols
+    # using the ones provided to the function
+    if timecols is None:
+        timecols = dtimecols
+    if magcols is None:
+        magcols = dmagcols
+    if errcols is None:
+        errcols = derrcols
+
+    # read in the light curve
+    lcdict = readerfunc(lcfile)
+    if isinstance(lcdict, tuple) and isinstance(lcdict[0],dict):
+        lcdict = lcdict[0]
+
+    # set up the fakelcdict with a randomly assigned objectid
+    fakeobjectid = md5(npr.bytes(12)).hexdigest()[-8:]
+    fakelcdict = {
+        'objectid':fakeobjectid,
+        'objectinfo':{'objectid':fakeobjectid},
+        'columns':[],
+        'moments':{},
+        'origformat':lcformat,
+    }
+
+    # get the time columns
+    for tcind, tcol in enumerate(timecols):
+
+        if '.' in tcol:
+            tcolget = tcol.split('.')
+        else:
+            tcolget = [tcol]
+
+        if tcol not in fakelcdict:
+            fakelcdict[tcol] = dict_get(lcdict, tcolget)
+            fakelcdict['columns'].append(tcol)
+
+            # update the ndet with the first time column's size. it's possible
+            # that different time columns have different lengths, but that would
+            # be weird and we won't deal with it for now
+            if tcind == 0:
+                fakelcdict['objectinfo']['ndet'] = fakelcdict[tcol].size
+
+
+    # get the mag columns
+    for mcol in magcols:
+
+        if '.' in mcol:
+            mcolget = mcol.split('.')
+        else:
+            mcolget = [mcol]
+
+        if mcol not in fakelcdict:
+
+            measuredmags = dict_get(lcdict, mcolget)
+            measuredmags = measuredmags[np.isfinite(measuredmags)]
+
+            # we require at least 10 finite measurements
+            if measuredmags.size > 9:
+                measuredmedian = np.median(measuredmags)
+                measuredmad = np.median(np.abs(measuredmags - measuredmedian))
+                fakelcdict['moments'][mcol] = {'median':measuredmedian,
+                                               'mad':measuredmad}
+            else:
+                LOGWARNING(
+                    'input LC %s does not have enough finite measurements, '
+                    'no mag moments calculated' % lcfile
+                )
+                fakelcdict['moments'][mcol] = {'median':np.nan,
+                                               'mad':np.nan}
+
+            # the magnitude column is set to all zeros initially
+            fakelcdict[mcol] = np.full_like(dict_get(lcdict, mcolget), 0.0)
+            fakelcdict['columns'].append(mcol)
+
+
+    # get the err columns
+    for ecol in errcols:
+
+        if '.' in ecol:
+            ecolget = ecol.split('.')
+        else:
+            ecolget = [ecol]
+
+        if ecol not in fakelcdict:
+
+            measurederrs = dict_get(lcdict, ecolget)
+            measurederrs = measurederrs[np.isfinite(measurederrs)]
+
+            # we require at least 10 finite measurements
+            # we'll calculate the median and MAD of the errs to use later on
+            if measurederrs.size > 9:
+                measuredmedian = np.median(measurederrs)
+                measuredmad = np.median(np.abs(measurederrs - measuredmedian))
+                fakelcdict['moments'][ecol] = {'median':measuredmedian,
+                                               'mad':measuredmad}
+            else:
+                LOGWARNING(
+                    'input LC %s does not have enough finite measurements, '
+                    'no err moments calculated' % lcfile
+                )
+                fakelcdict['moments'][ecol] = {'median':np.nan,
+                                               'mad':np.nan}
+
+            # the errors column is set to all zeros initially
+            fakelcdict[ecol] = np.full_like(dict_get(lcdict, ecolget), 0.0)
+            fakelcdict['columns'].append(ecol)
+
+
+    # now, get the actual mag of this object and other info and use that to
+    # populate the corresponding entries of the fakelcdict objectinfo
+    if (not randomizeinfo and
+        'objectinfo' in lcdict and
+        isinstance(lcdict['objectinfo'], dict)):
+
+        objectinfo = lcdict['objectinfo']
+
+        # get the RA
+        if ('ra' in objectinfo and
+
+            objectinfo['ra'] is not None and
+            np.isfinite(objectinfo['ra'])):
+
+            fakelcdict['objectinfo']['ra'] = objectinfo['ra']
+
+        else:
+
+            # if there's no RA available, we'll assign a random one between 0
+            # and 360.0
+            LOGWARNING('no "ra" key available in objectinfo dict for %s, '
+                       'assigning a random right ascension' % lcfile)
+            fakelcdict['objectinfo']['ra'] = npr.random()*360.0
+
+        # get the DEC
+        if ('decl' in objectinfo and
+            objectinfo['decl'] is not None and
+            np.isfinite(objectinfo['decl'])):
+
+            fakelcdict['objectinfo']['decl'] = objectinfo['decl']
+
+        else:
+
+            # if there's no DECL available, we'll assign a random one between
+            # -90.0 and +90.0
+            LOGWARNING('no "decl" key available in objectinfo dict for %s, '
+                       'assigning a random declination' % lcfile)
+            fakelcdict['objectinfo']['decl'] = npr.random()*90.0 - 90.0
+
+        # get the SDSS r mag for this object
+        # this will be used for getting the eventual mag-RMS relation later
+        if ('sdssr' in objectinfo and
+            objectinfo['sdssr'] is not None and
+            np.isfinite(objectinfo['sdssr'])):
+
+            fakelcdict['objectinfo']['sdssr'] = objectinfo['sdssr']
+
+        # if the SDSS r is unavailable, but we have J, H, K: use those to get
+        # the SDSS r by using transformations
+        elif (('jmag' in objectinfo and
+               objectinfo['jmag'] is not None and
+               np.isfinite(objectinfo['jmag'])) and
+              ('hmag' in objectinfo and
+               objectinfo['hmag'] is not None and
+               np.isfinite(objectinfo['hmag'])) and
+              ('kmag' in objectinfo and
+               objectinfo['kmag'] is not None and
+               np.isfinite(objectinfo['kmag']))):
+
+            LOGWARNING('used JHK mags to generate an SDSS r mag for %s' %
+                       lcfile)
+            fakelcdict['objectinfo']['sdssr'] = jhk_to_sdssr(
+                objectinfo['jmag'],
+                objectinfo['hmag'],
+                objectinfo['kmag']
+            )
+
+        # if there are no mags available at all, generate a random mag
+        # between 8 and 16.0
+        else:
+
+            fakelcdict['objectinfo']['sdssr'] = npr.random()*8.0 + 8.0
+
+    # if there's no info available, generate fake info
+    else:
+
+        LOGWARNING('no object information found in %s or randomizeinfo = True, '
+                   'generating random ra, decl, sdssr' %
+                   lcfile)
+        fakelcdict['objectinfo']['ra'] = npr.random()*360.0
+        fakelcdict['objectinfo']['decl'] = npr.random()*90.0 - 90.0
+        fakelcdict['objectinfo']['sdssr'] = npr.random()*8.0 + 8.0
+
+    # generate an output file name
+    fakelcfname = '%s-fakelc.pkl' % fakelcdict['objectid']
+    fakelcfpath = os.path.join(outdir, fakelcfname)
+
+    # write this out to the output directory
+    with open(fakelcfpath,'wb') as outfd:
+        pickle.dump(fakelcdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # return the fakelc path, its columns, info, and moments so we can put them
+    # into a collection DB later on
+    LOGINFO('real LC %s -> fake LC %s OK' % (lcfile, fakelcfpath))
+
+    return (fakelcfpath, fakelcdict['columns'],
+            fakelcdict['objectinfo'], fakelcdict['moments'])
+
+
+
+
+##########################
+## COLLECTION FUNCTIONS ##
+##########################
+
+
+def collection_worker(task):
+    '''
+    This wraps process_fakelc for collect_and_index_fakelcs below.
+
+    task[0] = lcfile
+    task[1] = outdir
+    task[2] = {'lcformat', 'timecols', 'magcols', 'errcols', 'randomizeinfo'}
+
+    '''
+
+    lcfile, outdir, kwargs = task
+
+    try:
+
+        fakelcresults = make_fakelc(
+            lcfile,
+            outdir,
+            **kwargs
+        )
+
+        return fakelcsresults
+
+    except Exception as e:
+
+        LOGEXCEPTION('could not process %s into a fakelc' % lcfile)
+        return None
+
+
+
+def make_fakelc_collection(lclist,
+                           simbasedir,
+                           maxlcs=25000,
+                           maxvars=2000,
+                           vartypes=['EB','RRAB','RRC',
+                                     'ROT','FLR','HADS',
+                                     'PLT','LPV'],
+                           randomizeinfo=False,
+                           lcformat='hat-sql',
+                           timecols=None,
+                           magcols=None,
+                           errcols=None,
+                           nworkers=16):
+
     '''This prepares light curves for the recovery sim.
+
+    Args
+    ----
+
+    lclist is a list of existing project light curves. This can be generated
+    from lcproc.getlclist or similar.
+
+    simbasedir is the directory to where the fake light curves and their
+    information will be copied to.
+
+    maxlcs is the total number of light curves to choose from lclist and
+    generate as fake LCs.
+
+    maxvars is the total number of fake light curves that will be marked as
+    variable.
+
+    vartypes is a list of variable types to put into the collection. The
+    vartypes for each fake variable star will be chosen uniformly from this
+    list.
+
 
     Collects light curves from lclist using a uniform sampling among
     them. Copies them to the simbasedir, zeroes out their mags and errs but
@@ -318,36 +719,176 @@ def collect_and_index_examplelcs(lclist,
 
     '''
 
+    if not isinstance(lclist, np.ndarray):
+        lclist = np.array(lclist)
+
+    randomlcindex = npr.choice(lclist, maxlcs, replace=False)
+    chosenlcs = lclist[randomlcindex]
+
+    fakelcdir = os.path.join(simbasedir, 'lightcurves')
+
+    if not os.path.exists(fakelcdir):
+        os.makedirs(fakelcdir)
+
+    tasks = [(x, simbasedir, {'lcformat':lcformat,
+                              'timecols':timecols,
+                              'magcols':magcols,
+                              'errcols':errcols,
+                              'randomizeinfo':randomizeinfo})
+             for x in chosenlcs]
+
+    # process these light curves into fake light curves
+    with ProcessPoolExecutor(max_workers=nworkers) as executor:
+        results = executor.map(collection_worker, tasks)
+
+    fakeresults = [x for x in results]
+    executor.shutdown()
+
+    LOGINFO('collecting info...')
+
+    fakedb = {'simbasedir':simbasedir,
+              'lcformat':lcformat,
+              'timecols':timecols,
+              'magcols':magcols,
+              'errcols':errcols}
+
+    fobjects, fpaths = [], []
+    fras, fdecls, fndets = [], [], []
+
+    fmags, fmagmads = [], []
+    ferrmeds, ferrmads = [], []
+
+    totalvars = 0
+
+    # these are the indices for the variable objects chosen randomly
+    isvariableind = npr.randint(0,high=len(fakeresults), size=maxvars)
+    isvariable = np.full(len(fakeresults), False, dtype=np.bool)
+    isvariable[isvariableind] = True
+    fakedb['isvariable'] = isvariable
+
+    LOGINFO('added %s variable stars' % maxvars)
+
+    # these are the variable types for each variable object
+    vartypeind = npr.randint(0,high=len(vartypes), size=maxvars)
+    vartypearr = np.array([vartypes[x] for x in vartypeind])
+    fakedb['vartype'] = vartypearr
+
+    for vt in sorted(vartypes):
+        LOGINFO('%s: %s stars' % (vt, vartypearr[vartypearr == vt].size))
+
+    # now go through the collection and get the mag/rms and err/rms for each
+    # star. these will be used later to add noise to light curves
+    for fr in fakeresults:
+
+        if fr is not None:
+
+            fpath, fcols, finfo, fmoments = fr
+
+            fobjects.append(finfo['objectid'])
+            fpaths.append(fpath)
+
+            fras.append(finfo['ra'])
+            fdecls.append(finfo['decl'])
+            fndets.append(finfo['ndet'])
+
+            fmags.append(finfo['sdssr'])
+            # this is per magcol
+            fmagmads.append([fr['moments'][x]['mad'] for x in magcols])
+
+            # these are per errcol
+            ferrmeds.append([fr['moments'][x]['median'] for x in errcols])
+            ferrmads.append([fr['moments'][x]['mad'] for x in errcols])
+
+
+    # convert to nparrays
+    fobjects = np.array(fobjects)
+    fpaths = np.array(fpaths)
+
+    fras = np.array(fras)
+    fdecls = np.array(fdecls)
+    fndets = np.array(fndets)
+
+    fmags = np.array(fmags)
+    fmagmads = np.array(fmagmads)
+    ferrmeds = np.array(ferrmeds)
+    ferrmads = np.array(ferrmads)
+
+    # put these in the fakedb
+    fakedb['objectid'] = fobjects
+    fakedb['lcfpath'] = fpaths
+
+    fakedb['ra'] = fras
+    fakedb['decl'] = fdecls
+    fakedb['ndet'] = fndets
+
+    fakedb['sdssr'] = fmags
+    fakedb['mad'] = fmagmads
+    fakedb['errmedian'] = ferrmeds
+    fakedb['errmad'] = ferrmads
+
+    # get the mag-RMS curve for this light curve collection for each magcol
+
+    fakedb['magrms'] = {}
+
+    for mcolind, mcol in enumerate(magcols):
+
+        LOGINFO('characterizing mag-RMS for %s' % mcol)
+
+        thisrms = fakedb['mad'][:,mcolind]*1.483
+        finind = np.isfinite(thisrms) & np.isfinite(fmags)
+        thisrms = thisrms[finind]
+        thismags = fmags[finind]
+
+        # do a polyfit - make sure to use the unsaturated star range
+        fitcoeffs = np.polyfit(thismags, thisrms, 2)
+
+        # get the poly function with these coeffs
+        magrmspoly = np.poly1d(fitcoeffs)
+
+        # write it to the output dict
+        fakedb['magrms'][mcol] = magrmspoly
+
+        # make a plot of the mag-rms relation and the fit
+        plt.figure(figsize=(10,8))
+        plt.plot(thismags, thisrms,
+                 linestyle='none', marker='.', ms=1.0, rasterized=True)
+        thismodelmags = np.linspace(8.0,16.0,num=2000)
+        plt.plot(thismodelmags, magrmspoly(thismodelmags))
+        plt.xlabel('SDSS r [mag]')
+        plt.ylabel(r'RMS (1.483 $\times$ MAD)')
+        plt.title('SDSS r vs. RMS for magcol: %s' % mcol)
+        plt.yscale('log')
+        plt.tight_layout()
+
+        plotfname = os.path.join(simbasedir,'mag-rms-%s.png' % mcol)
+        plt.savefig(plotfname, bbox_inches='tight')
+        plt.close('all')
+
+
+    # finally, write the collection DB to a pickle in simbasedir
+    dboutfname = os.path.join(simbasedir,'fakelcs-info.pkl')
+    with open(dboutfname, 'wb') as outfd:
+        pickle.dump(fakedb, outfd)
+
+    LOGINFO('wrote %s fake LCs to: %s' % simbasedir)
+    LOGINFO('fake LC info written to: %s' % dboutfname)
+
+    return dboutfname
 
 
 
-#############################################
-## FUNCTIONS TO GENERATE FAKE LIGHT CURVES ##
-#############################################
+########################################################
+## FUNCTIONS TO ADD VARIABLE LCS TO FAKELC COLLECTION ##
+########################################################
 
-def generate_transit_lightcurve():
+
+def add_variability_to_fakelc(fakelcfile,
+                              vartype,
+                              varparams,
+                              noiseparams):
     '''
-    This generates fake transit light curves.
+    This adds variability of the specified type to the fake LC.
 
-    '''
-
-
-def generate_eb_lightcurve():
-    '''
-    This generates fake EB light curves.
-
-    '''
-
-
-def generate_flare_lightcurve():
-    '''
-    This generates fake flare light curves.
-
-    '''
-
-
-def generate_sinusoidal_lightcurve():
-    '''
-    This generates fake sinusoidal light curves.
+    Also adds noise as specified by noiseparams.
 
     '''
