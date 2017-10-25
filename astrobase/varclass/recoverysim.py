@@ -682,8 +682,7 @@ def make_fakelc_collection(lclist,
                            lcformat='hat-sql',
                            timecols=None,
                            magcols=None,
-                           errcols=None,
-                           nworkers=16):
+                           errcols=None):
 
     '''This prepares light curves for the recovery sim.
 
@@ -751,12 +750,10 @@ def make_fakelc_collection(lclist,
                              'randomizeinfo':randomizeinfo})
              for x in chosenlcs]
 
-    # process these light curves into fake light curves
-    with ProcessPoolExecutor(max_workers=nworkers) as executor:
-        results = executor.map(collection_worker, tasks)
-
-    fakeresults = [x for x in results]
-    executor.shutdown()
+    # we can't parallelize because it messes up the random number generation,
+    # causing all the IDs to clash. FIXME: figure out a way around this
+    # (probably initial a seed in each worker process?)
+    fakeresults = [collection_worker(task) for task in tasks]
 
     fakedb = {'simbasedir':simbasedir,
               'lcformat':lcformat,
