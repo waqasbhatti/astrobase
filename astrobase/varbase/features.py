@@ -230,7 +230,7 @@ def lightcurve_moments(ftimes, fmags, ferrs):
 
 
 
-def lightcurve_flux_measures(ftimes, fmags, ferrs):
+def lightcurve_flux_measures(ftimes, fmags, ferrs, magsarefluxes=False):
     '''
     This calculates percentiles of the flux.
 
@@ -241,7 +241,11 @@ def lightcurve_flux_measures(ftimes, fmags, ferrs):
     if ndet > 9:
 
         # get the fluxes
-        series_fluxes = 10.0**(-0.4*fmags)
+        if magsarefluxes:
+            series_fluxes = fmags
+        else:
+            series_fluxes = 10.0**(-0.4*fmags)
+
         series_flux_median = npmedian(series_fluxes)
 
         # get the percent_amplitude for the fluxes
@@ -380,7 +384,7 @@ def lightcurve_ptp_measures(ftimes, fmags, ferrs):
 
 
 
-def nonperiodic_lightcurve_features(times, mags, errs):
+def nonperiodic_lightcurve_features(times, mags, errs, magsarefluxes=False):
     '''This calculates the following nonperiodic features of the light curve,
     listed in Richards, et al. 2011):
 
@@ -422,7 +426,8 @@ def nonperiodic_lightcurve_features(times, mags, errs):
         moments = lightcurve_moments(ftimes, fmags, ferrs)
 
         # calculate the flux measures
-        fluxmeasures = lightcurve_flux_measures(ftimes, fmags, ferrs)
+        fluxmeasures = lightcurve_flux_measures(ftimes, fmags, ferrs,
+                                                magsarefluxes=magsarefluxes)
 
         # calculate the point-to-point measures
         ptpmeasures = lightcurve_ptp_measures(ftimes, fmags, ferrs)
@@ -564,7 +569,9 @@ def gilliland_cdpp(times, mags, errs,
 #####################
 
 
-def all_nonperiodic_features(times, mags, errs, stetson_weightbytimediff=True):
+def all_nonperiodic_features(times, mags, errs,
+                             magsarefluxes=False,
+                             stetson_weightbytimediff=True):
     '''
     This rolls up the functions above and returns a single dict.
 
@@ -580,7 +587,8 @@ def all_nonperiodic_features(times, mags, errs, stetson_weightbytimediff=True):
     nzind = npnonzero(ferrs)
     ftimes, fmags, ferrs = ftimes[nzind], fmags[nzind], ferrs[nzind]
 
-    xfeatures = nonperiodic_lightcurve_features(times, mags, errs)
+    xfeatures = nonperiodic_lightcurve_features(times, mags, errs,
+                                                magsarefluxes=magsarefluxes)
     stetj = stetson_jindex(ftimes, fmags, ferrs,
                            weightbytimediff=stetson_weightbytimediff)
     stetk = stetson_kindex(fmags, ferrs)
