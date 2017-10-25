@@ -443,7 +443,7 @@ def make_fakelc(lcfile,
         lcdict = lcdict[0]
 
     # set up the fakelcdict with a randomly assigned objectid
-    fakeobjectid = md5(npr.bytes(12)).hexdigest()
+    fakeobjectid = md5(npr.bytes(12)).hexdigest()[-8:]
     fakelcdict = {
         'objectid':fakeobjectid,
         'objectinfo':{'objectid':fakeobjectid},
