@@ -166,7 +166,7 @@ def prewhiten_magseries(times, mags, errs,
         wmags = wmags + median_mag
 
     # prepare the returndict
-    returndict = {'wtimes':wtimes, # these are in phase order
+    returndict = {'wtimes':wtimes, # these are in the new time order
                   'wphase':wphase,
                   'wmags':wmags,
                   'werrs':werrs,
@@ -175,7 +175,7 @@ def prewhiten_magseries(times, mags, errs,
 
 
     # make the fit plot if required
-    if plotfit and isinstance(plotfit, str) or isinstance(plotfit, strio):
+    if plotfit and (isinstance(plotfit, str) or isinstance(plotfit, strio)):
 
         if plotfitphasedlconly:
             plt.figure(figsize=(10,4.8))
