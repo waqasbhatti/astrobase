@@ -44,7 +44,7 @@ except:
 
 from ..periodbase.zgls import pgen_lsp
 from .lcfit import _fourier_func, fourier_fit_magseries, spline_fit_magseries
-from ..lcmath import sigclip_magseries
+from ..lcmath import sigclip_magseries, phase_magseries
 
 
 #############
@@ -306,7 +306,8 @@ def prewhiten_magseries(times, mags, errs,
 
 
 def gls_prewhiten(times, mags, errs,
-                  startp=None, endp=None,
+                  startp_gls=None,
+                  endp_gls=None,
                   autofreq=True,
                   sigclip=30.0,
                   magsarefluxes=False,
@@ -323,127 +324,157 @@ def gls_prewhiten(times, mags, errs,
     are done.
 
     '''
-    stimes, smags, errs = sigclip_magseries(times, mags, errs,
-                                            sigclip=sigclip,
-                                            magsarefluxes=magsarefluxes)
 
+    stimes, smags, serrs = sigclip_magseries(times, mags, errs,
+                                             sigclip=sigclip,
+                                             magsarefluxes=magsarefluxes)
 
-    # now start the cycle by doing an LSP on the initial timeseries
-    lsp = pgen_lsp(stimes, smags, serrs,
+    # now start the cycle by doing an GLS on the initial timeseries
+    gls = pgen_lsp(stimes, smags, serrs,
                    magsarefluxes=magsarefluxes,
-                   startp=startp, endp=endp,
+                   startp=startp_gls,
+                   endp=endp_gls,
                    autofreq=autofreq,
                    sigclip=sigclip,
                    stepsize=stepsize,
                    nworkers=nworkers)
-    wperiod = lsp['bestperiod']
-    fseries = fourier_fit_magseries(stimes, smags, serrs, wperiod,
-                                    fourierorder=fourierorder,
-                                    fourierparams=initfparams,
-                                    sigclip=sigclip,
-                                    magsarefluxes=magsarefluxes)
-    ffitparams = fseries['fitinfo']['finalparams']
 
-    # this is the initial whitened series using the initial fourier fit and
-    # initial found best period
-    wseries = prewhiten_magseries(stimes,
-                                  smags,
-                                  serrs,
-                                  wperiod,
-                                  ffitparams,
-                                  sigclip=sigclip,
-                                  magsarefluxes=magsarefluxes)
-
-    LOGINFO('round %s: period = %.6f' % (1, wperiod))
-    bestperiods = [wperiod]
+    LOGINFO('round %s: period = %.6f' % (0, gls['bestperiod']))
 
     if plotfits and isinstance(plotfits, str):
 
-        plt.figure(figsize=(8,6*nbestpeaks))
+        plt.figure(figsize=(20,6*nbestpeaks))
 
         nplots = nbestpeaks + 1
 
-        plt.subplot(nplots,1,1)
-        plt.errorbar(stimes,smags,fmt='bo',yerr=serrs,
-                     markersize=2.0,capsize=0)
-        ymin, ymax = plt.ylim()
+        # periodogram
+        plt.subplot(nplots,3,1)
+        plt.plot(gls['periods'],gls['lspvals'])
+        plt.xlabel('period [days]')
+        plt.ylabel('GLS power')
+        plt.xscale('log')
+        plt.title('round 0, best period = %.6f' % gls['bestperiod'])
 
+        # unphased LC
+        plt.subplot(nplots,3,2)
+        plt.plot(stimes, smags,
+                 linestyle='none', marker='o',ms=1.0,rasterized=True)
         if not magsarefluxes:
-            plt.ylim(ymax,ymin)
+            plt.gca().invert_yaxis()
             plt.ylabel('magnitude')
         else:
-            plt.ylim(ymin,ymax)
-            plt.ylabel('magnitude')
-
+            plt.ylabel('flux')
         plt.xlabel('JD')
-        plt.title('LC before whitening')
+        plt.title('unphased LC before whitening')
 
-        plt.subplot(nplots,1,2)
-        plt.errorbar(wseries['wtimes'],wseries['wmags'],
-                     fmt='bo',yerr=wseries['werrs'],
-                     markersize=2.0,capsize=0)
-        ymin, ymax = plt.ylim()
+        # phased LC
+        plt.subplot(nplots,3,3)
+        phased = phase_magseries(stimes, smags,
+                                 gls['bestperiod'], stimes.min())
+
+        plt.plot(phased['phase'], phased['mags'],
+                 linestyle='none', marker='o',ms=1.0,rasterized=True)
         if not magsarefluxes:
-            plt.ylim(ymax,ymin)
             plt.ylabel('magnitude')
+            plt.gca().invert_yaxis()
         else:
-            plt.ylim(ymin,ymax)
-            plt.ylabel('magnitude')
-        plt.xlabel('JD')
-        plt.title('LC after whitening with period: %.6f' % wperiod)
+            plt.ylabel('flux')
+        plt.xlabel('phase')
+        plt.title('phased LC before whitening: P = %.6f' % gls['bestperiod'])
+
+
+    # set up the initial times, mags, errs, period
+    wtimes, wmags, werrs = stimes, smags, serrs
+    wperiod = gls['bestperiod']
+
+    # start the best periods list
+    bestperiods = []
 
     # now go through the rest of the cycles
-    for fitind in range(nbestpeaks-1):
+    for fitind in range(nbestpeaks):
 
-        wtimes, wmags, werrs = (wseries['wtimes'],
-                                wseries['wmags'],
-                                wseries['werrs'])
-
-        wlsp = pgen_lsp(wtimes, wmags, werrs,
-                        magsarefluxes=magsarefluxes,
-                        startp=startp,
-                        endp=endp,
-                        autofreq=autofreq,
-                        sigclip=sigclip,
-                        stepsize=stepsize,
-                        nworkers=nworkers)
-        wperiod = wlsp['bestperiod']
         wfseries = fourier_fit_magseries(wtimes, wmags, werrs, wperiod,
                                          fourierorder=fourierorder,
                                          fourierparams=initfparams,
                                          magsarefluxes=magsarefluxes,
                                          sigclip=sigclip)
+
         wffitparams = wfseries['fitinfo']['finalparams']
+
         wseries = prewhiten_magseries(wtimes, wmags, werrs,
                                       wperiod,
                                       wffitparams,
                                       magsarefluxes=magsarefluxes,
                                       sigclip=sigclip)
 
-        LOGINFO('round %s: period = %.6f' % (fitind+2, wperiod))
+
+        LOGINFO('round %s: period = %.6f' % (fitind+1, wperiod))
         bestperiods.append(wperiod)
 
+        # update the mag series with whitened version
+        wtimes, wmags, werrs = (
+            wseries['wtimes'], wseries['wmags'], wseries['werrs']
+        )
+
+        # redo the periodogram
+        wgls = pgen_lsp(wtimes, wmags, werrs,
+                        magsarefluxes=magsarefluxes,
+                        startp=startp_gls,
+                        endp=endp_gls,
+                        autofreq=autofreq,
+                        sigclip=sigclip,
+                        stepsize=stepsize,
+                        nworkers=nworkers)
+        wperiod = wgls['bestperiod']
+        bestperiods.append(wperiod)
+
+        # make plots if requested
         if plotfits and isinstance(plotfits, str):
 
-            plt.subplot(nplots,1,fitind+3)
-            plt.errorbar(wtimes,wmags,fmt='bo',yerr=werrs,
-                         markersize=2.0,capsize=0)
-            ymin, ymax = plt.ylim()
+            # periodogram
+            plt.subplot(nplots,3,4+fitind*3)
+            plt.plot(wgls['periods'],wgls['lspvals'])
+            plt.xlabel('period [days]')
+            plt.ylabel('LSP power')
+            plt.xscale('log')
+            plt.title('round %s, best period = %.6f' % (fitind+1,
+                                                        wgls['bestperiod']))
+
+            # unphased LC
+            plt.subplot(nplots,3,5+fitind*3)
+            plt.plot(wtimes, wmags,
+                     linestyle='none', marker='o',ms=1.0,rasterized=True)
             if not magsarefluxes:
-                plt.ylim(ymax,ymin)
+                plt.gca().invert_yaxis()
                 plt.ylabel('magnitude')
             else:
-                plt.ylim(ymin,ymax)
-                plt.ylabel('magnitude')
+                plt.ylabel('flux')
             plt.xlabel('JD')
-            plt.title('LC after whitening with period: %.6f' % wperiod)
+            plt.title('unphased LC after whitening')
+
+            # phased LC
+            plt.subplot(nplots,3,6+fitind*3)
+            wphased = phase_magseries(wtimes, wmags,
+                                      wperiod, stimes.min())
+
+            plt.plot(wphased['phase'], wphased['mags'],
+                     linestyle='none', marker='o',ms=1.0,rasterized=True)
+            if not magsarefluxes:
+                plt.ylabel('magnitude')
+                plt.gca().invert_yaxis()
+            else:
+                plt.ylabel('flux')
+            plt.xlabel('phase')
+            plt.title('phased LC after whitening: P = %.6f' % wperiod)
 
 
+
+    # in the end, write out the plot
     if plotfits and isinstance(plotfits, str):
 
-        plt.subplots_adjust(hspace=0.3,top=0.9)
+        plt.subplots_adjust(hspace=0.2,wspace=0.4)
         plt.savefig(plotfits, bbox_inches='tight')
-        plt.close()
+        plt.close('all')
         return bestperiods, os.path.abspath(plotfits)
 
     else:
