@@ -1236,6 +1236,7 @@ def variability_threshold(featuresdir,
                           magcols=None,
                           errcols=None,
                           lcformat='hat-sql',
+                          min_lcmad_stdev=5.0,
                           min_stetj_stdev=2.0,
                           min_iqr_stdev=2.0,
                           min_inveta_stdev=2.0):
@@ -1645,6 +1646,7 @@ def plot_variability_thresholds(varthreshpkl,
         allobjects = pickle.load(infd)
 
     magbins = allobjects['magbins']
+    min_lcmad_stdev = xmin_lcmad_stdev or allobjects['min_lcmad_stdev']
     min_stetj_stdev = xmin_stetj_stdev or allobjects['min_stetj_stdev']
     min_iqr_stdev = xmin_iqr_stdev or allobjects['min_iqr_stdev']
     min_inveta_stdev = xmin_inveta_stdev or allobjects['min_inveta_stdev']
