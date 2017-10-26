@@ -689,8 +689,8 @@ def make_fakelc(lcfile,
             # if we're randomizing, get the errs from the interpolated mag-RMS
             # relation
             if (randomizemags and magrms and mcol in magrms and
-                'interpolated_magmad' in magrms[magcol] and
-                magrms[magcol]['interpolated_magmad'] is not None):
+                'interpolated_magmad' in magrms[mcol] and
+                magrms[mcol]['interpolated_magmad'] is not None):
 
                 interpfunc = magrms[mcol]['interpolated_magmad']
                 lcmad = interpfunc(fakelcdict['objectinfo']['sdssr'])
@@ -726,7 +726,7 @@ def make_fakelc(lcfile,
                             'the mag-RMS relation' % lcfile
                         )
 
-                        interpfunc = magrms[magcol]['interpolated_magmad']
+                        interpfunc = magrms[mcol]['interpolated_magmad']
                         lcmad = interpfunc(fakelcdict['objectinfo']['sdssr'])
 
                         fakelcdict['moments'][ecol] = {
