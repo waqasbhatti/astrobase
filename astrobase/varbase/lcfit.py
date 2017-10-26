@@ -265,8 +265,7 @@ def _fourier_residual(fourierparams,
 
 def fourier_fit_magseries(times, mags, errs, period,
                           fourierorder=None,
-                          fourierparams=[0.6,0.2,0.2,0.2,0.2,0.2,0.2,0.2,
-                                         0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1],
+                          fourierparams=None,
                           sigclip=3.0,
                           magsarefluxes=False,
                           plotfit=False,
@@ -285,6 +284,8 @@ def fourier_fit_magseries(times, mags, errs, period,
 
     [fourier_amp1, fourier_amp2, fourier_amp3,...,fourier_ampN,
      fourier_phase1, fourier_phase2, fourier_phase3,...,fourier_phaseN]
+
+    If both/neither are specified, the default Fourier order of 3 will be used.
 
     Returns the Fourier fit parameters, the minimum chisq and reduced
     chisq. Makes a plot for the fit to the mag series if plotfit is a string
@@ -328,9 +329,12 @@ def fourier_fit_magseries(times, mags, errs, period,
         fourierorder = int(len(fourierparams)/2)
 
     else:
-        LOGWARNING('specified both Fourier order AND Fourier coeffs, '
-                   'using the specified Fourier coeffs')
-        fourierorder = int(len(fourierparams)/2)
+        LOGWARNING('specified both/neither Fourier order AND Fourier coeffs, '
+                   'using default Fourier order of 3')
+        fourierorder = 3
+        fourieramps = [0.6] + [0.2]*(fourierorder - 1)
+        fourierphas = [0.1] + [0.1]*(fourierorder - 1)
+        fourierparams = fourieramps + fourierphas
 
     if verbose:
         LOGINFO('fitting Fourier series of order %s to '
