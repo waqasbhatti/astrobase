@@ -62,6 +62,7 @@ import numpy.random as npr
 npr.seed(0xdecaff)
 
 import scipy.stats as sps
+import scipy.interpolate as spi
 
 import matplotlib
 matplotlib.use('Agg')
@@ -409,15 +410,41 @@ VARTYPE_LCGEN_MAP = {
 
 def make_fakelc(lcfile,
                 outdir,
+                magrms,
+                randomizemags=True,
+                randomizecoords=False,
                 lcformat='hat-sql',
                 timecols=None,
                 magcols=None,
-                errcols=None,
-                randomizeinfo=False):
+                errcols=None):
     '''This preprocesses the light curve and sets it up to be a sim light curve.
 
-    If randomizeinfo is True, will generate random RA, DEC, and SDSS r in the
-    output fakelc even if these values are available from the input LC.
+    Args
+    ----
+
+    lcfile is the input light curve file to copy the time base from.
+
+    outdir is the directory to which the fake LC will be written.
+
+    magrms is a dict containing the SDSS r mag-RMS (SDSS rmag-MAD preferably)
+    relations for all light curves that the input lcfile is from. This will be
+    used to generate the median mag and noise corresponding to the magnitude
+    chosen for this fake LC. If randomizeinfo is True, then a random mag between
+    the first and last magbin in magrms will be chosen as the median mag for
+    this light curve. Otherwise, the median mag will be taken from the input
+    lcfile's lcdict['objectinfo']['sdssr'] key or a transformed SDSS r mag
+    generated from the input lcfile's lcdict['objectinfo']['jmag'], ['hmag'],
+    and ['kmag'] keys. The magrms relation for each magcol will be used to
+    generate Gaussian noise at the correct level for the magbin this light
+    curve's median mag falls into.
+
+    If randomizemags is True, will generate random SDSS r in the output fakelc
+    even if these values are available from the input LC. If randomizecoords is
+    True, will do the same for RA, DEC.
+
+    lcformat is one of the entries in the LCFORMATS dict. This is used to set
+    the light curve reader function for lcfile, and the time, mag, err cols to
+    use by default if timecols, magcols, or errcols are None.
 
     '''
 
@@ -452,6 +479,92 @@ def make_fakelc(lcfile,
         'origformat':lcformat,
     }
 
+
+    # now, get the actual mag of this object and other info and use that to
+    # populate the corresponding entries of the fakelcdict objectinfo
+    if ('objectinfo' in lcdict and
+        isinstance(lcdict['objectinfo'], dict)):
+
+        objectinfo = lcdict['objectinfo']
+
+        # get the RA
+        if (not randomizecoords and 'ra' in objectinfo and
+            objectinfo['ra'] is not None and
+            np.isfinite(objectinfo['ra'])):
+
+            fakelcdict['objectinfo']['ra'] = objectinfo['ra']
+
+        else:
+
+            # if there's no RA available, we'll assign a random one between 0
+            # and 360.0
+            LOGWARNING('%s: assigning a random right ascension' % lcfile)
+            fakelcdict['objectinfo']['ra'] = npr.random()*360.0
+
+        # get the DEC
+        if (not randomizecoords and 'decl' in objectinfo and
+            objectinfo['decl'] is not None and
+            np.isfinite(objectinfo['decl'])):
+
+            fakelcdict['objectinfo']['decl'] = objectinfo['decl']
+
+        else:
+
+            # if there's no DECL available, we'll assign a random one between
+            # -90.0 and +90.0
+            LOGWARNING(' %s: assigning a random declination' % lcfile)
+            fakelcdict['objectinfo']['decl'] = npr.random()*90.0 - 90.0
+
+        # get the SDSS r mag for this object
+        # this will be used for getting the eventual mag-RMS relation later
+        if ((not randomizemags) and 'sdssr' in objectinfo and
+            objectinfo['sdssr'] is not None and
+            np.isfinite(objectinfo['sdssr'])):
+
+            fakelcdict['objectinfo']['sdssr'] = objectinfo['sdssr']
+
+        # if the SDSS r is unavailable, but we have J, H, K: use those to get
+        # the SDSS r by using transformations
+        elif ((not randomizemags) and ('jmag' in objectinfo and
+               objectinfo['jmag'] is not None and
+               np.isfinite(objectinfo['jmag'])) and
+              ('hmag' in objectinfo and
+               objectinfo['hmag'] is not None and
+               np.isfinite(objectinfo['hmag'])) and
+              ('kmag' in objectinfo and
+               objectinfo['kmag'] is not None and
+               np.isfinite(objectinfo['kmag']))):
+
+            LOGWARNING('used JHK mags to generate an SDSS r mag for %s' %
+                       lcfile)
+            fakelcdict['objectinfo']['sdssr'] = jhk_to_sdssr(
+                objectinfo['jmag'],
+                objectinfo['hmag'],
+                objectinfo['kmag']
+            )
+
+        # if there are no mags available at all, generate a random mag
+        # between 8 and 16.0
+        else:
+
+            LOGWARNING(' %s: assigning a random mag' % lcfile)
+            fakelcdict['objectinfo']['sdssr'] = npr.random()*8.0 + 8.0
+
+    # if there's no info available, generate fake info
+    else:
+
+        LOGWARNING('no object information found in %s, '
+                   'generating random ra, decl, sdssr' %
+                   lcfile)
+        fakelcdict['objectinfo']['ra'] = npr.random()*360.0
+        fakelcdict['objectinfo']['decl'] = npr.random()*90.0 - 90.0
+        fakelcdict['objectinfo']['sdssr'] = npr.random()*8.0 + 8.0
+
+
+    #
+    # NOW FILL IN THE TIMES, MAGS, ERRS
+    #
+
     # get the time columns
     for tcind, tcol in enumerate(timecols):
 
@@ -479,32 +592,90 @@ def make_fakelc(lcfile,
         else:
             mcolget = [mcol]
 
+        # put the mcol in only once
         if mcol not in fakelcdict:
 
             measuredmags = dict_get(lcdict, mcolget)
             measuredmags = measuredmags[np.isfinite(measuredmags)]
 
-            # we require at least 10 finite measurements
-            if measuredmags.size > 9:
-                measuredmedian = np.median(measuredmags)
-                measuredmad = np.median(np.abs(measuredmags - measuredmedian))
-                fakelcdict['moments'][mcol] = {'median':measuredmedian,
-                                               'mad':measuredmad}
-            else:
-                LOGWARNING(
-                    'input LC %s does not have enough finite measurements, '
-                    'no mag moments calculated' % lcfile
-                )
-                fakelcdict['moments'][mcol] = {'median':np.nan,
-                                               'mad':np.nan}
+            # if we're randomizing, get the mags from the interpolated mag-RMS
+            # relation
+            if (randomizemags and
+                mcol in magrms and
+                'interpolated_magmad' in magrms[mcol] and
+                magrms[mcol]['interpolated_magmad'] is not None):
 
-            # the magnitude column is set to all zeros initially
+                interpfunc = magrms[mcol]['interpolated_magmad']
+                lcmad = interpfunc(fakelcdict['objectinfo']['sdssr'])
+
+                fakelcdict['moments'][mcol] = {
+                    'median': fakelcdict['objectinfo']['sdssr'],
+                    'mad': lcmad
+                }
+
+            # if we're not randomizing, get the median and MAD from the light
+            # curve itself
+            else:
+
+                # we require at least 10 finite measurements
+                if measuredmags.size > 9:
+
+                    measuredmedian = np.median(measuredmags)
+                    measuredmad = np.median(
+                        np.abs(measuredmags - measuredmedian)
+                    )
+                    fakelcdict['moments'][mcol] = {'median':measuredmedian,
+                                                   'mad':measuredmad}
+
+                # if there aren't enough measurements in this LC, try to get the
+                # median and RMS from the interpolated mag-RMS relation first
+                else:
+
+                    if (mcol in magrms and
+                        'interpolated_magmad' in magrms[mcol] and
+                        magrms[mcol]['interpolated_magmad'] is not None):
+
+                        LOGWARNING(
+                            'input LC %s does not have enough '
+                            'finite measurements, '
+                            'generating mag moments from '
+                            'fakelc sdssr and the mag-RMS relation' % lcfile
+                        )
+
+                        interpfunc = magrms[mcol]['interpolated_magmad']
+                        lcmad = interpfunc(fakelcdict['objectinfo']['sdssr'])
+
+                        fakelcdict['moments'][mcol] = {
+                            'median': fakelcdict['objectinfo']['sdssr'],
+                            'mad': lcmad
+                        }
+
+                    # if we don't have the mag-RMS relation either, then we
+                    # can't do anything for this light curve, generate a random
+                    # MAD between 5e-4 and 0.1
+                    else:
+
+                        LOGWARNING(
+                            'input LC %s does not have enough '
+                            'finite measurements and '
+                            'no mag-RMS relation provided '
+                            'assigning a random MAD between 5.0e-4 and 0.1'
+                            % lcfile
+                        )
+
+                        fakelcdict['moments'][mcol] = {
+                            'median':fakelcdict['objectinfo']['sdssr'],
+                            'mad':npr.random()*(0.1 - 5.0e-4) + 5.0e-4
+                        }
+
+            # the magnitude column is set to all zeros initially. this will be
+            # filled in by the add_fakelc_variability function below
             fakelcdict[mcol] = np.full_like(dict_get(lcdict, mcolget), 0.0)
             fakelcdict['columns'].append(mcol)
 
 
     # get the err columns
-    for ecol in errcols:
+    for mcol, ecol in zip(magcols, errcols):
 
         if '.' in ecol:
             ecolget = ecol.split('.')
@@ -516,108 +687,77 @@ def make_fakelc(lcfile,
             measurederrs = dict_get(lcdict, ecolget)
             measurederrs = measurederrs[np.isfinite(measurederrs)]
 
-            # we require at least 10 finite measurements
-            # we'll calculate the median and MAD of the errs to use later on
-            if measurederrs.size > 9:
-                measuredmedian = np.median(measurederrs)
-                measuredmad = np.median(np.abs(measurederrs - measuredmedian))
-                fakelcdict['moments'][ecol] = {'median':measuredmedian,
-                                               'mad':measuredmad}
-            else:
-                LOGWARNING(
-                    'input LC %s does not have enough finite measurements, '
-                    'no err moments calculated' % lcfile
-                )
-                fakelcdict['moments'][ecol] = {'median':np.nan,
-                                               'mad':np.nan}
+            # if we're randomizing, get the errs from the interpolated mag-RMS
+            # relation
+            if (randomizemags and
+                mcol in magrms and
+                'interpolated_magmad' in magrms[magcol] and
+                magrms[magcol]['interpolated_magmad'] is not None):
 
-            # the errors column is set to all zeros initially
+                interpfunc = magrms[mcol]['interpolated_magmad']
+                lcmad = interpfunc(fakelcdict['objectinfo']['sdssr'])
+
+                # the median of the errs = lcmad
+                # the mad of the errs is 0.1 x lcmad
+                fakelcdict['moments'][ecol] = {
+                    'median': lcmad,
+                    'mad': 0.1*lcmad
+                }
+
+            else:
+
+                # we require at least 10 finite measurements
+                # we'll calculate the median and MAD of the errs to use later on
+                if measurederrs.size > 9:
+                    measuredmedian = np.median(measurederrs)
+                    measuredmad = np.median(
+                        np.abs(measurederrs - measuredmedian)
+                    )
+                    fakelcdict['moments'][ecol] = {'median':measuredmedian,
+                                                   'mad':measuredmad}
+                else:
+
+                    if (mcol in magrms and
+                        'interpolated_magmad' in magrms[mcol] and
+                        magrms[mcol]['interpolated_magmad'] is not None):
+
+                        LOGWARNING(
+                            'input LC %s does not have enough '
+                            'finite measurements, '
+                            'generating err moments from '
+                            'the mag-RMS relation' % lcfile
+                        )
+
+                        interpfunc = magrms[magcol]['interpolated_magmad']
+                        lcmad = interpfunc(fakelcdict['objectinfo']['sdssr'])
+
+                        fakelcdict['moments'][ecol] = {
+                            'median': lcmad,
+                            'mad': 0.1*lcmad
+                        }
+
+                    # if we don't have the mag-RMS relation either, then we
+                    # can't do anything for this light curve, generate a random
+                    # MAD between 5e-4 and 0.1
+                    else:
+
+                        LOGWARNING(
+                            'input LC %s does not have '
+                            'enough finite measurements and '
+                            'no mag-RMS relation provided, '
+                            'generating errs randomly' % lcfile
+                        )
+                        fakelcdict['moments'][ecol] = {
+                            'median':npr.random()*(0.01 - 5.0e-4) + 5.0e-4,
+                            'mad':npr.random()*(0.01 - 5.0e-4) + 5.0e-4
+                        }
+
+            # the errors column is set to all zeros initially. this will be
+            # filled in by the add_fakelc_variability function below.
             fakelcdict[ecol] = np.full_like(dict_get(lcdict, ecolget), 0.0)
             fakelcdict['columns'].append(ecol)
 
 
-    # now, get the actual mag of this object and other info and use that to
-    # populate the corresponding entries of the fakelcdict objectinfo
-    if (not randomizeinfo and
-        'objectinfo' in lcdict and
-        isinstance(lcdict['objectinfo'], dict)):
-
-        objectinfo = lcdict['objectinfo']
-
-        # get the RA
-        if ('ra' in objectinfo and
-
-            objectinfo['ra'] is not None and
-            np.isfinite(objectinfo['ra'])):
-
-            fakelcdict['objectinfo']['ra'] = objectinfo['ra']
-
-        else:
-
-            # if there's no RA available, we'll assign a random one between 0
-            # and 360.0
-            LOGWARNING('no "ra" key available in objectinfo dict for %s, '
-                       'assigning a random right ascension' % lcfile)
-            fakelcdict['objectinfo']['ra'] = npr.random()*360.0
-
-        # get the DEC
-        if ('decl' in objectinfo and
-            objectinfo['decl'] is not None and
-            np.isfinite(objectinfo['decl'])):
-
-            fakelcdict['objectinfo']['decl'] = objectinfo['decl']
-
-        else:
-
-            # if there's no DECL available, we'll assign a random one between
-            # -90.0 and +90.0
-            LOGWARNING('no "decl" key available in objectinfo dict for %s, '
-                       'assigning a random declination' % lcfile)
-            fakelcdict['objectinfo']['decl'] = npr.random()*90.0 - 90.0
-
-        # get the SDSS r mag for this object
-        # this will be used for getting the eventual mag-RMS relation later
-        if ('sdssr' in objectinfo and
-            objectinfo['sdssr'] is not None and
-            np.isfinite(objectinfo['sdssr'])):
-
-            fakelcdict['objectinfo']['sdssr'] = objectinfo['sdssr']
-
-        # if the SDSS r is unavailable, but we have J, H, K: use those to get
-        # the SDSS r by using transformations
-        elif (('jmag' in objectinfo and
-               objectinfo['jmag'] is not None and
-               np.isfinite(objectinfo['jmag'])) and
-              ('hmag' in objectinfo and
-               objectinfo['hmag'] is not None and
-               np.isfinite(objectinfo['hmag'])) and
-              ('kmag' in objectinfo and
-               objectinfo['kmag'] is not None and
-               np.isfinite(objectinfo['kmag']))):
-
-            LOGWARNING('used JHK mags to generate an SDSS r mag for %s' %
-                       lcfile)
-            fakelcdict['objectinfo']['sdssr'] = jhk_to_sdssr(
-                objectinfo['jmag'],
-                objectinfo['hmag'],
-                objectinfo['kmag']
-            )
-
-        # if there are no mags available at all, generate a random mag
-        # between 8 and 16.0
-        else:
-
-            fakelcdict['objectinfo']['sdssr'] = npr.random()*8.0 + 8.0
-
-    # if there's no info available, generate fake info
-    else:
-
-        LOGWARNING('no object information found in %s or randomizeinfo = True, '
-                   'generating random ra, decl, sdssr' %
-                   lcfile)
-        fakelcdict['objectinfo']['ra'] = npr.random()*360.0
-        fakelcdict['objectinfo']['decl'] = npr.random()*90.0 - 90.0
-        fakelcdict['objectinfo']['sdssr'] = npr.random()*8.0 + 8.0
 
     # generate an output file name
     fakelcfname = '%s-fakelc.pkl' % fakelcdict['objectid']
@@ -673,38 +813,21 @@ def collection_worker(task):
 
 def make_fakelc_collection(lclist,
                            simbasedir,
+                           magrmsfrom,
+                           magrms_interpolate='quadratic',
+                           magrms_fillvalue='extrapolate',
                            maxlcs=25000,
                            maxvars=2000,
                            vartypes=['EB','RRAB','RRC',
                                      'ROT','FLR','HADS',
                                      'PLT','LPV'],
-                           randomizeinfo=False,
+                           randomizeinfo=True,
                            lcformat='hat-sql',
                            timecols=None,
                            magcols=None,
                            errcols=None):
 
     '''This prepares light curves for the recovery sim.
-
-    Args
-    ----
-
-    lclist is a list of existing project light curves. This can be generated
-    from lcproc.getlclist or similar.
-
-    simbasedir is the directory to where the fake light curves and their
-    information will be copied to.
-
-    maxlcs is the total number of light curves to choose from lclist and
-    generate as fake LCs.
-
-    maxvars is the total number of fake light curves that will be marked as
-    variable.
-
-    vartypes is a list of variable types to put into the collection. The
-    vartypes for each fake variable star will be chosen uniformly from this
-    list.
-
 
     Collects light curves from lclist using a uniform sampling among
     them. Copies them to the simbasedir, zeroes out their mags and errs but
@@ -715,6 +838,63 @@ def make_fakelc_collection(lclist,
     The purpose of this function is to copy over the time base and mag-rms
     relation of an existing light curve collection to use it as the basis for a
     variability recovery simulation.
+
+    This returns a pickle written to the simbasedir that contains all the
+    information for the chosen ensemble of fake light curves and writes all
+    generated light curves to the simbasedir/lightucrves directory. Run the
+    add_variability_to_fakelc_collection function after this function to add
+    variability of the specified type to these generated light curves.
+
+    Args
+    ----
+
+    lclist is a list of existing project light curves. This can be generated
+    from lcproc.getlclist or similar.
+
+    simbasedir is the directory to where the fake light curves and their
+    information will be copied to.
+
+    magrmsfrom is used to generate magnitudes and RMSes for the objects in the
+    output collection of fake light curves. This arg is either a string pointing
+    to an existing pickle file that must contain a dict or a dict variable that
+    MUST have the following key-vals at a minimum:
+
+    {'<magcol1_name>': {
+          'binned_sdssr_median': list/array of median mags for each magbin
+          'binned_lcmad_median': list/array of LC MAD values per magbin
+     },
+     '<magcol2_name>': {
+          'binned_sdssr_median': list/array of median mags for each magbin
+          'binned_lcmad_median': list/array of LC MAD values per magbin
+     },
+     .
+     .
+     ...}
+
+    where magcol1_name, etc. are the same as the magcols liste in the magcols
+    kwarg (or the default magcols for the specified lcformat).
+
+
+    magrms_interpolate and magrms_fillvalue will be passed to the
+    scipy.interpolate.interp1d function that generates interpolators for the
+    mag-RMS relation. See:
+
+https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html
+
+    for details.
+
+
+    maxlcs is the total number of light curves to choose from lclist and
+    generate as fake LCs.
+
+
+    maxvars is the total number of fake light curves that will be marked as
+    variable.
+
+
+    vartypes is a list of variable types to put into the collection. The
+    vartypes for each fake variable star will be chosen uniformly from this
+    list.
 
     '''
 
@@ -743,11 +923,55 @@ def make_fakelc_collection(lclist,
     if not os.path.exists(fakelcdir):
         os.makedirs(fakelcdir)
 
-    tasks = [(x, fakelcdir, {'lcformat':lcformat,
-                             'timecols':timecols,
-                             'magcols':magcols,
-                             'errcols':errcols,
-                             'randomizeinfo':randomizeinfo})
+
+    # get the magrms relation needed from the pickle or input dict
+    if isinstance(magrmsfrom, str) and os.path.exists(magrmsfrom):
+        with open(magrmsfrom,'rb') as infd:
+            xmagrms = pickle.load(magrmsfrom)
+    elif isinstance(magrmsfrom, dict):
+        xmagrms = magrmsfrom
+
+    magrms = {}
+
+    # get the required items from the magrms dict. interpolate the mag-rms
+    # relation for the magcol so the make_fake_lc function can use it directly.
+    for magcol in magcols:
+
+        if (magcol in xmagrms and
+            'binned_sdssr_median' in xmagrms[magcol] and
+            'binned_lcmad_median' in xmagrms[magcol]):
+
+            magrms[magcol] = {
+                'binned_sdssr_median':xmagrms[magcol]['binned_sdssr_median'],
+                'binned_lcmad_median':xmagrms[magcol]['binned_sdssr_median'],
+            }
+
+            # interpolate the mag-MAD relation
+            interpolated_magmad = spi.interp1d(
+                xmagrms[magcol]['binned_sdssr_median'],
+                xmagrms[magcol]['binned_sdssr_median'],
+                kind=magrms_interpolate,
+                fill_value=magrms_fillvalue,
+            )
+            # save this as well
+            magrms[magcol]['interpolated_magmad'] = interpolated_magmad
+
+        else:
+
+            LOGWARNING('input magrms dict does not have '
+                       'required info for magcol: %s' % magcol)
+
+            magrms[magcol] = {
+                'binned_sdssr_median':None,
+                'binned_lcmad_median':None,
+                'interpolated_magmad':None,
+            }
+
+    tasks = [(x, fakelcdir, magrms, {'lcformat':lcformat,
+                                     'timecols':timecols,
+                                     'magcols':magcols,
+                                     'errcols':errcols,
+                                     'randomizeinfo':randomizeinfo})
              for x in chosenlcs]
 
     # we can't parallelize because it messes up the random number generation,
@@ -838,43 +1062,7 @@ def make_fakelc_collection(lclist,
     fakedb['errmad'] = ferrmads
 
     # get the mag-RMS curve for this light curve collection for each magcol
-
-    fakedb['magrms'] = {}
-
-    for mcolind, mcol in enumerate(magcols):
-
-        LOGINFO('characterizing mag-RMS for %s' % mcol)
-
-        thisrms = fakedb['mad'][:,mcolind]*1.483
-        finind = np.isfinite(thisrms) & np.isfinite(fmags)
-        thisrms = thisrms[finind]
-        thismags = fmags[finind]
-
-        # do a polyfit - make sure to use the unsaturated star range
-        fitcoeffs = np.polyfit(thismags, thisrms, 2)
-
-        # get the poly function with these coeffs
-        magrmspoly = np.poly1d(fitcoeffs)
-
-        # write it to the output dict
-        fakedb['magrms'][mcol] = magrmspoly
-
-        # make a plot of the mag-rms relation and the fit
-        plt.figure(figsize=(10,8))
-        plt.plot(thismags, thisrms,
-                 linestyle='none', marker='.', ms=1.0, rasterized=True)
-        thismodelmags = np.linspace(8.0,16.0,num=2000)
-        plt.plot(thismodelmags, magrmspoly(thismodelmags))
-        plt.xlabel('SDSS r [mag]')
-        plt.ylabel(r'RMS (1.483 $\times$ MAD)')
-        plt.title('SDSS r vs. RMS for magcol: %s' % mcol)
-        plt.yscale('log')
-        plt.tight_layout()
-
-        plotfname = os.path.join(simbasedir,'mag-rms-%s.png' % mcol)
-        plt.savefig(plotfname, bbox_inches='tight')
-        plt.close('all')
-
+    fakedb['magrms'] = magrms
 
     # finally, write the collection DB to a pickle in simbasedir
     dboutfname = os.path.join(simbasedir,'fakelcs-info.pkl')
@@ -893,13 +1081,20 @@ def make_fakelc_collection(lclist,
 ########################################################
 
 
-def add_variability_to_fakelc(fakelcfile,
-                              vartype,
-                              varparams,
-                              noiseparams):
+def add_fakelc_variability(fakelcfile,
+                           vartype,
+                           varparams):
     '''
     This adds variability of the specified type to the fake LC.
 
-    Also adds noise as specified by noiseparams.
+    The order is (for each magcol):
+
+    - add the periodic variability specified in vartype and varparams
+
+    - add the median mag level stored in fakelcfile to the time series
+
+    - add gaussian noise to the light curve as specified in fakelcfile
+
+    - write to pickle
 
     '''
