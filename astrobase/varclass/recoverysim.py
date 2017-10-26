@@ -817,10 +817,11 @@ def make_fakelc_collection(lclist,
                            magrms_fillvalue='extrapolate',
                            maxlcs=25000,
                            maxvars=2000,
+                           randomizemags=True,
+                           randomizecoords=False,
                            vartypes=['EB','RRAB','RRC',
                                      'ROT','FLR','HADS',
                                      'PLT','LPV'],
-                           randomizeinfo=True,
                            lcformat='hat-sql',
                            timecols=None,
                            magcols=None,
@@ -973,7 +974,8 @@ https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.
                              'magcols':magcols,
                              'errcols':errcols,
                              'magrms':magrms,
-                             'randomizeinfo':randomizeinfo})
+                             'randomizemags':randomizemags,
+                             'randomizecoords':randomizecoords})
              for x in chosenlcs]
 
     # we can't parallelize because it messes up the random number generation,
