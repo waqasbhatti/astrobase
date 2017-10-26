@@ -309,6 +309,8 @@ def generate_transit_lightcurve(fakelcfile, transitparams):
     for magnitudes -> transitdepth should be < 0
     for fluxes     -> transitdepth should be > 0
 
+    TODO: finish this
+
     '''
 
 
@@ -321,6 +323,9 @@ def generate_eb_lightcurve(fakelcfile, ebparams):
                 pdepth (mags),
                 pduration (phase),
                 depthratio]
+
+    TODO: finish this
+
     '''
 
 
@@ -333,6 +338,7 @@ def generate_flare_lightcurve(fakelcfile, flareparams):
                    rise_gaussian_stdev,
                    decay_time_constant]
 
+    TODO: finish this
 
     '''
 
@@ -359,6 +365,8 @@ def generate_sinusoidal_lightcurve(fakelcfile,
                      [phas_1, phas_2, phas_3, ..., phas_X]]
 
     The period will be set using the table above.
+
+    TODO: finish this
 
     '''
 
@@ -1111,7 +1119,8 @@ def add_fakelc_variability(fakelcfile,
 
     The procedure is (for each magcol):
 
-    - add the periodic variability specified in vartype and varparams
+    - add the periodic variability specified in vartype and varparams. if not
+      periodic variable, then do nothing.
 
     - add the median mag level stored in fakelcfile to the time series
 
@@ -1122,12 +1131,40 @@ def add_fakelc_variability(fakelcfile,
 
     - write back to pickle
 
+    - return the varinfo dict to the caller
+
+    TODO: finish this
+
     '''
 
 
 
-def add_variability_to_fakelc_collection(simbasedir):
-    '''
-    This adds variability and noise to all fakelcs in simbasedir.
+def add_variability_to_fakelc_collection(simbasedir, customparams=None):
+    '''This adds variability and noise to all fakelcs in simbasedir.
+
+    If an object is marked as variable in the fakelcs-info.pkl file in
+    simbasedir, a variable signal will be added to its light curve based on its
+    selected type, default period and amplitude distribution, the appropriate
+    params, etc. the epochs for each variable object will be chosen uniformly
+    from its time-range (and may not necessarily fall on a actual observed
+    time). Nonvariable objects will only have noise added as determined by their
+    params, but no variable signal will be added.
+
+    customparams is a dict like so:
+
+    {'<vartype1>': {'periodrange': [startp, endp],
+                    'perioddist': <a scipy.stats distribution object>,
+                    'amplrange': [startampl, endampl],
+                    'ampldist': <a scipy.stats distribution object>},
+     ...}
+
+    for any vartype in VARTYPE_LCGEN_MAP. These are used to override the default
+    period and amplitude distributions for each variable type.
+
+    This will get back the varinfo from the add_fakelc_variability function and
+    writes that info back to the simbasedir/fakelcs-info.pkl file for each
+    object.
+
+    TODO: finish this
 
     '''

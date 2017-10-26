@@ -104,6 +104,8 @@ def LOGEXCEPTION(message):
 ###################
 
 import astrobase.lcproc as lcproc
+lcproc.set_logger_parent(__name__)
+
 import astrobase.varbase.features as vfeatures
 
 
@@ -111,9 +113,9 @@ import astrobase.varbase.features as vfeatures
 ## LC FORMATS SET UP ##
 #######################
 
-def read_pklc(lcfile):
+def read_fakelc(fakelcfile):
     '''
-    This just reads a pickle LC.
+    This just reads a pickled fake LC.
 
     '''
 
@@ -125,3 +127,47 @@ def read_pklc(lcfile):
             lcdict = pickle.load(infd, encoding='latin1')
 
     return lcdict
+
+
+# register the fakelc pklc as a custom lcproc format
+# now we should be able to use all lcproc functions correctly
+lcproc.register_custom_lcformat(
+    'fakelc',
+    '*-fakelc.pkl',
+    read_pklc,
+    None, # these are None because we make sure to get from fakelc directly
+    None, # these are None because we make sure to get from fakelc directly
+    None, # these are None because we make sure to get from fakelc directly
+    magsarefluxes=False,
+    specialnormfunc=None
+)
+
+
+
+###########################
+## VARIABILITY FUNCTIONS ##
+###########################
+
+
+def run_variability_selection(simbasedir):
+    '''This runs variability selection on all of the light curves in simbasedir.
+
+    Reads the fakelcs-info.pkl in simbasedir to get:
+
+    - the variable objects, their types, periods, epochs, and params
+    - the nonvariable objects
+
+    Calculates the true positives, false positives, true negatives, false
+    negatives. Then gets the precision and recall, confusion matrix, and the ROC
+    curve for variable vs. nonvariable. Gets these for:
+
+    - the overall collection
+    - as a function of magnitude
+    - as a function of period
+    - as a function of number of detections
+    - as a function of amplitude of variability
+
+    Makes nice plots and writes everything back to
+    simbasedir/fakevar-recovery.pkl.
+
+    '''
