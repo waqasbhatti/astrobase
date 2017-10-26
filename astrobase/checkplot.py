@@ -1002,7 +1002,8 @@ def twolsp_checkplot_png(lspinfo1,
 
     # get the second LSP from a pickle file transparently
     if isinstance(lspinfo2,str) and os.path.exists(lspinfo2):
-        LOGINFO('loading LSP info from pickle %s' % lspinfo2)
+        if verbose:
+            LOGINFO('loading LSP info from pickle %s' % lspinfo2)
 
         if '.gz' in lspinfo2:
             with gzip.open(lspinfo2,'rb') as infd:
