@@ -228,8 +228,9 @@ def normalize_magseries(times,
 ####################
 
 def sigclip_magseries(times, mags, errs,
-                      magsarefluxes=False,
-                      sigclip=None):
+                      sigclip=None,
+                      iterative=False,
+                      magsarefluxes=False):
     '''
     Select the finite times, magnitudes (or fluxes), and errors from the
     passed values, and apply symmetric or asymmetric sigma clipping to them.
@@ -243,6 +244,8 @@ def sigclip_magseries(times, mags, errs,
         positive/negative.
 
         errs (np.array): ...
+
+        iterative (bool): True if you want iterative sigma-clipping.
 
         magsarefluxes (bool): True if your "mags" are in fact fluxes, i.e. if
         "dimming" corresponds to your "mags" getting smaller.
@@ -279,11 +282,45 @@ def sigclip_magseries(times, mags, errs,
     # sigclip next for a single sigclip value
     if sigclip and isinstance(sigclip,float):
 
-        sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
+        if not iterative:
 
-        stimes = ftimes[sigind]
-        smags = fmags[sigind]
-        serrs = ferrs[sigind]
+            sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
+
+            stimes = ftimes[sigind]
+            smags = fmags[sigind]
+            serrs = ferrs[sigind]
+
+        else:
+
+            #
+            # iterative version adapted from scipy.stats.sigmaclip
+            #
+            delta = 1
+
+            this_times = ftimes
+            this_mags = fmags
+            this_errs = ferrs
+
+            while delta:
+
+                this_median = npmedian(this_mags)
+                this_stdev = (npmedian(npabs(this_mags - this_median))) * 1.483
+                this_size = this_mags.size
+
+                # apply the sigclip
+                tsi = (npabs(this_mags - this_median)) < (sigclip * this_stdev)
+
+                # update the arrays
+                this_times = this_times[tsi]
+                this_mags = this_mags[tsi]
+                this_errs = this_errs[tsi]
+
+                # update delta and go to the top of the loop
+                delta = this_size - this_mags.size
+
+            # final sigclipped versions
+            stimes, smags, serrs = this_times, this_mags, this_errs
+
 
     # this handles sigclipping for asymmetric +ve and -ve clip values
     elif sigclip and isinstance(sigclip,list) and len(sigclip) == 2:
@@ -292,18 +329,74 @@ def sigclip_magseries(times, mags, errs,
         dimmingclip = sigclip[0]
         brighteningclip = sigclip[1]
 
-        if magsarefluxes:
-            nottoodimind = (fmags - median_mag) > (-dimmingclip*stddev_mag)
-            nottoobrightind = (fmags - median_mag) < (brighteningclip*stddev_mag)
+        if not iterative:
+
+            if magsarefluxes:
+                nottoodimind = (
+                    (fmags - median_mag) > (-dimmingclip*stddev_mag)
+                )
+                nottoobrightind = (
+                    (fmags - median_mag) < (brighteningclip*stddev_mag)
+                )
+            else:
+                nottoodimind = (
+                    (fmags - median_mag) < (dimmingclip*stddev_mag)
+                )
+                nottoobrightind = (
+                    (fmags - median_mag) > (-brighteningclip*stddev_mag)
+                )
+
+            sigind = nottoodimind & nottoobrightind
+
+            stimes = ftimes[sigind]
+            smags = fmags[sigind]
+            serrs = ferrs[sigind]
+
         else:
-            nottoodimind = (fmags - median_mag) < (dimmingclip*stddev_mag)
-            nottoobrightind = (fmags - median_mag) > (-brighteningclip*stddev_mag)
 
-        sigind = nottoodimind & nottoobrightind
+            #
+            # iterative version adapted from scipy.stats.sigmaclip
+            #
+            delta = 1
 
-        stimes = ftimes[sigind]
-        smags = fmags[sigind]
-        serrs = ferrs[sigind]
+            this_times = ftimes
+            this_mags = fmags
+            this_errs = ferrs
+
+            while delta:
+
+                this_median = npmedian(this_mags)
+                this_stdev = (npmedian(npabs(this_mags - this_median))) * 1.483
+                this_size = this_mags.size
+
+                if magsarefluxes:
+                    nottoodimind = (
+                        (this_mags - this_median) > (-dimmingclip*this_stdev)
+                    )
+                    nottoobrightind = (
+                        (this_mags - this_median) < (brighteningclip*this_stdev)
+                    )
+                else:
+                    nottoodimind = (
+                        (this_mags - this_median) < (dimmingclip*this_stdev)
+                    )
+                    nottoobrightind = (
+                        (this_mags - this_median) > (-brighteningclip*this_stdev)
+                    )
+
+                # apply the sigclip
+                tsi = nottoodimind & nottoobrightind
+
+                # update the arrays
+                this_times = this_times[tsi]
+                this_mags = this_mags[tsi]
+                this_errs = this_errs[tsi]
+
+                # update delta and go to top of the loop
+                delta = this_size - this_mags.size
+
+            # final sigclipped versions
+            stimes, smags, serrs = this_times, this_mags, this_errs
 
     else:
 
