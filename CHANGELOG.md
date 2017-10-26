@@ -1,3 +1,34 @@
+# v0.2.7
+
+## Fixes
+
+- checkplot: use axes_grid1 because axes_grid is deprecated apparently
+- features.all_nonperiodic_features: add back magsarefluxes kwarg
+- lcmath: add (optional for now) iterative sigclip to sigclip_magseries
+- lcmodels.eclipses: fixes to docstring
+- lcmodels.eclipses, lcfit: implemented invgauss_eclipses model & fit fns
+- lcproc.plot_variability_thresholds: yscale -> log
+- lcproc: stetson_threshold -> variability_threshold, now per mag-bin
+- lcproc: stupid bug fix
+- lcproc.variability_threshold: get and plot LC RMS as well
+- recoverysim: added make_fakelc_collection
+- recoverysim: fixed up make_fakelc, make_fakelc_collection
+- recoverysim: now two separate modules: fakelcgen and fakelcrecovery
+- varbase.features: some more measures added
+- varbase.lcfit: fix confusing fourierorder, fourierparams kwargs. GH PR #27
+- varbase.signals: fixes for GH PR #25 and #29
+- varbase/signals: fix long-broken gls_prewhiten iterative prewhiten function
+- checkplot.twolsp_checkplot.png: Wrapped LOGWARNING in `if verbose:` statement
+
+
+## Work that may be in progress
+
+- [WIP] moved various LC models into lcmodels, TODO: finish these
+- [WIP] recoverysim: redo make_fakelc, now gets mag-rms from previous results
+- [WIP] setting up the varclass package
+- [WIP] various implementation notes
+- [WIP] working on recoverysim
+
 # v0.2.6
 
 ## Fixes
@@ -382,4 +413,3 @@
 - checkplot: handle a missing objectid in checkplot_pickle
 - checkplotserver: adding skeletons for LC tool handling endpoints
 - timeutils: added jd_to_datetime fn (w/ optional ISO str output)
-
