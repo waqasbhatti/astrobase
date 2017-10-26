@@ -59,7 +59,7 @@ def invgauss_eclipses_func(ebparams, times, mags, errs):
                 epoch (time),
                 pdepth (mags),
                 pduration (phase),
-                psradratio]
+                depthratio]
 
     period is the period in days
 
@@ -71,14 +71,15 @@ def invgauss_eclipses_func(ebparams, times, mags, errs):
 
     pduration is the length of the primary eclipse in phase
 
-    psradratio is the ratio of the secondary radius to primary radius. this is
-    equal the ratio in the eclipse depths.
+    depthratio is the ratio in the eclipse depths:
+    depth_secondary/depth_primary. this is generally the same as the ratio of
+    the Teffs of the two stars.
 
     All of these will then have fitted values after the fit is done.
 
     '''
 
-    (period, epoch, pdepth, pduration, psradratio) = ebparams
+    (period, epoch, pdepth, pduration, depthratio) = ebparams
 
     # generate the phases
     iphase = (times - epoch)/period
@@ -94,7 +95,7 @@ def invgauss_eclipses_func(ebparams, times, mags, errs):
     modelmags = npfull_like(phase, zerolevel)
 
     primaryecl_amp = -pdepth
-    secondaryecl_amp = -pdepth * psradratio
+    secondaryecl_amp = -pdepth * depthratio
 
     primaryecl_std = pduration/5.0 # we use 5-sigma as full-width -> duration
     secondaryecl_std = pduration/5.0 # secondary eclipse has the same duration
