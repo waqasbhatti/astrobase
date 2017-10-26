@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''recoverysim - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
+'''fakelcgen - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
 License: MIT. See the LICENSE file for more details.
 
 This generates light curves of variable stars using the astrobase.lcmodels
@@ -77,7 +77,7 @@ import matplotlib.pyplot as plt
 LOGGER = None
 
 def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.lcproc' % parent_name)
+    globals()['LOGGER'] = logging.getLogger('%s.fakelcgen' % parent_name)
 
 def LOGDEBUG(message):
     if LOGGER:
@@ -1132,14 +1132,12 @@ https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.
 ## FUNCTIONS TO ADD VARIABLE LCS TO FAKELC COLLECTION ##
 ########################################################
 
-
 def add_fakelc_variability(fakelcfile,
                            vartype,
                            varparams):
-    '''
-    This adds variability of the specified type to the fake LC.
+    '''This adds variability of the specified type to the fake LC.
 
-    The order is (for each magcol):
+    The procedure is (for each magcol):
 
     - add the periodic variability specified in vartype and varparams
 
@@ -1147,6 +1145,17 @@ def add_fakelc_variability(fakelcfile,
 
     - add gaussian noise to the light curve as specified in fakelcfile
 
-    - write to pickle
+    - add a varinfo key and dict to the lcdict with varperiod, varepoch,
+      varparams
+
+    - write back to pickle
+
+    '''
+
+
+
+def add_variability_to_fakelc_collection(simbasedir):
+    '''
+    This adds variability and noise to all fakelcs in simbasedir.
 
     '''
