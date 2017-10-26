@@ -945,13 +945,13 @@ https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.
 
             magrms[magcol] = {
                 'binned_sdssr_median':xmagrms[magcol]['binned_sdssr_median'],
-                'binned_lcmad_median':xmagrms[magcol]['binned_sdssr_median'],
+                'binned_lcmad_median':xmagrms[magcol]['binned_lcmad_median'],
             }
 
             # interpolate the mag-MAD relation
             interpolated_magmad = spi.interp1d(
                 xmagrms[magcol]['binned_sdssr_median'],
-                xmagrms[magcol]['binned_sdssr_median'],
+                xmagrms[magcol]['binned_lcmad_median'],
                 kind=magrms_interpolate,
                 fill_value=magrms_fillvalue,
             )
