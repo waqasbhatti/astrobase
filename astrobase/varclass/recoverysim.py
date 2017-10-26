@@ -328,6 +328,15 @@ def generate_transit_lightcurve(fakelcfile, transitparams):
     '''
     This generates fake transit light curves.
 
+    transitparams = [transitperiod (time),
+                     transitepoch (time),
+                     transitdepth (flux or mags),
+                     transitduration (phase),
+                     ingressduration (phase)]
+
+    for magnitudes -> transitdepth should be < 0
+    for fluxes     -> transitdepth should be > 0
+
     '''
 
 
@@ -335,12 +344,23 @@ def generate_eb_lightcurve(fakelcfile, ebparams):
     '''
     This generates fake EB light curves.
 
+    ebparams = [period (time),
+                epoch (time),
+                pdepth (mags),
+                pduration (phase),
+                depthratio]
     '''
 
 
 def generate_flare_lightcurve(fakelcfile, flareparams):
     '''
     This generates fake flare light curves.
+
+    flareparams = [amplitude,
+                   flare_peak_time,
+                   rise_gaussian_stdev,
+                   decay_time_constant]
+
 
     '''
 
@@ -350,55 +370,83 @@ def generate_sinusoidal_lightcurve(fakelcfile,
                                    fourierparams):
     '''This generates fake sinusoidal light curves.
 
-    sintype is 'RRab', 'RRc', 'HADS', 'rotation', which sets the fourier order
-    and period limits like so:
+    sintype is one of 'RRab', 'RRc', 'HADS', 'rotation', 'LPV', which sets the
+    fourier order and period limits like so:
 
-    type        fourier order limits        period limit
+    type        fourier           period [days]
+                order    dist     limits         dist
 
-    RRab        5 to 8                      0.45 to 0.80 days
-    RRc         2 to 4                      0.10 to 0.40 days
-    HADS        5 to 8                      0.04 to 0.10 days
-    rotation    1 to 3                      0.8 to 120.0 days
-    LPV         1 to 3                      250 to 500.0 days
+    RRab        7 to 10  uniform  0.45--0.80     uniform
+    RRc         2 to 4   uniform  0.10--0.40     uniform
+    HADS        5 to 9   uniform  0.04--0.10     uniform
+    rotator     1 to 3   uniform  0.80--120.0    uniform
+    LPV         1 to 3   uniform  250--500.0     uniform
+
+    fourierparams = [epoch,
+                     [ampl_1, ampl_2, ampl_3, ..., ampl_X],
+                     [phas_1, phas_2, phas_3, ..., phas_X]]
+
+    The period will be set using the table above.
 
     '''
+
+
 
 def generate_rrab_lightcurve(fakelcfile, rrabparams):
     '''This wraps generate_sinusoidal_lightcurves for RRab LCs.
 
     '''
 
+    return generate_sinusoidal_lightcurve(fakelcfile, 'RRab', rrabparams)
+
+
+
 def generate_rrc_lightcurve(fakelcfile, rrcparams):
     '''This wraps generate_sinusoidal_lightcurves for RRc LCs.
 
     '''
+
+    return generate_sinusoidal_lightcurve(fakelcfile, 'RRc', rrcparams)
+
+
 
 def generate_hads_lightcurve(fakelcfile, hadsparams):
     '''This wraps generate_sinusoidal_lightcurves for HADS LCs.
 
     '''
 
-def generate_rotation_lightcurve(fakelcfile, rotparams):
+    return generate_sinusoidal_lightcurve(fakelcfile, 'HADS', hadsparams)
+
+
+
+def generate_rotator_lightcurve(fakelcfile, rotparams):
     '''This wraps generate_sinusoidal_lightcurves for rotation LCs.
 
     '''
+
+    return generate_sinusoidal_lightcurve(fakelcfile, 'rotator', rotparams)
+
+
 
 def generate_lpv_lightcurve(fakelcfile, lpvparams):
     '''This wraps generate_sinusoidal_lightcurves for LPV LCs.
 
     '''
 
+    return generate_sinusoidal_lightcurve(fakelcfile, 'LPV', lpvparams)
+
+
 
 # this maps functions to generate light curves to their vartype codes as put
 # into the make_fakelc_collection function.
 VARTYPE_LCGEN_MAP = {
     'EB': generate_eb_lightcurve,
-    'RRAB': generate_rrab_lightcurve,
-    'RRC': generate_rrc_lightcurve,
-    'ROT': generate_rotation_lightcurve,
-    'FLR': generate_flare_lightcurve,
+    'RRab': generate_rrab_lightcurve,
+    'RRc': generate_rrc_lightcurve,
+    'rotator': generate_rotation_lightcurve,
+    'flare': generate_flare_lightcurve,
     'HADS': generate_hads_lightcurve,
-    'PLT': generate_transit_lightcurve,
+    'planet': generate_transit_lightcurve,
     'LPV': generate_lpv_lightcurve,
 }
 
@@ -819,9 +867,9 @@ def make_fakelc_collection(lclist,
                            maxvars=2000,
                            randomizemags=True,
                            randomizecoords=False,
-                           vartypes=['EB','RRAB','RRC',
-                                     'ROT','FLR','HADS',
-                                     'PLT','LPV'],
+                           vartypes=['EB','RRab','RRc',
+                                     'rotator','flare','HADS',
+                                     'planet','LPV'],
                            lcformat='hat-sql',
                            timecols=None,
                            magcols=None,
