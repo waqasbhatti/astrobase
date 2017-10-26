@@ -410,7 +410,7 @@ VARTYPE_LCGEN_MAP = {
 
 def make_fakelc(lcfile,
                 outdir,
-                magrms,
+                magrms=None,
                 randomizemags=True,
                 randomizecoords=False,
                 lcformat='hat-sql',
