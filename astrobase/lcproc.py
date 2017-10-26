@@ -1653,7 +1653,7 @@ def plot_variability_thresholds(varthreshpkl,
 
     for magcol in magcols:
 
-        fig = plt.figure(figsize=(16,16))
+        fig = plt.figure(figsize=(20,16))
 
         # the mag vs lcmad
         plt.subplot(221)
@@ -1673,10 +1673,10 @@ def plot_variability_thresholds(varthreshpkl,
             linewidth=3.0, linestyle='dashed'
         )
         plt.xlim((magbins.min()-0.25, magbins.max()))
-        plt.ylim((-0.1,3.0))
         plt.xlabel('SDSS r')
         plt.ylabel(r'lightcurve RMS (MAD $\times$ 1.483)')
         plt.title('%s - SDSS r vs. light curve RMS' % magcol)
+        plt.yscale('log')
         plt.tight_layout()
 
         # the mag vs stetsonj
@@ -1697,10 +1697,10 @@ def plot_variability_thresholds(varthreshpkl,
             linewidth=3.0, linestyle='dashed'
         )
         plt.xlim((magbins.min()-0.25, magbins.max()))
-        plt.ylim((-0.1,3.0))
         plt.xlabel('SDSS r')
         plt.ylabel('Stetson J index')
         plt.title('%s - SDSS r vs. Stetson J index' % magcol)
+        plt.yscale('log')
         plt.tight_layout()
 
         # the mag vs IQR
@@ -1724,7 +1724,7 @@ def plot_variability_thresholds(varthreshpkl,
         plt.ylabel('IQR')
         plt.title('%s - SDSS r vs. IQR' % magcol)
         plt.xlim((magbins.min()-0.25, magbins.max()))
-        plt.ylim((0.0,0.5))
+        plt.yscale('log')
         plt.tight_layout()
 
         # the mag vs IQR
@@ -1748,7 +1748,7 @@ def plot_variability_thresholds(varthreshpkl,
         plt.ylabel(r'$1/\eta$')
         plt.title(r'%s - SDSS r vs. $1/\eta$' % magcol)
         plt.xlim((magbins.min()-0.25, magbins.max()))
-        plt.ylim((0.4,3.0))
+        plt.yscale('log')
         plt.tight_layout()
 
         plt.savefig('varfeatures-%s-%s-distributions.png' % (varthreshpkl,
