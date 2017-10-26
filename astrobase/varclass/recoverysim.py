@@ -786,7 +786,8 @@ def collection_worker(task):
 
     task[0] = lcfile
     task[1] = outdir
-    task[2] = {'lcformat', 'timecols', 'magcols', 'errcols', 'randomizeinfo'}
+    task[2] = magrms
+    task[3] = {'lcformat', 'timecols', 'magcols', 'errcols', 'randomizeinfo'}
 
     '''
 
@@ -967,11 +968,12 @@ https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.
                 'interpolated_magmad':None,
             }
 
-    tasks = [(x, fakelcdir, magrms, {'lcformat':lcformat,
-                                     'timecols':timecols,
-                                     'magcols':magcols,
-                                     'errcols':errcols,
-                                     'randomizeinfo':randomizeinfo})
+    tasks = [(x, fakelcdir, {'lcformat':lcformat,
+                             'timecols':timecols,
+                             'magcols':magcols,
+                             'errcols':errcols,
+                             'magrms':magrms,
+                             'randomizeinfo':randomizeinfo})
              for x in chosenlcs]
 
     # we can't parallelize because it messes up the random number generation,
