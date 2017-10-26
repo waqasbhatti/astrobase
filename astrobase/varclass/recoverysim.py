@@ -600,8 +600,7 @@ def make_fakelc(lcfile,
 
             # if we're randomizing, get the mags from the interpolated mag-RMS
             # relation
-            if (randomizemags and
-                mcol in magrms and
+            if (randomizemags and magrms and mcol in magrms and
                 'interpolated_magmad' in magrms[mcol] and
                 magrms[mcol]['interpolated_magmad'] is not None):
 
@@ -631,7 +630,7 @@ def make_fakelc(lcfile,
                 # median and RMS from the interpolated mag-RMS relation first
                 else:
 
-                    if (mcol in magrms and
+                    if (magrms and mcol in magrms and
                         'interpolated_magmad' in magrms[mcol] and
                         magrms[mcol]['interpolated_magmad'] is not None):
 
@@ -689,8 +688,7 @@ def make_fakelc(lcfile,
 
             # if we're randomizing, get the errs from the interpolated mag-RMS
             # relation
-            if (randomizemags and
-                mcol in magrms and
+            if (randomizemags and magrms and mcol in magrms and
                 'interpolated_magmad' in magrms[magcol] and
                 magrms[magcol]['interpolated_magmad'] is not None):
 
@@ -717,7 +715,7 @@ def make_fakelc(lcfile,
                                                    'mad':measuredmad}
                 else:
 
-                    if (mcol in magrms and
+                    if (magrms and mcol in magrms and
                         'interpolated_magmad' in magrms[mcol] and
                         magrms[mcol]['interpolated_magmad'] is not None):
 
