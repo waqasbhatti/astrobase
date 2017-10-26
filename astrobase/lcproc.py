@@ -1438,6 +1438,9 @@ def variability_threshold(featuresdir,
         binned_objectids_thresh_inveta = []
         binned_objectids_thresh_all = []
 
+        binned_lcmad_median = []
+        binned_lcmad_stdev = []
+
         binned_stetsonj_median = []
         binned_stetsonj_stdev = []
 
@@ -1465,6 +1468,13 @@ def variability_threshold(featuresdir,
             thisbin_count = thisbin_objectids.size
 
             if thisbin_count > 4:
+
+                thisbin_lcmad_median = np.median(thisbin_lcmad)
+                thisbin_lcmad_stdev = np.median(
+                    np.abs(thisbin_lcmad - thisbin_lcmad_median)
+                ) * 1.483
+                binned_lcmad_median.append(thisbin_lcmad_median)
+                binned_lcmad_stdev.append(thisbin_lcmad_stdev)
 
                 thisbin_stetsonj_median = np.median(thisbin_stetsonj)
                 thisbin_stetsonj_stdev = np.median(
@@ -1547,9 +1557,11 @@ def variability_threshold(featuresdir,
         allobjects[magcol]['binned_objectids'] = binned_objectids
         allobjects[magcol]['binned_sdssr_median'] = binned_sdssr_median
         allobjects[magcol]['binned_sdssr'] = binned_sdssr
-        allobjects[magcol]['binned_lcmad'] = binned_lcmad
         allobjects[magcol]['binned_count'] = binned_count
 
+        allobjects[magcol]['binned_lcmad'] = binned_lcmad
+        allobjects[magcol]['binned_lcmad_median'] = binned_lcmad_median
+        allobjects[magcol]['binned_lcmad_stdev'] = binned_lcmad_stdev
 
         allobjects[magcol]['binned_stetsonj'] = binned_stetsonj
         allobjects[magcol]['binned_stetsonj_median'] = binned_stetsonj_median
@@ -1607,6 +1619,7 @@ def variability_threshold(featuresdir,
 
 
 def plot_variability_thresholds(varthreshpkl,
+                                xmin_lcmad_stdev=5.0,
                                 xmin_stetj_stdev=2.0,
                                 xmin_iqr_stdev=2.0,
                                 xmin_inveta_stdev=2.0,
@@ -1638,10 +1651,34 @@ def plot_variability_thresholds(varthreshpkl,
 
     for magcol in magcols:
 
-        fig = plt.figure(figsize=(10,20))
+        fig = plt.figure(figsize=(16,16))
+
+        # the mag vs lcmad
+        plt.subplot(221)
+        plt.plot(allobjects[magcol]['sdssr'],
+                 allobjects[magcol]['lcmad']*1.483,
+                 marker='.',ms=1.0, linestyle='none',
+                 rasterized=True)
+        plt.plot(allobjects[magcol]['binned_sdssr_median'],
+                 np.array(allobjects[magcol]['binned_lcmad_median'])*1.483,
+                 linewidth=3.0)
+        plt.plot(
+            allobjects[magcol]['binned_sdssr_median'],
+            np.array(allobjects[magcol]['binned_lcmad_median'])*1.483 +
+            min_lcmad_stdev*np.array(
+                allobjects[magcol]['binned_lcmad_stdev']
+            ),
+            linewidth=3.0, linestyle='dashed'
+        )
+        plt.xlim((magbins.min()-0.25, magbins.max()))
+        plt.ylim((-0.1,3.0))
+        plt.xlabel('SDSS r')
+        plt.ylabel(r'lightcurve RMS (MAD $\times$ 1.483)')
+        plt.title('%s - SDSS r vs. light curve RMS' % magcol)
+        plt.tight_layout()
 
         # the mag vs stetsonj
-        plt.subplot(311)
+        plt.subplot(222)
         plt.plot(allobjects[magcol]['sdssr'],
                  allobjects[magcol]['stetsonj'],
                  marker='.',ms=1.0, linestyle='none',
@@ -1665,7 +1702,7 @@ def plot_variability_thresholds(varthreshpkl,
         plt.tight_layout()
 
         # the mag vs IQR
-        plt.subplot(312)
+        plt.subplot(223)
         plt.plot(allobjects[magcol]['sdssr'],
                  allobjects[magcol]['iqr'],
                  marker='.',ms=1.0, linestyle='none',
@@ -1689,7 +1726,7 @@ def plot_variability_thresholds(varthreshpkl,
         plt.tight_layout()
 
         # the mag vs IQR
-        plt.subplot(313)
+        plt.subplot(224)
         plt.plot(allobjects[magcol]['sdssr'],
                  allobjects[magcol]['inveta'],
                  marker='.',ms=1.0, linestyle='none',
