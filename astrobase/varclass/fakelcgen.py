@@ -541,7 +541,7 @@ def make_fakelc(lcfile,
             # if there's no DECL available, we'll assign a random one between
             # -90.0 and +90.0
             LOGWARNING(' %s: assigning a random declination' % lcfile)
-            fakelcdict['objectinfo']['decl'] = npr.random()*90.0 - 90.0
+            fakelcdict['objectinfo']['decl'] = npr.random()*180.0 - 90.0
 
         # get the SDSS r mag for this object
         # this will be used for getting the eventual mag-RMS relation later
@@ -585,7 +585,7 @@ def make_fakelc(lcfile,
                    'generating random ra, decl, sdssr' %
                    lcfile)
         fakelcdict['objectinfo']['ra'] = npr.random()*360.0
-        fakelcdict['objectinfo']['decl'] = npr.random()*90.0 - 90.0
+        fakelcdict['objectinfo']['decl'] = npr.random()*180.0 - 90.0
         fakelcdict['objectinfo']['sdssr'] = npr.random()*8.0 + 8.0
 
 
