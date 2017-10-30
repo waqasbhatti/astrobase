@@ -346,8 +346,8 @@ def generate_transit_lightcurve(
 
     # choose the period, depth, duration
     period = paramdists['transitperiod'].rvs(size=1)
-    depth = paramdists['transitperiod'].rvs(size=1)
-    duration = paramdists['transitperiod'].rvs(size=1)
+    depth = paramdists['transitdepth'].rvs(size=1)
+    duration = paramdists['transitduration'].rvs(size=1)
 
     # figure out the ingress duration
     ingduration = npr.random()*(0.5*duration - 0.05*duration) + 0.05*duration
