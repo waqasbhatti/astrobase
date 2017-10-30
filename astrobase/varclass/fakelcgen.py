@@ -13,6 +13,7 @@ recovery simulation.
 import os
 import os.path
 import pickle
+import shutil
 
 import multiprocessing as mp
 import logging
@@ -376,16 +377,16 @@ def generate_transit_lightcurve(
     # return a dict with everything
     modeldict = {
         'vartype':'planet',
-        'params':{x:y for x,y in zip(['transitperiod,'
-                                      'transitepoch',
-                                      'transitdepth',
-                                      'transitduration',
-                                      'ingressduration'],
-                                     [period,
-                                      epoch,
-                                      depth,
-                                      duration,
-                                      ingduration])},
+        'params':{x:np.asscalar(y) for x,y in zip(['transitperiod',
+                                                   'transitepoch',
+                                                   'transitdepth',
+                                                   'transitduration',
+                                                   'ingressduration'],
+                                                  [period,
+                                                   epoch,
+                                                   depth,
+                                                   duration,
+                                                   ingduration])},
         'times':mtimes,
         'mags':mmags,
         'errs':merrs
@@ -1249,19 +1250,18 @@ def add_fakelc_variability(fakelcfile,
     # 1. generate the variability, including the overrides if provided we do
     # this outside the loop below to get the period, etc. distributions once
     # only per object. NOTE: in doing so, we're assuming that the difference
-    # between magcols is just additive; this is not strictly correct
+    # between magcols is just additive and the timebases for each magcol are the
+    # same; this is not strictly correct
     if (override_varparamdists is not None and
         isinstance(override_varparamdists,dict)):
 
-        variablelc = vargenfunc(times,
+        variablelc = vargenfunc(lcdict[timecols[0]],
                                 paramdists=override_paramdists,
                                 magsarefluxes=magsarefluxes)
 
     else:
 
-        variablelc = vargenfunc(times,
-                                mags=mags,
-                                errs=errs,
+        variablelc = vargenfunc(lcdict[timecols[0]],
                                 magsarefluxes=magsarefluxes)
 
 
@@ -1278,11 +1278,13 @@ def add_fakelc_variability(fakelcfile,
         err_mad = lcdict['moments'][ecol]['mad']
 
         # 3. add the median level + gaussian noise
-        maglevel = sps.norm(loc=mag_median, scale=mag_mad*1.483)
-        errlevel = sps.norm(loc=err_median, scale=err_mad*1.483)
+        maglevel = npr.normal(loc=mag_median, scale=mag_mad*1.483,
+                              size=variablelc['mags'].size)
+        errlevel = npr.normal(loc=err_median, scale=err_mad*1.483,
+                              size=variablelc['mags'].size)
 
-        finalmags = variablelc['mags'] + maglevel.rvs(size=variablelc['mags'])
-        finalerrs = variablelc['errs'] + errlevel.rvs(size=variablelc['errs'])
+        finalmags = variablelc['mags'] + maglevel
+        finalerrs = variablelc['errs'] + errlevel
 
         # 4. update these tcol, mcol, ecol values in the lcdict
         lcdict[mcol] = finalmags
@@ -1297,9 +1299,9 @@ def add_fakelc_variability(fakelcfile,
     lcdict['actual_varparams'] = variablelc['params']
 
     # 6. write back, making sure to do it safely
-    tempoutf = '%s.%s' % md5(npr.bytes(4)).hexdigest()[-8:]
+    tempoutf = '%s.%s' % (fakelcfile, md5(npr.bytes(4)).hexdigest()[-8:])
     with open(tempoutf, 'wb') as outfd:
-        pickle.dump(lcdict, outfd, pickle.HIGHEST_PROTCOL)
+        pickle.dump(lcdict, outfd, pickle.HIGHEST_PROTOCOL)
 
     if os.path.exists(tempoutf):
         shutil.copy(tempoutf, fakelcfile)
