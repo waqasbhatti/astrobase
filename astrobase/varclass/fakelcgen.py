@@ -30,8 +30,11 @@ def dict_get(datadict, keylist):
 
 import numpy as np
 import numpy.random as npr
+
 # seed the numpy random generator
-npr.seed(0xdecaff)
+# we'll use RANDSEED for scipy.stats distribution functions as well
+RANDSEED = 0xdecaff
+npr.seed(RANDSEED)
 
 import scipy.stats as sps
 import scipy.interpolate as spi
@@ -296,22 +299,100 @@ def register_custom_lcformat(formatkey,
 ## FUNCTIONS TO GENERATE FAKE LIGHT CURVES ##
 #############################################
 
-def generate_transit_lightcurve(fakelcfile, transitparams):
+def generate_transit_lightcurve(
+        times,
+        mags=None,
+        errs=None,
+        paramdists={'transitperiod':sps.uniform(loc=0.1,scale=50.0),
+                    'transitdepth':sps.uniform(loc=1.0e-4,scale=2.0e-2),
+                    'transitduration':sps.uniform(loc=0.01,scale=0.3)},
+        magsarefluxes=False,
+):
+    '''This generates fake transit light curves.
+
+    times is an array of time values that will be used as the time base.
+
+    mags and errs will have the model mags applied to them. If either is None,
+    np.full_like(times, 0.0) will used as a substitute.
+
+    paramdists is a dict containing parameter distributions to use for the
+    transitparams, in order:
+
+    {'transitperiod', 'transitdepth', 'transitduration'}
+
+    These are all 'frozen' scipy.stats distribution objects, e.g.:
+
+    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+
+    The transit epoch will be automatically chosen from a uniform distribution
+    between times.min() and times.max().
+
+    The ingress duration will be automatically chosen from a uniform
+    distribution ranging from 0.05 to 0.5 of the transitduration.
+
+    The transitdepth will be flipped automatically as appropriate if
+    magsarefluxes=True.
+
     '''
-    This generates fake transit light curves.
 
-    transitparams = [transitperiod (time),
-                     transitepoch (time),
-                     transitdepth (flux or mags),
-                     transitduration (phase),
-                     ingressduration (phase)]
+    if mags is None:
+        mags = np.full_like(times, 0.0)
 
-    for magnitudes -> transitdepth should be < 0
-    for fluxes     -> transitdepth should be > 0
+    if errs is None:
+        errs = np.full_like(times, 0.0)
 
-    TODO: finish this
+    # choose the epoch
+    epoch = npr.random()*(times.max() - times.min()) + times.min()
 
-    '''
+    # choose the period, depth, duration
+    period = paramdists['transitperiod'].rvs(size=1)
+    depth = paramdists['transitperiod'].rvs(size=1)
+    duration = paramdists['transitperiod'].rvs(size=1)
+
+    # figure out the ingress duration
+    ingduration = npr.random()*(0.5*duration - 0.05*duration) + 0.05*duration
+
+    # fix the transit depth if it needs to be flipped
+    if magsarefluxes and depth < 0.0:
+        depth = -depth
+    elif not magsarefluxes and depth > 0.0:
+        depth = -depth
+
+    # generate the model
+    modelmags, phase, ptimes, pmags, perrs = (
+        transits.trapezoid_transit_func([period, epoch, depth,
+                                         duration, ingduration],
+                                        times,
+                                        mags,
+                                        errs)
+    )
+
+    # resort in original time order
+    timeind = np.argsort(ptimes)
+    mtimes = ptimes[timeind]
+    mmags = modelmags[timeind]
+    merrs = perrs[timeind]
+
+    # return a dict with everything
+    modeldict = {
+        'vartype':'planet',
+        'params':{x:y for x,y in zip(['transitperiod,'
+                                      'transitepoch',
+                                      'transitdepth',
+                                      'transitduration',
+                                      'ingressduration'],
+                                     [period,
+                                      epoch,
+                                      depth,
+                                      duration,
+                                      ingduration])},
+        'times':mtimes,
+        'mags':mmags,
+        'errs':merrs
+    }
+
+    return modeldict
+
 
 
 def generate_eb_lightcurve(fakelcfile, ebparams):
@@ -423,7 +504,7 @@ VARTYPE_LCGEN_MAP = {
     'EB': generate_eb_lightcurve,
     'RRab': generate_rrab_lightcurve,
     'RRc': generate_rrc_lightcurve,
-    'rotator': generate_rotation_lightcurve,
+    'rotator': generate_rotator_lightcurve,
     'flare': generate_flare_lightcurve,
     'HADS': generate_hads_lightcurve,
     'planet': generate_transit_lightcurve,
@@ -785,6 +866,11 @@ def make_fakelc(lcfile,
 
 
 
+    # add the timecols, magcols, errcols to the lcdict
+    fakelcdict['timecols'] = timecols
+    fakelcdict['magcols'] = magcols
+    fakelcdict['errcols'] = errcols
+
     # generate an output file name
     fakelcfname = '%s-fakelc.pkl' % fakelcdict['objectid']
     fakelcfpath = os.path.join(outdir, fakelcfname)
@@ -1114,13 +1200,20 @@ https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.
 
 def add_fakelc_variability(fakelcfile,
                            vartype,
-                           varparams):
+                           override_varparamdists=None,
+                           magsarefluxes=False):
     '''This adds variability of the specified type to the fake LC.
 
     The procedure is (for each magcol):
 
-    - add the periodic variability specified in vartype and varparams. if not
-      periodic variable, then do nothing.
+    - read the fakelcfile, get the stored moments and vartype info
+
+    - add the periodic variability specified in vartype and varparamdists. if
+     vartype == None, then do nothing in this step. If override_vartype is not
+     None, override stored vartype with specified vartype. If
+     override_varparamdists is not None, override with specified
+     varparamdists. NOTE: the varparamdists must make sense for the vartype,
+     otherwise, weird stuff will happen.
 
     - add the median mag level stored in fakelcfile to the time series
 
@@ -1133,9 +1226,96 @@ def add_fakelc_variability(fakelcfile,
 
     - return the varinfo dict to the caller
 
-    TODO: finish this
-
     '''
+
+    # read in the fakelcfile
+    lcdict = read_pklc(fakelcfile)
+
+    # get the times, mags, errs from this LC
+    timecols, magcols, errcols = (lcdict['timecols'],
+                                  lcdict['magcols'],
+                                  lcdict['errcols'])
+
+
+    # get the correct function to apply variability
+    if vartype in VARTYPE_LCGEN_MAP:
+        vargenfunc = VARTYPE_LCGEN_MAP[vartype]
+    else:
+        LOGERROR('unknown variability type: %s, choose from: %s' %
+                 (vartype, repr(list(VARTYPE_LCGEN_MAP.keys()))))
+        return None
+
+
+    # 1. generate the variability, including the overrides if provided we do
+    # this outside the loop below to get the period, etc. distributions once
+    # only per object. NOTE: in doing so, we're assuming that the difference
+    # between magcols is just additive; this is not strictly correct
+    if (override_varparamdists is not None and
+        isinstance(override_varparamdists,dict)):
+
+        variablelc = vargenfunc(times,
+                                paramdists=override_paramdists,
+                                magsarefluxes=magsarefluxes)
+
+    else:
+
+        variablelc = vargenfunc(times,
+                                mags=mags,
+                                errs=errs,
+                                magsarefluxes=magsarefluxes)
+
+
+    # now iterate over the time, mag, err columns
+    for tcol, mcol, ecol in zip(timecols, magcols, errcols):
+
+        times, mags, errs = lcdict[tcol], lcdict[mcol], lcdict[ecol]
+
+        # 2. get the moments for this magcol
+        mag_median = lcdict['moments'][mcol]['median']
+        mag_mad = lcdict['moments'][mcol]['mad']
+
+        err_median = lcdict['moments'][ecol]['median']
+        err_mad = lcdict['moments'][ecol]['mad']
+
+        # 3. add the median level + gaussian noise
+        maglevel = sps.norm(loc=mag_median, scale=mag_mad*1.483)
+        errlevel = sps.norm(loc=err_median, scale=err_mad*1.483)
+
+        finalmags = variablelc['mags'] + maglevel.rvs(size=variablelc['mags'])
+        finalerrs = variablelc['errs'] + errlevel.rvs(size=variablelc['errs'])
+
+        # 4. update these tcol, mcol, ecol values in the lcdict
+        lcdict[mcol] = finalmags
+        lcdict[ecol] = finalerrs
+
+    #
+    # all done with updating mags and errs
+    #
+
+    # 5. update the light curve with the variability info
+    lcdict['actual_vartype'] = variablelc['vartype']
+    lcdict['actual_varparams'] = variablelc['params']
+
+    # 6. write back, making sure to do it safely
+    tempoutf = '%s.%s' % md5(npr.bytes(4)).hexdigest()[-8:]
+    with open(tempoutf, 'wb') as outfd:
+        pickle.dump(lcdict, outfd, pickle.HIGHEST_PROTCOL)
+
+    if os.path.exists(tempoutf):
+        shutil.copy(tempoutf, fakelcfile)
+        os.remove(tempoutf)
+    else:
+        LOGEXCEPTION('could not write output light curve file to dir: %s' %
+                     os.path.dirname(tempoutf))
+        # fail here
+        raise
+
+    LOGINFO('vartype: %s light curve -> %s OK' % (vartype, fakelcfile))
+
+    return {'objectid':lcdict['objectid'],
+            'lcfname':fakelcfile,
+            'actual_vartype':vartype,
+            'actual_varparams':lcdict['actual_varparams']}
 
 
 
