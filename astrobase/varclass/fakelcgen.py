@@ -436,7 +436,7 @@ def generate_eb_lightcurve(
         mags=None,
         errs=None,
         paramdists={'period':sps.uniform(loc=0.2,scale=100.0),
-                    'pdepth':sps.uniform(loc=1.0e-4,scale=0.7)
+                    'pdepth':sps.uniform(loc=1.0e-4,scale=0.7),
                     'pduration':sps.uniform(loc=0.01,scale=0.45),
                     'depthratio':sps.uniform(loc=0.01,scale=1.0)},
         magsarefluxes=False,
@@ -534,8 +534,8 @@ def generate_flare_lightcurve(
             # is tuned for redder bands, flares are much stronger in bluer
             # bands, so tune appropriately for your situation.
             'amplitude':sps.uniform(loc=0.01,scale=1.0),
-            # up to 10 flares per LC
-            'nflares':npr.randint(1,high=10),
+            # up to 5 flares per LC
+            'nflares':npr.randint(1,high=5),
             # 10 minutes to 1 hour for rise stdev
             'risestdev':sps.uniform(loc=0.007, scale=0.04),
             # 1 hour to 4 hours for decay time constant
@@ -581,14 +581,14 @@ def generate_flare_lightcurve(
     )
 
     # now add the flares to the time-series
-    params = {'nflares':nflares}
+    params = {'nflares':paramdists['nflares']}
 
-    for flareind, peaktime in zip(range(paramdist['nflares']), flarepeaktimes):
+    for flareind, peaktime in zip(range(paramdists['nflares']), flarepeaktimes):
 
         # choose the amplitude, rise stdev and decay time constant
         amp = paramdists['amplitude'].rvs(size=1)
-        risestd = paramdists['risestdev'].rvs(size=1)
-        decayconst = paramdists['decayconst'].rvs(sizes=1)
+        risestdev = paramdists['risestdev'].rvs(size=1)
+        decayconst = paramdists['decayconst'].rvs(size=1)
 
         # fix the transit depth if it needs to be flipped
         if magsarefluxes and amp < 0.0:
@@ -599,7 +599,7 @@ def generate_flare_lightcurve(
         # add this flare to the light curve
         modelmags, ptimes, pmags, perrs = (
             flares.flare_model(
-                [amp, peaktime, risestd, decayconst],
+                [amp, peaktime, risestdev, decayconst],
                 times,
                 mags,
                 errs
@@ -613,7 +613,7 @@ def generate_flare_lightcurve(
         params[flareind] = {'peaktime':peaktime,
                             'amplitude':amp,
                             'risestdev':risestdev,
-                            'decayconst':decaycont}
+                            'decayconst':decayconst}
 
 
     #
@@ -623,14 +623,15 @@ def generate_flare_lightcurve(
     # return a dict with everything
     modeldict = {
         'vartype':'flare',
-        'params':param,
-        'times':mtimes,
-        'mags':mmags,
-        'errs':merrs,
+        'params':params,
+        'times':times,
+        'mags':mags,
+        'errs':errs,
         'varperiod':None,
         # FIXME: this is complicated because we can have multiple flares
         # figure out a good way to handle this upstream
-        'varamplitude':[param[x]['amplitude'] for x in range(nflares)],
+        'varamplitude':[params[x]['amplitude']
+                        for x in range(params['nflares'])],
     }
 
     return modeldict
