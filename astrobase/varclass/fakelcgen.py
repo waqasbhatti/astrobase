@@ -68,6 +68,7 @@ npr.seed(RANDSEED)
 
 import scipy.stats as sps
 import scipy.interpolate as spi
+import scipy.signal as sig
 
 import matplotlib
 matplotlib.use('Agg')
@@ -334,9 +335,9 @@ def generate_transit_lightcurve(
         times,
         mags=None,
         errs=None,
-        paramdists={'transitperiod':sps.uniform(loc=0.1,scale=50.0),
+        paramdists={'transitperiod':sps.uniform(loc=0.1,scale=49.9),
                     'transitdepth':sps.uniform(loc=1.0e-4,scale=2.0e-2),
-                    'transitduration':sps.uniform(loc=0.01,scale=0.3)},
+                    'transitduration':sps.uniform(loc=0.01,scale=0.29)},
         magsarefluxes=False,
 ):
     '''This generates fake transit light curves.
@@ -435,10 +436,10 @@ def generate_eb_lightcurve(
         times,
         mags=None,
         errs=None,
-        paramdists={'period':sps.uniform(loc=0.2,scale=100.0),
+        paramdists={'period':sps.uniform(loc=0.2,scale=99.8),
                     'pdepth':sps.uniform(loc=1.0e-4,scale=0.7),
-                    'pduration':sps.uniform(loc=0.01,scale=0.45),
-                    'depthratio':sps.uniform(loc=0.01,scale=1.0)},
+                    'pduration':sps.uniform(loc=0.01,scale=0.44),
+                    'depthratio':sps.uniform(loc=0.01,scale=0.99)},
         magsarefluxes=False,
 ):
     '''This generates fake EB light curves.
@@ -533,13 +534,13 @@ def generate_flare_lightcurve(
             # flare peak amplitude from 0.01 mag to 1.0 mag above median.  this
             # is tuned for redder bands, flares are much stronger in bluer
             # bands, so tune appropriately for your situation.
-            'amplitude':sps.uniform(loc=0.01,scale=1.0),
-            # up to 5 flares per LC
-            'nflares':npr.randint(1,high=5),
+            'amplitude':sps.uniform(loc=0.01,scale=0.99),
+            # up to 5 flares per LC and at least 1
+            'nflares':[1,5],
             # 10 minutes to 1 hour for rise stdev
             'risestdev':sps.uniform(loc=0.007, scale=0.04),
             # 1 hour to 4 hours for decay time constant
-            'decayconst':sps.uniform(loc=0.04, scale=0.167)
+            'decayconst':sps.uniform(loc=0.04, scale=0.163)
         },
         magsarefluxes=False,
 ):
@@ -580,10 +581,13 @@ def generate_flare_lightcurve(
         )*(times.max() - times.min()) + times.min()
     )
 
-    # now add the flares to the time-series
-    params = {'nflares':paramdists['nflares']}
+    nflares = npr.randint(paramdists['nflares'][0],
+                          high=paramdists['nflares'][1])
 
-    for flareind, peaktime in zip(range(paramdists['nflares']), flarepeaktimes):
+    # now add the flares to the time-series
+    params = {'nflares':nflares}
+
+    for flareind, peaktime in zip(range(nflares), flarepeaktimes):
 
         # choose the amplitude, rise stdev and decay time constant
         amp = paramdists['amplitude'].rvs(size=1)
@@ -643,15 +647,121 @@ def generate_flare_lightcurve(
 # type        fourier           period [days]
 #             order    dist     limits         dist
 
-# RRab        7 to 10  uniform  0.45--0.80     uniform
-# RRc         2 to 4   uniform  0.10--0.40     uniform
-# HADS        5 to 9   uniform  0.04--0.10     uniform
-# rotator     1 to 3   uniform  0.80--120.0    uniform
-# LPV         1 to 3   uniform  250--500.0     uniform
+# RRab        8 to 10  uniform  0.45--0.80     uniform
+# RRc         3 to 6   uniform  0.10--0.40     uniform
+# HADS        7 to 9   uniform  0.04--0.10     uniform
+# rotator     2 to 5   uniform  0.80--120.0    uniform
+# LPV         2 to 5   uniform  250--500.0     uniform
 
-# fourierparams = [epoch,
-#                  [ampl_1, ampl_2, ampl_3, ..., ampl_X],
-#                  [phas_1, phas_2, phas_3, ..., phas_X]]
+def generate_sinusoidal_lightcurve(
+        times,
+        mags=None,
+        errs=None,
+        paramdists={
+            'period':sps.uniform(loc=0.04,scale=500.0),
+            'fourierorder':[2,10],
+            'amplitude':sps.uniform(loc=0.1,scale=0.9),
+            'phioffset':0.0,
+        },
+        magsarefluxes=False
+):
+    '''This generates fake sinusoidal light curves.
+
+    times is an array of time values that will be used as the time base.
+
+    mags and errs will have the model mags applied to them. If either is None,
+    np.full_like(times, 0.0) will used as a substitute.
+
+    paramdists is a dict containing parameter distributions to use for the
+    transitparams, in order:
+
+    {'period', 'fourierorder', 'amplitude'}
+
+    These are all 'frozen' scipy.stats distribution objects, e.g.:
+
+    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+
+    The minimum light curve epoch will be automatically chosen from a uniform
+    distribution between times.min() and times.max().
+
+    The amplitude will be flipped automatically as appropriate if
+    magsarefluxes=True.
+
+    FIXME: figure out how scipy.signal.butter works and low-pass filter using
+    scipy.signal.filtfilt.
+
+    '''
+
+    if mags is None:
+        mags = np.full_like(times, 0.0)
+
+    if errs is None:
+        errs = np.full_like(times, 0.0)
+
+    # choose the epoch
+    epoch = npr.random()*(times.max() - times.min()) + times.min()
+
+    # choose the period, fourierorder, and amplitude
+    period = paramdists['period'].rvs(size=1)
+    fourierorder = npr.randint(paramdists['fourierorder'][0],
+                               high=paramdists['fourierorder'][1])
+    amplitude = paramdists['amplitude'].rvs(size=1)
+
+    # fix the amplitude if it needs to be flipped
+    if magsarefluxes and amplitude < 0.0:
+        amplitude = -amplitude
+    elif not magsarefluxes and amplitude > 0.0:
+        amplitude = -amplitude
+
+    # generate the amplitudes and phases of the Fourier components
+    ampcomps = [abs(amplitude/2.0)/float(x)
+                for x in range(1,fourierorder+1)]
+    phacomps = [paramdists['phioffset']*float(x)
+                for x in range(1,fourierorder+1)]
+
+    # now that we have our amp and pha components, generate the light curve
+    modelmags, phase, ptimes, pmags, perrs = sinusoidal.sine_series_sum(
+        [period, epoch, ampcomps, phacomps],
+        times,
+        mags,
+        errs
+    )
+
+    # resort in original time order
+    timeind = np.argsort(ptimes)
+    mtimes = ptimes[timeind]
+    mmags = modelmags[timeind]
+    merrs = perrs[timeind]
+    mphase = phase[timeind]
+
+    # return a dict with everything
+    modeldict = {
+        'vartype':'sinusoidal',
+        'params':{x:y for x,y in zip(['period',
+                                      'epoch',
+                                      'amplitude',
+                                      'fourierorder',
+                                      'fourieramps',
+                                      'fourierphases'],
+                                     [period,
+                                      epoch,
+                                      amplitude,
+                                      fourierorder,
+                                      ampcomps,
+                                      phacomps])},
+        'times':mtimes,
+        'mags':mmags,
+        'errs':merrs,
+        'phase':mphase,
+        # these are standard keys that help with later characterization of
+        # variability as a function period, variability amplitude, object mag,
+        # ndet, etc.
+        'varperiod':period,
+        'varamplitude':amplitude
+    }
+
+    return modeldict
+
 
 
 def generate_rrab_lightcurve(
@@ -659,11 +769,11 @@ def generate_rrab_lightcurve(
         mags=None,
         errs=None,
         paramdists={
-            'period':sps.uniform(loc=0.45,scale=0.80),
-            'fourierorder':npr.randint(7,high=10),
-            # this will set the total amplitude; all fourier series components
-            # must sum to this amplitude
-            'amplitude':sps.uniform(loc=0.1,scale=1.0)},
+            'period':sps.uniform(loc=0.45,scale=0.35),
+            'fourierorder':[8,11],
+            'amplitude':sps.uniform(loc=0.4,scale=0.5),
+            'phioffset':np.pi,
+        },
         magsarefluxes=False
 ):
     '''This generates fake RRab light curves.
@@ -688,14 +798,16 @@ def generate_rrab_lightcurve(
     The amplitude will be flipped automatically as appropriate if
     magsarefluxes=True.
 
-    TODO: make sure all amp components square-sum to params['amplitude']
-
-    TODO: we'll generate fourier components with uniform distributions in
-    amplitude and phase based on the constraint above.
-
-    TODO: finish this and check it returns the right thing
-
     '''
+
+    modeldict = generate_sinusoidal_lightcurve(times,
+                                               mags=mags,
+                                               errs=errs,
+                                               paramdists=paramdists,
+                                               magsarefluxes=magsarefluxes)
+    modeldict['vartype'] = 'RRab'
+    return modeldict
+
 
 
 def generate_rrc_lightcurve(
@@ -703,11 +815,11 @@ def generate_rrc_lightcurve(
         mags=None,
         errs=None,
         paramdists={
-            'period':sps.uniform(loc=0.10,scale=0.40),
-            'fourierorder':npr.randint(2,high=4),
-            # this will set the total amplitude; all fourier series components
-            # must sum to this amplitude
-            'amplitude':sps.uniform(loc=0.1,scale=0.4)},
+            'period':sps.uniform(loc=0.10,scale=0.30),
+            'fourierorder':[2,3],
+            'amplitude':sps.uniform(loc=0.1,scale=0.3),
+            'phioffset':1.5*np.pi,
+        },
         magsarefluxes=False
 ):
     '''This generates fake RRc light curves.
@@ -732,15 +844,15 @@ def generate_rrc_lightcurve(
     The amplitude will be flipped automatically as appropriate if
     magsarefluxes=True.
 
-    TODO: make sure all amp components square-sum to params['amplitude']
-
-    TODO: we'll generate fourier components with uniform distributions in
-    amplitude and phase based on the constraint above.
-
-    TODO: finish this and check it returns the right thing
-
     '''
 
+    modeldict = generate_sinusoidal_lightcurve(times,
+                                               mags=mags,
+                                               errs=errs,
+                                               paramdists=paramdists,
+                                               magsarefluxes=magsarefluxes)
+    modeldict['vartype'] = 'RRc'
+    return modeldict
 
 
 def generate_hads_lightcurve(
@@ -748,11 +860,11 @@ def generate_hads_lightcurve(
         mags=None,
         errs=None,
         paramdists={
-            'period':sps.uniform(loc=0.04,scale=0.10),
-            'fourierorder':npr.randint(5,high=9),
-            # this will set the total amplitude; all fourier series components
-            # must sum to this amplitude
-            'amplitude':sps.uniform(loc=0.1,scale=0.6)},
+            'period':sps.uniform(loc=0.04,scale=0.06),
+            'fourierorder':[5,10],
+            'amplitude':sps.uniform(loc=0.1,scale=0.6),
+            'phioffset':np.pi,
+        },
         magsarefluxes=False
 ):
     '''This generates fake HADS light curves.
@@ -777,15 +889,15 @@ def generate_hads_lightcurve(
     The amplitude will be flipped automatically as appropriate if
     magsarefluxes=True.
 
-    TODO: make sure all amp components square-sum to params['amplitude']
-
-    TODO: we'll generate fourier components with uniform distributions in
-    amplitude and phase based on the constraint above.
-
-    TODO: finish this and check it returns the right thing
-
     '''
 
+    modeldict = generate_sinusoidal_lightcurve(times,
+                                               mags=mags,
+                                               errs=errs,
+                                               paramdists=paramdists,
+                                               magsarefluxes=magsarefluxes)
+    modeldict['vartype'] = 'HADS'
+    return modeldict
 
 
 def generate_rotator_lightcurve(
@@ -793,11 +905,11 @@ def generate_rotator_lightcurve(
         mags=None,
         errs=None,
         paramdists={
-            'period':sps.uniform(loc=0.80,scale=0.120),
-            'fourierorder':npr.randint(1,high=3),
-            # this will set the total amplitude; all fourier series components
-            # must sum to this amplitude
-            'amplitude':sps.uniform(loc=0.01,scale=0.7)},
+            'period':sps.uniform(loc=0.80,scale=119.20),
+            'fourierorder':[2,3],
+            'amplitude':sps.uniform(loc=0.01,scale=0.7),
+            'phioffset':1.5*np.pi,
+        },
         magsarefluxes=False
 ):
     '''This generates fake rotator light curves.
@@ -822,15 +934,15 @@ def generate_rotator_lightcurve(
     The amplitude will be flipped automatically as appropriate if
     magsarefluxes=True.
 
-    TODO: make sure all amp components square-sum to params['amplitude']
-
-    TODO: we'll generate fourier components with uniform distributions in
-    amplitude and phase based on the constraint above.
-
-    TODO: finish this and check it returns the right thing
-
     '''
 
+    modeldict = generate_sinusoidal_lightcurve(times,
+                                               mags=mags,
+                                               errs=errs,
+                                               paramdists=paramdists,
+                                               magsarefluxes=magsarefluxes)
+    modeldict['vartype'] = 'rotator'
+    return modeldict
 
 
 def generate_lpv_lightcurve(
@@ -838,11 +950,11 @@ def generate_lpv_lightcurve(
         mags=None,
         errs=None,
         paramdists={
-            'period':sps.uniform(loc=250.0,scale=500.0),
-            'fourierorder':npr.randint(1,high=3),
-            # this will set the total amplitude; all fourier series components
-            # must sum to this amplitude
-            'amplitude':sps.uniform(loc=0.1,scale=0.9)},
+            'period':sps.uniform(loc=250.0,scale=250.0),
+            'fourierorder':[2,3],
+            'amplitude':sps.uniform(loc=0.1,scale=0.8),
+            'phioffset':1.5*np.pi,
+        },
         magsarefluxes=False
 ):
     '''This generates fake LPV light curves.
@@ -867,14 +979,15 @@ def generate_lpv_lightcurve(
     The amplitude will be flipped automatically as appropriate if
     magsarefluxes=True.
 
-    TODO: make sure all amp components square-sum to params['amplitude']
-
-    TODO: we'll generate fourier components with uniform distributions in
-    amplitude and phase based on the constraint above.
-
-    TODO: finish this and check it returns the right thing
-
     '''
+
+    modeldict = generate_sinusoidal_lightcurve(times,
+                                               mags=mags,
+                                               errs=errs,
+                                               paramdists=paramdists,
+                                               magsarefluxes=magsarefluxes)
+    modeldict['vartype'] = 'LPV'
+    return modeldict
 
 
 
@@ -1732,7 +1845,8 @@ def add_fakelc_variability(fakelcfile,
 
 
 def add_variability_to_fakelc_collection(simbasedir,
-                                         override_paramdists=None):
+                                         override_paramdists=None,
+                                         overwrite_existingvar=False):
     '''This adds variability and noise to all fakelcs in simbasedir.
 
     If an object is marked as variable in the fakelcs-info.pkl file in
@@ -1753,6 +1867,8 @@ def add_variability_to_fakelc_collection(simbasedir,
 
     for any vartype in VARTYPE_LCGEN_MAP. These are used to override the default
     parameter distributions for each variable type.
+
+    If overwrite_existingvar is True, then
 
     This will get back the varinfo from the add_fakelc_variability function and
     writes that info back to the simbasedir/fakelcs-info.pkl file for each
