@@ -574,15 +574,15 @@ def generate_flare_lightcurve(
     if errs is None:
         errs = np.full_like(times, 0.0)
 
+    nflares = npr.randint(paramdists['nflares'][0],
+                          high=paramdists['nflares'][1])
+
     # generate random flare peak times based on the number of flares
     flarepeaktimes = (
         npr.random(
-            size=paramdists['nflares']
+            size=nflares
         )*(times.max() - times.min()) + times.min()
     )
-
-    nflares = npr.randint(paramdists['nflares'][0],
-                          high=paramdists['nflares'][1])
 
     # now add the flares to the time-series
     params = {'nflares':nflares}
@@ -1366,7 +1366,7 @@ def make_fakelc(lcfile,
 
     # generate an output file name
     fakelcfname = '%s-fakelc.pkl' % fakelcdict['objectid']
-    fakelcfpath = os.path.join(outdir, fakelcfname)
+    fakelcfpath = os.path.abspath(os.path.join(outdir, fakelcfname))
 
     # write this out to the output directory
     with open(fakelcfpath,'wb') as outfd:
@@ -1693,7 +1693,7 @@ https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.
 
 def add_fakelc_variability(fakelcfile,
                            vartype,
-                           override_varparamdists=None,
+                           override_paramdists=None,
                            magsarefluxes=False,
                            overwrite=False):
     '''This adds variability of the specified type to the fake LC.
@@ -1759,8 +1759,8 @@ def add_fakelc_variability(fakelcfile,
     # between magcols is just additive and the timebases for each magcol are the
     # same; this is not strictly correct
     if vargenfunc is not None:
-        if (override_varparamdists is not None and
-            isinstance(override_varparamdists,dict)):
+        if (override_paramdists is not None and
+            isinstance(override_paramdists,dict)):
 
             variablelc = vargenfunc(lcdict[timecols[0]],
                                     paramdists=override_paramdists,
@@ -1774,7 +1774,6 @@ def add_fakelc_variability(fakelcfile,
     # for nonvariables, don't execute vargenfunc, but return a similar dict
     # so we can add the required noise to it
     else:
-        LOGWARNING('%s is marked non-variable' % fakelcfile)
         variablelc = {'vartype':None,
                       'params':None,
                       'times':lcdict[timecols[0]],
@@ -1817,8 +1816,12 @@ def add_fakelc_variability(fakelcfile,
 
     # these standard keys are set to help out later with characterizing recovery
     # rates by magnitude, period, amplitude, ndet, etc.
-    lcdict['actual_varperiod'] = variablelc['varperiod']
-    lcdict['actual_varamplitude'] = variablelc['varamplitude']
+    if vartype is not None:
+        lcdict['actual_varperiod'] = variablelc['varperiod']
+        lcdict['actual_varamplitude'] = variablelc['varamplitude']
+    else:
+        lcdict['actual_varperiod'] = np.nan
+        lcdict['actual_varamplitude'] = np.nan
 
 
     # 6. write back, making sure to do it safely
@@ -1835,7 +1838,11 @@ def add_fakelc_variability(fakelcfile,
         # fail here
         raise
 
-    LOGINFO('vartype: %s light curve -> %s OK' % (vartype, fakelcfile))
+    LOGINFO('object: %s, vartype: %s -> %s OK' % (
+        lcdict['objectid'],
+        vartype,
+        fakelcfile)
+    )
 
     return {'objectid':lcdict['objectid'],
             'lcfname':fakelcfile,
@@ -1877,3 +1884,78 @@ def add_variability_to_fakelc_collection(simbasedir,
     TODO: finish this
 
     '''
+
+    # open the fakelcs-info.pkl
+    infof = os.path.join(simbasedir,'fakelcs-info.pkl')
+    with open(infof, 'rb') as infd:
+        lcinfo = pickle.load(infd)
+
+
+    lclist = lcinfo['lcfpath']
+    varflag = lcinfo['isvariable']
+    vartypes = lcinfo['vartype']
+
+    vartind = 0
+
+    varinfo = {}
+
+    # go through all the LCs and add the required type of variability
+    for lc, varf, lcind in zip(lclist, varflag, range(len(lclist))):
+
+        # if this object is variable, add variability
+        if varf:
+
+            thisvartype = vartypes[vartind]
+
+            if (override_paramdists and
+                isinstance(override_paramdists, dict) and
+                thisvartype in override_paramdists and
+                isinstance(override_paramdists[thisvartype], dict)):
+
+                thisoverride_paramdists = override_paramdists[thisvartype]
+            else:
+                thisoverride_paramdists = None
+
+
+            varlc = add_fakelc_variability(
+                lc, thisvartype,
+                override_paramdists=thisoverride_paramdists,
+                overwrite=overwrite_existingvar
+            )
+            varinfo[varlc['objectid']] = {'params': varlc['actual_varparams'],
+                                          'vartype': varlc['actual_vartype']}
+
+            # update vartind
+            vartind = vartind + 1
+
+        else:
+
+            varlc = add_fakelc_variability(
+                lc, None,
+                overwrite=overwrite_existingvar
+            )
+            varinfo[varlc['objectid']] = {'params': varlc['actual_varparams'],
+                                          'vartype': varlc['actual_vartype']}
+
+
+    #
+    # done with all objects
+    #
+
+    # write the varinfo back to the dict and fakelcs-info.pkl
+    lcinfo['varinfo'] = varinfo
+
+    tempoutf = '%s.%s' % (infof, md5(npr.bytes(4)).hexdigest()[-8:])
+    with open(tempoutf, 'wb') as outfd:
+        pickle.dump(lcinfo, outfd, pickle.HIGHEST_PROTOCOL)
+
+    if os.path.exists(tempoutf):
+        shutil.copy(tempoutf, infof)
+        os.remove(tempoutf)
+    else:
+        LOGEXCEPTION('could not write output light curve file to dir: %s' %
+                     os.path.dirname(tempoutf))
+        # fail here
+        raise
+
+    return lcinfo
