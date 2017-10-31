@@ -1241,6 +1241,8 @@ def add_fakelc_variability(fakelcfile,
     # get the correct function to apply variability
     if vartype in VARTYPE_LCGEN_MAP:
         vargenfunc = VARTYPE_LCGEN_MAP[vartype]
+    elif vartype is None:
+        vargenfunc = None
     else:
         LOGERROR('unknown variability type: %s, choose from: %s' %
                  (vartype, repr(list(VARTYPE_LCGEN_MAP.keys()))))
@@ -1252,17 +1254,28 @@ def add_fakelc_variability(fakelcfile,
     # only per object. NOTE: in doing so, we're assuming that the difference
     # between magcols is just additive and the timebases for each magcol are the
     # same; this is not strictly correct
-    if (override_varparamdists is not None and
-        isinstance(override_varparamdists,dict)):
+    if vargenfunc is not None:
+        if (override_varparamdists is not None and
+            isinstance(override_varparamdists,dict)):
 
-        variablelc = vargenfunc(lcdict[timecols[0]],
-                                paramdists=override_paramdists,
-                                magsarefluxes=magsarefluxes)
+            variablelc = vargenfunc(lcdict[timecols[0]],
+                                    paramdists=override_paramdists,
+                                    magsarefluxes=magsarefluxes)
 
+        else:
+
+            variablelc = vargenfunc(lcdict[timecols[0]],
+                                    magsarefluxes=magsarefluxes)
+
+    # for nonvariables, don't execute vargenfunc, but return a similar dict
+    # so we can add the required noise to it
     else:
-
-        variablelc = vargenfunc(lcdict[timecols[0]],
-                                magsarefluxes=magsarefluxes)
+        LOGWARNING('%s is marked non-variable' % fakelcfile)
+        variablelc = {'vartype':None,
+                      'params':None,
+                      'times':lcdict[timecols[0]],
+                      'mags':np.full_like(lcdict[timecols[0]], 0.0),
+                      'errs':np.full_like(lcdict[timecols[0]], 0.0)}
 
 
     # now iterate over the time, mag, err columns
@@ -1281,7 +1294,7 @@ def add_fakelc_variability(fakelcfile,
         maglevel = npr.normal(loc=mag_median, scale=mag_mad*1.483,
                               size=variablelc['mags'].size)
         errlevel = npr.normal(loc=err_median, scale=err_mad*1.483,
-                              size=variablelc['mags'].size)
+                              size=variablelc['errs'].size)
 
         finalmags = variablelc['mags'] + maglevel
         finalerrs = variablelc['errs'] + errlevel
