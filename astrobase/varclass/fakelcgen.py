@@ -1240,7 +1240,7 @@ def add_fakelc_variability(fakelcfile,
         and not overwrite):
         LOGERROR('%s has existing variability type: %s '
                  'and params: %s and overwrite = False, '
-                 'skipping this file...' %(lcdict['actual_vartype'],
+                 'skipping this file...' %(fakelcfile, lcdict['actual_vartype'],
                                            repr(lcdict['actual_varparams'])))
         return None
 
