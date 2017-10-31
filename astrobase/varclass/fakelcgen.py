@@ -9,6 +9,35 @@ package, adds noise and observation sampling to them based on given parameters
 (or example light curves). See fakelcrecovery.py for functions that run a full
 recovery simulation.
 
+NOTE 1: the parameters for these light curves are currently all chosen from
+uniform distributions, which obviously doesn't reflect reality (some of the
+current parameter upper and lower limits are realistic, however). Some of these
+will be updated with real-life distributions as soon as I find them, especially
+for periods and amplitudes (along with references).
+
+NOTE 2: To generate custom distributions, one can subclass
+scipy.stats.rv_continuous and override the _pdf and _cdf methods (or just the
+_rvs method directly to get the distributed variables if distribution's location
+and scale don't really matter). This is described here:
+
+https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.html
+
+and doesn't seem to be restricted to distributions described by analytic
+functions only. It's probably possible to get a histogram of some complex
+distribution in parameter space and use a kernel-density estimator to get the
+PDF and CDF, e.g.:
+
+http://scikit-learn.org/stable/modules/density.html#kernel-density.
+
+NOTE 3: any distribution parameter below having to do with magnitudes/flux is by
+default in MAGNITUDES. So depth, amplitude, etc. distributions and their limits
+will have to be adjusted appropriately for fluxes. IT IS NOT SUFFICIENT to just
+set magsarefluxes = True.
+
+FIXME: in the future, we'll do all the amplitude, etc. distributions in
+differential fluxes canonically, and then take logs where appropriate if
+magsarefluxes = False.
+
 '''
 import os
 import os.path
@@ -105,6 +134,7 @@ from ..lcmodels import transits, eclipses, flares, sinusoidal
 from ..varbase.features import all_nonperiodic_features
 
 from ..magnitudes import jhk_to_sdssr
+
 
 #######################
 ## LC FORMATS SET UP ##
@@ -224,10 +254,10 @@ def register_custom_lcformat(formatkey,
                              specialnormfunc=None):
     '''This adds a custom format LC to the dict above.
 
-    Allows handling of custom format light curves for astrobase lcproc
-    drivers. Once the format is successfully registered, light curves should
-    work transparently with all of the functions below, by simply calling them
-    with the formatkey in the lcformat keyword argument.
+    Allows handling of custom format light curves that are input to the fake LC
+    generators below. Once the format is successfully registered, light curves
+    should work transparently with all of the functions below, by simply calling
+    them with the formatkey in the lcformat keyword argument where appropriate.
 
     Args
     ----
@@ -389,113 +419,461 @@ def generate_transit_lightcurve(
                                                    ingduration])},
         'times':mtimes,
         'mags':mmags,
-        'errs':merrs
+        'errs':merrs,
+        # these are standard keys that help with later characterization of
+        # variability as a function period, variability amplitude, object mag,
+        # ndet, etc.
+        'varperiod':period,
+        'varamplitude':depth
     }
 
     return modeldict
 
 
 
-def generate_eb_lightcurve(fakelcfile, ebparams):
-    '''
-    This generates fake EB light curves.
+def generate_eb_lightcurve(
+        times,
+        mags=None,
+        errs=None,
+        paramdists={'period':sps.uniform(loc=0.2,scale=100.0),
+                    'pdepth':sps.uniform(loc=1.0e-4,scale=0.7)
+                    'pduration':sps.uniform(loc=0.01,scale=0.45),
+                    'depthratio':sps.uniform(loc=0.01,scale=1.0)},
+        magsarefluxes=False,
+):
+    '''This generates fake EB light curves.
 
-    ebparams = [period (time),
-                epoch (time),
-                pdepth (mags),
-                pduration (phase),
-                depthratio]
+    times is an array of time values that will be used as the time base.
 
-    TODO: finish this
+    mags and errs will have the model mags applied to them. If either is None,
+    np.full_like(times, 0.0) will used as a substitute.
 
-    '''
+    paramdists is a dict containing parameter distributions to use for the
+    transitparams, in order:
 
+    {'period', 'pdepth', 'pduration','depthratio'}
 
-def generate_flare_lightcurve(fakelcfile, flareparams):
-    '''
-    This generates fake flare light curves.
+    These are all 'frozen' scipy.stats distribution objects, e.g.:
 
-    flareparams = [amplitude,
-                   flare_peak_time,
-                   rise_gaussian_stdev,
-                   decay_time_constant]
+    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
 
-    TODO: finish this
+    The EB epoch will be automatically chosen from a uniform distribution
+    between times.min() and times.max().
 
-    '''
-
-
-def generate_sinusoidal_lightcurve(fakelcfile,
-                                   sintype,
-                                   fourierparams):
-    '''This generates fake sinusoidal light curves.
-
-    sintype is one of 'RRab', 'RRc', 'HADS', 'rotation', 'LPV', which sets the
-    fourier order and period limits like so:
-
-    type        fourier           period [days]
-                order    dist     limits         dist
-
-    RRab        7 to 10  uniform  0.45--0.80     uniform
-    RRc         2 to 4   uniform  0.10--0.40     uniform
-    HADS        5 to 9   uniform  0.04--0.10     uniform
-    rotator     1 to 3   uniform  0.80--120.0    uniform
-    LPV         1 to 3   uniform  250--500.0     uniform
-
-    fourierparams = [epoch,
-                     [ampl_1, ampl_2, ampl_3, ..., ampl_X],
-                     [phas_1, phas_2, phas_3, ..., phas_X]]
-
-    The period will be set using the table above.
-
-    TODO: finish this
+    The pdepth will be flipped automatically as appropriate if
+    magsarefluxes=True.
 
     '''
 
+    if mags is None:
+        mags = np.full_like(times, 0.0)
+
+    if errs is None:
+        errs = np.full_like(times, 0.0)
+
+    # choose the epoch
+    epoch = npr.random()*(times.max() - times.min()) + times.min()
+
+    # choose the period, pdepth, duration, depthratio
+    period = paramdists['period'].rvs(size=1)
+    pdepth = paramdists['pdepth'].rvs(size=1)
+    pduration = paramdists['pduration'].rvs(size=1)
+    depthratio = paramdists['depthratio'].rvs(size=1)
+
+    # fix the transit depth if it needs to be flipped
+    if magsarefluxes and pdepth < 0.0:
+        pdepth = -pdepth
+    elif not magsarefluxes and pdepth > 0.0:
+        pdepth = -pdepth
+
+    # generate the model
+    modelmags, phase, ptimes, pmags, perrs = (
+        eclipses.invgauss_eclipses_func([period, epoch, pdepth,
+                                         pduration, depthratio],
+                                        times,
+                                        mags,
+                                        errs)
+    )
+
+    # resort in original time order
+    timeind = np.argsort(ptimes)
+    mtimes = ptimes[timeind]
+    mmags = modelmags[timeind]
+    merrs = perrs[timeind]
+
+    # return a dict with everything
+    modeldict = {
+        'vartype':'EB',
+        'params':{x:np.asscalar(y) for x,y in zip(['period',
+                                                   'epoch',
+                                                   'pdepth',
+                                                   'pduration',
+                                                   'depthratio'],
+                                                  [period,
+                                                   epoch,
+                                                   pdepth,
+                                                   pduration,
+                                                   depthratio])},
+        'times':mtimes,
+        'mags':mmags,
+        'errs':merrs,
+        'varperiod':period,
+        'varamplitude':pdepth,
+    }
+
+    return modeldict
 
 
-def generate_rrab_lightcurve(fakelcfile, rrabparams):
-    '''This wraps generate_sinusoidal_lightcurves for RRab LCs.
+
+def generate_flare_lightcurve(
+        times,
+        mags=None,
+        errs=None,
+        paramdists={
+            # flare peak amplitude from 0.01 mag to 1.0 mag above median.  this
+            # is tuned for redder bands, flares are much stronger in bluer
+            # bands, so tune appropriately for your situation.
+            'amplitude':sps.uniform(loc=0.01,scale=1.0),
+            # up to 10 flares per LC
+            'nflares':npr.randint(1,high=10),
+            # 10 minutes to 1 hour for rise stdev
+            'risestdev':sps.uniform(loc=0.007, scale=0.04),
+            # 1 hour to 4 hours for decay time constant
+            'decayconst':sps.uniform(loc=0.04, scale=0.167)
+        },
+        magsarefluxes=False,
+):
+    '''This generates fake flare light curves.
+
+    times is an array of time values that will be used as the time base.
+
+    mags and errs will have the model mags applied to them. If either is None,
+    np.full_like(times, 0.0) will used as a substitute.
+
+    paramdists is a dict containing parameter distributions to use for the
+    transitparams, in order:
+
+    {'amplitude', 'nflares', 'risestdev','decayconst'}
+
+    These are all 'frozen' scipy.stats distribution objects, e.g.:
+
+    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+
+    The flare_peak_time for each flare will be generated automatically between
+    times.min() and times.max() using a uniform distribution.
+
+    The amplitude will be flipped automatically as appropriate if
+    magsarefluxes=True.
 
     '''
 
-    return generate_sinusoidal_lightcurve(fakelcfile, 'RRab', rrabparams)
+    if mags is None:
+        mags = np.full_like(times, 0.0)
+
+    if errs is None:
+        errs = np.full_like(times, 0.0)
+
+    # generate random flare peak times based on the number of flares
+    flarepeaktimes = (
+        npr.random(
+            size=paramdists['nflares']
+        )*(times.max() - times.min()) + times.min()
+    )
+
+    # now add the flares to the time-series
+    params = {'nflares':nflares}
+
+    for flareind, peaktime in zip(range(paramdist['nflares']), flarepeaktimes):
+
+        # choose the amplitude, rise stdev and decay time constant
+        amp = paramdists['amplitude'].rvs(size=1)
+        risestd = paramdists['risestdev'].rvs(size=1)
+        decayconst = paramdists['decayconst'].rvs(sizes=1)
+
+        # fix the transit depth if it needs to be flipped
+        if magsarefluxes and amp < 0.0:
+            amp = -amp
+        elif not magsarefluxes and amp > 0.0:
+            amp = -amp
+
+        # add this flare to the light curve
+        modelmags, ptimes, pmags, perrs = (
+            flares.flare_model(
+                [amp, peaktime, risestd, decayconst],
+                times,
+                mags,
+                errs
+            )
+        )
+
+        # update the mags
+        mags = modelmags
+
+        # add the flare params to the modeldict
+        params[flareind] = {'peaktime':peaktime,
+                            'amplitude':amp,
+                            'risestdev':risestdev,
+                            'decayconst':decaycont}
+
+
+    #
+    # done with all flares
+    #
+
+    # return a dict with everything
+    modeldict = {
+        'vartype':'flare',
+        'params':param,
+        'times':mtimes,
+        'mags':mmags,
+        'errs':merrs,
+        'varperiod':None,
+        # FIXME: this is complicated because we can have multiple flares
+        # figure out a good way to handle this upstream
+        'varamplitude':[param[x]['amplitude'] for x in range(nflares)],
+    }
+
+    return modeldict
 
 
 
-def generate_rrc_lightcurve(fakelcfile, rrcparams):
-    '''This wraps generate_sinusoidal_lightcurves for RRc LCs.
+## FOURIER PARAMS FOR SINUSOIDAL VARIABLES
+#
+# type        fourier           period [days]
+#             order    dist     limits         dist
+
+# RRab        7 to 10  uniform  0.45--0.80     uniform
+# RRc         2 to 4   uniform  0.10--0.40     uniform
+# HADS        5 to 9   uniform  0.04--0.10     uniform
+# rotator     1 to 3   uniform  0.80--120.0    uniform
+# LPV         1 to 3   uniform  250--500.0     uniform
+
+# fourierparams = [epoch,
+#                  [ampl_1, ampl_2, ampl_3, ..., ampl_X],
+#                  [phas_1, phas_2, phas_3, ..., phas_X]]
+
+
+def generate_rrab_lightcurve(
+        times,
+        mags=None,
+        errs=None,
+        paramdists={
+            'period':sps.uniform(loc=0.45,scale=0.80),
+            'fourierorder':npr.randint(7,high=10),
+            # this will set the total amplitude; all fourier series components
+            # must sum to this amplitude
+            'amplitude':sps.uniform(loc=0.1,scale=1.0)},
+        magsarefluxes=False
+):
+    '''This generates fake RRab light curves.
+
+    times is an array of time values that will be used as the time base.
+
+    mags and errs will have the model mags applied to them. If either is None,
+    np.full_like(times, 0.0) will used as a substitute.
+
+    paramdists is a dict containing parameter distributions to use for the
+    transitparams, in order:
+
+    {'period', 'fourierorder', 'amplitude'}
+
+    These are all 'frozen' scipy.stats distribution objects, e.g.:
+
+    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+
+    The minimum light curve epoch will be automatically chosen from a uniform
+    distribution between times.min() and times.max().
+
+    The amplitude will be flipped automatically as appropriate if
+    magsarefluxes=True.
+
+    TODO: make sure all amp components square-sum to params['amplitude']
+
+    TODO: we'll generate fourier components with uniform distributions in
+    amplitude and phase based on the constraint above.
+
+    TODO: finish this and check it returns the right thing
 
     '''
 
-    return generate_sinusoidal_lightcurve(fakelcfile, 'RRc', rrcparams)
 
+def generate_rrc_lightcurve(
+        times,
+        mags=None,
+        errs=None,
+        paramdists={
+            'period':sps.uniform(loc=0.10,scale=0.40),
+            'fourierorder':npr.randint(2,high=4),
+            # this will set the total amplitude; all fourier series components
+            # must sum to this amplitude
+            'amplitude':sps.uniform(loc=0.1,scale=0.4)},
+        magsarefluxes=False
+):
+    '''This generates fake RRc light curves.
 
+    times is an array of time values that will be used as the time base.
 
-def generate_hads_lightcurve(fakelcfile, hadsparams):
-    '''This wraps generate_sinusoidal_lightcurves for HADS LCs.
+    mags and errs will have the model mags applied to them. If either is None,
+    np.full_like(times, 0.0) will used as a substitute.
+
+    paramdists is a dict containing parameter distributions to use for the
+    transitparams, in order:
+
+    {'period', 'fourierorder', 'amplitude'}
+
+    These are all 'frozen' scipy.stats distribution objects, e.g.:
+
+    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+
+    The minimum light curve epoch will be automatically chosen from a uniform
+    distribution between times.min() and times.max().
+
+    The amplitude will be flipped automatically as appropriate if
+    magsarefluxes=True.
+
+    TODO: make sure all amp components square-sum to params['amplitude']
+
+    TODO: we'll generate fourier components with uniform distributions in
+    amplitude and phase based on the constraint above.
+
+    TODO: finish this and check it returns the right thing
 
     '''
 
-    return generate_sinusoidal_lightcurve(fakelcfile, 'HADS', hadsparams)
 
 
+def generate_hads_lightcurve(
+        times,
+        mags=None,
+        errs=None,
+        paramdists={
+            'period':sps.uniform(loc=0.04,scale=0.10),
+            'fourierorder':npr.randint(5,high=9),
+            # this will set the total amplitude; all fourier series components
+            # must sum to this amplitude
+            'amplitude':sps.uniform(loc=0.1,scale=0.6)},
+        magsarefluxes=False
+):
+    '''This generates fake HADS light curves.
 
-def generate_rotator_lightcurve(fakelcfile, rotparams):
-    '''This wraps generate_sinusoidal_lightcurves for rotation LCs.
+    times is an array of time values that will be used as the time base.
+
+    mags and errs will have the model mags applied to them. If either is None,
+    np.full_like(times, 0.0) will used as a substitute.
+
+    paramdists is a dict containing parameter distributions to use for the
+    transitparams, in order:
+
+    {'period', 'fourierorder', 'amplitude'}
+
+    These are all 'frozen' scipy.stats distribution objects, e.g.:
+
+    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+
+    The minimum light curve epoch will be automatically chosen from a uniform
+    distribution between times.min() and times.max().
+
+    The amplitude will be flipped automatically as appropriate if
+    magsarefluxes=True.
+
+    TODO: make sure all amp components square-sum to params['amplitude']
+
+    TODO: we'll generate fourier components with uniform distributions in
+    amplitude and phase based on the constraint above.
+
+    TODO: finish this and check it returns the right thing
 
     '''
 
-    return generate_sinusoidal_lightcurve(fakelcfile, 'rotator', rotparams)
 
 
+def generate_rotator_lightcurve(
+        times,
+        mags=None,
+        errs=None,
+        paramdists={
+            'period':sps.uniform(loc=0.80,scale=0.120),
+            'fourierorder':npr.randint(1,high=3),
+            # this will set the total amplitude; all fourier series components
+            # must sum to this amplitude
+            'amplitude':sps.uniform(loc=0.01,scale=0.7)},
+        magsarefluxes=False
+):
+    '''This generates fake rotator light curves.
 
-def generate_lpv_lightcurve(fakelcfile, lpvparams):
-    '''This wraps generate_sinusoidal_lightcurves for LPV LCs.
+    times is an array of time values that will be used as the time base.
+
+    mags and errs will have the model mags applied to them. If either is None,
+    np.full_like(times, 0.0) will used as a substitute.
+
+    paramdists is a dict containing parameter distributions to use for the
+    transitparams, in order:
+
+    {'period', 'fourierorder', 'amplitude'}
+
+    These are all 'frozen' scipy.stats distribution objects, e.g.:
+
+    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+
+    The minimum light curve epoch will be automatically chosen from a uniform
+    distribution between times.min() and times.max().
+
+    The amplitude will be flipped automatically as appropriate if
+    magsarefluxes=True.
+
+    TODO: make sure all amp components square-sum to params['amplitude']
+
+    TODO: we'll generate fourier components with uniform distributions in
+    amplitude and phase based on the constraint above.
+
+    TODO: finish this and check it returns the right thing
 
     '''
 
-    return generate_sinusoidal_lightcurve(fakelcfile, 'LPV', lpvparams)
+
+
+def generate_lpv_lightcurve(
+        times,
+        mags=None,
+        errs=None,
+        paramdists={
+            'period':sps.uniform(loc=250.0,scale=500.0),
+            'fourierorder':npr.randint(1,high=3),
+            # this will set the total amplitude; all fourier series components
+            # must sum to this amplitude
+            'amplitude':sps.uniform(loc=0.1,scale=0.9)},
+        magsarefluxes=False
+):
+    '''This generates fake LPV light curves.
+
+    times is an array of time values that will be used as the time base.
+
+    mags and errs will have the model mags applied to them. If either is None,
+    np.full_like(times, 0.0) will used as a substitute.
+
+    paramdists is a dict containing parameter distributions to use for the
+    transitparams, in order:
+
+    {'period', 'fourierorder', 'amplitude'}
+
+    These are all 'frozen' scipy.stats distribution objects, e.g.:
+
+    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+
+    The minimum light curve epoch will be automatically chosen from a uniform
+    distribution between times.min() and times.max().
+
+    The amplitude will be flipped automatically as appropriate if
+    magsarefluxes=True.
+
+    TODO: make sure all amp components square-sum to params['amplitude']
+
+    TODO: we'll generate fourier components with uniform distributions in
+    amplitude and phase based on the constraint above.
+
+    TODO: finish this and check it returns the right thing
+
+    '''
 
 
 
@@ -1323,6 +1701,12 @@ def add_fakelc_variability(fakelcfile,
     lcdict['actual_vartype'] = variablelc['vartype']
     lcdict['actual_varparams'] = variablelc['params']
 
+    # these standard keys are set to help out later with characterizing recovery
+    # rates by magnitude, period, amplitude, ndet, etc.
+    lcdict['actual_varperiod'] = variablelc['varperiod']
+    lcdict['actual_varamplitude'] = variablelc['varamplitude']
+
+
     # 6. write back, making sure to do it safely
     tempoutf = '%s.%s' % (fakelcfile, md5(npr.bytes(4)).hexdigest()[-8:])
     with open(tempoutf, 'wb') as outfd:
@@ -1346,7 +1730,8 @@ def add_fakelc_variability(fakelcfile,
 
 
 
-def add_variability_to_fakelc_collection(simbasedir, customparams=None):
+def add_variability_to_fakelc_collection(simbasedir,
+                                         override_paramdists=None):
     '''This adds variability and noise to all fakelcs in simbasedir.
 
     If an object is marked as variable in the fakelcs-info.pkl file in
@@ -1357,16 +1742,16 @@ def add_variability_to_fakelc_collection(simbasedir, customparams=None):
     time). Nonvariable objects will only have noise added as determined by their
     params, but no variable signal will be added.
 
-    customparams is a dict like so:
+    override_paramdists is a dict like so:
 
-    {'<vartype1>': {'periodrange': [startp, endp],
-                    'perioddist': <a scipy.stats distribution object>,
-                    'amplrange': [startampl, endampl],
-                    'ampldist': <a scipy.stats distribution object>},
-     ...}
+    {'<vartype1>': {'<param1>: scipy.stats distribution or npr.randint function,
+                    .
+                    .
+                    .
+                    '<paramN>: scipy.stats distribution or npr.randint function}
 
     for any vartype in VARTYPE_LCGEN_MAP. These are used to override the default
-    period and amplitude distributions for each variable type.
+    parameter distributions for each variable type.
 
     This will get back the varinfo from the add_fakelc_variability function and
     writes that info back to the simbasedir/fakelcs-info.pkl file for each
