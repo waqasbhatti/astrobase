@@ -1202,7 +1202,8 @@ https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.
 def add_fakelc_variability(fakelcfile,
                            vartype,
                            override_varparamdists=None,
-                           magsarefluxes=False):
+                           magsarefluxes=False,
+                           overwrite=False):
     '''This adds variability of the specified type to the fake LC.
 
     The procedure is (for each magcol):
@@ -1231,6 +1232,17 @@ def add_fakelc_variability(fakelcfile,
 
     # read in the fakelcfile
     lcdict = read_pklc(fakelcfile)
+
+    # make sure to bail out if this light curve already has fake variability
+    # added
+    if ('actual_vartype' in lcdict and
+        'actual_varparams' in lcdict
+        and not overwrite):
+        LOGERROR('%s has existing variability type: %s '
+                 'and params: %s and overwrite = False, '
+                 'skipping this file...' %(lcdict['actual_vartype'],
+                                           repr(lcdict['actual_varparams'])))
+        return None
 
     # get the times, mags, errs from this LC
     timecols, magcols, errcols = (lcdict['timecols'],
