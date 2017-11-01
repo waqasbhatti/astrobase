@@ -1789,15 +1789,18 @@ def add_fakelc_variability(fakelcfile,
         # 2. get the moments for this magcol
         mag_median = lcdict['moments'][mcol]['median']
         mag_mad = lcdict['moments'][mcol]['mad']
-        mag_rms = mag_mad*1.483*2.0
+
+        # add up to 5 mmag of extra RMS
+        mag_rms = mag_mad*1.483 + np.uniform()*(0.005)
 
         err_median = lcdict['moments'][ecol]['median']
         err_mad = lcdict['moments'][ecol]['mad']
-        err_rms = err_mad*1.483*2.0
+        err_rms = err_mad*1.483
 
         # 3. add the median level + gaussian noise
         maglevel = npr.normal(loc=mag_median, scale=mag_rms,
                               size=variablelc['mags'].size)
+
         errlevel = npr.normal(loc=err_median, scale=err_rms,
                               size=variablelc['errs'].size)
 
