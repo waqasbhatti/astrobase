@@ -1151,8 +1151,8 @@ def make_fakelc(lcfile,
             LOGWARNING(' %s: assigning a random mag weighted by mag '
                        'bin probabilities' % lcfile)
 
-            magbins = magrms['binned_sdssr_median']
-            binprobs = magrms['magbin_probabilities']
+            magbins = magrms[magcols[0]]['binned_sdssr_median']
+            binprobs = magrms[magcols[0]]['magbin_probabilities']
 
             # this is the center of the magbin chosen
             magbincenter = npr.choice(magbins,size=1,p=binprobs)
