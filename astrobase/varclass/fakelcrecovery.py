@@ -149,7 +149,9 @@ lcproc.register_custom_lcformat(
 ###########################
 
 
-def run_variability_selection(simbasedir):
+def run_variability_selection(simbasedir,
+                              xmin_stetj_stdev=2.0,
+                              xmin_inveta_stdev=2.0):
     '''This runs variability selection on all of the light curves in simbasedir.
 
     Reads the fakelcs-info.pkl in simbasedir to get:

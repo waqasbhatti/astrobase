@@ -1031,18 +1031,17 @@ def make_fakelc(lcfile,
     magrms is a dict containing the SDSS r mag-RMS (SDSS rmag-MAD preferably)
     relations for all light curves that the input lcfile is from. This will be
     used to generate the median mag and noise corresponding to the magnitude
-    chosen for this fake LC. If randomizeinfo is True, then a random mag between
+    chosen for this fake LC. If randomizemags is True, then a random mag between
     the first and last magbin in magrms will be chosen as the median mag for
-    this light curve. Otherwise, the median mag will be taken from the input
-    lcfile's lcdict['objectinfo']['sdssr'] key or a transformed SDSS r mag
-    generated from the input lcfile's lcdict['objectinfo']['jmag'], ['hmag'],
-    and ['kmag'] keys. The magrms relation for each magcol will be used to
-    generate Gaussian noise at the correct level for the magbin this light
-    curve's median mag falls into.
+    this light curve. This choice will be weighted by the mag bin probability
+    obtained from the magrms kwarg. Otherwise, the median mag will be taken from
+    the input lcfile's lcdict['objectinfo']['sdssr'] key or a transformed SDSS r
+    mag generated from the input lcfile's lcdict['objectinfo']['jmag'],
+    ['hmag'], and ['kmag'] keys. The magrms relation for each magcol will be
+    used to generate Gaussian noise at the correct level for the magbin this
+    light curve's median mag falls into.
 
-    If randomizemags is True, will generate random SDSS r in the output fakelc
-    even if these values are available from the input LC. If randomizecoords is
-    True, will do the same for RA, DEC.
+    If randomizecoords is True, will randomize the RA, DEC of the object.
 
     lcformat is one of the entries in the LCFORMATS dict. This is used to set
     the light curve reader function for lcfile, and the time, mag, err cols to
@@ -1145,11 +1144,34 @@ def make_fakelc(lcfile,
                 objectinfo['kmag']
             )
 
+        # if there are no mags available or we're specically told to randomize
+        # them, generate a random mag between 8 and 16.0
+        elif randomizemags and magrms:
+
+            LOGWARNING(' %s: assigning a random mag weighted by mag '
+                       'bin probabilities' % lcfile)
+
+            magbins = magrms['binned_sdssr_median']
+            binprobs = magrms['magbin_probabilities']
+
+            # this is the center of the magbin chosen
+            magbincenter = npr.choice(magbins,size=1,p=binprobs)
+
+            # in this magbin, choose between center and -+ 0.25 mag
+            chosenmag = (
+                npr.random()*((magbincenter+0.25) - (magbincenter-0.25)) +
+                (magbincenter-0.25)
+            )
+
+            fakelcdict['objectinfo']['sdssr'] = chosenmag
+
         # if there are no mags available at all, generate a random mag
         # between 8 and 16.0
         else:
 
-            LOGWARNING(' %s: assigning a random mag' % lcfile)
+            LOGWARNING(' %s: assigning a random mag from '
+                       'uniform distribution between 8.0 and 16.0' % lcfile)
+
             fakelcdict['objectinfo']['sdssr'] = npr.random()*8.0 + 8.0
 
     # if there's no info available, generate fake info
@@ -1551,8 +1573,12 @@ https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.
             'binned_lcmad_median' in xmagrms[magcol]):
 
             magrms[magcol] = {
-                'binned_sdssr_median':xmagrms[magcol]['binned_sdssr_median'],
-                'binned_lcmad_median':xmagrms[magcol]['binned_lcmad_median'],
+                'binned_sdssr_median':np.array(
+                    xmagrms[magcol]['binned_sdssr_median']
+                ),
+                'binned_lcmad_median':np.array(
+                    xmagrms[magcol]['binned_lcmad_median']
+                ),
             }
 
             # interpolate the mag-MAD relation
@@ -1562,8 +1588,18 @@ https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.
                 kind=magrms_interpolate,
                 fill_value=magrms_fillvalue,
             )
-            # save this as well
+
+            # save the magrms
             magrms[magcol]['interpolated_magmad'] = interpolated_magmad
+
+            # generate the probability distribution in magbins. this is needed
+            # to correctly sample the objects in this population
+            magbins = np.array(xmagrms[magcol]['binned_sdssr_median'])
+            bincounts = np.array(xmagrms[magcol]['binned_count'])
+            binprobs = bincounts/np.sum(bincounts)
+
+            # save the bin probabilities as well
+            magrms[magcol]['magbin_probabilities'] = binprobs
 
         else:
 
@@ -1574,6 +1610,7 @@ https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.
                 'binned_sdssr_median':None,
                 'binned_lcmad_median':None,
                 'interpolated_magmad':None,
+                'magbin_probabilities':None,
             }
 
     tasks = [(x, fakelcdir, {'lcformat':lcformat,
