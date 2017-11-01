@@ -1791,7 +1791,7 @@ def add_fakelc_variability(fakelcfile,
         mag_mad = lcdict['moments'][mcol]['mad']
 
         # add up to 5 mmag of extra RMS
-        mag_rms = mag_mad*1.483 + np.uniform()*(0.005)
+        mag_rms = mag_mad*1.483 + npr.uniform()*(0.005)
 
         err_median = lcdict['moments'][ecol]['median']
         err_mad = lcdict['moments'][ecol]['mad']
