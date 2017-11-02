@@ -2055,6 +2055,8 @@ def parallel_pf_lcdir(lcdir,
     # now that we have all the files, process them
     if matching and len(matching) > 0:
 
+        LOGINFO('found %s light curves, running pf...' % len(matching))
+
         if maxobjects:
             matching = matching[:maxobjects]
 
