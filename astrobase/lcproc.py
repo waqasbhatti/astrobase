@@ -177,7 +177,7 @@ LCFORM = {
         None,
     ],
     'hp-pkl':[
-        '*-pklc.pkl',
+        '*-pklc.pkl*',
         read_hatpi_pklc,
         ['rjd','rjd'],
         ['iep1','itf1'],
