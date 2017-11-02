@@ -1385,24 +1385,24 @@ def variability_threshold(featuresdir,
         LOGINFO('finding objects above thresholds per magbin...')
 
         # turn the info into arrays
-        allobjects[magcol]['objectid'] = np.array(
+        allobjects[magcol]['objectid'] = np.ravel(np.array(
             allobjects[magcol]['objectid']
-        )
-        allobjects[magcol]['sdssr'] = np.array(
+        ))
+        allobjects[magcol]['sdssr'] = np.ravel(np.array(
             allobjects[magcol]['sdssr']
-        )
-        allobjects[magcol]['lcmad'] = np.array(
+        ))
+        allobjects[magcol]['lcmad'] = np.ravel(np.array(
             allobjects[magcol]['lcmad']
-        )
-        allobjects[magcol]['stetsonj'] = np.array(
+        ))
+        allobjects[magcol]['stetsonj'] = np.ravel(np.array(
             allobjects[magcol]['stetsonj']
-        )
-        allobjects[magcol]['iqr'] = np.array(
+        ))
+        allobjects[magcol]['iqr'] = np.ravel(np.array(
             allobjects[magcol]['iqr']
-        )
-        allobjects[magcol]['eta'] = np.array(
+        ))
+        allobjects[magcol]['eta'] = np.ravel(np.array(
             allobjects[magcol]['eta']
-        )
+        ))
 
         # only get finite elements everywhere
         thisfinind = (
