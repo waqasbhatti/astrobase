@@ -1351,8 +1351,13 @@ def _pkl_finder_objectinfo(objectinfo,
                 nbrradiusarcsec is not None and
                 nbrradiusarcsec > 0.0):
 
-                with open(lclistpkl,'rb') as infd:
-                    lclist = pickle.load(infd)
+                if lclistpkl.endswith('.gz'):
+                    infd = gzip.open(lclistpkl)
+                else:
+                    infd = open(lclistpkl)
+
+                lclist = pickle.load(infd)
+                infd.close()
 
                 if not 'kdtree' in lclist:
 

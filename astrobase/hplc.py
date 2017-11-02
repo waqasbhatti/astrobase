@@ -264,6 +264,8 @@ def read_hatpi_pklc(lcfile):
             infd = open(lcfile,'r')
 
         lcdict = pickle.load(infd)
+        infd.close()
+
         return lcdict
 
     except UnicodeDecodeError:
@@ -278,6 +280,8 @@ def read_hatpi_pklc(lcfile):
                    'This is probably a numpy issue: '
                    'http://stackoverflow.com/q/11305790' % lcfile)
         lcdict = pickle.load(infd, encoding='latin1')
+        infd.close()
+
         return lcdict
 
 
@@ -672,7 +676,12 @@ def read_hatpi_binnedlc(binnedpklf, textlcf, timebinsec):
 
     # read the binned LC
 
-    infd = open(binnedpklf,'rb')
+    if binnedpklf.endswith('.gz'):
+        infd = gzip.open(binnedpklf,'rb')
+    else:
+        infd = open(binnedpklf,'rb')
+
+
     try:
         binned = pickle.load(infd)
     except:
