@@ -257,21 +257,27 @@ def read_hatpi_pklc(lcfile):
     '''
 
     try:
-        with open(lcfile,'rb') as infd:
-            lcdict = pickle.load(infd)
 
+        if lcfile.endswith('.gz'):
+            infd = gzip.open(lcfile,'r')
+        else:
+            infd = open(lcfile,'r')
+
+        lcdict = pickle.load(infd)
         return lcdict
 
     except UnicodeDecodeError:
 
-        with open(lcfile,'rb') as infd:
-            lcdict = pickle.load(infd, encoding='latin1')
+        if lcfile.endswith('.gz'):
+            infd = gzip.open(lcfile,'r')
+        else:
+            infd = open(lcfile,'r')
 
         LOGWARNING('pickle %s was probably from Python 2 '
                    'and failed to load without using "latin1" encoding. '
                    'This is probably a numpy issue: '
                    'http://stackoverflow.com/q/11305790' % lcfile)
-
+        lcdict = pickle.load(infd, encoding='latin1')
         return lcdict
 
 
