@@ -2069,7 +2069,7 @@ def parallel_pf_lcdir(lcdir,
                            pfkwargs=pfkwargs,
                            getblssnr=getblssnr,
                            nperiodworkers=nperiodworkers,
-                           sigclip=sigcip,
+                           sigclip=sigclip,
                            nthisworkers=nthisworkers)
 
     else:
