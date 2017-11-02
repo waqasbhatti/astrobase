@@ -3656,3 +3656,20 @@ def checkplot_pickle_to_png(checkplotin,
     else:
         LOGERROR('failed to write checkplot PNG')
         return None
+
+
+
+def cp2png(checkplotin, extrarows=None):
+    '''
+    This is just a shortened form of the function above for convenience.
+
+    This only handles pickle files.
+
+    '''
+
+    if checkplotin.endswith('.gz'):
+        outfile = checkplotin.replace('.pkl.gz','.png')
+    else:
+        outfile = checkplotin.replace('.pkl','.png')
+
+    return checkplot_pickle_to_png(checkplotin, outfile, extrarows=extrarows)
