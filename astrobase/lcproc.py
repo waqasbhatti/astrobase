@@ -2254,9 +2254,12 @@ def runcp(pfpickle,
         LOGERROR('unknown light curve format specified: %s' % lcformat)
         return None
 
-    # get the pickled period-finding results
-    with open(pfpickle,'rb') as infd:
-        pfresults = pickle.load(infd)
+    if pkfpickle.endswith('.gz'):
+        infd = gzip.open(pfpickle)
+    else:
+        infd = open(pfpickle)
+    pfresults = pickle.load(infd)
+    infd.close()
 
     (fileglob, readerfunc, dtimecols, dmagcols,
      derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
