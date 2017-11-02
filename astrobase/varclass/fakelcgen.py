@@ -1163,7 +1163,7 @@ def make_fakelc(lcfile,
                 (magbincenter-0.25)
             )
 
-            fakelcdict['objectinfo']['sdssr'] = chosenmag
+            fakelcdict['objectinfo']['sdssr'] = np.asscalar(chosenmag)
 
         # if there are no mags available at all, generate a random mag
         # between 8 and 16.0
