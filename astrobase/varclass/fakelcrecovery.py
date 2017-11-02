@@ -52,6 +52,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+from tqdm import tqdm
 
 #############
 ## LOGGING ##
@@ -149,9 +150,9 @@ lcproc.register_custom_lcformat(
 ###########################
 
 
-def run_variability_selection(simbasedir,
-                              xmin_stetj_stdev=2.0,
-                              xmin_inveta_stdev=2.0):
+def variable_index_gridsearch(simbasedir,
+                              stetson_stdev_range=[1.0,20.0],
+                              inveta_stdev_range=[1.0,20.0]):
     '''This runs variability selection on all of the light curves in simbasedir.
 
     Reads the fakelcs-info.pkl in simbasedir to get:
@@ -159,11 +160,23 @@ def run_variability_selection(simbasedir,
     - the variable objects, their types, periods, epochs, and params
     - the nonvariable objects
 
-    Calculates the true positives, false positives, true negatives, false
-    negatives. Then gets the precision and recall, confusion matrix, and the ROC
-    curve for variable vs. nonvariable. Gets these for:
+    For each magbin, this does a grid search using the stetson and inveta ranges
+    and tries to optimize the Matthews Correlation Coefficient, indicating the
+    best possible separation of variables vs. nonvariables. The thresholds on
+    these two variable indexes that produce the largest coeff for the collection
+    of fake LCs will probably be the ones that work best for actual variable
+    classification on the real LCs.
 
-    - the overall collection
+    https://en.wikipedia.org/wiki/Matthews_correlation_coefficient
+
+    For each grid-point, calculates the true positives, false positives, true
+    negatives, false negatives. Then gets the precision and recall, confusion
+    matrix, and the ROC curve for variable vs. nonvariable.
+
+
+    Once we've identified the best thresholds to use, we can then calculate
+    variable object numbers:
+
     - as a function of magnitude
     - as a function of period
     - as a function of number of detections
