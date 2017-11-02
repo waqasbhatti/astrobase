@@ -1135,6 +1135,9 @@ def parallel_varfeatures(lclist,
     This runs varfeatures in parallel for all light curves in lclist.
 
     '''
+    # make sure to make the output directory if it doesn't exist
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
 
     if maxobjects:
         lclist = lclist[:maxobjects]
@@ -1209,6 +1212,9 @@ def parallel_varfeatures_lcdir(lcdir,
 
     # now that we have all the files, process them
     if matching and len(matching) > 0:
+
+        LOGINFO('found %s light curves, getting varfeatures...' %
+                len(matching))
 
         return parallel_varfeatures(matching,
                                     outdir,
