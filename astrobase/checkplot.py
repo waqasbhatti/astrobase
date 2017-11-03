@@ -1498,7 +1498,6 @@ def _pkl_finder_objectinfo(objectinfo,
                          (objectid, objectinfo['ra'], objectinfo['decl']))
             finderb64 = None
             neighbors = None
-            raise
 
         # now that we have the finder chart, get the rest of the object
         # information
