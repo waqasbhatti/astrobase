@@ -1352,9 +1352,9 @@ def _pkl_finder_objectinfo(objectinfo,
                 nbrradiusarcsec > 0.0):
 
                 if lclistpkl.endswith('.gz'):
-                    infd = gzip.open(lclistpkl)
+                    infd = gzip.open(lclistpkl,'rb')
                 else:
-                    infd = open(lclistpkl)
+                    infd = open(lclistpkl,'rb')
 
                 lclist = pickle.load(infd)
                 infd.close()
@@ -2179,12 +2179,12 @@ def _read_checkplot_picklefile(checkplotpickle):
     if checkplotpickle.endswith('.gz'):
 
         try:
-            with gzip.open(checkplotpickle) as infd:
+            with gzip.open(checkplotpickle,'rb') as infd:
                 cpdict = pickle.load(infd)
 
         except UnicodeDecodeError:
 
-            with gzip.open(checkplotpickle) as infd:
+            with gzip.open(checkplotpickle,'rb') as infd:
                 cpdict = pickle.load(infd, encoding='latin1')
 
             LOGWARNING('pickle %s was probably from Python 2 '

@@ -2255,10 +2255,12 @@ def runcp(pfpickle,
         return None
 
     if pfpickle.endswith('.gz'):
-        infd = gzip.open(pfpickle)
+        infd = gzip.open(pfpickle,'rb')
     else:
-        infd = open(pfpickle)
+        infd = open(pfpickle,'rb')
+
     pfresults = pickle.load(infd)
+
     infd.close()
 
     (fileglob, readerfunc, dtimecols, dmagcols,
