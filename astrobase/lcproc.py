@@ -2387,28 +2387,24 @@ def runcp_worker(task):
         return None
 
 
-
-def parallel_cp_lcdir(pfpickledir,
+def parallel_cp(pfpicklelist,
                       outdir,
                       lcbasedir,
                       lclistpkl=None,
                       nbrradiusarcsec=30.0,
                       maxobjects=None,
-                      pfpickleglob='periodfinding-*.pkl',
                       lcformat='hat-sql',
                       timecols=None,
                       magcols=None,
                       errcols=None,
                       nworkers=32):
-    '''
-    This drives the parallel execution of runcp.
+    '''This drives the parallel execution of runcp for a list of periodfinding
+    result pickles.
 
     '''
 
     if not os.path.exists(outdir):
         os.mkdir(outdir)
-
-    pfpicklelist = sorted(glob.glob(os.path.join(pfpickledir, pfpickleglob)))
 
     if maxobjects:
         pfpicklelist = pfpicklelist[:maxobjects]
@@ -2432,6 +2428,40 @@ def parallel_cp_lcdir(pfpickledir,
 
     executor.shutdown()
     return results
+
+
+
+def parallel_cp_lcdir(pfpickledir,
+                      outdir,
+                      lcbasedir,
+                      lclistpkl=None,
+                      nbrradiusarcsec=30.0,
+                      maxobjects=None,
+                      pfpickleglob='periodfinding-*.pkl',
+                      lcformat='hat-sql',
+                      timecols=None,
+                      magcols=None,
+                      errcols=None,
+                      nworkers=32):
+
+    '''This drives the parallel execution of runcp for a directory of
+    periodfinding pickles.
+
+    '''
+
+    pfpicklelist = sorted(glob.glob(os.path.join(pfpickledir, pfpickleglob)))
+
+    return parallel_cp(pfpicklelist,
+                       outdir,
+                       lcbasedir,
+                       lclistpkl=lclistpkl,
+                       nbrradiusarcsec=nbrradiusarcsec,
+                       maxobjects=maxobjects,
+                       lcformat=lcformat,
+                       timecols=timecols,
+                       magcols=magcols,
+                       errcols=errcols,
+                       nworkers=nworkers)
 
 
 
