@@ -2254,7 +2254,7 @@ def runcp(pfpickle,
         LOGERROR('unknown light curve format specified: %s' % lcformat)
         return None
 
-    if pkfpickle.endswith('.gz'):
+    if pfpickle.endswith('.gz'):
         infd = gzip.open(pfpickle)
     else:
         infd = open(pfpickle)
