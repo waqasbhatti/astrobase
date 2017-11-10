@@ -1,3 +1,30 @@
+# v0.2.8
+
+## Fixes
+
+- checkplot: add a short cp2png function for convenience
+- checkplot/hplc: add gzip support
+- checkplot, hplc, lcproc: fix binary mode opening for gzipped pickles
+- checkplot: remove stray re-raise so things won't break if no finder
+- fakelcgen.add_fakelc_variability: don't add variability if it exists
+- fakelcgen: add generate_transit_lightcurve, add_fakelc_variability fns
+- fakelcgen: add timecols, magcols, errcols to fakelcdict; transit stuff
+- fakelcgen: finished up add_variability_to_fakelc_collection
+- fakelcgen: fixed bugs in generate_[eb|flare]_lightcurve
+- fakelcgen: fixing generate_transit_lightcurve
+- fakelcgen: fix random declination range
+- fakelcgen: handle non-variables in add_fakelc_variability
+- fakelcgen/lcproc: chosen random mag -> scalar; feature arrays -> 1-d
+- fakelcgen: use the correct bin count dist for random mag assignments
+- hplc: read gzipped pklc transparently
+- lcproc: add parallel_runcp for list of periodfinding result pickles
+- lcproc: HP gzipped pklc glob update
+
+
+## Work that may be in progress
+
+- [WIP] varclass.fakelcrecovery: TBD
+
 # v0.2.7
 
 ## Fixes
@@ -13,12 +40,12 @@
 - lcproc.variability_threshold: get and plot LC RMS as well
 - recoverysim: added make_fakelc_collection
 - recoverysim: fixed up make_fakelc, make_fakelc_collection
-- recoverysim: now two separate modules: fakelcgen and fakelcrecovery
 - varbase.features: some more measures added
 - varbase.lcfit: fix confusing fourierorder, fourierparams kwargs. GH PR #27
 - varbase.signals: fixes for GH PR #25 and #29
 - varbase/signals: fix long-broken gls_prewhiten iterative prewhiten function
-- checkplot.twolsp_checkplot.png: Wrapped LOGWARNING in `if verbose:` statement
+- varclass.recoverysim -> two modules: fakelcgen and fakelcrecovery
+- Wrapped LOGWARNING in `if verbose:` statement
 
 
 ## Work that may be in progress
