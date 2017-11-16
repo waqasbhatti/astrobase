@@ -1020,7 +1020,7 @@ def fitscoords_to_jpeg(fits_image,
                       coordcenter[0] + coordcenter[2]/2.0)
         ymin, ymax = (coordcenter[1] - coordcenter[3]/2.0,
                       coordcenter[1] + coordcenter[3]/2.0)
-        scaled_img = scaled_img[ymin:ymax, xmin:xmax]
+        scaled_img = scaled_img[int(ymin):int(ymax), int(xmin):int(xmax)]
 
     if resize:
         resized_img = scipy.misc.imresize(scaled_img,
