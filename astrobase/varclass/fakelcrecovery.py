@@ -152,7 +152,8 @@ lcproc.register_custom_lcformat(
 
 def variable_index_gridsearch(simbasedir,
                               stetson_stdev_range=[1.0,20.0],
-                              inveta_stdev_range=[1.0,20.0]):
+                              inveta_stdev_range=[1.0,20.0],
+                              dgrid=0.5):
     '''This runs variability selection on all of the light curves in simbasedir.
 
     Reads the fakelcs-info.pkl in simbasedir to get:
