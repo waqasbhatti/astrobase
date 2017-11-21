@@ -60,7 +60,7 @@ for your purposes.
   variability tags, object type tags, best periods and epochs, and comments for
   each object using a browser-based UI (see below). The information entered can
   then be exported as CSV or JSON for the next stage of work. The
-  [lightcurves-and-checkplots](/lightcurves-and-checkplots.ipynb)
+  [lightcurves-and-checkplots](https://github.com/waqasbhatti/astrobase-notebooks/blob/master/lightcurves-and-checkplots.ipynb)
   Jupyter notebook details how to do this and goes through a full example.
 
   ![Checkplot Server](astrobase/data/checkplotserver-th.png?raw=true)
@@ -69,7 +69,7 @@ for your purposes.
   checkplots (e.g. for an initial look at a collection of light curves), there's
   a tiny `checkplot-viewer` webapp available (see below for an example) that
   operates on checkplot PNG images. The
-  [lightcurve-work](https://github.com/waqasbhatti/astrobase-notebooks/lightcurve-work.ipynb) Jupyter notebook goes
+  [lightcurve-work](https://github.com/waqasbhatti/astrobase-notebooks/blob/master/lightcurve-work.ipynb) Jupyter notebook goes
   through an example of generating these checkplot PNGs for light curves. See
   the [checkplot-viewer.js](astrobase/checkplot-viewer.js) file for more
   instructions and [checkplot-viewer.png](astrobase/data/checkplot-viewer.png)
