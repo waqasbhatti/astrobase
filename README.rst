@@ -14,7 +14,8 @@ argument that makes them handle flux light curves correctly.
 Full documentation is still a work in progress (as soon as I figure out how
 Sphinx works), but the docstrings are fairly good and an overview is provided at
 https://github.com/waqasbhatti/astrobase, along with Jupyter notebooks that
-demonstrate some of the functionality.
+demonstrate some of the functionality at
+https://github.com/waqasbhatti/astrobase-notebooks.
 
 Changelog
 ---------
