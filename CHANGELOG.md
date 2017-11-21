@@ -1,3 +1,13 @@
+# v0.2.9
+
+## Fixes
+
+- moved notebooks to their own
+  [astrobase-notebooks](https://github.com/waqasbhatti/astrobase-notebooks)
+  repository
+- tests: updated test light curve path
+
+
 # v0.2.8
 
 ## Fixes
