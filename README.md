@@ -13,7 +13,7 @@ makes them handle flux light curves correctly.
 Full documentation is still a work in progress (as soon as I figure out how
 Sphinx works), but the docstrings are fairly good and an [overview](#contents)
 is provided below, along with Jupyter notebooks that demonstrate some of the
-functionality.
+functionality in a [companion repository](https://github.com/waqasbhatti/astrobase-notebooks).
 
 To install **[astrobase](https://pypi.python.org/pypi/astrobase)** from the
 Python Package Index (PyPI):
@@ -33,25 +33,8 @@ Python 2.7: [![Python 2.7](https://ci.wbhatti.org/buildStatus/icon?job=astrobase
 
 ## notebooks
 
-This contains Jupyter notebooks that demonstrate various functions from this
-package. Also contains other useful notes-to-self.
-
-- **[lightcurve-work](notebooks/lightcurve-work.ipynb)**: demonstrates usage of
-    the [hatlc](astrobase/hatlc.py), [periodbase](astrobase/periodbase), and
-    [checkplot](astrobase/checkplot.py) modules for reading HAT light curves,
-    finding periods, and plotting phased light curves.
-
-- **[lightcurves-and-checkplots](notebooks/lightcurves-and-checkplots.ipynb)**:
-    demonstrates usage of the [hatlc](astrobase/hatlc.py),
-    [periodbase](astrobase/periodbase), [checkplot](astrobase/checkplot.py)
-    modules, and the [checkplotserver](astrobase/checkplotserver.py) for doing
-    period-finding and variability-classification work on a collection of light
-    curves.
-
-- **[parallel-ipython](notebooks/parallel-ipython.ipynb)**: shows examples of
-    how to map `astrobase` functions across an
-    [ipyparallel](http://ipyparallel.readthedocs.io/en/stable/) cluster to speed
-    up light curve processing.
+These are now located over at
+[astrobase-notebooks](https://github.com/waqasbhatti/astrobase-notebooks).
 
 ## astrobase
 
@@ -77,7 +60,7 @@ for your purposes.
   variability tags, object type tags, best periods and epochs, and comments for
   each object using a browser-based UI (see below). The information entered can
   then be exported as CSV or JSON for the next stage of work. The
-  [lightcurves-and-checkplots](notebooks/lightcurves-and-checkplots.ipynb)
+  [lightcurves-and-checkplots](/lightcurves-and-checkplots.ipynb)
   Jupyter notebook details how to do this and goes through a full example.
 
   ![Checkplot Server](astrobase/data/checkplotserver-th.png?raw=true)
@@ -86,7 +69,7 @@ for your purposes.
   checkplots (e.g. for an initial look at a collection of light curves), there's
   a tiny `checkplot-viewer` webapp available (see below for an example) that
   operates on checkplot PNG images. The
-  [lightcurve-work](notebooks/lightcurve-work.ipynb) Jupyter notebook goes
+  [lightcurve-work](https://github.com/waqasbhatti/astrobase-notebooks/lightcurve-work.ipynb) Jupyter notebook goes
   through an example of generating these checkplot PNGs for light curves. See
   the [checkplot-viewer.js](astrobase/checkplot-viewer.js) file for more
   instructions and [checkplot-viewer.png](astrobase/data/checkplot-viewer.png)
