@@ -45,8 +45,8 @@ from astrobase import hatlc, periodbase, checkplot
 ############
 
 # this is the light curve used for tests
-LCURL = ("https://github.com/waqasbhatti/astrobase/raw/master/"
-         "notebooks/nb-data/HAT-772-0554686-V0-DR0-hatlc.sqlite.gz")
+LCURL = ("https://github.com/waqasbhatti/astrobase-notebooks/raw/master/"
+         "nb-data/HAT-772-0554686-V0-DR0-hatlc.sqlite.gz")
 
 # this function is used to check progress of the download
 def on_download_chunk(transferred,blocksize,totalsize):
