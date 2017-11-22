@@ -265,8 +265,7 @@ def get_recovered_variables(simbasedir,
     recdict = {'stetj_min_stdev':stetson_stdev_min,
                'inveta_min_stdev':inveta_stdev_min,
                'actual_variables':actualvars,
-               'actual_nonvariables':actualnotvars,
-               'magbin_medians':varthresh['binned_sdssr_median']}
+               'actual_nonvariables':actualnotvars}
 
 
     # FIXME: make this recovery fraction by magnitude bin!
@@ -358,6 +357,7 @@ def get_recovered_variables(simbasedir,
             'inveta_recall':inveta_recall,
             'inveta_precision':inveta_precision,
             'inveta_mcc':inveta_mcc,
+            'magbin_medians':varthresh[magcol]['binned_sdssr_median']
         }
 
 
