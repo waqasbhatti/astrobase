@@ -496,13 +496,19 @@ def variable_index_gridsearch(simbasedir,
             grid_results[grid_point] = res
 
             for magcol in res['magcols']:
-                LOGINFO('intersect stdev threshold for magcol: %s, '
-                        '(stet, inveta) = (%.1f, %.1f): '
+                LOGINFO('magcol: %s, (stet, inveta) = (%.1f, %.1f): intersect '
                         'MCC = %.3f, precision = %.3f, recall = %.3f' %
                         (magcol, stet, inveta,
                          res[magcol]['intersect_mcc'],
                          res[magcol]['intersect_precision'],
                          res[magcol]['intersect_recall']))
+
+    grid_results['stetson_grid'] = stetson_grid
+    grid_results['inveta_grid'] = inveta_grid
+
+    with open(os.path.join(simbasedir,'fakevar-recovery.pkl'),'wb') as outfd:
+        pickle.dump(grid_results,outfd,pickle.HIGHEST_PROTOCOL)
+
 
     return grid_results
 
