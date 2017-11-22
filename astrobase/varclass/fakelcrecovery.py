@@ -479,9 +479,44 @@ def variable_index_gridsearch(simbasedir,
                               inveta_stdev_range[1],
                               num=ngridpoints)
 
+    grid_results = {}
 
-    # first, run just stet
 
-    # then, run just inveta
+    # run a grid of (stet, inveta) and get results for union/intersect and stet
+    # and inveta individually
+    for stet in stetson_grid:
+        for inveta in inveta_grid:
 
-    # finally, run a grid of (stet, inveta) and get results for union/intersect
+            grid_point = (stet, inveta)
+
+            res = get_recovered_variables(simbasedir,
+                                          stetson_stdev_min=stet,
+                                          inveta_stdev_min=inveta)
+
+            grid_results[grid_point] = res
+
+            for magcol in res['magcols']:
+                LOGINFO('intersect stdev threshold for magcol: %s, '
+                        '(stet, inveta) = (%.1f, %.1f): '
+                        'MCC = %.3f, precision = %.3f, recall = %.3f' %
+                        (magcol, stet, inveta,
+                         res[magcol]['intersect_mcc'],
+                         res[magcol]['intersect_precision'],
+                         res[magcol]['intersect_recall']))
+
+    return grid_results
+
+
+
+def plot_varind_gridsearch_results(gridresults):
+    '''
+    This plots the results from variable_index_gridsearch above.
+
+    Also returns the (stet,inveta) combinations that maximize the MCC for:
+
+    - stet alone
+    - inveta alone
+    - intersection of (stet, inveta)
+    - union of (stet, inveta)
+
+    '''
