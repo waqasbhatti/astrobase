@@ -526,3 +526,11 @@ def plot_varind_gridsearch_results(gridresults):
     - union of (stet, inveta)
 
     '''
+
+    # get the values
+    stet_inveta_grid = [a for a in list(gridresults.keys())
+                        if isinstance(a,tuple)]
+    aep_intersect_mcc = [gridresults[a]['aep_000']['intersect_mcc']
+                         for a in stet_inveta_grid]
+    atf_intersect_mcc = [gridresults[a]['atf_000']['intersect_mcc']
+                         for a in stet_inveta_grid]
