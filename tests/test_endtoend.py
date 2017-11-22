@@ -57,7 +57,6 @@ def on_download_chunk(transferred,blocksize,totalsize):
 # get the light curve if it's not there
 modpath = os.path.abspath(__file__)
 LCPATH = os.path.abspath(os.path.join(os.path.dirname(modpath),
-                                      '../notebooks/nb-data/',
                                       'HAT-772-0554686-V0-DR0-hatlc.sqlite.gz'))
 if not os.path.exists(LCPATH):
     localf, headerr = urlretrieve(
