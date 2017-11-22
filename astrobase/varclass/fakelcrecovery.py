@@ -33,6 +33,8 @@ from traceback import format_exc
 from concurrent.futures import ProcessPoolExecutor
 from hashlib import md5
 
+from math import sqrt as msqrt
+
 # to turn a list of keys into a dict address
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
@@ -130,24 +132,237 @@ def read_fakelc(fakelcfile):
     return lcdict
 
 
-# register the fakelc pklc as a custom lcproc format
-# now we should be able to use all lcproc functions correctly
-lcproc.register_custom_lcformat(
-    'fakelc',
-    '*-fakelc.pkl',
-    read_pklc,
-    None, # these are None because we make sure to get from fakelc directly
-    None, # these are None because we make sure to get from fakelc directly
-    None, # these are None because we make sure to get from fakelc directly
-    magsarefluxes=False,
-    specialnormfunc=None
-)
-
-
 
 ###########################
 ## VARIABILITY FUNCTIONS ##
 ###########################
+
+def get_varfeatures(simbasedir,
+                    nworkers=None):
+    '''
+    This runs lcproc.parallel_varfeatures on light curves in simbasedir.
+
+    '''
+
+    # get the info from the simbasedir
+    with open(os.path.join(simbasedir, 'fakelcs-info.pkl'),'rb') as infd:
+        siminfo = pickle.load(infd)
+
+    lcfpaths = siminfo['lcfpath']
+    varfeaturedir = os.path.join(simbasedir,'varfeatures')
+
+    # get the column defs for the fakelcs
+    timecols = siminfo['timecols']
+    magcols = siminfo['magcols']
+    errcols = siminfo['errcols']
+
+    # register the fakelc pklc as a custom lcproc format
+    # now we should be able to use all lcproc functions correctly
+    if 'fakelc' not in lcproc.LCFORM:
+
+        lcproc.register_custom_lcformat(
+            'fakelc',
+            '*-fakelc.pkl',
+            read_pklc,
+            timecols,
+            magcols,
+            errcols,
+            magsarefluxes=False,
+            specialnormfunc=None
+        )
+
+    # now we can use lcproc.parallel_varfeatures directly
+    varinfo = lcproc.parallel_varfeatures(lcfpaths,
+                                          varfeaturedir,
+                                          lcformat='fakelc',
+                                          nworkers=nworkers)
+
+    with open(os.path.join(simbasedir,'fakelc-varfeatures.pkl'),'wb') as outfd:
+        pickle.dump(varinfo, outfd, pickle.HIGHEST_PROTOCOL)
+
+    return os.path.join(simbasedir,'fakelc-varfeatures.pkl')
+
+
+
+def matthews_correl_coeff(ntp, ntn, nfp, nfn):
+    '''
+    This calculates the Matthews correlation coefficent.
+
+    https://en.wikipedia.org/wiki/Matthews_correlation_coefficient
+
+    '''
+
+    mcc_top = (ntp*ntn - nfp*nfn)
+    mcc_bot = msqrt((ntp + nfp)*(ntp + nfn)*(ntn + nfp)*(ntn + nfn))
+
+    return mcc_top/mcc_bot
+
+
+
+def get_recovered_variables(simbasedir,
+                            stetson_stdev_min=2.0,
+                            inveta_stdev_min=2.0):
+    '''This runs variability selection for LCs in simbasedir and gets recovery
+    stats.
+
+    returns:
+
+    {'stetson_stdev_min', 'inveta_stdev_min', 'recovered_varlcs',
+     'truepositives', 'truenegatives', 'falsepositives', 'falsenegatives',
+     'matthewscorrcoeff', 'precision', 'recall'}
+
+    '''
+
+    # get the info from the simbasedir
+    with open(os.path.join(simbasedir, 'fakelcs-info.pkl'),'rb') as infd:
+        siminfo = pickle.load(infd)
+
+    lcfpaths = siminfo['lcfpath']
+    objectids = siminfo['objectid']
+    varflags = siminfo['isvariable']
+    sdssr = siminfo['sdssr']
+    ndet = siminfo['ndet']
+
+    # get the column defs for the fakelcs
+    timecols = siminfo['timecols']
+    magcols = siminfo['magcols']
+    errcols = siminfo['errcols']
+
+    # register the fakelc pklc as a custom lcproc format
+    # now we should be able to use all lcproc functions correctly
+    if 'fakelc' not in lcproc.LCFORM:
+
+        lcproc.register_custom_lcformat(
+            'fakelc',
+            '*-fakelc.pkl',
+            read_pklc,
+            timecols,
+            magcols,
+            errcols,
+            magsarefluxes=False,
+            specialnormfunc=None
+        )
+
+    # run the variability search using the results of get_varfeatures
+    varfeaturedir = os.path.join(simbasedir,'varfeatures')
+    varthreshinfof = os.path.join(
+        simbasedir,
+        'varthresh-stet%.2f-inveta%.2f.pkl' % (stetson_stdev_min,
+                                               inveta_stdev_min)
+    )
+    varthresh = lcproc.variability_threshold(varfeaturedir,
+                                             varthreshinfof,
+                                             lcformat='fakelc',
+                                             min_stetj_stdev=stetson_stdev_min,
+                                             min_inveta_stdev=inveta_stdev_min)
+
+    # now get the true positives, false positives, true negatives, false
+    # negatives, and calculate recall, precision, Matthews corr. coeff.
+    actualvars = objectids[isvariable]
+    actualnotvars = objectids[~isvariable]
+
+    # this is the output directory
+    recdict = {'stetj_min_stdev':stetson_stdev_min,
+               'inveta_min_stdev':inveta_stdev_min,
+               'actual_variables':actualvars,
+               'actual_nonvariables':actualnotvars,
+               'magbin_medians':varthresh['binned_sdssr_median']}
+
+
+    # FIXME: make this recovery fraction by magnitude bin!
+    for magcol in magcols:
+
+        # stetson recovered variables
+        stet_recoveredvars = varthresh[magcol][
+            'objectids_stetsonj_thresh_all_magbins'
+        ]
+        stet_recoverednotvars = np.setdiff1d(objectids, stet_recoveredvars)
+
+        stet_truepositives = np.intersect1d(stet_recoveredvars,
+                                            actualvars)
+        stet_falsepositives = np.intersect1d(stet_recoveredvars,
+                                             actualnotvars)
+        stet_truenegatives = np.intersect1d(stet_recoverednotvars,
+                                            actualnotvars)
+        stet_falsenegatives = np.intersect1d(stet_recoverednotvars,
+                                             actualvars)
+
+        stet_tpfrac = stet_truepositives.size/actualvars.size
+        stet_fpfrac = stet_falsepositives.size/actualnotvars.size
+        stet_tnfrac = stet_truenegatives.size/actualnotvars.size
+        stet_fnfrac = stet_falsenegatives.size/actualvars.size
+
+        # inveta recovered variables
+        inveta_recoveredvars = varthresh[magcol][
+            'objectids_inveta_thresh_all_magbins'
+        ]
+        inveta_recoverednotvars = np.setdiff1d(objectids, inveta_recoveredvars)
+
+        inveta_truepositives = np.intersect1d(inveta_recoveredvars,
+                                              actualvars)
+        inveta_falsepositives = np.intersect1d(inveta_recoveredvars,
+                                               actualnotvars)
+        inveta_truenegatives = np.intersect1d(inveta_recoverednotvars,
+                                              actualnotvars)
+        inveta_falsenegatives = np.intersect1d(inveta_recoverednotvars,
+                                               actualvars)
+
+        inveta_tpfrac = inveta_truepositives.size/actualvars.size
+        inveta_fpfrac = inveta_falsepositives.size/actualnotvars.size
+        inveta_tnfrac = inveta_truenegatives.size/actualnotvars.size
+        inveta_fnfrac = inveta_falsenegatives.size/actualvars.size
+
+        # calculate stetson recall, precision, Matthews correl coeff
+        stet_recall = stet_truepositives.size/(stet_truepositives.size +
+                                               stet_falsenegatives.size)
+        stet_precision = stet_truepositives.size/(stet_truepositives.size +
+                                                  stet_falsepositives.size)
+        stet_mcc = matthews_correl_coeff(stet_truepositives.size,
+                                         stet_truenegatives.size,
+                                         stet_falsepositives.size,
+                                         stet_falsenegatives.size)
+
+        # calculate inveta recall, precision, Matthews correl coeff
+        inveta_recall = inveta_truepositives.size/(inveta_truepositives.size +
+                                               inveta_falsenegatives.size)
+        inveta_precision = inveta_truepositives.size/(inveta_truepositives.size +
+                                                      inveta_falsepositives.size)
+        inveta_mcc = matthews_correl_coeff(inveta_truepositives.size,
+                                         inveta_truenegatives.size,
+                                         inveta_falsepositives.size,
+                                         inveta_falsenegatives.size)
+
+
+        recdict[magcol] = {
+            'stet_recoveredvars':stet_recoveredvars,
+            'stet_truepositives':stet_truepositives,
+            'stet_falsepositives':stet_falsepositives,
+            'stet_truenegatives':stet_truenegatives,
+            'stet_falsenegative':stet_falsenegatives,
+            'stet_tpfrac':stet_tpfrac,
+            'stet_fpfrac':stet_fpfrac,
+            'stet_tnfrac':stet_tnfrac,
+            'stet_fnfrac':stet_fnfrac,
+            'stet_recall':stet_recall,
+            'stet_precision':stet_precision,
+            'stet_mcc':stet_mcc,
+            'inveta_recoveredvars':inveta_recoveredvars,
+            'inveta_truepositives':inveta_truepositives,
+            'inveta_falsepositives':inveta_falsepositives,
+            'inveta_truenegatives':inveta_truenegatives,
+            'inveta_falsenegative':inveta_falsenegatives,
+            'inveta_tpfrac':inveta_tpfrac,
+            'inveta_fpfrac':inveta_fpfrac,
+            'inveta_tnfrac':inveta_tnfrac,
+            'inveta_fnfrac':inveta_fnfrac,
+            'inveta_recall':inveta_recall,
+            'inveta_precision':inveta_precision,
+            'inveta_mcc':inveta_mcc,
+        }
+
+
+    return recdict
+
 
 
 def variable_index_gridsearch(simbasedir,
@@ -162,11 +377,11 @@ def variable_index_gridsearch(simbasedir,
     - the nonvariable objects
 
     For each magbin, this does a grid search using the stetson and inveta ranges
-    and tries to optimize the Matthews Correlation Coefficient, indicating the
-    best possible separation of variables vs. nonvariables. The thresholds on
-    these two variable indexes that produce the largest coeff for the collection
-    of fake LCs will probably be the ones that work best for actual variable
-    classification on the real LCs.
+    and tries to optimize the Matthews Correlation Coefficient (best value is
+    +1.0), indicating the best possible separation of variables
+    vs. nonvariables. The thresholds on these two variable indexes that produce
+    the largest coeff for the collection of fake LCs will probably be the ones
+    that work best for actual variable classification on the real LCs.
 
     https://en.wikipedia.org/wiki/Matthews_correlation_coefficient
 
