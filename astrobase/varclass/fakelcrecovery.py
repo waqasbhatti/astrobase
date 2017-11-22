@@ -292,10 +292,16 @@ def get_recovered_variables(simbasedir,
         stet_falsenegatives = np.intersect1d(stet_recoverednotvars,
                                              actualvars)
 
-        stet_tpfrac = stet_truepositives.size/actualvars.size
-        stet_fpfrac = stet_falsepositives.size/actualnotvars.size
-        stet_tnfrac = stet_truenegatives.size/actualnotvars.size
-        stet_fnfrac = stet_falsenegatives.size/actualvars.size
+        # calculate stetson recall, precision, Matthews correl coeff
+        stet_recall = stet_truepositives.size/(stet_truepositives.size +
+                                               stet_falsenegatives.size)
+        stet_precision = stet_truepositives.size/(stet_truepositives.size +
+                                                  stet_falsepositives.size)
+        stet_mcc = matthews_correl_coeff(stet_truepositives.size,
+                                         stet_truenegatives.size,
+                                         stet_falsepositives.size,
+                                         stet_falsenegatives.size)
+
 
         # inveta recovered variables
         inveta_recoveredvars = varthresh[magcol][
@@ -312,21 +318,6 @@ def get_recovered_variables(simbasedir,
         inveta_falsenegatives = np.intersect1d(inveta_recoverednotvars,
                                                actualvars)
 
-        inveta_tpfrac = inveta_truepositives.size/actualvars.size
-        inveta_fpfrac = inveta_falsepositives.size/actualnotvars.size
-        inveta_tnfrac = inveta_truenegatives.size/actualnotvars.size
-        inveta_fnfrac = inveta_falsenegatives.size/actualvars.size
-
-        # calculate stetson recall, precision, Matthews correl coeff
-        stet_recall = stet_truepositives.size/(stet_truepositives.size +
-                                               stet_falsenegatives.size)
-        stet_precision = stet_truepositives.size/(stet_truepositives.size +
-                                                  stet_falsepositives.size)
-        stet_mcc = matthews_correl_coeff(stet_truepositives.size,
-                                         stet_truenegatives.size,
-                                         stet_falsepositives.size,
-                                         stet_falsenegatives.size)
-
         # calculate inveta recall, precision, Matthews correl coeff
         inveta_recall = inveta_truepositives.size/(inveta_truepositives.size +
                                                inveta_falsenegatives.size)
@@ -338,31 +329,99 @@ def get_recovered_variables(simbasedir,
                                          inveta_falsenegatives.size)
 
 
+        # calculate the stats for combined intersect(stet,inveta) variable flags
+        intersect_recvars = np.intersect1d(
+            varthresh[magcol]['objectids_stetsonj_thresh_all_magbins'],
+            varthresh[magcol]['objectids_inveta_thresh_all_magbins']
+        )
+        intersect_recnonvars = np.setdiff1d(objectids, intersect_recvars)
+
+        intersect_truepositives = np.intersect1d(intersect_recvars,
+                                                 actualvars)
+        intersect_falsepositives = np.intersect1d(intersect_recvars,
+                                             actualnotvars)
+        intersect_truenegatives = np.intersect1d(intersect_recnonvars,
+                                            actualnotvars)
+        intersect_falsenegatives = np.intersect1d(intersect_recnonvars,
+                                             actualvars)
+
+        # calculate intersectson recall, precision, Matthews correl coeff
+        intersect_recall = (
+            intersect_truepositives.size/(intersect_truepositives.size +
+                                          intersect_falsenegatives.size)
+        )
+        intersect_precision = (
+            intersect_truepositives.size/(intersect_truepositives.size +
+                                          intersect_falsepositives.size)
+        )
+        intersect_mcc = matthews_correl_coeff(intersect_truepositives.size,
+                                              intersect_truenegatives.size,
+                                              intersect_falsepositives.size,
+                                              intersect_falsenegatives.size)
+
+        # calculate the stats for combined union(stet,inveta) variable flags
+        union_recvars = np.union1d(
+            varthresh[magcol]['objectids_stetsonj_thresh_all_magbins'],
+            varthresh[magcol]['objectids_inveta_thresh_all_magbins']
+        )
+        union_recnonvars = np.setdiff1d(objectids, union_recvars)
+
+        union_truepositives = np.union1d(union_recvars,
+                                         actualvars)
+        union_falsepositives = np.union1d(union_recvars,
+                                          actualnotvars)
+        union_truenegatives = np.union1d(union_recnonvars,
+                                         actualnotvars)
+        union_falsenegatives = np.union1d(union_recnonvars,
+                                          actualvars)
+
+        # calculate union recall, precision, Matthews correl coeff
+        union_recall = (
+            union_truepositives.size/(union_truepositives.size +
+                                      union_falsenegatives.size)
+        )
+        union_precision = (
+            union_truepositives.size/(union_truepositives.size +
+                                      union_falsepositives.size)
+        )
+        union_mcc = matthews_correl_coeff(union_truepositives.size,
+                                          union_truenegatives.size,
+                                          union_falsepositives.size,
+                                          union_falsenegatives.size)
+
         recdict[magcol] = {
+            # stetson J alone
             'stet_recoveredvars':stet_recoveredvars,
             'stet_truepositives':stet_truepositives,
             'stet_falsepositives':stet_falsepositives,
             'stet_truenegatives':stet_truenegatives,
             'stet_falsenegative':stet_falsenegatives,
-            'stet_tpfrac':stet_tpfrac,
-            'stet_fpfrac':stet_fpfrac,
-            'stet_tnfrac':stet_tnfrac,
-            'stet_fnfrac':stet_fnfrac,
-            'stet_recall':stet_recall,
             'stet_precision':stet_precision,
             'stet_mcc':stet_mcc,
+            # inveta alone
             'inveta_recoveredvars':inveta_recoveredvars,
             'inveta_truepositives':inveta_truepositives,
             'inveta_falsepositives':inveta_falsepositives,
             'inveta_truenegatives':inveta_truenegatives,
             'inveta_falsenegative':inveta_falsenegatives,
-            'inveta_tpfrac':inveta_tpfrac,
-            'inveta_fpfrac':inveta_fpfrac,
-            'inveta_tnfrac':inveta_tnfrac,
-            'inveta_fnfrac':inveta_fnfrac,
-            'inveta_recall':inveta_recall,
             'inveta_precision':inveta_precision,
             'inveta_mcc':inveta_mcc,
+            # intersect of stetson J and inveta
+            'intersect_recoveredvars':intersect_recvars,
+            'intersect_truepositives':intersect_truepositives,
+            'intersect_falsepositives':intersect_falsepositives,
+            'intersect_truenegatives':intersect_truenegatives,
+            'intersect_falsenegative':intersect_falsenegatives,
+            'intersect_precision':intersect_precision,
+            'intersect_mcc':intersect_mcc,
+            # union of stetson J and inveta
+            'union_recoveredvars':union_recvars,
+            'union_truepositives':union_truepositives,
+            'union_falsepositives':union_falsepositives,
+            'union_truenegatives':union_truenegatives,
+            'union_falsenegative':union_falsenegatives,
+            'union_precision':union_precision,
+            'union_mcc':union_mcc,
             'magbin_medians':varthresh[magcol]['binned_sdssr_median']
         }
 
@@ -374,7 +433,7 @@ def get_recovered_variables(simbasedir,
 def variable_index_gridsearch(simbasedir,
                               stetson_stdev_range=[1.0,20.0],
                               inveta_stdev_range=[1.0,20.0],
-                              dgrid=0.5):
+                              ngridpoints=10):
     '''This runs variability selection on all of the light curves in simbasedir.
 
     Reads the fakelcs-info.pkl in simbasedir to get:
@@ -408,3 +467,17 @@ def variable_index_gridsearch(simbasedir,
     simbasedir/fakevar-recovery.pkl.
 
     '''
+
+    stetson_grid = np.linspace(stetson_stdev_range[0],
+                               stetson_stdev_range[1],
+                               num=ngridpoints)
+    inveta_grid = np.linspace(inveta_stdev_range[0],
+                              inveta_stdev_range[1],
+                              num=ngridpoints)
+
+
+    # first, run just stet
+
+    # then, run just inveta
+
+    # finally, run a grid of (stet, inveta) and get results for union/intersect
