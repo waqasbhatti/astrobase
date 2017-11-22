@@ -258,8 +258,8 @@ def get_recovered_variables(simbasedir,
 
     # now get the true positives, false positives, true negatives, false
     # negatives, and calculate recall, precision, Matthews corr. coeff.
-    actualvars = objectids[isvariable]
-    actualnotvars = objectids[~isvariable]
+    actualvars = objectids[varflags]
+    actualnotvars = objectids[~varflags]
 
     # this is the output directory
     recdict = {'stetj_min_stdev':stetson_stdev_min,
