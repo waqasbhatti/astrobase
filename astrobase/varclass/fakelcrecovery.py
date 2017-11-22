@@ -262,10 +262,16 @@ def get_recovered_variables(simbasedir,
     actualnotvars = objectids[~varflags]
 
     # this is the output directory
-    recdict = {'stetj_min_stdev':stetson_stdev_min,
-               'inveta_min_stdev':inveta_stdev_min,
-               'actual_variables':actualvars,
-               'actual_nonvariables':actualnotvars}
+    recdict = {
+        'simbasedir':simbasedir,
+        'timecols':timecols,
+        'magcols':magcols,
+        'errcols':errcols,
+        'stetj_min_stdev':stetson_stdev_min,
+        'inveta_min_stdev':inveta_stdev_min,
+        'actual_variables':actualvars,
+        'actual_nonvariables':actualnotvars
+    }
 
 
     # FIXME: make this recovery fraction by magnitude bin!
