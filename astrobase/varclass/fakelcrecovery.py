@@ -571,18 +571,14 @@ def variable_index_gridsearch(simbasedir,
                      'simbasedir':os.path.abspath(simbasedir)}
 
     # launch parallel workers
+    LOGINFO('running grid-search for stetson J-inveta...')
+    pool = mp.Pool(ngridworkers)
+    tasks = [(simbasedir, gp) for gp in stet_inveta_grid]
+    gridresults = pool.map(varind_gridsearch_worker, tasks)
+    pool.close()
+    pool.join()
 
-    for magcol in magcols:
-
-        LOGINFO('running grid-search for %s stetson J-inveta...' % magcol)
-
-        pool = mp.Pool(ngridworkers)
-        tasks = [(simbasedir, gp) for gp in stet_inveta_grid]
-        gridresults = pool.map(varind_gridsearch_worker, tasks)
-        pool.close()
-        pool.join()
-
-        grid_results[magcol] = gridresults
+    grid_results['recovery'] = gridresults
 
     LOGINFO('done.')
     with open(os.path.join(simbasedir,'fakevar-recovery.pkl'),'wb') as outfd:
@@ -611,17 +607,19 @@ def plot_varind_gridsearch_results(gridresults):
 
     plotres = {'simbasedir':gridresults['simbasedir']}
 
+    recgrid = gridresults['recovery']
+
     for magcol in gridresults['magcols']:
 
-        intersect_mcc = np.array([x['intersect_mcc']
-                                  for x in gridresults[magcol]])
+        intersect_mcc = np.array([x[magcol]['intersect_mcc']
+                                  for x in recgrid])
         intersect_precision = np.array(
-            [x['intersect_precision']
-             for x in gridresults[magcol]]
+            [x[magcol]['intersect_precision']
+             for x in recgrid]
         )
         intersect_recall = np.array(
-            [x['intersect_recall']
-             for x in gridresults[magcol]]
+            [x[magcol]['intersect_recall']
+             for x in recgrid]
         )
 
         fig = plt.figure(figsize=(30,10))
