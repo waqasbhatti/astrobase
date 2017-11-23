@@ -639,15 +639,15 @@ def plot_varind_gridsearch_results(gridresults):
         inveta_mcc = np.array(
             [x[magcol]['inveta_mcc']
              for x in recgrid]
-        )[::gridresults['inveta_grid'].size]
+        )[:gridresults['inveta_grid'].size]
         inveta_precision = np.array(
             [x[magcol]['inveta_precision']
              for x in recgrid]
-        )[::gridresults['inveta_grid'].size]
+        )[:gridresults['inveta_grid'].size]
         inveta_recall = np.array(
             [x[magcol]['inveta_recall']
              for x in recgrid]
-        )[::gridresults['inveta_grid'].size]
+        )[:gridresults['inveta_grid'].size]
 
         fig = plt.figure(figsize=(6.4*3,4.8*3))
 
