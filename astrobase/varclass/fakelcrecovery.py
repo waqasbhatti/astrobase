@@ -638,7 +638,7 @@ def plot_varind_gridsearch_results(gridresults):
         plt.colorbar()
         plt.xlabel('stetson J stdev multiplier threshold')
         plt.ylabel('inveta multiplier threshold')
-        plt.title('precision for intersect(stetJ,inveta)')
+        plt.title('MCC for intersect(stetJ,inveta)')
 
         # make the precision grid plot
         plt.subplot(132)
@@ -649,7 +649,7 @@ def plot_varind_gridsearch_results(gridresults):
         plt.colorbar()
         plt.xlabel('stetson J stdev multiplier threshold')
         plt.ylabel('inveta multiplier threshold')
-        plt.title('MCC for intersect(stetJ,inveta)')
+        plt.title('precision for intersect(stetJ,inveta)')
 
         # make the recall grid plot
         plt.subplot(133)
