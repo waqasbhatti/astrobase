@@ -1142,8 +1142,6 @@ def parallel_varfeatures(lclist,
     if maxobjects:
         lclist = lclist[:maxobjects]
 
-    pool = mp.Pool(nworkers)
-
     tasks = [(x, outdir, timecols, magcols, errcols, mindet, lcformat)
              for x in lclist]
 
