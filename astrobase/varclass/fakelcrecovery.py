@@ -490,8 +490,8 @@ def varind_gridsearch_worker(task):
 
     try:
         res = get_recovered_variables(simbasedir,
-                                      min_stetj_stdev=gridpoint[0],
-                                      min_inveta_stdev=gridpoint[1])
+                                      stetson_stdev_min=gridpoint[0],
+                                      inveta_stdev_min=gridpoint[1])
         return res
     except:
         LOGEXCEPTION('failed to get info for %s' % gridpoint)
