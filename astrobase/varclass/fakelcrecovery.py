@@ -613,15 +613,15 @@ def plot_varind_gridsearch_results(gridresults):
 
     for magcol in gridresults['magcols']:
 
-        intersect_mcc = np.array([x[magcol]['intersect_mcc']
-                                  for x in gridresults['stet_inveta_results']])
+        intersect_mcc = np.array([x['intersect_mcc']
+                                  for x in gridresults[magcol]])
         intersect_precision = np.array(
-            [x[magcol]['intersect_precision']
-             for x in gridresults['stet_inveta_results']]
+            [x['intersect_precision']
+             for x in gridresults[magcol]]
         )
         intersect_recall = np.array(
-            [x[magcol]['intersect_recall']
-             for x in gridresults['stet_inveta_results']]
+            [x['intersect_recall']
+             for x in gridresults[magcol]]
         )
 
         fig = plt.figure(figsize=(30,10))
