@@ -1245,7 +1245,8 @@ def variability_threshold(featuresdir,
                           min_lcmad_stdev=5.0,
                           min_stetj_stdev=2.0,
                           min_iqr_stdev=2.0,
-                          min_inveta_stdev=2.0):
+                          min_inveta_stdev=2.0,
+                          verbose=True):
     '''This generates a list of objects with stetson J, IQR, and 1.0/eta
     above some threshold value to select them as potential variable stars.
 
@@ -1297,7 +1298,7 @@ def variability_threshold(featuresdir,
         }
 
         # fancy progress bar with tqdm if present
-        if TQDM:
+        if TQDM and verbose:
             listiterator = tqdm(pklist)
         else:
             listiterator = pklist
