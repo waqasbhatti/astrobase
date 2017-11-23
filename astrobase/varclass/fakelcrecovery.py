@@ -255,7 +255,8 @@ def get_recovered_variables(simbasedir,
                                              varthreshinfof,
                                              lcformat='fakelc',
                                              min_stetj_stdev=stetson_stdev_min,
-                                             min_inveta_stdev=inveta_stdev_min)
+                                             min_inveta_stdev=inveta_stdev_min,
+                                             verbose=False)
 
     # now get the true positives, false positives, true negatives, false
     # negatives, and calculate recall, precision, Matthews corr. coeff.
