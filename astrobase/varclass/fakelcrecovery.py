@@ -734,6 +734,7 @@ def plot_varind_gridsearch_results(gridresults):
         plt.ylabel('recall')
         plt.title('recall for inveta')
 
+        plt.subplots_adjust(hspace=0.3,wspace=0.3)
         plt.savefig(os.path.join(gridresults['simbasedir'],
                                  '%s-var-recoverygrid.png' % magcol),
                     dpi=100,bbox_inches='tight')
