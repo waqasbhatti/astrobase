@@ -623,44 +623,116 @@ def plot_varind_gridsearch_results(gridresults):
              for x in recgrid]
         )
 
-        fig = plt.figure(figsize=(6.4*2*3,4.8*2))
+        stet_mcc = np.array(
+            [x[magcol]['stet_mcc']
+             for x in recgrid]
+        )[::gridresults['stetson_grid'].size]
+        stet_precision = np.array(
+            [x[magcol]['stet_precision']
+             for x in recgrid]
+        )[::gridresults['stetson_grid'].size]
+        stet_recall = np.array(
+            [x[magcol]['stet_recall']
+             for x in recgrid]
+        )[::gridresults['stetson_grid'].size]
 
-        mcc_gz = intersect_mcc.reshape(gx.shape).T
-        precision_gz = intersect_precision.reshape(gx.shape).T
-        recall_gz = intersect_recall.reshape(gx.shape).T
+        inveta_mcc = np.array(
+            [x[magcol]['inveta_mcc']
+             for x in recgrid]
+        )[::gridresults['inveta_grid'].size]
+        inveta_precision = np.array(
+            [x[magcol]['inveta_precision']
+             for x in recgrid]
+        )[::gridresults['inveta_grid'].size]
+        inveta_recall = np.array(
+            [x[magcol]['inveta_recall']
+             for x in recgrid]
+        )[::gridresults['inveta_grid'].size]
 
-        plt.subplot(131)
+        fig = plt.figure(figsize=(6.4*3,4.8*3))
+
+        # FIRST ROW: intersect 2D plot
+
+        intersect_mcc_gz = intersect_mcc.reshape(gx.shape).T
+        intersect_precision_gz = intersect_precision.reshape(gx.shape).T
+        intersect_recall_gz = intersect_recall.reshape(gx.shape).T
+
+        plt.subplot(331)
         # make the mcc grid plot
-        plt.pcolormesh(gx, gy, mcc_gz,
+        plt.pcolormesh(gx, gy, intersect_mcc_gz,
                        cmap='RdBu',
-                       norm=mpc.LogNorm(vmin=mcc_gz.min(),
-                                        vmax=mcc_gz.max()))
+                       norm=mpc.LogNorm(vmin=intersect_mcc_gz.min(),
+                                        vmax=intersect_mcc_gz.max()))
         plt.colorbar()
         plt.xlabel('stetson J stdev multiplier threshold')
         plt.ylabel('inveta multiplier threshold')
         plt.title('MCC for intersect(stetJ,inveta)')
 
         # make the precision grid plot
-        plt.subplot(132)
-        plt.pcolormesh(gx, gy, precision_gz,
+        plt.subplot(332)
+        plt.pcolormesh(gx, gy, intersect_precision_gz,
                        cmap='RdBu',
-                       norm=mpc.LogNorm(vmin=precision_gz.min(),
-                                        vmax=precision_gz.max()))
+                       norm=mpc.LogNorm(vmin=intersect_precision_gz.min(),
+                                        vmax=intersect_precision_gz.max()))
         plt.colorbar()
         plt.xlabel('stetson J stdev multiplier threshold')
         plt.ylabel('inveta multiplier threshold')
         plt.title('precision for intersect(stetJ,inveta)')
 
         # make the recall grid plot
-        plt.subplot(133)
-        plt.pcolormesh(gx, gy, recall_gz,
+        plt.subplot(333)
+        plt.pcolormesh(gx, gy, intersect_recall_gz,
                        cmap='RdBu',
-                       norm=mpc.LogNorm(vmin=recall_gz.min(),
-                                        vmax=recall_gz.max()))
+                       norm=mpc.LogNorm(vmin=intersect_recall_gz.min(),
+                                        vmax=intersect_recall_gz.max()))
         plt.colorbar()
         plt.xlabel('stetson J stdev multiplier threshold')
         plt.ylabel('inveta multiplier threshold')
         plt.title('recall for intersect(stetJ,inveta)')
+
+        # SECOND ROW: Stetson J plot
+        plt.subplot(334)
+        plt.plot(gridresults['stetson_grid'],
+                 stet_mcc)
+        plt.xlabel('stetson J stdev multiplier threshold')
+        plt.ylabel('MCC')
+        plt.title('MCC for stetson J')
+
+        plt.subplot(335)
+        plt.plot(gridresults['stetson_grid'],
+                 stet_precision)
+        plt.xlabel('stetson J stdev multiplier threshold')
+        plt.ylabel('precision')
+        plt.title('precision for stetson J')
+
+        plt.subplot(336)
+        plt.plot(gridresults['stetson_grid'],
+                 stet_recall)
+        plt.xlabel('stetson J stdev multiplier threshold')
+        plt.ylabel('recall')
+        plt.title('recall for stetson J')
+
+        # THIRD ROW: inveta plot
+        plt.subplot(337)
+        plt.plot(gridresults['inveta_grid'],
+                 inveta_mcc)
+        plt.xlabel('inveta stdev multiplier threshold')
+        plt.ylabel('MCC')
+        plt.title('MCC for inveta')
+
+        plt.subplot(338)
+        plt.plot(gridresults['inveta_grid'],
+                 inveta_precision)
+        plt.xlabel('inveta stdev multiplier threshold')
+        plt.ylabel('precision')
+        plt.title('precision for inveta')
+
+        plt.subplot(339)
+        plt.plot(gridresults['stetson_grid'],
+                 inveta_recall)
+        plt.xlabel('inveta stdev multiplier threshold')
+        plt.ylabel('recall')
+        plt.title('recall for inveta')
 
         plt.savefig(os.path.join(gridresults['simbasedir'],
                                  '%s-var-recoverygrid.png' % magcol),
