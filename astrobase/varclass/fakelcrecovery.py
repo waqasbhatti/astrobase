@@ -553,9 +553,6 @@ def variable_index_gridsearch(simbasedir,
                               inveta_stdev_range[1],
                               num=ngridpoints)
 
-    grid_results = {}
-
-
     # generate the grid
     stet_inveta_grid = []
     for stet in stetson_grid:
@@ -563,24 +560,28 @@ def variable_index_gridsearch(simbasedir,
             grid_point = [stet, inveta]
             stet_inveta_grid.append(grid_point)
 
-    # launch parallel workers
-
-    LOGINFO('running grid-search for stetson J-inveta...')
-
-    pool = mp.Pool(ngridworkers)
-    tasks = [(simbasedir, gp) for gp in stet_inveta_grid]
-    gridresults = pool.map(varind_gridsearch_worker, tasks)
-    pool.close()
-    pool.join()
-
+    # the output dict
     grid_results =  {'stetson_grid':stetson_grid,
                      'inveta_grid':inveta_grid,
                      'stet_inveta_grid':stet_inveta_grid,
-                     'stet_inveta_results':gridresults,
                      'timecols':timecols,
                      'magcols':magcols,
                      'errcols':errcols,
                      'simbasedir':os.path.abspath(simbasedir)}
+
+    # launch parallel workers
+
+    for magcol in magcols:
+
+        LOGINFO('running grid-search for %s stetson J-inveta...' % magcol)
+
+        pool = mp.Pool(ngridworkers)
+        tasks = [(simbasedir, gp) for gp in stet_inveta_grid]
+        gridresults = pool.map(varind_gridsearch_worker, tasks)
+        pool.close()
+        pool.join()
+
+        grid_results[magcol] = gridresults
 
     LOGINFO('done.')
     with open(os.path.join(simbasedir,'fakevar-recovery.pkl'),'wb') as outfd:
