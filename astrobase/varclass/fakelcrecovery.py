@@ -623,7 +623,7 @@ def plot_varind_gridsearch_results(gridresults):
              for x in recgrid]
         )
 
-        fig = plt.figure(figsize=(30,10))
+        fig = plt.figure(figsize=(6.4*2*3,4.8*2))
 
         mcc_gz = intersect_mcc.reshape(gx.shape).T
         precision_gz = intersect_precision.reshape(gx.shape).T
