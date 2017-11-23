@@ -627,7 +627,8 @@ def plot_varind_gridsearch_results(gridresults):
         plt.subplot(131)
         # make the mcc grid plot
         plt.pcolormesh(gx, gy, intersect_mcc.reshape(gx.shape).T,
-                       vmin=0.0,vmax=1.0,cmap='RdBu')
+                       vmin=0.0,vmax=1.0,cmap='RdBu',
+                       aspect='equal')
         plt.colorbar()
         plt.xlabel('stetson J stdev multiplier threshold')
         plt.ylabel('inveta multiplier threshold')
@@ -635,7 +636,8 @@ def plot_varind_gridsearch_results(gridresults):
         # make the precision grid plot
         plt.subplot(132)
         plt.pcolormesh(gx, gy, intersect_precision.reshape(gx.shape).T,
-                       vmin=0.0,vmax=1.0,cmap='RdBu')
+                       vmin=0.0,vmax=1.0,cmap='RdBu',
+                       aspect='equal')
         plt.colorbar()
         plt.xlabel('stetson J stdev multiplier threshold')
         plt.ylabel('inveta multiplier threshold')
@@ -643,7 +645,8 @@ def plot_varind_gridsearch_results(gridresults):
         # make the recall grid plot
         plt.subplot(133)
         plt.pcolormesh(gx, gy, intersect_recall.reshape(gx.shape).T,
-                       vmin=0.0,vmax=1.0,cmap='RdBu')
+                       vmin=0.0,vmax=1.0,cmap='RdBu',
+                       aspect='equal')
         plt.colorbar()
         plt.xlabel('stetson J stdev multiplier threshold')
         plt.ylabel('inveta multiplier threshold')
@@ -653,42 +656,43 @@ def plot_varind_gridsearch_results(gridresults):
                     dpi=100,bbox_inches='tight')
         plt.close('all')
 
-        # find the max point of the arrays
-        best_mcc_ind = np.where(intersect_mcc == np.max(intersect_mcc))
-        best_mcc_stet, best_mcc_inveta = (
-            gridresults['stetson_grid'][best_mcc_ind],
-            gridresults['inveta_grid'][best_mcc_ind]
-        )
-        # find the max point of the arrays
-        best_recall_ind = np.where(
-            intersect_recall == np.max(intersect_recall)
-        )
-        best_recall_stet, best_recall_inveta = (
-            gridresults['stetson_grid'][best_recall_ind],
-            gridresults['inveta_grid'][best_recall_ind]
-        )
-        # find the max point of the arrays
-        best_precision_ind = np.where(
-            intersect_precision == np.max(intersect_precision)
-        )
-        best_precision_stet, best_precision_inveta = (
-            gridresults['stetson_grid'][best_precision_ind],
-            gridresults['inveta_grid'][best_precision_ind]
-        )
 
-        plotres[magcol] = {
-            'best_mcc':intersect_mcc[best_mcc_ind],
-            'best_mcc_stet':best_mcc_stet,
-            'best_mcc_inveta':best_mcc_inveta,
-            'best_precision':intersect_precision[best_precision_ind],
-            'best_precision_stet':best_precision_stet,
-            'best_precision_inveta':best_precision_inveta,
-            'best_recall':intersect_recall[best_recall_ind],
-            'best_recall_stet':best_recall_stet,
-            'best_recall_inveta':best_recall_inveta,
-            'grid_plot':os.path.join(gridresults['simbasedir'],
-                                     '%s-var-recoverygrid.png' % magcol),
-        }
+        # # find the max point of the arrays
+        # best_mcc_ind = np.where(intersect_mcc == np.max(intersect_mcc))
+        # best_mcc_stet, best_mcc_inveta = (
+        #     gridresults['stetson_grid'][best_mcc_ind],
+        #     gridresults['inveta_grid'][best_mcc_ind]
+        # )
+        # # find the max point of the arrays
+        # best_recall_ind = np.where(
+        #     intersect_recall == np.max(intersect_recall)
+        # )
+        # best_recall_stet, best_recall_inveta = (
+        #     gridresults['stetson_grid'][best_recall_ind],
+        #     gridresults['inveta_grid'][best_recall_ind]
+        # )
+        # # find the max point of the arrays
+        # best_precision_ind = np.where(
+        #     intersect_precision == np.max(intersect_precision)
+        # )
+        # best_precision_stet, best_precision_inveta = (
+        #     gridresults['stetson_grid'][best_precision_ind],
+        #     gridresults['inveta_grid'][best_precision_ind]
+        # )
+
+        # plotres[magcol] = {
+        #     'best_mcc':intersect_mcc[best_mcc_ind],
+        #     'best_mcc_stet':best_mcc_stet,
+        #     'best_mcc_inveta':best_mcc_inveta,
+        #     'best_precision':intersect_precision[best_precision_ind],
+        #     'best_precision_stet':best_precision_stet,
+        #     'best_precision_inveta':best_precision_inveta,
+        #     'best_recall':intersect_recall[best_recall_ind],
+        #     'best_recall_stet':best_recall_stet,
+        #     'best_recall_inveta':best_recall_inveta,
+        #     'grid_plot':os.path.join(gridresults['simbasedir'],
+        #                              '%s-var-recoverygrid.png' % magcol),
+        # }
 
 
     return plotres
