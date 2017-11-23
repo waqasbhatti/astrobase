@@ -494,6 +494,7 @@ def varind_gridsearch_worker(task):
                                       min_inveta_stdev=gridpoint[1])
         return res
     except:
+        LOGEXCEPTION('failed to get info for %s' % gridpoint)
         return None
 
 
