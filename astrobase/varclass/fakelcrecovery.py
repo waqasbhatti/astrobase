@@ -53,6 +53,7 @@ import scipy.interpolate as spi
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.colors as mpc
 
 from tqdm import tqdm
 
@@ -624,29 +625,36 @@ def plot_varind_gridsearch_results(gridresults):
 
         fig = plt.figure(figsize=(30,10))
 
+        mcc_gz = intersect_mcc.reshape(gx.shape).T
+        precision_gz = intersect_precision.reshape(gx.shape).T
+        recall_gz = intersect_recall.reshape(gx.shape).T
+
         plt.subplot(131)
         # make the mcc grid plot
-        plt.pcolormesh(gx, gy, intersect_mcc.reshape(gx.shape).T,
-                       vmin=0.0,vmax=1.0,cmap='RdBu',
-                       aspect='equal')
+        plt.pcolormesh(gx, gy, mcc_gz,
+                       cmap='RdBu',
+                       norm=mpc.LogNorm(vmin=mcc_gz.min(),
+                                        vmax=mcc_gz.max()))
         plt.colorbar()
         plt.xlabel('stetson J stdev multiplier threshold')
         plt.ylabel('inveta multiplier threshold')
 
         # make the precision grid plot
         plt.subplot(132)
-        plt.pcolormesh(gx, gy, intersect_precision.reshape(gx.shape).T,
-                       vmin=0.0,vmax=1.0,cmap='RdBu',
-                       aspect='equal')
+        plt.pcolormesh(gx, gy, precision_gz,
+                       cmap='RdBu',
+                       norm=mpc.LogNorm(vmin=precision_gz.min(),
+                                        vmax=precision_gz.max()))
         plt.colorbar()
         plt.xlabel('stetson J stdev multiplier threshold')
         plt.ylabel('inveta multiplier threshold')
 
         # make the recall grid plot
         plt.subplot(133)
-        plt.pcolormesh(gx, gy, intersect_recall.reshape(gx.shape).T,
-                       vmin=0.0,vmax=1.0,cmap='RdBu',
-                       aspect='equal')
+        plt.pcolormesh(gx, gy, recall_gz,
+                       cmap='RdBu',
+                       norm=mpc.LogNorm(vmin=recall_gz.min(),
+                                        vmax=recall_gz.max()))
         plt.colorbar()
         plt.xlabel('stetson J stdev multiplier threshold')
         plt.ylabel('inveta multiplier threshold')
