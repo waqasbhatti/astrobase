@@ -201,7 +201,8 @@ def matthews_correl_coeff(ntp, ntn, nfp, nfn):
 
 def get_recovered_variables(simbasedir,
                             stetson_stdev_min=2.0,
-                            inveta_stdev_min=2.0):
+                            inveta_stdev_min=2.0,
+                            statsonly=True):
     '''This runs variability selection for LCs in simbasedir and gets recovery
     stats.
 
@@ -389,46 +390,91 @@ def get_recovered_variables(simbasedir,
                                           union_falsepositives.size,
                                           union_falsenegatives.size)
 
-        recdict[magcol] = {
-            # stetson J alone
-            'stet_recoveredvars':stet_recoveredvars,
-            'stet_truepositives':stet_truepositives,
-            'stet_falsepositives':stet_falsepositives,
-            'stet_truenegatives':stet_truenegatives,
-            'stet_falsenegative':stet_falsenegatives,
-            'stet_precision':stet_precision,
-            'stet_recall':stet_recall,
-            'stet_mcc':stet_mcc,
-            # inveta alone
-            'inveta_recoveredvars':inveta_recoveredvars,
-            'inveta_truepositives':inveta_truepositives,
-            'inveta_falsepositives':inveta_falsepositives,
-            'inveta_truenegatives':inveta_truenegatives,
-            'inveta_falsenegative':inveta_falsenegatives,
-            'inveta_precision':inveta_precision,
-            'inveta_recall':inveta_recall,
-            'inveta_mcc':inveta_mcc,
-            # intersect of stetson J and inveta
-            'intersect_recoveredvars':intersect_recvars,
-            'intersect_truepositives':intersect_truepositives,
-            'intersect_falsepositives':intersect_falsepositives,
-            'intersect_truenegatives':intersect_truenegatives,
-            'intersect_falsenegative':intersect_falsenegatives,
-            'intersect_precision':intersect_precision,
-            'intersect_recall':intersect_recall,
-            'intersect_mcc':intersect_mcc,
-            # union of stetson J and inveta
-            'union_recoveredvars':union_recvars,
-            'union_truepositives':union_truepositives,
-            'union_falsepositives':union_falsepositives,
-            'union_truenegatives':union_truenegatives,
-            'union_falsenegative':union_falsenegatives,
-            'union_precision':union_precision,
-            'union_recall':union_recall,
-            'union_mcc':union_mcc,
-            'magbin_medians':varthresh[magcol]['binned_sdssr_median']
-        }
+        if not statsonly:
 
+            recdict[magcol] = {
+                # stetson J alone
+                'stet_recoveredvars':stet_recoveredvars,
+                'stet_truepositives':stet_truepositives,
+                'stet_falsepositives':stet_falsepositives,
+                'stet_truenegatives':stet_truenegatives,
+                'stet_falsenegatives':stet_falsenegatives,
+                'stet_precision':stet_precision,
+                'stet_recall':stet_recall,
+                'stet_mcc':stet_mcc,
+                # inveta alone
+                'inveta_recoveredvars':inveta_recoveredvars,
+                'inveta_truepositives':inveta_truepositives,
+                'inveta_falsepositives':inveta_falsepositives,
+                'inveta_truenegatives':inveta_truenegatives,
+                'inveta_falsenegatives':inveta_falsenegatives,
+                'inveta_precision':inveta_precision,
+                'inveta_recall':inveta_recall,
+                'inveta_mcc':inveta_mcc,
+                # intersect of stetson J and inveta
+                'intersect_recoveredvars':intersect_recvars,
+                'intersect_truepositives':intersect_truepositives,
+                'intersect_falsepositives':intersect_falsepositives,
+                'intersect_truenegatives':intersect_truenegatives,
+                'intersect_falsenegatives':intersect_falsenegatives,
+                'intersect_precision':intersect_precision,
+                'intersect_recall':intersect_recall,
+                'intersect_mcc':intersect_mcc,
+                # union of stetson J and inveta
+                'union_recoveredvars':union_recvars,
+                'union_truepositives':union_truepositives,
+                'union_falsepositives':union_falsepositives,
+                'union_truenegatives':union_truenegatives,
+                'union_falsenegatives':union_falsenegatives,
+                'union_precision':union_precision,
+                'union_recall':union_recall,
+                'union_mcc':union_mcc,
+                'magbin_medians':varthresh[magcol]['binned_sdssr_median']
+            }
+
+        # if statsonly is set, then we only return the numbers but not the
+        # arrays themselves
+        else:
+
+            recdict[magcol] = {
+                # stetson J alone
+                'stet_recoveredvars':stet_recoveredvars.size,
+                'stet_truepositives':stet_truepositives.size,
+                'stet_falsepositives':stet_falsepositives.size,
+                'stet_truenegatives':stet_truenegatives.size,
+                'stet_falsenegatives':stet_falsenegatives.size,
+                'stet_precision':stet_precision,
+                'stet_recall':stet_recall,
+                'stet_mcc':stet_mcc,
+                # inveta alone
+                'inveta_recoveredvars':inveta_recoveredvars.size,
+                'inveta_truepositives':inveta_truepositives.size,
+                'inveta_falsepositives':inveta_falsepositives.size,
+                'inveta_truenegatives':inveta_truenegatives.size,
+                'inveta_falsenegatives':inveta_falsenegatives.size,
+                'inveta_precision':inveta_precision,
+                'inveta_recall':inveta_recall,
+                'inveta_mcc':inveta_mcc,
+                # intersect of stetson J and inveta
+                'intersect_recoveredvars':intersect_recvars.size,
+                'intersect_truepositives':intersect_truepositives.size,
+                'intersect_falsepositives':intersect_falsepositives.size,
+                'intersect_truenegatives':intersect_truenegatives.size,
+                'intersect_falsenegatives':intersect_falsenegatives.size,
+                'intersect_precision':intersect_precision,
+                'intersect_recall':intersect_recall,
+                'intersect_mcc':intersect_mcc,
+                # union of stetson J and inveta
+                'union_recoveredvars':union_recvars.size,
+                'union_truepositives':union_truepositives.size,
+                'union_falsepositives':union_falsepositives.size,
+                'union_truenegatives':union_truenegatives.size,
+                'union_falsenegatives':union_falsenegatives.size,
+                'union_precision':union_precision,
+                'union_recall':union_recall,
+                'union_mcc':union_mcc,
+                'magbin_medians':varthresh[magcol]['binned_sdssr_median']
+            }
 
     return recdict
 
