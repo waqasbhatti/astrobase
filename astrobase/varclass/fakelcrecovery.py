@@ -200,12 +200,12 @@ def matthews_correl_coeff(ntp, ntn, nfp, nfn):
 
 
 
-def get_recovered_variables(simbasedir,
-                            stetson_stdev_min=2.0,
-                            inveta_stdev_min=2.0,
-                            statsonly=True):
+def get_overall_recovered_variables(simbasedir,
+                                    stetson_stdev_min=2.0,
+                                    inveta_stdev_min=2.0,
+                                    statsonly=True):
     '''This runs variability selection for LCs in simbasedir and gets recovery
-    stats.
+    stats for the overall sample (i.e. over all magbins).
 
     returns:
 
@@ -269,7 +269,7 @@ def get_recovered_variables(simbasedir,
     actualvars = objectids[varflags]
     actualnotvars = objectids[~varflags]
 
-    # this is the output directory
+    # this is the output dict
     recdict = {
         'simbasedir':simbasedir,
         'timecols':timecols,
@@ -281,9 +281,9 @@ def get_recovered_variables(simbasedir,
         'actual_nonvariables':actualnotvars
     }
 
-
-    # FIXME: make this recovery fraction by magnitude bin!
     for magcol in magcols:
+
+        magbins = varthresh[magcol]['binned_sdssr_median']
 
         # stetson recovered variables
         stet_recoveredvars = varthresh[magcol][
@@ -504,6 +504,7 @@ def get_recovered_variables(simbasedir,
     return recdict
 
 
+
 def varind_gridsearch_worker(task):
     '''
     This is a parallel grid seach worker for the function below.
@@ -513,7 +514,7 @@ def varind_gridsearch_worker(task):
     simbasedir, gridpoint = task
 
     try:
-        res = get_recovered_variables(simbasedir,
+        res = get_overall_recovered_variables(simbasedir,
                                       stetson_stdev_min=gridpoint[0],
                                       inveta_stdev_min=gridpoint[1])
         return res
@@ -862,3 +863,357 @@ def plot_varind_gridsearch_results(gridresults):
 
 
     return plotres
+
+
+
+def get_recovered_variables_for_magbin(simbasedir,
+                                       magbinmedian,
+                                       stetson_stdev_min=2.0,
+                                       inveta_stdev_min=2.0,
+                                       statsonly=True):
+    '''This runs variability selection for the given magbinmedian.
+
+    magbinmedian is an item from the fakelcs-info.pkl's
+    fakelcinfo['magrms'][magcol] list for each magcol and designates which
+    magbin to get the recovery stats for.
+
+    To generate a full recovery matrix, run this function for each magbin over
+    the specified stetson_stdev_min and inveta_stdev_min grid.
+
+    '''
+
+
+    # get the info from the simbasedir
+    with open(os.path.join(simbasedir, 'fakelcs-info.pkl'),'rb') as infd:
+        siminfo = pickle.load(infd)
+
+    lcfpaths = siminfo['lcfpath']
+    objectids = siminfo['objectid']
+    varflags = siminfo['isvariable']
+    sdssr = siminfo['sdssr']
+    ndet = siminfo['ndet']
+
+    # get the column defs for the fakelcs
+    timecols = siminfo['timecols']
+    magcols = siminfo['magcols']
+    errcols = siminfo['errcols']
+
+    # get the actual variables and non-variables
+    actualvars = objectids[varflags]
+    actualnotvars = objectids[~varflags]
+
+    # register the fakelc pklc as a custom lcproc format
+    # now we should be able to use all lcproc functions correctly
+    if 'fakelc' not in lcproc.LCFORM:
+
+        lcproc.register_custom_lcformat(
+            'fakelc',
+            '*-fakelc.pkl',
+            lcproc.read_pklc,
+            timecols,
+            magcols,
+            errcols,
+            magsarefluxes=False,
+            specialnormfunc=None
+        )
+
+    # make the output directory if it doesn't exit
+    outdir = os.path.join(simbasedir, 'recvar-threshold-pkls')
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+
+
+    # run the variability search
+    varfeaturedir = os.path.join(simbasedir, 'varfeatures')
+    varthreshinfof = os.path.join(
+        outdir,
+        'varthresh-magbinmed%.2f-stet%.2f-inveta%.2f.pkl' % (magbinmed,
+                                                             stetson_stdev_min,
+                                                             inveta_stdev_min)
+    )
+    varthresh = lcproc.variability_threshold(varfeaturedir,
+                                             varthreshinfof,
+                                             lcformat='fakelc',
+                                             min_stetj_stdev=stetson_stdev_min,
+                                             min_inveta_stdev=inveta_stdev_min,
+                                             verbose=False)
+
+    # get the magbins from the varthresh info
+    magbins = varthresh['magbins']
+
+    # get the magbininds
+    magbininds = np.digitize(sdssr, magbins)
+
+    # bin the objects according to these magbins
+    binned_objectids = []
+    binned_actualvars = []
+    binned_actualnotvars = []
+
+    # go through all the mag bins and bin up the objectids, actual variables,
+    # and actual not-variables
+    for mbinind, magi in zip(np.unique(magbininds),
+                             range(len(magbins)-1)):
+
+        thisbinind = np.where(magbininds == mbinind)
+
+        thisbin_objectids = objectids[thisbinind]
+        thisbin_varflags = varflags[thisbinind]
+
+        thisbin_actualvars = thisbin_objectids[thisbin_varflags]
+        thisbin_actualnotvars = thisbin_objectids[~thisbin_varflags]
+
+        binned_objectids.append(thisbin_objectids)
+        binned_actualvars.append(thisbin_actualvars)
+        binned_actualnotvars.append(thisbin_actualnotvars)
+
+
+    # this is the index of the matching magnitude bin for the magbinmedian
+    # provided
+    magbinind = np.where(
+        varthresh[magcol]['binned_sdssr_median'] == magbinmedian
+    )
+
+    # this is the output dict
+    recdict = {
+        'simbasedir':simbasedir,
+        'timecols':timecols,
+        'magcols':magcols,
+        'errcols':errcols,
+        'stetj_min_stdev':stetson_stdev_min,
+        'inveta_min_stdev':inveta_stdev_min,
+        'actual_variables':binned_actualvars[magbinind],
+        'actual_nonvariables':binned_actualnotvars[magbinind],
+        'all_objectids':binned_objectids[magbinind],
+        'magbinmedian':magbinmedian,
+        'magbinind':magbinind
+    }
+
+
+    # now, for each magcol, find the magbin corresponding to magbinmedian, and
+    # get its stats
+    for magcol in magcols:
+
+        # get the objectids, actual vars and actual notvars in this magbin
+        thisbin_objectids = binned_objectids[magbinind]
+        thisbin_actualvars = binned_actualvars[magbinind]
+        thisbin_actualnotvars = binned_actualnotvars[magbinind]
+
+        # stetson recovered variables in this magbin
+        stet_recoveredvars = varthresh[magcol][
+            'binned_objectids_thresh_stetsonj'
+        ][magbinind]
+
+        # calculate TP, FP, TN, FN
+        stet_recoverednotvars = np.setdiff1d(thisbin_objectids,
+                                             stet_recoveredvars)
+
+        stet_truepositives = np.intersect1d(stet_recoveredvars,
+                                            thisbin_actualvars)
+        stet_falsepositives = np.intersect1d(stet_recoveredvars,
+                                             thisbin_actualnotvars)
+        stet_truenegatives = np.intersect1d(stet_recoverednotvars,
+                                            thisbin_actualnotvars)
+        stet_falsenegatives = np.intersect1d(stet_recoverednotvars,
+                                             thisbin_actualvars)
+
+        # calculate stetson recall, precision, Matthews correl coeff
+        stet_recall = stet_truepositives.size/(stet_truepositives.size +
+                                               stet_falsenegatives.size)
+        stet_precision = stet_truepositives.size/(stet_truepositives.size +
+                                                  stet_falsepositives.size)
+        stet_mcc = matthews_correl_coeff(stet_truepositives.size,
+                                         stet_truenegatives.size,
+                                         stet_falsepositives.size,
+                                         stet_falsenegatives.size)
+
+
+        # inveta recovered variables in this magbin
+        inveta_recoveredvars = varthresh[magcol][
+            'binned_objectids_thresh_inveta'
+        ][magbinind]
+        inveta_recoverednotvars = np.setdiff1d(thisbin_objectids,
+                                               inveta_recoveredvars)
+
+        inveta_truepositives = np.intersect1d(inveta_recoveredvars,
+                                              thisbin_actualvars)
+        inveta_falsepositives = np.intersect1d(inveta_recoveredvars,
+                                               thisbin_actualnotvars)
+        inveta_truenegatives = np.intersect1d(inveta_recoverednotvars,
+                                              thisbin_actualnotvars)
+        inveta_falsenegatives = np.intersect1d(inveta_recoverednotvars,
+                                               thisbin_actualvars)
+
+        # calculate inveta recall, precision, Matthews correl coeff
+        inveta_recall = inveta_truepositives.size/(inveta_truepositives.size +
+                                               inveta_falsenegatives.size)
+        inveta_precision = inveta_truepositives.size/(inveta_truepositives.size +
+                                                      inveta_falsepositives.size)
+        inveta_mcc = matthews_correl_coeff(inveta_truepositives.size,
+                                         inveta_truenegatives.size,
+                                         inveta_falsepositives.size,
+                                         inveta_falsenegatives.size)
+
+
+        # calculate the stats for combined intersect(stet,inveta) variable flags
+        intersect_recvars = np.intersect1d(stet_recoveredvars,
+                                           inveta_recoveredvars)
+        intersect_recnonvars = np.setdiff1d(thisbin_objectids,
+                                            intersect_recvars)
+
+        intersect_truepositives = np.intersect1d(intersect_recvars,
+                                                 thisbin_actualvars)
+        intersect_falsepositives = np.intersect1d(intersect_recvars,
+                                                  thisbin_actualnotvars)
+        intersect_truenegatives = np.intersect1d(intersect_recnonvars,
+                                                 thisbin_actualnotvars)
+        intersect_falsenegatives = np.intersect1d(intersect_recnonvars,
+                                                  thisbin_actualvars)
+
+        # calculate intersectson recall, precision, Matthews correl coeff
+        intersect_recall = (
+            intersect_truepositives.size/(intersect_truepositives.size +
+                                          intersect_falsenegatives.size)
+        )
+        intersect_precision = (
+            intersect_truepositives.size/(intersect_truepositives.size +
+                                          intersect_falsepositives.size)
+        )
+        intersect_mcc = matthews_correl_coeff(intersect_truepositives.size,
+                                              intersect_truenegatives.size,
+                                              intersect_falsepositives.size,
+                                              intersect_falsenegatives.size)
+
+        # calculate the stats for combined union(stet,inveta) variable flags
+        union_recvars = np.union1d(stet_recoveredvars,
+                                   inveta_recoveredvars)
+        union_recnonvars = np.setdiff1d(thisbin_objectids, union_recvars)
+
+        union_truepositives = np.union1d(union_recvars,
+                                         thisbin_actualvars)
+        union_falsepositives = np.union1d(union_recvars,
+                                          thisbin_actualnotvars)
+        union_truenegatives = np.union1d(union_recnonvars,
+                                         thisbin_actualnotvars)
+        union_falsenegatives = np.union1d(union_recnonvars,
+                                          thisbin_actualvars)
+
+        # calculate union recall, precision, Matthews correl coeff
+        union_recall = (
+            union_truepositives.size/(union_truepositives.size +
+                                      union_falsenegatives.size)
+        )
+        union_precision = (
+            union_truepositives.size/(union_truepositives.size +
+                                      union_falsepositives.size)
+        )
+        union_mcc = matthews_correl_coeff(union_truepositives.size,
+                                          union_truenegatives.size,
+                                          union_falsepositives.size,
+                                          union_falsenegatives.size)
+
+
+        # calculate the items missed by one method but found by the other method
+        stet_missed_inveta_found = np.setdiff1d(inveta_truepositives,
+                                                stet_truepositives)
+        inveta_missed_stet_found = np.setdiff1d(stet_truepositives,
+                                                inveta_truepositives)
+
+
+        if not statsonly:
+
+            recdict[magcol] = {
+                # stetson J alone
+                'stet_recoveredvars':stet_recoveredvars,
+                'stet_truepositives':stet_truepositives,
+                'stet_falsepositives':stet_falsepositives,
+                'stet_truenegatives':stet_truenegatives,
+                'stet_falsenegatives':stet_falsenegatives,
+                'stet_precision':stet_precision,
+                'stet_recall':stet_recall,
+                'stet_mcc':stet_mcc,
+                # inveta alone
+                'inveta_recoveredvars':inveta_recoveredvars,
+                'inveta_truepositives':inveta_truepositives,
+                'inveta_falsepositives':inveta_falsepositives,
+                'inveta_truenegatives':inveta_truenegatives,
+                'inveta_falsenegatives':inveta_falsenegatives,
+                'inveta_precision':inveta_precision,
+                'inveta_recall':inveta_recall,
+                'inveta_mcc':inveta_mcc,
+                # intersect of stetson J and inveta
+                'intersect_recoveredvars':intersect_recvars,
+                'intersect_truepositives':intersect_truepositives,
+                'intersect_falsepositives':intersect_falsepositives,
+                'intersect_truenegatives':intersect_truenegatives,
+                'intersect_falsenegatives':intersect_falsenegatives,
+                'intersect_precision':intersect_precision,
+                'intersect_recall':intersect_recall,
+                'intersect_mcc':intersect_mcc,
+                # union of stetson J and inveta
+                'union_recoveredvars':union_recvars,
+                'union_truepositives':union_truepositives,
+                'union_falsepositives':union_falsepositives,
+                'union_truenegatives':union_truenegatives,
+                'union_falsenegatives':union_falsenegatives,
+                'union_precision':union_precision,
+                'union_recall':union_recall,
+                'union_mcc':union_mcc,
+                # true positive variables missed by one method but picked up by
+                # the other
+                'stet_missed_inveta_found':stet_missed_inveta_found,
+                'inveta_missed_stet_found':inveta_missed_stet_found,
+            }
+
+        # if statsonly is set, then we only return the numbers but not the
+        # arrays themselves
+        else:
+
+            recdict[magcol] = {
+                # stetson J alone
+                'stet_recoveredvars':stet_recoveredvars.size,
+                'stet_truepositives':stet_truepositives.size,
+                'stet_falsepositives':stet_falsepositives.size,
+                'stet_truenegatives':stet_truenegatives.size,
+                'stet_falsenegatives':stet_falsenegatives.size,
+                'stet_precision':stet_precision,
+                'stet_recall':stet_recall,
+                'stet_mcc':stet_mcc,
+                # inveta alone
+                'inveta_recoveredvars':inveta_recoveredvars.size,
+                'inveta_truepositives':inveta_truepositives.size,
+                'inveta_falsepositives':inveta_falsepositives.size,
+                'inveta_truenegatives':inveta_truenegatives.size,
+                'inveta_falsenegatives':inveta_falsenegatives.size,
+                'inveta_precision':inveta_precision,
+                'inveta_recall':inveta_recall,
+                'inveta_mcc':inveta_mcc,
+                # intersect of stetson J and inveta
+                'intersect_recoveredvars':intersect_recvars.size,
+                'intersect_truepositives':intersect_truepositives.size,
+                'intersect_falsepositives':intersect_falsepositives.size,
+                'intersect_truenegatives':intersect_truenegatives.size,
+                'intersect_falsenegatives':intersect_falsenegatives.size,
+                'intersect_precision':intersect_precision,
+                'intersect_recall':intersect_recall,
+                'intersect_mcc':intersect_mcc,
+                # union of stetson J and inveta
+                'union_recoveredvars':union_recvars.size,
+                'union_truepositives':union_truepositives.size,
+                'union_falsepositives':union_falsepositives.size,
+                'union_truenegatives':union_truenegatives.size,
+                'union_falsenegatives':union_falsenegatives.size,
+                'union_precision':union_precision,
+                'union_recall':union_recall,
+                'union_mcc':union_mcc,
+                # true positive variables missed by one method but picked up by
+                # the other
+                'stet_missed_inveta_found':stet_missed_inveta_found.size,
+                'inveta_missed_stet_found':inveta_missed_stet_found.size,
+            }
+
+
+    #
+    # done with per magcol
+    #
+
+    return recdict
