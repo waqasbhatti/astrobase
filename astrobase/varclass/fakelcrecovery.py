@@ -781,7 +781,7 @@ def plot_varind_gridsearch_results(gridresults):
 
         plt.subplot(3,4,12)
         plt.plot(gridresults['inveta_grid'],
-                 inveta_missed_stetson_found)
+                 inveta_missed_stet_found)
         plt.xlabel('inveta stdev multiplier threshold')
         plt.ylabel('# objects inveta missed but stetson found')
         plt.title('inveta missed, stetson J found')
