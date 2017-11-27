@@ -791,7 +791,7 @@ def plot_varind_gridsearch_results(gridresults):
 
         plotres[magcol] = {
             # stetson
-            'stet_grid':gridresult['stetson_grid'],
+            'stet_grid':gridresults['stetson_grid'],
             'stet_mcc':stet_mcc,
             'stet_precision':stet_precision,
             'stet_recall':stet_recall,
@@ -802,7 +802,7 @@ def plot_varind_gridsearch_results(gridresults):
             'best_stet_recall':best_stet_recall,
             'stet_with_best_recall':stet_with_best_recall,
             # inveta
-            'inveta_grid':gridresult['inveta_grid'],
+            'inveta_grid':gridresults['inveta_grid'],
             'inveta_mcc':inveta_mcc,
             'inveta_precision':inveta_precision,
             'inveta_recall':inveta_recall,
