@@ -927,7 +927,7 @@ def get_recovered_variables_for_magbin(simbasedir,
     varfeaturedir = os.path.join(simbasedir, 'varfeatures')
     varthreshinfof = os.path.join(
         outdir,
-        'varthresh-magbinmed%.2f-stet%.2f-inveta%.2f.pkl' % (magbinmed,
+        'varthresh-magbinmed%.2f-stet%.2f-inveta%.2f.pkl' % (magbinmedian,
                                                              stetson_stdev_min,
                                                              inveta_stdev_min)
     )
