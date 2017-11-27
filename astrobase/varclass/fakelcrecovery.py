@@ -1214,9 +1214,9 @@ def get_recovered_variables_for_magbin(simbasedir,
                 'stet_missed_inveta_found':stet_missed_inveta_found.size,
                 'inveta_missed_stet_found':inveta_missed_stet_found.size,
                 # bin info
-                'actual_variables':thisbin_actualvars,
-                'actual_nonvariables':thisbin_actualnotvars,
-                'all_objectids':thisbin_objectids,
+                'actual_variables':thisbin_actualvars.size,
+                'actual_nonvariables':thisbin_actualnotvars.size,
+                'all_objectids':thisbin_objectids.size,
                 'magbinind':magbinind,
             }
 
