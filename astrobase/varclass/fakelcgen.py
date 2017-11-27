@@ -49,7 +49,7 @@ import logging
 from datetime import datetime
 from traceback import format_exc
 from concurrent.futures import ProcessPoolExecutor
-from hashlib import md5
+from hashlib import md5, sha512
 
 # to turn a list of keys into a dict address
 # from https://stackoverflow.com/a/14692747
@@ -1071,7 +1071,7 @@ def make_fakelc(lcfile,
         lcdict = lcdict[0]
 
     # set up the fakelcdict with a randomly assigned objectid
-    fakeobjectid = md5(npr.bytes(12)).hexdigest()[-8:]
+    fakeobjectid = sha512(npr.bytes(12)).hexdigest()[-8:]
     fakelcdict = {
         'objectid':fakeobjectid,
         'objectinfo':{'objectid':fakeobjectid},
