@@ -200,6 +200,10 @@ def matthews_correl_coeff(ntp, ntn, nfp, nfn):
 
 
 
+####################################
+## VARIABILITY RECOVERY (OVERALL) ##
+####################################
+
 def get_overall_recovered_variables(simbasedir,
                                     stetson_stdev_min=2.0,
                                     inveta_stdev_min=2.0,
@@ -866,6 +870,10 @@ def plot_varind_gridsearch_results(gridresults):
 
 
 
+#######################################
+## VARIABILITY RECOVERY (PER MAGBIN) ##
+#######################################
+
 def get_recovered_variables_for_magbin(simbasedir,
                                        magbinmedian,
                                        stetson_stdev_min=2.0,
@@ -1226,3 +1234,109 @@ def get_recovered_variables_for_magbin(simbasedir,
     #
 
     return recdict
+
+
+
+def magbin_varind_gridsearch_worker(task):
+    '''
+    This is a parallel grid search worker for the function below.
+
+    '''
+
+    simbasedir, gridpoint, magbinmedian = task
+
+    try:
+        res = get_recovered_variables_for_magbin(simbasedir,
+                                                 magbinmedian,
+                                                 stetson_stdev_min=gridpoint[0],
+                                                 inveta_stdev_min=gridpoint[1],
+                                                 statsonly=True)
+        return res
+    except:
+        LOGEXCEPTION('failed to get info for %s' % gridpoint)
+        return None
+
+
+
+def variable_index_gridsearch_per_magbin(simbasedir,
+                                         stetson_stdev_range=[1.0,20.0],
+                                         inveta_stdev_range=[1.0,20.0],
+                                         ngridpoints=50,
+                                         ngridworkers=None):
+    '''This runs a variable index grid search per magbin.
+
+    Similar to variable_index_gridsearch above.
+
+    Gets the magbin medians from the fakelcinfo.pkl's
+    dict['magrms'][magcols[0]['binned_sdssr_median'] value.
+
+    '''
+
+    # make the output directory where all the pkls from the variability
+    # threshold runs will go
+    outdir = os.path.join(simbasedir,'recvar-threshold-pkls')
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+
+    # get the info from the simbasedir
+    with open(os.path.join(simbasedir, 'fakelcs-info.pkl'),'rb') as infd:
+        siminfo = pickle.load(infd)
+
+    # get the column defs for the fakelcs
+    timecols = siminfo['timecols']
+    magcols = siminfo['magcols']
+    errcols = siminfo['errcols']
+
+    # get the magbinmedians to use for the recovery processing
+    magbinmedians = siminfo['magrms'][magcols[0]]['binned_sdssr_median']
+
+    # generate the grids for stetson and inveta
+    stetson_grid = np.linspace(stetson_stdev_range[0],
+                               stetson_stdev_range[1],
+                               num=ngridpoints)
+    inveta_grid = np.linspace(inveta_stdev_range[0],
+                              inveta_stdev_range[1],
+                              num=ngridpoints)
+
+    # generate the grid
+    stet_inveta_grid = []
+    for stet in stetson_grid:
+        for inveta in inveta_grid:
+            grid_point = [stet, inveta]
+            stet_inveta_grid.append(grid_point)
+
+    # the output dict
+    grid_results =  {'stetson_grid':stetson_grid,
+                     'inveta_grid':inveta_grid,
+                     'stet_inveta_grid':stet_inveta_grid,
+                     'magbinmedians':magbinmedians,
+                     'timecols':timecols,
+                     'magcols':magcols,
+                     'errcols':errcols,
+                     'simbasedir':os.path.abspath(simbasedir),
+                     'recovery':[]}
+
+
+    # set up the pool
+    pool = mp.Pool(ngridworkers)
+
+    # run the grid search per magbinmedian
+    for magbinmedian in magbinmedians:
+
+        LOGINFO('running stetson J-inveta grid-search '
+                'for magbinmedian = %.3f...' % magbinmedian)
+
+        tasks = [(simbasedir, gp, magbinmedian) for gp in stet_inveta_grid]
+        thisbin_results = pool.map(magbin_varind_gridsearch_worker, tasks)
+        grid_results['recovery'].append(thisbin_results)
+
+    pool.close()
+    pool.join()
+
+
+    LOGINFO('done.')
+    with open(os.path.join(simbasedir,
+                           'fakevar-recovery-per-magbin.pkl'),'wb') as outfd:
+        pickle.dump(grid_results,outfd,pickle.HIGHEST_PROTOCOL)
+
+    return grid_results
