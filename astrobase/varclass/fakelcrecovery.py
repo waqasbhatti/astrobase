@@ -986,8 +986,10 @@ def get_recovered_variables_for_magbin(simbasedir,
         # this is the index of the matching magnitude bin for the magbinmedian
         # provided
         magbinind = np.where(
-            varthresh[magcol]['binned_sdssr_median'] == magbinmedian
+            np.array(varthresh[magcol]['binned_sdssr_median']) == magbinmedian
         )
+
+        magbinind = np.asscalar(magbinind[0])
 
         # get the objectids, actual vars and actual notvars in this magbin
         thisbin_objectids = binned_objectids[magbinind]
