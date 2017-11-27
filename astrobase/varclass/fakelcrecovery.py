@@ -967,12 +967,6 @@ def get_recovered_variables_for_magbin(simbasedir,
         binned_actualnotvars.append(thisbin_actualnotvars)
 
 
-    # this is the index of the matching magnitude bin for the magbinmedian
-    # provided
-    magbinind = np.where(
-        varthresh[magcol]['binned_sdssr_median'] == magbinmedian
-    )
-
     # this is the output dict
     recdict = {
         'simbasedir':simbasedir,
@@ -985,13 +979,18 @@ def get_recovered_variables_for_magbin(simbasedir,
         'actual_nonvariables':binned_actualnotvars[magbinind],
         'all_objectids':binned_objectids[magbinind],
         'magbinmedian':magbinmedian,
-        'magbinind':magbinind
     }
 
 
     # now, for each magcol, find the magbin corresponding to magbinmedian, and
     # get its stats
     for magcol in magcols:
+
+        # this is the index of the matching magnitude bin for the magbinmedian
+        # provided
+        magbinind = np.where(
+            varthresh[magcol]['binned_sdssr_median'] == magbinmedian
+        )
 
         # get the objectids, actual vars and actual notvars in this magbin
         thisbin_objectids = binned_objectids[magbinind]
