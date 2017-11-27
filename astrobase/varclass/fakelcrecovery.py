@@ -399,10 +399,10 @@ def get_recovered_variables(simbasedir,
 
 
         # calculate the items missed by one method but found by the other method
-        stet_missed_inveta_found = np.diff1d(inveta_truepositives,
-                                             stet_truepositives)
-        inveta_missed_stet_found = np.diff1d(stet_truepositives,
-                                             inveta_truepositives)
+        stet_missed_inveta_found = np.setdiff1d(inveta_truepositives,
+                                                stet_truepositives)
+        inveta_missed_stet_found = np.setdiff1d(stet_truepositives,
+                                                inveta_truepositives)
 
 
         if not statsonly:
