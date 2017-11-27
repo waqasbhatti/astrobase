@@ -253,10 +253,9 @@ def get_recovered_variables(simbasedir,
     # run the variability search using the results of get_varfeatures
     varfeaturedir = os.path.join(simbasedir, 'varfeatures')
     varthreshinfof = os.path.join(
-        simbasedir,
-        os.path.join(outdir,
-                     'varthresh-stet%.2f-inveta%.2f.pkl' % (stetson_stdev_min,
-                                                            inveta_stdev_min))
+        outdir,
+        'varthresh-stet%.2f-inveta%.2f.pkl' % (stetson_stdev_min,
+                                               inveta_stdev_min)
     )
     varthresh = lcproc.variability_threshold(varfeaturedir,
                                              varthreshinfof,
