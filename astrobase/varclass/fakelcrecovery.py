@@ -245,12 +245,18 @@ def get_recovered_variables(simbasedir,
             specialnormfunc=None
         )
 
+    # make the output directory if it doesn't exit
+    outdir = os.path.join(simbasedir, 'recvar-threshold-pkls')
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+
     # run the variability search using the results of get_varfeatures
-    varfeaturedir = os.path.join(simbasedir,'varfeatures')
+    varfeaturedir = os.path.join(simbasedir, 'varfeatures')
     varthreshinfof = os.path.join(
         simbasedir,
-        'varthresh-stet%.2f-inveta%.2f.pkl' % (stetson_stdev_min,
-                                               inveta_stdev_min)
+        os.path.join(outdir,
+                     'varthresh-stet%.2f-inveta%.2f.pkl' % (stetson_stdev_min,
+                                                            inveta_stdev_min))
     )
     varthresh = lcproc.variability_threshold(varfeaturedir,
                                              varthreshinfof,
@@ -539,6 +545,12 @@ def variable_index_gridsearch(simbasedir,
 
     '''
 
+    # make the output directory where all the pkls from the variability
+    # threshold runs will go
+    outdir = os.path.join(simbasedir,'recvar-threshold-pkls')
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+
     # get the info from the simbasedir
     with open(os.path.join(simbasedir, 'fakelcs-info.pkl'),'rb') as infd:
         siminfo = pickle.load(infd)
@@ -728,7 +740,7 @@ def plot_varind_gridsearch_results(gridresults):
         plt.title('precision for inveta')
 
         plt.subplot(339)
-        plt.plot(gridresults['stetson_grid'],
+        plt.plot(gridresults['inveta_grid'],
                  inveta_recall)
         plt.xlabel('inveta stdev multiplier threshold')
         plt.ylabel('recall')
@@ -741,42 +753,70 @@ def plot_varind_gridsearch_results(gridresults):
         plt.close('all')
 
 
-        # # find the max point of the arrays
-        # best_mcc_ind = np.where(intersect_mcc == np.max(intersect_mcc))
-        # best_mcc_stet, best_mcc_inveta = (
-        #     gridresults['stetson_grid'][best_mcc_ind],
-        #     gridresults['inveta_grid'][best_mcc_ind]
-        # )
-        # # find the max point of the arrays
-        # best_recall_ind = np.where(
-        #     intersect_recall == np.max(intersect_recall)
-        # )
-        # best_recall_stet, best_recall_inveta = (
-        #     gridresults['stetson_grid'][best_recall_ind],
-        #     gridresults['inveta_grid'][best_recall_ind]
-        # )
-        # # find the max point of the arrays
-        # best_precision_ind = np.where(
-        #     intersect_precision == np.max(intersect_precision)
-        # )
-        # best_precision_stet, best_precision_inveta = (
-        #     gridresults['stetson_grid'][best_precision_ind],
-        #     gridresults['inveta_grid'][best_precision_ind]
-        # )
+        # get the best values of MCC, recall, precision and their associated
+        # stet, inveta
+        stet_mcc_maxind = np.where(stet_mcc == np.max(stet_mcc))
+        stet_precision_maxind = np.where(
+            stet_precision == np.max(stet_precision)
+        )
+        stet_recall_maxind = np.where(stet_recall == np.max(stet_recall))
 
-        # plotres[magcol] = {
-        #     'best_mcc':intersect_mcc[best_mcc_ind],
-        #     'best_mcc_stet':best_mcc_stet,
-        #     'best_mcc_inveta':best_mcc_inveta,
-        #     'best_precision':intersect_precision[best_precision_ind],
-        #     'best_precision_stet':best_precision_stet,
-        #     'best_precision_inveta':best_precision_inveta,
-        #     'best_recall':intersect_recall[best_recall_ind],
-        #     'best_recall_stet':best_recall_stet,
-        #     'best_recall_inveta':best_recall_inveta,
-        #     'grid_plot':os.path.join(gridresults['simbasedir'],
-        #                              '%s-var-recoverygrid.png' % magcol),
-        # }
+        best_stet_mcc = stet_mcc[stet_mcc_maxind]
+        best_stet_precision = stet_mcc[stet_precision_maxind]
+        best_stet_recall = stet_mcc[stet_recall_maxind]
+
+        stet_with_best_mcc = gridresults['stetson_grid'][stet_mcc_maxind]
+        stet_with_best_precision = gridresults['stetson_grid'][
+            stet_precision_maxind
+        ]
+        stet_with_best_recall = gridresults['stetson_grid'][stet_recall_maxind]
+
+
+        inveta_mcc_maxind = np.where(inveta_mcc == np.max(inveta_mcc))
+        inveta_precision_maxind = np.where(
+            inveta_precision == np.max(inveta_precision)
+        )
+        inveta_recall_maxind = np.where(inveta_recall == np.max(inveta_recall))
+
+        best_inveta_mcc = inveta_mcc[inveta_mcc_maxind]
+        best_inveta_precision = inveta_mcc[inveta_precision_maxind]
+        best_inveta_recall = inveta_mcc[inveta_recall_maxind]
+
+        inveta_with_best_mcc = gridresults['inveta_grid'][inveta_mcc_maxind]
+        inveta_with_best_precision = gridresults['inveta_grid'][
+            inveta_precision_maxind
+        ]
+        inveta_with_best_recall = gridresults['inveta_grid'][
+            inveta_recall_maxind
+        ]
+
+        plotres[magcol] = {
+            # stetson
+            'stet_grid':gridresult['stetson_grid'],
+            'stet_mcc':stet_mcc,
+            'stet_precision':stet_precision,
+            'stet_recall':stet_recall,
+            'best_stet_mcc':best_stet_mcc,
+            'stet_with_best_mcc':stet_with_best_mcc,
+            'best_stet_precision':best_stet_precision,
+            'stet_with_best_precision':stet_with_best_precision,
+            'best_stet_recall':best_stet_recall,
+            'stet_with_best_recall':stet_with_best_recall,
+            # inveta
+            'inveta_grid':gridresult['inveta_grid'],
+            'inveta_mcc':inveta_mcc,
+            'inveta_precision':inveta_precision,
+            'inveta_recall':inveta_recall,
+            'best_inveta_mcc':best_inveta_mcc,
+            'inveta_with_best_mcc':inveta_with_best_mcc,
+            'best_inveta_precision':best_inveta_precision,
+            'inveta_with_best_precision':inveta_with_best_precision,
+            'best_inveta_recall':best_inveta_recall,
+            'inveta_with_best_recall':inveta_with_best_recall,
+            # plot info
+            'recoveryplot':os.path.join(gridresults['simbasedir'],
+                                        '%s-var-recoverygrid.png' % magcol)
+        }
 
 
     return plotres
