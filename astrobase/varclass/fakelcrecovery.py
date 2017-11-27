@@ -134,9 +134,9 @@ def read_fakelc(fakelcfile):
 
 
 
-###########################
-## VARIABILITY FUNCTIONS ##
-###########################
+#######################
+## UTILITY FUNCTIONS ##
+#######################
 
 def get_varfeatures(simbasedir,
                     nworkers=None):
@@ -182,6 +182,32 @@ def get_varfeatures(simbasedir,
         pickle.dump(varinfo, outfd, pickle.HIGHEST_PROTOCOL)
 
     return os.path.join(simbasedir,'fakelc-varfeatures.pkl')
+
+
+
+def precision(ntp, nfp):
+    '''
+    This calculates the precision.
+
+    '''
+
+    if (ntp+nfp) > 0:
+        return ntp/(ntp+nfp)
+    else:
+        return np.nan
+
+
+
+def recall(ntp, nfn):
+    '''
+    This calculates the recall.
+
+    '''
+
+    if (ntp+nfn) > 0:
+        return ntp/(ntp+nfn)
+    else:
+        return np.nan
 
 
 
@@ -307,18 +333,12 @@ def get_overall_recovered_variables(simbasedir,
         stet_falsenegatives = np.intersect1d(stet_recoverednotvars,
                                              actualvars)
 
-        # calculate stetson recall, precision, Matthews correl coeff
-        if (stet_truepositives.size + stet_falsenegatives.size) > 0:
-            stet_recall = stet_truepositives.size/(stet_truepositives.size +
-                                                   stet_falsenegatives.size)
-        else:
-            stet_recall = np.nan
+        # calculate stet recall, precision, and MCC
+        stet_recall = recall(stet_truepositives.size,
+                             stet_falsenegatives.size)
 
-        if (stet_truepositives.size + stet_falsepositives.size) > 0:
-            stet_precision = stet_truepositives.size/(stet_truepositives.size +
-                                                      stet_falsepositives.size)
-        else:
-            stet_precision = np.nan
+        stet_precision = precision(stet_truepositives.size,
+                                   stet_falsepositives.size)
 
         stet_mcc = matthews_correl_coeff(stet_truepositives.size,
                                          stet_truenegatives.size,
@@ -342,23 +362,11 @@ def get_overall_recovered_variables(simbasedir,
                                                actualvars)
 
         # calculate inveta recall, precision, Matthews correl coeff
+        inveta_recall = recall(inveta_truepositives.size,
+                               inveta_falsenegatives.size)
 
-        if (inveta_truepositives.size + inveta_falsenegatives.size) > 0:
-            inveta_recall = (
-                inveta_truepositives.size/(inveta_truepositives.size +
-                                           inveta_falsenegatives.size)
-            )
-        else:
-            inveta_recall = np.nan
-
-        if (inveta_truepositives.size + inveta_falsepositives.size) > 0:
-            inveta_precision = (
-                inveta_truepositives.size/(inveta_truepositives.size +
-                                           inveta_falsepositives.size)
-            )
-        else:
-            inveta_precision = np.nan
-
+        inveta_precision = precision(inveta_truepositives.size,
+                                     inveta_falsepositives.size)
 
         inveta_mcc = matthews_correl_coeff(inveta_truepositives.size,
                                          inveta_truenegatives.size,
@@ -382,22 +390,12 @@ def get_overall_recovered_variables(simbasedir,
         intersect_falsenegatives = np.intersect1d(intersect_recnonvars,
                                              actualvars)
 
-        # calculate intersectson recall, precision, Matthews correl coeff
-        if (intersect_truepositives.size + intersect_falsenegatives.size) > 0:
-            intersect_recall = (
-                intersect_truepositives.size/(intersect_truepositives.size +
-                                              intersect_falsenegatives.size)
-            )
-        else:
-            intersect_recall = np.nan
+        # calculate intersection recall, precision, Matthews correl coeff
+        intersect_recall = recall(intersect_truepositives.size,
+                                  intersect_falsenegatives.size)
 
-        if (intersect_truepositives.size + intersect_falsepositives.size) > 0:
-            intersect_precision = (
-                intersect_truepositives.size/(intersect_truepositives.size +
-                                              intersect_falsepositives.size)
-            )
-        else:
-            intersect_precision = np.nan
+        intersect_precision = precision(intersect_truepositives.size,
+                                        intersect_falsepositives.size)
 
         intersect_mcc = matthews_correl_coeff(intersect_truepositives.size,
                                               intersect_truenegatives.size,
@@ -421,21 +419,11 @@ def get_overall_recovered_variables(simbasedir,
                                           actualvars)
 
         # calculate union recall, precision, Matthews correl coeff
-        if (union_truepositives.size + union_falsenegatives.size) > 0:
-            union_recall = (
-                union_truepositives.size/(union_truepositives.size +
-                                          union_falsenegatives.size)
-            )
-        else:
-            union_recall = np.nan
+        union_recall = recall(union_truepositives.size,
+                              union_falsenegatives.size)
 
-        if (union_truepositives.size + union_falsepositives.size) > 0:
-            union_precision = (
-                union_truepositives.size/(union_truepositives.size +
-                                          union_falsepositives.size)
-            )
-        else:
-            union_precision = np.nan
+        union_precision = precision(union_truepositives.size,
+                                    union_falsepositives.size)
 
         union_mcc = matthews_correl_coeff(union_truepositives.size,
                                           union_truenegatives.size,
@@ -1064,17 +1052,11 @@ def get_recovered_variables_for_magbin(simbasedir,
                                              thisbin_actualvars)
 
         # calculate stetson recall, precision, Matthews correl coeff
-        if (stet_truepositives.size + stet_falsenegatives.size) > 0:
-            stet_recall = stet_truepositives.size/(stet_truepositives.size +
-                                                   stet_falsenegatives.size)
-        else:
-            stet_recall = np.nan
+        stet_recall = recall(stet_truepositives.size,
+                             stet_falsenegatives.size)
 
-        if (stet_truepositives.size + stet_falsepositives.size) > 0:
-            stet_precision = stet_truepositives.size/(stet_truepositives.size +
-                                                      stet_falsepositives.size)
-        else:
-            stet_precision = np.nan
+        stet_precision = precision(stet_truepositives.size,
+                                   stet_falsepositives.size)
 
         stet_mcc = matthews_correl_coeff(stet_truepositives.size,
                                          stet_truenegatives.size,
@@ -1099,23 +1081,11 @@ def get_recovered_variables_for_magbin(simbasedir,
                                                thisbin_actualvars)
 
         # calculate inveta recall, precision, Matthews correl coeff
+        inveta_recall = recall(inveta_truepositives.size,
+                               inveta_falsenegatives.size)
 
-        if (inveta_truepositives.size + inveta_falsenegatives.size) > 0:
-            inveta_recall = (
-                inveta_truepositives.size/(inveta_truepositives.size +
-                                           inveta_falsenegatives.size)
-                )
-        else:
-            inveta_recall = np.nan
-
-
-        if (inveta_truepositives.size + inveta_falsepositives.size) > 0:
-            inveta_precision = (
-                inveta_truepositives.size/(inveta_truepositives.size +
-                                           inveta_falsepositives.size)
-            )
-        else:
-            inveta_precision = np.nan
+        inveta_precision = precision(inveta_truepositives.size,
+                                     inveta_falsepositives.size)
 
         inveta_mcc = matthews_correl_coeff(inveta_truepositives.size,
                                            inveta_truenegatives.size,
@@ -1138,22 +1108,12 @@ def get_recovered_variables_for_magbin(simbasedir,
         intersect_falsenegatives = np.intersect1d(intersect_recnonvars,
                                                   thisbin_actualvars)
 
-        # calculate intersectson recall, precision, Matthews correl coeff
-        if (intersect_truepositives.size + intersect_falsenegatives.size > 0):
-            intersect_recall = (
-                intersect_truepositives.size/(intersect_truepositives.size +
-                                              intersect_falsenegatives.size)
-            )
-        else:
-            intersect_recall = np.nan
+        # calculate intersection recall, precision, Matthews correl coeff
+        intersect_recall = recall(intersect_truepositives.size,
+                                  intersect_falsenegatives.size)
 
-        if (intersect_truepositives.size + intersect_falsepositives.size) > 0:
-            intersect_precision = (
-                intersect_truepositives.size/(intersect_truepositives.size +
-                                              intersect_falsepositives.size)
-            )
-        else:
-            intersect_precision = np.nan
+        intersect_precision = precision(intersect_truepositives.size,
+                                        intersect_falsepositives.size)
 
         intersect_mcc = matthews_correl_coeff(intersect_truepositives.size,
                                               intersect_truenegatives.size,
@@ -1175,21 +1135,11 @@ def get_recovered_variables_for_magbin(simbasedir,
                                           thisbin_actualvars)
 
         # calculate union recall, precision, Matthews correl coeff
-        if (union_truepositives.size + union_falsenegatives.size) > 0:
-            union_recall = (
-                union_truepositives.size/(union_truepositives.size +
-                                          union_falsenegatives.size)
-            )
-        else:
-            union_recall = np.nan
+        union_recall = recall(union_truepositives.size,
+                              union_falsenegatives.size)
 
-        if (union_truepositives.size + union_falsepositives.size) > 0:
-            union_precision = (
-                union_truepositives.size/(union_truepositives.size +
-                                          union_falsepositives.size)
-            )
-        else:
-            union_precision = np.nan
+        union_precision = precision(union_truepositives.size,
+                                    union_falsepositives.size)
 
         union_mcc = matthews_correl_coeff(union_truepositives.size,
                                           union_truenegatives.size,
