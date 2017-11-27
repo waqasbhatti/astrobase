@@ -975,9 +975,6 @@ def get_recovered_variables_for_magbin(simbasedir,
         'errcols':errcols,
         'stetj_min_stdev':stetson_stdev_min,
         'inveta_min_stdev':inveta_stdev_min,
-        'actual_variables':binned_actualvars[magbinind],
-        'actual_nonvariables':binned_actualnotvars[magbinind],
-        'all_objectids':binned_objectids[magbinind],
         'magbinmedian':magbinmedian,
     }
 
@@ -1161,6 +1158,12 @@ def get_recovered_variables_for_magbin(simbasedir,
                 # the other
                 'stet_missed_inveta_found':stet_missed_inveta_found,
                 'inveta_missed_stet_found':inveta_missed_stet_found,
+                # bin info
+                'actual_variables':thisbin_actualvars,
+                'actual_nonvariables':thisbin_actualnotvars,
+                'all_objectids':thisbin_objectids,
+                'magbinind':magbinind,
+
             }
 
         # if statsonly is set, then we only return the numbers but not the
@@ -1208,6 +1211,11 @@ def get_recovered_variables_for_magbin(simbasedir,
                 # the other
                 'stet_missed_inveta_found':stet_missed_inveta_found.size,
                 'inveta_missed_stet_found':inveta_missed_stet_found.size,
+                # bin info
+                'actual_variables':thisbin_actualvars,
+                'actual_nonvariables':thisbin_actualnotvars,
+                'all_objectids':thisbin_objectids,
+                'magbinind':magbinind,
             }
 
 
