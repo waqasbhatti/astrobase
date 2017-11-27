@@ -397,6 +397,14 @@ def get_recovered_variables(simbasedir,
                                           union_falsepositives.size,
                                           union_falsenegatives.size)
 
+
+        # calculate the items missed by one method but found by the other method
+        stet_missed_inveta_found = np.diff1d(inveta_truepositives,
+                                             stet_truepositives)
+        inveta_missed_stet_found = np.diff1d(stet_truepositives,
+                                             inveta_truepositives)
+
+
         if not statsonly:
 
             recdict[magcol] = {
@@ -436,6 +444,11 @@ def get_recovered_variables(simbasedir,
                 'union_precision':union_precision,
                 'union_recall':union_recall,
                 'union_mcc':union_mcc,
+                # true positive variables missed by one method but picked up by
+                # the other
+                'stet_missed_inveta_found':stet_missed_inveta_found,
+                'inveta_missed_stet_found':inveta_missed_stet_found,
+                # the medians to plot these items vs mag
                 'magbin_medians':varthresh[magcol]['binned_sdssr_median']
             }
 
@@ -480,6 +493,11 @@ def get_recovered_variables(simbasedir,
                 'union_precision':union_precision,
                 'union_recall':union_recall,
                 'union_mcc':union_mcc,
+                # true positive variables missed by one method but picked up by
+                # the other
+                'stet_missed_inveta_found':stet_missed_inveta_found.size,
+                'inveta_missed_stet_found':inveta_missed_stet_found.size,
+                # the medians to plot these items vs mag
                 'magbin_medians':varthresh[magcol]['binned_sdssr_median']
             }
 
