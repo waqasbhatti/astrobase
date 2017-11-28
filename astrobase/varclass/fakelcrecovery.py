@@ -1468,7 +1468,9 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                 plt.text(0.5,0.5,
                          'intersect(stet,inveta) MCC values are all nan '
                          'for this magbin',
-                         transform=plt.gca().transAxes)
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
                 plt.xticks([])
                 plt.yticks([])
 
@@ -1490,7 +1492,9 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                 plt.text(0.5,0.5,
                          'intersect(stet,inveta) precision values are all nan '
                          'for this magbin',
-                         transform=plt.gca().transAxes)
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
                 plt.xticks([])
                 plt.yticks([])
 
@@ -1512,7 +1516,9 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                 plt.text(0.5,0.5,
                          'intersect(stet,inveta) recall values are all nan '
                          'for this magbin',
-                         transform=plt.gca().transAxes)
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
                 plt.xticks([])
                 plt.yticks([])
 
@@ -1529,7 +1535,9 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                 plt.text(0.5,0.5,
                          'stet MCC values are all nan '
                          'for this magbin',
-                         transform=plt.gca().transAxes)
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
                 plt.xticks([])
                 plt.yticks([])
 
@@ -1544,7 +1552,9 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                 plt.text(0.5,0.5,
                          'stet precision values are all nan '
                          'for this magbin',
-                         transform=plt.gca().transAxes)
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
                 plt.xticks([])
                 plt.yticks([])
 
@@ -1559,7 +1569,9 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                 plt.text(0.5,0.5,
                          'stet recall values are all nan '
                          'for this magbin',
-                         transform=plt.gca().transAxes)
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
                 plt.xticks([])
                 plt.yticks([])
 
@@ -1574,7 +1586,9 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                 plt.text(0.5,0.5,
                          'stet-missed/inveta-found values are all nan '
                          'for this magbin',
-                         transform=plt.gca().transAxes)
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
                 plt.xticks([])
                 plt.yticks([])
 
@@ -1592,7 +1606,9 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                 plt.text(0.5,0.5,
                          'inveta MCC values are all nan '
                          'for this magbin',
-                         transform=plt.gca().transAxes)
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
                 plt.xticks([])
                 plt.yticks([])
 
@@ -1607,7 +1623,9 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                 plt.text(0.5,0.5,
                          'inveta precision values are all nan '
                          'for this magbin',
-                         transform=plt.gca().transAxes)
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
                 plt.xticks([])
                 plt.yticks([])
 
@@ -1622,7 +1640,9 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                 plt.text(0.5,0.5,
                          'inveta recall values are all nan '
                          'for this magbin',
-                         transform=plt.gca().transAxes)
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
                 plt.xticks([])
                 plt.yticks([])
 
@@ -1637,7 +1657,9 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                 plt.text(0.5,0.5,
                          'inveta-missed-stet-found values are all nan '
                          'for this magbin',
-                         transform=plt.gca().transAxes)
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
                 plt.xticks([])
                 plt.yticks([])
 
