@@ -1384,7 +1384,9 @@ def plot_varind_gridsearch_magbin_results(gridresults):
 
     for magcol in gridresults['magcols']:
 
-        plotres[magcol] = {}
+        plotres[magcol] = {'best_stetsonj':[],
+                           'best_inveta':[],
+                           'magbinmedians':gridresults['magbinmedians']}
 
         # go through all the magbins
         for magbinind, magbinmedian in enumerate(gridresults['magbinmedians']):
@@ -1749,25 +1751,15 @@ def plot_varind_gridsearch_magbin_results(gridresults):
 
             # if there are multiple stets, choose the smallest one
             if stet_with_best_mcc.size > 1:
-                LOGINFO('smallest stetson J stdev multiplier with best '
-                        'MCC for magbin: %.3f = %.3f' % (magbinmedian,
-                                                         stet_with_best_mcc[0]))
+                plotres[magcol]['best_stetsonj'].append(stet_with_best_mcc[0])
             elif stet_with_best_mcc.size > 0:
-                LOGINFO('stetson J stdev multiplier with best '
-                        'MCC for magbin: %.3f = %.3f' % (magbinmedian,
-                                                         stet_with_best_mcc[0]))
+                plotres[magcol]['best_stetsonj'].append(stet_with_best_mcc[0])
 
             # if there are multiple best invetas, choose the smallest one
             if inveta_with_best_mcc.size > 1:
-                LOGINFO('smallest inveta stdev multiplier with best '
-                        'MCC for magbin: %.3f = %.3f'
-                        % (magbinmedian,
-                           inveta_with_best_mcc[0]))
+                plotres[magcol]['best_inveta'].append(inveta_with_best_mcc[0])
             elif inveta_with_best_mcc.size > 0:
-                LOGINFO('inveta stdev multiplier with best '
-                        'MCC for magbin: %.3f = %.3f'
-                        % (magbinmedian,
-                           inveta_with_best_mcc[0]))
+                plotres[magcol]['best_inveta'].append(inveta_with_best_mcc[0])
 
 
 
@@ -1776,5 +1768,22 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                                   'varindex-gridsearch-magbin-results.pkl')
     with open(plotrespicklef, 'wb') as outfd:
         pickle.dump(plotres, outfd, pickle.HIGHEST_PROTOCOL)
+
+
+    # recommend the values of stetson J and inveta to use
+    for magcol in magcols:
+
+        LOGINFO('best stdev multipliers for each %s magbin:' % magcol)
+        LOGINFO('\nmagbin    inveta    stetson J\n')
+
+        for magbin in plotres[magcol]['magbinmedians']:
+            LOGINFO(
+                '%.3f    %.3f    %.3f' %
+                (magbin,
+                 plotres[magcol][magbin]['inveta_with_best_mcc'],
+                 plotres[magcol][magbin]['stet_with_best_mcc'])
+            )
+
+
 
     return plotres
