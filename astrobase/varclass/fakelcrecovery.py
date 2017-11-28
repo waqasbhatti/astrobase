@@ -1443,97 +1443,190 @@ def plot_varind_gridsearch_magbin_results(gridresults):
             intersect_precision_gz = intersect_precision.reshape(gx.shape).T
             intersect_recall_gz = intersect_recall.reshape(gx.shape).T
 
-            plt.subplot(3,4,1)
             # make the mcc grid plot
-            plt.pcolormesh(gx, gy, intersect_mcc_gz,
-                           cmap='RdBu',
-                           norm=mpc.LogNorm(vmin=intersect_mcc_gz.min(),
-                                            vmax=intersect_mcc_gz.max()))
-            plt.colorbar()
-            plt.xlabel('stetson J stdev multiplier threshold')
-            plt.ylabel('inveta multiplier threshold')
-            plt.title('MCC for intersect(stetJ,inveta)')
+            plt.subplot(3,4,1)
+            if np.any(np.isfinite(intersect_mcc_gz)):
+                plt.pcolormesh(gx, gy, intersect_mcc_gz,
+                               cmap='RdBu',
+                               norm=mpc.LogNorm(vmin=intersect_mcc_gz.min(),
+                                                vmax=intersect_mcc_gz.max()))
+                plt.colorbar()
+                plt.xlabel('stetson J stdev multiplier threshold')
+                plt.ylabel('inveta multiplier threshold')
+                plt.title('MCC for intersect(stetJ,inveta)')
+
+            else:
+                plt.text(0.5,0.5,
+                         'intersect(stet,inveta) MCC values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes)
+                plt.xticks([])
+                plt.yticks([])
 
             # make the precision grid plot
             plt.subplot(3,4,2)
-            plt.pcolormesh(gx, gy, intersect_precision_gz,
-                           cmap='RdBu',
-                           norm=mpc.LogNorm(vmin=intersect_precision_gz.min(),
-                                            vmax=intersect_precision_gz.max()))
-            plt.colorbar()
-            plt.xlabel('stetson J stdev multiplier threshold')
-            plt.ylabel('inveta multiplier threshold')
-            plt.title('precision for intersect(stetJ,inveta)')
+            if np.any(np.isfinite(intersect_precision_gz)):
+                plt.pcolormesh(
+                    gx, gy, intersect_precision_gz,
+                    cmap='RdBu',
+                    norm=mpc.LogNorm(vmin=intersect_precision_gz.min(),
+                                     vmax=intersect_precision_gz.max())
+                )
+                plt.colorbar()
+                plt.xlabel('stetson J stdev multiplier threshold')
+                plt.ylabel('inveta multiplier threshold')
+                plt.title('precision for intersect(stetJ,inveta)')
+            else:
+                plt.text(0.5,0.5,
+                         'intersect(stet,inveta) precision values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes)
+                plt.xticks([])
+                plt.yticks([])
 
             # make the recall grid plot
             plt.subplot(3,4,3)
-            plt.pcolormesh(gx, gy, intersect_recall_gz,
-                           cmap='RdBu',
-                           norm=mpc.LogNorm(vmin=intersect_recall_gz.min(),
-                                            vmax=intersect_recall_gz.max()))
-            plt.colorbar()
-            plt.xlabel('stetson J stdev multiplier threshold')
-            plt.ylabel('inveta multiplier threshold')
-            plt.title('recall for intersect(stetJ,inveta)')
+            if np.any(np.isfinite(intersect_recall_gz)):
+                plt.pcolormesh(gx, gy, intersect_recall_gz,
+                               cmap='RdBu',
+                               norm=mpc.LogNorm(vmin=intersect_recall_gz.min(),
+                                                vmax=intersect_recall_gz.max()))
+                plt.colorbar()
+                plt.xlabel('stetson J stdev multiplier threshold')
+                plt.ylabel('inveta multiplier threshold')
+                plt.title('recall for intersect(stetJ,inveta)')
+            else:
+                plt.text(0.5,0.5,
+                         'intersect(stet,inveta) recall values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes)
+                plt.xticks([])
+                plt.yticks([])
+
 
             # SECOND ROW: Stetson J plot
             plt.subplot(3,4,5)
-            plt.plot(gridresults['stetson_grid'],
-                     stet_mcc)
-            plt.xlabel('stetson J stdev multiplier threshold')
-            plt.ylabel('MCC')
-            plt.title('MCC for stetson J')
+            if np.any(np.isfinite(stet_mcc)):
+                plt.plot(gridresults['stetson_grid'],
+                         stet_mcc)
+                plt.xlabel('stetson J stdev multiplier threshold')
+                plt.ylabel('MCC')
+                plt.title('MCC for stetson J')
+            else:
+                plt.text(0.5,0.5,
+                         'stet MCC values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes)
+                plt.xticks([])
+                plt.yticks([])
 
             plt.subplot(3,4,6)
-            plt.plot(gridresults['stetson_grid'],
-                     stet_precision)
-            plt.xlabel('stetson J stdev multiplier threshold')
-            plt.ylabel('precision')
-            plt.title('precision for stetson J')
+            if np.any(np.isfinite(stet_precision)):
+                plt.plot(gridresults['stetson_grid'],
+                         stet_precision)
+                plt.xlabel('stetson J stdev multiplier threshold')
+                plt.ylabel('precision')
+                plt.title('precision for stetson J')
+            else:
+                plt.text(0.5,0.5,
+                         'stet precision values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes)
+                plt.xticks([])
+                plt.yticks([])
 
             plt.subplot(3,4,7)
-            plt.plot(gridresults['stetson_grid'],
-                     stet_recall)
-            plt.xlabel('stetson J stdev multiplier threshold')
-            plt.ylabel('recall')
-            plt.title('recall for stetson J')
+            if np.any(np.isfinite(stet_recall)):
+                plt.plot(gridresults['stetson_grid'],
+                         stet_recall)
+                plt.xlabel('stetson J stdev multiplier threshold')
+                plt.ylabel('recall')
+                plt.title('recall for stetson J')
+            else:
+                plt.text(0.5,0.5,
+                         'stet recall values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes)
+                plt.xticks([])
+                plt.yticks([])
 
             plt.subplot(3,4,8)
-            plt.plot(gridresults['stetson_grid'],
-                     stet_missed_inveta_found)
-            plt.xlabel('stetson J stdev multiplier threshold')
-            plt.ylabel('# objects stetson missed but inveta found')
-            plt.title('stetson J missed, inveta found')
+            if np.any(np.isfinite(stet_missed_inveta_found)):
+                plt.plot(gridresults['stetson_grid'],
+                         stet_missed_inveta_found)
+                plt.xlabel('stetson J stdev multiplier threshold')
+                plt.ylabel('# objects stetson missed but inveta found')
+                plt.title('stetson J missed, inveta found')
+            else:
+                plt.text(0.5,0.5,
+                         'stet-missed/inveta-found values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes)
+                plt.xticks([])
+                plt.yticks([])
 
 
             # THIRD ROW: inveta plot
+
             plt.subplot(3,4,9)
-            plt.plot(gridresults['inveta_grid'],
-                     inveta_mcc)
-            plt.xlabel('inveta stdev multiplier threshold')
-            plt.ylabel('MCC')
-            plt.title('MCC for inveta')
+            if np.any(np.isfinite(inveta_mcc)):
+                plt.plot(gridresults['inveta_grid'],
+                         inveta_mcc)
+                plt.xlabel('inveta stdev multiplier threshold')
+                plt.ylabel('MCC')
+                plt.title('MCC for inveta')
+            else:
+                plt.text(0.5,0.5,
+                         'inveta MCC values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes)
+                plt.xticks([])
+                plt.yticks([])
 
             plt.subplot(3,4,10)
-            plt.plot(gridresults['inveta_grid'],
-                     inveta_precision)
-            plt.xlabel('inveta stdev multiplier threshold')
-            plt.ylabel('precision')
-            plt.title('precision for inveta')
+            if np.any(np.isfinite(inveta_precision)):
+                plt.plot(gridresults['inveta_grid'],
+                         inveta_precision)
+                plt.xlabel('inveta stdev multiplier threshold')
+                plt.ylabel('precision')
+                plt.title('precision for inveta')
+            else:
+                plt.text(0.5,0.5,
+                         'inveta precision values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes)
+                plt.xticks([])
+                plt.yticks([])
 
             plt.subplot(3,4,11)
-            plt.plot(gridresults['inveta_grid'],
-                     inveta_recall)
-            plt.xlabel('inveta stdev multiplier threshold')
-            plt.ylabel('recall')
-            plt.title('recall for inveta')
+            if np.any(np.isfinite(inveta_recall)):
+                plt.plot(gridresults['inveta_grid'],
+                         inveta_recall)
+                plt.xlabel('inveta stdev multiplier threshold')
+                plt.ylabel('recall')
+                plt.title('recall for inveta')
+            else:
+                plt.text(0.5,0.5,
+                         'inveta recall values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes)
+                plt.xticks([])
+                plt.yticks([])
 
             plt.subplot(3,4,12)
-            plt.plot(gridresults['inveta_grid'],
-                     inveta_missed_stet_found)
-            plt.xlabel('inveta stdev multiplier threshold')
-            plt.ylabel('# objects inveta missed but stetson found')
-            plt.title('inveta missed, stetson J found')
+            if np.any(np.isfinite(inveta_missed_stet_found)):
+                plt.plot(gridresults['inveta_grid'],
+                         inveta_missed_stet_found)
+                plt.xlabel('inveta stdev multiplier threshold')
+                plt.ylabel('# objects inveta missed but stetson found')
+                plt.title('inveta missed, stetson J found')
+            else:
+                plt.text(0.5,0.5,
+                         'inveta-missed-stet-found values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes)
+                plt.xticks([])
+                plt.yticks([])
 
             plt.subplots_adjust(hspace=0.25,wspace=0.25)
 
