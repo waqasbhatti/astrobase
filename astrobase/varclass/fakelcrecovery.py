@@ -1618,9 +1618,28 @@ def plot_varind_gridsearch_magbin_results(gridresults):
             }
 
             # recommend inveta and stetson index for this magbin
-            LOGINFO('stetson J stdev multiplier with best '
-                    'MCC for magbin: %.3f = %.3f' % (magbinmedian,
-                                                     stet_with_best_mcc))
+
+            # if there are multiple stets, choose the smallest one
+            if stet_with_best_mcc.size > 1:
+                LOGINFO('smallest stetson J stdev multiplier with best '
+                        'MCC for magbin: %.3f = %.3f' % (magbinmedian,
+                                                         stet_with_best_mcc[0]))
+            else:
+                LOGINFO('stetson J stdev multiplier with best '
+                        'MCC for magbin: %.3f = %.3f' % (magbinmedian,
+                                                         stet_with_best_mcc[0]))
+
+            # if there are multiple best invetas, choose the smallest one
+            if inveta_with_best_mcc.size > 1:
+                LOGINFO('smallest inveta stdev multiplier with best '
+                        'MCC for magbin: %.3f = %.3f'
+                        % (magbinmedian,
+                           inveta_with_best_mcc[0]))
+            else:
+                LOGINFO('inveta stdev multiplier with best '
+                        'MCC for magbin: %.3f = %.3f'
+                        % (magbinmedian,
+                           inveta_with_best_mcc[0]))
 
 
 
