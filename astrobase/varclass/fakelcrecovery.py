@@ -1443,6 +1443,11 @@ def plot_varind_gridsearch_magbin_results(gridresults):
             intersect_precision_gz = intersect_precision.reshape(gx.shape).T
             intersect_recall_gz = intersect_recall.reshape(gx.shape).T
 
+            # get rid of 0.0 values because they mess up logs
+            intersect_mcc_gz[intersect_mcc_gz == 0.0] = 1.0e-3
+            intersect_recall_gz[intersect_recall_gz == 0.0] = 1.0e-3
+            intersect_precision_gz[intersect_precision_gz == 0.0] = 1.0e-3
+
             # make the mcc grid plot
             plt.subplot(3,4,1)
             if np.any(np.isfinite(intersect_mcc_gz) & (intersect_mcc_gz > 0.0)):
