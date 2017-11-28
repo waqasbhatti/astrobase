@@ -1513,6 +1513,11 @@ def variability_threshold(featuresdir,
                                    'for magbin: %.3f is nan, using 2.0' %
                                    thisbin_sdssr_median)
                         thisbin_min_stetj_stdev = 2.0
+                        # update the input list/array as well, since we'll be
+                        # saving it to the output dict and using it to plot the
+                        # variability thresholds
+                        min_stetj_stdev[magi] = 2.0
+
 
                     thisbin_objectids_thresh_stetsonj = thisbin_objectids[
                         thisbin_stetsonj > (
@@ -1546,7 +1551,10 @@ def variability_threshold(featuresdir,
                                    'for magbin: %.3f is nan, using 2.0' %
                                    thisbin_sdssr_median)
                         thisbin_min_iqr_stdev = 2.0
-
+                        # update the input list/array as well, since we'll be
+                        # saving it to the output dict and using it to plot the
+                        # variability thresholds
+                        min_iqr_stdev[magi] = 2.0
 
                     thisbin_objectids_thresh_iqr = thisbin_objectids[
                         thisbin_iqr > (thisbin_iqr_median +
@@ -1577,6 +1585,10 @@ def variability_threshold(featuresdir,
                                    'for magbin: %.3f is nan, using 2.0' %
                                    thisbin_sdssr_median)
                         thisbin_min_inveta_stdev = 2.0
+                        # update the input list/array as well, since we'll be
+                        # saving it to the output dict and using it to plot the
+                        # variability thresholds
+                        min_inveta_stdev[magi] = 2.0
 
                     thisbin_objectids_thresh_inveta = thisbin_objectids[
                         thisbin_inveta > (
@@ -1692,9 +1704,24 @@ def variability_threshold(featuresdir,
     #
 
     allobjects['magbins'] = magbins
-    allobjects['min_stetj_stdev'] = min_stetj_stdev
-    allobjects['min_iqr_stdev'] = min_iqr_stdev
-    allobjects['min_inveta_stdev'] = min_inveta_stdev
+
+    # turn these into np.arrays for easier plotting if they're lists
+    if isinstance(min_stetj_stdev, list):
+        allobjects['min_stetj_stdev'] = np.array(min_stetj_stdev)
+    else:
+        allobjects['min_stetj_stdev'] = min_stetj_stdev
+
+    if isinstance(min_iqr_stdev, list):
+        allobjects['min_iqr_stdev'] = np.array(min_iqr_stdev)
+    else:
+        allobjects['min_iqr_stdev'] = min_iqr_stdev
+
+    if isinstance(min_inveta_stdev, list):
+        allobjects['min_inveta_stdev'] = np.array(min_inveta_stdev)
+    else:
+        allobjects['min_inveta_stdev'] = min_inveta_stdev
+
+    # this one doesn't get touched (for now)
     allobjects['min_lcmad_stdev'] = min_lcmad_stdev
 
     with open(outfile,'wb') as outfd:
