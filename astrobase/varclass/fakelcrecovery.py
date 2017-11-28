@@ -1776,7 +1776,7 @@ def plot_varind_gridsearch_magbin_results(gridresults):
     for magcol in gridresults['magcols']:
 
         LOGINFO('best stdev multipliers for each %s magbin:' % magcol)
-        LOGINFO('\nmagbin    inveta    stetson J\n')
+        LOGINFO('magbin    inveta    stetson J')
 
         for magbin, inveta, stet in zip(plotres[magcol]['magbinmedians'],
                                         plotres[magcol]['best_inveta'],
