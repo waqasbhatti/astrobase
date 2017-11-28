@@ -1541,7 +1541,7 @@ def variability_threshold(featuresdir,
                       isinstance(min_iqr_stdev, list)):
 
                     thisbin_min_iqr_stdev = min_iqr_stdev[magi]
-                    if not np.isfinite(thisbin_min_stetj_stdev):
+                    if not np.isfinite(thisbin_min_iqr_stdev):
                         LOGWARNING('provided threshold IQR stdev '
                                    'for magbin: %.3f is nan, using 2.0' %
                                    thisbin_sdssr_median)
@@ -1572,7 +1572,7 @@ def variability_threshold(featuresdir,
                       isinstance(min_inveta_stdev, list)):
 
                     thisbin_min_inveta_stdev = min_inveta_stdev[magi]
-                    if not np.isfinite(thisbin_min_stetj_stdev):
+                    if not np.isfinite(thisbin_min_inveta_stdev):
                         LOGWARNING('provided threshold inveta stdev '
                                    'for magbin: %.3f is nan, using 2.0' %
                                    thisbin_sdssr_median)
