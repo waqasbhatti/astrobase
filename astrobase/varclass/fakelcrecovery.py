@@ -1773,7 +1773,7 @@ def plot_varind_gridsearch_magbin_results(gridresults):
 
 
     # recommend the values of stetson J and inveta to use
-    for magcol in magcols:
+    for magcol in gridresults['magcols']:
 
         LOGINFO('best stdev multipliers for each %s magbin:' % magcol)
         LOGINFO('\nmagbin    inveta    stetson J\n')
