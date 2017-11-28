@@ -652,16 +652,11 @@ def variable_index_gridsearch(simbasedir,
 
 
 
-def plot_varind_gridsearch_results(gridresults):
+def plot_varind_gridsearch_results(gridresults)
     '''
     This plots the results from variable_index_gridsearch above.
 
-    Also returns the (stet,inveta) combinations that maximize the MCC for:
-
-    - stet alone
-    - inveta alone
-    - intersection of (stet, inveta)
-    - union of (stet, inveta)
+    If outprefix is not None, it'll be added into the output filename.
 
     '''
 
@@ -1287,7 +1282,7 @@ def magbin_varind_gridsearch_worker(task):
 
 
 
-def variable_index_gridsearch_per_magbin(simbasedir,
+def variable_index_gridsearch_magbin(simbasedir,
                                          stetson_stdev_range=[1.0,20.0],
                                          inveta_stdev_range=[1.0,20.0],
                                          ngridpoints=50,
@@ -1369,3 +1364,265 @@ def variable_index_gridsearch_per_magbin(simbasedir,
         pickle.dump(grid_results,outfd,pickle.HIGHEST_PROTOCOL)
 
     return grid_results
+
+
+
+def plot_varind_gridsearch_magbin_results(gridresults):
+    '''
+    This plots the gridsearch results from variable_index_gridsearch_magbin.
+
+    '''
+
+    # get the values
+    gx, gy = np.meshgrid(gridresults['stetson_grid'],
+                         gridresults['inveta_grid'])
+
+    plotres = {'simbasedir':gridresults['simbasedir']}
+
+    recgrid = gridresults['recovery']
+
+    for magcol in gridresults['magcols']:
+
+        plotres[magcol] = {}
+
+        for magbinind, magbinmedian in enumerate(gridresults['magbinmedians']):
+
+            LOGINFO('plotting results for %s: magbin: %.3f' %
+                    (magcol, magbinmedian))
+
+            intersect_mcc = np.array([x[magcol]['intersect_mcc']
+                                      for x in recgrid[magbinind]])
+            intersect_precision = np.array(
+                [x[magcol]['intersect_precision']
+                 for x in recgrid[magbinind]]
+            )
+            intersect_recall = np.array(
+                [x[magcol]['intersect_recall']
+                 for x in recgrid[magbinind]]
+            )
+
+            stet_mcc = np.array(
+                [x[magcol]['stet_mcc']
+                 for x in recgrid[magbinind]]
+            )[::gridresults['stetson_grid'].size]
+            stet_precision = np.array(
+                [x[magcol]['stet_precision']
+                 for x in recgrid[magbinind]]
+            )[::gridresults['stetson_grid'].size]
+            stet_recall = np.array(
+                [x[magcol]['stet_recall']
+                 for x in recgrid[magbinind]]
+            )[::gridresults['stetson_grid'].size]
+            stet_missed_inveta_found = np.array(
+                [x[magcol]['stet_missed_inveta_found']
+                 for x in recgrid[magbinind]]
+            )[::gridresults['stetson_grid'].size]
+
+            inveta_mcc = np.array(
+                [x[magcol]['inveta_mcc']
+                 for x in recgrid[magbinind]]
+            )[:gridresults['inveta_grid'].size]
+            inveta_precision = np.array(
+                [x[magcol]['inveta_precision']
+                 for x in recgrid[magbinind]]
+            )[:gridresults['inveta_grid'].size]
+            inveta_recall = np.array(
+                [x[magcol]['inveta_recall']
+                 for x in recgrid[magbinind]]
+            )[:gridresults['inveta_grid'].size]
+            inveta_missed_stet_found = np.array(
+                [x[magcol]['inveta_missed_stet_found']
+                 for x in recgrid[magbinind]]
+            )[:gridresults['inveta_grid'].size]
+
+            fig = plt.figure(figsize=(6.4*4,4.8*3))
+
+            # FIRST ROW: intersect 2D plot
+
+            intersect_mcc_gz = intersect_mcc.reshape(gx.shape).T
+            intersect_precision_gz = intersect_precision.reshape(gx.shape).T
+            intersect_recall_gz = intersect_recall.reshape(gx.shape).T
+
+            plt.subplot(3,4,1)
+            # make the mcc grid plot
+            plt.pcolormesh(gx, gy, intersect_mcc_gz,
+                           cmap='RdBu',
+                           norm=mpc.LogNorm(vmin=intersect_mcc_gz.min(),
+                                            vmax=intersect_mcc_gz.max()))
+            plt.colorbar()
+            plt.xlabel('stetson J stdev multiplier threshold')
+            plt.ylabel('inveta multiplier threshold')
+            plt.title('MCC for intersect(stetJ,inveta)')
+
+            # make the precision grid plot
+            plt.subplot(3,4,2)
+            plt.pcolormesh(gx, gy, intersect_precision_gz,
+                           cmap='RdBu',
+                           norm=mpc.LogNorm(vmin=intersect_precision_gz.min(),
+                                            vmax=intersect_precision_gz.max()))
+            plt.colorbar()
+            plt.xlabel('stetson J stdev multiplier threshold')
+            plt.ylabel('inveta multiplier threshold')
+            plt.title('precision for intersect(stetJ,inveta)')
+
+            # make the recall grid plot
+            plt.subplot(3,4,3)
+            plt.pcolormesh(gx, gy, intersect_recall_gz,
+                           cmap='RdBu',
+                           norm=mpc.LogNorm(vmin=intersect_recall_gz.min(),
+                                            vmax=intersect_recall_gz.max()))
+            plt.colorbar()
+            plt.xlabel('stetson J stdev multiplier threshold')
+            plt.ylabel('inveta multiplier threshold')
+            plt.title('recall for intersect(stetJ,inveta)')
+
+            # SECOND ROW: Stetson J plot
+            plt.subplot(3,4,5)
+            plt.plot(gridresults['stetson_grid'],
+                     stet_mcc)
+            plt.xlabel('stetson J stdev multiplier threshold')
+            plt.ylabel('MCC')
+            plt.title('MCC for stetson J')
+
+            plt.subplot(3,4,6)
+            plt.plot(gridresults['stetson_grid'],
+                     stet_precision)
+            plt.xlabel('stetson J stdev multiplier threshold')
+            plt.ylabel('precision')
+            plt.title('precision for stetson J')
+
+            plt.subplot(3,4,7)
+            plt.plot(gridresults['stetson_grid'],
+                     stet_recall)
+            plt.xlabel('stetson J stdev multiplier threshold')
+            plt.ylabel('recall')
+            plt.title('recall for stetson J')
+
+            plt.subplot(3,4,8)
+            plt.plot(gridresults['stetson_grid'],
+                     stet_missed_inveta_found)
+            plt.xlabel('stetson J stdev multiplier threshold')
+            plt.ylabel('# objects stetson missed but inveta found')
+            plt.title('stetson J missed, inveta found')
+
+
+            # THIRD ROW: inveta plot
+            plt.subplot(3,4,9)
+            plt.plot(gridresults['inveta_grid'],
+                     inveta_mcc)
+            plt.xlabel('inveta stdev multiplier threshold')
+            plt.ylabel('MCC')
+            plt.title('MCC for inveta')
+
+            plt.subplot(3,4,10)
+            plt.plot(gridresults['inveta_grid'],
+                     inveta_precision)
+            plt.xlabel('inveta stdev multiplier threshold')
+            plt.ylabel('precision')
+            plt.title('precision for inveta')
+
+            plt.subplot(3,4,11)
+            plt.plot(gridresults['inveta_grid'],
+                     inveta_recall)
+            plt.xlabel('inveta stdev multiplier threshold')
+            plt.ylabel('recall')
+            plt.title('recall for inveta')
+
+            plt.subplot(3,4,12)
+            plt.plot(gridresults['inveta_grid'],
+                     inveta_missed_stet_found)
+            plt.xlabel('inveta stdev multiplier threshold')
+            plt.ylabel('# objects inveta missed but stetson found')
+            plt.title('inveta missed, stetson J found')
+
+            plt.subplots_adjust(hspace=0.25,wspace=0.25)
+
+            plt.suptitle('magcol: %s, magbin: %.3f' % (magcol, magbinmedian))
+
+            gridplotf = os.path.join(gridresults['simbasedir'],
+                                     '%s-%.3f-var-recoverygrid-permagbin.png' %
+                                     (magcol, magbinmedian))
+
+            plt.savefig(gridplotf,dpi=100,bbox_inches='tight')
+            plt.close('all')
+
+
+            # get the best values of MCC, recall, precision and their associated
+            # stet, inveta
+            stet_mcc_maxind = np.where(stet_mcc == np.max(stet_mcc))
+            stet_precision_maxind = np.where(
+                stet_precision == np.max(stet_precision)
+            )
+            stet_recall_maxind = np.where(stet_recall == np.max(stet_recall))
+
+            best_stet_mcc = stet_mcc[stet_mcc_maxind]
+            best_stet_precision = stet_mcc[stet_precision_maxind]
+            best_stet_recall = stet_mcc[stet_recall_maxind]
+
+            stet_with_best_mcc = gridresults['stetson_grid'][stet_mcc_maxind]
+            stet_with_best_precision = gridresults['stetson_grid'][
+                stet_precision_maxind
+            ]
+            stet_with_best_recall = (
+                gridresults['stetson_grid'][stet_recall_maxind]
+            )
+
+
+            inveta_mcc_maxind = np.where(inveta_mcc == np.max(inveta_mcc))
+            inveta_precision_maxind = np.where(
+                inveta_precision == np.max(inveta_precision)
+            )
+            inveta_recall_maxind = (
+                np.where(inveta_recall == np.max(inveta_recall))
+            )
+
+            best_inveta_mcc = inveta_mcc[inveta_mcc_maxind]
+            best_inveta_precision = inveta_mcc[inveta_precision_maxind]
+            best_inveta_recall = inveta_mcc[inveta_recall_maxind]
+
+            inveta_with_best_mcc = gridresults['inveta_grid'][inveta_mcc_maxind]
+            inveta_with_best_precision = gridresults['inveta_grid'][
+                inveta_precision_maxind
+            ]
+            inveta_with_best_recall = gridresults['inveta_grid'][
+                inveta_recall_maxind
+            ]
+
+            plotres[magcol][magbinmedian] = {
+                # stetson
+                'stet_grid':gridresults['stetson_grid'],
+                'stet_mcc':stet_mcc,
+                'stet_precision':stet_precision,
+                'stet_recall':stet_recall,
+                'stet_missed_inveta_found':stet_missed_inveta_found,
+                'best_stet_mcc':best_stet_mcc,
+                'stet_with_best_mcc':stet_with_best_mcc,
+                'best_stet_precision':best_stet_precision,
+                'stet_with_best_precision':stet_with_best_precision,
+                'best_stet_recall':best_stet_recall,
+                'stet_with_best_recall':stet_with_best_recall,
+                # inveta
+                'inveta_grid':gridresults['inveta_grid'],
+                'inveta_mcc':inveta_mcc,
+                'inveta_precision':inveta_precision,
+                'inveta_recall':inveta_recall,
+                'inveta_missed_stet_found':inveta_missed_stet_found,
+                'best_inveta_mcc':best_inveta_mcc,
+                'inveta_with_best_mcc':inveta_with_best_mcc,
+                'best_inveta_precision':best_inveta_precision,
+                'inveta_with_best_precision':inveta_with_best_precision,
+                'best_inveta_recall':best_inveta_recall,
+                'inveta_with_best_recall':inveta_with_best_recall,
+                # plot info
+                'recoveryplot':gridplotf
+            }
+
+
+
+    # write the plotresults to a pickle
+    plotrespicklef = os.path.join('simbasedir',
+                                  'varindex-gridsearch-magbin-results.pkl')
+    with open(plotrespicklef, 'wb') as outfd:
+        pickle.dump(plotres, outfd, pickle.HIGHEST_PROTOCOL)
+
+    return plotres
