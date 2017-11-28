@@ -1288,6 +1288,27 @@ def variability_threshold(featuresdir,
 
     for magcol in magcols:
 
+        # keep local copies of these so we can fix them independently in case of
+        # nans
+        if (isinstance(min_stetj_stdev, list) or
+            isinstance(min_stetj_stdev, np.ndarray)):
+            magcol_min_stetj_stdev = min_stetj_stdev[::]
+        else:
+            magcol_min_stetj_stdev = min_stetj_stdev
+
+        if (isinstance(min_iqr_stdev, list) or
+            isinstance(min_iqr_stdev, np.ndarray)):
+            magcol_min_iqr_stdev = min_iqr_stdev[::]
+        else:
+            magcol_min_iqr_stdev = min_iqr_stdev
+
+        if (isinstance(min_inveta_stdev, list) or
+            isinstance(min_inveta_stdev, np.ndarray)):
+            magcol_min_inveta_stdev = min_inveta_stdev[::]
+        else:
+            magcol_min_inveta_stdev = min_inveta_stdev
+
+
         LOGINFO('getting all object sdssr, LC MAD, stet J, IQR, eta...')
 
         # we'll calculate the sigma per magnitude bin, so get the mags as well
@@ -1495,19 +1516,20 @@ def variability_threshold(featuresdir,
                 binned_stetsonj_stdev.append(thisbin_stetsonj_stdev)
 
                 # now get the objects above the required stdev threshold
-                if isinstance(min_stetj_stdev, float):
+                if isinstance(magcol_min_stetj_stdev, float):
 
                     thisbin_objectids_thresh_stetsonj = thisbin_objectids[
                         thisbin_stetsonj > (
                             thisbin_stetsonj_median +
-                            min_stetj_stdev*thisbin_stetsonj_stdev
+                            magcol_min_stetj_stdev*thisbin_stetsonj_stdev
                         )
                     ]
 
-                elif (isinstance(min_stetj_stdev, np.ndarray) or
-                      isinstance(min_stetj_stdev, list)):
+                elif (isinstance(magcol_min_stetj_stdev, np.ndarray) or
+                      isinstance(magcol_min_stetj_stdev, list)):
 
-                    thisbin_min_stetj_stdev = min_stetj_stdev[magi]
+                    thisbin_min_stetj_stdev = magcol_min_stetj_stdev[magi]
+
                     if not np.isfinite(thisbin_min_stetj_stdev):
                         LOGWARNING('provided threshold stetson J stdev '
                                    'for magbin: %.3f is nan, using 2.0' %
@@ -1516,7 +1538,7 @@ def variability_threshold(featuresdir,
                         # update the input list/array as well, since we'll be
                         # saving it to the output dict and using it to plot the
                         # variability thresholds
-                        min_stetj_stdev[magi] = 2.0
+                        magcol_min_stetj_stdev[magi] = 2.0
 
 
                     thisbin_objectids_thresh_stetsonj = thisbin_objectids[
@@ -1535,17 +1557,18 @@ def variability_threshold(featuresdir,
                 binned_iqr_stdev.append(thisbin_iqr_stdev)
 
                 # get the objects above the required stdev threshold
-                if isinstance(min_iqr_stdev, float):
+                if isinstance(magcol_min_iqr_stdev, float):
 
                     thisbin_objectids_thresh_iqr = thisbin_objectids[
                         thisbin_iqr > (thisbin_iqr_median +
-                                       min_iqr_stdev*thisbin_iqr_stdev)
+                                       magcol_min_iqr_stdev*thisbin_iqr_stdev)
                     ]
 
-                elif (isinstance(min_iqr_stdev, np.ndarray) or
-                      isinstance(min_iqr_stdev, list)):
+                elif (isinstance(magcol_min_iqr_stdev, np.ndarray) or
+                      isinstance(magcol_min_iqr_stdev, list)):
 
-                    thisbin_min_iqr_stdev = min_iqr_stdev[magi]
+                    thisbin_min_iqr_stdev = magcol_min_iqr_stdev[magi]
+
                     if not np.isfinite(thisbin_min_iqr_stdev):
                         LOGWARNING('provided threshold IQR stdev '
                                    'for magbin: %.3f is nan, using 2.0' %
@@ -1554,7 +1577,7 @@ def variability_threshold(featuresdir,
                         # update the input list/array as well, since we'll be
                         # saving it to the output dict and using it to plot the
                         # variability thresholds
-                        min_iqr_stdev[magi] = 2.0
+                        magcol_min_iqr_stdev[magi] = 2.0
 
                     thisbin_objectids_thresh_iqr = thisbin_objectids[
                         thisbin_iqr > (thisbin_iqr_median +
@@ -1569,26 +1592,30 @@ def variability_threshold(featuresdir,
                 binned_inveta_median.append(thisbin_inveta_median)
                 binned_inveta_stdev.append(thisbin_inveta_stdev)
 
-                if isinstance(min_inveta_stdev, float):
+                if isinstance(magcol_min_inveta_stdev, float):
 
                     thisbin_objectids_thresh_inveta = thisbin_objectids[
-                        thisbin_inveta > (thisbin_inveta_median +
-                                          min_inveta_stdev*thisbin_inveta_stdev)
+                        thisbin_inveta > (
+                            thisbin_inveta_median +
+                            magcol_min_inveta_stdev*thisbin_inveta_stdev
+                        )
                     ]
 
-                elif (isinstance(min_inveta_stdev, np.ndarray) or
-                      isinstance(min_inveta_stdev, list)):
+                elif (isinstance(magcol_min_inveta_stdev, np.ndarray) or
+                      isinstance(magcol_min_inveta_stdev, list)):
 
-                    thisbin_min_inveta_stdev = min_inveta_stdev[magi]
+                    thisbin_min_inveta_stdev = magcol_min_inveta_stdev[magi]
+
                     if not np.isfinite(thisbin_min_inveta_stdev):
                         LOGWARNING('provided threshold inveta stdev '
                                    'for magbin: %.3f is nan, using 2.0' %
                                    thisbin_sdssr_median)
+
                         thisbin_min_inveta_stdev = 2.0
                         # update the input list/array as well, since we'll be
                         # saving it to the output dict and using it to plot the
                         # variability thresholds
-                        min_inveta_stdev[magi] = 2.0
+                        magcol_min_inveta_stdev[magi] = 2.0
 
                     thisbin_objectids_thresh_inveta = thisbin_objectids[
                         thisbin_inveta > (
@@ -1699,30 +1726,37 @@ def variability_threshold(featuresdir,
             np.concatenate(allobjects[magcol]['binned_objectids_thresh_iqr'])
         )
 
+        # turn these into np.arrays for easier plotting if they're lists
+        if isinstance(min_stetj_stdev, list):
+            allobjects[magcol]['min_stetj_stdev'] = np.array(
+                magcol_min_stetj_stdev
+            )
+        else:
+            allobjects[magcol]['min_stetj_stdev'] = magcol_min_stetj_stdev
+
+        if isinstance(min_iqr_stdev, list):
+            allobjects[magcol]['min_iqr_stdev'] = np.array(
+                magcol_min_iqr_stdev
+            )
+        else:
+            allobjects[magcol]['min_iqr_stdev'] = magcol_min_iqr_stdev
+
+        if isinstance(min_inveta_stdev, list):
+            allobjects[magcol]['min_inveta_stdev'] = np.array(
+                magcol_min_inveta_stdev
+            )
+        else:
+            allobjects[magcol]['min_inveta_stdev'] = magcol_min_inveta_stdev
+
+        # this one doesn't get touched (for now)
+        allobjects[magcol]['min_lcmad_stdev'] = min_lcmad_stdev
+
+
     #
     # done with all magcols
     #
 
     allobjects['magbins'] = magbins
-
-    # turn these into np.arrays for easier plotting if they're lists
-    if isinstance(min_stetj_stdev, list):
-        allobjects['min_stetj_stdev'] = np.array(min_stetj_stdev)
-    else:
-        allobjects['min_stetj_stdev'] = min_stetj_stdev
-
-    if isinstance(min_iqr_stdev, list):
-        allobjects['min_iqr_stdev'] = np.array(min_iqr_stdev)
-    else:
-        allobjects['min_iqr_stdev'] = min_iqr_stdev
-
-    if isinstance(min_inveta_stdev, list):
-        allobjects['min_inveta_stdev'] = np.array(min_inveta_stdev)
-    else:
-        allobjects['min_inveta_stdev'] = min_inveta_stdev
-
-    # this one doesn't get touched (for now)
-    allobjects['min_lcmad_stdev'] = min_lcmad_stdev
 
     with open(outfile,'wb') as outfd:
         pickle.dump(allobjects, outfd, protocol=pickle.HIGHEST_PROTOCOL)
@@ -1758,12 +1792,21 @@ def plot_variability_thresholds(varthreshpkl,
         allobjects = pickle.load(infd)
 
     magbins = allobjects['magbins']
-    min_lcmad_stdev = xmin_lcmad_stdev or allobjects['min_lcmad_stdev']
-    min_stetj_stdev = xmin_stetj_stdev or allobjects['min_stetj_stdev']
-    min_iqr_stdev = xmin_iqr_stdev or allobjects['min_iqr_stdev']
-    min_inveta_stdev = xmin_inveta_stdev or allobjects['min_inveta_stdev']
 
     for magcol in magcols:
+
+        min_lcmad_stdev = (
+            xmin_lcmad_stdev or allobjects[magcol]['min_lcmad_stdev']
+        )
+        min_stetj_stdev = (
+            xmin_stetj_stdev or allobjects[magcol]['min_stetj_stdev']
+        )
+        min_iqr_stdev = (
+            xmin_iqr_stdev or allobjects[magcol]['min_iqr_stdev']
+        )
+        min_inveta_stdev = (
+            xmin_inveta_stdev or allobjects[magcol]['min_inveta_stdev']
+        )
 
         fig = plt.figure(figsize=(20,16))
 
@@ -1867,9 +1910,6 @@ def plot_variability_thresholds(varthreshpkl,
                                                              magcol),
                     bbox_inches='tight')
         plt.close('all')
-
-
-
 
 
 
