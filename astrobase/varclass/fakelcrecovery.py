@@ -1754,14 +1754,16 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                 plotres[magcol]['best_stetsonj'].append(stet_with_best_mcc[0])
             elif stet_with_best_mcc.size > 0:
                 plotres[magcol]['best_stetsonj'].append(stet_with_best_mcc[0])
+            else:
+                plotres[magcol]['best_stetsonj'].append(np.nan)
 
             # if there are multiple best invetas, choose the smallest one
             if inveta_with_best_mcc.size > 1:
                 plotres[magcol]['best_inveta'].append(inveta_with_best_mcc[0])
             elif inveta_with_best_mcc.size > 0:
                 plotres[magcol]['best_inveta'].append(inveta_with_best_mcc[0])
-
-
+            else:
+                plotres[magcol]['best_inveta'].append(np.nan)
 
     # write the plotresults to a pickle
     plotrespicklef = os.path.join(simbasedir,
@@ -1776,14 +1778,10 @@ def plot_varind_gridsearch_magbin_results(gridresults):
         LOGINFO('best stdev multipliers for each %s magbin:' % magcol)
         LOGINFO('\nmagbin    inveta    stetson J\n')
 
-        for magbin in plotres[magcol]['magbinmedians']:
-            LOGINFO(
-                '%.3f    %.3f    %.3f' %
-                (magbin,
-                 plotres[magcol][magbin]['inveta_with_best_mcc'],
-                 plotres[magcol][magbin]['stet_with_best_mcc'])
-            )
-
+        for magbin, inveta, stet in zip(plotres[magcol]['magbinmedians'],
+                                        plotres[magcol]['best_inveta'],
+                                        plotres[magcol]['best_stetsonj']):
+            LOGINFO('%.3f    %.3f    %.3f' % (magbin,inveta,stet))
 
 
     return plotres
