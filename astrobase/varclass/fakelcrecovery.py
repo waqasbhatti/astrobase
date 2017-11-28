@@ -1473,7 +1473,7 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                     gx, gy, intersect_precision_gz,
                     cmap='RdBu',
                     norm=mpc.LogNorm(vmin=np.nanmin(intersect_precision_gz),
-                                     vmax=np.nanax(intersect_precision_gz))
+                                     vmax=np.nanmax(intersect_precision_gz))
                 )
                 plt.colorbar()
                 plt.xlabel('stetson J stdev multiplier threshold')
