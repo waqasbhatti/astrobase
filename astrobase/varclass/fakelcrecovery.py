@@ -1748,7 +1748,7 @@ def plot_varind_gridsearch_magbin_results(gridresults):
 
 
     # write the plotresults to a pickle
-    plotrespicklef = os.path.join('simbasedir',
+    plotrespicklef = os.path.join(simbasedir,
                                   'varindex-gridsearch-magbin-results.pkl')
     with open(plotrespicklef, 'wb') as outfd:
         pickle.dump(plotres, outfd, pickle.HIGHEST_PROTOCOL)
