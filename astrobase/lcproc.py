@@ -1260,6 +1260,10 @@ def variability_threshold(featuresdir,
     scalar floats to apply the same sigma cut for each magbin or np.ndarrays of
     size = magbins.size - 1 to apply different sigma cuts for each magbin.
 
+    FIXME: implement a voting classifier here. this will choose variables based
+    on the thresholds in IQR, stetson, and inveta based on weighting carried
+    over from the variability recovery sims.
+
     '''
 
     if lcformat not in LCFORM or lcformat is None:

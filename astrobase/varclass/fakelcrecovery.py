@@ -21,6 +21,9 @@ afterwards check if successful by cross validation.
 run period searches and see recovery rate by period, amplitude, magnitude,
 number of observations, etc.
 
+FIXME: add in grid-search for IQR for all functions below in addition to
+existing grid-searches for stetson and inveta.
+
 '''
 import os
 import os.path
