@@ -1255,6 +1255,11 @@ def variability_threshold(featuresdir,
 
     outfile is a pickle file that will contain all the info.
 
+    min_lcmad_stdev, min_stetj_stdev, min_iqr_stdev, min_inveta_stdev are all
+    stdev multipliers to use for selecting variable objects. These are either
+    scalar floats to apply the same sigma cut for each magbin or np.ndarrays of
+    size = magbins.size - 1 to apply different sigma cuts for each magbin.
+
     '''
 
     if lcformat not in LCFORM or lcformat is None:
@@ -1489,10 +1494,34 @@ def variability_threshold(featuresdir,
                 binned_stetsonj_median.append(thisbin_stetsonj_median)
                 binned_stetsonj_stdev.append(thisbin_stetsonj_stdev)
 
-                thisbin_objectids_thresh_stetsonj = thisbin_objectids[
-                    thisbin_stetsonj > (thisbin_stetsonj_median +
-                                        min_stetj_stdev*thisbin_stetsonj_stdev)
-                ]
+                # now get the objects above the required stdev threshold
+                if isinstance(min_stetj_stdev, float):
+
+                    thisbin_objectids_thresh_stetsonj = thisbin_objectids[
+                        thisbin_stetsonj > (
+                            thisbin_stetsonj_median +
+                            min_stetj_stdev*thisbin_stetsonj_stdev
+                        )
+                    ]
+
+                elif (isinstance(min_stetj_stdev, np.ndarray) or
+                      isinstance(min_stetj_stdev, list)):
+
+                    thisbin_min_stetj_stdev = min_stetj_stdev[magi]
+                    if not np.isfinite(thisbin_min_stetj_stdev):
+                        LOGWARNING('provided threshold stetson J stdev '
+                                   'for magbin: %.3f is nan, using 2.0' %
+                                   thisbin_sdssr_median)
+                        thisbin_min_stetj_stdev = 2.0
+
+                    thisbin_objectids_thresh_stetsonj = thisbin_objectids[
+                        thisbin_stetsonj > (
+                            thisbin_stetsonj_median +
+                            thisbin_min_stetj_stdev*thisbin_stetsonj_stdev
+                        )
+                    ]
+
+
                 thisbin_iqr_median = np.median(thisbin_iqr)
                 thisbin_iqr_stdev = np.median(
                     np.abs(thisbin_iqr - thisbin_iqr_median)
@@ -1500,10 +1529,31 @@ def variability_threshold(featuresdir,
                 binned_iqr_median.append(thisbin_iqr_median)
                 binned_iqr_stdev.append(thisbin_iqr_stdev)
 
-                thisbin_objectids_thresh_iqr = thisbin_objectids[
-                    thisbin_iqr > (thisbin_iqr_median +
-                                   min_iqr_stdev*thisbin_iqr_stdev)
-                ]
+                # get the objects above the required stdev threshold
+                if isinstance(min_iqr_stdev, float):
+
+                    thisbin_objectids_thresh_iqr = thisbin_objectids[
+                        thisbin_iqr > (thisbin_iqr_median +
+                                       min_iqr_stdev*thisbin_iqr_stdev)
+                    ]
+
+                elif (isinstance(min_iqr_stdev, np.ndarray) or
+                      isinstance(min_iqr_stdev, list)):
+
+                    thisbin_min_iqr_stdev = min_iqr_stdev[magi]
+                    if not np.isfinite(thisbin_min_stetj_stdev):
+                        LOGWARNING('provided threshold IQR stdev '
+                                   'for magbin: %.3f is nan, using 2.0' %
+                                   thisbin_sdssr_median)
+                        thisbin_min_iqr_stdev = 2.0
+
+
+                    thisbin_objectids_thresh_iqr = thisbin_objectids[
+                        thisbin_iqr > (thisbin_iqr_median +
+                                       thisbin_min_iqr_stdev*thisbin_iqr_stdev)
+                    ]
+
+
                 thisbin_inveta_median = np.median(thisbin_inveta)
                 thisbin_inveta_stdev = np.median(
                     np.abs(thisbin_inveta - thisbin_inveta_median)
@@ -1511,16 +1561,31 @@ def variability_threshold(featuresdir,
                 binned_inveta_median.append(thisbin_inveta_median)
                 binned_inveta_stdev.append(thisbin_inveta_stdev)
 
-                thisbin_objectids_thresh_inveta = thisbin_objectids[
-                    thisbin_inveta > (thisbin_inveta_median +
-                                   min_inveta_stdev*thisbin_inveta_stdev)
-                ]
-                thisbin_objectids_thresh_all = reduce(
-                    np.intersect1d,
-                    (thisbin_objectids_thresh_stetsonj,
-                     thisbin_objectids_thresh_iqr,
-                     thisbin_objectids_thresh_inveta)
-                )
+                if isinstance(min_inveta_stdev, float):
+
+                    thisbin_objectids_thresh_inveta = thisbin_objectids[
+                        thisbin_inveta > (thisbin_inveta_median +
+                                          min_inveta_stdev*thisbin_inveta_stdev)
+                    ]
+
+                elif (isinstance(min_inveta_stdev, np.ndarray) or
+                      isinstance(min_inveta_stdev, list)):
+
+                    thisbin_min_inveta_stdev = min_inveta_stdev[magi]
+                    if not np.isfinite(thisbin_min_stetj_stdev):
+                        LOGWARNING('provided threshold inveta stdev '
+                                   'for magbin: %.3f is nan, using 2.0' %
+                                   thisbin_sdssr_median)
+                        thisbin_min_inveta_stdev = 2.0
+
+                    thisbin_objectids_thresh_inveta = thisbin_objectids[
+                        thisbin_inveta > (
+                            thisbin_inveta_median +
+                            thisbin_min_inveta_stdev*thisbin_inveta_stdev
+                        )
+                    ]
+
+
             else:
 
                 thisbin_objectids_thresh_stetsonj = (
@@ -1532,6 +1597,20 @@ def variability_threshold(featuresdir,
                 thisbin_objectids_thresh_inveta = (
                     np.array([],dtype=np.unicode_)
                 )
+
+
+            #
+            # done with check for enough objects in the bin
+            #
+
+            # get the intersection of all threshold objects to get objects that
+            # lie above the threshold for all variable indices
+            thisbin_objectids_thresh_all = reduce(
+                np.intersect1d,
+                (thisbin_objectids_thresh_stetsonj,
+                 thisbin_objectids_thresh_iqr,
+                 thisbin_objectids_thresh_inveta)
+            )
 
             binned_objectids.append(thisbin_objectids)
             binned_sdssr.append(thisbin_sdssr)
@@ -1616,6 +1695,7 @@ def variability_threshold(featuresdir,
     allobjects['min_stetj_stdev'] = min_stetj_stdev
     allobjects['min_iqr_stdev'] = min_iqr_stdev
     allobjects['min_inveta_stdev'] = min_inveta_stdev
+    allobjects['min_lcmad_stdev'] = min_lcmad_stdev
 
     with open(outfile,'wb') as outfd:
         pickle.dump(allobjects, outfd, protocol=pickle.HIGHEST_PROTOCOL)
