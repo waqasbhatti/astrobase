@@ -1723,7 +1723,7 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                 LOGINFO('smallest stetson J stdev multiplier with best '
                         'MCC for magbin: %.3f = %.3f' % (magbinmedian,
                                                          stet_with_best_mcc[0]))
-            else:
+            elif stet_with_best_mcc.size > 0:
                 LOGINFO('stetson J stdev multiplier with best '
                         'MCC for magbin: %.3f = %.3f' % (magbinmedian,
                                                          stet_with_best_mcc[0]))
@@ -1734,7 +1734,7 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                         'MCC for magbin: %.3f = %.3f'
                         % (magbinmedian,
                            inveta_with_best_mcc[0]))
-            else:
+            elif inveta_with_best_mcc.size > 0:
                 LOGINFO('inveta stdev multiplier with best '
                         'MCC for magbin: %.3f = %.3f'
                         % (magbinmedian,
