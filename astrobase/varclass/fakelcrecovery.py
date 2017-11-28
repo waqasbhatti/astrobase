@@ -1380,11 +1380,13 @@ def plot_varind_gridsearch_magbin_results(gridresults):
     plotres = {'simbasedir':gridresults['simbasedir']}
 
     recgrid = gridresults['recovery']
+    simbasedir = gridresults['simbasedir']
 
     for magcol in gridresults['magcols']:
 
         plotres[magcol] = {}
 
+        # go through all the magbins
         for magbinind, magbinmedian in enumerate(gridresults['magbinmedians']):
 
             LOGINFO('plotting results for %s: magbin: %.3f' %
