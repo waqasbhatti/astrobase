@@ -1445,11 +1445,13 @@ def plot_varind_gridsearch_magbin_results(gridresults):
 
             # make the mcc grid plot
             plt.subplot(3,4,1)
-            if np.any(np.isfinite(intersect_mcc_gz)):
-                plt.pcolormesh(gx, gy, intersect_mcc_gz,
-                               cmap='RdBu',
-                               norm=mpc.LogNorm(vmin=intersect_mcc_gz.min(),
-                                                vmax=intersect_mcc_gz.max()))
+            if np.any(np.isfinite(intersect_mcc_gz) & (intersect_mcc_gz > 0.0)):
+                plt.pcolormesh(
+                    gx, gy, intersect_mcc_gz,
+                    cmap='RdBu',
+                    norm=mpc.LogNorm(vmin=np.nanmin(intersect_mcc_gz),
+                                     vmax=np.nanmax(intersect_mcc_gz))
+                )
                 plt.colorbar()
                 plt.xlabel('stetson J stdev multiplier threshold')
                 plt.ylabel('inveta multiplier threshold')
@@ -1465,12 +1467,13 @@ def plot_varind_gridsearch_magbin_results(gridresults):
 
             # make the precision grid plot
             plt.subplot(3,4,2)
-            if np.any(np.isfinite(intersect_precision_gz)):
+            if np.any(np.isfinite(intersect_precision_gz) &
+                      (intersect_precision_gz > 0.0)):
                 plt.pcolormesh(
                     gx, gy, intersect_precision_gz,
                     cmap='RdBu',
-                    norm=mpc.LogNorm(vmin=intersect_precision_gz.min(),
-                                     vmax=intersect_precision_gz.max())
+                    norm=mpc.LogNorm(vmin=np.nanmin(intersect_precision_gz),
+                                     vmax=np.nanax(intersect_precision_gz))
                 )
                 plt.colorbar()
                 plt.xlabel('stetson J stdev multiplier threshold')
@@ -1486,11 +1489,14 @@ def plot_varind_gridsearch_magbin_results(gridresults):
 
             # make the recall grid plot
             plt.subplot(3,4,3)
-            if np.any(np.isfinite(intersect_recall_gz)):
-                plt.pcolormesh(gx, gy, intersect_recall_gz,
-                               cmap='RdBu',
-                               norm=mpc.LogNorm(vmin=intersect_recall_gz.min(),
-                                                vmax=intersect_recall_gz.max()))
+            if np.any(np.isfinite(intersect_recall_gz) &
+                      (intersect_recall_gz > 0.0)):
+                plt.pcolormesh(
+                    gx, gy, intersect_recall_gz,
+                    cmap='RdBu',
+                    norm=mpc.LogNorm(vmin=np.nanmin(intersect_recall_gz),
+                                     vmax=np.nanmax(intersect_recall_gz))
+                )
                 plt.colorbar()
                 plt.xlabel('stetson J stdev multiplier threshold')
                 plt.ylabel('inveta multiplier threshold')
