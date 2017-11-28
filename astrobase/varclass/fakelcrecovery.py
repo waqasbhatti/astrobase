@@ -652,7 +652,7 @@ def variable_index_gridsearch(simbasedir,
 
 
 
-def plot_varind_gridsearch_results(gridresults)
+def plot_varind_gridsearch_results(gridresults):
     '''
     This plots the results from variable_index_gridsearch above.
 
@@ -1616,6 +1616,11 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                 # plot info
                 'recoveryplot':gridplotf
             }
+
+            # recommend inveta and stetson index for this magbin
+            LOGINFO('stetson J stdev multiplier with best '
+                    'MCC for magbin: %.3f = %.3f' % (magbinmedian,
+                                                     stet_with_best_mcc))
 
 
 
