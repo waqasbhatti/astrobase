@@ -602,7 +602,7 @@ def variable_index_gridsearch_magbin(simbasedir,
                                      stetson_stdev_range=[1.0,20.0],
                                      inveta_stdev_range=[1.0,20.0],
                                      iqr_stdev_range=[1.0,20.0],
-                                     ngridpoints=50,
+                                     ngridpoints=32,
                                      ngridworkers=None):
     '''This runs a variable index grid search per magbin.
 
