@@ -28,6 +28,7 @@ existing grid-searches for stetson and inveta.
 import os
 import os.path
 import pickle
+import gzip
 
 import multiprocessing as mp
 import logging
