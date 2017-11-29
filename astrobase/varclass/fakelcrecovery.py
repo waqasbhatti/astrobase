@@ -1587,6 +1587,11 @@ def parallel_periodicvar_recovery(simbasedir,
 
         resdict = {x['objectid']:x for x in results}
 
+        actual_periodicvars = np.array(
+            [x['objectid'] for x in results
+             if (x['actual_vartype'] is not None)]
+        )
+
         recovered_periodicvars = np.array(
             [x['objectid'] for x in results
              if ('actual' in x['best_recovered_status'])]
@@ -1605,6 +1610,7 @@ def parallel_periodicvar_recovery(simbasedir,
         outdict = {'simbasedir':os.path.abspath(simbasedir),
                    'objectids':all_objectids,
                    'period_tolerance':period_tolerance,
+                   'actual_periodicvars':actual_periodicvars,
                    'recovered_periodicvars':recovered_periodicvars,
                    'alias_twice_periodicvars':alias_twice_periodicvars,
                    'alias_half_periodivars':alias_half_periodicvars,
