@@ -1339,7 +1339,6 @@ def check_periodrec_alias(actualperiod, recoveredperiod, tolerance=1.0e-3):
 
 def periodicvar_recovery(fakepfpkl,
                          simbasedir,
-                         magcols,
                          period_tolerance=1.0e-3):
 
     '''Recovers the periodic variable status/info for the simulated pf pickle.
@@ -1400,6 +1399,9 @@ def periodicvar_recovery(fakepfpkl,
     # get the moments too so we can track LC noise, etc.
     actual_moments = fakelc['moments']
 
+    # get the magcols for this LC
+    magcols = fakelc['magcols']
+
     # get the recovered info from each of the available methods
     pfres = {
         'simbasedir':simbasedir,
@@ -1407,8 +1409,8 @@ def periodicvar_recovery(fakepfpkl,
         'fakelc':os.path.abspath(lcfpath),
         'fakepf':os.path.abspath(fakepfpkl),
         'actual_vartype':actual_vartype,
-        'actual_varperiod':np.asscalar(actual_varperiod),
-        'actual_varamplitude':np.asscalar(actual_varamplitude),
+        'actual_varperiod':actual_varperiod,
+        'actual_varamplitude':actual_varamplitude,
         'actual_varparams':actual_varparams,
         'actual_moments':actual_moments,
         'pfmethods':[],
@@ -1451,7 +1453,9 @@ def periodicvar_recovery(fakepfpkl,
     #
 
     # if this is an actual periodic variable, characterize the recovery
-    if actual_vartype and actual_vartype in PERIODIC_VARTYPES:
+    if (actual_vartype and
+        actual_vartype in PERIODIC_VARTYPES and
+        np.isfinite(actual_varperiod)):
 
         for ri in range(pfres['recovery_periods'].size):
 
