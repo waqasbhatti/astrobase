@@ -1404,6 +1404,7 @@ def periodicvar_recovery(fakepfpkl,
 
     # get the recovered info from each of the available methods
     pfres = {
+        'objectid':objectid,
         'simbasedir':simbasedir,
         'magcols':magcols,
         'fakelc':os.path.abspath(lcfpath),
@@ -1413,7 +1414,6 @@ def periodicvar_recovery(fakepfpkl,
         'actual_varamplitude':actual_varamplitude,
         'actual_varparams':actual_varparams,
         'actual_moments':actual_moments,
-        'pfmethods':[],
         'recovery_periods':[],
         'recovery_pfmethods':[],
         'recovery_magcols':[],
@@ -1432,13 +1432,11 @@ def periodicvar_recovery(fakepfpkl,
                 # period_tolerance
                 for rp in fakepf[magcol][pfm]['nbestperiods']:
 
-                    print(rp,magcol,pfm)
-
-                    if not np.any(
-                            np.isclose(rp,
-                                       np.array(pfres['recovery_periods']),
-                                       rtol=period_tolerance)
-                    ):
+                    if ((not np.any(np.isclose(
+                            rp,
+                            np.array(pfres['recovery_periods']),
+                            rtol=period_tolerance
+                    ))) and np.isfinite(rp)):
                         pfres['recovery_periods'].append(rp)
                         pfres['recovery_pfmethods'].append(pfm)
                         pfres['recovery_magcols'].append(magcol)
@@ -1457,41 +1455,58 @@ def periodicvar_recovery(fakepfpkl,
         actual_vartype in PERIODIC_VARTYPES and
         np.isfinite(actual_varperiod)):
 
-        for ri in range(pfres['recovery_periods'].size):
+        if pfres['recovery_periods'].size > 0:
 
-            pfres['recovery_pdiff'].append(pfres['recovery_periods'][ri] -
-                                           np.asscalar(actual_varperiod))
+            for ri in range(pfres['recovery_periods'].size):
 
-            pfres['recovery_status'].append(
-                check_periodrec_alias(actual_varperiod,
-                                      pfres['recovery_periods'][ri],
-                                      tolerance=period_tolerance)
+                pfres['recovery_pdiff'].append(pfres['recovery_periods'][ri] -
+                                               np.asscalar(actual_varperiod))
+
+                # get the alias types
+                pfres['recovery_status'].append(
+                    check_periodrec_alias(actual_varperiod,
+                                          pfres['recovery_periods'][ri],
+                                          tolerance=period_tolerance)
+                )
+
+            # turn the recovery_pdiff/status lists into arrays
+            pfres['recovery_status'] = np.array(pfres['recovery_status'])
+            pfres['recovery_pdiff'] = np.array(pfres['recovery_pdiff'])
+
+            # find the best recovered period and its status
+            rec_absdiff = np.abs(pfres['recovery_pdiff'])
+            best_recp_ind = rec_absdiff == rec_absdiff.min()
+
+            pfres['best_recovered_period'] = (
+                pfres['recovery_periods'][best_recp_ind]
+            )
+            pfres['best_recovered_pfmethod'] = (
+                pfres['recovery_pfmethods'][best_recp_ind]
+            )
+            pfres['best_recovered_magcol'] = (
+                pfres['recovery_magcols'][best_recp_ind]
+            )
+            pfres['best_recovered_status'] = (
+                pfres['recovery_status'][best_recp_ind]
+            )
+            pfres['best_recovered_pdiff'] = (
+                pfres['recovery_pdiff'][best_recp_ind]
             )
 
-        # turn the recovery_pdiff/status lists into arrays
-        pfres['recovery_status'] = np.array(pfres['recovery_status'])
-        pfres['recovery_pdiff'] = np.array(pfres['recovery_pdiff'])
+        else:
 
-        # find the best recovered period and its status
-        rec_absdiff = np.abs(pfres['recovery_pdiff'])
-        best_recp_ind = rec_absdiff == rec_absdiff.min()
+            LOGWARNING(
+                'no finite periods recovered from period-finding for %s' %
+                fakepfpkl
+            )
 
-        pfres['best_recovered_period'] = (
-            pfres['recovery_periods'][best_recp_ind]
-        )
-        pfres['best_recovered_pfmethod'] = (
-            pfres['recovery_pfmethods'][best_recp_ind]
-        )
-        pfres['best_recovered_magcol'] = (
-            pfres['recovery_magcols'][best_recp_ind]
-        )
-        pfres['best_recovered_status'] = (
-            pfres['recovery_status'][best_recp_ind]
-        )
-        pfres['best_recovered_pdiff'] = (
-            pfres['recovery_pdiff'][best_recp_ind]
-        )
-
+            pfres['recovery_status'] = np.array(['no_finite_periods_recovered'])
+            pfres['recovery_pdiff'] = np.array([np.nan])
+            pfres['best_recovered_period'] = np.array([np.nan])
+            pfres['best_recovered_pfmethod'] = np.array([],dtype=np.unicode_)
+            pfres['best_recovered_magcol'] = np.array([],dtype=np.unicode_)
+            pfres['best_recovered_status'] = np.array([],dtype=np.unicode_)
+            pfres['best_recovered_pdiff'] = np.array([np.nan])
 
     # if this is not actually a variable, get the recovered period,
     # etc. anyway. this way, we can see what we need to look out for and avoid
@@ -1503,10 +1518,107 @@ def periodicvar_recovery(fakepfpkl,
         )
         pfres['recovery_pdiff'] = np.zeros(pfres['recovery_periods'].size)
 
-        pfres['best_recovered_period'] = None
-        pfres['best_recovered_pfmethod'] = None
-        pfres['best_recovered_magcol'] = None
-        pfres['best_recovered_status'] = None
-        pfres['best_recovered_pdiff'] = None
+        pfres['best_recovered_period'] = np.array([np.nan])
+        pfres['best_recovered_pfmethod'] = np.array([],dtype=np.unicode_)
+        pfres['best_recovered_magcol'] = np.array([],dtype=np.unicode_)
+        pfres['best_recovered_status'] = np.array([],dtype=np.unicode_)
+        pfres['best_recovered_pdiff'] = np.array([np.nan])
 
     return pfres
+
+
+
+def periodrec_worker(task):
+    '''
+    This is a parallel worker for the function below.
+
+    '''
+
+    pfpkl, simbasedir, period_tolerance = task
+
+    try:
+        return periodicvar_recovery(pfpkl,
+                                    simbasedir,
+                                    period_tolerance=period_tolerance)
+
+    except Exception as e:
+        LOGEXCEPTION('periodic var recovery failed for %s' % repr(task))
+        return None
+
+
+
+def parallel_periodicvar_recovery(simbasedir,
+                                  period_tolerance=1.0e-3,
+                                  liststartind=None,
+                                  listmaxobjects=None,
+                                  nworkers=None):
+    '''
+    This is a parallel driver for periodicvar_recovery.
+
+
+    '''
+
+    # figure out the periodfinding pickles directory
+    pfpkldir = os.path.join(simbasedir,'periodfinding')
+
+    if not os.path.exists(pfpkldir):
+        LOGERROR('no "periodfinding" subdirectory in %s, can\'t continue' %
+                 simbasedir)
+        return None
+
+    # find all the periodfinding pickles
+    pfpkl_list = glob.glob(pfpkldir,'*periodfinding*pkl*')
+
+    if len(pfpkl_list) > 0:
+
+        if liststartind:
+            pfpkl_list = pfpkl_list[liststartind:]
+
+        if listmaxobjects:
+            pfpkl_list = pfpkl_list[:listmaxobjects]
+
+        tasks = [(x, simbasedir, period_tolerance) for x in pfpkl_list]
+
+        pool = mp.Pool(nworkers)
+        results = pool.map(periodrec_worker, tasks)
+        pool.close()
+        pool.join()
+
+        resdict = {x['objectid']:x for x in results}
+
+        recovered_periodicvars = np.array(
+            [x['objectid'] for x in results
+             if ('actual' in x['best_recovered_status'])]
+        )
+        alias_twice_periodicvars = np.array(
+            [x['objectid'] for x in results
+             if ('twice' in x['best_recovered_status'])]
+        )
+        alias_half_periodicvars = np.array(
+            [x['objectid'] for x in results
+             if ('half' in x['best_recovered_status'])]
+        )
+
+        all_objectids = [x['objectid'] for x in results]
+
+        outdict = {'simbasedir':os.path.abspath(simbasedir),
+                   'objectids':all_objectids,
+                   'period_tolerance':period_tolerance,
+                   'recovered_periodicvars':recovered_periodicvars,
+                   'alias_twice_periodicvars':alias_twice_periodicvars,
+                   'alias_half_periodivars':alias_half_periodicvars,
+                   'details':resdict}
+
+        outf = os.path.join(simbasedir,'periodicvar-recovery.pkl')
+        with open(outfd, 'wb') as outfd:
+            pickle.dump(resdict, outfd, pickle.HIGHEST_PROTOCOL)
+
+        return outdict
+
+    else:
+
+        LOGERROR(
+            'no periodfinding result pickles found in %s, can\'t continue' %
+            pfpkldir
+        )
+        return None
