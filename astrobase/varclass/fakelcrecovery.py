@@ -1299,7 +1299,7 @@ def check_periodrec_alias(actualperiod, recoveredperiod, tolerance=1.0e-3):
         alias_4a = actualperiod/(actualperiod - 1.0)
         alias_4b = actualperiod/(2.0*actualperiod - 1.0)
 
-        aliases = np.array([
+        aliases = np.ravel(np.array([
             actualperiod,
             twotimes_p,
             half_p,
@@ -1311,7 +1311,7 @@ def check_periodrec_alias(actualperiod, recoveredperiod, tolerance=1.0e-3):
             alias_3b,
             alias_4a,
             alias_4b]
-        )
+        ))
         alias_labels = np.array(['actual',
                                  'twice',
                                  'half',
@@ -1585,24 +1585,24 @@ def parallel_periodicvar_recovery(simbasedir,
         pool.close()
         pool.join()
 
-        resdict = {x['objectid']:x for x in results}
+        resdict = {x['objectid']:x for x in results if x is not None}
 
         actual_periodicvars = np.array(
             [x['objectid'] for x in results
-             if (x['actual_vartype'] is not None)]
+             if (x is not None and x['actual_vartype'] is not None)]
         )
 
         recovered_periodicvars = np.array(
             [x['objectid'] for x in results
-             if ('actual' in x['best_recovered_status'])]
+             if (x is not None and 'actual' in x['best_recovered_status'])]
         )
         alias_twice_periodicvars = np.array(
             [x['objectid'] for x in results
-             if ('twice' in x['best_recovered_status'])]
+             if (x is not None and 'twice' in x['best_recovered_status'])]
         )
         alias_half_periodicvars = np.array(
             [x['objectid'] for x in results
-             if ('half' in x['best_recovered_status'])]
+             if (x is not None and 'half' in x['best_recovered_status'])]
         )
 
         all_objectids = [x['objectid'] for x in results]
