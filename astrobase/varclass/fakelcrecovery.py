@@ -1426,6 +1426,8 @@ def periodicvar_recovery(fakepfpkl,
                 # period_tolerance
                 for rp in fakepf[magcol][pfm]['nbestperiods']:
 
+                    print(rp,magcol,pfm)
+
                     if not np.any(
                             np.isclose(rp,
                                        np.array(pfres['recovery_periods']),
