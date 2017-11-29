@@ -1521,7 +1521,7 @@ def periodicvar_recovery(fakepfpkl,
         pfres['best_recovered_period'] = np.array([np.nan])
         pfres['best_recovered_pfmethod'] = np.array([],dtype=np.unicode_)
         pfres['best_recovered_magcol'] = np.array([],dtype=np.unicode_)
-        pfres['best_recovered_status'] = np.array([],dtype=np.unicode_)
+        pfres['best_recovered_status'] = np.array(['not_variable'])
         pfres['best_recovered_pdiff'] = np.array([np.nan])
 
     return pfres
