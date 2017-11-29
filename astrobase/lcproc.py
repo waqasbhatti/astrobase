@@ -2114,7 +2114,6 @@ def runpf_worker(task):
 
 def parallel_pf(lclist,
                 outdir,
-                maxobjects=None,
                 timecols=None,
                 magcols=None,
                 errcols=None,
@@ -2124,20 +2123,50 @@ def parallel_pf(lclist,
                 getblssnr=True,
                 sigclip=5.0,
                 nperiodworkers=10,
-                nthisworkers=4):
-    '''
-    This drives the overall parallel period processing.
+                ncontrolworkers=4,
+                liststartindex=None,
+                listmaxobjects=None):
+    '''This drives the overall parallel period processing.
+
+    Use pfmethods to specify which periodfinders to run. These must be in
+    lcproc.PFMETHODS.
+
+    Use pfkwargs to provide optional kwargs to the periodfinders.
+
+    If getblssnr is True, will run BLS SNR calculations for each object and
+    magcol. This takes a while to run, so it's disabled (False) by default.
+
+    sigclip sets the sigma-clip to use for the light curves before putting them
+    through each of the periodfinders.
+
+    nperiodworkers is the number of period-finder workers to launch.
+
+    ncontrolworkers is the number of controlling processes to launch.
+
+    liststartindex sets the index from where to start in the list of
+    fakelcs. listmaxobjects sets the maximum number of objects in the fakelc
+    list to run periodfinding for in this invocation. Together, these can be
+    used to distribute processing over several independent machines if the
+    number of light curves is very large.
+
+    As a rough benchmark, 25000 HATNet light curves with up to 50000 points per
+    LC take about 26 days in total for an invocation of this function using
+    GLS+PDM+BLS, 10 periodworkers, and 4 controlworkers (so all 40 'cores') on a
+    2 x Xeon E5-2660v3 machine.
 
     '''
 
-    if maxobjects:
-        lclist = lclist[:maxobjects]
+    if liststartindex:
+        lclist = lclist[liststartindex:]
+
+    if listmaxobjects:
+        lclist = lclist[:listmaxobjects]
 
     tasklist = [(x, outdir, timecols, magcols, errcols, lcformat,
                  pfmethods, pfkwargs, getblssnr, sigclip, nperiodworkers)
                 for x in lclist]
 
-    with ProcessPoolExecutor(max_workers=nthisworkers) as executor:
+    with ProcessPoolExecutor(max_workers=ncontrolworkers) as executor:
         resultfutures = executor.map(runpf_worker, tasklist)
 
     results = [x for x in resultfutures]
@@ -2147,7 +2176,6 @@ def parallel_pf(lclist,
 
 def parallel_pf_lcdir(lcdir,
                       outdir,
-                      maxobjects=None,
                       recursive=True,
                       timecols=None,
                       magcols=None,
@@ -2156,9 +2184,11 @@ def parallel_pf_lcdir(lcdir,
                       pfmethods=['gls','pdm','bls'],
                       pfkwargs=[{},{},{'startp':1.0,'maxtransitduration':0.3}],
                       getblssnr=True,
-                      nperiodworkers=10,
                       sigclip=5.0,
-                      nthisworkers=4):
+                      nperiodworkers=10,
+                      ncontrolworkers=4,
+                      liststartindex=None,
+                      listmaxobjects=None):
     '''
     This runs parallel light curve period finding for directory of LCs.
 
@@ -2207,12 +2237,14 @@ def parallel_pf_lcdir(lcdir,
 
         LOGINFO('found %s light curves, running pf...' % len(matching))
 
-        if maxobjects:
-            matching = matching[:maxobjects]
+        if liststartindex:
+            lclist = lclist[liststartindex:]
+
+        if listmaxobjects:
+            lclist = lclist[:listmaxobjects]
 
         return parallel_pf(matching,
                            outdir,
-                           maxobjects=maxobjects,
                            timecols=timecols,
                            magcols=magcols,
                            errcols=errcols,
@@ -2220,9 +2252,11 @@ def parallel_pf_lcdir(lcdir,
                            pfmethods=pfmethods,
                            pfkwargs=pfkwargs,
                            getblssnr=getblssnr,
-                           nperiodworkers=nperiodworkers,
                            sigclip=sigclip,
-                           nthisworkers=nthisworkers)
+                           nperiodworkers=nperiodworkers,
+                           ncontrolworkers=ncontrolworkers,
+                           liststartindex=liststartindex,
+                           listmaxobjects=listmaxobjects)
 
     else:
 
