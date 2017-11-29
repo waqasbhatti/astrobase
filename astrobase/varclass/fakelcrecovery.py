@@ -1589,20 +1589,24 @@ def parallel_periodicvar_recovery(simbasedir,
 
         actual_periodicvars = np.array(
             [x['objectid'] for x in results
-             if (x is not None and x['actual_vartype'] is not None)]
+             if (x is not None and x['actual_vartype'] is not None)],
+            dtype=np.unicode_
         )
 
         recovered_periodicvars = np.array(
             [x['objectid'] for x in results
-             if (x is not None and 'actual' in x['best_recovered_status'])]
+             if (x is not None and 'actual' in x['best_recovered_status'])],
+            dtype=np.unicode_
         )
         alias_twice_periodicvars = np.array(
             [x['objectid'] for x in results
-             if (x is not None and 'twice' in x['best_recovered_status'])]
+             if (x is not None and 'twice' in x['best_recovered_status'])],
+            dtype=np.unicode_
         )
         alias_half_periodicvars = np.array(
             [x['objectid'] for x in results
-             if (x is not None and 'half' in x['best_recovered_status'])]
+             if (x is not None and 'half' in x['best_recovered_status'])],
+            dtype=np.unicode_
         )
 
         all_objectids = [x['objectid'] for x in results]
@@ -1613,7 +1617,7 @@ def parallel_periodicvar_recovery(simbasedir,
                    'actual_periodicvars':actual_periodicvars,
                    'recovered_periodicvars':recovered_periodicvars,
                    'alias_twice_periodicvars':alias_twice_periodicvars,
-                   'alias_half_periodivars':alias_half_periodicvars,
+                   'alias_half_periodicvars':alias_half_periodicvars,
                    'details':resdict}
 
         outfile = os.path.join(simbasedir,'periodicvar-recovery.pkl')
