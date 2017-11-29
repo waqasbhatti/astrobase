@@ -1404,8 +1404,8 @@ def periodicvar_recovery(fakepfpkl,
         'fakelc':os.path.abspath(lcfpath),
         'fakepf':os.path.abspath(fakepfpkl),
         'actual_vartype':actual_vartype,
-        'actual_varperiod':actual_varperiod,
-        'actual_varamplitude':actual_varamplitude,
+        'actual_varperiod':np.asscalar(actual_varperiod),
+        'actual_varamplitude':np.asscalar(actual_varamplitude),
         'actual_varparams':actual_varparams,
         'pfmethods':[],
         'recovery_periods':[],
@@ -1452,7 +1452,7 @@ def periodicvar_recovery(fakepfpkl,
         for ri in range(pfres['recovery_periods'].size):
 
             pfres['recovery_pdiff'].append(pfres['recovery_periods'][ri] -
-                                           actual_varperiod)
+                                           np.asscalar(actual_varperiod))
 
             pfres['recovery_status'].append(
                 check_periodrec_alias(actual_varperiod,
