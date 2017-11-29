@@ -1610,8 +1610,8 @@ def parallel_periodicvar_recovery(simbasedir,
                    'alias_half_periodivars':alias_half_periodicvars,
                    'details':resdict}
 
-        outf = os.path.join(simbasedir,'periodicvar-recovery.pkl')
-        with open(outfd, 'wb') as outfd:
+        outfile = os.path.join(simbasedir,'periodicvar-recovery.pkl')
+        with open(outfile, 'wb') as outfd:
             pickle.dump(resdict, outfd, pickle.HIGHEST_PROTOCOL)
 
         return outdict
