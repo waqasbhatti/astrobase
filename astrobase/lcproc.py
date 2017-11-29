@@ -2143,11 +2143,10 @@ def parallel_pf(lclist,
 
     ncontrolworkers is the number of controlling processes to launch.
 
-    liststartindex sets the index from where to start in the list of
-    fakelcs. listmaxobjects sets the maximum number of objects in the fakelc
-    list to run periodfinding for in this invocation. Together, these can be
-    used to distribute processing over several independent machines if the
-    number of light curves is very large.
+    liststartindex sets the index from where to start in lclist. listmaxobjects
+    sets the maximum number of objects in lclist to run periodfinding for in
+    this invocation. Together, these can be used to distribute processing over
+    several independent machines if the number of light curves is very large.
 
     As a rough benchmark, 25000 HATNet light curves with up to 50000 points per
     LC take about 26 days in total for an invocation of this function using
