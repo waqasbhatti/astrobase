@@ -1420,7 +1420,7 @@ def periodicvar_recovery(fakepfpkl,
 
         for pfm in lcproc.PFMETHODS:
 
-            if pfm in fakepf:
+            if pfm in fakepf[magcol]:
 
                 # only get the unique recovered periods by using
                 # period_tolerance
