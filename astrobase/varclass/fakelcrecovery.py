@@ -1576,7 +1576,7 @@ def parallel_periodicvar_recovery(simbasedir,
 
         actual_periodicvars = np.array(
             [x['objectid'] for x in results
-             if (x is not None and x['actual_vartype'] is not None)],
+             if (x is not None and x['actual_vartype'] in PERIODIC_VARTYPES)],
             dtype=np.unicode_
         )
 
