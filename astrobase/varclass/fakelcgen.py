@@ -1517,7 +1517,7 @@ def make_fakelc_collection(lclist,
 
     This returns a pickle written to the simbasedir that contains all the
     information for the chosen ensemble of fake light curves and writes all
-    generated light curves to the simbasedir/lightucrves directory. Run the
+    generated light curves to the <simbasedir>/lightcurves directory. Run the
     add_variability_to_fakelc_collection function after this function to add
     variability of the specified type to these generated light curves.
 

@@ -1166,7 +1166,7 @@ def plot_varind_gridsearch_magbin_results(gridresults):
 ################################
 
 PERIODIC_VARTYPES = ['EB','RRab','RRc','rotator',
-                     'HADS','planet','LPV', 'cepheid']
+                     'HADS','planet','LPV','cepheid']
 
 
 def run_periodfinding(simbasedir,
@@ -1260,12 +1260,91 @@ def run_periodfinding(simbasedir,
 
 
 
-def get_periodicvar_recovery(fakepfpkl,
-                             simbasedir):
+def check_periodrec_alias(actualperiod, recoveredperiod, tolerance=1.0e-3):
+    '''This determines what kind of aliasing (if any) exists between
+    recoveredperiod and actualperiod.
+
+    '''
+
+    if not (np.isfinite(actualperiod) and np.isfinite(recoveredperiod)):
+
+        LOGERROR("can't compare nan values for actual/recovered periods")
+        return 'unknown'
+
+    else:
+
+        #################
+        ## ALIAS TYPES ##
+        #################
+
+        # simple ratios
+        twotimes_p = actualperiod*2.0
+        half_p = actualperiod*0.5
+
+        # first kind of alias
+        alias_1a = actualperiod/(1.0+actualperiod)
+        alias_1b = actualperiod/(1.0-actualperiod)
+
+        # second kind of alias
+        alias_2a = actualperiod/(1.0+2.0*actualperiod)
+        alias_2b = actualperiod/(1.0+2.0*actualperiod)
+
+        # third kind of alias
+        alias_3a = actualperiod/(1.0+3.0*actualperiod)
+        alias_3b = actualperiod/(1.0+3.0*actualperiod)
+
+        # fourth kind of alias
+        alias_4a = actualperiod/(actualperiod - 1.0)
+        alias_4b = actualperiod/(2.0*actualperiod - 1.0)
+
+        aliases = np.array([
+            actualperiod,
+            twotimes_p,
+            half_p,
+            alias_1a,
+            alias_1b,
+            alias_2a,
+            alias_2b,
+            alias_3a,
+            alias_3b,
+            alias_4a,
+            alias_4b]
+        )
+        alias_labels = np.array(['actual',
+                                 'twice',
+                                 'half',
+                                 'ratio_over_1plus',
+                                 'ratio_over_1minus',
+                                 'ratio_over_1plus_twice',
+                                 'ratio_over_1minus_twice',
+                                 'ratio_over_1plus_thrice',
+                                 'ratio_over_1minus_thrice',
+                                 'ratio_over_minus1',
+                                 'ratio_over_twice_minus1'])
+
+        # check type of alias
+        closest_alias = np.isclose(recoveredperiod, aliases, rtol=tolerance)
+
+        if np.any(closest_alias):
+
+            closest_alias_type = alias_labels[closest_alias]
+            return ','.join(closest_alias_type.tolist())
+
+        else:
+
+            return 'other'
+
+
+
+def periodicvar_recovery(fakepfpkl,
+                         simbasedir,
+                         magcols,
+                         period_tolerance=1.0e-3):
+
     '''Recovers the periodic variable status/info for the simulated pf pickle.
 
     fakepfpkl is a single periodfinding-<objectid>.pkl[.gz] file produced in the
-    <simbasedir/periodfinding subdirectory after run_periodfinding above is
+    <simbasedir>/periodfinding subdirectory after run_periodfinding above is
     done.
 
     - uses simbasedir and the lcfbasename stored in fakepfpkl to figure out
@@ -1317,15 +1396,106 @@ def get_periodicvar_recovery(fakepfpkl,
         fakelc['actual_vartype']
     )
 
+    # get the recovered info from each of the available methods
+    pfres = {
+        'simbasedir':simbasedir,
+        'magcols':magcols,
+        'fakelc':os.path.abspath(lcfpath),
+        'fakepf':os.path.abspath(fakepfpkl),
+        'actual_vartype':actual_vartype,
+        'actual_varperiod':actual_varperiod,
+        'actual_varamplitude':actual_varamplitude,
+        'actual_varparams':actual_varparams,
+        'pfmethods':[],
+        'recovery_periods':[],
+        'recovery_pfmethods':[],
+        'recovery_magcols':[],
+        'recovery_status':[],
+        'recovery_pdiff':[],
+    }
 
-    # if this is an actual variable, characterize the recovery
+    # populate the pfres dict with the periods, pfmethods, and magcols
+    for magcol in magcols:
+
+        for pfm in lcproc.PFMETHODS:
+
+            if pfm in fakepf:
+
+                # only get the unique recovered periods by using
+                # period_tolerance
+                for rp in fakepf[magcol][pfm]['nbestperiods']:
+
+                    if not np.any(
+                            np.isclose(rp,
+                                       np.array(pfres['recovery_periods']),
+                                       rtol=period_tolerance)
+                    ):
+                        pfres['recovery_periods'].append(rp)
+                        pfres['recovery_pfmethods'].append(pfm)
+                        pfres['recovery_magcols'].append(magcol)
+
+    # convert the recovery_* lists to arrays
+    pfres['recovery_periods'] = np.array(pfres['recovery_periods'])
+    pfres['recovery_pfmethods'] = np.array(pfres['recovery_pfmethods'])
+    pfres['recovery_magcols'] = np.array(pfres['recovery_magcols'])
+
+    #
+    # now figure out recovery status
+    #
+
+    # if this is an actual periodic variable, characterize the recovery
     if actual_vartype and actual_vartype in PERIODIC_VARTYPES:
 
-        do_stuff()
+        for ri in range(pfres['recovery_periods'].size):
+
+            pfres['recovery_pdiff'].append(pfres['recovery_periods'][ri] -
+                                           actual_varperiod)
+
+            pfres['recovery_status'].append(
+                check_periodrec_alias(actual_varperiod,
+                                      pfres['recovery_periods'][ri],
+                                      tolerance=period_tolerance)
+            )
+
+        # turn the recovery_pdiff/status lists into arrays
+        pfres['recovery_status'] = np.array(pfres['recovery_status'])
+        pfres['recovery_pdiff'] = np.array(pfres['recovery_pdiff'])
+
+        # find the best recovered period and its status
+        rec_absdiff = np.abs(pfres['recovery_pdiff'])
+        best_recp_ind = rec_absdiff == rec_absdiff.min()
+
+        pfres['best_recovered_period'] = (
+            pfres['recovery_periods'][best_recp_ind]
+        )
+        pfres['best_recovered_pfmethod'] = (
+            pfres['recovery_pfmethods'][best_recp_ind]
+        )
+        pfres['best_recovered_magcol'] = (
+            pfres['recovery_magcols'][best_recp_ind]
+        )
+        pfres['best_recovered_status'] = (
+            pfres['recovery_status'][best_recp_ind]
+        )
+        pfres['best_recovered_pdiff'] = (
+            pfres['recovery_pdiff'][best_recp_ind]
+        )
+
 
     # if this is not actually a variable, get the recovered period,
     # etc. anyway. this way, we can see what we need to look out for and avoid
     # when getting these values for actual objects
     else:
 
-        do_other_stuff()
+        pfres['recovery_status'] = np.array(
+            ['not_variable']*pfres['recovery_periods'].size
+        )
+        pfres['recovery_pdiff'] = np.zeros(pfres['recovery_periods'].size)
+
+        pfres['best_recovered_period'] = None
+        pfres['best_recovered_pfmethod'] = None
+        pfres['best_recovered_magcol'] = None
+        pfres['best_recovered_status'] = None
+        pfres['best_recovered_pdiff'] = None
+
+    return pfres
