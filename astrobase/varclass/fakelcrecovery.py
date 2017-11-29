@@ -1397,6 +1397,9 @@ def periodicvar_recovery(fakepfpkl,
         fakelc['actual_vartype']
     )
 
+    # get the moments too so we can track LC noise, etc.
+    actual_moments = fakelc['moments']
+
     # get the recovered info from each of the available methods
     pfres = {
         'simbasedir':simbasedir,
@@ -1407,6 +1410,7 @@ def periodicvar_recovery(fakepfpkl,
         'actual_varperiod':np.asscalar(actual_varperiod),
         'actual_varamplitude':np.asscalar(actual_varamplitude),
         'actual_varparams':actual_varparams,
+        'actual_moments':actual_moments,
         'pfmethods':[],
         'recovery_periods':[],
         'recovery_pfmethods':[],
