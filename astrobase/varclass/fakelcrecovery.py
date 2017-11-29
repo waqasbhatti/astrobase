@@ -142,6 +142,7 @@ def read_fakelc(fakelcfile):
 #######################
 
 def get_varfeatures(simbasedir,
+                    mindet=1000,
                     nworkers=None):
     '''
     This runs lcproc.parallel_varfeatures on light curves in simbasedir.
@@ -179,6 +180,7 @@ def get_varfeatures(simbasedir,
     varinfo = lcproc.parallel_varfeatures(lcfpaths,
                                           varfeaturedir,
                                           lcformat='fakelc',
+                                          mindet=mindet,
                                           nworkers=nworkers)
 
     with open(os.path.join(simbasedir,'fakelc-varfeatures.pkl'),'wb') as outfd:
@@ -1156,3 +1158,120 @@ def plot_varind_gridsearch_magbin_results(gridresults):
 
 
     return plotres
+
+
+
+################################
+## PERIODIC VARIABLE RECOVERY ##
+################################
+
+def run_periodfinding(simbasedir,
+                      pfmethods=['gls','pdm','bls'],
+                      pfkwargs=[{},{},{'startp':1.0,'maxtransitduration':0.3}],
+                      getblssnr=False,
+                      sigclip=5.0,
+                      nperiodworkers=10,
+                      ncontrolworkers=4,
+                      liststartindex=None,
+                      listmaxobjects=None):
+    '''This runs periodfinding using several periodfinders on a collection of
+    fakelcs.
+
+    Use pfmethods to specify which periodfinders to run. These must be in
+    lcproc.PFMETHODS.
+
+    Use pfkwargs to provide optional kwargs to the periodfinders.
+
+    If getblssnr is True, will run BLS SNR calculations for each object and
+    magcol. This takes a while to run, so it's disabled (False) by default.
+
+    sigclip sets the sigma-clip to use for the light curves before putting them
+    through each of the periodfinders.
+
+    nperiodworkers is the number of period-finder workers to launch.
+
+    ncontrolworkers is the number of controlling processes to launch.
+
+    liststartindex sets the index from where to start in the list of
+    fakelcs. listmaxobjects sets the maximum number of objects in the fakelc
+    list to run periodfinding for in this invocation. Together, these can be
+    used to distribute processing over several independent machines if the
+    number of light curves is very large.
+
+    As a rough benchmark, 25000 fakelcs with up to 50000 points per lc take
+    about 26 days in total to run on an invocation of this function using
+    GLS+PDM+BLS and 10 periodworkers and 4 controlworkers (so all 40 'cores') on
+    a 2 x Xeon E5-2660v3 machine.
+
+    '''
+
+    # get the info from the simbasedir
+    with open(os.path.join(simbasedir, 'fakelcs-info.pkl'),'rb') as infd:
+        siminfo = pickle.load(infd)
+
+    lcfpaths = siminfo['lcfpath']
+    pfdir = os.path.join(simbasedir,'periodfinding')
+
+    # get the column defs for the fakelcs
+    timecols = siminfo['timecols']
+    magcols = siminfo['magcols']
+    errcols = siminfo['errcols']
+
+    # register the fakelc pklc as a custom lcproc format
+    # now we should be able to use all lcproc functions correctly
+    if 'fakelc' not in lcproc.LCFORM:
+
+        lcproc.register_custom_lcformat(
+            'fakelc',
+            '*-fakelc.pkl',
+            lcproc.read_pklc,
+            timecols,
+            magcols,
+            errcols,
+            magsarefluxes=False,
+            specialnormfunc=None
+        )
+
+    if liststartindex:
+        lcfpaths = lcfpaths[liststartindex:]
+
+    if listmaxobjects:
+        lcfpaths = lcfpaths[:listmaxobjects]
+
+    pfinfo = lcproc.parallel_pf(lcfpaths,
+                                pfdir,
+                                lcformat='fakelc',
+                                pfmethods=pfmethods,
+                                pfkwargs=pfkwargs,
+                                getblssnr=getblssnr,
+                                sigclip=sigclip,
+                                nperiodworkers=nperiodworkers,
+                                ncontrolworkers=ncontrolworker)
+
+    with open(os.path.join(simbasedir,
+                           'fakelc-periodfinding.pkl'),'wb') as outfd:
+        pickle.dump(varinfo, outfd, pickle.HIGHEST_PROTOCOL)
+
+    return os.path.join(simbasedir,'fakelc-periodfinding.pkl')
+
+
+
+def get_periodicvar_recovery(fakepfpkl,
+                             simbasedir):
+    '''This recovers the periodic variable status/info for simulated pf pickle.
+
+    fakepfpkl is a single periodfinding-<objectid>.pkl[.gz] file produced in the
+    <simbasedir/periodfinding subdirectory after run_periodfinding above is
+    done.
+
+    - figures out if the current objectid is a periodic variable or not
+
+    - if it is a periodic variable, gets the canonical period assigned to it
+
+    - checks if the period was recovered, checks if the period recovered was a
+      harmonic of the period
+
+    - returns the objectid, actual period and vartype, recovered period, and
+      recovery status
+
+    '''
