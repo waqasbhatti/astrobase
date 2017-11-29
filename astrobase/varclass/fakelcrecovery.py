@@ -679,7 +679,7 @@ def variable_index_gridsearch_magbin(simbasedir,
         for inveta in inveta_grid:
             for iqr in iqr_grid:
                 grid_point = [stet, inveta, iqr]
-                stet_inveta_grid.append(grid_pont)
+                stet_inveta_iqr_grid.append(grid_pont)
 
     # the output dict
     grid_results =  {'stetson_grid':stetson_grid,
