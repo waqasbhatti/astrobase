@@ -8,20 +8,7 @@ This is a companion module for fakelcgen.py. It runs LCs generated using
 functions in that module through variable star detection and classification to
 see how well they are recovered.
 
-TODO: implement below
-
-calculate the various non-periodic variability indices for these sim LCs and
-test recall and precision. get the PCA PC1 of this for a combined var index.
-
-tune for a true positive and false positive rate using the ROC curve and set the
-sigma limit for confirmed variability per magnitude bin.
-
-afterwards check if successful by cross validation.
-
-run period searches and see recovery rate by period, amplitude, magnitude,
-number of observations, etc.
-
-FIXME: add in grid-search for IQR for all functions below in addition to
+TODO: add in grid-search for IQR for all functions below in addition to
 existing grid-searches for stetson and inveta.
 
 '''
