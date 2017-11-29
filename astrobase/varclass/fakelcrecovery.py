@@ -1568,7 +1568,7 @@ def parallel_periodicvar_recovery(simbasedir,
         return None
 
     # find all the periodfinding pickles
-    pfpkl_list = glob.glob(pfpkldir,'*periodfinding*pkl*')
+    pfpkl_list = glob.glob(os.path.join(pfpkldir,'*periodfinding*pkl*'))
 
     if len(pfpkl_list) > 0:
 
