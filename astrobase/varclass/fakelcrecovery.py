@@ -307,6 +307,7 @@ def get_recovered_variables_for_magbin(simbasedir,
                                              lcformat='fakelc',
                                              min_stetj_stdev=stetson_stdev_min,
                                              min_inveta_stdev=inveta_stdev_min,
+                                             min_iqr_stdev=iqr_stdev_min,
                                              verbose=False)
 
     # get the magbins from the varthresh info
@@ -427,66 +428,51 @@ def get_recovered_variables_for_magbin(simbasedir,
                                            inveta_falsenegatives.size)
 
 
-        # calculate the stats for combined intersect(stet,inveta) variable flags
-        intersect_recvars = np.intersect1d(stet_recoveredvars,
-                                           inveta_recoveredvars)
-        intersect_recnonvars = np.setdiff1d(thisbin_objectids,
-                                            intersect_recvars)
+        # iqr recovered variables in this magbin
+        iqr_recoveredvars = varthresh[magcol][
+            'binned_objectids_thresh_iqr'
+        ][magbinind]
+        iqr_recoverednotvars = np.setdiff1d(thisbin_objectids,
+                                            iqr_recoveredvars)
 
-        intersect_truepositives = np.intersect1d(intersect_recvars,
-                                                 thisbin_actualvars)
-        intersect_falsepositives = np.intersect1d(intersect_recvars,
-                                                  thisbin_actualnotvars)
-        intersect_truenegatives = np.intersect1d(intersect_recnonvars,
-                                                 thisbin_actualnotvars)
-        intersect_falsenegatives = np.intersect1d(intersect_recnonvars,
-                                                  thisbin_actualvars)
+        iqr_truepositives = np.intersect1d(iqr_recoveredvars,
+                                           thisbin_actualvars)
+        iqr_falsepositives = np.intersect1d(iqr_recoveredvars,
+                                            thisbin_actualnotvars)
+        iqr_truenegatives = np.intersect1d(iqr_recoverednotvars,
+                                           thisbin_actualnotvars)
+        iqr_falsenegatives = np.intersect1d(iqr_recoverednotvars,
+                                            thisbin_actualvars)
 
-        # calculate intersection recall, precision, Matthews correl coeff
-        intersect_recall = recall(intersect_truepositives.size,
-                                  intersect_falsenegatives.size)
+        # calculate iqr recall, precision, Matthews correl coeff
+        iqr_recall = recall(iqr_truepositives.size,
+                            iqr_falsenegatives.size)
 
-        intersect_precision = precision(intersect_truepositives.size,
-                                        intersect_falsepositives.size)
+        iqr_precision = precision(iqr_truepositives.size,
+                                  iqr_falsepositives.size)
 
-        intersect_mcc = matthews_correl_coeff(intersect_truepositives.size,
-                                              intersect_truenegatives.size,
-                                              intersect_falsepositives.size,
-                                              intersect_falsenegatives.size)
-
-        # calculate the stats for combined union(stet,inveta) variable flags
-        union_recvars = np.union1d(stet_recoveredvars,
-                                   inveta_recoveredvars)
-        union_recnonvars = np.setdiff1d(thisbin_objectids, union_recvars)
-
-        union_truepositives = np.union1d(union_recvars,
-                                         thisbin_actualvars)
-        union_falsepositives = np.union1d(union_recvars,
-                                          thisbin_actualnotvars)
-        union_truenegatives = np.union1d(union_recnonvars,
-                                         thisbin_actualnotvars)
-        union_falsenegatives = np.union1d(union_recnonvars,
-                                          thisbin_actualvars)
-
-        # calculate union recall, precision, Matthews correl coeff
-        union_recall = recall(union_truepositives.size,
-                              union_falsenegatives.size)
-
-        union_precision = precision(union_truepositives.size,
-                                    union_falsepositives.size)
-
-        union_mcc = matthews_correl_coeff(union_truepositives.size,
-                                          union_truenegatives.size,
-                                          union_falsepositives.size,
-                                          union_falsenegatives.size)
+        iqr_mcc = matthews_correl_coeff(iqr_truepositives.size,
+                                        iqr_truenegatives.size,
+                                        iqr_falsepositives.size,
+                                        iqr_falsenegatives.size)
 
 
-        # calculate the items missed by one method but found by the other method
+        # calculate the items missed by one method but found by the other
+        # methods
         stet_missed_inveta_found = np.setdiff1d(inveta_truepositives,
                                                 stet_truepositives)
+        stet_missed_iqr_found = np.setdiff1d(iqr_truepositives,
+                                             stet_truepositives)
+
         inveta_missed_stet_found = np.setdiff1d(stet_truepositives,
                                                 inveta_truepositives)
+        inveta_missed_iqr_found = np.setdiff1d(iqr_truepositives,
+                                               inveta_truepositives)
 
+        iqr_missed_stet_found = np.setdiff1d(stet_truepositives,
+                                             iqr_truepositives)
+        iqr_missed_inveta_found = np.setdiff1d(inveta_truepositives,
+                                               iqr_truepositives)
 
         if not statsonly:
 
@@ -509,28 +495,23 @@ def get_recovered_variables_for_magbin(simbasedir,
                 'inveta_precision':inveta_precision,
                 'inveta_recall':inveta_recall,
                 'inveta_mcc':inveta_mcc,
-                # intersect of stetson J and inveta
-                'intersect_recoveredvars':intersect_recvars,
-                'intersect_truepositives':intersect_truepositives,
-                'intersect_falsepositives':intersect_falsepositives,
-                'intersect_truenegatives':intersect_truenegatives,
-                'intersect_falsenegatives':intersect_falsenegatives,
-                'intersect_precision':intersect_precision,
-                'intersect_recall':intersect_recall,
-                'intersect_mcc':intersect_mcc,
-                # union of stetson J and inveta
-                'union_recoveredvars':union_recvars,
-                'union_truepositives':union_truepositives,
-                'union_falsepositives':union_falsepositives,
-                'union_truenegatives':union_truenegatives,
-                'union_falsenegatives':union_falsenegatives,
-                'union_precision':union_precision,
-                'union_recall':union_recall,
-                'union_mcc':union_mcc,
+                # iqr alone
+                'iqr_recoveredvars':iqr_recvars,
+                'iqr_truepositives':iqr_truepositives,
+                'iqr_falsepositives':iqr_falsepositives,
+                'iqr_truenegatives':iqr_truenegatives,
+                'iqr_falsenegatives':iqr_falsenegatives,
+                'iqr_precision':iqr_precision,
+                'iqr_recall':iqr_recall,
+                'iqr_mcc':iqr_mcc,
                 # true positive variables missed by one method but picked up by
-                # the other
+                # the others
                 'stet_missed_inveta_found':stet_missed_inveta_found,
+                'stet_missed_iqr_found':stet_missed_iqr_found,
                 'inveta_missed_stet_found':inveta_missed_stet_found,
+                'inveta_missed_iqr_found':inveta_missed_iqr_found,
+                'iqr_missed_stet_found':iqr_missed_stet_found,
+                'iqr_missed_inveta_found':iqr_missed_inveta_found,
                 # bin info
                 'actual_variables':thisbin_actualvars,
                 'actual_nonvariables':thisbin_actualnotvars,
@@ -562,28 +543,23 @@ def get_recovered_variables_for_magbin(simbasedir,
                 'inveta_precision':inveta_precision,
                 'inveta_recall':inveta_recall,
                 'inveta_mcc':inveta_mcc,
-                # intersect of stetson J and inveta
-                'intersect_recoveredvars':intersect_recvars.size,
-                'intersect_truepositives':intersect_truepositives.size,
-                'intersect_falsepositives':intersect_falsepositives.size,
-                'intersect_truenegatives':intersect_truenegatives.size,
-                'intersect_falsenegatives':intersect_falsenegatives.size,
-                'intersect_precision':intersect_precision,
-                'intersect_recall':intersect_recall,
-                'intersect_mcc':intersect_mcc,
-                # union of stetson J and inveta
-                'union_recoveredvars':union_recvars.size,
-                'union_truepositives':union_truepositives.size,
-                'union_falsepositives':union_falsepositives.size,
-                'union_truenegatives':union_truenegatives.size,
-                'union_falsenegatives':union_falsenegatives.size,
-                'union_precision':union_precision,
-                'union_recall':union_recall,
-                'union_mcc':union_mcc,
+                # iqr alone
+                'iqr_recoveredvars':iqr_recvars.size,
+                'iqr_truepositives':iqr_truepositives.size,
+                'iqr_falsepositives':iqr_falsepositives.size,
+                'iqr_truenegatives':iqr_truenegatives.size,
+                'iqr_falsenegatives':iqr_falsenegatives.size,
+                'iqr_precision':iqr_precision,
+                'iqr_recall':iqr_recall,
+                'iqr_mcc':iqr_mcc,
                 # true positive variables missed by one method but picked up by
-                # the other
+                # the others
                 'stet_missed_inveta_found':stet_missed_inveta_found.size,
+                'stet_missed_iqr_found':stet_missed_iqr_found.size,
                 'inveta_missed_stet_found':inveta_missed_stet_found.size,
+                'inveta_missed_iqr_found':inveta_missed_iqr_found.size,
+                'iqr_missed_stet_found':iqr_missed_stet_found.size,
+                'iqr_missed_inveta_found':iqr_missed_inveta_found.size,
                 # bin info
                 'actual_variables':thisbin_actualvars.size,
                 'actual_nonvariables':thisbin_actualnotvars.size,
@@ -613,6 +589,7 @@ def magbin_varind_gridsearch_worker(task):
                                                  magbinmedian,
                                                  stetson_stdev_min=gridpoint[0],
                                                  inveta_stdev_min=gridpoint[1],
+                                                 iqr_stdev_min=gridpoint[2],
                                                  statsonly=True)
         return res
     except:
@@ -622,10 +599,11 @@ def magbin_varind_gridsearch_worker(task):
 
 
 def variable_index_gridsearch_magbin(simbasedir,
-                                         stetson_stdev_range=[1.0,20.0],
-                                         inveta_stdev_range=[1.0,20.0],
-                                         ngridpoints=50,
-                                         ngridworkers=None):
+                                     stetson_stdev_range=[1.0,20.0],
+                                     inveta_stdev_range=[1.0,20.0],
+                                     iqr_stdev_range=[1.0,20.0],
+                                     ngridpoints=50,
+                                     ngridworkers=None):
     '''This runs a variable index grid search per magbin.
 
     Similar to variable_index_gridsearch above.
@@ -691,18 +669,23 @@ def variable_index_gridsearch_magbin(simbasedir,
     inveta_grid = np.linspace(inveta_stdev_range[0],
                               inveta_stdev_range[1],
                               num=ngridpoints)
+    iqr_grid = np.linspace(iqr_stdev_range[0],
+                           iqr_stdev_range[1],
+                           num=ngridpoints)
 
     # generate the grid
-    stet_inveta_grid = []
+    stet_inveta_iqr_grid = []
     for stet in stetson_grid:
         for inveta in inveta_grid:
-            grid_point = [stet, inveta]
-            stet_inveta_grid.append(grid_point)
+            for iqr in iqr_grid:
+                grid_point = [stet, inveta, iqr]
+                stet_inveta_grid.append(grid_pont)
 
     # the output dict
     grid_results =  {'stetson_grid':stetson_grid,
                      'inveta_grid':inveta_grid,
-                     'stet_inveta_grid':stet_inveta_grid,
+                     'iqr_grid':iqr_grid,
+                     'stet_inveta_iqr_grid':stet_inveta_iqr_grid,
                      'magbinmedians':magbinmedians,
                      'timecols':timecols,
                      'magcols':magcols,
@@ -720,7 +703,7 @@ def variable_index_gridsearch_magbin(simbasedir,
         LOGINFO('running stetson J-inveta grid-search '
                 'for magbinmedian = %.3f...' % magbinmedian)
 
-        tasks = [(simbasedir, gp, magbinmedian) for gp in stet_inveta_grid]
+        tasks = [(simbasedir, gp, magbinmedian) for gp in stet_inveta_iqr_grid]
         thisbin_results = pool.map(magbin_varind_gridsearch_worker, tasks)
         grid_results['recovery'].append(thisbin_results)
 
@@ -743,10 +726,6 @@ def plot_varind_gridsearch_magbin_results(gridresults):
 
     '''
 
-    # get the values
-    gx, gy = np.meshgrid(gridresults['stetson_grid'],
-                         gridresults['inveta_grid'])
-
     plotres = {'simbasedir':gridresults['simbasedir']}
 
     recgrid = gridresults['recovery']
@@ -764,16 +743,7 @@ def plot_varind_gridsearch_magbin_results(gridresults):
             LOGINFO('plotting results for %s: magbin: %.3f' %
                     (magcol, magbinmedian))
 
-            intersect_mcc = np.array([x[magcol]['intersect_mcc']
-                                      for x in recgrid[magbinind]])
-            intersect_precision = np.array(
-                [x[magcol]['intersect_precision']
-                 for x in recgrid[magbinind]]
-            )
-            intersect_recall = np.array(
-                [x[magcol]['intersect_recall']
-                 for x in recgrid[magbinind]]
-            )
+            # FIXME: figure out the correct index for a 3D grid here
 
             stet_mcc = np.array(
                 [x[magcol]['stet_mcc']
@@ -789,6 +759,10 @@ def plot_varind_gridsearch_magbin_results(gridresults):
             )[::gridresults['stetson_grid'].size]
             stet_missed_inveta_found = np.array(
                 [x[magcol]['stet_missed_inveta_found']
+                 for x in recgrid[magbinind]]
+            )[::gridresults['stetson_grid'].size]
+            stet_missed_iqr_found = np.array(
+                [x[magcol]['stet_missed_iqr_found']
                  for x in recgrid[magbinind]]
             )[::gridresults['stetson_grid'].size]
 
@@ -808,8 +782,34 @@ def plot_varind_gridsearch_magbin_results(gridresults):
                 [x[magcol]['inveta_missed_stet_found']
                  for x in recgrid[magbinind]]
             )[:gridresults['inveta_grid'].size]
+            inveta_missed_iqr_found = np.array(
+                [x[magcol]['inveta_missed_iqr_found']
+                 for x in recgrid[magbinind]]
+            )[:gridresults['inveta_grid'].size]
 
-            fig = plt.figure(figsize=(6.4*4,4.8*3))
+            iqr_mcc = np.array(
+                [x[magcol]['iqr_mcc']
+                 for x in recgrid[magbinind]]
+            )[:gridresults['iqr_grid'].size]
+            iqr_precision = np.array(
+                [x[magcol]['iqr_precision']
+                 for x in recgrid[magbinind]]
+            )[:gridresults['iqr_grid'].size]
+            iqr_recall = np.array(
+                [x[magcol]['iqr_recall']
+                 for x in recgrid[magbinind]]
+            )[:gridresults['iqr_grid'].size]
+            iqr_missed_stet_found = np.array(
+                [x[magcol]['iqr_missed_stet_found']
+                 for x in recgrid[magbinind]]
+            )[:gridresults['iqr_grid'].size]
+            iqr_missed_inveta_found = np.array(
+                [x[magcol]['iqr_missed_inveta_found']
+                 for x in recgrid[magbinind]]
+            )[:gridresults['iqr_grid'].size]
+
+
+            fig = plt.figure(figsize=(6.4*5, 4.8*3))
 
             # FIRST ROW: intersect 2D plot
 
