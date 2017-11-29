@@ -991,6 +991,52 @@ def generate_lpv_lightcurve(
 
 
 
+def generate_cepheid_lightcurve(
+        times,
+        mags=None,
+        errs=None,
+        paramdists={
+            'period':sps.uniform(loc=1.5,scale=108.5),
+            'fourierorder':[8,11],
+            'amplitude':sps.uniform(loc=0.1,scale=0.9),
+            'phioffset':np.pi,
+        },
+        magsarefluxes=False
+):
+    '''This generates fake Cepheid light curves.
+
+    times is an array of time values that will be used as the time base.
+
+    mags and errs will have the model mags applied to them. If either is None,
+    np.full_like(times, 0.0) will used as a substitute.
+
+    paramdists is a dict containing parameter distributions to use for the
+    transitparams, in order:
+
+    {'period', 'fourierorder', 'amplitude'}
+
+    These are all 'frozen' scipy.stats distribution objects, e.g.:
+
+    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+
+    The minimum light curve epoch will be automatically chosen from a uniform
+    distribution between times.min() and times.max().
+
+    The amplitude will be flipped automatically as appropriate if
+    magsarefluxes=True.
+
+    '''
+
+    modeldict = generate_sinusoidal_lightcurve(times,
+                                               mags=mags,
+                                               errs=errs,
+                                               paramdists=paramdists,
+                                               magsarefluxes=magsarefluxes)
+    modeldict['vartype'] = 'cepheid'
+    return modeldict
+
+
+
 # this maps functions to generate light curves to their vartype codes as put
 # into the make_fakelc_collection function.
 VARTYPE_LCGEN_MAP = {
@@ -1002,6 +1048,7 @@ VARTYPE_LCGEN_MAP = {
     'HADS': generate_hads_lightcurve,
     'planet': generate_transit_lightcurve,
     'LPV': generate_lpv_lightcurve,
+    'cepheid':generate_cepheid_lightcurve,
 }
 
 
@@ -1448,7 +1495,7 @@ def make_fakelc_collection(lclist,
                            maxvars=2000,
                            randomizemags=True,
                            randomizecoords=False,
-                           vartypes=['EB','RRab','RRc',
+                           vartypes=['EB','RRab','RRc','cepheid',
                                      'rotator','flare','HADS',
                                      'planet','LPV'],
                            lcformat='hat-sql',
@@ -1919,8 +1966,6 @@ def add_variability_to_fakelc_collection(simbasedir,
     This will get back the varinfo from the add_fakelc_variability function and
     writes that info back to the simbasedir/fakelcs-info.pkl file for each
     object.
-
-    TODO: finish this
 
     '''
 

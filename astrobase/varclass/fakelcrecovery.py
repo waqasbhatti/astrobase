@@ -1165,6 +1165,10 @@ def plot_varind_gridsearch_magbin_results(gridresults):
 ## PERIODIC VARIABLE RECOVERY ##
 ################################
 
+PERIODIC_VARTYPES = ['EB','RRab','RRc','rotator',
+                     'HADS','planet','LPV', 'cepheid']
+
+
 def run_periodfinding(simbasedir,
                       pfmethods=['gls','pdm','bls'],
                       pfkwargs=[{},{},{'startp':1.0,'maxtransitduration':0.3}],
@@ -1258,20 +1262,70 @@ def run_periodfinding(simbasedir,
 
 def get_periodicvar_recovery(fakepfpkl,
                              simbasedir):
-    '''This recovers the periodic variable status/info for simulated pf pickle.
+    '''Recovers the periodic variable status/info for the simulated pf pickle.
 
     fakepfpkl is a single periodfinding-<objectid>.pkl[.gz] file produced in the
     <simbasedir/periodfinding subdirectory after run_periodfinding above is
     done.
 
-    - figures out if the current objectid is a periodic variable or not
+    - uses simbasedir and the lcfbasename stored in fakepfpkl to figure out
+      where the LC for this object is
+
+    - gets the actual_varparams, actual_varperiod, actual_vartype,
+      actual_varamplitude elements from the LC
+
+    - figures out if the current objectid is a periodic variable (using
+      actual_vartype)
 
     - if it is a periodic variable, gets the canonical period assigned to it
 
-    - checks if the period was recovered, checks if the period recovered was a
+    - checks if the period was recovered in any of the five best periods
+      reported by any of the periodfinders, checks if the period recovered was a
       harmonic of the period
 
     - returns the objectid, actual period and vartype, recovered period, and
       recovery status
 
     '''
+
+    if fakepfpkl.endswith('.gz'):
+        infd = gzip.open(fakepfpkl,'rb')
+    else:
+        infd = open(fakepfpkl,'rb')
+
+    fakepf = pickle.load(infd)
+    infd.close()
+
+    # get info from the fakepf dict
+    objectid, lcfbasename = fakepf['objectid'], fakepf['lcfbasename']
+    lcfpath = os.path.join(simbasedir,'lightcurves',lcfbasename)
+
+    # if the LC doesn't exist, bail out
+    if not os.path.exists(lcfpath):
+        LOGERROR('light curve for %s does not exist at: %s' % (objectid,
+                                                               lcfpath))
+        return None
+
+    # now, open the fakelc
+    fakelc = lcproc.read_pklc(lcfpath)
+
+    # get the actual_varparams, actual_varperiod, actual_varamplitude
+    actual_varparams, actual_varperiod, actual_varamplitude, actual_vartype = (
+        fakelc['actual_varparams'],
+        fakelc['actual_varperiod'],
+        fakelc['actual_varamplitude'],
+        fakelc['actual_vartype']
+    )
+
+
+    # if this is an actual variable, characterize the recovery
+    if actual_vartype and actual_vartype in PERIODIC_VARTYPES:
+
+        do_stuff()
+
+    # if this is not actually a variable, get the recovered period,
+    # etc. anyway. this way, we can see what we need to look out for and avoid
+    # when getting these values for actual objects
+    else:
+
+        do_other_stuff()
