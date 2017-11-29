@@ -735,6 +735,7 @@ def plot_varind_gridsearch_magbin_results(gridresults):
 
         plotres[magcol] = {'best_stetsonj':[],
                            'best_inveta':[],
+                           'best_iqr':[],
                            'magbinmedians':gridresults['magbinmedians']}
 
         # go through all the magbins
@@ -743,7 +744,7 @@ def plot_varind_gridsearch_magbin_results(gridresults):
             LOGINFO('plotting results for %s: magbin: %.3f' %
                     (magcol, magbinmedian))
 
-            # FIXME: figure out the correct index for a 3D grid here
+            # FIXME: figure out the correct indexes for a 3D grid here
 
             stet_mcc = np.array(
                 [x[magcol]['stet_mcc']
