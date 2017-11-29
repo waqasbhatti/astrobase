@@ -544,7 +544,7 @@ def get_recovered_variables_for_magbin(simbasedir,
                 'inveta_recall':inveta_recall,
                 'inveta_mcc':inveta_mcc,
                 # iqr alone
-                'iqr_recoveredvars':iqr_recvars.size,
+                'iqr_recoveredvars':iqr_recoveredvars.size,
                 'iqr_truepositives':iqr_truepositives.size,
                 'iqr_falsepositives':iqr_falsepositives.size,
                 'iqr_truenegatives':iqr_truenegatives.size,
