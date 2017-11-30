@@ -1984,6 +1984,7 @@ def plot_periodicvar_recovery_results(
         dpi=100,
         bbox_inches='tight'
     )
+    plt.close('all')
 
     # 1b. plot of recovery rate per magbin per magcol
     # 1c. plot of recovery rate per magbin per periodfinder
@@ -1996,7 +1997,7 @@ def plot_periodicvar_recovery_results(
     # 2a. plot of overall recovery rate per periodbin
     fig = plt.figure(figsize=(6.4*2,4.8*2))
 
-    plt.plot(periodbinned_period, periodbinned_recfrac,
+    plt.plot(periodbinned_periods, periodbinned_recfrac,
              linestyle='none',marker='o',ms=5.0)
     plt.xlabel('periodic variable period [days]')
     plt.ylabel('recovered fraction of periodic variables')
@@ -2008,6 +2009,7 @@ def plot_periodicvar_recovery_results(
         dpi=100,
         bbox_inches='tight'
     )
+    plt.close('all')
 
     # 2b. plot of recovery rate per magbin per magcol
     # 2c. plot of recovery rate per magbin per periodfinder
@@ -2031,6 +2033,7 @@ def plot_periodicvar_recovery_results(
         dpi=100,
         bbox_inches='tight'
     )
+    plt.close('all')
 
     # 3b. plot of recovery rate per magbin per magcol
     # 3c. plot of recovery rate per magbin per periodfinder
@@ -2054,6 +2057,7 @@ def plot_periodicvar_recovery_results(
         dpi=100,
         bbox_inches='tight'
     )
+    plt.close('all')
 
     # 1b. plot of recovery rate per magbin per magcol
     # 1c. plot of recovery rate per magbin per periodfinder
