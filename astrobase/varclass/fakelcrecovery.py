@@ -1725,9 +1725,9 @@ def plot_periodicvar_recovery_results(
 
     # find all the matching objects for these recovered statuses
     recovered_periodicvars = np.array(
-            [x['objectid'] for x in precvar['details']
-             if (x is not None and
-                 x['best_recovered_status'] in recovered_status)],
+            [precvar[x]['objectid'] for x in precvar['details']
+             if (precvar[x] is not None and
+                 precvar[x]['best_recovered_status'] in recovered_status)],
             dtype=np.unicode_
         )
 
