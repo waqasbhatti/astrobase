@@ -1654,6 +1654,9 @@ def plot_periodicvar_recovery_results(
     'ratio_over_minus1'         recovered_p = actual_p/(actual_p - 1.0)
     'ratio_over_twice_minus1'   recovered_p = actual_p/(2.0*actual_p - 1.0)
 
+    or set aliases_count_as_recovered='all' to include all of the above in the
+    'recovered' periodic var list.
+
     This function makes plots for periodic var precision, recall as a function
     of:
 
@@ -1714,7 +1717,7 @@ def plot_periodicvar_recovery_results(
     # aliases_count_as_recovered kwarg
     recovered_status = ['actual']
 
-    if aliases_count_as_recovered:
+    if aliases_count_as_recovered and aliases_count_as_recovered != 'all':
 
         for atype in aliases_count_as_recovered:
 
@@ -1722,6 +1725,12 @@ def plot_periodicvar_recovery_results(
                 recovered_status.append(atype)
             else:
                 LOGWARNING('unknown alias type: %s, skipping' % atype)
+
+    elif aliases_count_as_recovered and aliases_count_as_recovered == 'all':
+        for atype in ALIAS_TYPES[1:]:
+            recovered_status.append(atype)
+
+
 
     # find all the matching objects for these recovered statuses
     recovered_periodicvars = np.array(
