@@ -1276,11 +1276,11 @@ def check_periodrec_alias(actualperiod, recoveredperiod, tolerance=1.0e-3):
 
         # second kind of alias
         alias_2a = actualperiod/(1.0+2.0*actualperiod)
-        alias_2b = actualperiod/(1.0+2.0*actualperiod)
+        alias_2b = actualperiod/(1.0-2.0*actualperiod)
 
         # third kind of alias
         alias_3a = actualperiod/(1.0+3.0*actualperiod)
-        alias_3b = actualperiod/(1.0+3.0*actualperiod)
+        alias_3b = actualperiod/(1.0-3.0*actualperiod)
 
         # fourth kind of alias
         alias_4a = actualperiod/(actualperiod - 1.0)
@@ -1620,3 +1620,49 @@ def parallel_periodicvar_recovery(simbasedir,
             pfpkldir
         )
         return None
+
+
+
+def plot_periodicvar_recovery_results(
+        precvar_results,
+        aliases_count_as_recovered=None,
+        simbasedir
+):
+    '''This plots the results of periodic var recovery.
+
+    precvar_results is either a dict returned by parallel_periodicvar_recovery
+    or a the pickle created by that function.
+
+    aliases_count_as recovered is used to set which kinds of aliases this
+    function consideres as 'recovered' objects. A 'recovered' object is defined
+    as determined by the aliases_count_as_recovered kwarg. Normally, we require
+    that recovered objects have a recovery status of 'actual' to indicate the
+    actual period was recovered. To change this default behavior,
+    aliases_count_as_recovered can be set to a list of alias status strings that
+    should be considered as 'recovered' objects as well. Choose from the
+    following alias types:
+
+    'twice'                     recovered_p = 2.0*actual_p
+    'half'                      recovered_p = 0.5*actual_p
+    'ratio_over_1plus'          recovered_p = actual_p/(1.0+actual_p)
+    'ratio_over_1minus'         recovered_p = actual_p/(1.0-actual_p)
+    'ratio_over_1plus_twice'    recovered_p = actual_p/(1.0+2.0*actual_p)
+    'ratio_over_1minus_twice'   recovered_p = actual_p/(1.0-2.0*actual_p)
+    'ratio_over_1plus_thrice'   recovered_p = actual_p/(1.0+3.0*actual_p)
+    'ratio_over_1minus_thrice'  recovered_p = actual_p/(1.0-3.0*actual_p)
+    'ratio_over_minus1'         recovered_p = actual_p/(actual_p - 1.0)
+    'ratio_over_twice_minus1'   recovered_p = actual_p/(2.0*actual_p - 1.0)
+
+    simbasedir is the directory where the recovery simulation results are.
+
+    This function makes the following plots:
+
+    - periodic var precision, recall as a function of:
+
+      - magbin
+      - periodbin
+      - vartype
+      - amplitude of variability
+
+
+    '''
