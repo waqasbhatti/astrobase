@@ -1882,18 +1882,22 @@ def plot_periodicvar_recovery_results(
         'recovered_periodicvars':recovered_periodicvars,
         'recovery_definition':recovered_status,
         # mag binned actual periodicvars
+        # note that only bins with nobjects > minbinsize are included
         'magbins':magbins,
         'magbinned_mags':magbinned_sdssr,
         'magbinned_periodicvars':magbinned_periodicvars,
         # period binned actual periodicvars
+        # note that only bins with nobjects > minbinsize are included
         'periodbins':periodbins,
-        'periodbinned_mags':periodbinned_periods,
+        'periodbinned_periods':periodbinned_periods,
         'periodbinned_periodicvars':periodbinned_periodicvars,
         # amplitude binned actual periodicvars
+        # note that only bins with nobjects > minbinsize are included
         'amplitudebins':amplitudebins,
         'amplitudebinned_amplitudes':amplitudebinned_amplitudes,
         'amplitudebinned_periodicvars':amplitudebinned_periodicvars,
         # ndet binned actual periodicvars
+        # note that only bins with nobjects > minbinsize are included
         'ndetbins':ndetbins,
         'ndetbinned_ndets':ndetbinned_ndets,
         'ndetbinned_periodicvars':ndetbinned_periodicvars,
