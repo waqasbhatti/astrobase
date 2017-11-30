@@ -1908,7 +1908,7 @@ def plot_periodicvar_recovery_results(
     # this is the initial output dict
     outdict = {
         'simbasedir':simbasedir,
-        'precvar_results':precvar_results,
+        'precvar_results':precvar,
         'magcols':magcols,
         'objectids':objectid,
         'ndet':ndet,
