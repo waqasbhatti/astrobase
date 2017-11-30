@@ -1627,10 +1627,10 @@ def parallel_periodicvar_recovery(simbasedir,
 
 def plot_periodicvar_recovery_results(
         precvar_results,
-        magbins=np.arange(8.0,16.25,0.25),
-        periodbins=np.arange(0.0,500.0,1.0),
-        amplitudebins=np.arange(0.0,2.0,0.2),
-        ndetbins=np.arange(0.0,60000.0,5000.0),
+        magbins=np.arange(8.0,16.25,0.1),
+        periodbins=np.arange(0.0,500.0,0.5),
+        amplitudebins=np.arange(0.0,2.0,0.05),
+        ndetbins=np.arange(0.0,60000.0,1000.0),
         minbinsize=7,
         aliases_count_as_recovered=None,
 ):
