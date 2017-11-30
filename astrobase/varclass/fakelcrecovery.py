@@ -1627,12 +1627,13 @@ def parallel_periodicvar_recovery(simbasedir,
 
 def plot_periodicvar_recovery_results(
         precvar_results,
+        aliases_count_as_recovered=None,
         magbins=np.arange(8.0,16.25,0.25),
         periodbins=np.arange(0.0,500.0,0.25),
         amplitudebins=np.arange(0.0,2.0,0.05),
         ndetbins=np.arange(0.0,60000.0,1000.0),
         minbinsize=1,
-        aliases_count_as_recovered=None,
+        plotfile_ext='png',
 ):
     '''This plots the results of periodic var recovery.
 
@@ -1676,8 +1677,10 @@ def plot_periodicvar_recovery_results(
       - vartype
       - recovery status
 
-    Recovery rates are calculated using the recovered periodic vars and the
-    actual periodic vars in the simulation.
+    The kwargs magbins, periodbins, amplitudebins, and ndetbins can be used to
+    set the bin lists as needed. The kwarg minbinsize controls how many elements
+    per bin are required to accept a bin in processing its recovery
+    characteristics for mags, periods, amplitudes, and ndets.
 
     '''
 
@@ -1961,19 +1964,101 @@ def plot_periodicvar_recovery_results(
     #
     # finally, we do stuff for the plots!
     #
-
-    #
-    # by magbin
-    #
+    recplotdir = os.path.join(simbasedir, 'periodic-variable-recovery-plots')
+    if not os.path.exists(recplotdir):
+        os.mkdir(recplotdir)
 
     # 1. recovery-rate by magbin
+
     # 1a. plot of overall recovery rate per magbin
+    fig = plt.figure(figsize=(6.4*2,4.8*2))
+
+    plt.plot(magbinned_sdssr, magbinned_recfrac,
+             linestyle='none',marker='o',ms=5.0)
+    plt.xlabel(r'SDSS $r$ magnitude')
+    plt.ylabel('recovered fraction of periodic variables')
+    plt.title('overall recovery fraction by periodic var magnitudes')
+    plt.savefig(
+        os.path.join(recplotdir,
+                     'recfrac-binned-magnitudes-overall.%s' % plotfile_ext),
+        dpi=100,
+        bbox_inches='tight'
+    )
+
     # 1b. plot of recovery rate per magbin per magcol
     # 1c. plot of recovery rate per magbin per periodfinder
     # 1d. plot of recovery rate per magbin per variable type
     # 1e. plot of recovery rate per magbin per alias type
 
 
+    # 2. recovery-rate by magbin
+
+    # 2a. plot of overall recovery rate per periodbin
+    fig = plt.figure(figsize=(6.4*2,4.8*2))
+
+    plt.plot(periodbinned_period, periodbinned_recfrac,
+             linestyle='none',marker='o',ms=5.0)
+    plt.xlabel('periodic variable period [days]')
+    plt.ylabel('recovered fraction of periodic variables')
+    plt.title('overall recovery fraction by periodic var periods')
+    plt.xscale('log')
+    plt.savefig(
+        os.path.join(recplotdir,
+                     'recfrac-binned-periods-overall.%s' % plotfile_ext),
+        dpi=100,
+        bbox_inches='tight'
+    )
+
+    # 2b. plot of recovery rate per magbin per magcol
+    # 2c. plot of recovery rate per magbin per periodfinder
+    # 2d. plot of recovery rate per magbin per variable type
+    # 2e. plot of recovery rate per magbin per alias type
+
+
+    # 3. recovery-rate by amplitude bin
+
+    # 3a. plot of overall recovery rate per amplitude bin
+    fig = plt.figure(figsize=(6.4*2,4.8*2))
+
+    plt.plot(amplitudebinned_amplitudes, amplitudebinned_recfrac,
+             linestyle='none',marker='o',ms=5.0)
+    plt.xlabel('periodic variable amplitude [mag]')
+    plt.ylabel('recovered fraction of periodic variables')
+    plt.title('overall recovery fraction by periodic var amplitudes')
+    plt.savefig(
+        os.path.join(recplotdir,
+                     'recfrac-binned-amplitudes-overall.%s' % plotfile_ext),
+        dpi=100,
+        bbox_inches='tight'
+    )
+
+    # 3b. plot of recovery rate per magbin per magcol
+    # 3c. plot of recovery rate per magbin per periodfinder
+    # 3d. plot of recovery rate per magbin per variable type
+    # 3e. plot of recovery rate per magbin per alias type
+
+
+    # 4. recovery-rate by ndet bin
+
+    # 4a. plot of overall recovery rate per ndet bin
+    fig = plt.figure(figsize=(6.4*2,4.8*2))
+
+    plt.plot(ndetbinned_ndets, ndetbinned_recfrac,
+             linestyle='none',marker='o',ms=5.0)
+    plt.xlabel('periodic variable light curve points')
+    plt.ylabel('recovered fraction of periodic variables')
+    plt.title('overall recovery fraction by periodic var ndet')
+    plt.savefig(
+        os.path.join(recplotdir,
+                     'recfrac-binned-ndet-overall.%s' % plotfile_ext),
+        dpi=100,
+        bbox_inches='tight'
+    )
+
+    # 1b. plot of recovery rate per magbin per magcol
+    # 1c. plot of recovery rate per magbin per periodfinder
+    # 1d. plot of recovery rate per magbin per variable type
+    # 1e. plot of recovery rate per magbin per alias type
 
 
 
