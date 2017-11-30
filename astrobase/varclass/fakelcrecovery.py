@@ -1971,7 +1971,7 @@ def plot_periodicvar_recovery_results(
     # 1. recovery-rate by magbin
 
     # 1a. plot of overall recovery rate per magbin
-    fig = plt.figure(figsize=(6.4*2,4.8*2))
+    fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
     plt.plot(magbinned_sdssr, magbinned_recfrac,
              linestyle='none',marker='o',ms=5.0)
@@ -1995,7 +1995,7 @@ def plot_periodicvar_recovery_results(
     # 2. recovery-rate by magbin
 
     # 2a. plot of overall recovery rate per periodbin
-    fig = plt.figure(figsize=(6.4*2,4.8*2))
+    fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
     plt.plot(periodbinned_periods, periodbinned_recfrac,
              linestyle='none',marker='o',ms=5.0)
@@ -2020,7 +2020,7 @@ def plot_periodicvar_recovery_results(
     # 3. recovery-rate by amplitude bin
 
     # 3a. plot of overall recovery rate per amplitude bin
-    fig = plt.figure(figsize=(6.4*2,4.8*2))
+    fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
     plt.plot(amplitudebinned_amplitudes, amplitudebinned_recfrac,
              linestyle='none',marker='o',ms=5.0)
@@ -2044,7 +2044,7 @@ def plot_periodicvar_recovery_results(
     # 4. recovery-rate by ndet bin
 
     # 4a. plot of overall recovery rate per ndet bin
-    fig = plt.figure(figsize=(6.4*2,4.8*2))
+    fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
     plt.plot(ndetbinned_ndets, ndetbinned_recfrac,
              linestyle='none',marker='o',ms=5.0)
