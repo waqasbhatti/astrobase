@@ -1875,7 +1875,6 @@ def plot_periodicvar_recovery_results(
         'simbasedir':simbasedir,
         'precvar_results':precvar_results,
         'magcols':magcols,
-        'varflags':varflag,
         'objectids':objectid,
         'ndet':ndet,
         'sdssr':sdssr,
