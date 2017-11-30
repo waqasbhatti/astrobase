@@ -1629,6 +1629,7 @@ def plot_periodicvar_recovery_results(
         precvar_results,
         magbins=np.arange(8.0,16.25,0.25),
         periodbins=np.arange(0.0,500.0,5.0),
+        amplitudebins=np.arange(0.0,2.0,0.2),
         ndetbins=np.arange(0.0,60000.0,5000.0),
         binminsize=7,
         aliases_count_as_recovered=None,
@@ -1665,11 +1666,14 @@ def plot_periodicvar_recovery_results(
 
       - magbin
       - periodbin
-      - vartype
       - amplitude of variability
+      - ndet
+
+    with plot lines broken down by:
+
       - magcol
       - periodfinder
-      - ndet
+      - vartype
 
     Precision and recall are calculated using the recovered periodic vars and
     the actual periodic vars in the simulation.
@@ -1741,39 +1745,49 @@ def plot_periodicvar_recovery_results(
     LOGINFO('found %s objects with requested period recovery status: %s' %
             (recovered_periodicvars.size, ', '.join(recovered_status)))
 
-    # this is the initial output dict
-    outdict = {
-        'simbasedir':simbasedir,
-        'precvar_results':precvar_results,
-        'magcols':magcols,
-        'varflags':varflag,
-        'objectids':objectid,
-        'ndet':ndet,
-        'sdssr':sdssr,
-        'actual_periodicvars':actual_periodicvars,
-        'recovered_periodicvars':recovered_periodicvars,
-        'recovery_definition':recovered_status,
-    }
-
-    # now, we make the plots!
-
     # first, generate lists of objects binned by magbins and periodbins
+    LOGINFO('getting sdssr and ndet for actual periodic vars...')
 
-    LOGINFO('binning actual periodic vars by magnitude...')
-
-    # get the sdssr for all periodic vars
+    # get the sdssr and ndet for all periodic vars
     periodicvar_sdssr = []
+    periodicvar_ndet = []
     periodicvar_objectids = []
 
     for pobj in actual_periodicvars:
+
         pobjind = objectid[objectid == pobj]
         periodicvar_objectids.append(pobj)
         periodicvar_sdssr.append(sdssr[pobjind])
+        periodicvar_ndet.append(ndet[pobjind])
+
 
     periodicvar_sdssr = np.array(periodicvar_sdssr)
     periodicvar_objectids = np.array(periodicvar_objectids)
+    periodicvar_ndet = np.array(periodicvar_ndet)
 
-    # now bin them by mag
+    LOGINFO('getting periods, vartypes, '
+            'amplitudes, ndet for actual periodic vars...')
+
+    # get the periods, vartypes, amplitudes for the actual periodic vars
+    periodicvar_periods = [
+        np.asscalar(precvar['details'][x]['actual_varperiod'])
+        for x in periodicvar_objectids
+    ]
+    periodicvar_amplitudes = [
+        np.asscalar(precvar['details'][x]['actual_varamplitude'])
+        for x in periodicvar_objectids
+    ]
+    periodicvar_vartypes = [
+        precvar['details'][x]['actual_vartype'] for x in periodicvar_objectids
+    ]
+
+    #
+    # do the binning
+    #
+
+    # bin by mag
+    LOGINFO('binning actual periodic vars by magnitude...')
+
     magbinned_sdssr = []
     magbinned_periodicvars = []
     magbininds = np.digitize(periodicvar_sdssr, magbins)
@@ -1789,28 +1803,108 @@ def plot_periodicvar_recovery_results(
             magbinned_sdssr.append((magbins[magi] + magbins[magi+1])/2.0)
             magbinned_periodicvars.append(periodicvar_objectids[thisbinind])
 
-    LOGINFO('getting periods, vartypes, '
-            'amplitudes, ndet for actual periodic vars')
 
-    # get the periods, vartypes, amplitudes for the actual periodic vars
-    periodicvar_periods = [
-        np.asscalar(precvar['details'][x]['actual_varperiod'])
-        for x in periodicvar_objectids
-    ]
-    periodicvar_amplitudes = [
-        np.asscalar(precvar['details'][x]['actual_varamplitude'])
-        for x in periodicvar_objectids
-    ]
-    periodicvar_vartypes = [
-        precvar['details'][x]['actual_vartype'] for x in periodicvar_objectids
-    ]
-
-    # get the ndets for the actual periodic vars
-
-
-
+    # bin by period
     LOGINFO('binning actual periodic vars by period...')
 
+    periodbinned_periods = []
+    periodbinned_periodicvars = []
+    periodbininds = np.digitize(periodicvar_periods, periodbins)
+
+    for pbinind, peri in zip(np.unique(periodbininds),
+                             range(len(periodbins)-1)):
+
+        thisbinind = np.where(periodbininds == pbinind)
+        thisbin_periodicvars = periodicvar_objectids[thisbinind]
+
+        if (thisbin_periodicvars.size > (minbinsize-1)):
+
+            periodbinned_periods.append((periodbins[peri] +
+                                         periodbins[peri+1])/2.0)
+            periodbinned_periodicvars.append(periodicvar_objectids[thisbinind])
+
+
+    # bin by amplitude of variability
+    LOGINFO('binning actual periodic vars by variability amplitude...')
+
+    amplitudebinned_amplitudes = []
+    amplitudebinned_periodicvars = []
+    amplitudebininds = np.digitize(periodicvar_amplitudes, amplitudebins)
+
+    for abinind, ampi in zip(np.unique(amplitudebininds),
+                             range(len(amplitudebins)-1)):
+
+        thisbinind = np.where(amplitudebininds == abinind)
+        thisbin_periodicvars = periodicvar_objectids[thisbinind]
+
+        if (thisbin_periodicvars.size > (minbinsize-1)):
+
+            amplitudebinned_amplitudes.append(
+                (amplitudebins[ampi] +
+                 amplitudebins[ampi+1])/2.0
+            )
+            amplitudebinned_periodicvars.append(
+                periodicvar_objectids[thisbinind]
+            )
+
+
+    # bin by ndet
+    LOGINFO('binning actual periodic vars by ndet...')
+
+    ndetbinned_ndets = []
+    ndetbinned_periodicvars = []
+    ndetbininds = np.digitize(periodicvar_ndet, ndetbins)
+
+    for nbinind, ndeti in zip(np.unique(ndetbininds),
+                             range(len(ndetbins)-1)):
+
+        thisbinind = np.where(ndetbininds == nbinind)
+        thisbin_periodicvars = periodicvar_objectids[thisbinind]
+
+        if (thisbin_periodicvars.size > (minbinsize-1)):
+
+            ndetbinned_ndets.append(
+                (ndetbins[ndeti] +
+                 ndetbins[ndeti+1])/2.0
+            )
+            ndetbinned_periodicvars.append(
+                periodicvar_objectids[thisbinind]
+            )
+
+
+    # this is the initial output dict
+    outdict = {
+        'simbasedir':simbasedir,
+        'precvar_results':precvar_results,
+        'magcols':magcols,
+        'varflags':varflag,
+        'objectids':objectid,
+        'ndet':ndet,
+        'sdssr':sdssr,
+        'actual_periodicvars':actual_periodicvars,
+        'recovered_periodicvars':recovered_periodicvars,
+        'recovery_definition':recovered_status,
+        # mag binned actual periodicvars
+        'magbins':magbins,
+        'magbinned_mags':magbinned_sdssr,
+        'magbinned_periodicvars':magbinned_periodicvars,
+        # period binned actual periodicvars
+        'periodbins':periodbins,
+        'periodbinned_mags':periodbinned_periods,
+        'periodbinned_periodicvars':periodbinned_periodicvars,
+        # amplitude binned actual periodicvars
+        'amplitudebins':amplitudebins,
+        'amplitudebinned_amplitudes':amplitudebinned_amplitudes,
+        'amplitudebinned_periodicvars':amplitudebinned_periodicvars,
+        # ndet binned actual periodicvars
+        'ndetbins':ndetbins,
+        'ndetbinned_ndets':ndetbinned_ndets,
+        'ndetbinned_periodicvars':ndetbinned_periodicvars,
+    }
+
+    #
+    # finally, we do stuff for the plots!
+    #
 
     # 1. precision/recall by magbin
 
