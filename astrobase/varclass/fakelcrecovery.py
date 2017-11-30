@@ -1880,34 +1880,42 @@ def plot_periodicvar_recovery_results(
         np.intersect1d(x,recovered_periodicvars)
         for x in magbinned_periodicvars
     ]
-    magbinned_recfrac = [float(x.size/y.size) for x,y
-                         in zip(magbinned_recovered_objects,
-                                magbinned_periodicvars)]
+    magbinned_recfrac = np.array([float(x.size/y.size) for x,y
+                                  in zip(magbinned_recovered_objects,
+                                         magbinned_periodicvars)])
 
     periodbinned_recovered_objects = [
         np.intersect1d(x,recovered_periodicvars)
         for x in periodbinned_periodicvars
     ]
-    periodbinned_recfrac = [float(x.size/y.size) for x,y
-                            in zip(periodbinned_recovered_objects,
-                                   periodbinned_periodicvars)]
+    periodbinned_recfrac = np.array([float(x.size/y.size) for x,y
+                                     in zip(periodbinned_recovered_objects,
+                                            periodbinned_periodicvars)])
 
     amplitudebinned_recovered_objects = [
         np.intersect1d(x,recovered_periodicvars)
         for x in amplitudebinned_periodicvars
     ]
-    amplitudebinned_recfrac = [float(x.size/y.size) for x,y
-                               in zip(amplitudebinned_recovered_objects,
-                                      amplitudebinned_periodicvars)]
+    amplitudebinned_recfrac = np.array(
+        [float(x.size/y.size) for x,y
+         in zip(amplitudebinned_recovered_objects,
+                amplitudebinned_periodicvars)]
+    )
 
     ndetbinned_recovered_objects = [
         np.intersect1d(x,recovered_periodicvars)
         for x in ndetbinned_periodicvars
     ]
-    ndetbinned_recfrac = [float(x.size/y.size) for x,y
-                          in zip(ndetbinned_recovered_objects,
-                                 ndetbinned_periodicvars)]
+    ndetbinned_recfrac = np.array([float(x.size/y.size) for x,y
+                                   in zip(ndetbinned_recovered_objects,
+                                          ndetbinned_periodicvars)])
 
+
+    # convert the bin medians to arrays
+    magbinned_sdssr = np.array(magbinned_sdssr)
+    periodbinned_periods = np.array(periodbinned_periods)
+    amplitudebinned_amplitudes = np.array(amplitudebinned_amplitudes)
+    ndetbinned_ndets = np.array(ndetbinned_ndets)
 
     # this is the initial output dict
     outdict = {
@@ -1957,8 +1965,6 @@ def plot_periodicvar_recovery_results(
     #
     # by magbin
     #
-
-
 
     # 1. recovery-rate by magbin
     # 1a. plot of overall recovery rate per magbin
