@@ -1715,37 +1715,10 @@ def plot_periodicvar_recovery_results(
     ndet = lcinfo['ndet']
     sdssr = lcinfo['sdssr']
 
-    # now figure out what 'recovered' means using the provided
-    # aliases_count_as_recovered kwarg
-    recovered_status = ['actual']
-
-    if aliases_count_as_recovered and aliases_count_as_recovered != 'all':
-
-        for atype in aliases_count_as_recovered:
-
-            if atype in ALIAS_TYPES:
-                recovered_status.append(atype)
-            else:
-                LOGWARNING('unknown alias type: %s, skipping' % atype)
-
-    elif aliases_count_as_recovered and aliases_count_as_recovered == 'all':
-        for atype in ALIAS_TYPES[1:]:
-            recovered_status.append(atype)
-
-    # find all the matching objects for these recovered statuses
-    recovered_periodicvars = np.array(
-            [precvar['details'][x]['objectid'] for x in precvar['details']
-             if (precvar['details'][x] is not None and
-                 precvar['details'][x]['best_recovered_status']
-                 in recovered_status)],
-            dtype=np.unicode_
-        )
+    # get the actual periodic vars
     actual_periodicvars = precvar['actual_periodicvars']
 
-    LOGINFO('found %s objects with requested period recovery status: %s' %
-            (recovered_periodicvars.size, ', '.join(recovered_status)))
-
-    # first, generate lists of objects binned by magbins and periodbins
+    # generate lists of objects binned by magbins and periodbins
     LOGINFO('getting sdssr and ndet for actual periodic vars...')
 
     # get the sdssr and ndet for all periodic vars
@@ -1795,13 +1768,12 @@ def plot_periodicvar_recovery_results(
     for mbinind, magi in zip(np.unique(magbininds),
                              range(len(magbins)-1)):
 
-        thisbinind = np.where(magbininds == mbinind)
-        thisbin_periodicvars = periodicvar_objectids[thisbinind]
+        thisbin_periodicvars = periodicvar_objectids[magbininds == mbinind]
 
         if (thisbin_periodicvars.size > (minbinsize-1)):
 
             magbinned_sdssr.append((magbins[magi] + magbins[magi+1])/2.0)
-            magbinned_periodicvars.append(periodicvar_objectids[thisbinind])
+            magbinned_periodicvars.append(thisbin_periodicvars)
 
 
     # bin by period
@@ -1814,14 +1786,13 @@ def plot_periodicvar_recovery_results(
     for pbinind, peri in zip(np.unique(periodbininds),
                              range(len(periodbins)-1)):
 
-        thisbinind = np.where(periodbininds == pbinind)
-        thisbin_periodicvars = periodicvar_objectids[thisbinind]
+        thisbin_periodicvars = periodicvar_objectids[periodbininds == pbinind]
 
         if (thisbin_periodicvars.size > (minbinsize-1)):
 
             periodbinned_periods.append((periodbins[peri] +
                                          periodbins[peri+1])/2.0)
-            periodbinned_periodicvars.append(periodicvar_objectids[thisbinind])
+            periodbinned_periodicvars.append(thisbin_periodicvars)
 
 
     # bin by amplitude of variability
@@ -1834,8 +1805,9 @@ def plot_periodicvar_recovery_results(
     for abinind, ampi in zip(np.unique(amplitudebininds),
                              range(len(amplitudebins)-1)):
 
-        thisbinind = np.where(amplitudebininds == abinind)
-        thisbin_periodicvars = periodicvar_objectids[thisbinind]
+        thisbin_periodicvars = periodicvar_objectids[
+            amplitudebininds == abinind
+        ]
 
         if (thisbin_periodicvars.size > (minbinsize-1)):
 
@@ -1843,9 +1815,7 @@ def plot_periodicvar_recovery_results(
                 (amplitudebins[ampi] +
                  amplitudebins[ampi+1])/2.0
             )
-            amplitudebinned_periodicvars.append(
-                periodicvar_objectids[thisbinind]
-            )
+            amplitudebinned_periodicvars.append(thisbin_periodicvars)
 
 
     # bin by ndet
@@ -1858,8 +1828,7 @@ def plot_periodicvar_recovery_results(
     for nbinind, ndeti in zip(np.unique(ndetbininds),
                              range(len(ndetbins)-1)):
 
-        thisbinind = np.where(ndetbininds == nbinind)
-        thisbin_periodicvars = periodicvar_objectids[thisbinind]
+        thisbin_periodicvars = periodicvar_objectids[ndetbininds == nbinind]
 
         if (thisbin_periodicvars.size > (minbinsize-1)):
 
@@ -1867,9 +1836,37 @@ def plot_periodicvar_recovery_results(
                 (ndetbins[ndeti] +
                  ndetbins[ndeti+1])/2.0
             )
-            ndetbinned_periodicvars.append(
-                periodicvar_objectids[thisbinind]
-            )
+            ndetbinned_periodicvars.append(thisbin_periodicvars)
+
+
+    # now figure out what 'recovered' means using the provided
+    # aliases_count_as_recovered kwarg
+    recovered_status = ['actual']
+
+    if aliases_count_as_recovered and aliases_count_as_recovered != 'all':
+
+        for atype in aliases_count_as_recovered:
+
+            if atype in ALIAS_TYPES:
+                recovered_status.append(atype)
+            else:
+                LOGWARNING('unknown alias type: %s, skipping' % atype)
+
+    elif aliases_count_as_recovered and aliases_count_as_recovered == 'all':
+        for atype in ALIAS_TYPES[1:]:
+            recovered_status.append(atype)
+
+    # find all the matching objects for these recovered statuses
+    recovered_periodicvars = np.array(
+            [precvar['details'][x]['objectid'] for x in precvar['details']
+             if (precvar['details'][x] is not None and
+                 precvar['details'][x]['best_recovered_status']
+                 in recovered_status)],
+            dtype=np.unicode_
+        )
+
+    LOGINFO('found %s objects with requested period recovery status: %s' %
+            (recovered_periodicvars.size, ', '.join(recovered_status)))
 
 
     # this is the initial output dict
