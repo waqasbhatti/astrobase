@@ -1714,12 +1714,14 @@ def plot_periodicvar_recovery_results(
     # aliases_count_as_recovered kwarg
     recovered_status = ['actual']
 
-    for atype in aliases_count_as_recovered:
+    if aliases_count_as_recovered:
 
-        if atype in ALIAS_TYPES:
-            recovered_status.append(atype)
-        else:
-            LOGWARNING('unknown alias type: %s, skipping' % atype)
+        for atype in aliases_count_as_recovered:
+
+            if atype in ALIAS_TYPES:
+                recovered_status.append(atype)
+            else:
+                LOGWARNING('unknown alias type: %s, skipping' % atype)
 
     # find all the matching objects for these recovered statuses
     recovered_periodicvars = np.array(
