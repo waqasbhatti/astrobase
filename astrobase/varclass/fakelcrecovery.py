@@ -1627,6 +1627,10 @@ def parallel_periodicvar_recovery(simbasedir,
 
 def plot_periodicvar_recovery_results(
         precvar_results,
+        magbins=np.arange(8.0,16.25,0.25),
+        periodbins=np.arange(0.0,500.0,5.0),
+        ndetbins=np.arange(0.0,60000.0,5000.0),
+        binminsize=7,
         aliases_count_as_recovered=None,
 ):
     '''This plots the results of periodic var recovery.
@@ -1635,10 +1639,9 @@ def plot_periodicvar_recovery_results(
     or a the pickle created by that function.
 
     aliases_count_as recovered is used to set which kinds of aliases this
-    function considers as 'recovered' objects. A 'recovered' object is defined
-    as determined by the aliases_count_as_recovered kwarg. Normally, we require
-    that recovered objects have a recovery status of 'actual' to indicate the
-    actual period was recovered. To change this default behavior,
+    function considers as 'recovered' objects. Normally, we require that
+    recovered objects have a recovery status of 'actual' to indicate the actual
+    period was recovered. To change this default behavior,
     aliases_count_as_recovered can be set to a list of alias status strings that
     should be considered as 'recovered' objects as well. Choose from the
     following alias types:
@@ -1702,16 +1705,11 @@ def plot_periodicvar_recovery_results(
     with open(lcinfof,'rb') as infd:
         lcinfo = pickle.load(infd)
 
-    # get the magcols, vartypes, sdssr, isvariable flags, and magbins
+    # get the magcols, vartypes, sdssr, isvariable flags
     magcols = lcinfo['magcols']
-    varflag = lcinfo['isvariable']
-    vartype = lcinfo['vartype']
     objectid = lcinfo['objectid']
     ndet = lcinfo['ndet']
     sdssr = lcinfo['sdssr']
-
-    # we'll assume the magbins are the same for all magcols
-    magbinmedians = lcinfo['magrms'][magcols[0]]['binned_sdssr_median']
 
     # now figure out what 'recovered' means using the provided
     # aliases_count_as_recovered kwarg
@@ -1730,8 +1728,6 @@ def plot_periodicvar_recovery_results(
         for atype in ALIAS_TYPES[1:]:
             recovered_status.append(atype)
 
-
-
     # find all the matching objects for these recovered statuses
     recovered_periodicvars = np.array(
             [precvar['details'][x]['objectid'] for x in precvar['details']
@@ -1740,23 +1736,83 @@ def plot_periodicvar_recovery_results(
                  in recovered_status)],
             dtype=np.unicode_
         )
+    actual_periodicvars = precvar['actual_periodicvars']
 
     LOGINFO('found %s objects with requested period recovery status: %s' %
             (recovered_periodicvars.size, ', '.join(recovered_status)))
 
     # this is the initial output dict
-    outdict = {'simbasedir':simbasedir,
-               'precvar_results':precvar_results,
-               'magcols':magcols,
-               'varflags':varflag,
-               'objectids':objectid,
-               'ndet':ndet,
-               'sdssr':sdssr,
-               'actual_periodicvars':precvar['actual_periodicvars'],
-               'recovered_periodicvars':recovered_periodicvars,
-               'recovery_definition':recovered_status}
+    outdict = {
+        'simbasedir':simbasedir,
+        'precvar_results':precvar_results,
+        'magcols':magcols,
+        'varflags':varflag,
+        'objectids':objectid,
+        'ndet':ndet,
+        'sdssr':sdssr,
+        'actual_periodicvars':actual_periodicvars,
+        'recovered_periodicvars':recovered_periodicvars,
+        'recovery_definition':recovered_status,
+    }
 
     # now, we make the plots!
+
+    # first, generate lists of objects binned by magbins and periodbins
+
+    LOGINFO('binning actual periodic vars by magnitude...')
+
+    # get the sdssr for all periodic vars
+    periodicvar_sdssr = []
+    periodicvar_objectids = []
+
+    for pobj in actual_periodicvars:
+        pobjind = objectid[objectid == pobj]
+        periodicvar_objectids.append(pobj)
+        periodicvar_sdssr.append(sdssr[pobjind])
+
+    periodicvar_sdssr = np.array(periodicvar_sdssr)
+    periodicvar_objectids = np.array(periodicvar_objectids)
+
+    # now bin them by mag
+    magbinned_sdssr = []
+    magbinned_periodicvars = []
+    magbininds = np.digitize(periodicvar_sdssr, magbins)
+
+    for mbinind, magi in zip(np.unique(magbininds),
+                             range(len(magbins)-1)):
+
+        thisbinind = np.where(magbininds == mbinind)
+        thisbin_periodicvars = periodicvar_objectids[thisbinind]
+
+        if (thisbin_periodicvars.size > (minbinsize-1)):
+
+            magbinned_sdssr.append((magbins[magi] + magbins[magi+1])/2.0)
+            magbinned_periodicvars.append(periodicvar_objectids[thisbinind])
+
+    LOGINFO('getting periods, vartypes, '
+            'amplitudes, ndet for actual periodic vars')
+
+    # get the periods, vartypes, amplitudes for the actual periodic vars
+    periodicvar_periods = [
+        np.asscalar(precvar['details'][x]['actual_varperiod'])
+        for x in periodicvar_objectids
+    ]
+    periodicvar_amplitudes = [
+        np.asscalar(precvar['details'][x]['actual_varamplitude'])
+        for x in periodicvar_objectids
+    ]
+    periodicvar_vartypes = [
+        precvar['details'][x]['actual_vartype'] for x in periodicvar_objectids
+    ]
+
+    # get the ndets for the actual periodic vars
+
+
+
+    LOGINFO('binning actual periodic vars by period...')
+
+
+    # 1. precision/recall by magbin
 
 
 
