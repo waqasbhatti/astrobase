@@ -1763,7 +1763,7 @@ def plot_periodicvar_recovery_results(
 
     magbinned_sdssr = []
     magbinned_periodicvars = []
-    magbininds = np.digitize(periodicvar_sdssr, magbins)
+    magbininds = np.digitize(np.ravel(periodicvar_sdssr), magbins)
 
     for mbinind, magi in zip(np.unique(magbininds),
                              range(len(magbins)-1)):
@@ -1781,7 +1781,7 @@ def plot_periodicvar_recovery_results(
 
     periodbinned_periods = []
     periodbinned_periodicvars = []
-    periodbininds = np.digitize(periodicvar_periods, periodbins)
+    periodbininds = np.digitize(np.ravel(periodicvar_periods), periodbins)
 
     for pbinind, peri in zip(np.unique(periodbininds),
                              range(len(periodbins)-1)):
@@ -1800,7 +1800,8 @@ def plot_periodicvar_recovery_results(
 
     amplitudebinned_amplitudes = []
     amplitudebinned_periodicvars = []
-    amplitudebininds = np.digitize(periodicvar_amplitudes, amplitudebins)
+    amplitudebininds = np.digitize(np.ravel(periodicvar_amplitudes),
+                                   amplitudebins)
 
     for abinind, ampi in zip(np.unique(amplitudebininds),
                              range(len(amplitudebins)-1)):
@@ -1823,7 +1824,7 @@ def plot_periodicvar_recovery_results(
 
     ndetbinned_ndets = []
     ndetbinned_periodicvars = []
-    ndetbininds = np.digitize(periodicvar_ndet, ndetbins)
+    ndetbininds = np.digitize(np.ravel(periodicvar_ndet), ndetbins)
 
     for nbinind, ndeti in zip(np.unique(ndetbininds),
                              range(len(ndetbins)-1)):
