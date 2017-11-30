@@ -1157,6 +1157,18 @@ def plot_varind_gridsearch_magbin_results(gridresults):
 PERIODIC_VARTYPES = ['EB','RRab','RRc','rotator',
                      'HADS','planet','LPV','cepheid']
 
+ALIAS_TYPES = ['actual',
+               'twice',
+               'half',
+               'ratio_over_1plus',
+               'ratio_over_1minus',
+               'ratio_over_1plus_twice',
+               'ratio_over_1minus_twice',
+               'ratio_over_1plus_thrice',
+               'ratio_over_1minus_thrice',
+               'ratio_over_minus1',
+               'ratio_over_twice_minus1']
+
 
 def run_periodfinding(simbasedir,
                       pfmethods=['gls','pdm','bls'],
@@ -1299,17 +1311,7 @@ def check_periodrec_alias(actualperiod, recoveredperiod, tolerance=1.0e-3):
             alias_4a,
             alias_4b]
         ))
-        alias_labels = np.array(['actual',
-                                 'twice',
-                                 'half',
-                                 'ratio_over_1plus',
-                                 'ratio_over_1minus',
-                                 'ratio_over_1plus_twice',
-                                 'ratio_over_1minus_twice',
-                                 'ratio_over_1plus_thrice',
-                                 'ratio_over_1minus_thrice',
-                                 'ratio_over_minus1',
-                                 'ratio_over_twice_minus1'])
+        alias_labels = np.array(ALIAS_TYPES)
 
         # check type of alias
         closest_alias = np.isclose(recoveredperiod, aliases, rtol=tolerance)
@@ -1625,7 +1627,6 @@ def parallel_periodicvar_recovery(simbasedir,
 
 def plot_periodicvar_recovery_results(
         precvar_results,
-        simbasedir,
         aliases_count_as_recovered=None,
 ):
     '''This plots the results of periodic var recovery.
@@ -1634,7 +1635,7 @@ def plot_periodicvar_recovery_results(
     or a the pickle created by that function.
 
     aliases_count_as recovered is used to set which kinds of aliases this
-    function consideres as 'recovered' objects. A 'recovered' object is defined
+    function considers as 'recovered' objects. A 'recovered' object is defined
     as determined by the aliases_count_as_recovered kwarg. Normally, we require
     that recovered objects have a recovery status of 'actual' to indicate the
     actual period was recovered. To change this default behavior,
@@ -1653,16 +1654,104 @@ def plot_periodicvar_recovery_results(
     'ratio_over_minus1'         recovered_p = actual_p/(actual_p - 1.0)
     'ratio_over_twice_minus1'   recovered_p = actual_p/(2.0*actual_p - 1.0)
 
-    simbasedir is the directory where the recovery simulation results are.
-
-    This function makes the following plots:
-
-    - periodic var precision, recall as a function of:
+    This function makes plots for periodic var precision, recall as a function
+    of:
 
       - magbin
       - periodbin
       - vartype
       - amplitude of variability
+      - magcol
+      - periodfinder
+      - ndet
 
+    Precision and recall are calculated using the recovered periodic vars and
+    the actual periodic vars in the simulation.
 
     '''
+
+    # get the result pickle/dict
+    if isinstance(precvar_results, str) and os.path.exists(precvar_results):
+
+        with open(precvar_results,'rb') as infd:
+            precvar = pickle.load(infd)
+
+    elif isinstance(precvar_results, dict):
+
+        precvar = precvar_results
+
+    else:
+        LOGERROR('could not understand the input '
+                 'periodic var recovery dict/pickle')
+        return None
+
+    # get the simbasedir and open the fakelc-info.pkl. we'll need the magbins
+    # definition from here.
+    simbasedir = precvar['simbasedir']
+
+    lcinfof = os.path.join(simbasedir,'fakelcs-info.pkl')
+
+    if not os.path.exists(lcinfof):
+        LOGERROR('fakelcs-info.pkl does not exist in %s, can\'t continue' %
+                 simbasedir)
+        return None
+
+    with open(lcinfof,'rb') as infd:
+        lcinfo = pickle.load(infd)
+
+    # get the magcols, vartypes, sdssr, isvariable flags, and magbins
+    magcols = lcinfo['magcols']
+    varflag = lcinfo['isvariable']
+    vartype = lcinfo['vartype']
+    objectid = lcinfo['objectid']
+    ndet = lcinfo['ndet']
+    sdssr = lcinfo['sdssr']
+
+    # we'll assume the magbins are the same for all magcols
+    magbinmedians = lcinfo['magrms'][magcols[0]]['binned_sdssr_median']
+
+    # now figure out what 'recovered' means using the provided
+    # aliases_count_as_recovered kwarg
+    recovered_status = ['actual']
+
+    for atype in aliases_count_as_recovered:
+
+        if atype in ALIAS_TYPES:
+            recovered_status.append(atype)
+        else:
+            LOGWARNING('unknown alias type: %s, skipping' % atype)
+
+    # find all the matching objects for these recovered statuses
+    recovered_periodicvars = np.array(
+            [x['objectid'] for x in results
+             if (x is not None and
+                 x['best_recovered_status'] in recovered_status)],
+            dtype=np.unicode_
+        )
+
+    LOGINFO('found %s objects with requested periodic var status: %s' %
+            (recovered_periodicvars.size, ', '.join(recovered_status)))
+
+    # this is the initial output dict
+    outdict = {'simbasedir':simbasedir,
+               'precvar_results':precvar_results,
+               'magcols':magcols,
+               'varflags':varflag,
+               'objectids':objectid,
+               'ndet':ndet,
+               'sdssr':sdssr,
+               'actual_periodicvars':precvar['actual_periodicvars'],
+               'recovered_periodicvars':recovered_periodicvars,
+               'recovery_definition':recovered_status}
+
+    # now, we make the plots!
+
+
+
+
+    # at the end, write the outdict to a pickle and return it
+    outfile = os.path.join(simbasedir, 'periodicvar-recovery-plotresults.pkl')
+    with open(outfile,'wb') as outfd:
+        pickle.dump(outdict, outfd, pickle.HIGHEST_PROTOCOL)
+
+    return outdict
