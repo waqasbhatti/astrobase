@@ -1631,7 +1631,7 @@ def plot_periodicvar_recovery_results(
         periodbins=np.arange(0.0,500.0,5.0),
         amplitudebins=np.arange(0.0,2.0,0.2),
         ndetbins=np.arange(0.0,60000.0,5000.0),
-        binminsize=7,
+        minbinsize=7,
         aliases_count_as_recovered=None,
 ):
     '''This plots the results of periodic var recovery.
