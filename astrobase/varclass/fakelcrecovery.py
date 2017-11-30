@@ -1732,7 +1732,7 @@ def plot_periodicvar_recovery_results(
             dtype=np.unicode_
         )
 
-    LOGINFO('found %s objects with requested periodic var status: %s' %
+    LOGINFO('found %s objects with requested period recovery status: %s' %
             (recovered_periodicvars.size, ', '.join(recovered_status)))
 
     # this is the initial output dict
