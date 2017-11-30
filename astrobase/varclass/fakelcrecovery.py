@@ -1973,8 +1973,7 @@ def plot_periodicvar_recovery_results(
     # 1a. plot of overall recovery rate per magbin
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
-    plt.plot(magbinned_sdssr, magbinned_recfrac,
-             linestyle='none',marker='o',ms=5.0)
+    plt.plot(magbinned_sdssr, magbinned_recfrac,marker='.')
     plt.xlabel(r'SDSS $r$ magnitude')
     plt.ylabel('recovered fraction of periodic variables')
     plt.title('overall recovery fraction by periodic var magnitudes')
@@ -1998,7 +1997,7 @@ def plot_periodicvar_recovery_results(
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
     plt.plot(periodbinned_periods, periodbinned_recfrac,
-             linestyle='none',marker='o',ms=5.0)
+             marker='.')
     plt.xlabel('periodic variable period [days]')
     plt.ylabel('recovered fraction of periodic variables')
     plt.title('overall recovery fraction by periodic var periods')
@@ -2023,7 +2022,7 @@ def plot_periodicvar_recovery_results(
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
     plt.plot(amplitudebinned_amplitudes, amplitudebinned_recfrac,
-             linestyle='none',marker='o',ms=5.0)
+             marker='.')
     plt.xlabel('periodic variable amplitude [mag]')
     plt.ylabel('recovered fraction of periodic variables')
     plt.title('overall recovery fraction by periodic var amplitudes')
@@ -2047,7 +2046,7 @@ def plot_periodicvar_recovery_results(
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
     plt.plot(ndetbinned_ndets, ndetbinned_recfrac,
-             linestyle='none',marker='o',ms=5.0)
+             marker='.')
     plt.xlabel('periodic variable light curve points')
     plt.ylabel('recovered fraction of periodic variables')
     plt.title('overall recovery fraction by periodic var ndet')
