@@ -1629,7 +1629,7 @@ def plot_periodicvar_recovery_results(
         precvar_results,
         aliases_count_as_recovered=None,
         magbins=np.arange(8.0,16.25,0.25),
-        periodbins=np.arange(0.0,500.0,0.25),
+        periodbins=np.arange(0.0,500.0,0.5),
         amplitudebins=np.arange(0.0,2.0,0.05),
         ndetbins=np.arange(0.0,60000.0,1000.0),
         minbinsize=1,
@@ -1973,10 +1973,11 @@ def plot_periodicvar_recovery_results(
     # 1a. plot of overall recovery rate per magbin
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
-    plt.plot(magbinned_sdssr, magbinned_recfrac,marker='.')
+    plt.plot(magbinned_sdssr, magbinned_recfrac,marker='.',ms=0.0)
     plt.xlabel(r'SDSS $r$ magnitude')
     plt.ylabel('recovered fraction of periodic variables')
     plt.title('overall recovery fraction by periodic var magnitudes')
+    plt.ylim((0,1))
     plt.savefig(
         os.path.join(recplotdir,
                      'recfrac-binned-magnitudes-overall.%s' % plotfile_ext),
@@ -1997,11 +1998,11 @@ def plot_periodicvar_recovery_results(
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
     plt.plot(periodbinned_periods, periodbinned_recfrac,
-             marker='.')
+             marker='.',ms=0.0)
     plt.xlabel('periodic variable period [days]')
     plt.ylabel('recovered fraction of periodic variables')
     plt.title('overall recovery fraction by periodic var periods')
-    plt.xscale('log')
+    plt.ylim((0,1))
     plt.savefig(
         os.path.join(recplotdir,
                      'recfrac-binned-periods-overall.%s' % plotfile_ext),
@@ -2022,10 +2023,11 @@ def plot_periodicvar_recovery_results(
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
     plt.plot(amplitudebinned_amplitudes, amplitudebinned_recfrac,
-             marker='.')
+             marker='.',ms=0.0)
     plt.xlabel('periodic variable amplitude [mag]')
     plt.ylabel('recovered fraction of periodic variables')
     plt.title('overall recovery fraction by periodic var amplitudes')
+    plt.ylim((0,1))
     plt.savefig(
         os.path.join(recplotdir,
                      'recfrac-binned-amplitudes-overall.%s' % plotfile_ext),
@@ -2046,10 +2048,11 @@ def plot_periodicvar_recovery_results(
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
     plt.plot(ndetbinned_ndets, ndetbinned_recfrac,
-             marker='.')
+             marker='.',ms=0.0)
     plt.xlabel('periodic variable light curve points')
     plt.ylabel('recovered fraction of periodic variables')
     plt.title('overall recovery fraction by periodic var ndet')
+    plt.ylim((0,1))
     plt.savefig(
         os.path.join(recplotdir,
                      'recfrac-binned-ndet-overall.%s' % plotfile_ext),
