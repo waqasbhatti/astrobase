@@ -1674,7 +1674,7 @@ def plot_periodicvar_recovery_results(
       - magcol
       - periodfinder
       - vartype
-      - alias type
+      - recovery status
 
     Recovery rates are calculated using the recovered periodic vars and the
     actual periodic vars in the simulation.
@@ -1867,8 +1867,12 @@ def plot_periodicvar_recovery_results(
             dtype=np.unicode_
         )
 
-    LOGINFO('found %s objects with requested period recovery status: %s' %
-            (recovered_periodicvars.size, ', '.join(recovered_status)))
+    LOGINFO('recovered %s/%s periodic variables (frac: %.3f) with '
+            'period recovery status: %s' %
+            (recovered_periodicvars.size,
+             actual_periodicvars.size,
+             float(recovered_periodicvars.size/actual_periodicvars.size),
+             ', '.join(recovered_status)))
 
 
     # get the objects recovered per bin and overall recovery fractions per bin
