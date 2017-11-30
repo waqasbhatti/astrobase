@@ -1755,7 +1755,7 @@ def plot_periodicvar_recovery_results(
 
     for pobj in actual_periodicvars:
 
-        pobjind = objectid[objectid == pobj]
+        pobjind = objectid == pobj]
         periodicvar_objectids.append(pobj)
         periodicvar_sdssr.append(sdssr[pobjind])
         periodicvar_ndet.append(ndet[pobjind])
