@@ -1627,8 +1627,8 @@ def parallel_periodicvar_recovery(simbasedir,
 
 def plot_periodicvar_recovery_results(
         precvar_results,
-        magbins=np.arange(8.0,16.25,0.1),
-        periodbins=np.arange(0.0,500.0,0.5),
+        magbins=np.arange(8.0,16.25,0.25),
+        periodbins=np.arange(0.0,500.0,0.25),
         amplitudebins=np.arange(0.0,2.0,0.05),
         ndetbins=np.arange(0.0,60000.0,1000.0),
         minbinsize=1,
@@ -1637,7 +1637,7 @@ def plot_periodicvar_recovery_results(
     '''This plots the results of periodic var recovery.
 
     precvar_results is either a dict returned by parallel_periodicvar_recovery
-    or a the pickle created by that function.
+    or the pickle created by that function.
 
     aliases_count_as recovered is used to set which kinds of aliases this
     function considers as 'recovered' objects. Normally, we require that
@@ -1661,7 +1661,7 @@ def plot_periodicvar_recovery_results(
     or set aliases_count_as_recovered='all' to include all of the above in the
     'recovered' periodic var list.
 
-    This function makes plots for periodic var precision, recall as a function
+    This function makes plots for periodicvar recovered fraction as a function
     of:
 
       - magbin
@@ -1674,9 +1674,10 @@ def plot_periodicvar_recovery_results(
       - magcol
       - periodfinder
       - vartype
+      - alias type
 
-    Precision and recall are calculated using the recovered periodic vars and
-    the actual periodic vars in the simulation.
+    Recovery rates are calculated using the recovered periodic vars and the
+    actual periodic vars in the simulation.
 
     '''
 
@@ -1870,6 +1871,40 @@ def plot_periodicvar_recovery_results(
             (recovered_periodicvars.size, ', '.join(recovered_status)))
 
 
+    # get the objects recovered per bin and overall recovery fractions per bin
+    magbinned_recovered_objects = [
+        np.intersect1d(x,recovered_periodicvars)
+        for x in magbinned_periodicvars
+    ]
+    magbinned_recfrac = [float(x.size/y.size) for x,y
+                         in zip(magbinned_recovered_objects,
+                                magbinned_periodicvars)]
+
+    periodbinned_recovered_objects = [
+        np.intersect1d(x,recovered_periodicvars)
+        for x in periodbinned_periodicvars
+    ]
+    periodbinned_recfrac = [float(x.size/y.size) for x,y
+                            in zip(periodbinned_recovered_objects,
+                                   periodbinned_periodicvars)]
+
+    amplitudebinned_recovered_objects = [
+        np.intersect1d(x,recovered_periodicvars)
+        for x in amplitudebinned_periodicvars
+    ]
+    amplitudebinned_recfrac = [float(x.size/y.size) for x,y
+                               in zip(amplitudebinned_recovered_objects,
+                                      amplitudebinned_periodicvars)]
+
+    ndetbinned_recovered_objects = [
+        np.intersect1d(x,recovered_periodicvars)
+        for x in ndetbinned_periodicvars
+    ]
+    ndetbinned_recfrac = [float(x.size/y.size) for x,y
+                          in zip(ndetbinned_recovered_objects,
+                                 ndetbinned_periodicvars)]
+
+
     # this is the initial output dict
     outdict = {
         'simbasedir':simbasedir,
@@ -1886,28 +1921,49 @@ def plot_periodicvar_recovery_results(
         'magbins':magbins,
         'magbinned_mags':magbinned_sdssr,
         'magbinned_periodicvars':magbinned_periodicvars,
+        'magbinned_recoveredvars':magbinned_recovered_objects,
+        'magbinned_recfrac':magbinned_recfrac,
         # period binned actual periodicvars
         # note that only bins with nobjects > minbinsize are included
         'periodbins':periodbins,
         'periodbinned_periods':periodbinned_periods,
         'periodbinned_periodicvars':periodbinned_periodicvars,
+        'periodbinned_recoveredvars':periodbinned_recovered_objects,
+        'periodbinned_recfrac':periodbinned_recfrac,
         # amplitude binned actual periodicvars
         # note that only bins with nobjects > minbinsize are included
         'amplitudebins':amplitudebins,
         'amplitudebinned_amplitudes':amplitudebinned_amplitudes,
         'amplitudebinned_periodicvars':amplitudebinned_periodicvars,
+        'amplitudebinned_recoveredvars':amplitudebinned_recovered_objects,
+        'amplitudebinned_recfrac':amplitudebinned_recfrac,
         # ndet binned actual periodicvars
         # note that only bins with nobjects > minbinsize are included
         'ndetbins':ndetbins,
         'ndetbinned_ndets':ndetbinned_ndets,
         'ndetbinned_periodicvars':ndetbinned_periodicvars,
+        'ndetbinned_recoveredvars':ndetbinned_recovered_objects,
+        'ndetbinned_recfrac':ndetbinned_recfrac,
     }
 
     #
     # finally, we do stuff for the plots!
     #
 
-    # 1. precision/recall by magbin
+    #
+    # by magbin
+    #
+
+
+
+    # 1. recovery-rate by magbin
+    # 1a. plot of overall recovery rate per magbin
+    # 1b. plot of recovery rate per magbin per magcol
+    # 1c. plot of recovery rate per magbin per periodfinder
+    # 1d. plot of recovery rate per magbin per variable type
+    # 1e. plot of recovery rate per magbin per alias type
+
+
 
 
 
