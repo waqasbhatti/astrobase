@@ -1800,7 +1800,7 @@ def plot_periodicvar_recovery_results(
 
     amplitudebinned_amplitudes = []
     amplitudebinned_periodicvars = []
-    amplitudebininds = np.digitize(np.ravel(periodicvar_amplitudes),
+    amplitudebininds = np.digitize(np.ravel(np.abs(periodicvar_amplitudes)),
                                    amplitudebins)
 
     for abinind, ampi in zip(np.unique(amplitudebininds),
