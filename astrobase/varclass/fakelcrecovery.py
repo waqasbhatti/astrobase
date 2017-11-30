@@ -1625,8 +1625,8 @@ def parallel_periodicvar_recovery(simbasedir,
 
 def plot_periodicvar_recovery_results(
         precvar_results,
-        aliases_count_as_recovered=None,
         simbasedir
+        aliases_count_as_recovered=None,
 ):
     '''This plots the results of periodic var recovery.
 
