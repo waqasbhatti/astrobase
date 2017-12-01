@@ -2087,10 +2087,9 @@ def plot_periodicvar_recovery_results(
 
     # figure out all vartypes
     all_vartypes = np.unique(
-        np.concatenate(
-            [np.unique(precvar['details'][x]['actual_vartype'])
-             for x in precvar['details']]
-        )
+            [(precvar['details'][x]['actual_vartype'])
+             for x in precvar['details'] if
+             (precvar['details'][x]['actual_vartype'] is not None)]
     )
 
     for vt in all_vartypes:
