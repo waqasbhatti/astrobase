@@ -2016,6 +2016,23 @@ def plot_periodicvar_recovery_results(
     # FIXME: how will this be done? we need to get best_recovered_magcol per
     # recovered objectid per bin.
 
+    magbinned_recfracs_magcols = []
+
+    for magcol in magcols:
+
+        thismagcol_recvars = []
+
+        for magbin_rv in magbinned_recovered_objects:
+
+            thisbin_thismagcol_recvars = [
+                x for x in magbin_rv
+                if (precvar['details'][x]['best_recovered_magcol'] == magcol)
+            ]
+            thisbin_thismagcol_recfrac =
+
+
+
+
 
     # 2c. plot of recovery rate per magbin per periodfinder
     # 2d. plot of recovery rate per magbin per variable type
