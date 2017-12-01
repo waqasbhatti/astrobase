@@ -2015,7 +2015,7 @@ def plot_periodicvar_recovery_results(
 
     # finish up the plot
     plt.plot(magbinned_sdssr, magbinned_recfrac,
-             marker='.',ms=0.0, label='overall')
+             marker='.',ms=0.0, label='overall', color='k')
     plt.xlabel(r'SDSS $r$ magnitude')
     plt.ylabel('recovered fraction of periodic variables')
     plt.title('per magcol recovery fraction by periodic var magnitudes')
@@ -2067,7 +2067,7 @@ def plot_periodicvar_recovery_results(
 
     # finish up the plot
     plt.plot(magbinned_sdssr, magbinned_recfrac,
-             marker='.',ms=0.0, label='overall')
+             marker='.',ms=0.0, label='overall', color='k')
     plt.xlabel(r'SDSS $r$ magnitude')
     plt.ylabel('recovered fraction of periodic variables')
     plt.title('per period-finder recovery fraction by periodic var magnitudes')
