@@ -2018,13 +2018,13 @@ def plot_periodicvar_recovery_results(
     plt.ylabel('recovered fraction of periodic variables')
     plt.title('per magcol recovery fraction by periodic var magnitudes')
     plt.ylim((0,1))
+    plt.legend(markerscale=10.0)
     plt.savefig(
         os.path.join(recplotdir,
                      'recfrac-binned-magnitudes-magcols.%s' % plotfile_ext),
         dpi=100,
         bbox_inches='tight'
     )
-    plt.legend(markerscale=10.0)
     plt.close('all')
 
     # 1c. plot of recovery rate per magbin per periodfinder
