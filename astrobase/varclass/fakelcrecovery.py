@@ -1992,14 +1992,16 @@ def plot_periodicvar_recovery_results(
 
         thismagcol_recfracs = []
 
-        for magbin_rv in magbinned_recovered_objects:
+        for magbin_pv, magbin_rv in zip(magbinned_periodicvars,
+                                        magbinned_recovered_objects):
 
             thisbin_thismagcol_recvars = [
                 x for x in magbin_rv
                 if (precvar['details'][x]['best_recovered_magcol'] == magcol)
             ]
             thisbin_thismagcol_recfrac = (
-                np.array(thisbin_thismagcol_recvars).size
+                np.array(thisbin_thismagcol_recvars).size /
+                magbin_pv.size
             )
             thismagcol_recfracs.append(thisbin_thismagcol_recfrac)
 
