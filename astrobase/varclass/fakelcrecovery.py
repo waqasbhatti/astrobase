@@ -1989,6 +1989,7 @@ def plot_periodicvar_recovery_results(
 
     # 1b. plot of recovery rate per magbin per magcol
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
+
     for magcol in magcols:
 
         thismagcol_recfracs = []
@@ -2040,7 +2041,6 @@ def plot_periodicvar_recovery_results(
         )
     )
 
-    fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
     for pfm in all_pfmethods:
 
         thispf_recfracs = []
@@ -2081,7 +2081,59 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
+
     # 1d. plot of recovery rate per magbin per variable type
+    fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
+
+    # figure out all vartypes
+    all_vartypes = np.unique(
+        np.concatenate(
+            [np.unique(precvar['details'][x]['actual_vartype'])
+             for x in precvar['details']]
+        )
+    )
+
+    for vt in all_vartypes:
+
+        thisvt_recfracs = []
+
+        for magbin_pv, magbin_rv in zip(magbinned_periodicvars,
+                                        magbinned_recovered_objects):
+
+            thisbin_thisvt_recvars = [
+                x for x in magbin_rv
+                if (precvar['details'][x]['actual_vartype'] == vt)
+            ]
+            thisbin_thismagcol_recfrac = (
+                np.array(thisbin_thisvt_recvars).size /
+                magbin_pv.size
+            )
+            thisvt_recfracs.append(thisbin_thismagcol_recfrac)
+
+        # now that we have per magcol recfracs, plot them
+        plt.plot(magbinned_sdssr,
+                 np.array(thisvt_recfracs),
+                 marker='.',
+                 label='%s' % vt,
+                 ms=0.0)
+
+    # finish up the plot
+    plt.plot(magbinned_sdssr, magbinned_recfrac,
+             marker='.',ms=0.0, label='overall', color='k')
+    plt.xlabel(r'SDSS $r$ magnitude')
+    plt.ylabel('recovered fraction of periodic variables')
+    plt.title('per vartype recovery fraction by periodic var magnitudes')
+    plt.ylim((0,1))
+    plt.legend(markerscale=10.0)
+    plt.savefig(
+        os.path.join(recplotdir,
+                     'recfrac-binned-magnitudes-vartype.%s' % plotfile_ext),
+        dpi=100,
+        bbox_inches='tight'
+    )
+    plt.close('all')
+
+
     # 1e. plot of recovery rate per magbin per alias type
 
 
