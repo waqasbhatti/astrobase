@@ -1986,13 +1986,53 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
+
     # 1b. plot of recovery rate per magbin per magcol
+    for magcol in magcols:
+
+        thismagcol_recfracs = []
+
+        for magbin_rv in magbinned_recovered_objects:
+
+            thisbin_thismagcol_recvars = [
+                x for x in magbin_rv
+                if (precvar['details'][x]['best_recovered_magcol'] == magcol)
+            ]
+            thisbin_thismagcol_recfrac = (
+                np.array(thisbin_thismagcol_recvar).size
+            )
+            thismagcol_recfracs.append(thisbin_thismagcol_recfrac)
+
+        # now that we have per magcol recfracs, plot them
+        plt.plot(magbinned_sdssr,
+                 np.array(thismagcol_recfracs),
+                 marker='.',
+                 label='magcol: %s' % magcol,
+                 ms=0.0)
+
+    # finish up the plot
+    plt.plot(magbinned_sdssr, magbinned_recfrac,
+             marker='.',ms=0.0, label='overall')
+    plt.xlabel(r'SDSS $r$ magnitude')
+    plt.xlabel(r'SDSS $r$ magnitude')
+    plt.ylabel('recovered fraction of periodic variables')
+    plt.title('per magcol recovery fraction by periodic var magnitudes')
+    plt.ylim((0,1))
+    plt.savefig(
+        os.path.join(recplotdir,
+                     'recfrac-binned-magnitudes-magcols.%s' % plotfile_ext),
+        dpi=100,
+        bbox_inches='tight'
+    )
+    plt.legend(markerscale=10.0)
+    plt.close('all')
+
     # 1c. plot of recovery rate per magbin per periodfinder
     # 1d. plot of recovery rate per magbin per variable type
     # 1e. plot of recovery rate per magbin per alias type
 
 
-    # 2. recovery-rate by magbin
+    # 2. recovery-rate by periodbin
 
     # 2a. plot of overall recovery rate per periodbin
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
@@ -2011,32 +2051,10 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
-    # 2b. plot of recovery rate per magbin per magcol
-
-    # FIXME: how will this be done? we need to get best_recovered_magcol per
-    # recovered objectid per bin.
-
-    magbinned_recfracs_magcols = []
-
-    for magcol in magcols:
-
-        thismagcol_recvars = []
-
-        for magbin_rv in magbinned_recovered_objects:
-
-            thisbin_thismagcol_recvars = [
-                x for x in magbin_rv
-                if (precvar['details'][x]['best_recovered_magcol'] == magcol)
-            ]
-            thisbin_thismagcol_recfrac =
-
-
-
-
-
-    # 2c. plot of recovery rate per magbin per periodfinder
-    # 2d. plot of recovery rate per magbin per variable type
-    # 2e. plot of recovery rate per magbin per alias type
+    # 2b. plot of recovery rate per periodbin per magcol
+    # 2c. plot of recovery rate per periodbin per periodfinder
+    # 2d. plot of recovery rate per periodbin per variable type
+    # 2e. plot of recovery rate per periodbin per alias type
 
 
     # 3. recovery-rate by amplitude bin
@@ -2058,10 +2076,10 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
-    # 3b. plot of recovery rate per magbin per magcol
-    # 3c. plot of recovery rate per magbin per periodfinder
-    # 3d. plot of recovery rate per magbin per variable type
-    # 3e. plot of recovery rate per magbin per alias type
+    # 3b. plot of recovery rate per amplitude bin per magcol
+    # 3c. plot of recovery rate per amplitude bin per periodfinder
+    # 3d. plot of recovery rate per amplitude bin per variable type
+    # 3e. plot of recovery rate per amplitude bin per alias type
 
 
     # 4. recovery-rate by ndet bin
@@ -2083,10 +2101,10 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
-    # 1b. plot of recovery rate per magbin per magcol
-    # 1c. plot of recovery rate per magbin per periodfinder
-    # 1d. plot of recovery rate per magbin per variable type
-    # 1e. plot of recovery rate per magbin per alias type
+    # 1b. plot of recovery rate per ndet bin per magcol
+    # 1c. plot of recovery rate per ndet bin per periodfinder
+    # 1d. plot of recovery rate per ndet bin per variable type
+    # 1e. plot of recovery rate per ndet bin per alias type
 
 
 
