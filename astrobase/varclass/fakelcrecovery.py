@@ -1999,7 +1999,7 @@ def plot_periodicvar_recovery_results(
                 if (precvar['details'][x]['best_recovered_magcol'] == magcol)
             ]
             thisbin_thismagcol_recfrac = (
-                np.array(thisbin_thismagcol_recvar).size
+                np.array(thisbin_thismagcol_recvars).size
             )
             thismagcol_recfracs.append(thisbin_thismagcol_recfrac)
 
