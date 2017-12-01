@@ -38,6 +38,25 @@ FIXME: in the future, we'll do all the amplitude, etc. distributions in
 differential fluxes canonically, and then take logs where appropriate if
 magsarefluxes = False.
 
+FIXME: we should add RA/DEC values that are taken from GAIA if we provide a
+radec box for the simulation to take place in. in this way, we can parameterize
+blending and take it into account in the recovery as well.
+
+FIXME: check if object coordinates end up so that two or more objects lie within
+a chosen blend radius. if this happens, we should check if the blender(s) are
+variable, and add in some fraction of their phased light curve to the
+blendee. if the blender(s) are not variable, add in a constant fraction of the
+brightness to the blendee's light curve. the blending fraction is multiplied
+into the light curve of the blender(s) and the resulting flux added to the
+blendee's light curve.
+
+given the FWHM of the instrument, figure out the overlap
+
+we need to calculate the pixel area for blendee and the sum of pixel areas
+covered by the blenders. this will require input kwargs for pixel size of the
+detector and FWHM of the star (this might need to be calculated based on the
+brightness of the star)
+
 '''
 import os
 import os.path
