@@ -2036,7 +2036,7 @@ def plot_periodicvar_recovery_results(
     all_pfmethods = np.unique(
         np.concatenate(
             [np.unique(precvar['details'][x]['recovery_pfmethods'])
-             for x in plotres['precvar_results']['details']]
+             for x in precvar['details']]
         )
     )
 
