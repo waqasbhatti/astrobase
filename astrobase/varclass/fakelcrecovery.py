@@ -2062,7 +2062,7 @@ def plot_periodicvar_recovery_results(
         plt.plot(magbinned_sdssr,
                  np.array(thispf_recfracs),
                  marker='.',
-                 label='%s' % magcol.upper(),
+                 label='%s' % pfm.upper(),
                  ms=0.0)
 
     # finish up the plot
