@@ -2413,6 +2413,8 @@ def plot_periodicvar_recovery_results(
     plt.close('all')
 
     # 3b. plot of recovery rate per amplitude bin per magcol
+
+
     # 3c. plot of recovery rate per amplitude bin per periodfinder
     # 3d. plot of recovery rate per amplitude bin per variable type
     # 3e. plot of recovery rate per amplitude bin per alias type
@@ -2449,6 +2451,8 @@ def plot_periodicvar_recovery_results(
     # 7. plot of overall recovery rate per magcol
 
     # 8. plot of overall recovery rate per alias-type
+
+    # 9. plot of period-finder recovery rate per vartype
 
 
     # at the end, write the outdict to a pickle and return it
