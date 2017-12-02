@@ -2200,9 +2200,197 @@ def plot_periodicvar_recovery_results(
     plt.close('all')
 
     # 2b. plot of recovery rate per periodbin per magcol
+    fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
+
+    for magcol in magcols:
+
+        thismagcol_recfracs = []
+
+        for periodbin_pv, periodbin_rv in zip(periodbinned_periodicvars,
+                                              periodbinned_recovered_objects):
+
+            thisbin_thismagcol_recvars = [
+                x for x in periodbin_rv
+                if (precvar['details'][x]['best_recovered_magcol'] == magcol)
+            ]
+            thisbin_thismagcol_recfrac = (
+                np.array(thisbin_thismagcol_recvars).size /
+                periodbin_pv.size
+            )
+            thismagcol_recfracs.append(thisbin_thismagcol_recfrac)
+
+        # now that we have per magcol recfracs, plot them
+        plt.plot(periodbinned_periods,
+                 np.array(thismagcol_recfracs),
+                 marker='.',
+                 label='magcol: %s' % magcol,
+                 ms=0.0)
+
+    # finish up the plot
+    plt.plot(periodbinned_periods, periodbinned_recfrac,
+             marker='.',ms=0.0, label='overall', color='k')
+    plt.xlabel(r'SDSS $r$ magnitude')
+    plt.ylabel('recovered fraction of periodic variables')
+    plt.title('per magcol recovery fraction by periodic var periods')
+    plt.ylim((0,1))
+    plt.legend(markerscale=10.0)
+    plt.savefig(
+        os.path.join(recplotdir,
+                     'recfrac-binned-periods-magcols.%s' % plotfile_ext),
+        dpi=100,
+        bbox_inches='tight'
+    )
+    plt.close('all')
+
+
     # 2c. plot of recovery rate per periodbin per periodfinder
+    fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
+
+    # figure out which pfmethods were used
+    all_pfmethods = np.unique(
+        np.concatenate(
+            [np.unique(precvar['details'][x]['recovery_pfmethods'])
+             for x in precvar['details']]
+        )
+    )
+
+    for pfm in all_pfmethods:
+
+        thispf_recfracs = []
+
+        for periodbin_pv, periodbin_rv in zip(periodbinned_periodicvars,
+                                              periodbinned_recovered_objects):
+
+            thisbin_thispf_recvars = [
+                x for x in periodbin_rv
+                if (precvar['details'][x]['best_recovered_pfmethod'] == pfm)
+            ]
+            thisbin_thismagcol_recfrac = (
+                np.array(thisbin_thispf_recvars).size /
+                periodbin_pv.size
+            )
+            thispf_recfracs.append(thisbin_thismagcol_recfrac)
+
+        # now that we have per magcol recfracs, plot them
+        plt.plot(periodbinned_periods,
+                 np.array(thispf_recfracs),
+                 marker='.',
+                 label='%s' % pfm.upper(),
+                 ms=0.0)
+
+    # finish up the plot
+    plt.plot(periodbinned_periods, periodbinned_recfrac,
+             marker='.',ms=0.0, label='overall', color='k')
+    plt.xlabel(r'SDSS $r$ magnitude')
+    plt.ylabel('recovered fraction of periodic variables')
+    plt.title('per period-finder recovery fraction by periodic var periods')
+    plt.ylim((0,1))
+    plt.legend(markerscale=10.0)
+    plt.savefig(
+        os.path.join(recplotdir,
+                     'recfrac-binned-periods-pfmethod.%s' % plotfile_ext),
+        dpi=100,
+        bbox_inches='tight'
+    )
+    plt.close('all')
+
+
     # 2d. plot of recovery rate per periodbin per variable type
+    fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
+
+    # figure out all vartypes
+    all_vartypes = np.unique(
+            [(precvar['details'][x]['actual_vartype'])
+             for x in precvar['details'] if
+             (precvar['details'][x]['actual_vartype'] is not None)]
+    )
+
+    for vt in all_vartypes:
+
+        thisvt_recfracs = []
+
+        for periodbin_pv, periodbin_rv in zip(periodbinned_periodicvars,
+                                        periodbinned_recovered_objects):
+
+            thisbin_thisvt_recvars = [
+                x for x in periodbin_rv
+                if (precvar['details'][x]['actual_vartype'] == vt)
+            ]
+            thisbin_thismagcol_recfrac = (
+                np.array(thisbin_thisvt_recvars).size /
+                periodbin_pv.size
+            )
+            thisvt_recfracs.append(thisbin_thismagcol_recfrac)
+
+        # now that we have per magcol recfracs, plot them
+        plt.plot(periodbinned_periods,
+                 np.array(thisvt_recfracs),
+                 marker='.',
+                 label='%s' % vt,
+                 ms=0.0)
+
+    # finish up the plot
+    plt.plot(periodbinned_periods, periodbinned_recfrac,
+             marker='.',ms=0.0, label='overall', color='k')
+    plt.xlabel(r'SDSS $r$ magnitude')
+    plt.ylabel('recovered fraction of periodic variables')
+    plt.title('per vartype recovery fraction by periodic var magnitudes')
+    plt.ylim((0,1))
+    plt.legend(markerscale=10.0)
+    plt.savefig(
+        os.path.join(recplotdir,
+                     'recfrac-binned-periods-vartype.%s' % plotfile_ext),
+        dpi=100,
+        bbox_inches='tight'
+    )
+    plt.close('all')
+
+
     # 2e. plot of recovery rate per periodbin per alias type
+    fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
+
+    # figure out all vartypes
+    all_aliastypes = recovered_status
+
+    for at in all_aliastypes:
+
+        thisat_recfracs = []
+
+        for periodbin_pv, periodbin_rv in zip(periodbinned_periodicvars,
+                                        periodbinned_recovered_objects):
+
+            thisbin_thisat_recvars = [
+                x for x in periodbin_rv
+                if (precvar['details'][x]['best_recovered_status'][0] == at)
+            ]
+            thisbin_thismagcol_recfrac = (
+                np.array(thisbin_thisat_recvars).size /
+                periodbin_pv.size
+            )
+            thisat_recfracs.append(thisbin_thismagcol_recfrac)
+
+        # now that we have per magcol recfracs, plot them
+        plt.plot(periodbinned_periods,
+                 np.array(thisat_recfracs),
+                 marker='.',
+                 label='%s' % at,
+                 ms=0.0)
+
+    # finish up the plot
+    plt.plot(periodbinned_periods, periodbinned_recfrac,
+             marker='.',ms=0.0, label='overall', color='k')
+    plt.xlabel(r'SDSS $r$ magnitude')
+    plt.ylabel('recovered fraction of periodic variables')
+    plt.title('per alias-type recovery fraction by periodic var magnitudes')
+    plt.ylim((0,1))
+    plt.legend(markerscale=10.0)
+    plt.savefig(
+        os.path.join(recplotdir,
+                     'recfrac-binned-periods-aliastype.%s' % plotfile_ext),
+        dpi=100,
+        bbox_inches='tight'
+    )
+    plt.close('all')
 
 
     # 3. recovery-rate by amplitude bin
@@ -2249,12 +2437,18 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
-    # 1b. plot of recovery rate per ndet bin per magcol
-    # 1c. plot of recovery rate per ndet bin per periodfinder
-    # 1d. plot of recovery rate per ndet bin per variable type
-    # 1e. plot of recovery rate per ndet bin per alias type
+    # 4b. plot of recovery rate per ndet bin per magcol
+    # 4c. plot of recovery rate per ndet bin per periodfinder
+    # 4d. plot of recovery rate per ndet bin per variable type
+    # 4e. plot of recovery rate per ndet bin per alias type
 
+    # 5. plot of overall recovery rate per vartype
 
+    # 6. plot of overall recovery rate per period-finder
+
+    # 7. plot of overall recovery rate per magcol
+
+    # 8. plot of overall recovery rate per alias-type
 
 
     # at the end, write the outdict to a pickle and return it
