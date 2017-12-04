@@ -2754,7 +2754,7 @@ def plot_periodicvar_recovery_results(
         )
 
     # finish up the plot
-    plt.plot(amplitudebinned_amplitudes, amplitudebinned_amplitudes,
+    plt.plot(amplitudebinned_amplitudes, amplitudebinned_recfracs,
              marker='.',ms=0.0, label='overall', color='k')
     plt.xlabel(r'SDSS $r$ magnitude')
     plt.ylabel('recovered fraction of periodic variables')
