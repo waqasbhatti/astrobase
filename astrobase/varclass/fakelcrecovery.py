@@ -1442,8 +1442,8 @@ def periodicvar_recovery(fakepfpkl,
                         if pfm == 'pdm':
 
                             this_lspval = (
-                                np.max(fakepf[magcol][pfm]['lspvals']) /
-                                fakepf[magcol][pfm]['nbestlspvals'][rpi] - 1.0
+                                np.max(fakepf[magcol][pfm]['lspvals']) -
+                                fakepf[magcol][pfm]['nbestlspvals'][rpi]
                             )
 
                         else:
