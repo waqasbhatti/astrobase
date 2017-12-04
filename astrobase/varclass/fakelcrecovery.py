@@ -1460,6 +1460,7 @@ def periodicvar_recovery(fakepfpkl,
 
     # convert the recovery_* lists to arrays
     pfres['recovery_periods'] = np.array(pfres['recovery_periods'])
+    pfres['recovery_lspvals'] = np.array(pfres['recovery_lspvals'])
     pfres['recovery_pfmethods'] = np.array(pfres['recovery_pfmethods'])
     pfres['recovery_magcols'] = np.array(pfres['recovery_magcols'])
 
