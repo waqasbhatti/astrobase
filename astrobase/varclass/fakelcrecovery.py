@@ -2754,7 +2754,7 @@ def plot_periodicvar_recovery_results(
         )
 
     # finish up the plot
-    plt.plot(amplitudebinned_amplitudes, amplitudebinned_recfracs,
+    plt.plot(amplitudebinned_amplitudes, amplitudebinned_recfrac,
              marker='.',ms=0.0, label='overall', color='k')
     plt.xlabel(r'SDSS $r$ magnitude')
     plt.ylabel('recovered fraction of periodic variables')
@@ -2911,7 +2911,7 @@ def plot_periodicvar_recovery_results(
         thismagcol_recfracs = []
 
         for ndetbin_pv, ndetbin_rv in zip(ndetbinned_periodicvars,
-                                        ndetbinned_recovered_objects):
+                                          ndetbinned_recovered_objects):
 
             thisbin_thismagcol_recvars = [
                 x for x in ndetbin_rv
