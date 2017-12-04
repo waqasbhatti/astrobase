@@ -1405,6 +1405,7 @@ def periodicvar_recovery(fakepfpkl,
         'actual_varparams':actual_varparams,
         'actual_moments':actual_moments,
         'recovery_periods':[],
+        'recovery_lspvals':[],
         'recovery_pfmethods':[],
         'recovery_magcols':[],
         'recovery_status':[],
@@ -1427,9 +1428,35 @@ def periodicvar_recovery(fakepfpkl,
                             np.array(pfres['recovery_periods']),
                             rtol=period_tolerance
                     ))) and np.isfinite(rp)):
+
+                        # populate the recovery periods, pfmethods, and magcols
                         pfres['recovery_periods'].append(rp)
                         pfres['recovery_pfmethods'].append(pfm)
                         pfres['recovery_magcols'].append(magcol)
+
+                        # normalize the periodogram peak value to between
+                        # 0 and 1 so we can put in the results of multiple
+                        # periodfinders on one scale
+                        if pfm == 'pdm':
+
+                            this_lspval = (
+                                np.max(fakepf[magcol][pfm]['lspvals']) /
+                                fakepf[magcol][pfm]['lspvals'] - 1.0
+                            )
+
+                        else:
+
+                            this_lspval = (
+                                fakepf[magcol][pfm]['lspvals'] /
+                                np.max(fakepf[magcol][pfm]['lspvals'])
+                            )
+
+                        # add the normalized lspval to the outdict for
+                        # this object as well. later, we'll use this to
+                        # construct a periodogram for objects that were actually
+                        # not variables
+                        pfres['recovery_lspvals'].append(this_lspval)
+
 
     # convert the recovery_* lists to arrays
     pfres['recovery_periods'] = np.array(pfres['recovery_periods'])
@@ -3139,6 +3166,37 @@ def plot_periodicvar_recovery_results(
     plt.savefig(
         os.path.join(recplotdir,
                      'recfrac-overall-vartype.%s' % plotfile_ext),
+        dpi=100,
+        bbox_inches='tight'
+    )
+    plt.close('all')
+
+
+    # 9. histogram of recovered periods if an object is not an actual periodic
+    # variable
+
+    notvariable_recovered_periods = np.concatenate([
+        precvar['details'][x]['recovery_periods']
+        for x in precvar['details'] if
+        (precvar['details'][x]['actual_vartype'] is None)
+    ])
+    notvariable_recovered_lspvals = np.concatenate([
+        precvar['details'][x]['recovery_lspvals']
+        for x in precvar['details'] if
+        (precvar['details'][x]['actual_vartype'] is None)
+    ])
+
+    fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
+    plt.plot(notvariable_recovered_periods,
+             notvariable_recovered_lspvals,
+             marker='.',ms=0.0,rasterized=True)
+    plt.xscale('log')
+    plt.xlabel('recovered periods [days]')
+    plt.ylabel('recovered normalized periodogram power')
+    plt.title('periodogram for actual not-variable objects')
+    plt.savefig(
+        os.path.join(recplotdir,
+                     'recovered-period-hist-nonvariables.%s' % plotfile_ext),
         dpi=100,
         bbox_inches='tight'
     )
