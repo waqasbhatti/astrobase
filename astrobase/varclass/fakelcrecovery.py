@@ -1421,7 +1421,9 @@ def periodicvar_recovery(fakepfpkl,
 
                 # only get the unique recovered periods by using
                 # period_tolerance
-                for rp in fakepf[magcol][pfm]['nbestperiods']:
+                for rpi, rp in enumerate(
+                        fakepf[magcol][pfm]['nbestperiods']
+                ):
 
                     if ((not np.any(np.isclose(
                             rp,
@@ -1440,15 +1442,15 @@ def periodicvar_recovery(fakepfpkl,
                         if pfm == 'pdm':
 
                             this_lspval = (
-                                np.max(fakepf[magcol][pfm]['nbestlspvals']) /
-                                fakepf[magcol][pfm]['nbestlspvals'] - 1.0
+                                np.max(fakepf[magcol][pfm]['lspvals']) /
+                                fakepf[magcol][pfm]['nbestlspvals'][rpi] - 1.0
                             )
 
                         else:
 
                             this_lspval = (
-                                fakepf[magcol][pfm]['nbestlspvals'] /
-                                np.max(fakepf[magcol][pfm]['nbestlspvals'])
+                                fakepf[magcol][pfm]['nbestlspvals'][rpi] /
+                                np.max(fakepf[magcol][pfm]['lspvals'])
                             )
 
                         # add the normalized lspval to the outdict for
