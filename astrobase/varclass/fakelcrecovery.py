@@ -856,92 +856,9 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
 
             fig = plt.figure(figsize=(6.4*5, 4.8*3))
 
-            # FIRST ROW: intersect 2D plot
+            # FIRST ROW: stetson J plot
 
-            intersect_mcc_gz = intersect_mcc.reshape(gx.shape).T
-            intersect_precision_gz = intersect_precision.reshape(gx.shape).T
-            intersect_recall_gz = intersect_recall.reshape(gx.shape).T
-
-            # get rid of 0.0 values because they mess up logs
-            intersect_mcc_gz[intersect_mcc_gz == 0.0] = 1.0e-3
-            intersect_recall_gz[intersect_recall_gz == 0.0] = 1.0e-3
-            intersect_precision_gz[intersect_precision_gz == 0.0] = 1.0e-3
-
-            # make the mcc grid plot
-            plt.subplot(3,4,1)
-            if np.any(np.isfinite(intersect_mcc_gz) & (intersect_mcc_gz > 0.0)):
-                plt.pcolormesh(
-                    gx, gy, intersect_mcc_gz,
-                    cmap='RdBu',
-                    norm=mpc.LogNorm(vmin=np.nanmin(intersect_mcc_gz),
-                                     vmax=np.nanmax(intersect_mcc_gz))
-                )
-                plt.colorbar()
-                plt.xlabel('stetson J stdev multiplier threshold')
-                plt.ylabel('inveta multiplier threshold')
-                plt.title('MCC for intersect(stetJ,inveta)')
-
-            else:
-                plt.text(0.5,0.5,
-                         'intersect(stet,inveta) MCC values are all nan '
-                         'for this magbin',
-                         transform=plt.gca().transAxes,
-                         horizontalalignment='center',
-                         verticalalignment='center')
-                plt.xticks([])
-                plt.yticks([])
-
-            # make the precision grid plot
-            plt.subplot(3,4,2)
-            if np.any(np.isfinite(intersect_precision_gz) &
-                      (intersect_precision_gz > 0.0)):
-                plt.pcolormesh(
-                    gx, gy, intersect_precision_gz,
-                    cmap='RdBu',
-                    norm=mpc.LogNorm(vmin=np.nanmin(intersect_precision_gz),
-                                     vmax=np.nanmax(intersect_precision_gz))
-                )
-                plt.colorbar()
-                plt.xlabel('stetson J stdev multiplier threshold')
-                plt.ylabel('inveta multiplier threshold')
-                plt.title('precision for intersect(stetJ,inveta)')
-            else:
-                plt.text(0.5,0.5,
-                         'intersect(stet,inveta) precision values are all nan '
-                         'for this magbin',
-                         transform=plt.gca().transAxes,
-                         horizontalalignment='center',
-                         verticalalignment='center')
-                plt.xticks([])
-                plt.yticks([])
-
-            # make the recall grid plot
-            plt.subplot(3,4,3)
-            if np.any(np.isfinite(intersect_recall_gz) &
-                      (intersect_recall_gz > 0.0)):
-                plt.pcolormesh(
-                    gx, gy, intersect_recall_gz,
-                    cmap='RdBu',
-                    norm=mpc.LogNorm(vmin=np.nanmin(intersect_recall_gz),
-                                     vmax=np.nanmax(intersect_recall_gz))
-                )
-                plt.colorbar()
-                plt.xlabel('stetson J stdev multiplier threshold')
-                plt.ylabel('inveta multiplier threshold')
-                plt.title('recall for intersect(stetJ,inveta)')
-            else:
-                plt.text(0.5,0.5,
-                         'intersect(stet,inveta) recall values are all nan '
-                         'for this magbin',
-                         transform=plt.gca().transAxes,
-                         horizontalalignment='center',
-                         verticalalignment='center')
-                plt.xticks([])
-                plt.yticks([])
-
-
-            # SECOND ROW: Stetson J plot
-            plt.subplot(3,4,5)
+            plt.subplot(3,5,1)
             if np.any(np.isfinite(stet_mcc)):
                 plt.plot(gridresults['stetson_grid'],
                          stet_mcc)
@@ -958,7 +875,7 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
                 plt.xticks([])
                 plt.yticks([])
 
-            plt.subplot(3,4,6)
+            plt.subplot(3,5,2)
             if np.any(np.isfinite(stet_precision)):
                 plt.plot(gridresults['stetson_grid'],
                          stet_precision)
@@ -975,7 +892,7 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
                 plt.xticks([])
                 plt.yticks([])
 
-            plt.subplot(3,4,7)
+            plt.subplot(3,5,3)
             if np.any(np.isfinite(stet_recall)):
                 plt.plot(gridresults['stetson_grid'],
                          stet_recall)
@@ -992,7 +909,7 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
                 plt.xticks([])
                 plt.yticks([])
 
-            plt.subplot(3,4,8)
+            plt.subplot(3,5,4)
             if np.any(np.isfinite(stet_missed_inveta_found)):
                 plt.plot(gridresults['stetson_grid'],
                          stet_missed_inveta_found)
@@ -1009,10 +926,26 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
                 plt.xticks([])
                 plt.yticks([])
 
+            plt.subplot(3,5,5)
+            if np.any(np.isfinite(stet_missed_iqr_found)):
+                plt.plot(gridresults['stetson_grid'],
+                         stet_missed_iqr_found)
+                plt.xlabel('stetson J stdev multiplier threshold')
+                plt.ylabel('# objects stetson missed but IQR found')
+                plt.title('stetson J missed, IQR found')
+            else:
+                plt.text(0.5,0.5,
+                         'stet-missed/IQR-found values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
+                plt.xticks([])
+                plt.yticks([])
 
-            # THIRD ROW: inveta plot
+            # SECOND ROW: inveta plots
 
-            plt.subplot(3,4,9)
+            plt.subplot(3,5,6)
             if np.any(np.isfinite(inveta_mcc)):
                 plt.plot(gridresults['inveta_grid'],
                          inveta_mcc)
@@ -1029,7 +962,7 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
                 plt.xticks([])
                 plt.yticks([])
 
-            plt.subplot(3,4,10)
+            plt.subplot(3,5,7)
             if np.any(np.isfinite(inveta_precision)):
                 plt.plot(gridresults['inveta_grid'],
                          inveta_precision)
@@ -1046,7 +979,7 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
                 plt.xticks([])
                 plt.yticks([])
 
-            plt.subplot(3,4,11)
+            plt.subplot(3,5,8)
             if np.any(np.isfinite(inveta_recall)):
                 plt.plot(gridresults['inveta_grid'],
                          inveta_recall)
@@ -1063,7 +996,7 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
                 plt.xticks([])
                 plt.yticks([])
 
-            plt.subplot(3,4,12)
+            plt.subplot(3,5,9)
             if np.any(np.isfinite(inveta_missed_stet_found)):
                 plt.plot(gridresults['inveta_grid'],
                          inveta_missed_stet_found)
@@ -1079,6 +1012,112 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
                          verticalalignment='center')
                 plt.xticks([])
                 plt.yticks([])
+
+            plt.subplot(3,5,10)
+            if np.any(np.isfinite(inveta_missed_iqr_found)):
+                plt.plot(gridresults['inveta_grid'],
+                         inveta_missed_iqr_found)
+                plt.xlabel('inveta stdev multiplier threshold')
+                plt.ylabel('# objects inveta missed but IQR found')
+                plt.title('inveta missed, IQR found')
+            else:
+                plt.text(0.5,0.5,
+                         'inveta-missed-iqr-found values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
+                plt.xticks([])
+                plt.yticks([])
+
+
+            # THIRD ROW: inveta plots
+
+            plt.subplot(3,5,11)
+            if np.any(np.isfinite(iqr_mcc)):
+                plt.plot(gridresults['iqr_grid'],
+                         iqr_mcc)
+                plt.xlabel('IQR stdev multiplier threshold')
+                plt.ylabel('MCC')
+                plt.title('MCC for IQR')
+            else:
+                plt.text(0.5,0.5,
+                         'IQR MCC values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
+                plt.xticks([])
+                plt.yticks([])
+
+            plt.subplot(3,5,12)
+            if np.any(np.isfinite(iqr_precision)):
+                plt.plot(gridresults['iqr_grid'],
+                         iqr_precision)
+                plt.xlabel('IQR stdev multiplier threshold')
+                plt.ylabel('precision')
+                plt.title('precision for IQR')
+            else:
+                plt.text(0.5,0.5,
+                         'IQR precision values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
+                plt.xticks([])
+                plt.yticks([])
+
+            plt.subplot(3,5,13)
+            if np.any(np.isfinite(iqr_recall)):
+                plt.plot(gridresults['iqr_grid'],
+                         iqr_recall)
+                plt.xlabel('IQR stdev multiplier threshold')
+                plt.ylabel('recall')
+                plt.title('recall for IQR')
+            else:
+                plt.text(0.5,0.5,
+                         'IQR recall values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
+                plt.xticks([])
+                plt.yticks([])
+
+            plt.subplot(3,5,14)
+            if np.any(np.isfinite(iqr_missed_stet_found)):
+                plt.plot(gridresults['iqr_grid'],
+                         iqr_missed_stet_found)
+                plt.xlabel('IQR stdev multiplier threshold')
+                plt.ylabel('# objects IQR missed but stetson found')
+                plt.title('IQR missed, stetson J found')
+            else:
+                plt.text(0.5,0.5,
+                         'iqr-missed-stet-found values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
+                plt.xticks([])
+                plt.yticks([])
+
+            plt.subplot(3,5,15)
+            if np.any(np.isfinite(iqr_missed_inveta_found)):
+                plt.plot(gridresults['iqr_grid'],
+                         iqr_missed_inveta_found)
+                plt.xlabel('IQR stdev multiplier threshold')
+                plt.ylabel('# objects IQR missed but inveta found')
+                plt.title('IQR missed, inveta found')
+            else:
+                plt.text(0.5,0.5,
+                         'iqr-missed-inveta-found values are all nan '
+                         'for this magbin',
+                         transform=plt.gca().transAxes,
+                         horizontalalignment='center',
+                         verticalalignment='center')
+                plt.xticks([])
+                plt.yticks([])
+
 
             plt.subplots_adjust(hspace=0.25,wspace=0.25)
 
@@ -1133,6 +1172,28 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
                 inveta_recall_maxind
             ]
 
+
+            iqr_mcc_maxind = np.where(iqr_mcc == np.max(iqr_mcc))
+            iqr_precision_maxind = np.where(
+                iqr_precision == np.max(iqr_precision)
+            )
+            iqr_recall_maxind = (
+                np.where(iqr_recall == np.max(iqr_recall))
+            )
+
+            best_iqr_mcc = iqr_mcc[iqr_mcc_maxind]
+            best_iqr_precision = iqr_mcc[iqr_precision_maxind]
+            best_iqr_recall = iqr_mcc[iqr_recall_maxind]
+
+            iqr_with_best_mcc = gridresults['iqr_grid'][iqr_mcc_maxind]
+            iqr_with_best_precision = gridresults['iqr_grid'][
+                iqr_precision_maxind
+            ]
+            iqr_with_best_recall = gridresults['iqr_grid'][
+                iqr_recall_maxind
+            ]
+
+
             plotres[magcol][magbinmedian] = {
                 # stetson
                 'stet_grid':gridresults['stetson_grid'],
@@ -1158,11 +1219,23 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
                 'inveta_with_best_precision':inveta_with_best_precision,
                 'best_inveta_recall':best_inveta_recall,
                 'inveta_with_best_recall':inveta_with_best_recall,
+                # iqr
+                'iqr_grid':gridresults['iqr_grid'],
+                'iqr_mcc':iqr_mcc,
+                'iqr_precision':iqr_precision,
+                'iqr_recall':iqr_recall,
+                'iqr_missed_stet_found':iqr_missed_stet_found,
+                'best_iqr_mcc':best_iqr_mcc,
+                'iqr_with_best_mcc':iqr_with_best_mcc,
+                'best_iqr_precision':best_iqr_precision,
+                'iqr_with_best_precision':iqr_with_best_precision,
+                'best_iqr_recall':best_iqr_recall,
+                'iqr_with_best_recall':iqr_with_best_recall,
                 # plot info
                 'recoveryplot':gridplotf
             }
 
-            # recommend inveta and stetson index for this magbin
+            # recommend inveta, stetson index, and iqr for this magbin
 
             # if there are multiple stets, choose the smallest one
             if stet_with_best_mcc.size > 1:
@@ -1180,6 +1253,15 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
             else:
                 plotres[magcol]['best_inveta'].append(np.nan)
 
+            # if there are multiple best iqrs, choose the smallest one
+            if iqr_with_best_mcc.size > 1:
+                plotres[magcol]['best_iqr'].append(iqr_with_best_mcc[0])
+            elif iqr_with_best_mcc.size > 0:
+                plotres[magcol]['best_iqr'].append(iqr_with_best_mcc[0])
+            else:
+                plotres[magcol]['best_iqr'].append(np.nan)
+
+
     # write the plotresults to a pickle
     plotrespicklef = os.path.join(simbasedir,
                                   'varindex-gridsearch-magbin-results.pkl')
@@ -1191,12 +1273,17 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
     for magcol in gridresults['magcols']:
 
         LOGINFO('best stdev multipliers for each %s magbin:' % magcol)
-        LOGINFO('magbin    inveta    stetson J')
+        LOGINFO('magbin    inveta    stetson J    IQR')
 
-        for magbin, inveta, stet in zip(plotres[magcol]['magbinmedians'],
-                                        plotres[magcol]['best_inveta'],
-                                        plotres[magcol]['best_stetsonj']):
-            LOGINFO('%.3f    %.3f    %.3f' % (magbin,inveta,stet))
+        for magbin, inveta, stet, iqr in zip(
+                plotres[magcol]['magbinmedians'],
+                plotres[magcol]['best_inveta'],
+                plotres[magcol]['best_stetsonj'],
+                plotres[magcol]['best_iqr']):
+            LOGINFO('%.3f    %.3f    %.3f    %.3f' % (magbin,
+                                                      inveta,
+                                                      stet,
+                                                      iqr))
 
 
     return plotres
