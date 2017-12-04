@@ -44,6 +44,8 @@ import scipy.interpolate as spi
 
 import matplotlib
 matplotlib.use('Agg')
+matplotlib.rcParams['agg.path.chunksize'] = 10000
+
 import matplotlib.pyplot as plt
 import matplotlib.colors as mpc
 
@@ -3330,14 +3332,35 @@ def plot_periodicvar_recovery_results(
         (precvar['details'][x]['actual_vartype'] is None)
     ])
 
+    sortind = np.argsort(notvariable_recovered_periods)
+    notvariable_recovered_periods = notvariable_recovered_periods[sortind]
+    notvariable_recovered_lspvals = notvariable_recovered_lspvals[sortind]
+
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
     plt.plot(notvariable_recovered_periods,
              notvariable_recovered_lspvals,
-             marker='.',ms=0.0,rasterized=True)
+             ms=1.0,linestyle='none',marker='.')
     plt.xscale('log')
     plt.xlabel('recovered periods [days]')
     plt.ylabel('recovered normalized periodogram power')
     plt.title('periodogram for actual not-variable objects')
+    plt.savefig(
+        os.path.join(recplotdir,
+                     'recovered-periodogram-nonvariables.%s' % plotfile_ext),
+        dpi=100,
+        bbox_inches='tight'
+    )
+    plt.close('all')
+
+    # 10. overall recovered period histogram for objects marked
+    # not-variable. this gives us the most common periods
+    fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
+    plt.hist(notvariable_recovered_periods,bins=np.arange(0.02,300.0,1.0e-3),
+             histtype='step')
+    plt.xscale('log')
+    plt.xlabel('recovered periods [days]')
+    plt.ylabel('number of times periods recovered')
+    plt.title('recovered period histogram for non-variable objects')
     plt.savefig(
         os.path.join(recplotdir,
                      'recovered-period-hist-nonvariables.%s' % plotfile_ext),
