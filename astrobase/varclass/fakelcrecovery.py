@@ -2065,6 +2065,9 @@ def plot_periodicvar_recovery_results(
                  label='magcol: %s' % magcol,
                  ms=0.0)
 
+        # add this to the outdict array
+        magbinned_per_magcol_recfracs.append(np.array(thismagcol_recfracs))
+
     # finish up the plot
     plt.plot(magbinned_sdssr, magbinned_recfrac,
              marker='.',ms=0.0, label='overall', color='k')
@@ -2117,6 +2120,9 @@ def plot_periodicvar_recovery_results(
                  label='%s' % pfm.upper(),
                  ms=0.0)
 
+        # add this to the outdict array
+        magbinned_per_pfmethod_recfracs.append(np.array(thispf_recfracs))
+
     # finish up the plot
     plt.plot(magbinned_sdssr, magbinned_recfrac,
              marker='.',ms=0.0, label='overall', color='k')
@@ -2168,6 +2174,9 @@ def plot_periodicvar_recovery_results(
                  label='%s' % vt,
                  ms=0.0)
 
+        # add this to the outdict array
+        magbinned_per_vartype_recfracs.append(np.array(thisvt_recfracs))
+
     # finish up the plot
     plt.plot(magbinned_sdssr, magbinned_recfrac,
              marker='.',ms=0.0, label='overall', color='k')
@@ -2214,6 +2223,9 @@ def plot_periodicvar_recovery_results(
                  marker='.',
                  label='%s' % at,
                  ms=0.0)
+
+        # add this to the outdict array
+        magbinned_per_aliastype_recfracs.append(np.array(thisat_recfracs))
 
     # finish up the plot
     plt.plot(magbinned_sdssr, magbinned_recfrac,
@@ -2278,6 +2290,9 @@ def plot_periodicvar_recovery_results(
                  label='magcol: %s' % magcol,
                  ms=0.0)
 
+        # add this to the outdict array
+        periodbinned_per_magcol_recfracs.append(np.array(thismagcol_recfracs))
+
     # finish up the plot
     plt.plot(periodbinned_periods, periodbinned_recfrac,
              marker='.',ms=0.0, label='overall', color='k')
@@ -2330,6 +2345,9 @@ def plot_periodicvar_recovery_results(
                  label='%s' % pfm.upper(),
                  ms=0.0)
 
+        # add this to the outdict array
+        periodbinned_per_pfmethod_recfracs.append(np.array(thispf_recfracs))
+
     # finish up the plot
     plt.plot(periodbinned_periods, periodbinned_recfrac,
              marker='.',ms=0.0, label='overall', color='k')
@@ -2381,6 +2399,9 @@ def plot_periodicvar_recovery_results(
                  label='%s' % vt,
                  ms=0.0)
 
+        # add this to the outdict array
+        periodbinned_per_vartype_recfracs.append(np.array(thisvt_recfracs))
+
     # finish up the plot
     plt.plot(periodbinned_periods, periodbinned_recfrac,
              marker='.',ms=0.0, label='overall', color='k')
@@ -2408,8 +2429,10 @@ def plot_periodicvar_recovery_results(
 
         thisat_recfracs = []
 
-        for periodbin_pv, periodbin_rv in zip(periodbinned_periodicvars,
-                                        periodbinned_recovered_objects):
+        for periodbin_pv, periodbin_rv in zip(
+                periodbinned_periodicvars,
+                periodbinned_recovered_objects
+        ):
 
             thisbin_thisat_recvars = [
                 x for x in periodbin_rv
@@ -2427,6 +2450,9 @@ def plot_periodicvar_recovery_results(
                  marker='.',
                  label='%s' % at,
                  ms=0.0)
+
+        # add this to the outdict array
+        periodbinned_per_aliastype_recfracs.append(np.array(thisat_recfracs))
 
     # finish up the plot
     plt.plot(periodbinned_periods, periodbinned_recfrac,
@@ -2493,6 +2519,11 @@ def plot_periodicvar_recovery_results(
                  label='magcol: %s' % magcol,
                  ms=0.0)
 
+        # add this to the outdict array
+        amplitudebinned_per_magcol_recfracs.append(
+            np.array(thismagcol_recfracs)
+        )
+
     # finish up the plot
     plt.plot(amplitudebinned_amplitudes, amplitudebinned_recfrac,
              marker='.',ms=0.0, label='overall', color='k')
@@ -2547,6 +2578,11 @@ def plot_periodicvar_recovery_results(
                  label='%s' % pfm.upper(),
                  ms=0.0)
 
+        # add this to the outdict array
+        amplitudebinned_per_pfmethod_recfracs.append(
+            np.array(thispf_recfracs)
+        )
+
     # finish up the plot
     plt.plot(amplitudebinned_amplitudes, amplitudebinned_amplitudes,
              marker='.',ms=0.0, label='overall', color='k')
@@ -2600,6 +2636,12 @@ def plot_periodicvar_recovery_results(
                  label='%s' % vt,
                  ms=0.0)
 
+        # add this to the outdict array
+        amplitudebinned_per_vartype_recfracs.append(
+            np.array(thisvt_recfracs)
+        )
+
+
     # finish up the plot
     plt.plot(amplitudebinned_amplitudes, amplitudebinned_recfrac,
              marker='.',ms=0.0, label='overall', color='k')
@@ -2648,6 +2690,12 @@ def plot_periodicvar_recovery_results(
                  marker='.',
                  label='%s' % at,
                  ms=0.0)
+
+        # add this to the outdict array
+        amplitudebinned_per_aliastype_recfracs.append(
+            np.array(thisat_recfracs)
+        )
+
 
     # finish up the plot
     plt.plot(amplitudebinned_amplitudes, amplitudebinned_recfrac,
@@ -2712,6 +2760,11 @@ def plot_periodicvar_recovery_results(
                  label='magcol: %s' % magcol,
                  ms=0.0)
 
+        # add this to the outdict array
+        ndetbinned_per_magcol_recfracs.append(
+            np.array(thismagcol_recfracs)
+        )
+
     # finish up the plot
     plt.plot(ndetbinned_ndets, ndetbinned_recfrac,
              marker='.',ms=0.0, label='overall', color='k')
@@ -2764,6 +2817,11 @@ def plot_periodicvar_recovery_results(
                  label='%s' % pfm.upper(),
                  ms=0.0)
 
+        # add this to the outdict array
+        ndetbinned_per_pfmethod_recfracs.append(
+            np.array(thispf_recfracs)
+        )
+
     # finish up the plot
     plt.plot(ndetbinned_ndets, ndetbinned_recfrac,
              marker='.',ms=0.0, label='overall', color='k')
@@ -2788,7 +2846,7 @@ def plot_periodicvar_recovery_results(
     all_vartypes = np.unique(
             [(precvar['details'][x]['actual_vartype'])
              for x in precvar['details'] if
-             (precvar['details'][x]['actual_vartype'] is not None)]
+             (precvar['details'][x]['actual_vartype'] in PERIODIC_VARTYPES)]
     )
 
     for vt in all_vartypes:
@@ -2814,6 +2872,11 @@ def plot_periodicvar_recovery_results(
                  marker='.',
                  label='%s' % vt,
                  ms=0.0)
+
+        # add this to the outdict array
+        ndetbinned_per_vartype_recfracs.append(
+            np.array(thisvt_recfracs)
+        )
 
     # finish up the plot
     plt.plot(ndetbinned_ndets, ndetbinned_recfrac,
@@ -2861,6 +2924,11 @@ def plot_periodicvar_recovery_results(
                  label='%s' % at,
                  ms=0.0)
 
+        # add this to the outdict array
+        ndetbinned_per_aliastype_recfracs.append(
+            np.array(thisat_recfracs)
+        )
+
     # finish up the plot
     plt.plot(ndetbinned_ndets, ndetbinned_recfrac,
              marker='.',ms=0.0, label='overall', color='k')
@@ -2877,14 +2945,204 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
+    # update the lists in the outdict
+    outdict['magbinned_per_magcol_recfracs'] = (
+        magbinned_per_magcol_recfracs
+    )
+    outdict['magbinned_per_pfmethod_recfracs'] = (
+        magbinned_per_pfmethod_recfracs
+    )
+    outdict['magbinned_per_vartype_recfracs'] = (
+        magbinned_per_vartype_recfracs
+    )
+    outdict['magbinned_per_aliastype_recfracs'] = (
+        magbinned_per_aliastype_recfracs
+    )
 
-    # 5. stacked bar plot of overall recovery rate per vartype (per
-    # periodfinder)
+    outdict['periodbinned_per_magcol_recfracs'] = (
+        periodbinned_per_magcol_recfracs
+    )
+    outdict['periodbinned_per_pfmethod_recfracs'] = (
+        periodbinned_per_pfmethod_recfracs
+    )
+    outdict['periodbinned_per_vartype_recfracs'] = (
+        periodbinned_per_vartype_recfracs
+    )
+    outdict['periodbinned_per_aliastype_recfracs'] = (
+        periodbinned_per_aliastype_recfracs
+    )
+
+    outdict['amplitudebinned_per_magcol_recfracs'] = (
+        amplitudebinned_per_magcol_recfracs
+    )
+    outdict['amplitudebinned_per_pfmethod_recfracs'] = (
+        amplitudebinned_per_pfmethod_recfracs
+    )
+    outdict['amplitudebinned_per_vartype_recfracs'] = (
+        amplitudebinned_per_vartype_recfracs
+    )
+    outdict['amplitudebinned_per_aliastype_recfracs'] = (
+        amplitudebinned_per_aliastype_recfracs
+    )
+
+    outdict['ndetbinned_per_magcol_recfracs'] = (
+        ndetbinned_per_magcol_recfracs
+    )
+    outdict['ndetbinned_per_pfmethod_recfracs'] = (
+        ndetbinned_per_pfmethod_recfracs
+    )
+    outdict['ndetbinned_per_vartype_recfracs'] = (
+        ndetbinned_per_vartype_recfracs
+    )
+    outdict['ndetbinned_per_aliastype_recfracs'] = (
+        ndetbinned_per_aliastype_recfracs
+    )
+
+
+    # get the overall recovered vars per pfmethod
+    overall_recvars_per_pfmethod = []
+
+    for pfm in all_pfmethods:
+
+        thispfm_recvars = np.array([
+            x for x in precvar['details'] if
+            ((x in recovered_periodicvars) and
+             (precvar['details'][x]['best_recovered_pfmethod'] == pfm))
+        ])
+        overall_recvars_per_pfmethod.append(thispfm_recvars)
+
+
+    # get the overall recovered vars per vartype
+    overall_recvars_per_vartype = []
+
+    for vt in all_vartypes:
+
+        thisvt_recvars = np.array([
+            x for x in precvar['details'] if
+            ((x in recovered_periodicvars) and
+             (precvar['details'][x]['actual_vartype'] == vt))
+        ])
+        overall_recvars_per_vartype.append(thisvt_recvars)
+
+
+    # get the overall recovered vars per magcol
+    overall_recvars_per_magcol = []
+
+    for mc in magcols:
+
+        thismc_recvars = np.array([
+            x for x in precvar['details'] if
+            ((x in recovered_periodicvars) and
+             (precvar['details'][x]['best_recovered_magcol'] == mc))
+        ])
+        overall_recvars_per_magcol.append(thismc_recvars)
+
+
+    # get the overall recovered vars per aliastype
+    overall_recvars_per_aliastype = []
+
+    for at in all_aliastypes:
+
+        thisat_recvars = np.array([
+            x for x in precvar['details'] if
+            ((x in recovered_periodicvars) and
+             (precvar['details'][x]['best_recovered_status'] == at))
+        ])
+        overall_recvars_per_aliastype.append(thisat_recvars)
+
+    # update the outdict with these
+    outdict['overall_recfrac_per_pfmethod'] = np.array([
+        x.size/actual_periodicvars.size for x in overall_recvars_per_pfmethod
+    ])
+    outdict['overall_recfrac_per_vartype'] = np.array([
+        x.size/actual_periodicvars.size for x in overall_recvars_per_vartype
+    ])
+    outdict['overall_recfrac_per_magcol'] = np.array([
+        x.size/actual_periodicvars.size for x in overall_recvars_per_magcol
+    ])
+    outdict['overall_recfrac_per_aliastype'] = np.array([
+        x.size/actual_periodicvars.size for x in overall_recvars_per_aliastype
+    ])
+
+
+    # 5. bar plot of overall recovery rate per pfmethod
+    fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
+
+    xt = np.arange(len(all_pfmethods))
+    xl = all_pfmethods
+
+    plt.barh(xt, outdict['overall_recfrac_per_pfmethod'], 0.50)
+    plt.yticks(xt, xl)
+    plt.xlabel('period-finding method')
+    plt.ylabel('overall recovery rate')
+    plt.title('overall recovery rate per period-finding method')
+    plt.savefig(
+        os.path.join(recplotdir,
+                     'recfrac-overall-pfmethod.%s' % plotfile_ext),
+        dpi=100,
+        bbox_inches='tight'
+    )
+    plt.close('all')
+
 
     # 6. bar plot of overall recovery rate per magcol
+    fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
-    # 7. bar plot of overall recovery rate per alias-type
+    xt = np.arange(len(magcols))
+    xl = magcols
 
+    plt.barh(xt, outdict['overall_recfrac_per_magcol'], 0.50)
+    plt.yticks(xt, xl)
+    plt.xlabel('light curve magnitude column')
+    plt.ylabel('overall recovery rate')
+    plt.title('overall recovery rate per light curve magcol')
+    plt.savefig(
+        os.path.join(recplotdir,
+                     'recfrac-overall-magcol.%s' % plotfile_ext),
+        dpi=100,
+        bbox_inches='tight'
+    )
+    plt.close('all')
+
+
+    # 7. bar plot of overall recovery rate per aliastype
+    fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
+
+    xt = np.arange(len(all_aliastypes))
+    xl = all_aliastypes
+
+    plt.barh(xt, outdict['overall_recfrac_per_aliastype'], 0.50)
+    plt.yticks(xt, xl)
+    plt.xlabel('period recovery status')
+    plt.ylabel('overall recovery rate')
+    plt.title('overall recovery rate per period recovery status')
+    plt.savefig(
+        os.path.join(recplotdir,
+                     'recfrac-overall-aliastype.%s' % plotfile_ext),
+        dpi=100,
+        bbox_inches='tight'
+    )
+    plt.close('all')
+
+
+    # 8. bar plot of overall recovery rate per vartype
+    fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
+
+    xt = np.arange(len(all_vartypes))
+    xl = all_vartypes
+
+    plt.barh(xt, outdict['overall_recfrac_per_vartype'], 0.50)
+    plt.yticks(xt, xl)
+    plt.xlabel('periodic variable type')
+    plt.ylabel('overall recovery rate')
+    plt.title('overall recovery rate per periodic variable type')
+    plt.savefig(
+        os.path.join(recplotdir,
+                     'recfrac-overall-vartype.%s' % plotfile_ext),
+        dpi=100,
+        bbox_inches='tight'
+    )
+    plt.close('all')
 
 
     # at the end, write the outdict to a pickle and return it
