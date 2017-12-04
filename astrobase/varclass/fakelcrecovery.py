@@ -1440,15 +1440,15 @@ def periodicvar_recovery(fakepfpkl,
                         if pfm == 'pdm':
 
                             this_lspval = (
-                                np.max(fakepf[magcol][pfm]['lspvals']) /
-                                fakepf[magcol][pfm]['lspvals'] - 1.0
+                                np.max(fakepf[magcol][pfm]['nbestlspvals']) /
+                                fakepf[magcol][pfm]['nbestlspvals'] - 1.0
                             )
 
                         else:
 
                             this_lspval = (
-                                fakepf[magcol][pfm]['lspvals'] /
-                                np.max(fakepf[magcol][pfm]['lspvals'])
+                                fakepf[magcol][pfm]['nbestlspvals'] /
+                                np.max(fakepf[magcol][pfm]['nbestlspvals'])
                             )
 
                         # add the normalized lspval to the outdict for
