@@ -338,6 +338,7 @@ def get_recovered_variables_for_magbin(simbasedir,
         'errcols':errcols,
         'stetj_min_stdev':stetson_stdev_min,
         'inveta_min_stdev':inveta_stdev_min,
+        'iqr_min_stdev':iqr_stdev_min,
         'magbinmedian':magbinmedian,
     }
 
@@ -711,11 +712,29 @@ def variable_index_gridsearch_magbin(simbasedir,
 
 
 
-def plot_varind_gridsearch_magbin_results(gridresults):
+def plot_varind_gridsearch_magbin_results(gridsearch_results):
     '''
     This plots the gridsearch results from variable_index_gridsearch_magbin.
 
     '''
+
+    # get the result pickle/dict
+    if (isinstance(gridsearch_results, str) and
+        os.path.exists(gridsearch_results)):
+
+        with open(gridsearch_results,'rb') as infd:
+            gridresults = pickle.load(infd)
+
+    elif isinstance(gridsearch_results, dict):
+
+        gridresults = gridsearch_results
+
+    else:
+        LOGERROR('could not understand the input '
+                 'variable index grid-search result dict/pickle')
+        return None
+
+
 
     plotres = {'simbasedir':gridresults['simbasedir']}
 
@@ -735,70 +754,104 @@ def plot_varind_gridsearch_magbin_results(gridresults):
             LOGINFO('plotting results for %s: magbin: %.3f' %
                     (magcol, magbinmedian))
 
-            # FIXME: figure out the correct indexes for a 3D grid here
-
+            # FIXME: check if these indices are correct
             stet_mcc = np.array(
                 [x[magcol]['stet_mcc']
                  for x in recgrid[magbinind]]
-            )[::gridresults['stetson_grid'].size]
+            )[::(gridresults['inveta_grid'].size *
+                 gridresults['stetson_grid'].size)]
             stet_precision = np.array(
                 [x[magcol]['stet_precision']
                  for x in recgrid[magbinind]]
-            )[::gridresults['stetson_grid'].size]
+            )[::(gridresults['inveta_grid'].size *
+                 gridresults['stetson_grid'].size)]
             stet_recall = np.array(
                 [x[magcol]['stet_recall']
                  for x in recgrid[magbinind]]
-            )[::gridresults['stetson_grid'].size]
+            )[::(gridresults['inveta_grid'].size *
+                 gridresults['stetson_grid'].size)]
             stet_missed_inveta_found = np.array(
                 [x[magcol]['stet_missed_inveta_found']
                  for x in recgrid[magbinind]]
-            )[::gridresults['stetson_grid'].size]
+            )[::(gridresults['inveta_grid'].size *
+                 gridresults['stetson_grid'].size)]
             stet_missed_iqr_found = np.array(
                 [x[magcol]['stet_missed_iqr_found']
                  for x in recgrid[magbinind]]
-            )[::gridresults['stetson_grid'].size]
+            )[::(gridresults['inveta_grid'].size *
+                 gridresults['stetson_grid'].size)]
 
             inveta_mcc = np.array(
                 [x[magcol]['inveta_mcc']
                  for x in recgrid[magbinind]]
-            )[:gridresults['inveta_grid'].size]
+            )[:(gridresults['iqr_grid'].size *
+                gridresults['stetson_grid'].size)][
+                    ::gridresults['inveta_grid'].size
+                ]
             inveta_precision = np.array(
                 [x[magcol]['inveta_precision']
                  for x in recgrid[magbinind]]
-            )[:gridresults['inveta_grid'].size]
+            )[:(gridresults['iqr_grid'].size *
+                gridresults['stetson_grid'].size)][
+                    ::gridresults['inveta_grid'].size
+                ]
             inveta_recall = np.array(
                 [x[magcol]['inveta_recall']
                  for x in recgrid[magbinind]]
-            )[:gridresults['inveta_grid'].size]
+            )[:(gridresults['iqr_grid'].size *
+                gridresults['stetson_grid'].size)][
+                    ::gridresults['inveta_grid'].size
+                ]
             inveta_missed_stet_found = np.array(
                 [x[magcol]['inveta_missed_stet_found']
                  for x in recgrid[magbinind]]
-            )[:gridresults['inveta_grid'].size]
+            )[:(gridresults['iqr_grid'].size *
+                gridresults['stetson_grid'].size)][
+                    ::gridresults['inveta_grid'].size
+                ]
             inveta_missed_iqr_found = np.array(
                 [x[magcol]['inveta_missed_iqr_found']
                  for x in recgrid[magbinind]]
-            )[:gridresults['inveta_grid'].size]
+            )[:(gridresults['iqr_grid'].size *
+                gridresults['stetson_grid'].size)][
+                    ::gridresults['inveta_grid'].size
+                ]
 
             iqr_mcc = np.array(
                 [x[magcol]['iqr_mcc']
                  for x in recgrid[magbinind]]
-            )[:gridresults['iqr_grid'].size]
+            )[:(gridresults['iqr_grid'].size *
+                gridresults['stetson_grid'].size)][
+                    :gridresults['inveta_grid'].size
+                ]
             iqr_precision = np.array(
                 [x[magcol]['iqr_precision']
                  for x in recgrid[magbinind]]
-            )[:gridresults['iqr_grid'].size]
+            )[:(gridresults['iqr_grid'].size *
+                gridresults['stetson_grid'].size)][
+                    :gridresults['inveta_grid'].size
+                ]
             iqr_recall = np.array(
                 [x[magcol]['iqr_recall']
                  for x in recgrid[magbinind]]
-            )[:gridresults['iqr_grid'].size]
+            )[:(gridresults['iqr_grid'].size *
+                gridresults['stetson_grid'].size)][
+                    :gridresults['inveta_grid'].size
+                ]
             iqr_missed_stet_found = np.array(
                 [x[magcol]['iqr_missed_stet_found']
                  for x in recgrid[magbinind]]
-            )[:gridresults['iqr_grid'].size]
+            )[:(gridresults['iqr_grid'].size *
+                gridresults['stetson_grid'].size)][
+                    :gridresults['inveta_grid'].size
+                ]
             iqr_missed_inveta_found = np.array(
                 [x[magcol]['iqr_missed_inveta_found']
                  for x in recgrid[magbinind]]
-            )[:gridresults['iqr_grid'].size]
+            )[:(gridresults['iqr_grid'].size *
+                gridresults['stetson_grid'].size)][
+                    :gridresults['inveta_grid'].size
+                ]
 
 
             fig = plt.figure(figsize=(6.4*5, 4.8*3))
@@ -3175,8 +3228,9 @@ def plot_periodicvar_recovery_results(
     plt.close('all')
 
 
-    # 9. histogram of recovered periods if an object is not an actual periodic
-    # variable
+    # 9. overall recovered period periodogram for objects that aren't actual
+    # periodic variables. this effectively should give us the window function of
+    # the observations
 
     notvariable_recovered_periods = np.concatenate([
         precvar['details'][x]['recovery_periods']
