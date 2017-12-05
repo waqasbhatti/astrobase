@@ -35,7 +35,7 @@ from scipy.signal import savgol_filter
 LOGGER = None
 
 def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.varbase.features' % parent_name)
+    globals()['LOGGER'] = logging.getLogger('%s.features' % parent_name)
 
 def LOGDEBUG(message):
     if LOGGER:
