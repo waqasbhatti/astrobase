@@ -7,6 +7,8 @@ License: MIT. See the LICENSE file for more details.
 This contains functions that calculate various light curve features using
 information about periods and fits to phased light curves.
 
+FIXME: add more interesting features from FATS and Upsilon.
+
 '''
 
 import logging
@@ -63,6 +65,7 @@ def LOGEXCEPTION(message):
 ## LOCAL IMPORTS ##
 ###################
 
+from .. import lcmath
 from ..varbase import lcfit
 
 
@@ -79,57 +82,97 @@ def fourier_features(times, mags, errs, period,
 
     '''
 
+    # freq_amplitude_ratio_21 - amp ratio of the 2nd to 1st Fourier component
+
+    # freq_amplitude_ratio_31 - amp ratio of the 3rd to 1st Fourier component
+
+    # freq_rrd - 1 if freq_frequency_ratio_21 or freq_frequency_ratio_31 are
+    #            close to 0.746 (characteristic of RRc? -- double mode RRLyr), 0
+    #            otherwise
+
+    # in addition, we fit a Fourier series to the light curve using the best
+    # period and extract the amplitudes and phases up to the 8th order to fit
+    # the LC. the various ratios of the amplitudes A_ij and the differences in
+    # the phases phi_ij are also used as periodic variability features
+
+
+def periodogram_features(periodogramresults,
+                         times, mags, errs, period,
+                         pdiffthreshold=1.0e-5,
+                         pgram_smoothwindow=5):
+    '''
+    This calculates various periodogram features.
+
+    '''
+
+    # freq_n_sidereal - number of top period estimates that are consistent with
+    #                   a 1 day period (1.0027379 and 0.9972696 actually, for
+    #                   sidereal day period) and 0.5x, 2x, and 3x multipliers
+
+    # peak_height_over_background - ratio of best normalized periodogram peak
+    #                               height to that of the periodogram background
+    #                               near the same period peak
+
+    # peak_height_over_sampling_peak_height - ratio of best normalized
+    #                                         periodogram peak height to that of
+    #                                         the sampling periodogram at the
+    #                                         same period
+
+    # smallest_nbestperiods_diff - the smallest cross-wise difference between
+    #                              the best periods found by all the
+    #                              period-finders used
+
+
+def phasedlc_features(times, mags, errs, period):
+    '''
+    This calculates various phased LC features.
+
+    '''
+
+
+    # freq_model_max_delta_mags - absval of magdiff btw model phased LC maxima
+    #                             using period x 2
+
+    # freq_model_max_delta_mags - absval of magdiff btw model phased LC minima
+    #                             using period x 2
+
+    # freq_model_phi1_phi2 - ratio of the phase difference between the first
+    #                        minimum and the first maximum to the phase
+    #                        difference between first minimum and second maximum
+
+    # scatter_res_raw - MAD of the GLS phased LC residuals divided by MAD of the
+    #                   raw light curve (unphased)
+
+    # p2p_scatter_2praw - sum of the squared mag differences between pairs of
+    #                     successive observations in the phased LC using best
+    #                     period x 2 divided by that of the unphased light curve
+
+    # p2p_scatter_pfold_over_mad - MAD of successive absolute mag diffs of the
+    #                              phased LC using best period divided by the
+    #                              MAD of the unphased LC
+
+    # fold2P_slope_10percentile - 10th percentile of the slopes between adjacent
+    #                             mags after the light curve is folded on best
+    #                             period x 2
+
+    # fold2P_slope_90percentile - 90th percentile of the slopes between adjacent
+    #                             mags after the light curve is folded on best
+    #                             period x 2
+
+    # skew, kurtosis - for the phased light curve
 
 
 
-# freq_amplitude_ratio_21 - amp ratio of the 2nd to 1st Fourier component
+def lcfit_features(times, mags, errs, period):
+    '''
+    This calculates various features related to fits to the phased LC.
 
-# freq_amplitude_ratio_31 - amp ratio of the 3rd to 1st Fourier component
+    '''
 
-# freq_model_max_delta_mags - absval of magdiff btw model phased LC maxima
-#                             using period x 2
+    # ebchisq, pltchisq, fourierchisq, splchisq - red-chisq-values for these
+    #                                             fits to the phased LC
 
-# freq_model_max_delta_mags - absval of magdiff btw model phased LC minima
-#                             using period x 2
-
-# freq_model_phi1_phi2 - ratio of the phase difference between the first minimum
-#                        and the first maximum to the phase difference between
-#                        first minimum and second maximum
-
-# freq_n_alias - number of top period estimates that are consistent with a 1
-#                day period
-
-# freq_rrd - 1 if freq_frequency_ratio_21 or freq_frequency_ratio_31 are close
-#            to 0.746 (characteristic of RRc? -- double mode RRLyr), 0 otherwise
-
-# scatter_res_raw - MAD of the GLS phased LC residuals divided by MAD of the raw
-#                   light curve (unphased)
-
-# p2p_scatter_2praw - sum of the squared mag differences between pairs of
-#                     successive observations in the phased LC using best period
-#                     x 2 divided by that of the unphased light curve
-
-# p2p_scatter_pfold_over_mad - MAD of successive absolute mag diffs of the
-#                              phased LC using best period divided by the MAD of
-#                              the unphased LC
-
-# medperc90_2p_p - 90th percentile of the absolute residual values around the
-#                  light curve phased with best period x 2 divided by the same
-#                  quantity for the residuals using the phased light curve with
-#                  best period (to detect EBs)
-
-# fold2P_slope_10percentile - 10th percentile of the slopes between adjacent
-#                             mags after the light curve is folded on best
-#                             period x 2
-
-# fold2P_slope_90percentile - 90th percentile of the slopes between adjacent
-#                             mags after the light curve is folded on best
-#                             period x 2
-
-# ebchisq, pltchisq, fourierchisq, splchisq - chisq-values for these fits to the
-#                                             phased LC
-
-# in addition, we fit a Fourier series to the light curve using the best period
-# and extract the amplitudes and phases up to the 8th order to fit the LC. the
-# various ratios of the amplitudes A_ij and the differences in the phases phi_ij
-# are also used as periodic variability features
+    # medperc90_2p_p - 90th percentile of the absolute residual values around
+    #                  the light curve phased with best period x 2 divided by
+    #                  the same quantity for the residuals using the phased
+    #                  light curve with best period (to detect EBs)
