@@ -10,7 +10,8 @@ characterize its reliability and completeness via simulating LCs.
 fakelcgen.py        - fake light curve generation and injection of variability
 fakelcrecovery.py   - recovery of fake light curve variability and periodic vars
 
-periodicfeatures.py - periodic variable light curve features
+features.py         - non-periodic light curve features
+periodicfeatures.py - light curve features for phased light curves
 
 rfclass.py          - random forest classifier and support functions for
                       variability classification

@@ -88,7 +88,7 @@ from .checkplot import checkplot_pickle_update, checkplot_pickle_to_png, \
 from .checkplot import _pkl_finder_objectinfo, _pkl_periodogram, \
     _pkl_magseries_plot, _pkl_phased_magseries_plot
 
-from .varbase import features
+from .varclass import features
 features.set_logger_parent(__name__)
 
 from .varbase import lcfit

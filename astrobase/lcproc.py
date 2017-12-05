@@ -97,7 +97,7 @@ from astrobase.hplc import read_hatpi_textlc, read_hatpi_pklc
 from astrobase.astrokep import read_kepler_fitslc, read_kepler_pklc
 
 from astrobase import periodbase, checkplot
-from astrobase.varbase import features
+from astrobase.varclass import features
 from astrobase.lcmath import normalize_magseries, \
     time_bin_magseries_with_errs, sigclip_magseries
 from astrobase.periodbase.kbls import bls_snr
