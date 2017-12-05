@@ -143,7 +143,8 @@ PFMETHODS = {'bls':periodbase.bls_parallel_pfind,
              'aov':periodbase.aov_periodfind,
              'mav':periodbase.aovhm_periodfind,
              'pdm':periodbase.stellingwerf_pdm,
-             'acf':periodbase.macf_period_find}
+             'acf':periodbase.macf_period_find,
+             'win':periodbase.specwindow_lsp}
 
 
 
@@ -1935,7 +1936,8 @@ def runpf(lcfile,
     '''This runs the period-finding for a single LC.
 
     pfmethods is a list of period finding methods to run. Each element is a
-    string matching the keys of the PFMETHODS dict above.
+    string matching the keys of the PFMETHODS dict above. By default, this runs
+    GLS, PDM, and BLS.
 
     pfkwargs are any special kwargs to pass along to each period-finding method
     function.

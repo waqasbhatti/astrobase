@@ -856,7 +856,8 @@ PLOTYLABELS = {'gls':'Generalized Lomb-Scargle normalized power',
                'mav':'Schwarzenberg-Czerny AoVMH $\Theta$',
                'bls':'Box Least-squared Search SR',
                'acf':'Autocorrelation Function',
-               'sls':'Lomb-Scargle normalized power'}
+               'sls':'Lomb-Scargle normalized power',
+               'win':'Lomb-Scargle normalized power'}
 
 METHODLABELS = {'gls':'Generalized Lomb-Scargle periodogram',
                 'pdm':'Stellingwerf phase-dispersion minimization',
@@ -864,7 +865,8 @@ METHODLABELS = {'gls':'Generalized Lomb-Scargle periodogram',
                 'mav':'Schwarzenberg-Czerny AoV multi-harmonic',
                 'bls':'Box Least-squared Search',
                 'acf':'McQuillan+ ACF Period Search',
-                'sls':'Lomb-Scargle periodogram (Scipy)'}
+                'sls':'Lomb-Scargle periodogram (Scipy)',
+                'win':'Timeseries Sampling Lomb-Scargle periodogram'}
 
 METHODSHORTLABELS = {'gls':'Generalized L-S',
                      'pdm':'Stellingwerf PDM',
@@ -872,7 +874,8 @@ METHODSHORTLABELS = {'gls':'Generalized L-S',
                      'mav':'Schwarzenberg-Czerny AoVMH',
                      'acf':'McQuillan+ ACF',
                      'bls':'BLS',
-                     'sls':'L-S (Scipy)'}
+                     'sls':'L-S (Scipy)',
+                     'win':'Sampling L-S'}
 
 
 def plot_periodbase_lsp(lspinfo, outfile=None, plotdpi=100):
