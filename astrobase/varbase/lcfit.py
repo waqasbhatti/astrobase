@@ -23,6 +23,10 @@ Fitting routines for light curves. Includes:
 - traptransit_fit_magseries: fit a trapezoid-shaped transit signal to the
                              magnitude/flux time series
 
+- gaussianeb_fit_magseries: fit a double inverted gaussian eclipsing binary
+                            model to the magnitude/flux time series
+
+
 TODO:
 - Find correct dof for reduced chi squared in savgol_fit_magseries
 
