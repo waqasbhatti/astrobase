@@ -241,6 +241,37 @@ def generalized_lsp_value_notau(times, mags, errs, omega):
 
 
 
+def specwindow_lsp_value(times, mags, errs, omega):
+    '''
+    This calculates the peak associated with the spectral window function
+    for times and at the specified omega.
+
+    '''
+
+    norm_times = times - times.min()
+
+    tau = (
+        (1.0/(2.0*omega)) *
+        nparctan( npsum(npsin(2.0*omega*norm_times)) /
+                  npsum(npcos(2.0*omega*norm_times)) )
+    )
+
+    lspval_top_cos = (npsum(1.0 * npcos(omega*(norm_times-tau))) *
+                      npsum(1.0 * npcos(omega*(norm_times-tau))))
+    lspval_bot_cos = npsum( (npcos(omega*(norm_times-tau))) *
+                             (npcos(omega*(norm_times-tau))) )
+
+    lspval_top_sin = (npsum(1.0 * npsin(omega*(norm_times-tau))) *
+                      npsum(1.0 * npsin(omega*(norm_times-tau))))
+    lspval_bot_sin = npsum( (npsin(omega*(norm_times-tau))) *
+                             (npsin(omega*(norm_times-tau))) )
+
+    lspval = 0.5 * ( (lspval_top_cos/lspval_bot_cos) +
+                     (lspval_top_sin/lspval_bot_sin) )
+
+    return lspval
+
+
 ##############################
 ## GENERALIZED LOMB-SCARGLE ##
 ##############################
@@ -253,6 +284,19 @@ def glsp_worker(task):
 
     try:
         return generalized_lsp_value(*task)
+    except Exception as e:
+        return npnan
+
+
+
+def glsp_worker_specwindow(task):
+    '''This is a worker to wrap the generalized Lomb-Scargle single-frequency
+    function.
+
+    '''
+
+    try:
+        return specwindow_lsp_value(*task)
     except Exception as e:
         return npnan
 
@@ -284,6 +328,7 @@ def pgen_lsp(
         periodepsilon=0.1, # 0.1
         stepsize=1.0e-4,
         nworkers=None,
+        workchunksize=None,
         sigclip=10.0,
         glspfunc=glsp_worker,
         verbose=True
@@ -355,7 +400,10 @@ def pgen_lsp(
         pool = Pool(nworkers)
 
         tasks = [(stimes, smags, serrs, x) for x in omegas]
-        lsp = pool.map(glspfunc, tasks)
+        if workchunksize:
+            lsp = pool.map(glspfunc, tasks, chunksize=workchunksize)
+        else:
+            lsp = pool.map(glspfunc, tasks)
 
         pool.close()
         pool.join()
@@ -475,3 +523,57 @@ def pgen_lsp(
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
                           'sigclip':sigclip}}
+
+
+
+def specwindow_lsp(
+        times,
+        mags,
+        errs,
+        magsarefluxes=False,
+        startp=None,
+        endp=100.0,
+        autofreq=True,
+        nbestpeaks=5,
+        periodepsilon=0.1, # 0.1
+        stepsize=1.0e-4,
+        nworkers=None,
+        sigclip=10.0,
+        glspfunc=glsp_worker_specwindow,
+        verbose=True
+):
+    '''
+    This calculates the spectral window function.
+
+    '''
+
+    # run the LSP using glsp_worker_specwindow as the worker
+    lspres = pgen_lsp(
+        times,
+        mags,
+        errs,
+        magsarefluxes=magsarefluxes,
+        startp=startp,
+        endp=endp,
+        autofreq=autofreq,
+        nbestpeaks=nbestpeaks,
+        periodepsilon=periodepsilon,
+        stepsize=stepsize,
+        nworkers=nworkers,
+        sigclip=sigclip,
+        glspfunc=glsp_worker_specwindow,
+        verbose=verbose
+    )
+
+    # update the resultdict to indicate we're a spectral window function
+    lspres['method'] = 'win'
+
+    # renormalize the periodogram to between 0 and 1 like the usual GLS.
+    lspmax = npmax(lspres['lspvals'])
+    lspres['lspvals'] = lspres['lspvals']/lspmax
+    lspres['nbestlspvals'] = [
+        x/lspmax for x in lspres['nbestlspvals']
+    ]
+    lspres['bestlspval'] = lspres['bestlspval']/lspmax
+
+    return lspres
