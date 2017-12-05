@@ -8,9 +8,6 @@ This is a companion module for fakelcgen.py. It runs LCs generated using
 functions in that module through variable star detection and classification to
 see how well they are recovered.
 
-TODO: add in grid-search for IQR for all functions below in addition to
-existing grid-searches for stetson and inveta.
-
 '''
 import os
 import os.path
@@ -756,7 +753,6 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
             LOGINFO('plotting results for %s: magbin: %.3f' %
                     (magcol, magbinmedian))
 
-            # FIXME: check if these indices are correct
             stet_mcc = np.array(
                 [x[magcol]['stet_mcc']
                  for x in recgrid[magbinind]]
@@ -1125,9 +1121,16 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
 
             plt.suptitle('magcol: %s, magbin: %.3f' % (magcol, magbinmedian))
 
-            gridplotf = os.path.join(gridresults['simbasedir'],
-                                     '%s-%.3f-var-recoverygrid-permagbin.png' %
-                                     (magcol, magbinmedian))
+            plotdir = os.path.join(gridresults['simbasedir'],
+                                   'varindex-gridsearch-plots')
+            if not os.path.exists(plotdir):
+                os.mkdir(plotdir)
+
+            gridplotf = os.path.join(
+                plotdir,
+                '%s-magbin-%.3f-var-recoverygrid-permagbin.png' %
+                (magcol, magbinmedian)
+            )
 
             plt.savefig(gridplotf,dpi=100,bbox_inches='tight')
             plt.close('all')
@@ -3335,6 +3338,9 @@ def plot_periodicvar_recovery_results(
     sortind = np.argsort(notvariable_recovered_periods)
     notvariable_recovered_periods = notvariable_recovered_periods[sortind]
     notvariable_recovered_lspvals = notvariable_recovered_lspvals[sortind]
+
+    outdict['notvariable_recovered_periods'] = notvariable_recovered_periods
+    outdict['notvariable_recovered_lspvals'] = notvariable_recovered_lspvals
 
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
     plt.plot(notvariable_recovered_periods,
