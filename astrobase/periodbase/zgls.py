@@ -532,7 +532,7 @@ def specwindow_lsp(
         errs,
         magsarefluxes=False,
         startp=None,
-        endp=100.0,
+        endp=None,
         autofreq=True,
         nbestpeaks=5,
         periodepsilon=0.1, # 0.1

@@ -629,9 +629,12 @@ def variable_index_gridsearch_magbin(simbasedir,
     - as a function of number of detections
     - as a function of amplitude of variability
 
-    Makes nice plots and writes everything back to
-    simbasedir/fakevar-recovery.pkl.
+    Writes everything back to simbasedir/fakevar-recovery.pkl. Use the plotting
+    function below to make plots for the results.
 
+    For the default number of grid-points and 25000 simulated light curves, this
+    takes about 3 days to run on a 40 (effective) core machine with 2 x Xeon
+    E5-2650v3 CPUs.
 
     '''
 

@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''features.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
+License: MIT. See the LICENSE file for more details.
 
 Calculates light curve features for variability classification.
 

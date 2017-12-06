@@ -458,7 +458,8 @@ def generate_eb_lightcurve(
         paramdists={'period':sps.uniform(loc=0.2,scale=99.8),
                     'pdepth':sps.uniform(loc=1.0e-4,scale=0.7),
                     'pduration':sps.uniform(loc=0.01,scale=0.44),
-                    'depthratio':sps.uniform(loc=0.01,scale=0.99)},
+                    'depthratio':sps.uniform(loc=0.01,scale=0.99),
+                    'secphase':sps.norm(loc=0.5,scale=0.1)},
         magsarefluxes=False,
 ):
     '''This generates fake EB light curves.
@@ -471,7 +472,7 @@ def generate_eb_lightcurve(
     paramdists is a dict containing parameter distributions to use for the
     transitparams, in order:
 
-    {'period', 'pdepth', 'pduration','depthratio'}
+    {'period', 'pdepth', 'pduration','depthratio', 'secphase'}
 
     These are all 'frozen' scipy.stats distribution objects, e.g.:
 
@@ -499,6 +500,7 @@ def generate_eb_lightcurve(
     pdepth = paramdists['pdepth'].rvs(size=1)
     pduration = paramdists['pduration'].rvs(size=1)
     depthratio = paramdists['depthratio'].rvs(size=1)
+    secphase = paramdists['secphase'].rvs(size=1)
 
     # fix the transit depth if it needs to be flipped
     if magsarefluxes and pdepth < 0.0:
@@ -509,7 +511,7 @@ def generate_eb_lightcurve(
     # generate the model
     modelmags, phase, ptimes, pmags, perrs = (
         eclipses.invgauss_eclipses_func([period, epoch, pdepth,
-                                         pduration, depthratio],
+                                         pduration, depthratio, secphase],
                                         times,
                                         mags,
                                         errs)
