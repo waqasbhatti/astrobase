@@ -1138,7 +1138,8 @@ def gaussianeb_fit_magseries(times, mags, errs,
                 epoch (time),
                 pdepth (mags),
                 pduration (phase),
-                psradratio]
+                psdepthratio,
+                secondaryphase]
 
     period is the period in days
 
@@ -1150,8 +1151,11 @@ def gaussianeb_fit_magseries(times, mags, errs,
 
     pduration is the length of the primary eclipse in phase
 
-    psradratio is the ratio of the secondary radius to primary radius. this is
-    equal the ratio in the eclipse depths.
+    psdepthratio is the ratio of the secondary eclipse depth to that of the
+    primary eclipse.
+
+    secondaryphase is the phase at which the minimum of the secondary eclipse is
+    located. This effectively parameterizes eccentricity.
 
     if epoch is None, this function will do an initial spline fit to find an
     approximate minimum of the phased light curve using the given period.
