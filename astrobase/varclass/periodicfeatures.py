@@ -160,7 +160,8 @@ def lcfit_features(times, mags, errs, period,
                    None,
                    ebparams[0],
                    ebparams[1],
-                   ebparams[2]]
+                   ebparams[2],
+                   ebparams[3]]
 
     # do the planet and EB fit with this period
     planet_fit = lcfit.traptransit_fit_magseries(times, mags, errs,
