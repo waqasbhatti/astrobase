@@ -19,6 +19,8 @@ form (an 'objectinfo' dict):
 
 def star_color_features(objectinfo):
     '''
-    Stellar colors and dereddened stellar colors using NED extinction API.
+    Stellar colors and dereddened stellar colors using 2MASS DUST API:
+
+    http://irsa.ipac.caltech.edu/applications/DUST/docs/dustProgramInterface.html
 
     '''
