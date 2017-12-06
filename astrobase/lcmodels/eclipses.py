@@ -59,7 +59,8 @@ def invgauss_eclipses_func(ebparams, times, mags, errs):
                 epoch (time),
                 pdepth (mags),
                 pduration (phase),
-                depthratio]
+                psdepthratio,
+                secondaryphase]
 
     period is the period in days
 
@@ -71,15 +72,18 @@ def invgauss_eclipses_func(ebparams, times, mags, errs):
 
     pduration is the length of the primary eclipse in phase
 
-    depthratio is the ratio in the eclipse depths:
-    depth_secondary/depth_primary. this is generally the same as the ratio of
+    psdepthratio is the ratio in the eclipse depths:
+    depth_secondary/depth_primary. This is generally the same as the ratio of
     the Teffs of the two stars.
+
+    secondaryphase is the phase at which the minimum of the secondary eclipse is
+    located. This effectively parameterizes eccentricity.
 
     All of these will then have fitted values after the fit is done.
 
     '''
 
-    (period, epoch, pdepth, pduration, depthratio) = ebparams
+    (period, epoch, pdepth, pduration, depthratio, secondaryphase) = ebparams
 
     # generate the phases
     iphase = (times - epoch)/period
@@ -112,7 +116,8 @@ def invgauss_eclipses_func(ebparams, times, mags, errs):
     )
 
     secondary_eclipse_phase = (
-        (phase >= (0.5 - halfduration)) & (phase <= (0.5 + halfduration))
+        (phase >= (secondaryphase - halfduration)) &
+        (phase <= (secondaryphase + halfduration))
     )
 
     # put in the eclipses
@@ -131,7 +136,7 @@ def invgauss_eclipses_func(ebparams, times, mags, errs):
     modelmags[secondary_eclipse_phase] = (
         zerolevel + _gaussian(phase[secondary_eclipse_phase],
                               secondaryecl_amp,
-                              0.5,
+                              secondaryphase,
                               secondaryecl_std)
     )
 
