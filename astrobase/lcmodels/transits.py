@@ -99,7 +99,7 @@ def trapezoid_transit_residual(transitparams, times, mags, errs):
     '''
 
     modelmags, phase, ptimes, pmags, perrs = (
-        _trapezoid_transit_func(transitparams, times, mags, errs)
+        trapezoid_transit_func(transitparams, times, mags, errs)
     )
 
     # this is now a weighted residual taking into account the measurement err
