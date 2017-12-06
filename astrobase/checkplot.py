@@ -150,7 +150,7 @@ def LOGEXCEPTION(message):
 from .lcmath import phase_magseries, phase_bin_magseries, \
     normalize_magseries, sigclip_magseries
 from .varbase.lcfit import spline_fit_magseries
-from .varbase.features import all_nonperiodic_features
+from .varclass.features import all_nonperiodic_features
 from .coordutils import total_proper_motion, reduced_proper_motion
 from .plotbase import skyview_stamp, \
     PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
