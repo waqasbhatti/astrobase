@@ -160,10 +160,39 @@ FEATURES_TO_COLLECT = [
 
 def collect_nonperiodic_varfeatures(
         featuresdir,
+        magcol,
+        outfile,
         maxobjects=None,
+        varflags=None,
 ):
-    '''
-    This collects nonperiodic varfeatures into arrays.
+    '''This collects nonperiodic varfeatures into arrays.
+
+    featuresdir is the directory where all the varfeatures pickles are.
+
+    magcol is the light curve magnitude col key to use when looking inside each
+    varfeatures pickle.
+
+    maxobjects controls how many pickles to process.
+
+    This returns a dict with the following keys per magcol:
+
+    'feature_array' = nobjects x nfeatures array
+    'feature_labels' = labels for each feature
+
+    This tries to get all the features listed in FEATURES_TO_COLLECT.
+
+    If varflags is not None, it must be a dict with the following key:val
+    list:
+
+    '<objectid>':True or False
+
+    This will turn the collected information into a training set for
+    classifiers. For a collection of fake LCS prepared by fakelcs.generation,
+    use the value of the 'isvariable' dict elem from fakelcs-info.pkl here, like
+    so:
+
+    varflags={x:y for x,y in zip(fakelcinfo['objectid'],
+                                 fakelcinfo['isvariable'])}
 
     '''
 
@@ -172,3 +201,75 @@ def collect_nonperiodic_varfeatures(
 
     if maxobjects:
         pklist = pklist[:maxobjects]
+
+
+    # fancy progress bar with tqdm if present
+    if TQDM:
+        listiterator = tqdm(pklist)
+    else:
+        listiterator = pklist
+
+    # go through all the varfeatures arrays
+
+    feature_dict = {'objectids':[],'magcol':magcol, 'featurelist':[]}
+
+    LOGINFO('collecting features for magcol: %s' % magcol)
+
+    for pkl in listiterator:
+
+        with open(pkl,'rb') as infd:
+            varf = pickle.load(infd)
+
+        # update the objectid list
+        objectid = varf['objectid']
+        if objectid not in feature_dict['objectids']:
+            feature_dict['objectids'].append(objectid)
+
+        thisfeatures = varf[magcol]
+
+        # collect all the features for this magcol/objectid combination
+        for feature in FEATURES_TO_COLLECT:
+
+            # update the global feature list if necessary
+            if ((feature not in feature_dict['featurelist']) and
+                (feature in thisfeatures)):
+
+                feature_dict['featurelist'].append(feature)
+                feature_dict[feature] = []
+
+            if feature in thisfeatures:
+
+                feature_dict[feature].append(
+                    thisfeatures[feature]
+                )
+
+    # now that we've collected all the objects and their features, turn the list
+    # into arrays, and then concatenate them
+    for feat in feature_dict['featurelist']:
+        feature_dict[feat] = np.array(feature_dict[feat])
+
+    feature_dict['objectids'] = np.array(feature_dict['objectids'])
+
+    feature_array = np.column_stack([feature_dict[feat] for feat in
+                                     feature_dict['featurelist']])
+    feature_dict['feature_array'] = feature_array
+
+    # if there's a varflag dict available, use it to generate a class array
+    if isinstance(varflags, dict):
+
+        flagarray = np.zeros(feature_dict['objectids'].size, dtype=np.int64)
+
+        for ind, objectid in enumerate(feature_dict['objectids']):
+            if objectid in varf lags:
+                if varflags[objectid]:
+                    flagarray[ind] = 1
+
+        feature_dict['varflag_array'] = flagarray
+
+
+    # write the info to the output pickle
+    with open(outfile,'wb') as outfd:
+        pickle.dump(feature_dict, outfd, pickle.HIGHEST_PROTOCOL)
+
+    # return the feature_dict
+    return feature_dict
