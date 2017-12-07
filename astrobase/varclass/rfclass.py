@@ -348,7 +348,7 @@ def get_rf_classifier(
     bestclf_hyperparams = cvsearch_classifiers.best_params_
 
     # test this classifier on the testing set
-    test_predicted_labels = bestclf.predict(test_features)
+    test_predicted_labels = bestclf.predict(testing_features)
 
     recscore = recall_score(testing_labels, test_predicted_labels)
     precscore = precision_score(testing_labels,test_predicted_labels)
