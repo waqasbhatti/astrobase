@@ -340,7 +340,7 @@ def get_rf_classifier(
                                         training_labels)
 
     # report on the classifiers' performance
-    gridsearch_report(cvsearch_classifiers)
+    gridsearch_report(cvsearch_classifiers.grid_scores_)
 
     # get the best classifier after CV
     bestclf = cvsearch_classifiers.best_estimator_
