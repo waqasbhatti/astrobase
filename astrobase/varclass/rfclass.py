@@ -17,24 +17,6 @@ are supported:
   recognized are listed in PERIODIC_VARCLASSES below and were generated from
   manual classification run on various HATNet, HATSouth and HATPI fields.
 
-How to use other astrobase modules with this one:
-
-- use varclass/fakelcgen to generate light curves corresponding to the
-  brightness distribution and time-sampling of your actual light curves.
-
-- use varclass/fakelcrecovery and varclass/rfclass to run variable/non-variable
-  classification on your fake light curves.
-
-- use varclass/fakelcrecovery to run period-finding on fake light curves,
-  generate periodic light curve features, and characterize how well
-  period-finding methods work on the fake light curves.
-
-- use varclass/rfclass to classify recovered variable stars based on their
-  periodic light curve features.
-
-- use varclass/fakelcrecovery to characterize recovery rates of all variables
-  and just the periodic variables.
-
 '''
 
 import logging
