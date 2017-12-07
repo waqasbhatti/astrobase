@@ -51,8 +51,11 @@ from scipy.stats import randint as sp_randint
 # scikit imports
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold, StratifiedKFold, RandomizedSearchCV
+from sklearn.model_selection import train_test_split
+
 from operator import itemgetter
-from sklearn.metrics import r2_score, median_absolute_error
+from sklearn.metrics import r2_score, median_absolute_error, \
+    precision_score, recall_score, confusion_matrix, f1_score
 
 #############
 ## LOGGING ##
@@ -116,24 +119,13 @@ def gridsearch_report(grid_scores, n_top=3):
         LOGINFO("Parameters: {0}".format(score.parameters))
 
 
-#######################################
-## HYPERPARAMETER OPTIMIZATION GRIDS ##
-#######################################
-
-RF_HYPERPARAMS = {
-    "max_depth": [3,4,5,10,20,None],
-    "n_estimators":sp_randint(100,2000),
-    "max_features": sp_randint(1, 5),
-    "min_samples_split": sp_randint(1, 11),
-    "min_samples_leaf": sp_randint(1, 11),
-}
 
 
 #####################################
 ## NON-PERIODIC VAR CLASSIFICATION ##
 #####################################
 
-FEATURES_TO_COLLECT = [
+NONPERIODIC_FEATURES_TO_COLLECT = [
     'stetsonj',
     'stetsonk',
     'amplitude',
@@ -179,7 +171,7 @@ def collect_nonperiodic_varfeatures(
     'feature_array' = nobjects x nfeatures array
     'feature_labels' = labels for each feature
 
-    This tries to get all the features listed in FEATURES_TO_COLLECT.
+    This tries to get all the features listed in NONPERIODIC_FEATURES_TO_COLLECT.
 
     If varflags is not None, it must be a dict with the following key:val
     list:
@@ -228,7 +220,7 @@ def collect_nonperiodic_varfeatures(
         thisfeatures = varf[magcol]
 
         # collect all the features for this magcol/objectid combination
-        for feature in FEATURES_TO_COLLECT:
+        for feature in NONPERIODIC_FEATURES_TO_COLLECT:
 
             # update the global feature list if necessary
             if ((feature not in feature_dict['featurelist']) and
@@ -260,7 +252,7 @@ def collect_nonperiodic_varfeatures(
         flagarray = np.zeros(feature_dict['objectids'].size, dtype=np.int64)
 
         for ind, objectid in enumerate(feature_dict['objectids']):
-            if objectid in varf lags:
+            if objectid in varflags:
                 if varflags[objectid]:
                     flagarray[ind] = 1
 
@@ -273,3 +265,123 @@ def collect_nonperiodic_varfeatures(
 
     # return the feature_dict
     return feature_dict
+
+
+
+
+
+#################################
+## TRAINING THE RF CLASSIFIERS ##
+#################################
+
+
+def get_rf_classifier(
+        tfeatures,
+        tlabels,
+        test_fraction=0.25,
+        n_crossval_iterations=20,
+        n_kfolds=5,
+        crossval_scoring_metric='f1',
+        classifier_to_pickle=None,
+        nworkers=-1,
+):
+    '''
+    This gets the best RF classifier after running cross-validation.
+
+    - splits the training set into test/train samples
+    - does KFold stratified cross-validation using RandomizedSearchCV
+    - gets the randomforest with the best performance after CV
+    - gets the confusion matrix for the test set
+
+    '''
+
+    # split the training set into training/test samples using stratification
+    # to keep the same fraction of variable/nonvariables in each
+    training_features, testing_features, training_labels, testing_labels = (
+        train_test_split(
+            tfeatures,
+            tlabels,
+            test_size=test_fraction,
+            random_state=RANDSEED,
+            stratify=tlabels
+        )
+    )
+
+    # get a random forest classifier
+    clf = RandomForestClassifier(n_jobs=nworkers,
+                                 random_state=RANDSEED)
+
+
+    # this is the grid def for hyperparam optimization
+    rf_hyperparams = {
+        "max_depth": [3,4,5,10,20,None],
+        "n_estimators":sp_randint(100,2000),
+        "max_features": sp_randint(1, 5),
+        "min_samples_split": sp_randint(1, 11),
+        "min_samples_leaf": sp_randint(1, 11),
+    }
+
+
+    # run the stratified kfold cross-validation on training features
+    cvsearch = RandomizedSearchCV(
+        clf,
+        param_distributions=rf_hyperparams,
+        n_iter=n_crossval_iterations,
+        scoring=crossval_scoring_metric,
+        cv=StratifiedKFold(n_splits=n_kfolds,
+                           shuffle=True,
+                           random_state=RANDSEED),
+        random_state=RANDSEED
+    )
+
+
+    LOGINFO('running grid-search CV...')
+    cvsearch_classifiers = cvsearch.fit(training_features,
+                                        training_labels)
+
+    # report on the classifiers' performance
+    gridsearch_report(cvsearch_classifiers)
+
+    # get the best classifier after CV
+    bestclf = cvsearch_classifiers.best_estimator_
+    bestclf_score = cvsearch_classifiers.best_score_
+    bestclf_hyperparams = cvsearch_classifiers.best_params_
+
+    # test this classifier on the testing set
+    test_predicted_labels = bestclf.predict(test_features)
+
+    recscore = recall_score(testing_labels, test_predicted_labels)
+    precscore = precision_score(testing_labels,test_predicted_labels)
+    f1score = f1_score(testing_labels, test_predicted_labels)
+    confmatrix = confusion_matrix(testing_labels, test_predicted_labels)
+
+
+    # write the classifier, its training/testing set, and its stats to the
+    # pickle if requested
+    outdict = {'all_features':tfeatures,
+               'all_labels':tlabels,
+               'kwargs':{'test_fraction':test_fraction,
+                         'n_crossval_iterations':n_crossval_iterations,
+                         'n_kfolds':n_kfolds,
+                         'crossval_scoring_metric':crossval_scoring_metric,
+                         'nworkers':nworkers},
+               'testing_features':testing_features,
+               'testing_labels':testing_labels,
+               'training_features':training_features,
+               'training_labels':training_labels,
+               'best_classifier':bestclf,
+               'best_score':bestclf_score,
+               'best_hyperparams':bestclf_hyperparams,
+               'best_recall':recscore,
+               'best_precision':precscore,
+               'best_f1':f1score,
+               'best_confmatrix':confmatrix}
+
+    if classifier_to_pickle:
+
+        with open(classifier_to_pickle,'wb') as outfd:
+            pickle.dump(outdict, outfd, pickle.HIGHEST_PROTOCOL)
+
+
+    # return this classifier and accompanying info
+    return outdict
