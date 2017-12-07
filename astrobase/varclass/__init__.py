@@ -18,20 +18,20 @@ nnclass.py          - optional RNN classifier (will require Keras) and support
 
 How to use other astrobase modules with this one:
 
-- use varclass/fakelcgen to generate light curves corresponding to the
+- use fakelcs/generation to generate light curves corresponding to the
   brightness distribution and time-sampling of your actual light curves.
 
-- use varclass/fakelcrecovery and varclass/rfclass to run variable/non-variable
+- use fakelcs/recovery and varclass/rfclass to run variable/non-variable
   classification on your fake light curves.
 
-- use varclass/fakelcrecovery to run period-finding on fake light curves,
+- use fakelcs/recovery to run period-finding on fake light curves,
   generate periodic light curve features, and characterize how well
   period-finding methods work on the fake light curves.
 
 - use varclass/rfclass to classify recovered variable stars based on their
   periodic light curve features.
 
-- use varclass/fakelcrecovery to characterize recovery rates of all variables
-  and just the periodic variables.
+- use fakelcs/recovery to characterize recovery rates of all variables
+  and also just the periodic variables.
 
 '''
