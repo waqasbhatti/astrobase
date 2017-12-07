@@ -11,7 +11,10 @@ processing HAT light curves.
 import os
 import os.path
 import sys
-import pickle
+try:
+    import cPickle as pickle
+except:
+    import pickle
 import gzip
 import glob
 import shutil
