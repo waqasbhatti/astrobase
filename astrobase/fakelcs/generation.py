@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''fakelcgen - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
+'''generation - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
 License: MIT. See the LICENSE file for more details.
 
 This generates light curves of variable stars using the astrobase.lcmodels
@@ -57,6 +57,9 @@ covered by the blenders. this will require input kwargs for pixel size of the
 detector and FWHM of the star (this might need to be calculated based on the
 brightness of the star)
 
+FIXME: add input from TRILEGAL produced .dat files for color and mag
+information. This will let us generate pulsating variables with their actual
+colors.
 '''
 import os
 import os.path
@@ -102,7 +105,7 @@ import matplotlib.pyplot as plt
 LOGGER = None
 
 def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.fakelcgen' % parent_name)
+    globals()['LOGGER'] = logging.getLogger('%s.generation' % parent_name)
 
 def LOGDEBUG(message):
     if LOGGER:
@@ -145,14 +148,15 @@ def LOGEXCEPTION(message):
 ###################
 
 # LC reading functions
-from astrobase.hatlc import read_and_filter_sqlitecurve, read_csvlc, \
+from ..hatlc import read_and_filter_sqlitecurve, read_csvlc, \
     normalize_lcdict_byinst
-from astrobase.hplc import read_hatpi_textlc, read_hatpi_pklc
-from astrobase.astrokep import read_kepler_fitslc, read_kepler_pklc
+from ..hplc import read_hatpi_textlc, read_hatpi_pklc
+from ..astrokep import read_kepler_fitslc, read_kepler_pklc
 
+# light curve models
 from ..lcmodels import transits, eclipses, flares, sinusoidal
-from ..varbase.features import all_nonperiodic_features
 
+# magnitude conversion
 from ..magnitudes import jhk_to_sdssr
 
 
@@ -1099,15 +1103,17 @@ def make_fakelc(lcfile,
     magrms is a dict containing the SDSS r mag-RMS (SDSS rmag-MAD preferably)
     relations for all light curves that the input lcfile is from. This will be
     used to generate the median mag and noise corresponding to the magnitude
-    chosen for this fake LC. If randomizemags is True, then a random mag between
-    the first and last magbin in magrms will be chosen as the median mag for
-    this light curve. This choice will be weighted by the mag bin probability
-    obtained from the magrms kwarg. Otherwise, the median mag will be taken from
-    the input lcfile's lcdict['objectinfo']['sdssr'] key or a transformed SDSS r
-    mag generated from the input lcfile's lcdict['objectinfo']['jmag'],
-    ['hmag'], and ['kmag'] keys. The magrms relation for each magcol will be
-    used to generate Gaussian noise at the correct level for the magbin this
-    light curve's median mag falls into.
+    chosen for this fake LC.
+
+    If randomizemags is True, then a random mag between the first and last
+    magbin in magrms will be chosen as the median mag for this light curve. This
+    choice will be weighted by the mag bin probability obtained from the magrms
+    kwarg. Otherwise, the median mag will be taken from the input lcfile's
+    lcdict['objectinfo']['sdssr'] key or a transformed SDSS r mag generated from
+    the input lcfile's lcdict['objectinfo']['jmag'], ['hmag'], and ['kmag']
+    keys. The magrms relation for each magcol will be used to generate Gaussian
+    noise at the correct level for the magbin this light curve's median mag
+    falls into.
 
     If randomizecoords is True, will randomize the RA, DEC of the object.
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''fakelcrecovery - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
+'''recovery - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
 License: MIT. See the LICENSE file for more details.
 
 This is a companion module for fakelcgen.py. It runs LCs generated using
@@ -56,7 +56,7 @@ from tqdm import tqdm
 LOGGER = None
 
 def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.fakelcrecovery' % parent_name)
+    globals()['LOGGER'] = logging.getLogger('%s.recovery' % parent_name)
 
 def LOGDEBUG(message):
     if LOGGER:
@@ -98,10 +98,8 @@ def LOGEXCEPTION(message):
 ## LOCAL IMPORTS ##
 ###################
 
-import astrobase.lcproc as lcproc
+from .. import lcproc
 lcproc.set_logger_parent(__name__)
-
-import astrobase.varbase.features as vfeatures
 
 
 #######################
