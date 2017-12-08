@@ -554,6 +554,7 @@ def plot_training_results(classifier):
     This plots the training results from the classifier run on the training set.
 
     - plots the confusion matrix
+    - plots the feature importances
 
 
     '''
