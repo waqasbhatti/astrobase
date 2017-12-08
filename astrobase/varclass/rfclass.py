@@ -523,6 +523,9 @@ def apply_rf_classifier(classifier,
     bestclf = clfdict['best_classifier']
 
     predicted_labels = bestclf.predict(features['features_array'])
+
+    # FIXME: do we need to use the probability calibration curves to fix these
+    # probabilities? probably. figure out how to do this.
     predicted_label_probs = bestclf.predict_proba(
         features['features_array']
     )
@@ -539,3 +542,18 @@ def apply_rf_classifier(classifier,
         pickle.dump(outdict, outfd, pickle.HIGHEST_PROTOCOL)
 
     return outdict
+
+
+
+######################
+## PLOTTING RESULTS ##
+######################
+
+def plot_training_results(classifier):
+    '''
+    This plots the training results from the classifier run on the training set.
+
+    - plots the confusion matrix
+
+
+    '''
