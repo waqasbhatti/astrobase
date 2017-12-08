@@ -435,6 +435,7 @@ def train_rf_classifier(
                          'n_kfolds':n_kfolds,
                          'crossval_scoring_metric':crossval_scoring_metric,
                          'nworkers':nworkers},
+               'collect_kwargs':fdict['kwargs'],
                'testing_features':testing_features,
                'testing_labels':testing_labels,
                'training_features':training_features,
@@ -461,7 +462,8 @@ def train_rf_classifier(
 
 def apply_rf_classifier(classifier,
                         varfeaturesdir,
-                        outpickle):
+                        outpickle,
+                        maxobjects=None):
     '''This applys an RF classifier trained using train_rf_classifier
     to pickles in varfeaturesdir.
 
@@ -493,6 +495,47 @@ def apply_rf_classifier(classifier,
                  "varfeature pickles in %s" % varfeaturesdir)
         return None
 
+    # get the feature labeltype, pklglob, and maxobjects from classifier's
+    # collect_kwargs elem.
+    featurestouse = clfdict['feature_names']
+    labeltype = clfdict['collect_kwargs']['labeltype']
+    pklglob = clfdict['collect_kwargs']['pklglob']
+    magcol = clfdict['magcol']
+
 
     # extract the features used by the classifier from the varfeatures pickles
-    # in varfeaturesdir
+    # in varfeaturesdir using the pklglob provided
+    featfile = os.path.join(
+        os.path.dirname(outpickle),
+        'actual-collected-features.pkl'
+        )
+
+    features = collect_features(
+        varfeaturesdir,
+        magcol,
+        featfile,
+        pklglob=pklglob,
+        featurestouse=featurestouse,
+        maxobjects=maxobjects
+    )
+
+    # now use the trained classifier on these features
+    bestclf = clfdict['best_classifier']
+
+    predicted_labels = bestclf.predict(features['features_array'])
+    predicted_label_probs = bestclf.predict_proba(
+        features['features_array']
+    )
+
+    outdict = {
+        'features':features,
+        'featfile':featfile,
+        'classifier':clfdict,
+        'predicted_labels':predicted_labels,
+        'predicted_label_probs':predicted_label_probs,
+    }
+
+    with open(outpickle,'wb') as outfd:
+        pickle.dump(outdict, outfd, pickle.HIGHEST_PROTOCOL)
+
+    return outdict
