@@ -383,8 +383,8 @@ def train_rf_classifier(
         "max_depth": [3,4,5,10,20,None],
         "n_estimators":sp_randint(100,2000),
         "max_features": sp_randint(1, 5),
-        "min_samples_split": sp_randint(1, 11),
-        "min_samples_leaf": sp_randint(1, 11),
+        "min_samples_split": sp_randint(2, 11),
+        "min_samples_leaf": sp_randint(2, 11),
     }
 
 
