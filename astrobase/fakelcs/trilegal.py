@@ -42,6 +42,7 @@ import requests.exceptions
 
 # to convert to/from galactic coords and read IPAC tables
 from astropy.coordinates import SkyCoord
+from astropy import units as u
 from astropy.table import Table
 
 #############
@@ -871,6 +872,52 @@ def trilegal_query_galcoords(gal_lon,
                'tablefile':cachefname}
 
     return resdict
+
+
+
+def trilegal_query_radecl(ra,
+                          decl,
+                          filtersystem='sloan_2mass',
+                          field_deg2=1.0,
+                          usebinaries=True,
+                          extinction_sigma=0.1,
+                          magnitude_limit=26.0,
+                          maglim_filtercol=4,
+                          trilegal_version=1.6,
+                          extraparams=None,
+                          forcefetch=False,
+                          cachedir='~/.astrobase/trilegal-cache',
+                          verbose=True,
+                          timeout=60.0,
+                          refresh=150.0,
+                          maxtimeout=700.0):
+    '''
+    This runs the TRILEGAL query for decimal equatorial coordinates.
+
+    '''
+
+    # convert the ra/decl to gl, gb
+    radecl = SkyCoord(ra=ra*u.degree, dec=decl*u.degree)
+
+    gl = radecl.galactic.l.degree
+    gb = radecl.galactic.b.degree
+
+    return trilegal_query_galcoords(gl,
+                                    gb,
+                                    filtersystem=filtersystem,
+                                    field_deg2=field_deg2,
+                                    usebinaries=usebinaries,
+                                    extinction_sigma=extinction_sigma,
+                                    magnitude_limit=magnitude_limit,
+                                    maglim_filtercol=maglim_filtercol,
+                                    trilegal_version=trilegal_version,
+                                    extraparams=extraparams,
+                                    forcefetch=forcefetch,
+                                    cachedir=cachedir,
+                                    verbose=verbose,
+                                    timeout=timeout,
+                                    refresh=refresh,
+                                    maxtimeout=maxtimeout)
 
 
 
