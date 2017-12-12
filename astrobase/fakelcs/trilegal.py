@@ -492,11 +492,13 @@ def dust_extinction_query(ra, decl,
                           sizedeg=5.0,
                           forcefetch=False,
                           cachedir='~/.astrobase/dust-cache',
-                          verbose=False,
+                          verbose=True,
                           timeout=10.0):
     '''
     This queries the 2MASS DUST service to find the extinction parameters
     for the given ra, decl.
+
+    ra, decl are decimal right ascension and declination.
 
     '''
 
@@ -570,6 +572,11 @@ def dust_extinction_query(ra, decl,
     # if this result is available in the cache, get it from there
     else:
 
+        if verbose:
+            LOGINFO('getting cached 2MASS DUST result for '
+                    'RA = %.3f, DEC = %.3f, size = %.1f' %
+                    (ra, decl, sizedeg))
+
         tablefname = cachefname
 
     #
@@ -578,14 +585,23 @@ def dust_extinction_query(ra, decl,
     # read and parse the extinction table using astropy.Table
     extinction_table = Table.read(tablefname, format='ascii.ipac')
 
+    # get the columns we need
     filters = np.array(extinction_table['Filter_name'])
     a_sf11_byfilter = np.array(extinction_table['A_SandF'])
     a_sfd98_byfilter = np.array(extinction_table['A_SFD'])
 
+    # generate the output dict
     extdict = {'Amag':{x:{'sf11':y, 'sfd98':z} for
                        x,y,z in zip(filters,a_sf11_byfilter,a_sfd98_byfilter)},
                'table':np.array(extinction_table),
+               'tablefile':os.path.abspath(cachefname),
                'provenance':provenance,
-               'cachekey':cachekey}
+               'request':'(%.3f, %.3f) with size = %.1f' % (ra,decl,sizedeg)}
 
     return extdict
+
+
+
+##############################
+## TRILEGAL QUERY FUNCTIONS ##
+##############################
