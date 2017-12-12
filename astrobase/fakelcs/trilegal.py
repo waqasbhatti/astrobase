@@ -94,21 +94,27 @@ def LOGEXCEPTION(message):
 ############################
 
 # URL of the POST form target
-TRILEGAL_URL = 'http://stev.oapd.inaf.it/cgi-bin/trilegal_{formversion}'
+TRILEGAL_POSTURL = 'http://stev.oapd.inaf.it/cgi-bin/trilegal_{formversion}'
+
+# BASE URL for the results
+TRILEGAL_BASEURL = 'http://stev.oapd.inaf.it'
+
+# regex to get the result file name
+TRILEGAL_REGEX = re.compile('a href\S*.dat')
 
 # these are the params that the user will probably interact with the most
-TRILEGAL_INPUT_PARAMS = [
-    'binary_kind',
-    'extinction_infty',
-    'extinction_sigma',
-    'gc_b',
-    'gc_l',
-    'field',
-    'icm_lim',
-    'mag_lim',
-    'photsys_file',
-    'trilegal_version'
-]
+TRILEGAL_INPUT_PARAMS = {
+    'binary_kind':'1',
+    'extinction_infty':'0.0398',
+    'extinction_sigma':'0.1',
+    'gc_b':'60.0',
+    'gc_l':'90.0',
+    'field':'1.0',
+    'icm_lim':'4',
+    'mag_lim':'26.0',
+    'photsys_file':'tab_mag_odfnew/tab_mag_sloan_2mass.dat',
+    'trilegal_version':'1.6',
+}
 
 # these are taken from get_trilegal.pm, a Perl script from Prof. Leo Girardi
 # a version of this is at T. D. Morton's VESPA github repository:
@@ -488,25 +494,34 @@ DUST_REGEX = re.compile(r'http[s|]://\S*extinction\.tbl')
 ## 2MASS DUST QUERY FUNCTIONS ##
 ################################
 
-def dust_extinction_query(ra, decl,
+def dust_extinction_query(lon, lat,
+                          coordtype='equatorial',
                           sizedeg=5.0,
                           forcefetch=False,
                           cachedir='~/.astrobase/dust-cache',
                           verbose=True,
                           timeout=10.0):
-    '''
-    This queries the 2MASS DUST service to find the extinction parameters
-    for the given ra, decl.
+    '''This queries the 2MASS DUST service to find the extinction parameters
+    for the given lon, lat.
 
-    ra, decl are decimal right ascension and declination.
+    lon, lat are decimal right ascension and declination if coordtype ==
+    'equatorial'. lon, lat are decimal Galactic longitude and latitude if
+    coordtype == 'galactic'.
 
     '''
 
     dustparams = DUST_PARAMS.copy()
 
-    # convert the ra, decl to the required format
+    # convert the lon, lat to the required format
     # and generate the param dict
-    locstr = '%.3f %.3f Equ J2000' % (ra, decl)
+    if coordtype == 'equatorial':
+        locstr = '%.3f %.3f Equ J2000' % (lon, lat)
+    elif coordtype == 'galactic':
+        locstr = '%.3f %.3f gal' % (lon, lat)
+    else:
+        LOGERROR('unknown coordinate type: %s' % coordtype)
+        return None
+
     dustparams['locstr'] = locstr
     dustparams['regSize'] = sizedeg
 
@@ -531,10 +546,10 @@ def dust_extinction_query(ra, decl,
 
             if verbose:
                 LOGINFO('submitting 2MASS DUST request for '
-                        'RA = %.3f, DEC = %.3f, size = %.1f' %
-                        (ra, decl, sizedeg))
+                        'lon = %.3f, lat = %.3f, type = %s, size = %.1f' %
+                        (lon, lat, coordtype, sizedeg))
 
-            req = requests.get(DUST_URL, dustparams, timeout=timeout)
+            req = requests.get(DUST_URL, params=dustparams, timeout=timeout)
             resp = req.text
 
             # see if we got an extinction table URL in the response
@@ -555,18 +570,21 @@ def dust_extinction_query(ra, decl,
 
             else:
                 LOGERROR('could not get extinction parameters for '
-                         '(%.3f, %.3f) with size = %.1f' % (ra,decl,sizedeg))
+                         '%s (%.3f, %.3f) with size = %.1f' % (coordtype,
+                                                               lon,lat,sizedeg))
                 LOGERROR('error from DUST service follows:\n%s' % resp)
                 return None
 
         except requests.exceptions.Timeout as e:
             LOGERROR('DUST request timed out for '
-                     '(%.3f, %.3f) with size = %.1f' % (ra,decl,sizedeg))
+                     '%s (%.3f, %.3f) with size = %.1f' % (coordtype,
+                                                           lon,lat,sizedeg))
             return None
 
         except Exception as e:
             LOGEXCEPTION('DUST request failed for '
-                         '(%.3f, %.3f) with size = %.1f' % (ra,decl,sizedeg))
+                         '%s (%.3f, %.3f) with size = %.1f' % (coordtype,
+                                                               lon,lat,sizedeg))
             return None
 
     # if this result is available in the cache, get it from there
@@ -574,8 +592,8 @@ def dust_extinction_query(ra, decl,
 
         if verbose:
             LOGINFO('getting cached 2MASS DUST result for '
-                    'RA = %.3f, DEC = %.3f, size = %.1f' %
-                    (ra, decl, sizedeg))
+                    'lon = %.3f, lat = %.3f, coordtype = %s, size = %.1f' %
+                    (lon, lat, coordtype, sizedeg))
 
         tablefname = cachefname
 
@@ -596,7 +614,9 @@ def dust_extinction_query(ra, decl,
                'table':np.array(extinction_table),
                'tablefile':os.path.abspath(cachefname),
                'provenance':provenance,
-               'request':'(%.3f, %.3f) with size = %.1f' % (ra,decl,sizedeg)}
+               'request':'%s (%.3f, %.3f) with size = %.1f' % (coordtype,
+                                                               lon,lat,
+                                                               sizedeg)}
 
     return extdict
 
@@ -605,3 +625,238 @@ def dust_extinction_query(ra, decl,
 ##############################
 ## TRILEGAL QUERY FUNCTIONS ##
 ##############################
+
+def list_trilegal_filtersystems():
+    '''
+    This just lists all the filter systems available for TRILEGAL.
+
+    '''
+
+    print('%-40s %s' % ('FILTER SYSTEM NAME','DESCRIPTION'))
+    print('%-40s %s' % ('------------------','-----------'))
+    for key in sorted(TRILEGAL_FILTER_SYSTEMS.keys()):
+        print('%-40s %s' % (key, TRILEGAL_FILTER_SYSTEMS[key]['desc']))
+
+
+
+def trilegal_query_galcoords(gal_lon,
+                             gal_lat,
+                             filtersystem='sloan_2mass',
+                             field_deg2=1.0,
+                             usebinaries=True,
+                             extinction_sigma=0.1,
+                             magnitude_limit=26.0,
+                             maglim_filtercol=4,
+                             trilegal_version=1.6,
+                             extraparams=None,
+                             forcefetch=False,
+                             cachedir='~/.astrobase/trilegal-cache',
+                             verbose=True,
+                             timeout=60.0,
+                             refresh=150.0,
+                             maxtimeout=700.0):
+    '''This queries the TRILEGAL model form, downloads results, and parses them.
+
+    '''
+
+    # these are the default parameters
+    inputparams = TRILEGAL_INPUT_PARAMS.copy()
+
+    # update them with the input params
+    inputparams['binary_kind'] = '1' if usebinaries else '0'
+    inputparams['extinction_sigma'] = '%.2f' % extinction_sigma
+    inputparams['field'] = '%.2f' % field_deg2
+    inputparams['icm_lim'] = str(maglim_filtercol)
+    inputparams['mag_lim'] = '%.2f' % magnitude_limit
+    inputparams['trilegal_version'] = str(trilegal_version)
+
+    # get the coordinates
+    inputparams['gc_l'] = '%.3f' % gal_lon
+    inputparams['gc_b'] = '%.3f' % gal_lat
+
+    # get the extinction parameter. this is by default A[inf] in V. we'll use
+    # the value from SF11 generated by the 2MASS DUST service
+    extinction_info = dust_extinction_query(gal_lon,
+                                            gal_lat,
+                                            coordtype='galactic',
+                                            sizedeg=field_deg2**0.5,
+                                            forcefetch=forcefetch,
+                                            verbose=verbose,
+                                            timeout=timeout)
+    try:
+        Av_infinity = extinction_info['Amag']['CTIO V']['sf11']
+        inputparams['extinction_infty'] = '%.5f' % Av_infinity
+    except Exception as e:
+        LOGEXCEPTION(
+            'could not get A_V_SF11 from 2MASS DUST '
+            'for Galactic coords: (%.3f, %.3f), ',
+            'using default value of %.5f' % (gal_lon, gal_lat,
+                                             inputparams['extinction_infty'])
+        )
+
+
+    # get the filter system table
+    if filtersystem in TRILEGAL_FILTER_SYSTEMS:
+        inputparams['photsys_file'] = (
+            TRILEGAL_FILTER_SYSTEMS[filtersystem]['table']
+        )
+    else:
+        LOGERROR('filtersystem name: %s is not in the table of known '
+                 'filter systems.\n'
+                 'Try the trilegal.list_trilegal_filtersystems() function '
+                 'to see all available filter systems.' % filtersystem)
+        return None
+
+    # override the complete form param dict now with our params
+    trilegal_params = TRILEGAL_DEFAULT_PARAMS.copy()
+    trilegal_params.update(inputparams)
+
+    # override the final params with any extraparams
+    if extraparams and isinstance(extraparams, dict):
+        trilegal_params.update(extraparams)
+
+    # see if the cachedir exists
+    if '~' in cachedir:
+        cachedir = os.path.expanduser(cachedir)
+    if not os.path.exists(cachedir):
+        os.makedirs(cachedir)
+
+    # generate the cachefname and look for it
+    cachekey = repr(inputparams)
+    cachekey = hashlib.sha256(cachekey.encode()).hexdigest()
+    cachefname = os.path.join(cachedir, '%s.txt.gz' % cachekey)
+    provenance = 'cache'
+
+    lockfile = os.path.join(cachedir, 'LOCK-%s' % cachekey)
+
+    # run the query if results not found in the cache
+    if forcefetch or (not os.path.exists(cachefname)):
+
+        # first, check if a query like this is running already
+        if os.path.exists(lockfile):
+            with open(lockfile,'r') as infd:
+                lock_contents = infd.read()
+            lock_contents = lock_contents.replace('\n','')
+
+            LOGERROR('this query appears to be active since %s'
+                     'in another instance, not running it again' %
+                     lock_contents)
+            return None
+
+        else:
+            with open(lockfile,'w') as outfd:
+                outfd.write(datetime.utcnow().isoformat())
+
+        provenance = 'new download'
+
+        try:
+
+            if verbose:
+                LOGINFO('submitting TRILEGAL request for input params: %s'
+                        % repr(inputparams))
+
+            posturl = TRILEGAL_POSTURL.format(formversion=trilegal_version)
+
+            req = requests.post(posturl,
+                                data=trilegal_params,
+                                timeout=timeout)
+            resp = req.text
+
+            # get the URL of the result file
+            resultfile = TRILEGAL_REGEX.search(resp)
+
+            if resultfile:
+
+                resultfile = resultfile[0]
+                waitdone = False
+                timeelapsed = 0.0
+
+                resultfileurl = '%s/%s' % (
+                    TRILEGAL_BASEURL,
+                    resultfile.replace('a href=..','')
+                )
+
+                if verbose:
+                    LOGINFO(
+                        'request submitted sucessfully, waiting for results...'
+                    )
+
+                # wait for 2 minutes, then try to download the result file
+                while not waitdone:
+
+                    if timeelapsed > maxtimeout:
+                        LOGERROR('TRILEGAL timed out after waiting for results,'
+                                 ' request was: '
+                                 '%s' % repr(inputparams))
+                        return None
+
+                    time.sleep(refresh)
+                    timeelapsed = timeelapsed + refresh
+
+                    try:
+
+                        resreq = requests.get(resultfileurl)
+
+                        if verbose:
+                            LOGINFO('TRILEGAL completed, retrieving results...')
+
+                        # stream the response to the output cache file
+                        with gzip.open(cachefname,'wb') as outfd:
+                            for chunk in resreq.iter_content(chunk_size=4096):
+                                outfd.write(chunk)
+
+                        tablefname = cachefname
+                        waitdone = True
+                        if verbose:
+                            LOGINFO('done.')
+
+                    except Exception as e:
+
+                        if verbose:
+                            LOGINFO('elapsed time: %.1f, result file: %s '
+                                    'not ready yet...'
+                                    % (resultfileurl, timeelapsed))
+                        continue
+
+            else:
+
+                LOGERROR('no result file URL found in TRILEGAL output, '
+                         'this is probably an error with the input. '
+                         'HTML of error page follows:\n')
+                LOGINFO(resp)
+                return None
+
+
+        except requests.exceptions.Timeout as e:
+            LOGERROR('TRILEGAL submission timed out, '
+                     'site is probably down. Request was: '
+                     '%s' % repr(inputparams))
+            return None
+
+        except Exception as e:
+            LOGEXCEPTION('TRILEGAL request failed for '
+                         '%s' % repr(inputparams))
+            return None
+
+
+        finally:
+
+            # remove the lock file
+            if os.path.exists(lockfile):
+                os.remove(lockfile)
+
+
+    # otherwise, get the file from the cache
+    else:
+
+        tablefname = cachefname
+
+
+    # return a dict pointing to the result file
+    # we'll parse this later
+    resdict = {'params':inputparams,
+               'extraparams':extraparams,
+               'provenance':provenance,
+               'tablefile':cachefname}
+
+    return resdict
