@@ -17,6 +17,7 @@ import gzip
 import glob
 import hashlib
 
+import time
 import logging
 from datetime import datetime
 from traceback import format_exc
@@ -523,7 +524,7 @@ def dust_extinction_query(lon, lat,
         return None
 
     dustparams['locstr'] = locstr
-    dustparams['regSize'] = sizedeg
+    dustparams['regSize'] = '%.3f' % sizedeg
 
     # see if the cachedir exists
     if '~' in cachedir:
@@ -549,7 +550,7 @@ def dust_extinction_query(lon, lat,
                         'lon = %.3f, lat = %.3f, type = %s, size = %.1f' %
                         (lon, lat, coordtype, sizedeg))
 
-            req = requests.get(DUST_URL, params=dustparams, timeout=timeout)
+            req = requests.get(DUST_URL, dustparams, timeout=timeout)
             resp = req.text
 
             # see if we got an extinction table URL in the response
@@ -679,7 +680,6 @@ def trilegal_query_galcoords(gal_lon,
     extinction_info = dust_extinction_query(gal_lon,
                                             gal_lat,
                                             coordtype='galactic',
-                                            sizedeg=field_deg2**0.5,
                                             forcefetch=forcefetch,
                                             verbose=verbose,
                                             timeout=timeout)
@@ -689,9 +689,9 @@ def trilegal_query_galcoords(gal_lon,
     except Exception as e:
         LOGEXCEPTION(
             'could not get A_V_SF11 from 2MASS DUST '
-            'for Galactic coords: (%.3f, %.3f), ',
-            'using default value of %.5f' % (gal_lon, gal_lat,
-                                             inputparams['extinction_infty'])
+            'for Galactic coords: (%.3f, %.3f), '
+            'using default value of %s' % (gal_lon, gal_lat,
+                                           inputparams['extinction_infty'])
         )
 
 
@@ -855,6 +855,11 @@ def trilegal_query_galcoords(gal_lon,
     # otherwise, get the file from the cache
     else:
 
+        if verbose:
+            LOGINFO('getting cached TRILEGAL model result for '
+                    'request: %s' %
+                    (repr(inputparams)))
+
         tablefname = cachefname
 
 
@@ -866,3 +871,17 @@ def trilegal_query_galcoords(gal_lon,
                'tablefile':cachefname}
 
     return resdict
+
+
+
+def read_trilegal_model(modelfile):
+    '''
+    This reads a downloaded TRILEGAL model file.
+
+    '''
+
+    infd = gzip.open(modelfile)
+    model = np.genfromtxt(infd,names=True)
+    infd.close()
+
+    return model
