@@ -788,6 +788,9 @@ def trilegal_query_galcoords(gal_lon,
                         LOGERROR('TRILEGAL timed out after waiting for results,'
                                  ' request was: '
                                  '%s' % repr(inputparams))
+                        # remove the lock file
+                        if os.path.exists(lockfile):
+                            os.remove(lockfile)
                         return None
 
                     time.sleep(refresh)
@@ -824,6 +827,9 @@ def trilegal_query_galcoords(gal_lon,
                          'this is probably an error with the input. '
                          'HTML of error page follows:\n')
                 LOGINFO(resp)
+                # remove the lock file
+                if os.path.exists(lockfile):
+                    os.remove(lockfile)
                 return None
 
 
