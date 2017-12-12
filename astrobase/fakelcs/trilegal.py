@@ -15,10 +15,13 @@ import os.path
 import pickle
 import gzip
 import glob
+import hashlib
 
 import logging
 from datetime import datetime
 from traceback import format_exc
+
+import re
 
 import numpy as np
 import numpy.random as npr
@@ -30,10 +33,15 @@ import scipy.interpolate as spi
 
 import matplotlib
 matplotlib.use('Agg')
-
 import matplotlib.pyplot as plt
 
+# to do the queries
 import requests
+import requests.exceptions
+
+# to convert to/from galactic coords and read IPAC tables
+from astropy.coordinates import SkyCoord
+from astropy.table import Table
 
 #############
 ## LOGGING ##
@@ -81,15 +89,15 @@ def LOGEXCEPTION(message):
         )
 
 
-################################
-## QUERYING THE TRILEGAL FORM ##
-################################
+############################
+## TRILEGAL FORM SETTINGS ##
+############################
 
 # URL of the POST form target
-POSTURL = 'http://stev.oapd.inaf.it/cgi-bin/trilegal_{formversion}'
+TRILEGAL_URL = 'http://stev.oapd.inaf.it/cgi-bin/trilegal_{formversion}'
 
 # these are the params that the user will probably interact with the most
-POST_INPUT_PARAMS = [
+TRILEGAL_INPUT_PARAMS = [
     'binary_kind',
     'extinction_infty',
     'extinction_sigma',
@@ -105,7 +113,7 @@ POST_INPUT_PARAMS = [
 # these are taken from get_trilegal.pm, a Perl script from Prof. Leo Girardi
 # a version of this is at T. D. Morton's VESPA github repository:
 # https://github.com/timothydmorton/VESPA/blob/master/scripts/get_trilegal
-POST_DEFAULT_PARAMS = {
+TRILEGAL_DEFAULT_PARAMS = {
     'binary_frac': '0.3',
     'binary_kind': '${use_binaries}',
     'binary_mrinf': '0.7',
@@ -184,7 +192,7 @@ POST_DEFAULT_PARAMS = {
 
 # these were extracted from the TRILEGAL HTML form at:
 # http://stev.oapd.inaf.it/cgi-bin/trilegal
-FILTER_SYSTEMS = {
+TRILEGAL_FILTER_SYSTEMS = {
     '2mass': {
         'desc': '2MASS JHKs',
         'table': 'tab_mag_odfnew/tab_mag_2mass.dat'
@@ -460,3 +468,124 @@ FILTER_SYSTEMS = {
         'table': 'tab_mag_odfnew/tab_mag_wircam.dat'
     }
 }
+
+
+
+##############################
+## 2MASS DUST FORM SETTINGS ##
+##############################
+
+DUST_URL = 'https://irsa.ipac.caltech.edu/cgi-bin/DUST/nph-dust'
+
+DUST_PARAMS = {'locstr':'',
+               'regSize':'5.0'}
+
+DUST_REGEX = re.compile(r'http[s|]://\S*extinction\.tbl')
+
+
+
+################################
+## 2MASS DUST QUERY FUNCTIONS ##
+################################
+
+def dust_extinction_query(ra, decl,
+                          sizedeg=5.0,
+                          forcefetch=False,
+                          cachedir='~/.astrobase/dust-cache',
+                          verbose=False,
+                          timeout=10.0):
+    '''
+    This queries the 2MASS DUST service to find the extinction parameters
+    for the given ra, decl.
+
+    '''
+
+    dustparams = DUST_PARAMS.copy()
+
+    # convert the ra, decl to the required format
+    # and generate the param dict
+    locstr = '%.3f %.3f Equ J2000' % (ra, decl)
+    dustparams['locstr'] = locstr
+    dustparams['regSize'] = sizedeg
+
+    # see if the cachedir exists
+    if '~' in cachedir:
+        cachedir = os.path.expanduser(cachedir)
+    if not os.path.exists(cachedir):
+        os.makedirs(cachedir)
+
+    # generate the cachekey and cache filename
+    cachekey = '%s - %.1f' % (locstr, sizedeg)
+    cachekey = hashlib.sha256(cachekey.encode()).hexdigest()
+    cachefname = os.path.join(cachedir, '%s.txt' % cachekey)
+    provenance = 'cache'
+
+    # if this does not exist in cache or if we're forcefetching, do the query
+    if forcefetch or (not os.path.exists(cachefname)):
+
+        provenance = 'new download'
+
+        try:
+
+            if verbose:
+                LOGINFO('submitting 2MASS DUST request for '
+                        'RA = %.3f, DEC = %.3f, size = %.1f' %
+                        (ra, decl, sizedeg))
+
+            req = requests.get(DUST_URL, dustparams, timeout=timeout)
+            resp = req.text
+
+            # see if we got an extinction table URL in the response
+            tableurl = DUST_REGEX.search(resp)
+
+            # if we did, download it to the cache directory
+            if tableurl:
+
+                tableurl = tableurl[0]
+
+                req2 = requests.get(tableurl, timeout=timeout)
+
+                # write the table to the cache directory
+                with open(cachefname,'wb') as outfd:
+                    outfd.write(req2.content)
+
+                tablefname = cachefname
+
+            else:
+                LOGERROR('could not get extinction parameters for '
+                         '(%.3f, %.3f) with size = %.1f' % (ra,decl,sizedeg))
+                LOGERROR('error from DUST service follows:\n%s' % resp)
+                return None
+
+        except requests.exceptions.Timeout as e:
+            LOGERROR('DUST request timed out for '
+                     '(%.3f, %.3f) with size = %.1f' % (ra,decl,sizedeg))
+            return None
+
+        except Exception as e:
+            LOGEXCEPTION('DUST request failed for '
+                         '(%.3f, %.3f) with size = %.1f' % (ra,decl,sizedeg))
+            return None
+
+    # if this result is available in the cache, get it from there
+    else:
+
+        tablefname = cachefname
+
+    #
+    # now we should have the extinction table in some form
+    #
+    # read and parse the extinction table using astropy.Table
+    extinction_table = Table.read(tablefname, format='ascii.ipac')
+
+    filters = np.array(extinction_table['Filter_name'])
+    a_sf11_byfilter = np.array(extinction_table['A_SandF'])
+    a_sfd98_byfilter = np.array(extinction_table['A_SFD'])
+
+    extdict = {'Amag':{x:{'sf11':y, 'sfd98':z} for
+                       x,y,z in zip(filters,a_sf11_byfilter,a_sfd98_byfilter)},
+               'table':np.array(extinction_table),
+               'provenance':provenance,
+               'cachekey':cachekey}
+
+    return extdict
