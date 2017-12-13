@@ -29,7 +29,7 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     arctan as nparctan, nanargmax as npnanargmax, nanargmin as npnanargmin, \
     empty as npempty, ceil as npceil, mean as npmean, \
     digitize as npdigitize, unique as npunique, \
-    argmax as npargmax, argmin as npargmin, zeros as npzeros
+    argmax as npargmax, argmin as npargmin, zeros as npzeros, nanmax as npnanmax
 
 
 #############
@@ -568,12 +568,17 @@ def specwindow_lsp(
     # update the resultdict to indicate we're a spectral window function
     lspres['method'] = 'win'
 
-    # renormalize the periodogram to between 0 and 1 like the usual GLS.
-    lspmax = npmax(lspres['lspvals'])
-    lspres['lspvals'] = lspres['lspvals']/lspmax
-    lspres['nbestlspvals'] = [
-        x/lspmax for x in lspres['nbestlspvals']
-    ]
-    lspres['bestlspval'] = lspres['bestlspval']/lspmax
+    if lspres['lspvals'] is not None:
+
+        # renormalize the periodogram to between 0 and 1 like the usual GLS.
+        lspmax = npnanmax(lspres['lspvals'])
+
+        if np.isfinite(lspmax):
+
+            lspres['lspvals'] = lspres['lspvals']/lspmax
+            lspres['nbestlspvals'] = [
+                x/lspmax for x in lspres['nbestlspvals']
+            ]
+            lspres['bestlspval'] = lspres['bestlspval']/lspmax
 
     return lspres
