@@ -2160,11 +2160,14 @@ def parallel_pf(lclist,
 
     '''
 
-    if liststartindex:
+    if (liststartindex is not None) and (listmaxobjects is None):
         lclist = lclist[liststartindex:]
 
-    if listmaxobjects:
+    elif (liststartindex is None) and (listmaxobjects is not None):
         lclist = lclist[:listmaxobjects]
+
+    elif (liststartindex is not None) and (listmaxobjects is not None):
+        lclist = lclist[liststartindex:liststartindex+listmaxobjects]
 
     tasklist = [(x, outdir, timecols, magcols, errcols, lcformat,
                  pfmethods, pfkwargs, getblssnr, sigclip, nperiodworkers)
