@@ -9,7 +9,5 @@ characterize its reliability and completeness via simulating LCs.
 
 generation.py     - fake light curve generation and injection of variability
 recovery.py       - recovery of fake light curve variability and periodic vars
-trilegal.py       - interface to get data tables from the TRILEGAL galaxy model
-                    also contains interface to the 2MASS DUST extinction service
 
 '''
