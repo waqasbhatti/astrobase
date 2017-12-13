@@ -26,18 +26,9 @@ import numpy as np
 import requests
 import requests.exceptions
 try:
-    from astropy.io import fits as pyfits
-except:
-    import pyfits
-
-try:
     from urllib.parse import urljoin
 except:
     from urlparse import urljoin
-
-# for convolving DSS stamps to simulate seeing effects
-import astropy.convolution as aconv
-
 
 
 #############
@@ -120,15 +111,11 @@ FITS_BASEURL = 'https://skyview.gsfc.nasa.gov'
 def get_stamp(ra, decl,
               survey='DSS2 Red',
               scaling='Linear',
-              flip=True,
-              convolvewith=None,
               forcefetch=False,
               cachedir='~/.astrobase/stamp-cache',
               timeout=10.0,
-              savewcsheader=True,
               verbose=False):
-
-'''This is the internal version of the astroquery_skyview_stamp function.
+    '''This is the internal version of the astroquery_skyview_stamp function.
 
     Why this exists:
 
@@ -218,46 +205,27 @@ def get_stamp(ra, decl,
         except requests.exceptions.HTTPError as e:
             LOGEXCEPTION('SkyView stamp request for '
                          'coordinates %s failed' % repr(formposition))
-            raise
+            return None
 
         except requests.exceptions.Timeout as e:
             LOGERROR('SkyView stamp request for '
                      'coordinates %s did not complete within %s seconds' %
                      (repr(formposition), timeout))
-            raise
+            return None
 
         except Exception as e:
             LOGEXCEPTION('SkyView stamp request for '
                          'coordinates %s failed' % repr(formposition))
-            raise
+            return None
 
     #
     # DONE WITH FETCHING STUFF
     #
 
-    # open the frame
-    stampfits = pyfits.open(cachefname)
-    header = stampfits[0].header
-    frame = stampfits[0].data
-    stampfits.close()
+    retdict = {
+        'params':{'ra':ra, 'decl':decl, 'survey':survey, 'scaling':scaling},
+        'provenance':provenance,
+        'fitsfile':cachefname
+    }
 
-    # finally, we can process the frame
-    if flip:
-        frame = np.flipud(frame)
-
-    if verbose:
-        LOGINFO('fetched stamp successfully for %s, provenance: %s'
-                % (repr(formposition[0]), provenance))
-
-    if convolvewith:
-        convolved = aconv.convolve(frame, convolvewith)
-        if savewcsheader:
-            return frame, header
-        else:
-            return frame
-
-    else:
-        if savewcsheader:
-            return frame, header
-        else:
-            return frame
+    return retdict

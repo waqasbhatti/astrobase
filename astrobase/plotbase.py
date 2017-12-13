@@ -111,6 +111,8 @@ from .varbase.lcfit import spline_fit_magseries
 
 from .coordutils import total_proper_motion, reduced_proper_motion
 
+from .services.skyview import get_stamp
+
 #########################
 ## SIMPLE LIGHT CURVES ##
 #########################
@@ -602,115 +604,9 @@ def plot_phased_mag_series(times,
 
 
 
-# this is now deprecated, kept around for a while until removed
-try:
-
-    from astroquery.skyview import SkyView
-
-    def astroquery_skyview_stamp(
-            ra, decl, survey='DSS2 Red',
-            flip=True,
-            convolvewith=None
-    ):
-        '''This uses astroquery's SkyView connector to get stamps.
-
-        flip = True will flip the image top to bottom.
-
-        if convolvewith is an astropy.convolution kernel:
-
-        http://docs.astropy.org/en/stable/convolution/kernels.html
-
-        this will return the stamp convolved with that kernel. This can be
-        useful to see effects of wide-field telescopes (like the HATNet and
-        HATSouth lenses) degrading the nominal 1 arcsec/px of DSS, causing
-        blending of targets and any variability.
-
-        '''
-
-        position = '{ra:.3f}d{decl:+.3f}d'.format(ra=ra,decl=decl)
-
-        imglist = SkyView.get_images(position=position,
-                                     survey=[survey],
-                                     coordinates='J2000')
-
-        # this frame is usually upside down (at least for DSS), flip it if asked
-        # for
-        frame = imglist[0][0].data
-
-        if flip:
-            frame = np.flipud(frame)
-
-            for x in imglist:
-                x.close()
-
-            if convolvewith:
-                convolved = aconv.convolve(frame, convolvewith)
-                return frame
-
-            else:
-                return frame
-
-except:
-    pass
-
-
-##############################
-## OBJECT STAMPS FROM HATDS ##
-##############################
-
-def get_dss_stamp(ra, decl, outfile, stampsize=5.0):
-    '''This gets a DSS stamp from the HAT data server.
-
-    These are a bit nicer than the DSS stamps direct from STScI because they
-    have crosshairs and annotations.
-
-    '''
-
-    stampsurl = (
-        "https://hatsurveys.org/lightcurves/stamps/direct?coords={ra},{decl}"
-        "&stampsize={stampsize}"
-        ).format(ra=ra,
-                 decl=decl,
-                 stampsize=stampsize)
-
-    try:
-        downloaded = requests.get(stampsurl)
-        with open(outfile,'wb') as outfd:
-            outfile.write(downloaded.content)
-
-        return outfile
-
-    except Exception as e:
-        LOGEXCEPTION('could not get a HATDS stamp for %s, %s' % (ra, decl))
-        return None
-
-
-
 #####################################
 ## INTERNAL SKYVIEW STAMP FUNCTION ##
 #####################################
-
-SKYVIEW_URL = 'https://skyview.gsfc.nasa.gov/current/cgi/runquery.pl'
-SKYVIEW_PARAMS = {
-    'CatalogIDs': ['on'],
-    'Deedger': ['_skip_'],
-    'Position': ['0.0, 0.0'],
-    'Sampler': ['_skip_'],
-    'coordinates': ['J2000'],
-    'ebins': ['null'],
-    'float': ['on'],
-    'grid': ['_skip_'],
-    'gridlabels': ['1'],
-    'lut': ['colortables/b-w-linear.bin'],
-    'pixels': ['300'],
-    'projection': ['Tan'],
-    'resolver': ['SIMBAD-NED'],
-    'scaling': ['Linear'],
-    'survey': ['DSS2 Red', '_skip_', '_skip_', '_skip_']
-}
-
-FITS_REGEX = re.compile(r'(tempspace\/fits\/skv\d{8,20}\.fits)')
-FITS_BASEURL = 'https://skyview.gsfc.nasa.gov'
 
 def skyview_stamp(ra, decl,
                   survey='DSS2 Red',
@@ -744,106 +640,51 @@ def skyview_stamp(ra, decl,
 
     '''
 
-    # parse the given params into the correct format for the form
-    formposition = ['%.4f, %.4f' % (ra, decl)]
-    formscaling = [scaling]
-
-    formparams = SKYVIEW_PARAMS.copy()
-    formparams['Position'] = formposition
-    formparams['survey'][0] = survey
-    formparams['scaling'] = formscaling
-
-    # see if the cachedir exists
-    if '~' in cachedir:
-        cachedir = os.path.expanduser(cachedir)
-    if not os.path.exists(cachedir):
-        os.makedirs(cachedir)
-
-    # figure out if we can get this image from the cache
-    cachekey = '%s-%s-%s' % (formposition[0], survey, scaling)
-    cachekey = hashlib.sha256(cachekey.encode()).hexdigest()
-    cachefname = os.path.join(cachedir, '%s.fits.gz' % cachekey)
-    provenance = 'cache'
-
-    # if this exists in the cache and we're not refetching, get the frame
-    if forcefetch or (not os.path.exists(cachefname)):
-
-        provenance= 'new download'
-
-        # fire the request
-        try:
-
-            if verbose:
-                LOGINFO('submitting stamp request for %s, %s, %s' % (
-                    formposition[0],
-                    survey,
-                    scaling)
-                )
-            req = requests.get(SKYVIEW_URL, params=formparams, timeout=timeout)
-
-            # get the text of the response, this includes the locations of the
-            # generated FITS on the server
-            resp = req.text
-
-            # find the URLS of the FITS
-            fitsurls = FITS_REGEX.findall(resp)
-
-            # download the URLs
-            if fitsurls:
-                for fitsurl in fitsurls:
-                    fullfitsurl = urljoin(FITS_BASEURL, fitsurl)
-                    if verbose:
-                        LOGINFO('getting %s' % fullfitsurl)
-                    fitsreq = requests.get(fullfitsurl, timeout=timeout)
-                    with gzip.open(cachefname,'wb') as outfd:
-                        outfd.write(fitsreq.content)
-
-            else:
-                LOGERROR('no FITS URLs found in query results for %s' %
-                         formposition)
-                return None
-
-        except requests.exceptions.Timeout as e:
-            LOGERROR('SkyView stamp request for '
-                     'coordinates %s did not complete within %s seconds' %
-                     (repr(formposition), timeout))
-            raise
-
-        except Exception as e:
-            LOGEXCEPTION('SkyView stamp request for '
-                         'coordinates %s failed' % repr(formposition))
-            raise
-
+    stampdict = get_stamp(ra, decl,
+                          survey=survey,
+                          scaling=scaling,
+                          forcefetch=forcefetch,
+                          cachedir=cachedir,
+                          timeout=timeout,
+                          verbose=verbose)
     #
     # DONE WITH FETCHING STUFF
     #
+    if stampdict:
 
-    # open the frame
-    stampfits = pyfits.open(cachefname)
-    header = stampfits[0].header
-    frame = stampfits[0].data
-    stampfits.close()
+        # open the frame
+        stampfits = pyfits.open(stampdict['fitsfile'])
+        header = stampfits[0].header
+        frame = stampfits[0].data
+        stampfits.close()
 
-    # finally, we can process the frame
-    if flip:
-        frame = np.flipud(frame)
+        # finally, we can process the frame
+        if flip:
+            frame = np.flipud(frame)
 
-    if verbose:
-        LOGINFO('fetched stamp successfully for %s, provenance: %s'
-                % (repr(formposition[0]), provenance))
+        if verbose:
+            LOGINFO('fetched stamp successfully for %s, provenance: %s'
+                    % (repr(formposition[0]), provenance))
 
-    if convolvewith:
-        convolved = aconv.convolve(frame, convolvewith)
-        if savewcsheader:
-            return frame, header
+        if convolvewith:
+            convolved = aconv.convolve(frame, convolvewith)
+            if savewcsheader:
+                return frame, header
+            else:
+                return frame
+
         else:
-            return frame
+            if savewcsheader:
+                return frame, header
+            else:
+                return frame
 
     else:
-        if savewcsheader:
-            return frame, header
-        else:
-            return frame
+        LOGERROR('could not fetch the requested stamp for '
+                 'coords: (%.3f, %.3f) from survey: %s and scaling: %s'
+                 % (ra, decl, survey, scaling))
+        return None
+
 
 
 ##################
