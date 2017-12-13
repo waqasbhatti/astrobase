@@ -2239,6 +2239,10 @@ def parallel_pf_lcdir(lcdir,
     # now that we have all the files, process them
     if matching and len(matching) > 0:
 
+        # this helps us process things in deterministic order when we distribute
+        # processing over several machines
+        matching = sorted(matching)
+
         LOGINFO('found %s light curves, running pf...' % len(matching))
 
         if liststartindex:
@@ -2576,16 +2580,16 @@ def runcp_worker(task):
 
 
 def parallel_cp(pfpicklelist,
-                      outdir,
-                      lcbasedir,
-                      lclistpkl=None,
-                      nbrradiusarcsec=30.0,
-                      maxobjects=None,
-                      lcformat='hat-sql',
-                      timecols=None,
-                      magcols=None,
-                      errcols=None,
-                      nworkers=32):
+                outdir,
+                lcbasedir,
+                lclistpkl=None,
+                nbrradiusarcsec=30.0,
+                maxobjects=None,
+                lcformat='hat-sql',
+                timecols=None,
+                magcols=None,
+                errcols=None,
+                nworkers=32):
     '''This drives the parallel execution of runcp for a list of periodfinding
     result pickles.
 
