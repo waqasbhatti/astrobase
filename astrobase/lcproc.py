@@ -2245,12 +2245,6 @@ def parallel_pf_lcdir(lcdir,
 
         LOGINFO('found %s light curves, running pf...' % len(matching))
 
-        if liststartindex:
-            matching = matching[liststartindex:]
-
-        if listmaxobjects:
-            matching = matching[:listmaxobjects]
-
         return parallel_pf(matching,
                            outdir,
                            timecols=timecols,
