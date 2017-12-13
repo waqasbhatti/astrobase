@@ -114,26 +114,21 @@ def get_stamp(ra, decl,
               forcefetch=False,
               cachedir='~/.astrobase/stamp-cache',
               timeout=10.0,
-              verbose=False):
-    '''This is the internal version of the astroquery_skyview_stamp function.
+              verbose=True):
+    '''This gets a FITS cutout from the NASA GSFC SkyView service.
 
-    Why this exists:
+    ra, decl are decimal equatorial coordinates for the cutout center.
 
-    - SkyView queries don't accept timeouts (should put in a PR for this)
-    - we can drop the dependency on astroquery (but add another on requests)
+    survey is the name of the survey to get the stamp for. This is 'DSS2 Red' by
+    default.
 
-    flip = True will flip the image top to bottom.
-
-    if convolvewith is an astropy.convolution kernel:
-
-    http://docs.astropy.org/en/stable/convolution/kernels.html
-
-    this will return the stamp convolved with that kernel. This can be useful to
-    see effects of wide-field telescopes (like the HATNet and HATSouth lenses)
-    degrading the nominal 1 arcsec/px of DSS, causing blending of targets and
-    any variability.
+    scaling is the type of pixel value scaling to apply to the cutout. This is
+    'Linear' by default.
 
     cachedir points to the astrobase stamp-cache directory.
+
+    timeout is the amount of time in seconds to wait for a response from the
+    service.
 
     '''
 
