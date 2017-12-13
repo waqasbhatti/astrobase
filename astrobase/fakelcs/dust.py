@@ -101,13 +101,13 @@ DUST_REGEX = re.compile(r'http[s|]://\S*extinction\.tbl')
 ## 2MASS DUST QUERY FUNCTIONS ##
 ################################
 
-def dust_extinction_query(lon, lat,
-                          coordtype='equatorial',
-                          sizedeg=5.0,
-                          forcefetch=False,
-                          cachedir='~/.astrobase/dust-cache',
-                          verbose=True,
-                          timeout=10.0):
+def extinction_query(lon, lat,
+                     coordtype='equatorial',
+                     sizedeg=5.0,
+                     forcefetch=False,
+                     cachedir='~/.astrobase/dust-cache',
+                     verbose=True,
+                     timeout=10.0):
     '''This queries the 2MASS DUST service to find the extinction parameters
     for the given lon, lat.
 
