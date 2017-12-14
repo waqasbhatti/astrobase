@@ -1931,8 +1931,8 @@ def runpf(lcfile,
           magcols=None,
           errcols=None,
           lcformat='hat-sql',
-          pfmethods=['gls','pdm','bls'],
-          pfkwargs=[{},{},{'startp':1.0,'maxtransitduration':0.3}],
+          pfmethods=['gls','pdm','mav','win'],
+          pfkwargs=[{},{},{},{}],
           sigclip=5.0,
           getblssnr=True,
           nworkers=10):
@@ -1940,7 +1940,7 @@ def runpf(lcfile,
 
     pfmethods is a list of period finding methods to run. Each element is a
     string matching the keys of the PFMETHODS dict above. By default, this runs
-    GLS, PDM, and BLS.
+    GLS, PDM, AoVMH, and the spectral window Lomb-Scargle periodogram.
 
     pfkwargs are any special kwargs to pass along to each period-finding method
     function.
