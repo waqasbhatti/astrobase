@@ -2363,7 +2363,7 @@ def update_checkplotdict_nbrlcs(
             )
             xtimes, xmags, xerrs = ntimes, nmags, serrs
         else:
-            xtimes, xmags, xerrs = xtimes, smags, serrs
+            xtimes, xmags, xerrs = stimes, smags, serrs
 
         #
         # now we can start doing stuff
