@@ -3089,7 +3089,8 @@ def checkplot_pickle_to_png(checkplotin,
     cprows = 0
 
     # get checkplot pickle rows
-    for lspmethod in ('gls','pdm','bls','aov','fch','mav'):
+    # we don't use the window function here
+    for lspmethod in ('gls','pdm','bls','aov','mav','acf','win'):
         if lspmethod in cpd:
             cplspmethods.append(lspmethod)
             cprows = cprows + 1
@@ -3566,9 +3567,22 @@ def checkplot_pickle_to_png(checkplotin,
         # tile 1: neighbor objectid, ra, decl, distance, unphased LC
         # tile 2: phased LC for gls
         # tile 3: phased LC for pdm
-        # tile 4: phased LC for bls
+        # tile 4: phased LC for any other period finding method
+        #         the priority is like so: ['bls','mav','aov','win']
 
         for nbrind, nbr in enumerate(cpd['neighbors']):
+
+            # figure out which period finding methods are available for this
+            # neighbor. make sure to match the ones from the actual object in
+            # order of priority: 'gls','pdm','bls','aov','mav','acf','win'
+            nbrlspmethods = []
+
+            for lspmethod in ('gls','pdm','bls','aov','mav','acf','win'):
+                if lspmethod in nbr:
+                    nbrlspmethods.append(lspmethod)
+
+            # restrict to top three in priority
+            nbrlspmethods = nbrlspmethods[:3]
 
             # first panel: neighbor objectid, ra, decl, distance, unphased LC
             nbrlc = Image.open(
@@ -3603,34 +3617,34 @@ def checkplot_pickle_to_png(checkplotin,
 
 
             # second panel: phased LC for gls
-            glslc = Image.open(
+            lsp1lc = Image.open(
                 _base64_to_file(
-                    nbr['gls'][0]['plot'], None, writetostrio=True
+                    nbr[nbrlspmethods[0]][0]['plot'], None, writetostrio=True
                 )
             )
-            outimg.paste(glslc,
+            outimg.paste(lsp1lc,
                          (750*1,
                           (cprows+1)*480 + (erows*480) + (cpderows*480) +
                           480*nbrind))
 
             # second panel: phased LC for gls
-            pdmlc = Image.open(
+            lsp2lc = Image.open(
                 _base64_to_file(
-                    nbr['pdm'][0]['plot'], None, writetostrio=True
+                    nbr[nbrlspmethods[1]][0]['plot'], None, writetostrio=True
                 )
             )
-            outimg.paste(pdmlc,
+            outimg.paste(lsp2lc,
                          (750*2,
                           (cprows+1)*480 + (erows*480) + (cpderows*480) +
                           480*nbrind))
 
             # second panel: phased LC for gls
-            blslc = Image.open(
+            lsp3lc = Image.open(
                 _base64_to_file(
-                    nbr['bls'][0]['plot'], None, writetostrio=True
+                    nbr[nbrlspmethods[2]][0]['plot'], None, writetostrio=True
                 )
             )
-            outimg.paste(blslc,
+            outimg.paste(lsp3lc,
                          (750*3,
                           (cprows+1)*480 + (erows*480) + (cpderows*480) +
                           480*nbrind))
