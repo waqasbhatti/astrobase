@@ -70,7 +70,7 @@ def LOGEXCEPTION(message):
 from .. import lcmath
 from ..varbase import lcfit
 from ..lcmodels import sinusoidal, eclipses, transits
-from ..periodbase import zgls
+from ..periodbase.zgls import specwindow_lsp
 
 ###################################
 ## FEATURE CALCULATION FUNCTIONS ##
@@ -301,8 +301,21 @@ def periodogram_features(pgramlist,
                          sampling_startp=None,
                          sampling_endp=None,
                          verbose=True):
-    '''
-    This calculates various periodogram features (for each periodogram).
+    '''This calculates various periodogram features (for each periodogram).
+
+    pgramlist is a list of dicts returned by any of the periodfinding methods in
+    astrobase.periodbase. This can also be obtained from the resulting pickle
+    from the lcproc.run_pf function.
+
+    times, mags, errs are from the object's light curve.
+
+    sigclip is the sigclip to apply to the light curve.
+
+    pdiffthreshold is the max diff between periods to consider them the same.
+
+    sampling_startp and sampling_endp are provided if the pgramlist doesn't have
+    a spectral window LSP and this must be obtained from the times, mags, errs
+    directly by running periodbase.specwindow_lsp.
 
     '''
     # get the finite values
@@ -313,19 +326,27 @@ def periodogram_features(pgramlist,
     nzind = np.nonzero(ferrs)
     ftimes, fmags, ferrs = ftimes[nzind], fmags[nzind], ferrs[nzind]
 
-    # run the sampling peak periodogram
-    sampling_lsp = zgls.specwindow_lsp(times,mags,errs,
-                                       startp=sampling_startp,
-                                       endp=sampling_endp,
-                                       sigclip=sigclip,
-                                       verbose=verbose)
+    # run the sampling peak periodogram if necessary
+    pfmethodlist = [pgram['method'] for pgram in pgramlist]
 
+    if 'win' not in pfmethodlist:
 
+        sampling_lsp = specwindow_lsp(times,mags,errs,
+                                      startp=sampling_startp,
+                                      endp=sampling_endp,
+                                      sigclip=sigclip,
+                                      verbose=verbose)
+
+    else:
+        sampling_lsp = pgramlist[pfmethodlist.index('win')]
 
 
     # freq_n_sidereal - number of top period estimates that are consistent with
     #                   a 1 day period (1.0027379 and 0.9972696 actually, for
     #                   sidereal day period) and 0.5x, 2x, and 3x multipliers
+    all_bestperiods = np.concatenate(
+        [x['nbestperiods'] for x in pgramlist if x['method'] != 'win']
+    )
 
     # best_peak_height_over_sampling_height - ratio of best normalized
     #                                         periodogram peak height to that of
@@ -408,5 +429,5 @@ def neighbor_features(lclistpkl,
 
     # number of neighbors within 2 x fwhm_arcsec
 
-    # sum of absdiff between the phased LC of this object and that of the
-    # closest neighbor phased with the same period and epoch
+    # sum of absdiff between the normalized to 0.0 phased LC of this object and
+    # that of the closest neighbor phased with the same period and epoch

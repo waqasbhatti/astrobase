@@ -296,13 +296,13 @@ def tap_query(querystr,
                 if cachefname.endswith('.gz'):
 
                     with gzip.open(cachefname,'wb') as outfd:
-                        for chunk in resreq.iter_content(chunk_size=8192):
+                        for chunk in resreq.iter_content(chunk_size=65536):
                             outfd.write(chunk)
 
                 else:
 
                     with open(cachefname,'wb') as outfd:
-                        for chunk in resreq.iter_content(chunk_size=8192):
+                        for chunk in resreq.iter_content(chunk_size=65536):
                             outfd.write(chunk)
 
                 LOGINFO('done. rows in result: %s' % result_nrows)

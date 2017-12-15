@@ -714,7 +714,7 @@ def query_galcoords(gal_lon,
 
                         # stream the response to the output cache file
                         with gzip.open(cachefname,'wb') as outfd:
-                            for chunk in resreq.iter_content(chunk_size=8192):
+                            for chunk in resreq.iter_content(chunk_size=65536):
                                 outfd.write(chunk)
 
                         tablefname = cachefname
