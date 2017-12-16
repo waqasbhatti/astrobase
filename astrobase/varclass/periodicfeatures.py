@@ -341,12 +341,35 @@ def periodogram_features(pgramlist,
         sampling_lsp = pgramlist[pfmethodlist.index('win')]
 
 
+    # get the best periods across all the period finding methods
+    all_bestperiods = np.concatenate(
+        [x['nbestperiods']
+         for x in pgramlist if
+         (x['method'] != 'win' and x['nbestperiods'] is not None)]
+    )
+    # get the best normalized peaks across all the period finding methods
+    normalized_pgrams = []
+    normalized_sampling_pgram = []
+
+    for pfm, pgram in zip(pfmethodlist, pgramlist):
+
+        if pfm == 'pdm':
+
+            peaks = pgram['lspvals']
+
+
+    all_normalized_peaks = np.concatenate(
+        [x['nbestlpsvals']/np.nanmax(x['lspvals'])
+         for x in pgramlist if
+         (x['method'] != 'win' and x['nbestlspvals'] is not None)]
+    )
+
+    if 'win' in pfmethodlist:
+
+
     # freq_n_sidereal - number of top period estimates that are consistent with
     #                   a 1 day period (1.0027379 and 0.9972696 actually, for
     #                   sidereal day period) and 0.5x, 2x, and 3x multipliers
-    all_bestperiods = np.concatenate(
-        [x['nbestperiods'] for x in pgramlist if x['method'] != 'win']
-    )
 
     # best_peak_height_over_sampling_height - ratio of best normalized
     #                                         periodogram peak height to that of
