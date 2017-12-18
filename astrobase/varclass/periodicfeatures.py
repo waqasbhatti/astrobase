@@ -306,7 +306,10 @@ def periodogram_features(pgramlist, times, mags, errs,
 
     pgramlist is a list of dicts returned by any of the periodfinding methods in
     astrobase.periodbase. This can also be obtained from the resulting pickle
-    from the lcproc.run_pf function.
+    from the lcproc.run_pf function. Might be a good idea to make pgramlist a
+    list of periodogram lists from all magnitude columns to test periodic
+    variability across all magnitude columns (e.g. period diffs between EPD and
+    TFA mags)
 
     times, mags, errs are from the object's light curve.
 
