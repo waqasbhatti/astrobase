@@ -296,8 +296,9 @@ def lcfit_features(times, mags, errs, period,
 
 def periodogram_features(pgramlist, times, mags, errs,
                          sigclip=10.0,
-                         pdiff_threshold=1.0e-5,
+                         pdiff_threshold=1.0e-4,
                          sidereal_threshold=1.0e-4,
+                         sampling_peak_multiplier=5.0,
                          sampling_startp=None,
                          sampling_endp=None,
                          verbose=True):
@@ -348,13 +349,6 @@ def periodogram_features(pgramlist, times, mags, errs,
     )
     normalized_sampling_periods = sampling_lsp['periods']
 
-    # get the best periods across all the period finding methods
-    all_bestperiods = np.concatenate(
-        [x['nbestperiods']
-         for x in pgramlist if
-         (x['method'] != 'win' and x['nbestperiods'] is not None)]
-    )
-
     # go through the periodograms and calculate normalized peak height of best
     # periods over the normalized peak height of the sampling periodogram at the
     # same periods
@@ -373,6 +367,10 @@ def periodogram_features(pgramlist, times, mags, errs,
                                               np.nanmin(1.0 - peaks))
 
             # get the best period normalized peaks
+            if pgram['nbestperiods'] is None:
+                LOGERROR('no period results for method: %s' % pfm)
+                continue
+
             for bp in pgram['nbestperiods']:
 
                 if np.isfinite(bp):
@@ -447,6 +445,11 @@ def periodogram_features(pgramlist, times, mags, errs,
             normalized_pgram_lspvals.append(normalized_peaks)
             normalized_pgram_methods.append(pfm)
 
+            # get the best period normalized peaks
+            if pgram['nbestperiods'] is None:
+                LOGERROR('no period results for method: %s' % pfm)
+                continue
+
             #
             # first, get the best period normalized peaks
             #
@@ -508,19 +511,54 @@ def periodogram_features(pgramlist, times, mags, errs,
     #
     # done with calculations, get the features we need
     #
+    # get the best periods across all the period finding methods
+    all_bestperiods = np.concatenate(
+        [x['nbestperiods']
+         for x in pgramlist if
+         (x['method'] != 'win' and x['nbestperiods'] is not None)]
+    )
+    all_bestperiod_diffs = np.array(
+        [abs(a-b) for a,b in combinations(all_bestperiods)]
+    )
 
-    # freq_n_5sigsampling - number of top period estimates with peaks that are
-    #                       at least 5.0 x sampling peak height at the same
-    #                       period
+    all_sampling_ratios = np.concatenate(
+        [x['nbestpeakratios']
+         for x in pgramlist if
+         (x['method'] != 'win' and x['nbestperiods'] is not None)]
+    )
 
+    all_sidereal_flags = np.concatenate(
+        [x['siderealflags']
+         for x in pgramlist if
+         (x['method'] != 'win' and x['nbestperiods'] is not None)]
+    )
 
-    # freq_n_sidereal - number of top period estimates that are consistent with
-    #                   a 1 day period (1.0027379 and 0.9972696 actually, for
-    #                   sidereal day period)
+    # bestperiods_n_abovesampling - number of top period estimates with peaks
+    #                               that are at least sampling_peak_multiplier x
+    #                               sampling peak height at the same period
+    bestperiods_n_abovesampling = (
+        all_sampling_ratios[all_sampling_ratios >
+                            sampling_peak_multiplier]
+    ).size
+    # bestperiods_n_sidereal - number of top period estimates that are
+    #                          consistent with a 1 day period (1.0027379 and
+    #                          0.9972696 actually, for sidereal day period)
+    bestperiods_n_sidereal = all_sidereal_flags.sum()
 
-    # smallest_nbestperiods_diff - the smallest cross-wise difference between
-    #                              the best periods found by all the
-    #                              period-finders used
+    # bestperiods_diffn_threshold - the number of cross-wise period diffs from
+    #                               all period finders that fall below the
+    #                               pdiff_threshold
+    bestperiods_diffn_threshold = (
+        all_bestperiod_diffs < pdiff_threshold
+    ).size
+
+    resdict = {
+        'bestperiods_n_abovesampling':bestperiods_n_abovesampling,
+        'bestperiods_n_sidereal':bestperiods_n_sidereal,
+        'bestperiods_diffn_threshold':bestperiods_diffn_threshold
+    }
+
+    return resdict
 
 
 
