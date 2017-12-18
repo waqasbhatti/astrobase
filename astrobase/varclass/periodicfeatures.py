@@ -294,10 +294,10 @@ def lcfit_features(times, mags, errs, period,
 
 
 
-def periodogram_features(pgramlist,
-                         times, mags, errs, period,
+def periodogram_features(pgramlist, times, mags, errs,
                          sigclip=10.0,
-                         pdiffthreshold=1.0e-5,
+                         pdiff_threshold=1.0e-5,
+                         sidereal_threshold=1.0e-4,
                          sampling_startp=None,
                          sampling_endp=None,
                          verbose=True):
@@ -341,46 +341,187 @@ def periodogram_features(pgramlist,
         sampling_lsp = pgramlist[pfmethodlist.index('win')]
 
 
+    # get the normalized sampling periodogram peaks
+    normalized_sampling_lspvals = (
+        sampling_lsp['lspvals']/(np.nanmax(sampling_lsp['lspvals']) -
+                                 np.nanmin(sampling_lsp['lspvals']))
+    )
+    normalized_sampling_periods = sampling_lsp['periods']
+
     # get the best periods across all the period finding methods
     all_bestperiods = np.concatenate(
         [x['nbestperiods']
          for x in pgramlist if
          (x['method'] != 'win' and x['nbestperiods'] is not None)]
     )
-    # get the best normalized peaks across all the period finding methods
-    normalized_pgrams = []
-    normalized_sampling_pgram = []
+
+    # go through the periodograms and calculate normalized peak height of best
+    # periods over the normalized peak height of the sampling periodogram at the
+    # same periods
 
     for pfm, pgram in zip(pfmethodlist, pgramlist):
 
         if pfm == 'pdm':
 
+            best_peak_sampling_ratios = []
+            close_to_sidereal_flag = []
+
+            periods = pgram['periods']
             peaks = pgram['lspvals']
 
+            normalized_peaks = (1.0 - peaks)/(np.nanmax(1.0 - peaks) -
+                                              np.nanmin(1.0 - peaks))
 
-    all_normalized_peaks = np.concatenate(
-        [x['nbestlpsvals']/np.nanmax(x['lspvals'])
-         for x in pgramlist if
-         (x['method'] != 'win' and x['nbestlspvals'] is not None)]
-    )
+            # get the best period normalized peaks
+            for bp in pgram['nbestperiods']:
 
-    if 'win' in pfmethodlist:
+                if np.isfinite(bp):
+
+                    #
+                    # first, get the normalized peak ratio
+                    #
+                    thisp_norm_pgrampeak = normalized_peaks[periods == bp]
+
+                    thisp_sampling_pgramind = (
+                        np.abs(normalized_sampling_periods -
+                               bp) < pdiffthreshold
+                    )
+                    thisp_sampling_peaks = normalized_sampling_lspvals[
+                        thisp_sampling_pgramind
+                    ]
+                    if thisp_sampling_peaks.size > 1:
+                        peak_sampling_ratio = (
+                            thisp_norm_pgrampeak/np.mean(thisp_sampling_peaks)
+                        )
+                    elif thisp_sampling_peaks.size == 1:
+                        thisp_sampling_ratio = (
+                            thisp_norm_pgrampeak/thisp_sampling_peaks
+                        )
+                    else:
+                        LOGERROR('sampling periodogram is not defined '
+                                 'at period %.5f, '
+                                 'skipping calculation of ratio' % bp)
+                        thisp_sampling_ratio = np.nan
+
+                    best_peak_sampling_ratios.append(thisp_sampling_ratio)
+
+                    #
+                    # next, see if the best periods are close to a sidereal day
+                    # or any multiples of thus
+                    #
+                    sidereal_a_ratio = (bp - 1.0027379)/bp
+                    sidereal_b_ratio = (bp - 0.9972696)/bp
+
+                    if ((sidereal_a_ratio < sidereal_threshold) or
+                        (sidereal_b_ratio < sidereal_threshold)):
+
+                        close_to_sidereal_flag.append(True)
+
+                    else:
+
+                        close_to_sidereal_flag.append(False)
+
+
+
+                else:
+                    LOGERROR('period is nan')
+                    best_peak_sampling_ratios.append(np.nan)
+                    close_to_sidereal_flag.append(False)
+
+            # update the pgram with these
+            pgram['nbestpeakratios'] = best_peak_sampling_ratios
+            pgram['siderealflags'] = close_to_sidereal_flag
+
+
+        elif pfm != 'win':
+
+            best_peak_sampling_ratios = []
+            close_to_sidereal_flag = []
+
+            periods = pgram['periods']
+            peaks = pgram['lspvals']
+
+            normalized_peaks = peaks/(np.nanmax(peaks) - np.nanmin(peaks))
+
+            normalized_pgram_periods.append(periods)
+            normalized_pgram_lspvals.append(normalized_peaks)
+            normalized_pgram_methods.append(pfm)
+
+            #
+            # first, get the best period normalized peaks
+            #
+            for bp in pgram['nbestperiods']:
+
+                if np.isfinite(bp):
+
+                    thisp_norm_pgrampeak = normalized_peaks[periods == bp]
+
+                    thisp_sampling_pgramind = (
+                        np.abs(normalized_sampling_periods -
+                               bp) < pdiffthreshold
+                    )
+                    thisp_sampling_peaks = normalized_sampling_lspvals[
+                        thisp_sampling_pgramind
+                    ]
+                    if thisp_sampling_peaks.size > 1:
+                        peak_sampling_ratio = (
+                            thisp_norm_pgrampeak/np.mean(thisp_sampling_peaks)
+                        )
+                    elif thisp_sampling_peaks.size == 1:
+                        thisp_sampling_ratio = (
+                            thisp_norm_pgrampeak/thisp_sampling_peaks
+                        )
+                    else:
+                        LOGERROR('sampling periodogram is not defined '
+                                 'at period %.5f, '
+                                 'skipping calculation of ratio' % bp)
+                        thisp_sampling_ratio = np.nan
+
+                    best_peak_sampling_ratios.append(thisp_sampling_ratio)
+
+                    #
+                    # next, see if the best periods are close to a sidereal day
+                    # or any multiples of thus
+                    #
+                    sidereal_a_ratio = (bp - 1.0027379)/bp
+                    sidereal_b_ratio = (bp - 0.9972696)/bp
+
+                    if ((sidereal_a_ratio < sidereal_threshold) or
+                        (sidereal_b_ratio < sidereal_threshold)):
+
+                        close_to_sidereal_flag.append(True)
+
+                    else:
+
+                        close_to_sidereal_flag.append(False)
+
+
+                else:
+                    LOGERROR('period is nan')
+                    best_peak_sampling_ratios.append(np.nan)
+                    close_to_sidereal_flag.append(False)
+
+            # update the pgram with these
+            pgram['nbestpeakratios'] = best_peak_sampling_ratios
+            pgram['siderealflags'] = close_to_sidereal_flag
+
+    #
+    # done with calculations, get the features we need
+    #
+
+    # freq_n_5sigsampling - number of top period estimates with peaks that are
+    #                       at least 5.0 x sampling peak height at the same
+    #                       period
 
 
     # freq_n_sidereal - number of top period estimates that are consistent with
     #                   a 1 day period (1.0027379 and 0.9972696 actually, for
-    #                   sidereal day period) and 0.5x, 2x, and 3x multipliers
-
-    # best_peak_height_over_sampling_height - ratio of best normalized
-    #                                         periodogram peak height to that of
-    #                                         the sampling periodogram at the
-    #                                         same period
-
-    # npeaks_above_5sig_sampling
+    #                   sidereal day period)
 
     # smallest_nbestperiods_diff - the smallest cross-wise difference between
     #                              the best periods found by all the
     #                              period-finders used
+
 
 
 def phasedlc_features(times, mags, errs, period):
