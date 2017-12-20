@@ -311,31 +311,40 @@ def periodogram_features(pgramlist, times, mags, errs,
     variability across all magnitude columns (e.g. period diffs between EPD and
     TFA mags)
 
-    times, mags, errs are from the object's light curve.
+    times, mags, errs are from the object's light curve. These are used to
+    recalculat the sampling L-S periodogram if one is not present in
+    pgramlist. If it's present, these can all be set to None.
 
     sigclip is the sigclip to apply to the light curve.
 
-    pdiffthreshold is the max diff between periods to consider them the same.
+    pdiff_threshold is the max diff between periods to consider them the same.
+
+    sidereal_threshold is the max diff between any of the periods and the
+    sidereal day periods to consider them the same.
+
+    sampling_peak_multipler is the minimum multiplicative factor of a period's
+    normalized periodogram peak over the sampling periodogram peak at the same
+    period required to accept the period as possibly real.
 
     sampling_startp and sampling_endp are provided if the pgramlist doesn't have
     a spectral window LSP and this must be obtained from the times, mags, errs
     directly by running periodbase.specwindow_lsp.
 
     '''
-    # get the finite values
-    finind = np.isfinite(times) & np.isfinite(mags) & np.isfinite(errs)
-    ftimes, fmags, ferrs = times[finind], mags[finind], errs[finind]
-
-    # get nonzero errors
-    nzind = np.nonzero(ferrs)
-    ftimes, fmags, ferrs = ftimes[nzind], fmags[nzind], ferrs[nzind]
-
     # run the sampling peak periodogram if necessary
     pfmethodlist = [pgram['method'] for pgram in pgramlist]
 
     if 'win' not in pfmethodlist:
 
-        sampling_lsp = specwindow_lsp(times,mags,errs,
+        # get the finite values
+        finind = np.isfinite(times) & np.isfinite(mags) & np.isfinite(errs)
+        ftimes, fmags, ferrs = times[finind], mags[finind], errs[finind]
+
+        # get nonzero errors
+        nzind = np.nonzero(ferrs)
+        ftimes, fmags, ferrs = ftimes[nzind], fmags[nzind], ferrs[nzind]
+
+        sampling_lsp = specwindow_lsp(times, mags, errs,
                                       startp=sampling_startp,
                                       endp=sampling_endp,
                                       sigclip=sigclip,
@@ -385,13 +394,13 @@ def periodogram_features(pgramlist, times, mags, errs,
 
                     thisp_sampling_pgramind = (
                         np.abs(normalized_sampling_periods -
-                               bp) < pdiffthreshold
+                               bp) < pdiff_threshold
                     )
                     thisp_sampling_peaks = normalized_sampling_lspvals[
                         thisp_sampling_pgramind
                     ]
                     if thisp_sampling_peaks.size > 1:
-                        peak_sampling_ratio = (
+                        thisp_sampling_ratio = (
                             thisp_norm_pgrampeak/np.mean(thisp_sampling_peaks)
                         )
                     elif thisp_sampling_peaks.size == 1:
@@ -444,10 +453,6 @@ def periodogram_features(pgramlist, times, mags, errs,
 
             normalized_peaks = peaks/(np.nanmax(peaks) - np.nanmin(peaks))
 
-            normalized_pgram_periods.append(periods)
-            normalized_pgram_lspvals.append(normalized_peaks)
-            normalized_pgram_methods.append(pfm)
-
             # get the best period normalized peaks
             if pgram['nbestperiods'] is None:
                 LOGERROR('no period results for method: %s' % pfm)
@@ -464,13 +469,13 @@ def periodogram_features(pgramlist, times, mags, errs,
 
                     thisp_sampling_pgramind = (
                         np.abs(normalized_sampling_periods -
-                               bp) < pdiffthreshold
+                               bp) < pdiff_threshold
                     )
                     thisp_sampling_peaks = normalized_sampling_lspvals[
                         thisp_sampling_pgramind
                     ]
                     if thisp_sampling_peaks.size > 1:
-                        peak_sampling_ratio = (
+                        thisp_sampling_ratio = (
                             thisp_norm_pgrampeak/np.mean(thisp_sampling_peaks)
                         )
                     elif thisp_sampling_peaks.size == 1:
@@ -521,7 +526,7 @@ def periodogram_features(pgramlist, times, mags, errs,
          (x['method'] != 'win' and x['nbestperiods'] is not None)]
     )
     all_bestperiod_diffs = np.array(
-        [abs(a-b) for a,b in combinations(all_bestperiods)]
+        [abs(a-b) for a,b in combinations(all_bestperiods,2)]
     )
 
     all_sampling_ratios = np.concatenate(
