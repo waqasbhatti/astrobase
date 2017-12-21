@@ -1,10 +1,8 @@
 FROM python:3.6-slim-stretch
+LABEL maintainer "Waqas Bhatti <waqas.afzal.bhatti@gmail.com>"
 
 # can pip install directly because we now have wheels for pyeebls and astrobase
-RUN pip install --no-cache-dir astrobase
-
-# install ipython that will have astrobase available
-RUN pip install --no-cache-dir ipython
+RUN pip install --no-cache-dir astrobase ipython
 
 # include the JPL ephem file so this is self-contained
 RUN python -c "from astrobase import timeutils"
