@@ -1935,7 +1935,8 @@ def runpf(lcfile,
           pfkwargs=[{},{},{},{}],
           sigclip=10.0,
           getblssnr=False,
-          nworkers=10):
+          nworkers=10,
+          excludeprocessed=False):
     '''This runs the period-finding for a single LC.
 
     pfmethods is a list of period finding methods to run. Each element is a
@@ -1972,6 +1973,31 @@ def runpf(lcfile,
 
         outfile = os.path.join(outdir, 'periodfinding-%s.pkl' %
                                lcdict['objectid'])
+
+        # if excludeprocessed is True, return the output file if it exists and
+        # has a size that is at least 100 kilobytes (this should be enough to
+        # contain the minimal results of this function).
+        if excludeprocessed:
+
+            test_outfile = os.path.exists(outfile)
+            test_outfile_gz = os.path.exists(outfile+'.gz')
+
+            if (test_outfile and os.stat(outfile).st_size > 102400):
+
+                LOGWARN('periodfinding result for %s already exists at %s, '
+                        'skipping because excludeprocessed=True'
+                        % (lcfile, outfile))
+                return outfile
+
+            elif (test_outfile_gz and os.stat(outfile+'.gz').st_size > 102400):
+
+                LOGWARN('gzipped periodfinding result for %s already '
+                        'exists at %s, skipping because excludeprocessed=True'
+                        % (lcfile, outfile+'.gz'))
+                return outfile+'.gz'
+
+
+        # this is the final returndict
         resultdict = {'objectid':lcdict['objectid'],
                       'lcfbasename':os.path.basename(lcfile)}
 
@@ -2086,6 +2112,7 @@ def runpf(lcfile,
     except Exception as e:
 
         LOGEXCEPTION('failed to run for %s, because: %s' % (lcfile, e))
+        return None
 
 
 
@@ -2096,7 +2123,7 @@ def runpf_worker(task):
     '''
 
     (lcfile, outdir, timecols, magcols, errcols, lcformat,
-     pfmethods, pfkwargs, getblssnr, sigclip, nworkers) = task
+     pfmethods, pfkwargs, getblssnr, sigclip, nworkers, excludeprocessed) = task
 
     if os.path.exists(lcfile):
         pfresult = runpf(lcfile,
@@ -2109,7 +2136,8 @@ def runpf_worker(task):
                          pfkwargs=pfkwargs,
                          getblssnr=getblssnr,
                          sigclip=sigclip,
-                         nworkers=nworkers)
+                         nworkers=nworkers,
+                         excludeprocessed=excludeprocessed)
         return pfresult
     else:
         LOGERROR('LC does not exist for requested file %s' % lcfile)
@@ -2130,7 +2158,8 @@ def parallel_pf(lclist,
                 nperiodworkers=10,
                 ncontrolworkers=4,
                 liststartindex=None,
-                listmaxobjects=None):
+                listmaxobjects=None,
+                excludeprocessed=True):
     '''This drives the overall parallel period processing.
 
     Use pfmethods to specify which periodfinders to run. These must be in
@@ -2153,12 +2182,20 @@ def parallel_pf(lclist,
     this invocation. Together, these can be used to distribute processing over
     several independent machines if the number of light curves is very large.
 
+    If excludeprocessed is True, light curves that have been processed already
+    and have existing corresponding periodfinding-<objectid-suffix>.pkl[.gz]
+    files in outdir will be ignored.
+
     As a rough benchmark, 25000 HATNet light curves with up to 50000 points per
     LC take about 26 days in total for an invocation of this function using
     GLS+PDM+BLS, 10 periodworkers, and 4 controlworkers (so all 40 'cores') on a
     2 x Xeon E5-2660v3 machine.
 
     '''
+
+    # make the output directory if it doesn't exist
+    if not os.path.exists(outdir):
+        os.mkdirs(outdir)
 
     if (liststartindex is not None) and (listmaxobjects is None):
         lclist = lclist[liststartindex:]
@@ -2170,7 +2207,8 @@ def parallel_pf(lclist,
         lclist = lclist[liststartindex:liststartindex+listmaxobjects]
 
     tasklist = [(x, outdir, timecols, magcols, errcols, lcformat,
-                 pfmethods, pfkwargs, getblssnr, sigclip, nperiodworkers)
+                 pfmethods, pfkwargs, getblssnr, sigclip, nperiodworkers,
+                 excludeprocessed)
                 for x in lclist]
 
     with ProcessPoolExecutor(max_workers=ncontrolworkers) as executor:
@@ -2195,7 +2233,8 @@ def parallel_pf_lcdir(lcdir,
                       nperiodworkers=10,
                       ncontrolworkers=4,
                       liststartindex=None,
-                      listmaxobjects=None):
+                      listmaxobjects=None,
+                      excludeprocessed=True):
     '''
     This runs parallel light curve period finding for directory of LCs.
 
@@ -2261,7 +2300,8 @@ def parallel_pf_lcdir(lcdir,
                            nperiodworkers=nperiodworkers,
                            ncontrolworkers=ncontrolworkers,
                            liststartindex=liststartindex,
-                           listmaxobjects=listmaxobjects)
+                           listmaxobjects=listmaxobjects,
+                           excludeprocessed=excludeprocessed)
 
     else:
 
