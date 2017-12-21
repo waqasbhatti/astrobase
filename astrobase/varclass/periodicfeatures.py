@@ -588,6 +588,11 @@ def phasedlc_features(times, mags, errs, period):
     lightcurve_mad = np.median(np.abs(fmags - lightcurve_median))
 
 
+    # eta_phasedlc_bestperiod - calculate eta for the phased LC with best period
+
+    # eta_phasedlc_bestperiodx2 - calculate eta for the phased LC with best
+    #                             period x 2
+
     # freq_model_max_delta_mags - absval of magdiff btw model phased LC maxima
     #                             using period x 2
 
