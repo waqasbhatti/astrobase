@@ -1946,6 +1946,18 @@ def runpf(lcfile,
     pfkwargs are any special kwargs to pass along to each period-finding method
     function.
 
+    If excludeprocessing is True, light curves that have existing periodfinding
+    result pickles in outdir will not be processed.
+
+    FIXME: currently, this uses a dumb method of excluding already-processed
+    files. A smarter way to do this is to (i) generate a SHA512 cachekey based
+    on a repr of {'lcfile', 'timecols', 'magcols', 'errcols', 'lcformat',
+    'pfmethods', 'sigclip', 'getblssnr', 'pfkwargs'}, (ii) make sure all list
+    kwargs in the dict are sorted, (iii) check if the output file has the same
+    cachekey in its filename (last 8 chars of cachekey should work), so the
+    result was processed in exactly the same way as specifed in the input to
+    this function, and can therefore be ignored. Will implement this later.
+
     '''
 
     if lcformat not in LCFORM or lcformat is None:
