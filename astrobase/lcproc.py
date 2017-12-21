@@ -1996,16 +1996,18 @@ def runpf(lcfile,
 
             if (test_outfile and os.stat(outfile).st_size > 102400):
 
-                LOGWARN('periodfinding result for %s already exists at %s, '
-                        'skipping because excludeprocessed=True'
-                        % (lcfile, outfile))
+                LOGWARNING('periodfinding result for %s already exists at %s, '
+                           'skipping because excludeprocessed=True'
+                           % (lcfile, outfile))
                 return outfile
 
             elif (test_outfile_gz and os.stat(outfile+'.gz').st_size > 102400):
 
-                LOGWARN('gzipped periodfinding result for %s already '
-                        'exists at %s, skipping because excludeprocessed=True'
-                        % (lcfile, outfile+'.gz'))
+                LOGWARNING(
+                    'gzipped periodfinding result for %s already '
+                    'exists at %s, skipping because excludeprocessed=True'
+                    % (lcfile, outfile+'.gz')
+                )
                 return outfile+'.gz'
 
 
