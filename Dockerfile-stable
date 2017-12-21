@@ -1,10 +1,7 @@
 FROM python:3.6-slim-stretch
 
-# install git
-RUN apt-get update && apt-get -y install git
-
-# can pip install directly from git because we now have wheels for pyeebls
-RUN pip install --no-cache-dir git+https://github.com/waqasbhatti/astrobase
+# can pip install directly because we now have wheels for pyeebls and astrobase
+RUN pip install --no-cache-dir astrobase
 
 # install ipython that will have astrobase available
 RUN pip install --no-cache-dir ipython
