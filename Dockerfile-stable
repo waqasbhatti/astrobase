@@ -1,11 +1,12 @@
 FROM python:3.6-slim-stretch
+
+# metadata
 LABEL maintainer "Waqas Bhatti <waqas.afzal.bhatti@gmail.com>"
 
 # can pip install directly because we now have wheels for pyeebls and astrobase
-RUN pip install --no-cache-dir astrobase ipython
-
-# include the JPL ephem file so this is self-contained
-RUN python -c "from astrobase import timeutils"
+# after installation, include the JPL ephem file so this is self-contained
+RUN pip install --no-cache-dir astrobase ipython \
+    && python -c "from astrobase import timeutils"
 
 # setup the work directory
 WORKDIR /astrobase

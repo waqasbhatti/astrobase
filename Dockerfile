@@ -1,4 +1,6 @@
 FROM python:3.6-slim-stretch
+
+# metadata
 LABEL maintainer "Waqas Bhatti <waqas.afzal.bhatti@gmail.com>"
 
 # install git, then pip install astrobase directly from git because we now have
