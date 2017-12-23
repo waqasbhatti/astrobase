@@ -1,0 +1,13 @@
+{
+    "fileglob": "*binned-*hat*.pkl",
+    "timecols": ["binned.aep_000.times","binned.atf_000.times"],
+    "magcols": ["binned.aep_000.mags","binned.atf_000.mags"],
+    "errcols": ["binned.aep_000.errs","binned.atf_000.errs"],
+    "magsarefluxes": false,
+    "lcreader_module": "astrobase.lcproc_batch",
+    "lcreader_func": "read_pklc",
+    "lcreader_kwargs": null,
+    "lcnorm_module": null,
+    "lcnorm_func": null,
+    "lcnorm_kwargs": null
+}

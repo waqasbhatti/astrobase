@@ -1,0 +1,13 @@
+{
+    "fileglob": "HAT-*tfalc.TF1*",
+    "timecols": ["rjd", "rjd"],
+    "magcols": ["iep1", "itf1"],
+    "errcols": ["ire1", "ire1"],
+    "magsarefluxes": false,
+    "lcreader_module": "astrobase.hplc",
+    "lcreader_func": "read_hatpi_textlc",
+    "lcreader_kwargs": null,
+    "lcnorm_module": null,
+    "lcnorm_func": null,
+    "lcnorm_kwargs": null
+}

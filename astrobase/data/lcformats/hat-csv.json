@@ -1,0 +1,13 @@
+{
+  "fileglob": "*-hatlc.csv*",
+  "timecols": ["rjd", "rjd"],
+  "magcols": ["aep_000", "atf_000"],
+  "errcols": ["aie_000", "aie_000"],
+  "magsarefluxes": false,
+  "lcreader_module": "astrobase.hatlc",
+  "lcreader_func": "read_csvlc",
+  "lcreader_kwargs": {"verbose": false, "raiseonfail": false},
+  "lcnorm_module": "astrobase.hatlc",
+  "lcnorm_func": "normalize_lcdict_byinst",
+  "lcnorm_kwargs": {"normto": "sdssr", "magcols": "all"}
+}

@@ -1,0 +1,13 @@
+{
+    "fileglob": "*_llc.fits",
+    "timecols": ["rjd", "rjd"],
+    "magcols": ["sap.sap_flux", "pdc.pdc_sapflux"],
+    "errcols": ["sap.sap_flux_err", "pdc.pdc_sapflux_err"],
+    "magsarefluxes": true,
+    "lcreader_module": "astrobase.astrokep",
+    "lcreader_func": "read_kepler_pklc",
+    "lcreader_kwargs": null,
+    "lcnorm_module": null,
+    "lcnorm_func": null,
+    "lcnorm_kwargs": null
+}
