@@ -1,5 +1,5 @@
 {
-    "fileglob": "*binned-*kep*.pkl",
+    "fileglob": "*binned*kep*.pkl",
     "timecols": ["binned.sap_flux.times","binned.pdc_sapflux.times"],
     "magcols": ["binned.sap_flux.mags","binned.pdc_sapflux.mags"],
     "errcols": ["binned.sap_flux.errs","binned.pdc_sapflux.errs"],

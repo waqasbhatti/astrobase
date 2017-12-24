@@ -209,7 +209,7 @@ LCFORM = {
     ],
     # binned light curve format
     'binned-hat':[
-        '*binned-*hat*.pkl',
+        '*binned*hat*.pkl',
         read_pklc,
         ['binned.aep_000.times','binned.atf_000.times'],
         ['binned.aep_000.mags','binned.atf_000.mags'],
@@ -218,7 +218,7 @@ LCFORM = {
         None,
     ],
     'binned-hp':[
-        '*binned-*hp*.pkl',
+        '*binned*hp*.pkl',
         read_pklc,
         ['binned.iep1.times','binned.itf1.times'],
         ['binned.iep1.mags','binned.itf1.mags'],
@@ -227,7 +227,7 @@ LCFORM = {
         None,
     ],
     'binned-kep':[
-        '*binned-*kep*.pkl',
+        '*binned*kep*.pkl',
         read_pklc,
         ['binned.sap_flux.times','binned.pdc_sapflux.times'],
         ['binned.sap_flux.mags','binned.pdc_sapflux.mags'],

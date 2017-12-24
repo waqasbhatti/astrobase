@@ -1,5 +1,5 @@
 {
-    "fileglob": "*binned-*hat*.pkl",
+    "fileglob": "*binned*hat*.pkl",
     "timecols": ["binned.aep_000.times","binned.atf_000.times"],
     "magcols": ["binned.aep_000.mags","binned.atf_000.mags"],
     "errcols": ["binned.aep_000.errs","binned.atf_000.errs"],

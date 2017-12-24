@@ -2245,6 +2245,7 @@ def checkplot_dict(lspinfolist,
                    plotdpi=100,
                    bestperiodhighlight=None,
                    xgridlines=None,
+                   mindet=1000,
                    verbose=True):
 
     '''This writes a multiple lspinfo checkplot to a dict.
@@ -2442,7 +2443,7 @@ def checkplot_dict(lspinfolist,
                                             mingap=normmingap)
 
     # make sure we have some lightcurve points to plot after sigclip
-    if len(stimes) > 49:
+    if len(stimes) > mindet:
 
         # 1. get the mag series plot using these filtered stimes, smags, serrs
         magseriesdict = _pkl_magseries_plot(stimes, smags, serrs,
@@ -2549,7 +2550,7 @@ def checkplot_dict(lspinfolist,
                 stimes,
                 smags,
                 serrs,
-                magsarefluxes=magsarefluxes
+                magsarefluxes=magsarefluxes,
             )
 
 
@@ -2589,8 +2590,8 @@ def checkplot_dict(lspinfolist,
     # otherwise, we don't have enough LC points, return nothing
     else:
 
-        LOGERROR('not enough light curve points for %s' %
-                 checkplotdict['objectid'])
+        LOGERROR('not enough light curve points for %s, have %s, need %s' %
+                 (checkplotdict['objectid'],len(stimes),mindet))
         checkplotdict['magseries'] = None
         checkplotdict['status'] = 'failed: not enough LC points'
 
@@ -2637,6 +2638,7 @@ def checkplot_pickle(lspinfolist,
                      pickleprotocol=None,
                      bestperiodhighlight=None,
                      xgridlines=None,
+                     mindet=1000,
                      verbose=True):
 
     '''This writes a multiple lspinfo checkplot to a (gzipped) pickle file.
@@ -2822,6 +2824,7 @@ def checkplot_pickle(lspinfolist,
         plotdpi=plotdpi,
         bestperiodhighlight=bestperiodhighlight,
         xgridlines=xgridlines,
+        mindet=mindet,
         verbose=verbose
     )
 

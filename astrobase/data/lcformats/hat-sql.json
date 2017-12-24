@@ -5,8 +5,8 @@
   "errcols": ["aie_000", "aie_000"],
   "magsarefluxes": false,
   "lcreader_module": "astrobase.hatlc",
-  "lcreader_func": "read_and_filter_sqlitecurves",
-  "lcreader_kwargs": {"verbose": false, "raiseonfail": false},
+  "lcreader_func": "read_and_filter_sqlitecurve",
+  "lcreader_kwargs": {"returnarrays": true, "raiseonfail": false},
   "lcnorm_module": "astrobase.hatlc",
   "lcnorm_func": "normalize_lcdict_byinst",
   "lcnorm_kwargs": {"normto": "sdssr", "magcols": "all"}
