@@ -44,83 +44,6 @@ lcpbatch cp-png /path/to/checkplot.pkl
 
 lcpbatch timebin /path/to/lc.file outdir --options
 
-
-Specifying LC formats
----------------------
-
-A custom LC format can be permanently registered using:
-
-lcpbatch register-lcformat [specification options]
-
-where specification options are strings surrounded by single quotes to prevent
-the shell from expanding them. An example for HAT sqlitecurves:
-
---formatkey 'hat-sql'
---fileglob '*-hatlc.sqlite*'
---timecols '["rjd", "rjd"]'
---magcols '["aep_000", "atf_000"]'
---errcols '["aie_000", "aie_000"]'
---readermodule 'astrobase.hatlc'
---readerfunc 'read_and_filter_sqlitecurves'
---readerkwargs '{"verbose": false, "raiseonfail": false}'
---normmodule 'astrobase.hatlc'
---normfunc 'normalize_lcdict_byinst'
---normkwargs '{"normto": "sdssr", "magcols": "all"}'
-
-This will generate a lcformat JSON with filename <formatkey>.json that will
-allow light curve files matching the fileglob to be automatically recognized and
-use the specified functions to read and normalize them. Any options left out
-will be set to None. The generated JSON looks like the following (example for
-HAT sqlitecurves):
-
-{
-  "fileglob": "*-hatlc.sqlite*",
-  "timecols": ["rjd", "rjd"],
-  "magcols": ["aep_000", "atf_000"],
-  "errcols": ["aie_000", "aie_000"],
-  "magsarefluxes": false,
-  "lcreader_module": "astrobase.hatlc",
-  "lcreader_func": "read_and_filter_sqlitecurves",
-  "lcreader_kwargs": {"returnarrays": true, "raiseonfail": false},
-  "lcnorm_module": "astrobase.hatlc",
-  "lcnorm_func": "normalize_lcdict_byinst",
-  "lcnorm_kwargs": {"normto": "sdssr", "magcols": "all"}
-}
-
-LC format specification requires modules defined in lcreader_module and
-lcnorm_module containing the reader and normalization functions
-respectively. These can be the same module; it won't be imported
-twice. Astrobase built-in modules look like "astrobase.<module names>".
-Your own modules must be specified as either a Python module path
-(e.g. "yourpackage.yourmodule"), or a file path on disk
-(e.g. "/path/to/yourpackage/yourmodule.py").
-
-The lcreader_func function must have the following signature:
-
-def lcreader_func(lc_filepath_string, **lcreader_kwargs)
-
-and return a dict that contains the timecols, magcols, and errcols as key:val
-elems: the lcdict.
-
-The lcnorm_func function must have the following signature:
-
-def lcnorm_func(lcdict, **lcnorm_kwargs)
-
-and return the same lcdict with the columns normalized however as specified by
-lcnorm_kwargs, etc.
-
-
-To override automatic LC format recognition based on the fileglob and force the
-use of a specific known lcformat, use:
-
---lcformat <formatkey>
-
-
-To use a unregistered LC format for which you already have a lcformat JSON
-elsewhere, use:
-
---lcformat-json /path/to/lcformat-name.json
-
 '''
 
 import os
@@ -2789,3 +2712,112 @@ def timebinlc(lcfile,
         pickle.dump(lcdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
 
     return outfile
+
+
+
+#####################################
+## SUPPORT FOR EXECUTION AS SCRIPT ##
+#####################################
+
+PROGEPILOG = '''\
+Specifying LC formats
+---------------------
+
+A custom LC format can be permanently registered using:
+
+lcpbatch register-lcformat [specification options]
+
+where specification options are strings surrounded by single quotes to prevent
+the shell from expanding them. An example for HAT sqlitecurves:
+
+--formatkey 'hat-sql'
+--fileglob '*-hatlc.sqlite*'
+--timecols '["rjd", "rjd"]'
+--magcols '["aep_000", "atf_000"]'
+--errcols '["aie_000", "aie_000"]'
+--readermodule 'astrobase.hatlc'
+--readerfunc 'read_and_filter_sqlitecurves'
+--readerkwargs '{"verbose": false, "raiseonfail": false}'
+--normmodule 'astrobase.hatlc'
+--normfunc 'normalize_lcdict_byinst'
+--normkwargs '{"normto": "sdssr", "magcols": "all"}'
+
+This will generate a lcformat JSON with filename <formatkey>.json that will
+allow light curve files matching the fileglob to be automatically recognized and
+use the specified functions to read and normalize them. Any options left out
+will be set to None. The generated JSON looks like the following (example for
+HAT sqlitecurves):
+
+{
+  "fileglob": "*-hatlc.sqlite*",
+  "timecols": ["rjd", "rjd"],
+  "magcols": ["aep_000", "atf_000"],
+  "errcols": ["aie_000", "aie_000"],
+  "magsarefluxes": false,
+  "lcreader_module": "astrobase.hatlc",
+  "lcreader_func": "read_and_filter_sqlitecurves",
+  "lcreader_kwargs": {"returnarrays": true, "raiseonfail": false},
+  "lcnorm_module": "astrobase.hatlc",
+  "lcnorm_func": "normalize_lcdict_byinst",
+  "lcnorm_kwargs": {"normto": "sdssr", "magcols": "all"}
+}
+
+LC format specification requires modules defined in lcreader_module and
+lcnorm_module containing the reader and normalization functions
+respectively. These can be the same module; it won't be imported
+twice. Astrobase built-in modules look like "astrobase.<module names>".
+Your own modules must be specified as either a Python module path
+(e.g. "yourpackage.yourmodule"), or a file path on disk
+(e.g. "/path/to/yourpackage/yourmodule.py").
+
+The lcreader_func function must have the following signature:
+
+def lcreader_func(lc_filepath_string, **lcreader_kwargs)
+
+and return a dict that contains the timecols, magcols, and errcols as key:val
+elems: the lcdict.
+
+The lcnorm_func function must have the following signature:
+
+def lcnorm_func(lcdict, **lcnorm_kwargs)
+
+and return the same lcdict with the columns normalized however as specified by
+lcnorm_kwargs, etc.
+
+
+To override automatic LC format recognition based on the fileglob and force the
+use of a specific known lcformat, use:
+
+--lcformat <formatkey>
+
+
+To use a unregistered LC format for which you already have a lcformat JSON
+elsewhere, use:
+
+--lcformat-json /path/to/lcformat-name.json
+'''
+
+
+##########
+## MAIN ##
+##########
+
+def main():
+    '''
+    This is the main function.
+
+    '''
+
+    ################
+    ## PARSE ARGS ##
+    ################
+
+    aparser = argparse.ArgumentParser(
+        epilog=PROGEPILOG,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+
+
+if __name__ == '__main__':
+    main()
