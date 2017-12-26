@@ -2630,6 +2630,7 @@ def runcp_worker(task):
         return None
 
 
+
 def parallel_cp(pfpicklelist,
                 outdir,
                 lcbasedir,
@@ -2674,13 +2675,13 @@ def parallel_cp(pfpicklelist,
 
 
 
-def parallel_cp_lcdir(pfpickledir,
+def parallel_cp_pfdir(pfpickledir,
                       outdir,
                       lcbasedir,
                       lclistpkl=None,
                       nbrradiusarcsec=30.0,
                       maxobjects=None,
-                      pfpickleglob='periodfinding-*.pkl',
+                      pfpickleglob='periodfinding-*.pkl*',
                       lcformat='hat-sql',
                       timecols=None,
                       magcols=None,
@@ -2693,6 +2694,9 @@ def parallel_cp_lcdir(pfpickledir,
     '''
 
     pfpicklelist = sorted(glob.glob(os.path.join(pfpickledir, pfpickleglob)))
+
+    LOGINFO('found %s period-finding pickles, running cp...' % len(pfpicklelist))
+
 
     return parallel_cp(pfpicklelist,
                        outdir,
