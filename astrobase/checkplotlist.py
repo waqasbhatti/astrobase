@@ -126,7 +126,7 @@ You can filter the checkplot pickle files in the output list by using the
 --filterby argument. Note that filtering takes place after any requested
 sorting.  Provide a filterkey, filteroperator, and filteroperand in the form:
 
---filterby '<filterkey>|<filteroperator>|<filteroperand>'
+--filterby '<filterkey>|<filteroperator>@<filteroperand>'
 
 Here, filterkey is some key in the checkplot pickle, specified as the sortkey
 discussed above. filteroperator is one of the following 2-character strings:
@@ -140,13 +140,13 @@ operator.
 Example: get only those checkplots with Stetson J > 0.2:
 
 checkplotlist pkl my-project/awesome-objects
-    --filterby 'varinfo.features.stetsonj|gt|0.2'
+    --filterby 'varinfo.features.stetsonj|gt@0.2'
 
 Example: get only those checkplots for objects with r < 12.0 and sort these by
 power of the best peak in their Lomb-Scargle periodogram:
 
 checkplot pkl my-project/awesome-objects
-    --filterby 'objectinfo.sdssr|lt|12.0'
+    --filterby 'objectinfo.sdssr|lt@12.0'
     --sortby 'gls.nbestlspvals.0|desc'
 
 Example: get only those checkplots for objects that have best-period transit
@@ -546,7 +546,7 @@ def main():
 
                     try:
 
-                        foperator, foperand = fcond.split('|')
+                        foperator, foperand = fcond.split('@')
                         foperator = FILTEROPS[foperator]
 
                         # we'll do a straight eval of the filter
