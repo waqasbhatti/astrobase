@@ -74,7 +74,6 @@ suited to more serious variability searches on large numbers of checkplots.
 
 '''
 
-
 PROGDESC = '''\
 This makes a checkplot file list for use with the checkplot-viewer.html (for
 checkplot PNGs) or the checkplotserver.py (for checkplot pickles) webapps.
@@ -92,10 +91,6 @@ this:
 Make sure to use the quotes around this argument, otherwise the shell will
 expand it.
 
-Example: search for checkplots with awesome-object in their filename:
-
-$ checkplotlist png my-project/awesome-objects --search '*awesome-object*'
-
 SORTING CHECKPLOT PICKLES
 -------------------------
 If you want to sort checkplot pickle files in the output list in some special
@@ -104,21 +99,12 @@ commandline of the form:
 
 --sortby '<sortkey>|<asc or desc>'
 
-(use the pipe character | to separate sortkey and order)
+(use the | character to separate sortkey and order)
 
 Here, sortkey is some key in the checkplot pickle. This can be a simple key:
 e.g. objectid or it can be a composite key: e.g. varinfo.features.stetsonj.
 sortorder is either 'asc' or desc' for ascending/descending sort. The sortkey
 must exist in all checkplot pickles.
-
-Example: sort checkplots by their 2MASS J magnitudes in ascending order:
-
-$ checkplotlist pkl my-project/awesome-objects --sortby 'objectinfo.jmag|asc'
-
-Example: sort checkplots by the power of the best peak in their PDM
-periodograms:
-
-$ checkplotlist pkl my-project/awesome-objects --sortby 'pdm.nbestlspvals.0|asc'
 
 FILTERING CHECKPLOT PICKLES
 ---------------------------
@@ -127,6 +113,9 @@ You can filter the checkplot pickle files in the output list by using the
 sorting.  Provide a filterkey, filteroperator, and filteroperand in the form:
 
 --filterby '<filterkey>|<filteroperator>@<filteroperand>'
+
+(use the | character to separate the filter column-key and filter specification,
+ use the @ character in the filter spec to separate filter operator and operand)
 
 Here, filterkey is some key in the checkplot pickle, specified as the sortkey
 discussed above. filteroperator is one of the following 2-character strings:
@@ -137,28 +126,36 @@ discussed above. filteroperator is one of the following 2-character strings:
 filteroperand is the appropriate integer, float, or string for the filterkey and
 operator.
 
-Example: get only those checkplots with Stetson J > 0.2:
+EXAMPLES OF CHECKPLOT PICKLE SORTING AND FILTERING
+--------------------------------------------------
+Sort checkplots by their 2MASS J magnitudes in ascending order:
 
-checkplotlist pkl my-project/awesome-objects
-    --filterby 'varinfo.features.stetsonj|gt@0.2'
+  $ checkplotlist pkl project/awesome-objects --sortby 'objectinfo.jmag|asc'
 
-Example: get only those checkplots for objects with r < 12.0 and sort these by
-power of the best peak in their Lomb-Scargle periodogram:
+Sort checkplots by the power of the best peak in their PDM periodograms:
 
-checkplot pkl my-project/awesome-objects
-    --filterby 'objectinfo.sdssr|lt@12.0'
-    --sortby 'gls.nbestlspvals.0|desc'
+  $ checkplotlist pkl project/awesome-objects --sortby 'pdm.nbestlspvals.0|asc'
 
-Example: get only those checkplots for objects that have best-period transit
-depths between 1 mmag and 10 mmag and sort these by the SNR of the best peak in
-the BLS spectrum in descending order:
+Get only those checkplots with Stetson J > 0.2:
 
-checkplot pkl my-project/awesome-objects
-    --sortby 'bls.snr.0_desc'
-    --filterby 'bls.transitdepth.0|lt|-0.001'
-    --filterby 'bls.transitdepth.0|gt|-0.01'
+  $ checkplotlist pkl project/awesome-objects       \\
+      --filterby 'varinfo.features.stetsonj|gt@0.2'
 
+Get only those checkplots for objects that have object r mag < 12.0 and sort
+these by power of the best peak in their Lomb-Scargle periodogram:
 
+  $ checkplot pkl project/awesome-objects   \\
+      --filterby 'objectinfo.sdssr|lt@12.0' \\
+      --sortby 'gls.nbestlspvals.0|desc'
+
+Get only those checkplots for objects that have best-period transit depths
+between 1 mmag and 10 mmag and sort these by the SNR of the best peak in the BLS
+spectrum in descending order:
+
+  $ checkplot pkl project/awesome-objects       \\
+      --sortby 'bls.snr.0|desc'                 \\
+      --filterby 'bls.transitdepth.0|lt@-0.001' \\
+      --filterby 'bls.transitdepth.0|gt@-0.01'
 '''
 
 import os
@@ -290,7 +287,8 @@ def main():
         action='store',
         default='*checkplot*',
         type=str,
-        help=("file glob prefix to use when searching for checkplots "
+        help=("file glob prefix to use when searching for checkplots, "
+              "default: '%(default)s', "
               "(the extension is added automatically - .png or .pkl)")
     )
 
@@ -317,16 +315,17 @@ def main():
         help=("if there are more than SPLITOUT objects in "
               "the target directory (default: %(default)s), "
               "checkplotlist will split the output JSON into multiple files. "
-              "this helps keep the webapps responsive.")
+              "this helps keep the checkplotserver webapp responsive.")
     )
     aparser.add_argument(
         '--outprefix',
         action='store',
         type=str,
         help=("a prefix string to use for the output JSON file(s). "
-              "use this to separate out different sort orders, for example. "
-              "if this isn't provided, but sortby is, will use that to "
-              "figure out the output files' prefixes")
+              "use this to separate out different sort orders "
+              "or filter conditions, for example. "
+              "if this isn't provided, but --sortby or --filterby are, "
+              "will use those to figure out the output files' prefixes")
     )
     aparser.add_argument(
         '--maxkeyworkers',
@@ -335,7 +334,7 @@ def main():
         default=8,
         help=("the number of parallel workers that will be launched "
               "to retrieve checkplot key values used for "
-              "sorting and filtering ")
+              "sorting and filtering (default: %(default)s)")
     )
 
     args = aparser.parse_args()
