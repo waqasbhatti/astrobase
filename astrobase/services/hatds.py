@@ -119,6 +119,7 @@ from datetime import datetime
 from traceback import format_exc
 import multiprocessing as mp
 import json
+import argparse
 
 # import url methods here.  we use built-ins because we want this module to be
 # usable as a single file. otherwise, we'd use something sane like Requests.
@@ -183,34 +184,45 @@ def LOGEXCEPTION(message):
 ## API KEY CONFIG ##
 ####################
 
-USERHOME = os.path.expanduser('~')
-APIKEYFILE = os.path.join(USERHOME, '.hatdsrc')
+def check_apikey_settings():
+    '''
+    This checks if an API key is available.
 
-if os.path.exists(APIKEYFILE):
+    '''
 
-    # check if this file is readable/writeable by user only
-    fileperm = oct(os.stat(APIKEYFILE)[stat.ST_MODE])
+    USERHOME = os.path.expanduser('~')
+    APIKEYFILE = os.path.join(USERHOME, '.hatdsrc')
 
-    if fileperm == '0100600' or fileperm == '0o100600':
+    if os.path.exists(APIKEYFILE):
 
-        with open(APIKEYFILE) as infd:
-            creds = infd.read().strip('\n')
-        APIUSER, APIKEY = creds.split(':')
-        HAVEAPIKEY = True
+        # check if this file is readable/writeable by user only
+        fileperm = oct(os.stat(APIKEYFILE)[stat.ST_MODE])
 
+        if fileperm == '0100600' or fileperm == '0o100600':
+
+            with open(APIKEYFILE) as infd:
+                creds = infd.read().strip('\n')
+            APIUSER, APIKEY = creds.split(':')
+            HAVEAPIKEY = True
+
+            return HAVEAPIKEY, APIUSER, APIKEY
+
+        else:
+            LOGWARNING('The API key credentials file %s has bad permissions '
+                       'and is insecure, not reading it.\n'
+                       '(you need to chmod 600 this file)'
+                       % APIKEYFILE)
+            HAVEAPIKEY = False
+
+            return HAVEAPIKEY, None, None
     else:
-        LOGWARNING('The API key credentials file %s has bad permissions '
-                   'and is insecure, not reading it.\n'
-                   '(you need to chmod 600 this file)'
-                   % APIKEYFILE)
+        LOGWARNING('No HAT Data Server API credentials found in: %s\n'
+                   'Only anonymous access is available.\n\n
+                   {apikeyhelp}'.format(apikeyhelp=APIKEYHELP))
         HAVEAPIKEY = False
 
+        return HAVEAPIKEY, None, None
 
-else:
-    LOGWARNING('No HAT Data Server API credentials found in: %s\n'
-               'Only anonymous access is available.\n\n
-               {apikeyhelp}'.format(apikeyhelp=APIKEYHELP))
-    HAVEAPIKEY = False
 
 
 ########################
@@ -230,7 +242,7 @@ def on_download_chunk(transferred, blocksize, totalsize):
 def hatlc_for_object(objectid,
                      hatproject,
                      datarelease=None,
-                     apikey=None,
+                     anonmode=True,
                      outdir=None,
                      lcformat='sqlite'):
     '''This gets the light curve for the specified objectid.
@@ -248,9 +260,7 @@ def hatlc_for_object(objectid,
     indicating the data release to use for the light curve. By default, this is
     None, meaning that the latest data release light curve will be fetched.
 
-    apikey is your HAT Data Server apikey. If not provided, this will search for
-    a ~/.hatdsrc file and get it from there. If that file is not available,
-    will use anonymous mode.
+    if anonmode is True, will not use apikey.
 
     lcformat is one of the following:
 
@@ -263,6 +273,11 @@ def hatlc_for_object(objectid,
 
     '''
 
+    if not anonmode:
+        apikey_avail, apikey_user, apikey_key = check_apikey_settings()
+        if not apikey_avail:
+            LOGERROR("no API key available, can't continue")
+            return None
 
 
 
@@ -270,7 +285,7 @@ def hatlc_for_object(objectid,
 def hatlcs_for_objectlist(objectidlist,
                           hatproject,
                           datarelease=None,
-                          apikey=None,
+                          anonmode=True,
                           outdir=None,
                           lcformat='sqlite',
                           nworkers=None):
@@ -285,15 +300,21 @@ def hatlcs_for_objectlist(objectidlist,
 
     '''
 
+    if not anonmode:
+        apikey_avail, apikey_user, apikey_key = check_apikey_settings()
+        if not apikey_avail:
+            LOGERROR("no API key available, can't continue")
+            return None
 
 
 
 def hatlcs_at_radec(coordstring,
                     hatproject,
                     datarelease=None,
-                    apikey=None,
+                    anonmode=False,
                     outdir=None,
-                    lcformat='sqlite'):
+                    lcformat='sqlite',
+                    nworkers=None):
     '''This gets light curves for all objectids at coordstring.
 
     All args and kwargs are the same as for get_hatlc, except for:
@@ -319,3 +340,24 @@ def hatlcs_at_radec(coordstring,
     specification.
 
     '''
+
+    if not anonmode:
+        apikey_avail, apikey_user, apikey_key = check_apikey_settings()
+        if not apikey_avail:
+            LOGERROR("no API key available, can't continue")
+            return None
+
+
+
+
+
+
+def main():
+    '''
+    This enables execution as a commandline script.
+
+    '''
+
+
+if __name__ == '__main__':
+    main()
