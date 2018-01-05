@@ -352,7 +352,6 @@ def lightcurve_ptp_measures(ftimes, fmags, ferrs):
         eta_normal = npsum(p2p_squared_magdiffs)/npvar(fmags)
         eta_normal = eta_normal/(ndet - 1.0)
 
-
         timeweights = 1.0/(timediffs*timediffs)
 
         # this is eta_e modified for uneven sampling from the Kim+ 2014 paper

@@ -16,6 +16,7 @@ from time import time as unixtime
 from itertools import combinations
 
 import numpy as np
+from scipy.signal import argrelmin, arglenmax
 
 
 #############
@@ -71,6 +72,8 @@ from .. import lcmath
 from ..varbase import lcfit
 from ..lcmodels import sinusoidal, eclipses, transits
 from ..periodbase.zgls import specwindow_lsp
+from .features import lightcurve_ptp_measures
+
 
 ###################################
 ## FEATURE CALCULATION FUNCTIONS ##
@@ -583,47 +586,143 @@ def phasedlc_features(times, mags, errs, period):
     nzind = np.nonzero(ferrs)
     ftimes, fmags, ferrs = ftimes[nzind], fmags[nzind], ferrs[nzind]
 
-    # get the MAD of the unphased light curve
-    lightcurve_median = np.median(fmags)
-    lightcurve_mad = np.median(np.abs(fmags - lightcurve_median))
+    # only operate on LC if enough points
+    if ftimes.size > 49:
+
+        # get the MAD of the unphased light curve
+        lightcurve_median = np.median(fmags)
+        lightcurve_mad = np.median(np.abs(fmags - lightcurve_median))
+
+        # get p2p for raw lightcurve
+        p2p_unphasedlc = lightcurve_ptp_measures(ftimes, fmags, ferrs)
+        inveta_unphasedlc = 1.0/p2p_unphasedlc['eta_normal']
+
+        # phase the light curve with the given period, assume epoch is
+        # times.min()
+        phasedlc = lcmath.phase_magseries_with_errs(ftimes, fmags, ferrs,
+                                                    period, ftimes.min(),
+                                                    wrap=False)
+
+        phase = phasedlc['phase']
+        pmags = phasedlc['mags']
+        perrs = phasedlc['errs']
+
+        # get ptp measures for best period
+        ptp_bestperiod = lightcurve_ptp_measures(phase,pmags,perrs)
+
+        # phase the light curve with the given periodx2, assume epoch is
+        # times.min()
+        phasedlc = lcmath.phase_magseries_with_errs(ftimes, fmags, ferrs,
+                                                    period*2.0, ftimes.min(),
+                                                    wrap=False)
+
+        phasex2 = phasedlc['phase']
+        pmagsx2 = phasedlc['mags']
+        perrsx2 = phasedlc['errs']
 
 
-    # eta_phasedlc_bestperiod - calculate eta for the phased LC with best period
+        # get ptp measures for best periodx2
+        ptp_bestperiodx2 = lightcurve_ptp_measures(phasex2,pmagsx2,perrsx2)
 
-    # eta_phasedlc_bestperiodx2 - calculate eta for the phased LC with best
-    #                             period x 2
+        # eta_phasedlc_bestperiod - calculate eta for the phased LC with best
+        # period
+        inveta_bestperiod = 1.0/ptp_bestperiod['eta_normal']
 
-    # freq_model_max_delta_mags - absval of magdiff btw model phased LC maxima
-    #                             using period x 2
+        # eta_phasedlc_bestperiodx2 - calculate eta for the phased LC with best
+        #                             period x 2
+        inveta_bestperiodx2 = 1.0/ptp_bestperiodx2['eta_normal']
 
-    # freq_model_max_delta_mags - absval of magdiff btw model phased LC minima
-    #                             using period x 2
 
-    # freq_model_phi1_phi2 - ratio of the phase difference between the first
-    #                        minimum and the first maximum to the phase
-    #                        difference between first minimum and second maximum
+        # eta_phased_ratio_eta_raw - eta for best period phased LC / eta for raw
+        # LC
+        inveta_ratio_phased_unphased = inveta_bestperiod/inveta_unphasedlc
 
-    # scatter_res_raw - MAD of the GLS phased LC residuals divided by MAD of the
-    #                   raw light curve (unphased). if this is close to 1.0 or
-    #                   larger than 1.0, then the phased LC is no better than
-    #                   the unphased light curve so the object may not be
-    #                   periodic.
+        # eta_phasedx2_ratio_eta_raw - eta for best periodx2 phased LC/eta for
+        # raw LC
+        inveta_ratio_phasedx2_unphased = inveta_bestperiodx2/inveta_unphasedlc
 
-    # p2p_scatter_2praw - sum of the squared mag differences between pairs of
-    #                     successive observations in the phased LC using best
-    #                     period x 2 divided by that of the unphased light curve
 
-    # p2p_scatter_pfold_over_mad - MAD of successive absolute mag diffs of the
-    #                              phased LC using best period divided by the
-    #                              MAD of the unphased LC
+        # freq_model_max_delta_mags - absval of magdiff btw model phased LC
+        #                             maxima using period x 2. look at points
+        #                             more than 10 points away for maxima
+        phasedx2_maxval_ind = argrelmax(pmagsx2, order=10)
+        if phasedx2_maxval_ind[0].size > 1:
+            phasedx2_magdiff_maxval = (
+                np.max(np.abs(np.diff(pmagsx2[phasedx2_maxval_ind[0]])))
+            )
+        else:
+            phasedx2_magdiff_maxval = np.nan
 
-    # fold2P_slope_10percentile - 10th percentile of the slopes between adjacent
-    #                             mags after the light curve is folded on best
-    #                             period x 2
+        # freq_model_min_delta_mags - absval of magdiff btw model phased LC
+        #                             minima using period x 2. look at points
+        #                             more than 10 points away for minima
+        phasedx2_minval_ind = argrelmin(pmagsx2, order=10)
+        if phasedx2_minval_ind[0].size > 1:
+            phasedx2_magdiff_minval = (
+                np.max(np.abs(np.diff(pmagsx2[phasedx2_minval_ind[0]])))
+            )
+        else:
+            phasedx2_magdiff_minval = np.nan
 
-    # fold2P_slope_90percentile - 90th percentile of the slopes between adjacent
-    #                             mags after the light curve is folded on best
-    #                             period x 2
+        # p2p_scatter_pfold_over_mad - MAD of successive absolute mag diffs of
+        #                              the phased LC using best period divided
+        #                              by the MAD of the unphased LC
+        phased_magdiff = np.diff(pmags)
+        phased_magdiff_median = np.median(phased_magdiff)
+        phased_magdiff_mad = np.median(np.abs(phased_magdiff -
+                                              phased_magdiff_median))
+
+        phasedx2_magdiff = np.diff(pmagsx2)
+        phasedx2_magdiff_median = np.median(phasedx2_magdiff)
+        phasedx2_magdiff_mad = np.median(np.abs(phasedx2_magdiff -
+                                                phasedx2_magdiff_median))
+
+        phased_magdiffmad_unphased_mad_ratio = phased_magdiff_mad/lightcurve_mad
+        phasedx2_magdiffmad_unphased_mad_ratio = (
+            phasedx2_magdiff_mad/lightcurve_mad
+        )
+
+        # get the percentiles of the slopes of the adjacent mags for phasedx2
+        phasedx2_slopes = np.diff(pmagsx2)/np.diff(phasex2)
+        phasedx2_slope_percentiles = np.ravel(np.percentile(phasedx2_slopes,
+                                                            [10.0,90.0]))
+        phasedx2_slope_10percentile = phasedx2_slope_percentiles[0]
+        phasedx2_slope_90percentile = phasedx2_slope_percentiles[1]
+
+        return {
+            'inveta_unphasedlc':inveta_unphasedlc,
+            'inveta_bestperiod':inveta_bestperiod,
+            'inveta_bestperiodx2':inveta_bestperiodx2,
+            'inveta_ratio_phased_unphased':inveta_ratio_phased_unphased,
+            'inveta_ratio_phasedx2_unphased':inveta_ratio_phasedx2_unphased,
+            'phasedx2_magdiff_maxima':phasedx2_magdiff_maxval,
+            'phasedx2_magdiff_minina':phasedx2_magdiff_minval,
+            'phased_unphased_magdiff_mad_ratio':(
+                phased_magdiffmad_unphased_mad_ratio
+            ),
+            'phasedx2_unphased_magdiff_mad_ratio':(
+                phasedx2_magdiffmad_unphased_mad_ratio
+            ),
+            'phasedx2_slope_10percentile':phasedx2_slope_10percentile,
+            'phasedx2_slope_90percentile':phasedx2_slope_90percentile,
+        }
+
+    else:
+
+        return {
+            'inveta_unphasedlc':np.nan,
+            'inveta_bestperiod':np.nan,
+            'inveta_bestperiodx2':np.nan,
+            'inveta_ratio_phased_unphased':np.nan,
+            'inveta_ratio_phasedx2_unphased':np.nan,
+            'phasedx2_magdiff_maxima':np.nan,
+            'phasedx2_magdiff_minina':np.nan,
+            'phased_unphased_magdiff_mad_ratio':np.nan,
+            'phasedx2_unphased_magdiff_mad_ratio':np.nan,
+            'phasedx2_slope_10percentile':np.nan,
+            'phasedx2_slope_90percentile':np.nan,
+
+            }
 
 
 
