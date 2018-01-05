@@ -563,6 +563,8 @@ def plot_training_results(classifier,
 
     - plots the confusion matrix
     - plots the feature importances
+    - FIXME: plot the learning curves too, see:
+             http://scikit-learn.org/stable/modules/learning_curve.html
 
     '''
 
