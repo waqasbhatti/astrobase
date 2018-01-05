@@ -16,7 +16,7 @@ from time import time as unixtime
 from itertools import combinations
 
 import numpy as np
-from scipy.signal import argrelmin, arglenmax
+from scipy.signal import argrelmin, argrelmax
 
 
 #############
@@ -573,9 +573,19 @@ def periodogram_features(pgramlist, times, mags, errs,
 
 
 
-def phasedlc_features(times, mags, errs, period):
-    '''
-    This calculates various phased LC features.
+def phasedlc_features(times,
+                      mags,
+                      errs,
+                      period,
+                      nbrtimes=None,
+                      nbrmags=None,
+                      nbrerrs=None):
+    '''This calculates various phased LC features for the object.
+
+    If nbrtimes, nbrmags, and nbrerrs are all not None, they should
+    be ndarrays with times, mags, errs of this object's closest neighbor (close
+    within some small number x FWHM of telescope to check for blending) will
+    also calculate extra features based on neighbor phased LC.
 
     '''
     # get the finite values
@@ -689,6 +699,87 @@ def phasedlc_features(times, mags, errs, period):
         phasedx2_slope_10percentile = phasedx2_slope_percentiles[0]
         phasedx2_slope_90percentile = phasedx2_slope_percentiles[1]
 
+        # check if nbrtimes, _mags, _errs are available
+        if ((nbrtimes is not None) and
+            (nbrmags is not None) and
+            (nbrerrs is not None)):
+
+            # get the finite values
+            nfinind = (np.isfinite(nbrtimes) &
+                       np.isfinite(nbrmags) &
+                       np.isfinite(nbrerrs))
+            nftimes, nfmags, nferrs = (nbrtimes[nfinind],
+                                       nbrmags[nfinind],
+                                       nbrerrs[nfinind])
+
+            # get nonzero errors
+            nnzind = np.nonzero(nferrs)
+            nftimes, nfmags, nferrs = (nftimes[nnzind],
+                                       nfmags[nnzind],
+                                       nferrs[nnzind])
+
+            # only operate on LC if enough points
+            if nftimes.size > 49:
+
+                # get the phased light curve using the same period and epoch as
+                # the actual object
+                nphasedlc = lcmath.phase_magseries_with_errs(
+                    nftimes, nfmags, nferrs,
+                    period, ftimes.min(),
+                    wrap=False
+                )
+
+                # normalize the object and neighbor phased mags
+                norm_pmags = pmags - np.median(pmags)
+                norm_npmags = nphasedlc['mags'] - np.median(nphasedlc['mags'])
+
+                # phase bin them both so we can compare LCs easily
+                phabinned_objectlc = lcmath.phase_bin_magseries(phase,
+                                                                norm_pmags,
+                                                                minbinelems=0)
+                phabinned_nbrlc = lcmath.phase_bin_magseries(nphasedlc['phase'],
+                                                             norm_npmags,
+                                                             minbinelems=0)
+
+                absdiffs = []
+
+                for pha, phamag in zip(phabinned_objectlc['binnedphases'],
+                                       phabinned_objectlc['binnedmags']):
+
+                    try:
+
+                        # get the matching phase from the neighbor phased LC
+                        phadiffs = np.abs(pha - phabinned_nbrlc['binnedphases'])
+                        minphadiffind = np.where(
+                            (phadiffs < 1.0e-4) &
+                            (phadiffs == np.min(phadiffs))
+                        )
+                        absmagdiff = np.abs(
+                            phamag - phabinned_nbrlc['binnedmags'][
+                                minphadiffind
+                            ]
+                        )
+                        if absmagdiff.size > 0:
+                            absdiffs.append(absmagdiff.min())
+
+                    except Exception as e:
+                        continue
+
+                # sum of absdiff between the normalized to 0.0 phased LC of this
+                # object and that of the closest neighbor phased with the same
+                # period and epoch
+                if len(absdiffs) > 0:
+                    sum_nbr_phasedlc_magdiff = sum(absdiffs)
+                else:
+                    sum_nbr_phasedlc_magdiff = np.nan
+
+            else:
+
+                sum_nbr_phasedlc_magdiff = np.nan
+
+        else:
+            sum_nbr_phasedlc_magdiff = np.nan
+
         return {
             'inveta_unphasedlc':inveta_unphasedlc,
             'inveta_bestperiod':inveta_bestperiod,
@@ -705,6 +796,7 @@ def phasedlc_features(times, mags, errs, period):
             ),
             'phasedx2_slope_10percentile':phasedx2_slope_10percentile,
             'phasedx2_slope_90percentile':phasedx2_slope_90percentile,
+            'sum_nbr_phasedlc_magdiff':sum_nbr_phasedlc_magdiff,
         }
 
     else:
@@ -721,27 +813,5 @@ def phasedlc_features(times, mags, errs, period):
             'phasedx2_unphased_magdiff_mad_ratio':np.nan,
             'phasedx2_slope_10percentile':np.nan,
             'phasedx2_slope_90percentile':np.nan,
-
-            }
-
-
-
-def neighbor_features(lclistpkl,
-                      objectid,
-                      fwhm_arcsec,
-                      times,
-                      mags,
-                      errs,
-                      period,
-                      epoch):
-    '''
-    This calculates various features based on neighboring stars.
-
-    '''
-
-    # distance to closest neighbor in arcsec
-
-    # number of neighbors within 2 x fwhm_arcsec
-
-    # sum of absdiff between the normalized to 0.0 phased LC of this object and
-    # that of the closest neighbor phased with the same period and epoch
+            'sum_nbr_phasedlc_magdiff':np.nan,
+        }

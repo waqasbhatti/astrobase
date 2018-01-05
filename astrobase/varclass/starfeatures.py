@@ -24,3 +24,21 @@ def star_color_features(objectinfo):
     http://irsa.ipac.caltech.edu/applications/DUST/docs/dustProgramInterface.html
 
     '''
+
+
+
+def star_neighbor_features(objectinfo,
+                           lclistpkl,
+                           fwhm_arcsec):
+    '''Gets several neighbor features:
+
+    - distance to closest neighbor in arcsec
+    - mag diff of closest neighbor
+    - total number of all neighbors within 2 x fwhm_arcsec
+
+    objectinfo is the objectinfo dict from an object light curve
+
+    lclistpkl is a pickle produced by lcproc.makelclist that has a kdtree
+    available for nearest neighbor searches.
+
+    '''
