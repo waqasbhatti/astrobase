@@ -26,6 +26,16 @@ def star_color_features(objectinfo):
     '''
 
 
+def propermotion_features(objectinfo):
+    '''
+    Calculates proper motion features.
+
+    - total proper motion from pmra, pmdecl
+    - reduced J proper motion from propermotion and Jmag
+
+    '''
+
+
 
 def star_neighbor_features(objectinfo,
                            lclistpkl,
