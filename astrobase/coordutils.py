@@ -14,6 +14,10 @@ from math import trunc, radians, degrees, sin, cos, asin, atan2, fabs, pi as PI
 
 import numpy as np
 
+from astropy.coordinates import SkyCoord
+from astropy import units as u
+
+
 #############
 ## LOGGING ##
 #############
@@ -404,6 +408,39 @@ def reduced_proper_motion(jmag, propermotion):
 
     rpm = jmag + 5.0*np.log10(propermotion/1000.0)
     return rpm
+
+
+###########################
+## COORDINATE CONVERSION ##
+###########################
+
+def equatorial_to_galactic(ra, decl, equinox='J2000'):
+    '''
+    This simply converts from equatorial coords to galactic coords.
+
+    '''
+
+    # convert the ra/decl to gl, gb
+    radecl = SkyCoord(ra=ra*u.degree, dec=decl*u.degree, equinox=equinox)
+
+    gl = radecl.galactic.l.degree
+    gb = radecl.galactic.b.degree
+
+    return gl, gb
+
+
+def galactic_to_equatorial(gl, gb):
+    '''
+    This converts from galactic coords to equatorial coordinates.
+
+    '''
+
+    gal = SkyCoord(gl*u.degree, gl*u.degree, frame='galactic')
+
+    transformed = gal.transform_to('icrs')
+
+    return transformed.ra.degree, transformed.dec.degree
+
 
 
 ########################
