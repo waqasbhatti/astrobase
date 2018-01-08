@@ -218,20 +218,21 @@ def color_features(objectinfo, deredden=True):
                                        objectinfo['decl'],
                                        verbose=False)
 
-    if not extinction:
+    if deredden and not extinction:
         LOGERROR("could not retrieve extinction info from "
                  "2MASS DUST, can't continue")
         return outdict
 
-    outdict['extinctj'] = extinction['Amag']['2MASS J']['sf11']
-    outdict['extincth'] = extinction['Amag']['2MASS H']['sf11']
-    outdict['extinctk'] = extinction['Amag']['2MASS Ks']['sf11']
+    if deredden:
+        outdict['extinctj'] = extinction['Amag']['2MASS J']['sf11']
+        outdict['extincth'] = extinction['Amag']['2MASS H']['sf11']
+        outdict['extinctk'] = extinction['Amag']['2MASS Ks']['sf11']
 
-    outdict['extinctu'] = extinction['Amag']['SDSS u']['sf11']
-    outdict['extinctg'] = extinction['Amag']['SDSS g']['sf11']
-    outdict['extinctr'] = extinction['Amag']['SDSS r']['sf11']
-    outdict['extincti'] = extinction['Amag']['SDSS i']['sf11']
-    outdict['extinctz'] = extinction['Amag']['SDSS z']['sf11']
+        outdict['extinctu'] = extinction['Amag']['SDSS u']['sf11']
+        outdict['extinctg'] = extinction['Amag']['SDSS g']['sf11']
+        outdict['extinctr'] = extinction['Amag']['SDSS r']['sf11']
+        outdict['extincti'] = extinction['Amag']['SDSS i']['sf11']
+        outdict['extinctz'] = extinction['Amag']['SDSS z']['sf11']
 
 
     # get the 2MASS mags
