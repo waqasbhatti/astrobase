@@ -32,6 +32,7 @@ import logging
 from datetime import datetime
 from traceback import format_exc
 from time import time as unixtime
+import pickle
 
 import numpy as np
 
@@ -134,7 +135,7 @@ def coord_features(objectinfo):
         LOGERROR("one or more of pmra, pmdecl, jmag, ra, decl "
                  "are missing from the input objectinfo dict, can't continue")
         return {'propermotion':np.nan,
-                'rpm':np.nan}
+                'rpmj':np.nan}
 
 
 
@@ -559,9 +560,12 @@ def neighbor_features(objectinfo,
 
     '''
 
+    with open(lclistpkl,'rb') as infd:
+        lclist = pickle.load(infd)
+
     if ('ra' in objectinfo and 'decl' in objectinfo and
         objectinfo['ra'] is not None and objectinfo['decl'] is not None and
-        'kdtree' in lclistpkl):
+        'kdtree' in lclist):
 
         ra, decl = objectinfo['ra'], objectinfo['decl']
 
@@ -575,7 +579,7 @@ def neighbor_features(objectinfo,
 
         # look up the coordinates for the closest 100 objects in the kdtree
         # within 2 x fwhmarcsec
-        kdt_dist, kdt_ind = lclistpkl['kdtree'].query(
+        kdt_dist, kdt_ind = lclist['kdtree'].query(
             [cosra*cosdecl,
              sinra*cosdecl,
              sindecl],
@@ -584,15 +588,29 @@ def neighbor_features(objectinfo,
         )
 
         # the first match is the object itself
-        n_neighbors = kdt_dist.size - 1
-        closest_dist = np.sort(kdt_dist)[1]
+        finite_dists = kdt_dist[np.isfinite(kdt_dist)]
+        n_neighbors = finite_dists - 1
 
-        return {
-            'neighbors':n_neighbors,
-            'closestdistarcsec':(
+        if n_neighbors > 0:
+            closest_dist = finite_dists.min()
+            closest_dist_arcsec = (
                 np.degrees(2.0*np.arcsin(closest_dist/2.0))*3600.0
-                )
-        }
+            )
+
+            return {
+                'neighbors':n_neighbors,
+                'closestdistarcsec':closest_dist_arcsec,
+                'searchradarcsec':2.0*fwhmarcsec,
+            }
+
+        else:
+
+            return {
+                'neighbors':0,
+                'closestdistarcsec':np.nan,
+                'searchradarcsec':2.0*fwhmarcsec,
+            }
+
 
     else:
 
