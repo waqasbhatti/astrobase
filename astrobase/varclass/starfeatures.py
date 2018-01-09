@@ -289,8 +289,15 @@ def color_features(objectinfo, deredden=True):
     else:
         outdict['sdssz'] = objectinfo['sdssz']
 
+    # calculating dereddened mags:
+    # A_x = m - m0_x where m is measured mag, m0 is intrinsic mag
+    # m0_x = m - A_x
+    #
+    # so for two bands x, y:
+    # intrinsic color (m_x - m_y)_0 = (m_x - m_y) - (A_x - A_y)
 
     if deredden:
+
         # calculate the dereddened JHK mags
         outdict['deredj'] = outdict['jmag'] - outdict['extinctj']
         outdict['deredh'] = outdict['hmag'] - outdict['extincth']
@@ -376,14 +383,15 @@ def mdwarf_subtype_from_sdsscolor(ri_color, iz_color):
     else:
         m_class = None
 
-    return m_class
-
+    return m_class, obj_sti, obj_sts
 
 
 def color_classification(colorfeatures, pmfeatures):
     '''This calculates rough classifications based on star colors from ugrizJHK.
 
-    Uses the output from color_features and coord_features
+    Uses the output from color_features and coord_features. By default,
+    color_features will use dereddened colors, as are expected by most relations
+    here.
 
     Based on the color cuts from:
 
@@ -446,7 +454,7 @@ def color_classification(colorfeatures, pmfeatures):
     d_gr = 0.45*(u-g) - (g-r) - 0.12
 
     # check the M subtype
-    m_subtype = mdwarf_subtype_from_sdsscolor(r-i, i-z)
+    m_subtype, m_sti, m_sts = mdwarf_subtype_from_sdsscolor(r-i, i-z)
 
     # now check if this is a likely M dwarf
     if m_subtype and rpm and rpm > 1.0:
@@ -541,7 +549,15 @@ def color_classification(colorfeatures, pmfeatures):
          ((u-g) > (1.6*(g-r) + 1.34)) ):
         possible_classes.append('QSO')
 
-    return possible_classes
+    return {'classes':possible_classes,
+            'v_color':v_color,
+            'p1_color':p1_color,
+            's_color':s_color,
+            'l_color':l_color,
+            'd_ug':d_ug,
+            'd_gr':d_gr,
+            'm_sti':m_sti,
+            'm_sts':m_sts}
 
 
 
