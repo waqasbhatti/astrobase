@@ -2258,8 +2258,18 @@ def runpf(lcfile,
 
 
         # this is the final returndict
-        resultdict = {'objectid':lcdict['objectid'],
-                      'lcfbasename':os.path.basename(lcfile)}
+        resultdict = {
+            'objectid':lcdict['objectid'],
+            'lcfbasename':os.path.basename(lcfile),
+            'kwargs':{'timecols':timecols,
+                      'magcols':magcols,
+                      'errcols':errcols,
+                      'lcformat':lcformat,
+                      'pfmethods':pfmethods,
+                      'pfkwargs':pfkwargs,
+                      'sigclip':sigclip,
+                      'getblssnr':getblssnr}
+        }
 
         # normalize using the special function if specified
         if normfunc is not None:
