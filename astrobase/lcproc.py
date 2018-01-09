@@ -1238,6 +1238,247 @@ def parallel_varfeatures_lcdir(lcdir,
 ## PERIODIC FEATURES ##
 #######################
 
+def get_periodicfeatures(pfpickle,
+                         lcbasedir,
+                         outdir,
+                         starfeatures=None,
+                         timecols=None,
+                         magcols=None,
+                         errcols=None,
+                         lcformat='hat-sql'):
+    '''This gets all periodic features for the object.
+
+    If starfeatures is not None, it should be the filename of the
+    starfeatures-<objectid>.pkl created by get_starfeatures for this
+    object. This is used to get the neighbor's light curve and phase it with
+    this object's period to see if this object is blended.
+
+    '''
+
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    (fileglob, readerfunc, dtimecols, dmagcols,
+     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+    # open the pfpickle
+    with open(pfpickle, 'rb') as infd:
+        pf = pickle.load(pfpickle)
+
+    lcfile = os.path.join(lcbasedir, pf['lcfbasename'])
+    objectid = pf['objectid']
+
+    if 'kwargs' in pf:
+        kwargs = pf['kwargs']
+    else:
+        kwargs = None
+
+    # override the default timecols, magcols, and errcols
+    # using the ones provided to the periodfinder
+    # if those don't exist, use the defaults from the lcformat def
+    if kwargs and 'timecols' in kwargs and timecols is None:
+        timecols = kwargs['timecols']
+    elif not kwargs and not timecols:
+        timecols = dtimecols
+
+    if kwargs and 'magcols' in kwargs and magcols is None:
+        magcols = kwargs['magcols']
+    elif not kwargs and not magcols:
+        magcols = dmagcols
+
+    if kwargs and 'errcols' in kwargs and errcols is None:
+        errcols = kwargs['errcols']
+    elif not kwargs and not errcols:
+        errcols = derrcols
+
+    # check if the light curve file exists
+    if not os.path.exists(lcfile):
+        LOGERROR("can't find LC %s for object %s" % (lcfile, objectid))
+        return None
+
+
+    # check if we have neighbors we can get the LCs for
+    if starfeatures is not None and os.path.exists(starfeatures):
+
+        with open(starfeatures,'rb') as infd:
+            starfeat = pickle.load(starfeatures)
+
+        if starfeat['closestnbrlcfname'].size > 0:
+            nbrlcf = starfeat['closestnbrlcfname'][0]
+        else:
+            nbrlcf = None
+
+    else:
+        nbrlcf = None
+
+
+    # now, start processing for periodic feature extraction
+    try:
+
+        # get the object LC into a dict
+        lcdict = readerfunc(lcfile)
+        if isinstance(lcdict, tuple) and isinstance(lcdict[0],dict):
+            lcdict = lcdict[0]
+
+        # get the nbr object LC into a dict if there is one
+        if nbrlcf is not None:
+
+            nbrlcdict = readerfunc(nbrlcfile)
+            if isinstance(nbrlcdict, tuple) and isinstance(nbrlcdict[0],dict):
+                nbrlcdict = nbrlcdict[0]
+
+        # this will be the output file
+        outfile = os.path.join(outdir, 'periodicfeatures-%s.pkl' % objectid)
+
+        # normalize using the special function if specified
+        if normfunc is not None:
+           lcdict = normfunc(lcdict)
+
+           if nbrlcf:
+               nbrlcdict = normfunc(nbrlcdict)
+
+
+        resultdict = {}
+
+        for tcol, mcol, ecol in zip(timecols, magcols, errcols):
+
+            # dereference the columns and get them from the lcdict
+            if '.' in tcol:
+                tcolget = tcol.split('.')
+            else:
+                tcolget = [tcol]
+            times = dict_get(lcdict, tcolget)
+
+            if nbrlcf:
+                nbrtimes = dict_get(nbrlcdict, tcolget)
+            else:
+                nbrtimes = None
+
+
+            if '.' in mcol:
+                mcolget = mcol.split('.')
+            else:
+                mcolget = [mcol]
+
+            mags = dict_get(lcdict, mcolget)
+
+            if nbrlcf:
+                nbrmags = dict_get(nbrlcdict, mcolget)
+            else:
+                nbrmags = None
+
+
+            if '.' in ecol:
+                ecolget = ecol.split('.')
+            else:
+                ecolget = [ecol]
+
+            errs = dict_get(lcdict, ecolget)
+
+            if nbrlcf:
+                nbrerrs = dict_get(nbrlcdict, ecolget)
+            else:
+                nbrerrs = None
+
+            # normalize here if not using special normalization
+            if normfunc is None:
+
+                ntimes, nmags = normalize_magseries(
+                    times, mags,
+                    magsarefluxes=magsarefluxes
+                )
+
+                times, mags, errs = ntimes, nmags, errs
+
+                if nbrlcf:
+                    nbrntimes, nbrnmags = normalize_magseries(
+                        nbrtimes, nbrmags,
+                        magsarefluxes=magsarefluxes
+                    )
+                    nbrtimes, nbrmags, nbrerrs = nbrntimes, nbrnmags, nbrerrs
+                else:
+                    nbrtimes, nbrmags, nbrerrs = None, None, None
+
+            #
+            # now we have times, mags, errs (and nbrtimes, nbrmags, nbrerrs)
+            #
+            avaiable_pfmethods = []
+            available_pgrams = []
+            available_bestperiods = []
+
+            for k in pf[mcolget[-1]].keys():
+
+                if k in PFMETHODS:
+
+                    available_pgrams.append(pf[mcolget[-1]][k])
+
+                    if k != 'win':
+                        available_pfmethods.append(
+                            pf[mcolget[-1]][k]['method']
+                        )
+                        available_bestperiods.append(
+                            pf[k][mcolget[-1]][k]['bestperiod']
+                        )
+
+            #
+            # process periodic features for this magcol
+            #
+            featkey = 'periodicfeatures-%s' % mcolget[-1]
+            resultdict[featkey] = {}
+
+            # first, handle the periodogram features
+            pgramfeat = periodicfeatures.periodogram_features(
+                available_pgrams, times, mags, errs,
+                sigclip=sigclip,
+                pdiff_threshold=pdiff_threshold,
+                sidereal_threshold=sidereal_threshold,
+                sampling_peak_multiplier=sampling_peak_multiplier,
+                sampling_startp=sampling_startp,
+                sampling_endp=sampling_endp,
+                verbose=verbose
+            )
+            resultdict[featkey].update(pgramfeat)
+
+            resultdict[featkey]['pfmethods'] = available_pfmethods
+
+            # then for each bestperiod, get phasedlc and lcfit features
+            for ind, pfm, bp in zip(range(len(available_bestperiods)),
+                                    available_pfmethods,
+                                    available_bestperiods):
+
+                resultdict[featkey][pfm] = periodicfeatures.lcfit_features(
+                    times, mags, errs, bp,
+                    fourierorder=fourierorder,
+                    transitparams=transitparams,
+                    ebparams=ebparams,
+                    sigclip=sigclip,
+                    magsarefluxes=magsarefluxes,
+                    verbose=verbose
+                )
+
+                phasedlcfeat = periodicfeatures.phasedlc_features(
+                    times, mags, errs, bp,
+                    nbrtimes=nbrtimes,
+                    nbrmags=nbrmags,
+                    nbrerrs=nbrerrs
+                )
+
+                resultdict[featkey][pfm].update(phasedlcfeat)
+
+        #
+        # end of per magcol processing
+        #
+
+        return resultdict
+
+    except Exception as e:
+
+        LOGEXCEPTION('failed to run for pf: %s, lcfile: %s' %
+                     (pfpickle, lcfile))
+        return None
+
+
 
 ###################
 ## STAR FEATURES ##
@@ -1246,11 +1487,33 @@ def parallel_varfeatures_lcdir(lcdir,
 def get_starfeatures(lcfile,
                      outdir,
                      kdtree,
+                     objlist,
+                     lcflist,
                      fwhmarcsec,
                      deredden=True,
                      lcformat='hat-sql'):
     '''This runs the functions from astrobase.varclass.starfeatures on a single
     light curve file.
+
+    lcfile is the LC file to extract star features for
+
+    outdir is the directory to write the output pickle to
+
+    kdtree is a scipy.spatial KDTree or cKDTree
+
+    objlist is a numpy array of object IDs in the same order as KDTree.data
+
+    lcflist is a numpy array of light curve filenames in the same order as
+    KDTree.data
+
+    fwhmarcsec indicates where to search for neighbors for this object using
+    kdtree, objlist, and lcflist. 2 x fwhmarcsec will be used as the radius of
+    the cone search around the coordinates of the object in lcfile.
+
+    deredden controls if the colors and any color classifications will be
+    dereddened using 2MASS DUST.
+
+    lcformat is a key in LCFORM specifying the type of light curve lcfile is
 
     '''
 
@@ -1288,6 +1551,21 @@ def get_starfeatures(lcfile,
                                                  kdtree,
                                                  fwhmarcsec)
 
+        # get the objectids of the neighbors found if any
+        if nbrfeat['nbrindices'].size > 0:
+            nbrfeat['nbrobjectids'] = objlist[nbrfeat['nbrindices']]
+            nbrfeat['closestnbrobjectid'] = objlist[
+                nbrfeat['closestdistnbrind']
+            ]
+            nbrfeat['closestnbrlcfname'] = lcflist[
+                nbrfeat['closestdistnbrind']
+            ]
+
+        else:
+            nbrfeat['nbrobjectids'] = np.array([])
+            nbrfeat['closestnbrobjectid'] = np.array([])
+            nbrfeat['closestnbrlcfname'] = np.array([])
+
         # update the result dict
         resultdict.update(coordfeat)
         resultdict.update(colorfeat)
@@ -1317,18 +1595,21 @@ def starfeatures_worker(task):
     '''
 
     try:
-        lcfile, outdir, kdtree, fwhmarcsec, deredden, lcformat = task
-        return get_starfeatures(lcfile, outdir, kdtree, fwhmarcsec,
+        (lcfile, outdir, kdtree, objlist,
+         lcflist, fwhmarcsec, deredden, lcformat) = task
+
+        return get_starfeatures(lcfile, outdir,
+                                kdtree, objlist, lcflist,
+                                fwhmarcsec,
                                 deredden=deredden,
                                 lcformat=lcformat)
-
     except:
         return None
 
 
 def serial_starfeatures(lclist,
                         outdir,
-                        kdtreepickle,
+                        lclistpickle,
                         fwhmarcsec,
                         maxobjects=None,
                         deredden=True,
@@ -1336,9 +1617,16 @@ def serial_starfeatures(lclist,
                         nworkers=None):
     '''This drives the starfeatures function for a collection of LCs.
 
-    kdtreepickle is a pickle containing the scipy.spatial.KDTree or cKDTree
-    object to use for finding neighbors for each object. This must contain a
-    key: 'kdtree' whose value is the cKDTree/KDTree object.
+    lclistpickle is a pickle containing at least:
+
+    - an object ID array accessible with dict keys ['objects']['objectid']
+
+    - an LC filename array accessible with dict keys ['objects']['lcfname']
+
+    - a scipy.spatial.KDTree or cKDTree object to use for finding neighbors for
+      each object accessible with dict key ['kdtree']
+
+    This pickle can be produced using lcproc.makelclist.
 
     '''
     # make sure to make the output directory if it doesn't exist
@@ -1349,12 +1637,15 @@ def serial_starfeatures(lclist,
         lclist = lclist[:maxobjects]
 
     # read in the kdtree pickle
-    with open(kdtreepickle, 'rb') as infd:
+    with open(lclistpickle, 'rb') as infd:
         kdt_dict = pickle.load(infd)
 
     kdt = kdt_dict['kdtree']
+    objlist = kdt_dict['objects']['objectid']
+    objlcfl = kdt_dict['objects']['lcfname']
 
-    tasks = [(x, outdir, kdt, fwhmarcsec, deredden, lcformat) for x in lclist]
+    tasks = [(x, outdir, kdt, objlist, objlcfl,
+              fwhmarcsec, deredden, lcformat) for x in lclist]
 
     for task in tqdm(tasks):
         result = starfeatures_worker(task)
@@ -1363,7 +1654,7 @@ def serial_starfeatures(lclist,
 
 def parallel_starfeatures(lclist,
                           outdir,
-                          kdtreepickle,
+                          lclistpickle,
                           fwhmarcsec,
                           maxobjects=None,
                           deredden=True,
@@ -1386,12 +1677,15 @@ def parallel_starfeatures(lclist,
         lclist = lclist[:maxobjects]
 
     # read in the kdtree pickle
-    with open(kdtreepickle, 'rb') as infd:
+    with open(lclistpickle, 'rb') as infd:
         kdt_dict = pickle.load(infd)
 
     kdt = kdt_dict['kdtree']
+    objlist = kdt_dict['objects']['objectid']
+    objlcfl = kdt_dict['objects']['lcfname']
 
-    tasks = [(x, outdir, kdt, fwhmarcsec, deredden, lcformat) for x in lclist]
+    tasks = [(x, outdir, kdt, objlist, objlcfl,
+              fwhmarcsec, deredden, lcformat) for x in lclist]
 
     with ProcessPoolExecutor(max_workers=nworkers) as executor:
         resultfutures = executor.map(starfeatures_worker, tasks)
@@ -1405,7 +1699,7 @@ def parallel_starfeatures(lclist,
 
 def parallel_starfeatures_lcdir(lcdir,
                                 outdir,
-                                kdtreepickle,
+                                lclistpickle,
                                 fwhmarcsec,
                                 maxobjects=None,
                                 deredden=True,
@@ -1463,7 +1757,7 @@ def parallel_starfeatures_lcdir(lcdir,
 
         return parallel_starfeatures(matching,
                                      outdir,
-                                     kdtreepickle,
+                                     lclistpickle,
                                      fwhmarcsec,
                                      deredden=deredden,
                                      maxobjects=maxobjects,
