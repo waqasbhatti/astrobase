@@ -35,6 +35,7 @@ from time import time as unixtime
 import pickle
 
 import numpy as np
+from scipy.spatial import cKDTree, KDTree
 
 #############
 ## LOGGING ##
@@ -562,7 +563,7 @@ def color_classification(colorfeatures, pmfeatures):
 
 
 def neighbor_features(objectinfo,
-                      lclistpkl,
+                      lclist_kdtree,
                       fwhmarcsec):
     '''Gets several neighbor features:
 
@@ -571,17 +572,17 @@ def neighbor_features(objectinfo,
 
     objectinfo is the objectinfo dict from an object light curve
 
-    lclistpkl is a pickle produced by lcproc.makelclist that has a kdtree
-    available for nearest neighbor searches.
+    lclist_kdtree is a scipy.spatial.cKDTree object built on the cartesian xyz
+    coordinates from (ra, dec) of all objects in the same field as this
+    object. It is similar to that produced by lcproc.makelclist, and is used to
+    carry out the spatial search required to find neighbors for this object.
 
     '''
 
-    with open(lclistpkl,'rb') as infd:
-        lclist = pickle.load(infd)
-
     if ('ra' in objectinfo and 'decl' in objectinfo and
         objectinfo['ra'] is not None and objectinfo['decl'] is not None and
-        'kdtree' in lclist):
+        (isinstance(lclist_kdtree, cKDTree) or
+         isinstance(lclist_kdtree, KDTree))):
 
         ra, decl = objectinfo['ra'], objectinfo['decl']
 
@@ -595,7 +596,7 @@ def neighbor_features(objectinfo,
 
         # look up the coordinates for the closest 100 objects in the kdtree
         # within 2 x fwhmarcsec
-        kdt_dist, kdt_ind = lclist['kdtree'].query(
+        kdt_dist, kdt_ind = lclist_kdtree.query(
             [cosra*cosdecl,
              sinra*cosdecl,
              sindecl],
@@ -604,8 +605,8 @@ def neighbor_features(objectinfo,
         )
 
         # the first match is the object itself
-        finite_dists = kdt_dist[np.isfinite(kdt_dist)]
-        n_neighbors = finite_dists - 1
+        finite_dists = kdt_dist[(np.isfinite(kdt_dist)) & (kdt_dist > 0)]
+        n_neighbors = finite_dists.size
 
         if n_neighbors > 0:
             closest_dist = finite_dists.min()
@@ -615,6 +616,7 @@ def neighbor_features(objectinfo,
 
             return {
                 'neighbors':n_neighbors,
+                'distarcsec':np.degrees(2.0*np.arcsin(finite_dists/2.0))*3600.0,
                 'closestdistarcsec':closest_dist_arcsec,
                 'searchradarcsec':2.0*fwhmarcsec,
             }
@@ -623,6 +625,7 @@ def neighbor_features(objectinfo,
 
             return {
                 'neighbors':0,
+                'distarcsec':np.array([]),
                 'closestdistarcsec':np.nan,
                 'searchradarcsec':2.0*fwhmarcsec,
             }
@@ -634,5 +637,7 @@ def neighbor_features(objectinfo,
                  "objectinfo dict or lclistpkl', can't continue")
         return {
             'neighbors':np.nan,
-            'closestdistarcsec':np.nan
+            'distarcsec':np.array([]),
+            'closestdistarcsec':np.nan,
+            'searchradarcsec':2.0*fwhmarcsec,
         }
