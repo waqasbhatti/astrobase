@@ -100,7 +100,7 @@ from astrobase.hplc import read_hatpi_textlc, read_hatpi_pklc
 from astrobase.astrokep import read_kepler_fitslc, read_kepler_pklc
 
 from astrobase import periodbase, checkplot
-from astrobase.varclass import features
+from astrobase.varclass import features, starfeatures, periodicfeatures
 from astrobase.lcmath import normalize_magseries, \
     time_bin_magseries_with_errs, sigclip_magseries
 from astrobase.periodbase.kbls import bls_snr
@@ -952,9 +952,9 @@ def getlclist(listpickle,
         return filteredlcfnames, filteredobjectids
 
 
-##################################
-## GETTING VARIABILITY FEATURES ##
-##################################
+##########################
+## VARIABILITY FEATURES ##
+##########################
 
 def varfeatures(lcfile,
                 outdir,
@@ -1234,7 +1234,253 @@ def parallel_varfeatures_lcdir(lcdir,
                                                                     lcdir))
         return None
 
+#######################
+## PERIODIC FEATURES ##
+#######################
 
+
+###################
+## STAR FEATURES ##
+###################
+
+def get_starfeatures(lcfile,
+                     outdir,
+                     kdtree,
+                     fwhmarcsec,
+                     deredden=True,
+                     lcformat='hat-sql'):
+    '''This runs the functions from astrobase.varclass.starfeatures on a single
+    light curve file.
+
+    '''
+
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    (fileglob, readerfunc, dtimecols, dmagcols,
+     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+    try:
+
+        # get the LC into a dict
+        lcdict = readerfunc(lcfile)
+        if isinstance(lcdict, tuple) and isinstance(lcdict[0],dict):
+            lcdict = lcdict[0]
+
+        resultdict = {'objectid':lcdict['objectid'],
+                      'info':lcdict['objectinfo'],
+                      'lcfbasename':os.path.basename(lcfile)}
+
+        # run the coord features first
+        coordfeat = starfeatures.coord_features(lcdict['objectinfo'])
+
+        # next, run the color features
+        colorfeat = starfeatures.color_features(lcdict['objectinfo'],
+                                                deredden=deredden)
+
+        # run a rough color classification
+        colorclass = starfeatures.color_classification(colorfeat,
+                                                       coordfeat)
+
+        # finally, run the neighbor features
+        nbrfeat = starfeatures.neighbor_features(lcdict['objectinfo'],
+                                                 kdtree,
+                                                 fwhmarcsec)
+
+        # update the result dict
+        resultdict.update(coordfeat)
+        resultdict.update(colorfeat)
+        resultdict.update(colorclass)
+        resultdict.update(nbrfeat)
+
+        outfile = os.path.join(outdir,
+                               'starfeatures-%s.pkl' % resultdict['objectid'])
+
+        with open(outfile, 'wb') as outfd:
+            pickle.dump(resultdict, outfd, protocol=4)
+
+        return outfile
+
+    except Exception as e:
+
+        LOGEXCEPTION('failed to get star features for %s because: %s' %
+              (os.path.basename(lcfile), e))
+        return None
+
+
+
+def starfeatures_worker(task):
+    '''
+    This wraps starfeatures.
+
+    '''
+
+    try:
+        lcfile, outdir, kdtree, fwhmarcsec, deredden, lcformat = task
+        return get_starfeatures(lcfile, outdir, kdtree, fwhmarcsec,
+                                deredden=deredden,
+                                lcformat=lcformat)
+
+    except:
+        return None
+
+
+def serial_starfeatures(lclist,
+                        outdir,
+                        kdtreepickle,
+                        fwhmarcsec,
+                        maxobjects=None,
+                        deredden=True,
+                        lcformat='hat-sql',
+                        nworkers=None):
+    '''This drives the starfeatures function for a collection of LCs.
+
+    kdtreepickle is a pickle containing the scipy.spatial.KDTree or cKDTree
+    object to use for finding neighbors for each object. This must contain a
+    key: 'kdtree' whose value is the cKDTree/KDTree object.
+
+    '''
+    # make sure to make the output directory if it doesn't exist
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+
+    if maxobjects:
+        lclist = lclist[:maxobjects]
+
+    # read in the kdtree pickle
+    with open(kdtreepickle, 'rb') as infd:
+        kdt_dict = pickle.load(infd)
+
+    kdt = kdt_dict['kdtree']
+
+    tasks = [(x, outdir, kdt, fwhmarcsec, deredden, lcformat) for x in lclist]
+
+    for task in tqdm(tasks):
+        result = starfeatures_worker(task)
+
+
+
+def parallel_starfeatures(lclist,
+                          outdir,
+                          kdtreepickle,
+                          fwhmarcsec,
+                          maxobjects=None,
+                          deredden=True,
+                          lcformat='hat-sql',
+                          nworkers=None):
+    '''
+    This runs starfeatures in parallel for all light curves in lclist.
+
+    '''
+
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    # make sure to make the output directory if it doesn't exist
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+
+    if maxobjects:
+        lclist = lclist[:maxobjects]
+
+    # read in the kdtree pickle
+    with open(kdtreepickle, 'rb') as infd:
+        kdt_dict = pickle.load(infd)
+
+    kdt = kdt_dict['kdtree']
+
+    tasks = [(x, outdir, kdt, fwhmarcsec, deredden, lcformat) for x in lclist]
+
+    with ProcessPoolExecutor(max_workers=nworkers) as executor:
+        resultfutures = executor.map(starfeatures_worker, tasks)
+
+    results = [x for x in resultfutures]
+    resdict = {os.path.basename(x):y for (x,y) in zip(lclist, results)}
+
+    return resdict
+
+
+
+def parallel_starfeatures_lcdir(lcdir,
+                                outdir,
+                                kdtreepickle,
+                                fwhmarcsec,
+                                maxobjects=None,
+                                deredden=True,
+                                lcformat='hat-sql',
+                                nworkers=None,
+                                recursive=True):
+    '''
+    This runs parallel star feature extraction for a directory of LCs.
+
+    '''
+
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    fileglob = LCFORM[lcformat][0]
+
+    # now find the files
+    LOGINFO('searching for %s light curves in %s ...' % (lcformat, lcdir))
+
+    if recursive == False:
+        matching = glob.glob(os.path.join(lcdir, fileglob))
+
+    else:
+        # use recursive glob for Python 3.5+
+        if sys.version_info[:2] > (3,4):
+
+            matching = glob.glob(os.path.join(lcdir,
+                                              '**',
+                                              fileglob),recursive=True)
+
+        # otherwise, use os.walk and glob
+        else:
+
+            # use os.walk to go through the directories
+            walker = os.walk(lcdir)
+            matching = []
+
+            for root, dirs, files in walker:
+                for sdir in dirs:
+                    searchpath = os.path.join(root,
+                                              sdir,
+                                              fileglob)
+                    foundfiles = glob.glob(searchpath)
+
+                    if foundfiles:
+                        matching.extend(foundfiles)
+
+
+    # now that we have all the files, process them
+    if matching and len(matching) > 0:
+
+        LOGINFO('found %s light curves, getting starfeatures...' %
+                len(matching))
+
+        return parallel_starfeatures(matching,
+                                     outdir,
+                                     kdtreepickle,
+                                     fwhmarcsec,
+                                     deredden=deredden,
+                                     maxobjects=maxobjects,
+                                     lcformat=lcformat,
+                                     nworkers=nworkers)
+
+    else:
+
+        LOGERROR('no light curve files in %s format found in %s' % (lcformat,
+                                                                    lcdir))
+        return None
+
+
+
+###########################
+## VARIABILITY THRESHOLD ##
+###########################
 
 def variability_threshold(featuresdir,
                           outfile,
