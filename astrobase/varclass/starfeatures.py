@@ -662,19 +662,25 @@ def neighbor_features(objectinfo,
         )
 
         # the first match is the object itself
-        finite_dists = kdt_dist[(np.isfinite(kdt_dist)) & (kdt_dist > 0)]
+        finite_distind = (np.isfinite(kdt_dist)) & (kdt_dist > 0)
+        finite_dists = kdt_dist[finite_distind]
+        nbrindices = kdt_ind[finite_distind]
         n_neighbors = finite_dists.size
 
         if n_neighbors > 0:
+
             closest_dist = finite_dists.min()
             closest_dist_arcsec = (
                 np.degrees(2.0*np.arcsin(closest_dist/2.0))*3600.0
             )
+            closest_dist_nbrind = nbrindices[finite_dists == finite_dists.min()]
 
             return {
                 'neighbors':n_neighbors,
+                'nbrindices':nbrindices,
                 'distarcsec':np.degrees(2.0*np.arcsin(finite_dists/2.0))*3600.0,
                 'closestdistarcsec':closest_dist_arcsec,
+                'closestdistnbrind':closest_dist_nbrind,
                 'searchradarcsec':2.0*fwhmarcsec,
             }
 
@@ -682,8 +688,10 @@ def neighbor_features(objectinfo,
 
             return {
                 'neighbors':0,
+                'nbrindices':np.array([]),
                 'distarcsec':np.array([]),
                 'closestdistarcsec':np.nan,
+                'closestdistnbrind':np.array([]),
                 'searchradarcsec':2.0*fwhmarcsec,
             }
 
@@ -694,7 +702,9 @@ def neighbor_features(objectinfo,
                  "objectinfo dict or lclistpkl', can't continue")
         return {
             'neighbors':np.nan,
+            'nbrindices':np.array([]),
             'distarcsec':np.array([]),
             'closestdistarcsec':np.nan,
+            'closestdistnbrind':np.array([]),
             'searchradarcsec':2.0*fwhmarcsec,
         }
