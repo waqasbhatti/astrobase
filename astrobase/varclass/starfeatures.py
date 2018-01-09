@@ -7,23 +7,23 @@ License: MIT. See the LICENSE file for more details.
 This calculates various features related to the color/proper-motion of stars.
 
 All of the functions in this module require as input an 'objectinfo' dict with
-keys outlined below.
+keys outlined below. This should usually be taken from a light curve file.
 
 {
     'ra': right ascension in degrees. REQUIRED: all functions below,
     'decl': declination in degrees. REQUIRED: all functions below,
     'pmra': propermotion in RA in mas/yr. REQUIRED: coord_features,
-    'pmdecl': propermotion in RA in mas/yr. REQUIRED: coord_features,
-    'jmag': propermotion in RA in mas/yr. REQUIRED: color_features, neighbor_,
-    'hmag': propermotion in RA in mas/yr. REQUIRED: color_features,
-    'kmag': propermotion in RA in mas/yr. REQUIRED: color_features,
-    'bmag': propermotion in RA in mas/yr. optional: color_features,
-    'vmag': propermotion in RA in mas/yr. optional: color_features,
-    'sdssu': propermotion in RA in mas/yr. optional: color_features,
-    'sdssg': propermotion in RA in mas/yr. optional: color_features,
-    'sdssr': propermotion in RA in mas/yr. optional: color_features,
-    'sdssi': propermotion in RA in mas/yr. optional: color_features,
-    'sdssz': propermotion in RA in mas/yr. optional: color_features,
+    'pmdecl': propermotion in DEC in mas/yr. REQUIRED: coord_features,
+    'jmag': 2MASS J mag. REQUIRED: color_features,
+    'hmag': 2MASS H mag. REQUIRED: color_features,
+    'kmag': 2MASS Ks mag. REQUIRED: color_features,
+    'bmag': Cousins B mag. optional: color_features,
+    'vmag': Cousins V mag. optional: color_features,
+    'sdssu': SDSS u mag. optional: color_features,
+    'sdssg': SDSS g mag. optional: color_features,
+    'sdssr': SDSS r mag. optional: color_features,
+    'sdssi': SDSS i mag. optional: color_features,
+    'sdssz': SDSS z mag. optional: color_features,
 }
 
 '''
@@ -129,13 +129,30 @@ def coord_features(objectinfo):
         return {'propermotion':propermotion,
                 'gl':gl,
                 'gb':gb,
-                'rpm':rpm}
+                'rpmj':rpm}
+
+    elif ('ra' in objectinfo and 'decl' in objectinfo and
+          objectinfo['ra'] is not None and objectinfo['decl'] is not None):
+
+        gl, gb = coordutils.equatorial_to_galactic(objectinfo['ra'],
+                                                   objectinfo['decl'])
+
+        LOGWARNING("one or more of pmra, pmdecl, jmag "
+                   "are missing from the input objectinfo dict, "
+                   "can't get proper motion features")
+
+        return {'propermotion':np.nan,
+                'gl':gl,
+                'gb':gb,
+                'rpmj':np.nan}
 
     else:
 
         LOGERROR("one or more of pmra, pmdecl, jmag, ra, decl "
                  "are missing from the input objectinfo dict, can't continue")
         return {'propermotion':np.nan,
+                'gl':np.nan,
+                'gb':np.nan,
                 'rpmj':np.nan}
 
 
@@ -168,6 +185,8 @@ def color_features(objectinfo, deredden=True):
         'izcolor':np.nan,
         'gjcolor':np.nan,
         'gkcolor':np.nan,
+        'bvcolor':np.nan,
+        'vkcolor':np.nan,
         'extinctj':np.nan,
         'extincth':np.nan,
         'extinctk':np.nan,
@@ -176,6 +195,8 @@ def color_features(objectinfo, deredden=True):
         'extinctr':np.nan,
         'extincti':np.nan,
         'extinctz':np.nan,
+        'extinctb':np.nan,
+        'extinctv':np.nan,
         'sdssu':np.nan,
         'sdssg':np.nan,
         'sdssr':np.nan,
@@ -184,6 +205,8 @@ def color_features(objectinfo, deredden=True):
         'jmag':np.nan,
         'hmag':np.nan,
         'kmag':np.nan,
+        'bmag':np.nan,
+        'vmag':np.nan,
         'deredu':np.nan,
         'deredg':np.nan,
         'deredr':np.nan,
@@ -192,6 +215,8 @@ def color_features(objectinfo, deredden=True):
         'deredj':np.nan,
         'deredh':np.nan,
         'deredk':np.nan,
+        'deredb':np.nan,
+        'deredv':np.nan,
         'sdssufromjhk':False,
         'sdssgfromjhk':False,
         'sdssrfromjhk':False,
@@ -226,6 +251,7 @@ def color_features(objectinfo, deredden=True):
         return outdict
 
     if deredden:
+
         outdict['extinctj'] = extinction['Amag']['2MASS J']['sf11']
         outdict['extincth'] = extinction['Amag']['2MASS H']['sf11']
         outdict['extinctk'] = extinction['Amag']['2MASS Ks']['sf11']
@@ -236,6 +262,8 @@ def color_features(objectinfo, deredden=True):
         outdict['extincti'] = extinction['Amag']['SDSS i']['sf11']
         outdict['extinctz'] = extinction['Amag']['SDSS z']['sf11']
 
+        outdict['extinctb'] = extinction['Amag']['CTIO B']['sf11']
+        outdict['extinctv'] = extinction['Amag']['CTIO V']['sf11']
 
     # get the 2MASS mags
     outdict['jmag'] = objectinfo['jmag']
@@ -290,6 +318,22 @@ def color_features(objectinfo, deredden=True):
     else:
         outdict['sdssz'] = objectinfo['sdssz']
 
+    #
+    # get the B and V mags
+    #
+    if ('bmag' not in objectinfo or
+        ('bmag' in objectinfo and objectinfo['bmag'] is None)):
+        outdict['bmag'] = np.nan
+    else:
+        outdict['bmag'] = objectinfo['bmag']
+
+    if ('vmag' not in objectinfo or
+        ('vmag' in objectinfo and objectinfo['vmag'] is None)):
+        outdict['vmag'] = np.nan
+    else:
+        outdict['vmag'] = objectinfo['vmag']
+
+
     # calculating dereddened mags:
     # A_x = m - m0_x where m is measured mag, m0 is intrinsic mag
     # m0_x = m - A_x
@@ -311,6 +355,10 @@ def color_features(objectinfo, deredden=True):
         outdict['deredi'] = outdict['sdssi'] - outdict['extincti']
         outdict['deredz'] = outdict['sdssz'] - outdict['extinctz']
 
+        # calculate the dereddened B and V mags
+        outdict['deredb'] = outdict['bmag'] - outdict['extinctb']
+        outdict['deredv'] = outdict['vmag'] - outdict['extinctv']
+
         outdict['dereddened'] = True
 
     else:
@@ -324,16 +372,25 @@ def color_features(objectinfo, deredden=True):
         outdict['deredi'] = outdict['sdssi']
         outdict['deredz'] = outdict['sdssz']
 
+        outdict['deredb'] = outdict['bmag']
+        outdict['deredv'] = outdict['vmag']
+
+
     # finally, calculate the colors
     outdict['ugcolor'] = outdict['deredu'] - outdict['deredg']
     outdict['grcolor'] = outdict['deredg'] - outdict['deredr']
     outdict['ricolor'] = outdict['deredr'] - outdict['deredi']
     outdict['izcolor'] = outdict['deredi'] - outdict['deredz']
+
     outdict['jhcolor'] = outdict['deredj'] - outdict['deredh']
     outdict['hkcolor'] = outdict['deredh'] - outdict['deredk']
     outdict['jkcolor'] = outdict['deredj'] - outdict['deredk']
+
     outdict['gjcolor'] = outdict['deredg'] - outdict['deredj']
     outdict['gkcolor'] = outdict['deredg'] - outdict['deredk']
+
+    outdict['bvcolor'] = outdict['deredb'] - outdict['deredv']
+    outdict['vkcolor'] = outdict['deredv'] - outdict['deredk']
 
     return outdict
 
@@ -433,7 +490,7 @@ def color_classification(colorfeatures, pmfeatures):
                           colorfeatures['sdssz'])
 
     # reduced proper motion
-    rpm = pmfeatures['rpm'] if np.isfinite(pmfeatures['rpm']) else None
+    rpmj = pmfeatures['rpmj'] if np.isfinite(pmfeatures['rpmj']) else None
 
     # now generate the various color indices
     # color-gravity index
@@ -458,7 +515,7 @@ def color_classification(colorfeatures, pmfeatures):
     m_subtype, m_sti, m_sts = mdwarf_subtype_from_sdsscolor(r-i, i-z)
 
     # now check if this is a likely M dwarf
-    if m_subtype and rpm and rpm > 1.0:
+    if m_subtype and rpmj and rpmj > 1.0:
         possible_classes.append('d' + m_subtype)
 
     # white dwarf
@@ -550,7 +607,7 @@ def color_classification(colorfeatures, pmfeatures):
          ((u-g) > (1.6*(g-r) + 1.34)) ):
         possible_classes.append('QSO')
 
-    return {'classes':possible_classes,
+    return {'color_classes':possible_classes,
             'v_color':v_color,
             'p1_color':p1_color,
             's_color':s_color,
