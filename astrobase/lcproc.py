@@ -100,7 +100,7 @@ from astrobase.hplc import read_hatpi_textlc, read_hatpi_pklc
 from astrobase.astrokep import read_kepler_fitslc, read_kepler_pklc
 
 from astrobase import periodbase, checkplot
-from astrobase.varclass import features, starfeatures, periodicfeatures
+from astrobase.varclass import varfeatures, starfeatures, periodicfeatures
 from astrobase.lcmath import normalize_magseries, \
     time_bin_magseries_with_errs, sigclip_magseries
 from astrobase.periodbase.kbls import bls_snr
@@ -956,13 +956,13 @@ def getlclist(listpickle,
 ## VARIABILITY FEATURES ##
 ##########################
 
-def varfeatures(lcfile,
-                outdir,
-                timecols=None,
-                magcols=None,
-                errcols=None,
-                mindet=1000,
-                lcformat='hat-sql'):
+def get_varfeatures(lcfile,
+                    outdir,
+                    timecols=None,
+                    magcols=None,
+                    errcols=None,
+                    mindet=1000,
+                    lcformat='hat-sql'):
     '''
     This runs varfeatures on a single LC file.
 
@@ -1044,7 +1044,7 @@ def varfeatures(lcfile,
             else:
 
                 # get the features for this magcol
-                lcfeatures = features.all_nonperiodic_features(
+                lcfeatures = varfeatures.all_nonperiodic_features(
                     times, mags, errs
                 )
                 resultdict[mcolget[-1]] = lcfeatures
@@ -1094,12 +1094,12 @@ def varfeatures_worker(task):
 
     try:
         lcfile, outdir, timecols, magcols, errcols, mindet, lcformat = task
-        return varfeatures(lcfile, outdir,
-                           timecols=timecols,
-                           magcols=magcols,
-                           errcols=errcols,
-                           mindet=mindet,
-                           lcformat=lcformat)
+        return get_varfeatures(lcfile, outdir,
+                               timecols=timecols,
+                               magcols=magcols,
+                               errcols=errcols,
+                               mindet=mindet,
+                               lcformat=lcformat)
 
     except:
         return None
