@@ -138,7 +138,7 @@ def LOGEXCEPTION(message):
 
 # things that import fairly fast
 # everything else is deferred to the functions themselves
-from astrobase.varclass import features
+from astrobase.varclass import varfeatures
 from astrobase.lcmath import normalize_magseries, \
     time_bin_magseries_with_errs, sigclip_magseries
 from astrobase.magnitudes import jhk_to_sdssr
@@ -1029,13 +1029,13 @@ def filter_lclist(listpickle,
 ## GETTING VARIABILITY FEATURES ##
 ##################################
 
-def varfeatures(lcfile,
-                outdir,
-                timecols=None,
-                magcols=None,
-                errcols=None,
-                mindet=1000,
-                lcformat='hat-sql'):
+def get_varfeatures(lcfile,
+                    outdir,
+                    timecols=None,
+                    magcols=None,
+                    errcols=None,
+                    mindet=1000,
+                    lcformat='hat-sql'):
     '''
     This runs varfeatures on a single LC file.
 
