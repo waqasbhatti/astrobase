@@ -72,7 +72,7 @@ from .. import lcmath
 from ..varbase import lcfit
 from ..lcmodels import sinusoidal, eclipses, transits
 from ..periodbase.zgls import specwindow_lsp
-from .features import lightcurve_ptp_measures
+from .varfeatures import lightcurve_ptp_measures
 
 
 ###################################
