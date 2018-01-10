@@ -44,7 +44,18 @@ For some extra functionality, you'll need the following modules:
 
 - for ``astrobase.lcdb`` to work, you'll also need psycopg2
 
-First, make sure numpy and a Fortran compiler are installed ::
+If you're using:
+
+- 64-bit Linux and Python 2.7, 3.4, 3.5, 3.6
+- 64-bit Mac OSX 10.12+ with Python 2.7 or 3.6
+- 64-bit Windows with Python 2.7 and 3.6
+
+You can simply install astrobase with ::
+
+  (venv)$ pip install astrobase
+
+Otherwise, you'll need to make sure that a Fortran compiler and numpy are
+installed beforehand to compile the pyeebls package that astrobase depends on ::
 
   ## you'll need a Fortran compiler.                      ##
   ## on Linux: dnf/yum/apt install gcc gcc-gfortran       ##

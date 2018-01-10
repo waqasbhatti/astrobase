@@ -181,24 +181,41 @@ For some extra functionality:
 
 ## Installing with pip
 
-First, make sure numpy and a Fortran compiler are installed:
+If you're using:
+
+- 64-bit Linux and Python 2.7, 3.4, 3.5, 3.6
+- 64-bit Mac OSX 10.12+ with Python 2.7 or 3.6
+- 64-bit Windows with Python 2.7 and 3.6
+
+You can simply install astrobase with:
 
 ```bash
-## you'll need a Fortran compiler.                      ##
-## on Linux: dnf/yum/apt install gcc gcc-gfortran       ##
-## on OSX (using homebrew): brew install gcc            ##
 
-## make sure numpy is installed first!                  ##
-## this is required for the pyeebls module installation ##
+(venv)$ pip install astrobase
+```
+
+Otherwise, you'll need to make sure that a Fortran compiler and numpy are
+installed beforehand to compile the pyeebls package that astrobase depends on:
+
+```bash
+## you'll need a Fortran compiler.                              ##
+## on Linux: dnf/yum/apt install gcc gfortran                   ##
+## on OSX (using homebrew): brew install gcc && brew link gcc   ##
+
+## make sure numpy is installed as well!                        ##
+## this is required for the pyeebls module installation         ##
+
 (venv)$ pip install numpy # in a virtualenv
 # or use dnf/yum/apt install numpy to install systemwide
 ```
 
-Next, install astrobase.
+Once that's done, install astrobase.
 
 ```bash
 (venv)$ pip install astrobase
 ```
+
+### Other installation methods
 
 Or if you want to install optional dependencies as well:
 
