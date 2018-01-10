@@ -1044,8 +1044,12 @@ def traptransit_fit_magseries(times, mags, errs,
         residualvariance = (
             npsum(residuals*residuals)/(pmags.size - finalparams.size)
         )
-        covmatrix = residualvariance*covxmatrix
-        stderrs = npsqrt(npdiag(covmatrix))
+        if covxmatrix is not None:
+            covmatrix = residualvariance*covxmatrix
+            stderrs = npsqrt(npdiag(covmatrix))
+        else:
+            LOGERROR('covxmatrix not available, fit probably failed!')
+            stderrs = None
 
         if verbose:
             LOGINFO(
@@ -1276,8 +1280,12 @@ def gaussianeb_fit_magseries(times, mags, errs,
         residualvariance = (
             npsum(residuals*residuals)/(pmags.size - finalparams.size)
         )
-        covmatrix = residualvariance*covxmatrix
-        stderrs = npsqrt(npdiag(covmatrix))
+        if covxmatrix is not None:
+            covmatrix = residualvariance*covxmatrix
+            stderrs = npsqrt(npdiag(covmatrix))
+        else:
+            LOGERROR('covxmatrix not available, fit probably failed!')
+            stderrs = None
 
         if verbose:
             LOGINFO(
