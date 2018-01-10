@@ -1762,7 +1762,7 @@ def parallel_periodicfeatures(pfpkl_list,
         resultfutures = executor.map(periodicfeatures_worker, tasks)
 
     results = [x for x in resultfutures]
-    resdict = {os.path.basename(x):y for (x,y) in zip(lclist, results)}
+    resdict = {os.path.basename(x):y for (x,y) in zip(pfpkl_list, results)}
 
     return resdict
 
