@@ -694,8 +694,8 @@ def phasedlc_features(times,
 
         # get the percentiles of the slopes of the adjacent mags for phasedx2
         phasedx2_slopes = np.diff(pmagsx2)/np.diff(phasex2)
-        phasedx2_slope_percentiles = np.ravel(np.percentile(phasedx2_slopes,
-                                                            [10.0,90.0]))
+        phasedx2_slope_percentiles = np.ravel(np.nanpercentile(phasedx2_slopes,
+                                                               [10.0,90.0]))
         phasedx2_slope_10percentile = phasedx2_slope_percentiles[0]
         phasedx2_slope_90percentile = phasedx2_slope_percentiles[1]
 
