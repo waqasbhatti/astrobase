@@ -521,6 +521,18 @@ var cpv = {
                 lspmethods.push('aov');
                 ncols = ncols + 1;
             }
+            if ('mav' in cpv.currcp) {
+                lspmethods.push('mav');
+                ncols = ncols + 1;
+            }
+            if ('acf' in cpv.currcp) {
+                lspmethods.push('acf');
+                ncols = ncols + 1;
+            }
+            if ('win' in cpv.currcp) {
+                lspmethods.push('win');
+                ncols = ncols + 1;
+            }
 
             var colwidth = 12/ncols;
 
@@ -1975,8 +1987,10 @@ var cptools = {
         // see if autofreq is checked
         var autofreq = $('#psearch-autofreq').prop('checked');
 
-        if ((lspmethod == 'gls') || (lspmethod == 'bls') ||
-            (lspmethod == 'pdm') || (lspmethod == 'aov')) {
+        if ( (lspmethod == 'gls') || (lspmethod == 'bls') ||
+             (lspmethod == 'pdm') || (lspmethod == 'aov') ||
+             (lspmethod == 'mav') || (lspmethod == 'acf') ||
+             (lspmethod == 'win') ) {
             proceed = true;
         }
 
