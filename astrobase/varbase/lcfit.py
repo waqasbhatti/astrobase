@@ -362,12 +362,15 @@ def fourier_fit_magseries(times, mags, errs, period,
 
         leastsqparams = initialfit.x
 
-        leastsqfit = spleastsq(_fourier_residual,
-                               leastsqparams,
-                               args=(phase, pmags))
+        try:
+            leastsqfit = spleastsq(_fourier_residual,
+                                   leastsqparams,
+                                   args=(phase, pmags))
+        except Exception as e:
+            leastsqfit = None
 
         # if the fit succeeded, then we can return the final parameters
-        if leastsqfit[-1] in (1,2,3,4):
+        if leastsqfit and leastsqfit[-1] in (1,2,3,4):
 
             finalparams = leastsqfit[0]
 
@@ -432,7 +435,7 @@ def fourier_fit_magseries(times, mags, errs, period,
 
         # if the leastsq fit did not succeed, return Nothing
         else:
-            LOGERROR('least-squared fit to the light curve failed')
+            LOGERROR('fourier-fit: least-squared fit to the light curve failed')
             return {
                 'fittype':'fourier',
                 'fitinfo':{
@@ -1017,13 +1020,16 @@ def traptransit_fit_magseries(times, mags, errs,
             transitparams[2] = -transitdepth[2]
 
     # finally, do the fit
-    leastsqfit = spleastsq(transits.trapezoid_transit_residual,
-                           transitparams,
-                           args=(stimes, smags, serrs),
-                           full_output=True)
+    try:
+        leastsqfit = spleastsq(transits.trapezoid_transit_residual,
+                               transitparams,
+                               args=(stimes, smags, serrs),
+                               full_output=True)
+    except Exception as e:
+        leastsqfit = None
 
     # if the fit succeeded, then we can return the final parameters
-    if leastsqfit[-1] in (1,2,3,4):
+    if leastsqfit and leastsqfit[-1] in (1,2,3,4):
 
         finalparams = leastsqfit[0]
         covxmatrix = leastsqfit[1]
@@ -1098,7 +1104,7 @@ def traptransit_fit_magseries(times, mags, errs,
     # if the leastsq fit failed, return nothing
     else:
 
-        LOGERROR('the least squared fit to the light curve failed!')
+        LOGERROR('trapezoid-fit: least-squared fit to the light curve failed!')
 
         # assemble the returndict
         returndict =  {
@@ -1106,6 +1112,7 @@ def traptransit_fit_magseries(times, mags, errs,
             'fitinfo':{
                 'initialparams':transitparams,
                 'finalparams':None,
+                'finalparamerrs':None,
                 'leastsqfit':leastsqfit,
                 'fitmags':None,
                 'fitepoch':None,
@@ -1253,13 +1260,16 @@ def gaussianeb_fit_magseries(times, mags, errs,
             ebparams[2] = -ebdepth[2]
 
     # finally, do the fit
-    leastsqfit = spleastsq(eclipses.invgauss_eclipses_residual,
-                           ebparams,
-                           args=(stimes, smags, serrs),
-                           full_output=True)
+    try:
+        leastsqfit = spleastsq(eclipses.invgauss_eclipses_residual,
+                               ebparams,
+                               args=(stimes, smags, serrs),
+                               full_output=True)
+    except Exception as e:
+        leastsqfit = None
 
     # if the fit succeeded, then we can return the final parameters
-    if leastsqfit[-1] in (1,2,3,4):
+    if leastsqfit and leastsqfit[-1] in (1,2,3,4):
 
         finalparams = leastsqfit[0]
         covxmatrix = leastsqfit[1]
@@ -1334,7 +1344,7 @@ def gaussianeb_fit_magseries(times, mags, errs,
     # if the leastsq fit failed, return nothing
     else:
 
-        LOGERROR('the least squared fit to the light curve failed!')
+        LOGERROR('eb-fit: least-squared fit to the light curve failed!')
 
         # assemble the returndict
         returndict =  {
@@ -1342,6 +1352,7 @@ def gaussianeb_fit_magseries(times, mags, errs,
             'fitinfo':{
                 'initialparams':ebparams,
                 'finalparams':None,
+                'finalparamerrs':None,
                 'leastsqfit':leastsqfit,
                 'fitmags':None,
                 'fitepoch':None,
