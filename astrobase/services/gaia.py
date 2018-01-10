@@ -219,7 +219,22 @@ def tap_query(querystr,
 
                     LOGINFO('GAIA query completed, '
                             'retrieving results...')
-                waitdone = True
+
+                    waitdone = True
+
+            elif jobstatus == 'ERROR':
+
+                if verbose:
+
+                    LOGERROR(
+                        'GAIA query failed immediately '
+                        '(probably an ADQL error): %s, '
+                        'status URL: %s, status contents: %s' %
+                        (repr(inputparams),
+                         status_url,
+                         req.text)
+                    )
+                    return None
 
             # we wait for the job to complete if it's not done already
             else:
@@ -360,6 +375,71 @@ def tap_query(querystr,
 
 
 
+def objectlist_conesearch(racenter,
+                          declcenter,
+                          searchradiusarcsec,
+                          columns=['source_id',
+                                   'ra','dec',
+                                   'phot_g_mean_mag',
+                                   'l','b'],
+                          returnformat='csv',
+                          forcefetch=False,
+                          cachedir='~/.astrobase/gaia-cache',
+                          verbose=True,
+                          timeout=60.0,
+                          refresh=2.0,
+                          maxtimeout=700.0):
+    '''This queries the GAIA TAP service for a list of objects near the coords.
+
+    Uses a conesearch around racenter, declcenter with radius in arcsec of
+    searchradiusarcsec.
+
+    If forcefetch is True, the query will be retried even if cached results for
+    it exist.
+
+    cachedir points to the directory where results will be downloaded.
+
+    timeout sets the amount of time in seconds to wait for the service to
+    respond.
+
+    refresh sets the amount of time in seconds to wait before checking if the
+    result file is available. If the results file isn't available after refresh
+    seconds have elapsed, the function will wait for refresh continuously, until
+    maxtimeout is reached or the results file becomes available.
+
+    '''
+
+    # this was generated using the awesome query generator at:
+    # https://gea.esac.esa.int/archive/
+    query = (
+        "select {columns}, "
+        "(DISTANCE(POINT('ICRS', "
+        "gaiadr1.gaia_source.ra, gaiadr1.gaia_source.dec), "
+        "POINT('ICRS', {ra_center}, {decl_center})))*3600.0 AS dist_arcsec "
+        "from gaiadr1.gaia_source where "
+        "CONTAINS(POINT('ICRS',gaiadr1.gaia_source.ra,"
+        "gaiadr1.gaia_source.dec),"
+        "CIRCLE('ICRS',{ra_center},{decl_center},{search_radius}))=1 "
+        "ORDER by dist_arcsec asc "
+    )
+
+    formatted_query = query.format(ra_center=racenter,
+                                   decl_center=declcenter,
+                                   search_radius=searchradiusarcsec/3600.0,
+                                   columns=', '.join(columns))
+
+
+    return tap_query(formatted_query,
+                     returnformat=returnformat,
+                     forcefetch=forcefetch,
+                     cachedir=cachedir,
+                     verbose=verbose,
+                     timeout=timeout,
+                     refresh=refresh,
+                     maxtimeout=maxtimeout)
+
+
+
 def objectlist_radeclbox(radeclbox,
                          columns=['source_id',
                                   'ra','dec',
@@ -372,6 +452,7 @@ def objectlist_radeclbox(radeclbox,
                          timeout=60.0,
                          refresh=2.0,
                          maxtimeout=700.0):
+
     '''
     This queries the GAIA TAP service for a list of objects in radeclbox.
 
