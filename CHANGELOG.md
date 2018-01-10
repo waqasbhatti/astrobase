@@ -1,3 +1,17 @@
+# v0.3.2
+
+## Fixes
+
+- cpserver: correct imports for varfeatures
+- cpserver: enable specwindow LSP, AoVMH, ACF plots
+- cpserver: show time-sampling specwindow LSP if it exists
+- lcproc.get_periodicfeatures: handle insufficient # of finite LC pts
+- lcproc: `makelclist` -> `make_lclist`, `getlclist` -> `filter_lclist`
+- services.gaia: added GAIA cone-search function
+- varclass.periodicfeatures: lots of fixes for handling LC fit errors
+- varclass.starfeatures: fix `dist_arcsec` calculation from `xyz_dist`
+- varclass.starfeatures, lcproc: added GAIA nbr dist features, fixed more bugs
+
 # v0.3.0
 
 ## Fixes
