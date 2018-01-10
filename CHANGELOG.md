@@ -1,3 +1,52 @@
+# v0.3.0
+
+## Fixes
+
+- moved some modules around for better organization
+  - fakelcgen -> fakelcs.generation
+  - fakelcrecovery -> fakelcs.recovery
+  - varbase.features -> varclass.varfeatures
+  - hatds -> services.hatds
+
+- new modules:
+  - varclass.periodicfeatures
+  - varclass.starfeatures
+  - varclass.rfclass
+  - services.dust
+  - services.gaia
+  - services.skyview
+  - services.trilegal
+
+- checkplot: arbitrary lspmethods in priority order for neighbors
+- checkplotlist: use '|' to separate filter/sort ops/operands, not '_'
+
+- fakelcs.generation: add in cepheids as a fakevar class
+- fakelcs.recovery: added grid-search for optimizing per-magbin varidx
+- fakelcs.recovery: added plotting for optimization results
+
+- lcfit: additional guards against leastsq failure
+- lcfit: handle case where covxmatrix isn't returned
+
+- lcmodels.eclipses: add secondaryphase as another param
+
+- lcproc: added get_starfeatures, serial and parallel drivers
+- lcproc: added `parallel_periodicfeatures`, `_lcdir`
+- lcproc: adding in per-magbin variable index thresholds
+- lcproc: fix glob for `parallel_runcp_pfdir`
+- lcproc: added star, periodic_feature parallel and serial drivers
+- lcproc.runpf: remove BLS, add AoVMH + specwindow L-S as default PF
+
+- periodbase, plotbase: add specwindow function to registries
+- periodbase.zgls: add specwindow_lsp to check for peaks caused by time-sampling
+
+- many other bugfixes
+
+## Work that may be in progress
+
+- added lcproc_batch.py for running LC processing on AWS, GKE, etc.
+- added Dockerfiles to run astrobase from a Docker container
+
+
 # v0.2.9
 
 ## Fixes
