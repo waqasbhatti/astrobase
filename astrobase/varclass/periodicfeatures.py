@@ -129,30 +129,68 @@ def lcfit_features(times, mags, errs, period,
     fourier_fitcoeffs = ffit['fitinfo']['finalparams']
     fourier_chisq = ffit['fitchisq']
     fourier_redchisq = ffit['fitredchisq']
-    fourier_modelmags, _, _, fpmags, _ = sinusoidal.fourier_sinusoidal_func(
-        [period,
-         ffit['fitinfo']['fitepoch'],
-         ffit['fitinfo']['finalparams'][:fourierorder],
-         ffit['fitinfo']['finalparams'][fourierorder:]],
-        ftimes,
-        fmags,
-        ferrs
-    )
-    fourier_residuals = fourier_modelmags - fpmags
-    fourier_residual_median = np.median(fourier_residuals)
-    fourier_residual_mad = np.median(np.abs(fourier_residuals -
-                                            fourier_residual_median))
+
+    if fourier_fitcoeffs is not None:
+
+        fourier_modelmags, _, _, fpmags, _ = sinusoidal.fourier_sinusoidal_func(
+            [period,
+             ffit['fitinfo']['fitepoch'],
+             ffit['fitinfo']['finalparams'][:fourierorder],
+             ffit['fitinfo']['finalparams'][fourierorder:]],
+            ftimes,
+            fmags,
+            ferrs
+        )
+
+        fourier_residuals = fourier_modelmags - fpmags
+        fourier_residual_median = np.median(fourier_residuals)
+        fourier_residual_mad = np.median(np.abs(fourier_residuals -
+                                                fourier_residual_median))
 
 
-    # break them out into amps and phases
-    famplitudes = fourier_fitcoeffs[:fourierorder]
-    fphases = fourier_fitcoeffs[fourierorder:]
+        # break them out into amps and phases
+        famplitudes = fourier_fitcoeffs[:fourierorder]
+        fphases = fourier_fitcoeffs[fourierorder:]
 
-    famp_combos = combinations(famplitudes,2)
-    famp_cinds = combinations(range(len(famplitudes)),2)
+        famp_combos = combinations(famplitudes,2)
+        famp_cinds = combinations(range(len(famplitudes)),2)
 
-    fpha_combos = combinations(fphases,2)
-    fpha_cinds = combinations(range(len(fphases)),2)
+        fpha_combos = combinations(fphases,2)
+        fpha_cinds = combinations(range(len(fphases)),2)
+
+    else:
+
+        LOGERROR('LC fit to sinusoidal series model failed, '
+                 'using initial params')
+
+        initfourieramps = [0.6] + [0.2]*(fourierorder - 1)
+        initfourierphas = [0.1] + [0.1]*(fourierorder - 1)
+
+        fourier_modelmags, _, _, fpmags, _ = sinusoidal.fourier_sinusoidal_func(
+            [period,
+             ffit['fitinfo']['fitepoch'],
+             initfourieramps,
+             initfourierphas],
+            ftimes,
+            fmags,
+            ferrs
+        )
+
+        fourier_residuals = fourier_modelmags - fpmags
+        fourier_residual_median = np.median(fourier_residuals)
+        fourier_residual_mad = np.median(np.abs(fourier_residuals -
+                                                fourier_residual_median))
+
+        # break them out into amps and phases
+        famplitudes = initfourieramps
+        fphases = initfourierphas
+
+        famp_combos = combinations(famplitudes,2)
+        famp_cinds = combinations(range(len(famplitudes)),2)
+
+        fpha_combos = combinations(fphases,2)
+        fpha_cinds = combinations(range(len(fphases)),2)
+
 
     fampratios = {}
     fphadiffs = {}
@@ -210,12 +248,25 @@ def lcfit_features(times, mags, errs, period,
     planetfit_chisq = planet_fit['fitchisq']
     planetfit_redchisq = planet_fit['fitredchisq']
 
-    planet_modelmags, _, _, ppmags, _ = transits.trapezoid_transit_func(
-        planetfit_finalparams,
-        ftimes,
-        fmags,
-        ferrs
-    )
+    if planetfit_finalparams is not None:
+
+        planet_modelmags, _, _, ppmags, _ = transits.trapezoid_transit_func(
+            planetfit_finalparams,
+            ftimes,
+            fmags,
+            ferrs
+        )
+
+    else:
+
+        LOGERROR('LC fit to transit planet model failed, using initial params')
+        planet_modelmags, _, _, ppmags, _ = transits.trapezoid_transit_func(
+            planetfitparams,
+            ftimes,
+            fmags,
+            ferrs
+        )
+
     planet_residuals = planet_modelmags - ppmags
     planet_residual_median = np.median(planet_residuals)
     planet_residual_mad = np.median(np.abs(planet_residuals -
@@ -232,12 +283,26 @@ def lcfit_features(times, mags, errs, period,
     ebfit_chisq = eb_fit['fitchisq']
     ebfit_redchisq = eb_fit['fitredchisq']
 
-    eb_modelmags, _, _, ebpmags, _ = eclipses.invgauss_eclipses_func(
-        ebfit_finalparams,
-        ftimes,
-        fmags,
-        ferrs
-    )
+    if ebfit_finalparams is not None:
+
+        eb_modelmags, _, _, ebpmags, _ = eclipses.invgauss_eclipses_func(
+            ebfit_finalparams,
+            ftimes,
+            fmags,
+            ferrs
+        )
+
+    else:
+
+        LOGERROR('LC fit to EB model failed, using initial params')
+
+        eb_modelmags, _, _, ebpmags, _ = eclipses.invgauss_eclipses_func(
+            ebfitparams,
+            ftimes,
+            fmags,
+            ferrs
+        )
+
     eb_residuals = eb_modelmags - ebpmags
     eb_residual_median = np.median(eb_residuals)
     eb_residual_mad = np.median(np.abs(eb_residuals - eb_residual_median))
@@ -254,12 +319,26 @@ def lcfit_features(times, mags, errs, period,
     ebfitx2_chisq = eb_fitx2['fitchisq']
     ebfitx2_redchisq = eb_fitx2['fitredchisq']
 
-    ebx2_modelmags, _, _, ebx2pmags, _ = eclipses.invgauss_eclipses_func(
-        ebfitx2_finalparams,
-        ftimes,
-        fmags,
-        ferrs
-    )
+    if ebfitx2_finalparams is not None:
+
+        ebx2_modelmags, _, _, ebx2pmags, _ = eclipses.invgauss_eclipses_func(
+            ebfitx2_finalparams,
+            ftimes,
+            fmags,
+            ferrs
+        )
+
+    else:
+
+        LOGERROR('LC fit to EB model with 2xP failed, using initial params')
+
+        ebx2_modelmags, _, _, ebx2pmags, _ = eclipses.invgauss_eclipses_func(
+            ebfitparams,
+            ftimes,
+            fmags,
+            ferrs
+        )
+
     ebx2_residuals = ebx2_modelmags - ebx2pmags
     ebx2_residual_median = np.median(ebx2_residuals)
     ebx2_residual_mad = np.median(np.abs(ebx2_residuals -

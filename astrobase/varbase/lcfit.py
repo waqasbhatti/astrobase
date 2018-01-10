@@ -446,8 +446,8 @@ def fourier_fit_magseries(times, mags, errs, period,
                     'fitmags':None,
                     'fitepoch':None
                 },
-                'fitchisq':None,
-                'fitredchisq':None,
+                'fitchisq':npnan,
+                'fitredchisq':npnan,
                 'fitplotfile':None,
                 'magseries':{
                     'times':ptimes,
@@ -476,8 +476,8 @@ def fourier_fit_magseries(times, mags, errs, period,
                 'fitmags':None,
                 'fitepoch':None
                 },
-            'fitchisq':None,
-            'fitredchisq':None,
+            'fitchisq':npnan,
+            'fitredchisq':npnan,
             'fitplotfile':None,
             'magseries':{
                 'times':ptimes,
@@ -1003,12 +1003,24 @@ def traptransit_fit_magseries(times, mags, errs,
                 return returndict
 
             else:
-                if verbose:
-                    LOGWARNING(
-                        'using automatically determined transitepoch = %.5f'
-                        % transitepoch
-                    )
-                transitparams[1] = transitepoch
+
+                # check the case when there are more than one transitepochs returned
+                if transitepoch.size > 0:
+                    if verbose:
+                        LOGWARNING(
+                            "could not auto-find a single minimum in LC for "
+                            "transitepoch, using the first one returned"
+                        )
+                    transitparams[1] = transitepoch[0]
+
+                else:
+
+                    if verbose:
+                        LOGWARNING(
+                            'using automatically determined transitepoch = %.5f'
+                            % transitepoch
+                        )
+                    transitparams[1] = transitepoch
 
     # next, check the transitdepth and fix it to the form required
     if magsarefluxes:
@@ -1243,12 +1255,21 @@ def gaussianeb_fit_magseries(times, mags, errs,
                 return returndict
 
             else:
-                if verbose:
-                    LOGWARNING(
-                        'using automatically determined ebepoch = %.5f'
-                        % ebepoch
-                    )
-                ebparams[1] = ebepoch
+
+                if ebepoch.size > 1:
+                    if verbose:
+                        LOGWARNING('could not auto-find a single minimum '
+                                   'for ebepoch, using the first one returned')
+                    ebparams[1] = ebepoch[0]
+
+                else:
+
+                    if verbose:
+                        LOGWARNING(
+                            'using automatically determined ebepoch = %.5f'
+                            % ebepoch
+                        )
+                    ebparams[1] = ebepoch
 
     # next, check the ebdepth and fix it to the form required
     if magsarefluxes:
