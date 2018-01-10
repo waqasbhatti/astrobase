@@ -1561,7 +1561,7 @@ def periodicfeatures_worker(task):
 
     '''
 
-    pfpickle, lcbasedir, outdir, starfeatures = task
+    pfpickle, lcbasedir, outdir, starfeatures, kwargs = task
 
     try:
 
@@ -1577,64 +1577,33 @@ def periodicfeatures_worker(task):
 
 
 def serial_periodicfeatures(pfpkl_list,
-
+                            lcbasedir,
                             outdir,
-                            lclistpickle,
-                            fwhmarcsec,
-                            maxobjects=None,
-                            deredden=True,
+                            starfeaturesdir=None,
+                            fourierorder=5,
+                            # these are depth, duration, ingress duration
+                            transitparams=[-0.01,0.1,0.1],
+                            # these are depth, duration, depth ratio, secphase
+                            ebparams=[-0.2,0.3,0.7,0.5],
+                            pdiff_threshold=1.0e-4,
+                            sidereal_threshold=1.0e-4,
+                            sampling_peak_multiplier=5.0,
+                            sampling_startp=None,
+                            sampling_endp=None,
+                            starfeatures=None,
+                            timecols=None,
+                            magcols=None,
+                            errcols=None,
                             lcformat='hat-sql',
+                            sigclip=10.0,
+                            magsarefluxes=False,
+                            verbose=False,
+                            maxobjects=None,
                             nworkers=None):
-    '''This drives the starfeatures function for a collection of LCs.
-
-    lclistpickle is a pickle containing at least:
-
-    - an object ID array accessible with dict keys ['objects']['objectid']
-
-    - an LC filename array accessible with dict keys ['objects']['lcfname']
-
-    - a scipy.spatial.KDTree or cKDTree object to use for finding neighbors for
-      each object accessible with dict key ['kdtree']
-
-    This pickle can be produced using lcproc.makelclist.
+    '''This drives the periodicfeatures collection for a list of periodfinding
+    pickles.
 
     '''
-    # make sure to make the output directory if it doesn't exist
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-
-    if maxobjects:
-        lclist = lclist[:maxobjects]
-
-    # read in the kdtree pickle
-    with open(lclistpickle, 'rb') as infd:
-        kdt_dict = pickle.load(infd)
-
-    kdt = kdt_dict['kdtree']
-    objlist = kdt_dict['objects']['objectid']
-    objlcfl = kdt_dict['objects']['lcfname']
-
-    tasks = [(x, outdir, kdt, objlist, objlcfl,
-              fwhmarcsec, deredden, lcformat) for x in lclist]
-
-    for task in tqdm(tasks):
-        result = starfeatures_worker(task)
-
-
-
-def parallel_periodicfeatures(lclist,
-                          outdir,
-                          lclistpickle,
-                          fwhmarcsec,
-                          maxobjects=None,
-                          deredden=True,
-                          lcformat='hat-sql',
-                          nworkers=None):
-    '''
-    This runs starfeatures in parallel for all light curves in lclist.
-
-    '''
-
     if lcformat not in LCFORM or lcformat is None:
         LOGERROR('unknown light curve format specified: %s' % lcformat)
         return None
@@ -1644,21 +1613,153 @@ def parallel_periodicfeatures(lclist,
         os.makedirs(outdir)
 
     if maxobjects:
-        lclist = lclist[:maxobjects]
+        pfpkl_list = pfpkl_list[:maxobjects]
 
-    # read in the kdtree pickle
-    with open(lclistpickle, 'rb') as infd:
-        kdt_dict = pickle.load(infd)
+    LOGINFO('%s periodfinding pickles to process' % len(pfpkl_list))
 
-    kdt = kdt_dict['kdtree']
-    objlist = kdt_dict['objects']['objectid']
-    objlcfl = kdt_dict['objects']['lcfname']
+    # if the starfeaturedir is provided, try to find a starfeatures pickle for
+    # each periodfinding pickle in pfpkl_list
+    if starfeaturesdir and os.path.exists(starfeaturesdir):
 
-    tasks = [(x, outdir, kdt, objlist, objlcfl,
-              fwhmarcsec, deredden, lcformat) for x in lclist]
+        starfeatures_list = []
+
+        LOGINFO('collecting starfeatures pickles...')
+
+        for pfpkl in pfpkl_list:
+
+            sfpkl1 = os.path.basename(pfpkl).replace('periodfinding',
+                                                     'starfeatures')
+            sfpkl2 = sfpkl1.replace('.gz','')
+
+            sfpath1 = os.path.join(starfeaturesdir, sfpkl1)
+            sfpath2 = os.path.join(starfeaturesdir, sfpkl2)
+
+            if os.path.exists(sfpath1):
+                starfeatures_list.append(sfpkl1)
+            elif os.path.exists(sfpath2):
+                starfeatures_list.append(sfpkl2)
+            else:
+                starfeatures_list.append(None)
+
+    else:
+
+        starfeatures_list = [None for x in pfpkl_list]
+
+    # generate the task list
+    kwargs = {'fourierorder':fourierorder,
+              'transitparams':transitparams,
+              'ebparams':ebparams,
+              'pdiff_threshold':pdiff_threshold,
+              'sidereal_threshold':sidereal_threshold,
+              'sampling_peak_multiplier':sampling_peak_multiplier,
+              'sampling_startp':sampling_startp,
+              'sampling_endp':sampling_endp,
+              'timecols':timecols,
+              'magcols':magcols,
+              'errcols':errcols,
+              'lcformat':lcformat,
+              'sigclip':sigclip,
+              'magsarefluxes':magsarefluxes,
+              'verbose':verbose}
+
+    tasks = [(x, lcbasedir, outdir, y, kwargs) for (x,y) in
+             zip(pfpkl_list, starfeatures_list)]
+
+    LOGINFO('processing periodfinding pickles...')
+
+    for task in tqdm(tasks):
+        result = periodicfeatures_worker(task)
+
+
+
+def parallel_periodicfeatures(pfpkl_list,
+                              lcbasedir,
+                              outdir,
+                              starfeaturesdir=None,
+                              fourierorder=5,
+                              # these are depth, duration, ingress duration
+                              transitparams=[-0.01,0.1,0.1],
+                              # these are depth, duration, depth ratio, secphase
+                              ebparams=[-0.2,0.3,0.7,0.5],
+                              pdiff_threshold=1.0e-4,
+                              sidereal_threshold=1.0e-4,
+                              sampling_peak_multiplier=5.0,
+                              sampling_startp=None,
+                              sampling_endp=None,
+                              timecols=None,
+                              magcols=None,
+                              errcols=None,
+                              lcformat='hat-sql',
+                              sigclip=10.0,
+                              magsarefluxes=False,
+                              verbose=False,
+                              maxobjects=None,
+                              nworkers=None):
+    '''
+    This runs periodicfeatures in parallel for all periodfinding pickles.
+
+    '''
+    # make sure to make the output directory if it doesn't exist
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+
+    if maxobjects:
+        pfpkl_list = pfpkl_list[:maxobjects]
+
+    LOGINFO('%s periodfinding pickles to process' % len(pfpkl_list))
+
+    # if the starfeaturedir is provided, try to find a starfeatures pickle for
+    # each periodfinding pickle in pfpkl_list
+    if starfeaturesdir and os.path.exists(starfeaturesdir):
+
+        starfeatures_list = []
+
+        LOGINFO('collecting starfeatures pickles...')
+
+        for pfpkl in pfpkl_list:
+
+            sfpkl1 = os.path.basename(pfpkl).replace('periodfinding',
+                                                     'starfeatures')
+            sfpkl2 = sfpkl1.replace('.gz','')
+
+            sfpath1 = os.path.join(starfeaturesdir, sfpkl1)
+            sfpath2 = os.path.join(starfeaturesdir, sfpkl2)
+
+            if os.path.exists(sfpath1):
+                starfeatures_list.append(sfpkl1)
+            elif os.path.exists(sfpath2):
+                starfeatures_list.append(sfpkl2)
+            else:
+                starfeatures_list.append(None)
+
+    else:
+
+        starfeatures_list = [None for x in pfpkl_list]
+
+    # generate the task list
+    kwargs = {'fourierorder':fourierorder,
+              'transitparams':transitparams,
+              'ebparams':ebparams,
+              'pdiff_threshold':pdiff_threshold,
+              'sidereal_threshold':sidereal_threshold,
+              'sampling_peak_multiplier':sampling_peak_multiplier,
+              'sampling_startp':sampling_startp,
+              'sampling_endp':sampling_endp,
+              'timecols':timecols,
+              'magcols':magcols,
+              'errcols':errcols,
+              'lcformat':lcformat,
+              'sigclip':sigclip,
+              'magsarefluxes':magsarefluxes,
+              'verbose':verbose}
+
+    tasks = [(x, lcbasedir, outdir, y, kwargs) for (x,y) in
+             zip(pfpkl_list, starfeatures_list)]
+
+    LOGINFO('processing periodfinding pickles...')
 
     with ProcessPoolExecutor(max_workers=nworkers) as executor:
-        resultfutures = executor.map(starfeatures_worker, tasks)
+        resultfutures = executor.map(periodicfeatures_worker, tasks)
 
     results = [x for x in resultfutures]
     resdict = {os.path.basename(x):y for (x,y) in zip(lclist, results)}
@@ -1667,17 +1768,35 @@ def parallel_periodicfeatures(lclist,
 
 
 
-def parallel_periodicfeatures_lcdir(lcdir,
-                                outdir,
-                                lclistpickle,
-                                fwhmarcsec,
-                                maxobjects=None,
-                                deredden=True,
-                                lcformat='hat-sql',
-                                nworkers=None,
-                                recursive=True):
-    '''
-    This runs parallel star feature extraction for a directory of LCs.
+def parallel_periodicfeatures_lcdir(
+        pfpkl_dir,
+        lcbasedir,
+        outdir,
+        pfpkl_glob='periodfinding-*.pkl*',
+        starfeaturesdir=None,
+        fourierorder=5,
+        # these are depth, duration, ingress duration
+        transitparams=[-0.01,0.1,0.1],
+        # these are depth, duration, depth ratio, secphase
+        ebparams=[-0.2,0.3,0.7,0.5],
+        pdiff_threshold=1.0e-4,
+        sidereal_threshold=1.0e-4,
+        sampling_peak_multiplier=5.0,
+        sampling_startp=None,
+        sampling_endp=None,
+        timecols=None,
+        magcols=None,
+        errcols=None,
+        lcformat='hat-sql',
+        sigclip=10.0,
+        magsarefluxes=False,
+        verbose=False,
+        maxobjects=None,
+        nworkers=None,
+        recursive=True,
+):
+    '''This runs parallel periodicfeature extraction for a directory of
+    periodfinding result pickles.
 
     '''
 
@@ -1685,19 +1804,19 @@ def parallel_periodicfeatures_lcdir(lcdir,
         LOGERROR('unknown light curve format specified: %s' % lcformat)
         return None
 
-    fileglob = LCFORM[lcformat][0]
+    fileglob = pfpkl_glob
 
     # now find the files
-    LOGINFO('searching for %s light curves in %s ...' % (lcformat, lcdir))
+    LOGINFO('searching for periodfinding pickles in %s ...' % pfpkl_dir)
 
     if recursive == False:
-        matching = glob.glob(os.path.join(lcdir, fileglob))
+        matching = glob.glob(os.path.join(pfpkl_dir, fileglob))
 
     else:
         # use recursive glob for Python 3.5+
         if sys.version_info[:2] > (3,4):
 
-            matching = glob.glob(os.path.join(lcdir,
+            matching = glob.glob(os.path.join(pfpkl_dir,
                                               '**',
                                               fileglob),recursive=True)
 
@@ -1705,7 +1824,7 @@ def parallel_periodicfeatures_lcdir(lcdir,
         else:
 
             # use os.walk to go through the directories
-            walker = os.walk(lcdir)
+            walker = os.walk(pfpkl_dir)
             matching = []
 
             for root, dirs, files in walker:
@@ -1722,22 +1841,36 @@ def parallel_periodicfeatures_lcdir(lcdir,
     # now that we have all the files, process them
     if matching and len(matching) > 0:
 
-        LOGINFO('found %s light curves, getting starfeatures...' %
+        LOGINFO('found %s periodfinding pickles, getting periodicfeatures...' %
                 len(matching))
 
-        return parallel_periodicfeatures(matching,
-                                     outdir,
-                                     lclistpickle,
-                                     fwhmarcsec,
-                                     deredden=deredden,
-                                     maxobjects=maxobjects,
-                                     lcformat=lcformat,
-                                     nworkers=nworkers)
+        return parallel_periodicfeatures(
+            matching,
+            lcbasedir,
+            outdir,
+            starfeaturesdir=starfeaturesdir,
+            fourierorder=fourierorder,
+            transitparams=transitparams,
+            ebparams=ebparams,
+            pdiff_threshold=pdiff_threshold,
+            sidereal_threshold=sidereal_threshold,
+            sampling_peak_multiplier=sampling_peak_multiplier,
+            sampling_startp=sampling_startp,
+            sampling_endp=sampling_endp,
+            timecols=timecols,
+            magcols=magcols,
+            errcols=errcols,
+            lcformat=lcformat,
+            sigclip=sigclip,
+            magsarefluxes=magsarefluxes,
+            verbose=verbose,
+            maxobjects=maxobjects,
+            nworkers=nworkers,
+        )
 
     else:
 
-        LOGERROR('no light curve files in %s format found in %s' % (lcformat,
-                                                                    lcdir))
+        LOGERROR('no periodfinding pickles found in %s' % (pfpkl_dir))
         return None
 
 
