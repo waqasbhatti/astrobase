@@ -678,14 +678,14 @@ def neighbor_features(objectinfo,
 
             closest_dist = finite_dists.min()
             closest_dist_arcsec = (
-                np.degrees(np.arcsin(closest_dist/2.0))*3600.0
+                np.degrees(2.0*np.arcsin(closest_dist/2.0))*3600.0
             )
             closest_dist_nbrind = nbrindices[finite_dists == finite_dists.min()]
 
             resultdict = {
                 'neighbors':n_neighbors,
                 'nbrindices':nbrindices,
-                'distarcsec':np.degrees(np.arcsin(finite_dists/2.0))*3600.0,
+                'distarcsec':np.degrees(2.0*np.arcsin(finite_dists/2.0))*3600.0,
                 'closestdistarcsec':closest_dist_arcsec,
                 'closestdistnbrind':closest_dist_nbrind,
                 'searchradarcsec':neighbor_radius_arcsec,
