@@ -89,7 +89,7 @@ from .checkplot import _pkl_finder_objectinfo, _pkl_periodogram, \
     _pkl_magseries_plot, _pkl_phased_magseries_plot
 
 from .varclass import varfeatures
-features.set_logger_parent(__name__)
+varfeatures.set_logger_parent(__name__)
 
 from .varbase import lcfit
 lcfit.set_logger_parent(__name__)
