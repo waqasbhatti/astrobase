@@ -448,7 +448,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 }
 
                 # now get the other stuff
-                for key in ('pdm','aov','bls','gls','sls'):
+                for key in ('pdm','aov','bls','gls','mav','acf','win'):
 
                     # we return only the first three phased LCs per periodogram
                     if key in cpdict:
