@@ -192,7 +192,7 @@ CPTOOLMAP = {
         'kwargs':(),
         'kwargtypes':(),
         'kwargdefs':(),
-        'func':features.all_nonperiodic_features,
+        'func':varfeatures.all_nonperiodic_features,
         'resloc':['varinfo','features'],
     },
     'var-prewhiten':{
