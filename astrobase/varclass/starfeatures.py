@@ -33,6 +33,7 @@ from datetime import datetime
 from traceback import format_exc
 from time import time as unixtime
 import pickle
+import gzip
 
 import numpy as np
 from scipy.spatial import cKDTree, KDTree
@@ -88,7 +89,7 @@ def LOGEXCEPTION(message):
 ###################
 
 from .. import magnitudes, coordutils
-from ..services import dust
+from ..services import dust, gaia
 dust.set_logger_parent(__name__)
 
 
@@ -621,11 +622,16 @@ def color_classification(colorfeatures, pmfeatures):
 
 def neighbor_features(objectinfo,
                       lclist_kdtree,
-                      fwhmarcsec):
+                      neighbor_radius_arcsec):
     '''Gets several neighbor features:
 
+    from the given light curve catalog:
     - distance to closest neighbor in arcsec
-    - total number of all neighbors within 2 x fwhmarcsec
+    - total number of all neighbors within 2 x neighbor_radius_arcsec
+
+    from the GAIA DR1 catalog:
+    - distance to closest neighbor in arcsec
+    - total number of all neighbors within 2 x neighbor_radius_arcsec
 
     objectinfo is the objectinfo dict from an object light curve
 
@@ -636,6 +642,7 @@ def neighbor_features(objectinfo,
 
     '''
 
+    # kdtree search for neighbors in light curve catalog
     if ('ra' in objectinfo and 'decl' in objectinfo and
         objectinfo['ra'] is not None and objectinfo['decl'] is not None and
         (isinstance(lclist_kdtree, cKDTree) or
@@ -649,10 +656,10 @@ def neighbor_features(objectinfo,
         sinra = np.sin(np.radians(ra))
 
         # this is the search distance in xyz unit vectors
-        xyzdist = 2.0 * np.sin(np.radians(2.0*fwhmarcsec/3600.0)/2.0)
+        xyzdist = 2.0 * np.sin(np.radians(neighbor_radius_arcsec/3600.0)/2.0)
 
         # look up the coordinates for the closest 100 objects in the kdtree
-        # within 2 x fwhmarcsec
+        # within 2 x neighbor_radius_arcsec
         kdt_dist, kdt_ind = lclist_kdtree.query(
             [cosra*cosdecl,
              sinra*cosdecl,
@@ -671,28 +678,28 @@ def neighbor_features(objectinfo,
 
             closest_dist = finite_dists.min()
             closest_dist_arcsec = (
-                np.degrees(2.0*np.arcsin(closest_dist/2.0))*3600.0
+                np.degrees(np.arcsin(closest_dist/2.0))*3600.0
             )
             closest_dist_nbrind = nbrindices[finite_dists == finite_dists.min()]
 
-            return {
+            resultdict = {
                 'neighbors':n_neighbors,
                 'nbrindices':nbrindices,
-                'distarcsec':np.degrees(2.0*np.arcsin(finite_dists/2.0))*3600.0,
+                'distarcsec':np.degrees(np.arcsin(finite_dists/2.0))*3600.0,
                 'closestdistarcsec':closest_dist_arcsec,
                 'closestdistnbrind':closest_dist_nbrind,
-                'searchradarcsec':2.0*fwhmarcsec,
+                'searchradarcsec':neighbor_radius_arcsec,
             }
 
         else:
 
-            return {
+            resultdict = {
                 'neighbors':0,
                 'nbrindices':np.array([]),
                 'distarcsec':np.array([]),
                 'closestdistarcsec':np.nan,
                 'closestdistnbrind':np.array([]),
-                'searchradarcsec':2.0*fwhmarcsec,
+                'searchradarcsec':neighbor_radius_arcsec,
             }
 
 
@@ -700,11 +707,77 @@ def neighbor_features(objectinfo,
 
         LOGERROR("one of ra, decl, kdtree is missing in "
                  "objectinfo dict or lclistpkl', can't continue")
-        return {
+        resultdict = {
             'neighbors':np.nan,
             'nbrindices':np.array([]),
             'distarcsec':np.array([]),
             'closestdistarcsec':np.nan,
             'closestdistnbrind':np.array([]),
-            'searchradarcsec':2.0*fwhmarcsec,
+            'searchradarcsec':neighbor_radius_arcsec,
         }
+
+
+    # next, search for this object in GAIA
+    if ('ra' in objectinfo and 'decl' in objectinfo and
+        objectinfo['ra'] is not None and objectinfo['decl'] is not None):
+
+        gaia_result = gaia.objectlist_conesearch(objectinfo['ra'],
+                                                 objectinfo['decl'],
+                                                 neighbor_radius_arcsec,
+                                                 verbose=False)
+        if gaia_result:
+
+            gaia_objlistf = gaia_result['result']
+
+            with gzip.open(gaia_objlistf,'rb') as infd:
+
+                gaia_objlist = np.genfromtxt(
+                    infd,
+                    names=True,
+                    delimiter=',',
+                    dtype='i8,f8,f8,f8,f8,f8,f8',
+                    usecols=(0,1,2,3,4,5,6)
+                )
+
+            # the first object is likely the match to the object itself
+            if gaia_objlist['dist_arcsec'][0] < 3.0:
+
+                gaia_nneighbors = gaia_objlist[1:].size
+                gaia_nbr_ids = gaia_objlist[1:]
+                gaia_closest_distarcsec = gaia_objlist['dist_arcsec'][1]
+                gaia_closest_gmagdiff = (
+                    gaia_objlist['phot_g_mean_mag'][0] -
+                    gaia_objlist['phot_g_mean_mag'][1]
+                )
+
+            # otherwise, the object wasn't found in GAIA for some reason
+            else:
+
+                gaia_nneighbors = np.nan
+                gaia_closest_distarcsec = np.nan
+                gaia_closest_gmagdiff = np.nan
+
+            resultdict.update(
+                {'gaia_neighbors':gaia_nneighbors,
+                 'gaia_closest_distarcsec':gaia_closest_distarcsec,
+                 'gaia_closest_gmagdiff':gaia_closest_gmagdiff}
+            )
+
+        else:
+
+            resultdict.update(
+                {'gaia_neighbors':np.nan,
+                 'gaia_closest_distarcsec':np.nan,
+                 'gaia_closest_gmagdiff':np.nan}
+            )
+
+
+    else:
+
+        resultdict.update(
+            {'gaia_neighbors':np.nan,
+             'gaia_closest_distarcsec':np.nan,
+             'gaia_closest_gmagdiff':np.nan}
+        )
+
+    return resultdict

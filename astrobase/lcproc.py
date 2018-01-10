@@ -1899,7 +1899,7 @@ def get_starfeatures(lcfile,
                      kdtree,
                      objlist,
                      lcflist,
-                     fwhmarcsec,
+                     neighbor_radius_arcsec,
                      deredden=True,
                      lcformat='hat-sql'):
     '''This runs the functions from astrobase.varclass.starfeatures on a single
@@ -1916,9 +1916,9 @@ def get_starfeatures(lcfile,
     lcflist is a numpy array of light curve filenames in the same order as
     KDTree.data
 
-    fwhmarcsec indicates where to search for neighbors for this object using
-    kdtree, objlist, and lcflist. 2 x fwhmarcsec will be used as the radius of
-    the cone search around the coordinates of the object in lcfile.
+    neighbor_radius_arcsec indicates the radius in arcsec to search for
+    neighbors for this object using the light curve catalog's kdtree, objlist,
+    and lcflist and in GAIA.
 
     deredden controls if the colors and any color classifications will be
     dereddened using 2MASS DUST.
@@ -1959,7 +1959,7 @@ def get_starfeatures(lcfile,
         # finally, run the neighbor features
         nbrfeat = starfeatures.neighbor_features(lcdict['objectinfo'],
                                                  kdtree,
-                                                 fwhmarcsec)
+                                                 neighbor_radius_arcsec)
 
         # get the objectids of the neighbors found if any
         if nbrfeat['nbrindices'].size > 0:
@@ -2006,11 +2006,11 @@ def starfeatures_worker(task):
 
     try:
         (lcfile, outdir, kdtree, objlist,
-         lcflist, fwhmarcsec, deredden, lcformat) = task
+         lcflist, neighbor_radius_arcsec, deredden, lcformat) = task
 
         return get_starfeatures(lcfile, outdir,
                                 kdtree, objlist, lcflist,
-                                fwhmarcsec,
+                                neighbor_radius_arcsec,
                                 deredden=deredden,
                                 lcformat=lcformat)
     except:
@@ -2020,7 +2020,7 @@ def starfeatures_worker(task):
 def serial_starfeatures(lclist,
                         outdir,
                         lclistpickle,
-                        fwhmarcsec,
+                        neighbor_radius_arcsec,
                         maxobjects=None,
                         deredden=True,
                         lcformat='hat-sql',
@@ -2055,7 +2055,7 @@ def serial_starfeatures(lclist,
     objlcfl = kdt_dict['objects']['lcfname']
 
     tasks = [(x, outdir, kdt, objlist, objlcfl,
-              fwhmarcsec, deredden, lcformat) for x in lclist]
+              neighbor_radius_arcsec, deredden, lcformat) for x in lclist]
 
     for task in tqdm(tasks):
         result = starfeatures_worker(task)
@@ -2065,7 +2065,7 @@ def serial_starfeatures(lclist,
 def parallel_starfeatures(lclist,
                           outdir,
                           lclistpickle,
-                          fwhmarcsec,
+                          neighbor_radius_arcsec,
                           maxobjects=None,
                           deredden=True,
                           lcformat='hat-sql',
@@ -2095,7 +2095,7 @@ def parallel_starfeatures(lclist,
     objlcfl = kdt_dict['objects']['lcfname']
 
     tasks = [(x, outdir, kdt, objlist, objlcfl,
-              fwhmarcsec, deredden, lcformat) for x in lclist]
+              neighbor_radius_arcsec, deredden, lcformat) for x in lclist]
 
     with ProcessPoolExecutor(max_workers=nworkers) as executor:
         resultfutures = executor.map(starfeatures_worker, tasks)
@@ -2110,7 +2110,7 @@ def parallel_starfeatures(lclist,
 def parallel_starfeatures_lcdir(lcdir,
                                 outdir,
                                 lclistpickle,
-                                fwhmarcsec,
+                                neighbor_radius_arcsec,
                                 maxobjects=None,
                                 deredden=True,
                                 lcformat='hat-sql',
@@ -2168,7 +2168,7 @@ def parallel_starfeatures_lcdir(lcdir,
         return parallel_starfeatures(matching,
                                      outdir,
                                      lclistpickle,
-                                     fwhmarcsec,
+                                     neighbor_radius_arcsec,
                                      deredden=deredden,
                                      maxobjects=maxobjects,
                                      lcformat=lcformat,
