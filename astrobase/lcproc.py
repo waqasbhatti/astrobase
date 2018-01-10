@@ -406,19 +406,19 @@ def lclist_parallel_worker(task):
 
 
 
-def makelclist(basedir,
-               outfile,
-               lcformat='hat-sql',
-               fileglob=None,
-               recursive=True,
-               columns=['objectid',
-                        'objectinfo.ra','objectinfo.decl',
-                        'objectinfo.ndet','objectinfo.sdssr'],
-               makecoordindex=['objectinfo.ra','objectinfo.decl'],
-               maxlcs=None,
-               nworkers=20):
+def make_lclist(basedir,
+                outfile,
+                lcformat='hat-sql',
+                fileglob=None,
+                recursive=True,
+                columns=['objectid',
+                         'objectinfo.ra','objectinfo.decl',
+                         'objectinfo.ndet','objectinfo.sdssr'],
+                makecoordindex=['objectinfo.ra','objectinfo.decl'],
+                maxlcs=None,
+                nworkers=20):
 
-    '''This generates a list file compatible with getlclist below.
+    '''This generates a list file compatible with filter_lclist below.
 
     Given a base directory where all the files are, and a light curve format,
     this will find all light curves, pull out the keys in each lcdict requested
@@ -442,7 +442,7 @@ def makelclist(basedir,
 
     If makecoordindex is not None, it must be a two-element list of the lcdict
     keys for the right ascension and declination for each object. These will be
-    used to make a kdtree for fast look-up by position later by getlclist.
+    used to make a kdtree for fast look-up by position later by filter_lclist.
 
     This returns a pickle file.
 
@@ -652,22 +652,22 @@ def makelclist(basedir,
 
 
 
-def getlclist(listpickle,
-              objectidcol='objectid',
-              xmatchexternal=None,
-              xmatchdistarcsec=3.0,
-              externalcolnums=(0,1,2),
-              externalcolnames=['objectid','ra','decl'],
-              externalcoldtypes='U20,f8,f8',
-              externalcolsep=None,
-              conesearch=None,
-              columnfilters=None,
-              conesearchworkers=1,
-              copylcsto=None):
+def filter_lclist(listpickle,
+                  objectidcol='objectid',
+                  xmatchexternal=None,
+                  xmatchdistarcsec=3.0,
+                  externalcolnums=(0,1,2),
+                  externalcolnames=['objectid','ra','decl'],
+                  externalcoldtypes='U20,f8,f8',
+                  externalcolsep=None,
+                  conesearch=None,
+                  columnfilters=None,
+                  conesearchworkers=1,
+                  copylcsto=None):
 
     '''This is used to collect light curves based on selection criteria.
 
-    Uses the output of makelclist above. This function returns a list of light
+    Uses the output of make_lclist above. This function returns a list of light
     curves matching various criteria speciifed by the xmatchexternal,
     conesearch, and columnfilters kwargs. Use this function to generate input
     lists for the parallel_varfeatures, parallel_pf, and parallel_timebin
@@ -2036,7 +2036,7 @@ def serial_starfeatures(lclist,
     - a scipy.spatial.KDTree or cKDTree object to use for finding neighbors for
       each object accessible with dict key ['kdtree']
 
-    This pickle can be produced using lcproc.makelclist.
+    This pickle can be produced using lcproc.make_lclist.
 
     '''
     # make sure to make the output directory if it doesn't exist

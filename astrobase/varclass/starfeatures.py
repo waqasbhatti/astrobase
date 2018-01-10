@@ -637,7 +637,7 @@ def neighbor_features(objectinfo,
 
     lclist_kdtree is a scipy.spatial.cKDTree object built on the cartesian xyz
     coordinates from (ra, dec) of all objects in the same field as this
-    object. It is similar to that produced by lcproc.makelclist, and is used to
+    object. It is similar to that produced by lcproc.make_lclist, and is used to
     carry out the spatial search required to find neighbors for this object.
 
     '''
