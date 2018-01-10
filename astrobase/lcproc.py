@@ -1537,8 +1537,12 @@ def get_periodicfeatures(pfpickle,
         #
         # end of per magcol processing
         #
+        # write resultdict to pickle
+        outfile = os.path.join(outdir, 'periodicfeatures-%s.pkl' % objectid)
+        with open(outfile,'wb') as outfd:
+            pickle.dump(resultdict, outfd, pickle.HIGHEST_PROTOCOL)
 
-        return resultdict
+        return outfile
 
     except Exception as e:
 
