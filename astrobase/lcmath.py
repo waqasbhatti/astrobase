@@ -733,7 +733,7 @@ def phase_bin_magseries(phases, mags,
 
     # collect the finite_phases
     binned_phase = np.array([np.median(finite_phases[x])
-                          for x in binned_finite_phaseseries_indices])
+                             for x in binned_finite_phaseseries_indices])
     collected_binned_mags['binnedphases'] = binned_phase
     collected_binned_mags['binsize'] = binsize
 

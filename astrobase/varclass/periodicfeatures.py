@@ -736,10 +736,10 @@ def phasedlc_features(times,
                 # phase bin them both so we can compare LCs easily
                 phabinned_objectlc = lcmath.phase_bin_magseries(phase,
                                                                 norm_pmags,
-                                                                minbinelems=0)
+                                                                minbinelems=1)
                 phabinned_nbrlc = lcmath.phase_bin_magseries(nphasedlc['phase'],
                                                              norm_npmags,
-                                                             minbinelems=0)
+                                                             minbinelems=1)
 
                 absdiffs = []
 

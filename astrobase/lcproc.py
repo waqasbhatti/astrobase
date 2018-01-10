@@ -1234,6 +1234,8 @@ def parallel_varfeatures_lcdir(lcdir,
                                                                     lcdir))
         return None
 
+
+
 #######################
 ## PERIODIC FEATURES ##
 #######################
@@ -1241,11 +1243,25 @@ def parallel_varfeatures_lcdir(lcdir,
 def get_periodicfeatures(pfpickle,
                          lcbasedir,
                          outdir,
+                         fourierorder=5,
+                         # these are depth, duration, ingress duration
+                         transitparams=[-0.01,0.1,0.1],
+                         # these are depth, duration, depth ratio, secphase
+                         ebparams=[-0.2,0.3,0.7,0.5],
+                         pdiff_threshold=1.0e-4,
+                         sidereal_threshold=1.0e-4,
+                         sampling_peak_multiplier=5.0,
+                         sampling_startp=None,
+                         sampling_endp=None,
                          starfeatures=None,
                          timecols=None,
                          magcols=None,
                          errcols=None,
-                         lcformat='hat-sql'):
+                         lcformat='hat-sql',
+                         sigclip=10.0,
+                         magsarefluxes=False,
+                         verbose=True,
+                         raiseonfail=False):
     '''This gets all periodic features for the object.
 
     If starfeatures is not None, it should be the filename of the
@@ -1263,8 +1279,12 @@ def get_periodicfeatures(pfpickle,
      derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
 
     # open the pfpickle
-    with open(pfpickle, 'rb') as infd:
-        pf = pickle.load(pfpickle)
+    if pfpickle.endswith('.gz'):
+        infd = gzip.open(pfpickle)
+    else:
+        infd = open(pfpickle)
+    pf = pickle.load(infd)
+    infd.close()
 
     lcfile = os.path.join(lcbasedir, pf['lcfbasename'])
     objectid = pf['objectid']
@@ -1302,10 +1322,30 @@ def get_periodicfeatures(pfpickle,
     if starfeatures is not None and os.path.exists(starfeatures):
 
         with open(starfeatures,'rb') as infd:
-            starfeat = pickle.load(starfeatures)
+            starfeat = pickle.load(infd)
 
         if starfeat['closestnbrlcfname'].size > 0:
-            nbrlcf = starfeat['closestnbrlcfname'][0]
+
+            nbr_full_lcf = starfeat['closestnbrlcfname'][0]
+
+            # check for this LC in the lcbasedir
+            if os.path.exists(os.path.join(lcbasedir,
+                                           os.path.basename(nbr_full_lcf))):
+                nbrlcf = os.path.join(lcbasedir,
+                                      os.path.basename(nbr_full_lcf))
+            # if it's not there, check for this file at the full LC location
+            elif os.path.exists(nbr_full_lcf):
+                nbrlcf = nbr_full_lcf
+            # otherwise, we can't find it, so complain
+            else:
+                LOGWARNING("can't find neighbor light curve file: %s in "
+                           "its original directory: %s, or in this object's "
+                           "lcbasedir: %s, skipping neighbor processing..." %
+                           (os.path.basename(nbr_full_lcf),
+                            os.path.dirname(nbr_full_lcf),
+                            lcbasedir))
+                nbrlcf = None
+
         else:
             nbrlcf = None
 
@@ -1324,7 +1364,7 @@ def get_periodicfeatures(pfpickle,
         # get the nbr object LC into a dict if there is one
         if nbrlcf is not None:
 
-            nbrlcdict = readerfunc(nbrlcfile)
+            nbrlcdict = readerfunc(nbrlcf)
             if isinstance(nbrlcdict, tuple) and isinstance(nbrlcdict[0],dict):
                 nbrlcdict = nbrlcdict[0]
 
@@ -1381,29 +1421,57 @@ def get_periodicfeatures(pfpickle,
             else:
                 nbrerrs = None
 
+            #
+            # filter out nans, etc. from the object and any neighbor LC
+            #
+
+            # get the finite values
+            finind = np.isfinite(times) & np.isfinite(mags) & np.isfinite(errs)
+            ftimes, fmags, ferrs = times[finind], mags[finind], errs[finind]
+
+            if nbrlcf:
+
+                nfinind = (np.isfinite(nbrtimes) &
+                           np.isfinite(nbrmags) &
+                           np.isfinite(nbrerrs))
+                nbrftimes, nbrfmags, nbrferrs = (nbrtimes[nfinind],
+                                                 nbrmags[nfinind],
+                                                 nbrerrs[nfinind])
+
+            # get nonzero errors
+            nzind = np.nonzero(ferrs)
+            ftimes, fmags, ferrs = ftimes[nzind], fmags[nzind], ferrs[nzind]
+
+            if nbrlcf:
+
+                nnzind = np.nonzero(nbrferrs)
+                nbrftimes, nbrfmags, nbrferrs = (nbrftimes[nnzind],
+                                                 nbrfmags[nnzind],
+                                                 nbrferrs[nnzind])
+
             # normalize here if not using special normalization
             if normfunc is None:
 
                 ntimes, nmags = normalize_magseries(
-                    times, mags,
+                    ftimes, fmags,
                     magsarefluxes=magsarefluxes
                 )
 
-                times, mags, errs = ntimes, nmags, errs
+                times, mags, errs = ntimes, nmags, ferrs
 
                 if nbrlcf:
                     nbrntimes, nbrnmags = normalize_magseries(
-                        nbrtimes, nbrmags,
+                        nbrftimes, nbrfmags,
                         magsarefluxes=magsarefluxes
                     )
-                    nbrtimes, nbrmags, nbrerrs = nbrntimes, nbrnmags, nbrerrs
+                    nbrtimes, nbrmags, nbrerrs = nbrntimes, nbrnmags, nbrferrs
                 else:
                     nbrtimes, nbrmags, nbrerrs = None, None, None
 
             #
             # now we have times, mags, errs (and nbrtimes, nbrmags, nbrerrs)
             #
-            avaiable_pfmethods = []
+            available_pfmethods = []
             available_pgrams = []
             available_bestperiods = []
 
@@ -1418,7 +1486,7 @@ def get_periodicfeatures(pfpickle,
                             pf[mcolget[-1]][k]['method']
                         )
                         available_bestperiods.append(
-                            pf[k][mcolget[-1]][k]['bestperiod']
+                            pf[mcolget[-1]][k]['bestperiod']
                         )
 
             #
@@ -1476,7 +1544,10 @@ def get_periodicfeatures(pfpickle,
 
         LOGEXCEPTION('failed to run for pf: %s, lcfile: %s' %
                      (pfpickle, lcfile))
-        return None
+        if raiseonfail:
+            raise
+        else:
+            return None
 
 
 
