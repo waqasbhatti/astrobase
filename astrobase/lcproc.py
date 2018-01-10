@@ -1555,6 +1555,193 @@ def get_periodicfeatures(pfpickle,
 
 
 
+def periodicfeatures_worker(task):
+    '''
+    This is a parallel worker for the drivers below.
+
+    '''
+
+    pfpickle, lcbasedir, outdir, starfeatures = task
+
+    try:
+
+        return get_periodicfeatures(pfpickle,
+                                    lcbasedir,
+                                    outdir,
+                                    starfeatures=starfeatures,
+                                    **kwargs)
+
+    except Exception as e:
+
+        LOGEXCEPTION('failed to get periodicfeatures for %s' % pfpickle)
+
+
+def serial_periodicfeatures(pfpkl_list,
+
+                            outdir,
+                            lclistpickle,
+                            fwhmarcsec,
+                            maxobjects=None,
+                            deredden=True,
+                            lcformat='hat-sql',
+                            nworkers=None):
+    '''This drives the starfeatures function for a collection of LCs.
+
+    lclistpickle is a pickle containing at least:
+
+    - an object ID array accessible with dict keys ['objects']['objectid']
+
+    - an LC filename array accessible with dict keys ['objects']['lcfname']
+
+    - a scipy.spatial.KDTree or cKDTree object to use for finding neighbors for
+      each object accessible with dict key ['kdtree']
+
+    This pickle can be produced using lcproc.makelclist.
+
+    '''
+    # make sure to make the output directory if it doesn't exist
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+
+    if maxobjects:
+        lclist = lclist[:maxobjects]
+
+    # read in the kdtree pickle
+    with open(lclistpickle, 'rb') as infd:
+        kdt_dict = pickle.load(infd)
+
+    kdt = kdt_dict['kdtree']
+    objlist = kdt_dict['objects']['objectid']
+    objlcfl = kdt_dict['objects']['lcfname']
+
+    tasks = [(x, outdir, kdt, objlist, objlcfl,
+              fwhmarcsec, deredden, lcformat) for x in lclist]
+
+    for task in tqdm(tasks):
+        result = starfeatures_worker(task)
+
+
+
+def parallel_periodicfeatures(lclist,
+                          outdir,
+                          lclistpickle,
+                          fwhmarcsec,
+                          maxobjects=None,
+                          deredden=True,
+                          lcformat='hat-sql',
+                          nworkers=None):
+    '''
+    This runs starfeatures in parallel for all light curves in lclist.
+
+    '''
+
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    # make sure to make the output directory if it doesn't exist
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+
+    if maxobjects:
+        lclist = lclist[:maxobjects]
+
+    # read in the kdtree pickle
+    with open(lclistpickle, 'rb') as infd:
+        kdt_dict = pickle.load(infd)
+
+    kdt = kdt_dict['kdtree']
+    objlist = kdt_dict['objects']['objectid']
+    objlcfl = kdt_dict['objects']['lcfname']
+
+    tasks = [(x, outdir, kdt, objlist, objlcfl,
+              fwhmarcsec, deredden, lcformat) for x in lclist]
+
+    with ProcessPoolExecutor(max_workers=nworkers) as executor:
+        resultfutures = executor.map(starfeatures_worker, tasks)
+
+    results = [x for x in resultfutures]
+    resdict = {os.path.basename(x):y for (x,y) in zip(lclist, results)}
+
+    return resdict
+
+
+
+def parallel_periodicfeatures_lcdir(lcdir,
+                                outdir,
+                                lclistpickle,
+                                fwhmarcsec,
+                                maxobjects=None,
+                                deredden=True,
+                                lcformat='hat-sql',
+                                nworkers=None,
+                                recursive=True):
+    '''
+    This runs parallel star feature extraction for a directory of LCs.
+
+    '''
+
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    fileglob = LCFORM[lcformat][0]
+
+    # now find the files
+    LOGINFO('searching for %s light curves in %s ...' % (lcformat, lcdir))
+
+    if recursive == False:
+        matching = glob.glob(os.path.join(lcdir, fileglob))
+
+    else:
+        # use recursive glob for Python 3.5+
+        if sys.version_info[:2] > (3,4):
+
+            matching = glob.glob(os.path.join(lcdir,
+                                              '**',
+                                              fileglob),recursive=True)
+
+        # otherwise, use os.walk and glob
+        else:
+
+            # use os.walk to go through the directories
+            walker = os.walk(lcdir)
+            matching = []
+
+            for root, dirs, files in walker:
+                for sdir in dirs:
+                    searchpath = os.path.join(root,
+                                              sdir,
+                                              fileglob)
+                    foundfiles = glob.glob(searchpath)
+
+                    if foundfiles:
+                        matching.extend(foundfiles)
+
+
+    # now that we have all the files, process them
+    if matching and len(matching) > 0:
+
+        LOGINFO('found %s light curves, getting starfeatures...' %
+                len(matching))
+
+        return parallel_periodicfeatures(matching,
+                                     outdir,
+                                     lclistpickle,
+                                     fwhmarcsec,
+                                     deredden=deredden,
+                                     maxobjects=maxobjects,
+                                     lcformat=lcformat,
+                                     nworkers=nworkers)
+
+    else:
+
+        LOGERROR('no light curve files in %s format found in %s' % (lcformat,
+                                                                    lcdir))
+        return None
+
+
+
 ###################
 ## STAR FEATURES ##
 ###################
