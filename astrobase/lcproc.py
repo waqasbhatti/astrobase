@@ -1468,71 +1468,86 @@ def get_periodicfeatures(pfpickle,
                 else:
                     nbrtimes, nbrmags, nbrerrs = None, None, None
 
-            #
-            # now we have times, mags, errs (and nbrtimes, nbrmags, nbrerrs)
-            #
-            available_pfmethods = []
-            available_pgrams = []
-            available_bestperiods = []
+            else:
+                times, mags, errs = ftimes, fmags, ferrs
 
-            for k in pf[mcolget[-1]].keys():
 
-                if k in PFMETHODS:
+            if times.size > 999:
 
-                    available_pgrams.append(pf[mcolget[-1]][k])
+                #
+                # now we have times, mags, errs (and nbrtimes, nbrmags, nbrerrs)
+                #
+                available_pfmethods = []
+                available_pgrams = []
+                available_bestperiods = []
 
-                    if k != 'win':
-                        available_pfmethods.append(
-                            pf[mcolget[-1]][k]['method']
-                        )
-                        available_bestperiods.append(
-                            pf[mcolget[-1]][k]['bestperiod']
-                        )
+                for k in pf[mcolget[-1]].keys():
 
-            #
-            # process periodic features for this magcol
-            #
-            featkey = 'periodicfeatures-%s' % mcolget[-1]
-            resultdict[featkey] = {}
+                    if k in PFMETHODS:
 
-            # first, handle the periodogram features
-            pgramfeat = periodicfeatures.periodogram_features(
-                available_pgrams, times, mags, errs,
-                sigclip=sigclip,
-                pdiff_threshold=pdiff_threshold,
-                sidereal_threshold=sidereal_threshold,
-                sampling_peak_multiplier=sampling_peak_multiplier,
-                sampling_startp=sampling_startp,
-                sampling_endp=sampling_endp,
-                verbose=verbose
-            )
-            resultdict[featkey].update(pgramfeat)
+                        available_pgrams.append(pf[mcolget[-1]][k])
 
-            resultdict[featkey]['pfmethods'] = available_pfmethods
+                        if k != 'win':
+                            available_pfmethods.append(
+                                pf[mcolget[-1]][k]['method']
+                            )
+                            available_bestperiods.append(
+                                pf[mcolget[-1]][k]['bestperiod']
+                            )
 
-            # then for each bestperiod, get phasedlc and lcfit features
-            for ind, pfm, bp in zip(range(len(available_bestperiods)),
-                                    available_pfmethods,
-                                    available_bestperiods):
+                #
+                # process periodic features for this magcol
+                #
+                featkey = 'periodicfeatures-%s' % mcolget[-1]
+                resultdict[featkey] = {}
 
-                resultdict[featkey][pfm] = periodicfeatures.lcfit_features(
-                    times, mags, errs, bp,
-                    fourierorder=fourierorder,
-                    transitparams=transitparams,
-                    ebparams=ebparams,
+                # first, handle the periodogram features
+                pgramfeat = periodicfeatures.periodogram_features(
+                    available_pgrams, times, mags, errs,
                     sigclip=sigclip,
-                    magsarefluxes=magsarefluxes,
+                    pdiff_threshold=pdiff_threshold,
+                    sidereal_threshold=sidereal_threshold,
+                    sampling_peak_multiplier=sampling_peak_multiplier,
+                    sampling_startp=sampling_startp,
+                    sampling_endp=sampling_endp,
                     verbose=verbose
                 )
+                resultdict[featkey].update(pgramfeat)
 
-                phasedlcfeat = periodicfeatures.phasedlc_features(
-                    times, mags, errs, bp,
-                    nbrtimes=nbrtimes,
-                    nbrmags=nbrmags,
-                    nbrerrs=nbrerrs
-                )
+                resultdict[featkey]['pfmethods'] = available_pfmethods
 
-                resultdict[featkey][pfm].update(phasedlcfeat)
+                # then for each bestperiod, get phasedlc and lcfit features
+                for ind, pfm, bp in zip(range(len(available_bestperiods)),
+                                        available_pfmethods,
+                                        available_bestperiods):
+
+                    resultdict[featkey][pfm] = periodicfeatures.lcfit_features(
+                        times, mags, errs, bp,
+                        fourierorder=fourierorder,
+                        transitparams=transitparams,
+                        ebparams=ebparams,
+                        sigclip=sigclip,
+                        magsarefluxes=magsarefluxes,
+                        verbose=verbose
+                    )
+
+                    phasedlcfeat = periodicfeatures.phasedlc_features(
+                        times, mags, errs, bp,
+                        nbrtimes=nbrtimes,
+                        nbrmags=nbrmags,
+                        nbrerrs=nbrerrs
+                    )
+
+                    resultdict[featkey][pfm].update(phasedlcfeat)
+
+
+            else:
+
+                LOGERROR('not enough finite measurements in magcol: %s, for '
+                         'pfpickle: %s, skipping this magcol'
+                         % (mcol, pfpickle))
+                featkey = 'periodicfeatures-%s' % mcolget[-1]
+                resultdict[featkey] = None
 
         #
         # end of per magcol processing
