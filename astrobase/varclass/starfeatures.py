@@ -90,8 +90,9 @@ def LOGEXCEPTION(message):
 
 from .. import magnitudes, coordutils
 from ..services import dust, gaia
-dust.set_logger_parent(__name__)
 
+dust.set_logger_parent(__name__)
+gaia.set_logger_parent(__name__)
 
 
 #########################
