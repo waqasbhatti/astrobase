@@ -350,7 +350,7 @@ def main():
         if outprefix is None:
             outprefix = args.sortby
     else:
-        sortkey, sortorder = None, None
+        sortkey, sortorder = 'objectid', 'asc'
 
     # see if there's a filter condition
     if args.filterby:
