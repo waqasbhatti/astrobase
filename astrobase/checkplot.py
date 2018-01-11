@@ -151,7 +151,8 @@ from .lcmath import phase_magseries, phase_bin_magseries, \
     normalize_magseries, sigclip_magseries
 from .varbase.lcfit import spline_fit_magseries
 from .varclass.varfeatures import all_nonperiodic_features
-from .coordutils import total_proper_motion, reduced_proper_motion
+from .varclass.starfeatures import coord_features, color_features, \
+    color_classification, neighbor_features
 from .plotbase import skyview_stamp, \
     PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
 
@@ -1365,6 +1366,7 @@ def _pkl_finder_objectinfo(objectinfo,
                              'not be found, no kdtree in lclistpkl: %s'
                              % (objectid, lclistpkl))
                     neighbors = None
+                    kdt = None
 
                 else:
 
@@ -1466,6 +1468,7 @@ def _pkl_finder_objectinfo(objectinfo,
             else:
 
                 neighbors = None
+                kdt = None
 
             #
             # finish up the finder chart after neighbors are processed
@@ -1498,52 +1501,29 @@ def _pkl_finder_objectinfo(objectinfo,
                          (objectid, objectinfo['ra'], objectinfo['decl']))
             finderb64 = None
             neighbors = None
+            kdt = None
 
         # now that we have the finder chart, get the rest of the object
         # information
 
-        # FIXME: get this stuff from astroquery or HATDS if it's missing and we
-        # have the ra/decl
+        # first, the color features
+        colorfeat = color_features(objectinfo)
 
-        if ('bmag' in objectinfo and objectinfo['bmag'] is not None and
-            'vmag' in objectinfo and objectinfo['vmag'] is not None):
-            objectinfo['bvcolor'] = objectinfo['bmag'] - objectinfo['vmag']
-        else:
-            objectinfo['bvcolor'] = None
+        # next, get the coord features
+        coordfeat = coord_features(objectinfo)
 
-        if ('sdssi' in objectinfo and objectinfo['sdssi'] is not None and
-            'jmag' in objectinfo and objectinfo['jmag'] is not None):
-            objectinfo['ijcolor'] = objectinfo['sdssi'] - objectinfo['jmag']
-        else:
-            objectinfo['ijcolor'] = None
+        # next, get the color classification
+        colorclass = color_classification(colorfeat, coordfeat)
 
-        if ('jmag' in objectinfo and objectinfo['jmag'] is not None and
-            'kmag' in objectinfo and objectinfo['kmag'] is not None):
-            objectinfo['jkcolor'] = objectinfo['jmag'] - objectinfo['kmag']
-        else:
-            objectinfo['jkcolor'] = None
+        # finally, get the neighbor features
+        nbrfeat = neighbor_features(objectinfo, kdt, nbrradiusarcsec,
+                                    verbose=False)
 
-        # add in proper motion stuff if available in objectinfo
-        if ('pmra' in objectinfo and objectinfo['pmra'] and
-            'pmdecl' in objectinfo and objectinfo['pmdecl']):
-
-            objectinfo['propermotion'] = total_proper_motion(
-                objectinfo['pmra'],
-                objectinfo['pmdecl'],
-                objectinfo['decl']
-            )
-        else:
-            objectinfo['propermotion'] = None
-
-        if ('jmag' in objectinfo and objectinfo['jmag'] and
-            objectinfo['propermotion']):
-
-            objectinfo['reducedpropermotion'] = reduced_proper_motion(
-                objectinfo['jmag'],
-                objectinfo['propermotion']
-            )
-        else:
-            objectinfo['reducedpropermotion'] = None
+        # update the objectinfo dict with everything
+        objectinfo.update(colorfeat)
+        objectinfo.update(coordfeat)
+        objectinfo.update(colorclass)
+        objectinfo.update(nbrfeat)
 
         # put together the initial checkplot pickle dictionary
         # this will be updated by the functions below as appropriate
@@ -1585,7 +1565,7 @@ def _pkl_finder_objectinfo(objectinfo,
                                        'pmra_err':None,
                                        'propermotion':None,
                                        'ra':None,
-                                       'reducedpropermotion':None,
+                                       'rpmj':None,
                                        'sdssg':None,
                                        'sdssi':None,
                                        'sdssr':None,
@@ -3241,11 +3221,11 @@ def checkplot_pickle_to_png(checkplotin,
             fill=(0,0,0,255)
         )
 
-    if 'reducedpropermotion' in cpd['objectinfo']:
+    if 'rpmj' in cpd['objectinfo']:
         objinfodraw.text(
             (1125, 175),
-            (('Reduced PM: %.3f' % cpd['objectinfo']['reducedpropermotion'])
-             if (cpd['objectinfo']['reducedpropermotion'] is not None)
+            (('Reduced PM [Jmag]: %.3f' % cpd['objectinfo']['rpmj'])
+             if (cpd['objectinfo']['rpmj'] is not None)
              else ''),
             font=cpfontnormal,
             fill=(0,0,0,255)
@@ -3253,7 +3233,7 @@ def checkplot_pickle_to_png(checkplotin,
     else:
         objinfodraw.text(
             (1125, 175),
-            'Reduced PM: nan',
+            'Reduced PM [Jmag]: nan',
             font=cpfontnormal,
             fill=(0,0,0,255)
         )
@@ -3317,42 +3297,100 @@ def checkplot_pickle_to_png(checkplotin,
     )
 
     # colors
+    if ('dereddened' in cpd['objectinfo'] and
+        cpd['objectinfo']['dereddened'] == True):
+        deredlabel = "(dereddened)"
+    else:
+        deredlabel = ""
+
     objinfodraw.text(
         (875, 275),
-        ('Colors'),
+        'Colors %s' % deredlabel,
         font=cpfontnormal,
         fill=(0,0,0,255)
     )
+
     objinfodraw.text(
         (1125, 275),
-        ('B - V: %.3f' %
-         (cpd['objectinfo']['bvcolor'] if
-          ('bvcolor' in cpd['objectinfo'] and
-           cpd['objectinfo']['bvcolor'] is not None)
-          else npnan)),
+        ('B - V: %.3f, V - K: %.3f' %
+         ( (cpd['objectinfo']['bvcolor'] if
+            ('bvcolor' in cpd['objectinfo'] and
+             cpd['objectinfo']['bvcolor'] is not None)
+            else npnan),
+           (cpd['objectinfo']['vkcolor'] if
+            ('vkcolor' in cpd['objectinfo'] and
+             cpd['objectinfo']['vkcolor'] is not None)
+            else npnan) )),
         font=cpfontnormal,
         fill=(0,0,0,255)
     )
     objinfodraw.text(
         (1125, 300),
-        ('i - J: %.3f' %
-         (cpd['objectinfo']['ijcolor'] if
-          ('ijcolor' in cpd['objectinfo'] and
-           cpd['objectinfo']['ijcolor'] is not None)
-          else npnan)),
+        ('i - J: %.3f, g - K: %.3f' %
+         ( (cpd['objectinfo']['ijcolor'] if
+            ('ijcolor' in cpd['objectinfo'] and
+             cpd['objectinfo']['ijcolor'] is not None)
+            else npnan),
+           (cpd['objectinfo']['gkcolor'] if
+            ('gkcolor' in cpd['objectinfo'] and
+             cpd['objectinfo']['gkcolor'] is not None)
+            else npnan) )),
         font=cpfontnormal,
         fill=(0,0,0,255)
     )
     objinfodraw.text(
         (1125, 325),
         ('J - K: %.3f' %
-         (cpd['objectinfo']['jkcolor'] if
-          ('jkcolor' in cpd['objectinfo'] and
-           cpd['objectinfo']['jkcolor'] is not None)
-          else npnan)),
+         ( (cpd['objectinfo']['jkcolor'] if
+            ('jkcolor' in cpd['objectinfo'] and
+             cpd['objectinfo']['jkcolor'] is not None)
+            else npnan),) ),
         font=cpfontnormal,
         fill=(0,0,0,255)
     )
+
+    # color classification
+    if ('color_classes' in cpd['objectinfo'] and
+        cpd['objectinfo']['color_classes']):
+
+        objinfodraw.text(
+            (875, 350),
+            ('star classification by color: %s' %
+             (', '.join(cpd['objectinfo']['color_classes']))),
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+
+    # GAIA neighbors
+    if ('gaia_neighbors' in cpd['objectinfo'] and
+        np.isfinite(cpd['objectinfo']['gaia_neighbors']) and
+        'searchradarcsec' in cpd['objectinfo'] and
+        cpd['objectinfo']['searchradarcsec']):
+
+        objinfodraw.text(
+            (875, 375),
+            ('%s GAIA close neighbors within %.1f arcsec' %
+             (cpd['objectinfo']['gaia_neighbors'],
+              cpd['objectinfo']['searchradarcsec'])),
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+
+    # closest GAIA neighbor
+    if ('gaia_closest_distarcsec' in cpd['objectinfo'] and
+        np.isfinite(cpd['objectinfo']['gaia_closest_distarcsec']) and
+        'gaia_closest_gmagdiff' in cpd['objectinfo'] and
+        np.isfinite(cpd['objectinfo']['gaia_closest_gmagdiff'])):
+
+        objinfodraw.text(
+            (875, 400),
+            ('closest GAIA neighbor is %.1f arcsec away, '
+             'GAIA mag (obj-nbr): %.3f' %
+             (cpd['objectinfo']['gaia_closest_distarcsec'],
+              cpd['objectinfo']['gaia_closest_gmagdiff'])),
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
 
     # object tags
     if 'objecttags' in cpd['objectinfo'] and cpd['objectinfo']['objecttags']:
@@ -3365,7 +3403,7 @@ def checkplot_pickle_to_png(checkplotin,
         for objtagline in range(nobjtaglines):
             objtagslice = ','.join(objtagsplit[objtagline*3:objtagline*3+3])
             objinfodraw.text(
-                (875, 375+objtagline*25),
+                (875, 450+objtagline*25),
                 objtagslice,
                 font=cpfontnormal,
                 fill=(135, 54, 0, 255)

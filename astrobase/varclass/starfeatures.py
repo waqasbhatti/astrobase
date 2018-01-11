@@ -178,13 +178,14 @@ def color_features(objectinfo, deredden=True):
 
     # this is the default output dict
     outdict = {
-        'jhcolor':np.nan,
-        'hkcolor':np.nan,
-        'jkcolor':np.nan,
         'ugcolor':np.nan,
         'grcolor':np.nan,
         'ricolor':np.nan,
         'izcolor':np.nan,
+        'jhcolor':np.nan,
+        'hkcolor':np.nan,
+        'jkcolor':np.nan,
+        'ijcolor':np.nan,
         'gjcolor':np.nan,
         'gkcolor':np.nan,
         'bvcolor':np.nan,
@@ -388,6 +389,7 @@ def color_features(objectinfo, deredden=True):
     outdict['hkcolor'] = outdict['deredh'] - outdict['deredk']
     outdict['jkcolor'] = outdict['deredj'] - outdict['deredk']
 
+    outdict['ijcolor'] = outdict['deredi'] - outdict['deredj']
     outdict['gjcolor'] = outdict['deredg'] - outdict['deredj']
     outdict['gkcolor'] = outdict['deredg'] - outdict['deredk']
 
@@ -623,7 +625,8 @@ def color_classification(colorfeatures, pmfeatures):
 
 def neighbor_features(objectinfo,
                       lclist_kdtree,
-                      neighbor_radius_arcsec):
+                      neighbor_radius_arcsec,
+                      verbose=True):
     '''Gets several neighbor features:
 
     from the given light curve catalog:
@@ -705,9 +708,11 @@ def neighbor_features(objectinfo,
 
 
     else:
+        if verbose:
+            LOGWARNING("one of ra, decl, kdtree is missing in "
+                       "objectinfo dict or lclistpkl, "
+                       "can't get observed neighbors")
 
-        LOGERROR("one of ra, decl, kdtree is missing in "
-                 "objectinfo dict or lclistpkl', can't continue")
         resultdict = {
             'neighbors':np.nan,
             'nbrindices':np.array([]),
@@ -744,7 +749,10 @@ def neighbor_features(objectinfo,
             if gaia_objlist['dist_arcsec'][0] < 3.0:
 
                 gaia_nneighbors = gaia_objlist[1:].size
-                gaia_nbr_ids = gaia_objlist[1:]
+                gaia_nbr_ids = gaia_objlist['source_id'][1:]
+                gaia_nbr_dists = gaia_objlist['dist_arcsec'][1:]
+                gaia_nbr_mags = gaia_objlist['phot_g_mean_mag'][1:]
+
                 gaia_closest_distarcsec = gaia_objlist['dist_arcsec'][1]
                 gaia_closest_gmagdiff = (
                     gaia_objlist['phot_g_mean_mag'][0] -
@@ -755,11 +763,19 @@ def neighbor_features(objectinfo,
             else:
 
                 gaia_nneighbors = np.nan
+                gaia_nbr_ids = None
+                gaia_nbr_dists = None
+                gaia_nbr_mags = None
+
                 gaia_closest_distarcsec = np.nan
                 gaia_closest_gmagdiff = np.nan
 
+            # update the resultdict with gaia stuff
             resultdict.update(
                 {'gaia_neighbors':gaia_nneighbors,
+                 'gaia_nbrids':gaia_nbr_ids,
+                 'gaia_nbrdists':gaia_nbr_dists,
+                 'gaia_nbrmags':gaia_nbr_mags,
                  'gaia_closest_distarcsec':gaia_closest_distarcsec,
                  'gaia_closest_gmagdiff':gaia_closest_gmagdiff}
             )
@@ -768,6 +784,9 @@ def neighbor_features(objectinfo,
 
             resultdict.update(
                 {'gaia_neighbors':np.nan,
+                 'gaia_nbrids':None,
+                 'gaia_nbrdists':None,
+                 'gaia_nbrmags':None,
                  'gaia_closest_distarcsec':np.nan,
                  'gaia_closest_gmagdiff':np.nan}
             )
@@ -777,6 +796,9 @@ def neighbor_features(objectinfo,
 
         resultdict.update(
             {'gaia_neighbors':np.nan,
+             'gaia_nbrids':None,
+             'gaia_nbrdists':None,
+             'gaia_nbrmags':None,
              'gaia_closest_distarcsec':np.nan,
              'gaia_closest_gmagdiff':np.nan}
         )
