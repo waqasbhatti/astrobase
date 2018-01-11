@@ -645,15 +645,15 @@ var cpv = {
 
                 var colors =
                     '<strong><em>(B - V)<sub>0</sub></em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.bvcolor,4) + '  ' +
+                    math.format(cpv.currcp.objectinfo.bvcolor,4) + ',  ' +
                     '<strong><em>(V - K)<sub>0</sub></em>:</strong> ' +
                     math.format(cpv.currcp.objectinfo.vkcolor,4) + '<br>' +
                     '<strong><em>(J - K)<sub>0</sub></em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.jkcolor,4) + '  ' +
+                    math.format(cpv.currcp.objectinfo.jkcolor,4) + ',  ' +
                     '<strong><em>(i - J)<sub>0</sub></em>:</strong> ' +
                     math.format(cpv.currcp.objectinfo.ijcolor,4) + '<br>' +
                     '<strong><em>(g - K)<sub>0</sub></em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.gkcolor,4) + '  ' +
+                    math.format(cpv.currcp.objectinfo.gkcolor,4) + ',  ' +
                     '<strong><em>(g - r)<sub>0</sub></em>:</strong> ' +
                     math.format(cpv.currcp.objectinfo.grcolor,4);
 
@@ -662,15 +662,15 @@ var cpv = {
             else {
                 var colors =
                     '<strong><em>(B - V)</em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.bvcolor,4) + '  ' +
+                    math.format(cpv.currcp.objectinfo.bvcolor,4) + ',  ' +
                     '<strong><em>(V - K)</em>:</strong> ' +
                     math.format(cpv.currcp.objectinfo.vkcolor,4) + '<br>' +
                     '<strong><em>(J - K)</em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.jkcolor,4) + '  ' +
+                    math.format(cpv.currcp.objectinfo.jkcolor,4) + ',  ' +
                     '<strong><em>(i - J)</em>:</strong> ' +
                     math.format(cpv.currcp.objectinfo.ijcolor,4) + '<br>' +
                     '<strong><em>(g - K)</em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.gkcolor,4) + '  ' +
+                    math.format(cpv.currcp.objectinfo.gkcolor,4) + ',  ' +
                     '<strong><em>(g - r)</em>:</strong> ' +
                     math.format(cpv.currcp.objectinfo.grcolor,4);
             }
