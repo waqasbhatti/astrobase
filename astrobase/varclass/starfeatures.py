@@ -745,10 +745,10 @@ def neighbor_features(objectinfo,
                     usecols=(0,1,2,3,4,5,6)
                 )
 
-            # the first object is likely the match to the object itself
-            if gaia_objlist['dist_arcsec'][0] < 3.0:
+            if gaia_objlist.size > 1:
 
-                if gaia_objlist.size > 1:
+                # the first object is likely the match to the object itself
+                if gaia_objlist['dist_arcsec'][0] < 3.0:
 
                     gaia_nneighbors = gaia_objlist[1:].size
                     gaia_nbr_ids = gaia_objlist['source_id'][1:]
@@ -761,11 +761,10 @@ def neighbor_features(objectinfo,
                         gaia_objlist['phot_g_mean_mag'][1]
                     )
 
-                # if there are no neighbors within neighbor_radius_arcsec
-                # then return nothing
+                # otherwise, the object wasn't found in GAIA for some reason
                 else:
 
-                    gaia_nneighbors = 0
+                    gaia_nneighbors = np.nan
                     gaia_nbr_ids = None
                     gaia_nbr_dists = None
                     gaia_nbr_mags = None
@@ -773,11 +772,11 @@ def neighbor_features(objectinfo,
                     gaia_closest_distarcsec = np.nan
                     gaia_closest_gmagdiff = np.nan
 
-
-            # otherwise, the object wasn't found in GAIA for some reason
+            # if there are no neighbors within neighbor_radius_arcsec
+            # or this object is not covered by GAIA. return nothing
             else:
 
-                gaia_nneighbors = np.nan
+                gaia_nneighbors = 0
                 gaia_nbr_ids = None
                 gaia_nbr_dists = None
                 gaia_nbr_mags = None
