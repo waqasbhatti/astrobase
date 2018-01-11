@@ -111,6 +111,7 @@ FITS_BASEURL = 'https://skyview.gsfc.nasa.gov'
 def get_stamp(ra, decl,
               survey='DSS2 Red',
               scaling='Linear',
+              sizepix=300,
               forcefetch=False,
               cachedir='~/.astrobase/stamp-cache',
               timeout=10.0,
@@ -124,6 +125,8 @@ def get_stamp(ra, decl,
 
     scaling is the type of pixel value scaling to apply to the cutout. This is
     'Linear' by default.
+
+    sizepix is the size of the cutout in pixels.
 
     cachedir points to the astrobase stamp-cache directory.
 
@@ -140,6 +143,7 @@ def get_stamp(ra, decl,
     formparams['Position'] = formposition
     formparams['survey'][0] = survey
     formparams['scaling'] = formscaling
+    formparams['pixels'] = ['%s' % sizepix]
 
     # see if the cachedir exists
     if '~' in cachedir:
@@ -148,10 +152,21 @@ def get_stamp(ra, decl,
         os.makedirs(cachedir)
 
     # figure out if we can get this image from the cache
-    cachekey = '%s-%s-%s' % (formposition[0], survey, scaling)
+    cachekey = '%s-%s-%s-%s' % (formposition[0], survey, scaling, sizepix)
     cachekey = hashlib.sha256(cachekey.encode()).hexdigest()
     cachefname = os.path.join(cachedir, '%s.fits.gz' % cachekey)
     provenance = 'cache'
+
+    # this is to handle older cached stamps that didn't include the sizepix
+    # parameter
+    if sizepix == 300:
+
+        oldcachekey = '%s-%s-%s' % (formposition[0], survey, scaling)
+        oldcachekey = hashlib.sha256(cachekey.encode()).hexdigest()
+        oldcachefname = os.path.join(cachedir, '%s.fits.gz' % cachekey)
+
+        if os.path.exists(oldcachefname):
+            cachefname = oldcachefname
 
     # if this exists in the cache and we're not refetching, get the frame
     if forcefetch or (not os.path.exists(cachefname)):
@@ -162,10 +177,11 @@ def get_stamp(ra, decl,
         try:
 
             if verbose:
-                LOGINFO('submitting stamp request for %s, %s, %s' % (
+                LOGINFO('submitting stamp request for %s, %s, %s, %s' % (
                     formposition[0],
                     survey,
-                    scaling)
+                    scaling,
+                    sizepix)
                 )
             req = requests.get(SKYVIEW_URL, params=formparams, timeout=timeout)
             req.raise_for_status()
@@ -218,7 +234,11 @@ def get_stamp(ra, decl,
     #
 
     retdict = {
-        'params':{'ra':ra, 'decl':decl, 'survey':survey, 'scaling':scaling},
+        'params':{'ra':ra,
+                  'decl':decl,
+                  'survey':survey,
+                  'scaling':scaling,
+                  'sizepix':sizepix},
         'provenance':provenance,
         'fitsfile':cachefname
     }
