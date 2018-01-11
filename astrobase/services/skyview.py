@@ -162,8 +162,8 @@ def get_stamp(ra, decl,
     if sizepix == 300:
 
         oldcachekey = '%s-%s-%s' % (formposition[0], survey, scaling)
-        oldcachekey = hashlib.sha256(cachekey.encode()).hexdigest()
-        oldcachefname = os.path.join(cachedir, '%s.fits.gz' % cachekey)
+        oldcachekey = hashlib.sha256(oldcachekey.encode()).hexdigest()
+        oldcachefname = os.path.join(cachedir, '%s.fits.gz' % oldcachekey)
 
         if os.path.exists(oldcachefname):
             cachefname = oldcachefname
