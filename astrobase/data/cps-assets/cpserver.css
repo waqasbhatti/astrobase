@@ -10,7 +10,7 @@
 .sidebar-list {
     height: 300px;
     overflow-y: auto;
-    font-size: 75%;
+    font-size: 70%;
     margin-top: 10px;
     margin-bottom: 10px;
 }
@@ -18,7 +18,7 @@
 .status-list {
     height: 250px;
     overflow-y: auto;
-    font-size: small;
+    font-size: 80%;
     margin-bottom: 10px;
 }
 
@@ -201,4 +201,8 @@ to use this:
 
 .sidebar-label {
     font-size: 75%;
+}
+
+.objectinfo-table {
+    font-size: 80%;
 }

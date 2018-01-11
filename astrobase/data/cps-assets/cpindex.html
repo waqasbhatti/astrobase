@@ -206,7 +206,9 @@
 
       <div class="col-md-4">
 
-        <table class="table table-sm">
+        <table id="objectinfo-basic"
+               class="table table-sm objectinfo-table">
+
           <tr>
             <th>Observations</th>
             <td id="hatinfo">blah</td>
@@ -216,14 +218,18 @@
             <td id="coordspm">blah</td>
           </tr>
           <tr>
-            <th>Magnitudes</th>
+            <th>Magnitudes<span id="magnotice"></span></th>
             <td id="mags">blah</td>
           </tr>
           <tr>
-            <th>Colors</th>
+            <th>Colors<span id="derednotice"></span></th>
             <td id="colors">blah</td>
           </tr>
 
+        </table>
+
+        <table id="objectinfo-extra"
+               class="table table-sm objectinfo-table">
         </table>
 
       </div>

@@ -30,6 +30,9 @@ try:
 except:
     from io import BytesIO as strio
 
+import numpy as np
+from numpy import ndarray
+
 ######################################
 ## CUSTOM JSON ENCODER FOR FRONTEND ##
 ######################################
@@ -43,10 +46,12 @@ class FrontendEncoder(json.JSONEncoder):
 
     def default(self, obj):
 
-        if isinstance(obj, ndarray):
+        if isinstance(obj, np.ndarray):
             return obj.tolist()
         elif isinstance(obj, bytes):
             return obj.decode()
+        elif isinstance(obj, float) and np.isnan(obj):
+            return None
         else:
             return json.JSONEncoder.default(self, obj)
 
@@ -75,8 +80,6 @@ from tornado import gen
 ###################
 ## LOCAL IMPORTS ##
 ###################
-
-from numpy import ndarray
 
 from . import checkplot
 checkplot.set_logger_parent(__name__)
@@ -446,6 +449,15 @@ class CheckplotHandler(tornado.web.RequestHandler):
                         'cpstatus':cpstatus,
                     }
                 }
+
+                # replace nans with Nones
+                for key in resultdict['result']['objectinfo']:
+
+                    if (isinstance(resultdict['result']['objectinfo'][key],
+                                   float) and
+                        (not np.isfinite(resultdict['result']['objectinfo'][key]))):
+                        resultdict['result']['objectinfo'][key] = None
+
 
                 # now get the other stuff
                 for key in ('pdm','aov','bls','gls','mav','acf','win'):

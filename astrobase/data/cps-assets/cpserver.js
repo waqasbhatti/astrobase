@@ -42,18 +42,89 @@ var cptracker = {
 
     // this is the order of columns for generating the CSV
     infocolumns: [
-        'objectid','checkplot',
-        'objectinfo.hatid','objectinfo.twomassid',
-        'objectinfo.network','objectinfo.stations','objectinfo.ndet',
-        'objectinfo.objecttags','objectinfo.bmag','objectinfo.vmag',
-        'objectinfo.sdssg','objectinfo.sdssr','objectinfo.sdssi',
-        'objectinfo.jmag','objectinfo.hmag','objectinfo.kmag',
-        'objectinfo.bvcolor','objectinfo.ijcolor','objectinfo.jkcolor',
-        'objectinfo.pmra','objectinfo.pmra_err',
-        'objectinfo.pmdecl','objectinfo.pmdecl_err',
-        'objectinfo.propermotion','objectinfo.reducedpropermotion',
-        'varinfo.objectisvar','varinfo.varperiod','varinfo.varepoch',
-        'varinfo.vartags','comments'
+        'objectid',
+        'checkplot',
+        'objectinfo.twomassid',
+        'objectinfo.network',
+        'objectinfo.stations',
+        'objectinfo.ndet',
+        'objectinfo.objecttags',
+        'objectinfo.bmag',
+        'objectinfo.vmag',
+        'objectinfo.sdssu',
+        'objectinfo.sdssg',
+        'objectinfo.sdssr',
+        'objectinfo.sdssi',
+        'objectinfo.sdssz',
+        'objectinfo.jmag',
+        'objectinfo.hmag',
+        'objectinfo.kmag',
+        'objectinfo.deredb',
+        'objectinfo.deredv',
+        'objectinfo.deredu',
+        'objectinfo.deredg',
+        'objectinfo.deredr',
+        'objectinfo.deredi',
+        'objectinfo.deredz',
+        'objectinfo.deredj',
+        'objectinfo.deredh',
+        'objectinfo.deredk',
+        'objectinfo.bvcolor',
+        'objectinfo.gjcolor',
+        'objectinfo.ijcolor',
+        'objectinfo.jkcolor',
+        'objectinfo.gkcolor',
+        'objectinfo.vkcolor',
+        'objectinfo.ugcolor',
+        'objectinfo.grcolor',
+        'objectinfo.ricolor',
+        'objectinfo.izcolor',
+        'objectinfo.dereddened',
+        'objectinfo.sdssufromjhk',
+        'objectinfo.sdssgfromjhk',
+        'objectinfo.sdssrfromjhk',
+        'objectinfo.sdssifromjhk',
+        'objectinfo.sdsszfromjhk',
+        'objectinfo.color_classes',
+        'objectinfo.ra',
+        'objectinfo.decl',
+        'objectinfo.gl',
+        'objectinfo.gb',
+        'objectinfo.pmra',
+        'objectinfo.pmra_err',
+        'objectinfo.pmdecl',
+        'objectinfo.pmdecl_err',
+        'objectinfo.propermotion',
+        'objectinfo.rpmj',
+        'objectinfo.reducedpropermotion',
+        'objectinfo.neighbors',
+        'objectinfo.closestdistarcsec',
+        'objectinfo.gaia_neighbors',
+        'objectinfo.gaia_closest_distarcsec',
+        'objectinfo.gaia_closest_gmagdiff',
+        'objectinfo.d_ug',
+        'objectinfo.d_gr',
+        'objectinfo.s_color',
+        'objectinfo.l_color',
+        'objectinfo.v_color',
+        'objectinfo.p1_color',
+        'objectinfo.m_sti',
+        'objectinfo.m_sts',
+        'objectinfo.extinctb',
+        'objectinfo.extinctv',
+        'objectinfo.extinctu',
+        'objectinfo.extinctg',
+        'objectinfo.extinctr',
+        'objectinfo.extincti',
+        'objectinfo.extinctz',
+        'objectinfo.extinctj',
+        'objectinfo.extincth',
+        'objectinfo.extinctk',
+        'varinfo.objectisvar',
+        'varinfo.varperiod',
+        'varinfo.varepoch',
+        'varinfo.vartags',
+        'comments'
     ],
 
     // this function generates a CSV row for a single object in the
@@ -415,7 +486,7 @@ var cpv = {
                     (String(hatstations).split(',')).join(', ');
             }
             else {
-                var splitstations = 'no HAT observations';
+                var splitstations = '';
             }
 
             var objndet = cpv.currcp.objectinfo.ndet;
@@ -431,21 +502,124 @@ var cpv = {
                 '<strong>LC points:</strong> ' + objndet;
             $('#hatinfo').html(hatinfo);
 
+            //
+            // get the coordinates
+            //
+
+            // ra
+            if (cpv.currcp.objectinfo.ra != undefined) {
+                var objectra = math.format(
+                    cpv.currcp.objectinfo.ra, 6
+                );
+
+            }
+            else {
+                var objectra = '';
+            }
+            // decl
+            if (cpv.currcp.objectinfo.decl != undefined) {
+                var objectdecl = math.format(
+                    cpv.currcp.objectinfo.decl, 6
+                );
+
+            }
+            else {
+                var objectdecl = '';
+            }
+            // gl
+            if (cpv.currcp.objectinfo.gl != undefined) {
+                var objectgl = math.format(
+                    cpv.currcp.objectinfo.gl, 6
+                );
+
+            }
+            else {
+                var objectgl = '';
+            }
+            // gb
+            if (cpv.currcp.objectinfo.gb != undefined) {
+                var objectgb = math.format(
+                    cpv.currcp.objectinfo.gb, 6
+                );
+
+            }
+            else {
+                var objectgb = '';
+            }
+            // total proper motion
+            if (cpv.currcp.objectinfo.propermotion != undefined) {
+                var objectpm = math.format(
+                    cpv.currcp.objectinfo.propermotion, 5
+                ) + ' mas/yr';
+
+            }
+            else {
+                var objectpm = '';
+            }
+            // reduced proper motion [Jmag]
+            if (cpv.currcp.objectinfo.rpmj != undefined) {
+                var objectrpmj = math.format(
+                    cpv.currcp.objectinfo.rpmj, 4
+                );
+
+            }
+            else if (cpv.currcp.objectinfo.reducedpropermotion != undefined) {
+                var objectrpmj = math.format(
+                    cpv.currcp.objectinfo.reducedpropermotion, 4
+                );
+
+            }
+            else {
+                var objectrpmj = '';
+            }
+
+            // format the coordinates and PM
             var coordspm =
-                '<strong>RA, Dec:</strong> ' +
+                '<strong>Equatorial (&alpha;, &delta;):</strong> ' +
                 '<a title="SIMBAD search at these coordinates" ' +
                 'href="http://simbad.u-strasbg.fr/simbad/sim-coo?Coord=' +
                 cpv.currcp.objectinfo.ra + '+' + cpv.currcp.objectinfo.decl +
                 '&Radius=1&Radius.unit=arcmin' +
                 '" rel="nofollow" target="_blank">' +
-                math.format(cpv.currcp.objectinfo.ra,6) + ', ' +
-                math.format(cpv.currcp.objectinfo.decl,6) + '</a><br>' +
-                '<strong>Total PM:</strong> ' +
-                math.format(cpv.currcp.objectinfo.propermotion,5) +
-                ' mas/yr<br>' +
-                '<strong>Reduced PM:</strong> ' +
-                math.format(cpv.currcp.objectinfo.reducedpropermotion,4);
+                objectra + ', ' + objectdecl + '</a><br>' +
+                '<strong>Galactic (l, b):</strong> ' +
+                objectgl + ', ' + objectgb + '<br>' +
+                '<strong>Total PM:</strong> ' + objectpm + '<br>' +
+                '<strong>Reduced PM<sub>J</sub>:</strong> ' + objectrpmj;
             $('#coordspm').html(coordspm);
+
+
+            //
+            // handle the mags
+            //
+
+            var magnotices = [];
+
+            if (cpv.currcp.objectinfo.sdssufromjhk != undefined &&
+                cpv.currcp.objectinfo.sdssufromjhk) {
+                magnotices.push('u');
+            }
+            if (cpv.currcp.objectinfo.sdssgfromjhk != undefined &&
+                cpv.currcp.objectinfo.sdssgfromjhk) {
+                magnotices.push('g');
+            }
+            if (cpv.currcp.objectinfo.sdssrfromjhk != undefined &&
+                cpv.currcp.objectinfo.sdssrfromjhk) {
+                magnotices.push('r');
+            }
+            if (cpv.currcp.objectinfo.sdssifromjhk != undefined &&
+                cpv.currcp.objectinfo.sdssifromjhk) {
+                magnotices.push('i');
+            }
+            if (cpv.currcp.objectinfo.sdsszfromjhk != undefined &&
+                cpv.currcp.objectinfo.sdsszfromjhk) {
+                magnotices.push('z');
+            }
+
+            if (magnotices.length > 0) {
+                $('#magnotice').html('<br>(' + magnotices.join('') +
+                                     ' via JHK transform)');
+            }
 
             var mags = '<strong><em>gri</em>:</strong> ' +
                 math.format(cpv.currcp.objectinfo.sdssg,5) + ', ' +
@@ -460,13 +634,117 @@ var cpv = {
                 math.format(cpv.currcp.objectinfo.vmag,5);
             $('#mags').html(mags);
 
-            var colors = '<strong><em>B - V</em>:</strong> ' +
-                math.format(cpv.currcp.objectinfo.bvcolor,4) + '<br>' +
-                '<strong><em>i - J</em>:</strong> ' +
-                math.format(cpv.currcp.objectinfo.ijcolor,4) + '<br>' +
-                '<strong><em>J - K</em>:</strong> ' +
-                math.format(cpv.currcp.objectinfo.jkcolor,4);
+            //
+            // handle the colors
+            //
+
+            if (cpv.currcp.objectinfo.dereddened != undefined &&
+                cpv.currcp.objectinfo.dereddened) {
+
+                $('#derednotice').html('<br>(dereddened)');
+
+                var colors =
+                    '<strong><em>(B - V)<sub>0</sub></em>:</strong> ' +
+                    math.format(cpv.currcp.objectinfo.bvcolor,4) + '  ' +
+                    '<strong><em>(V - K)<sub>0</sub></em>:</strong> ' +
+                    math.format(cpv.currcp.objectinfo.vkcolor,4) + '<br>' +
+                    '<strong><em>(J - K)<sub>0</sub></em>:</strong> ' +
+                    math.format(cpv.currcp.objectinfo.jkcolor,4) + '  ' +
+                    '<strong><em>(i - J)<sub>0</sub></em>:</strong> ' +
+                    math.format(cpv.currcp.objectinfo.ijcolor,4) + '<br>' +
+                    '<strong><em>(g - K)<sub>0</sub></em>:</strong> ' +
+                    math.format(cpv.currcp.objectinfo.gkcolor,4) + '  ' +
+                    '<strong><em>(g - r)<sub>0</sub></em>:</strong> ' +
+                    math.format(cpv.currcp.objectinfo.grcolor,4);
+
+            }
+
+            else {
+                var colors =
+                    '<strong><em>(B - V)</em>:</strong> ' +
+                    math.format(cpv.currcp.objectinfo.bvcolor,4) + '  ' +
+                    '<strong><em>(V - K)</em>:</strong> ' +
+                    math.format(cpv.currcp.objectinfo.vkcolor,4) + '<br>' +
+                    '<strong><em>(J - K)</em>:</strong> ' +
+                    math.format(cpv.currcp.objectinfo.jkcolor,4) + '  ' +
+                    '<strong><em>(i - J)</em>:</strong> ' +
+                    math.format(cpv.currcp.objectinfo.ijcolor,4) + '<br>' +
+                    '<strong><em>(g - K)</em>:</strong> ' +
+                    math.format(cpv.currcp.objectinfo.gkcolor,4) + '  ' +
+                    '<strong><em>(g - r)</em>:</strong> ' +
+                    math.format(cpv.currcp.objectinfo.grcolor,4);
+            }
+
+            // format the colors
             $('#colors').html(colors);
+
+            //
+            // additional stuff
+            //
+            $("#objectinfo-extra").empty();
+
+            if (cpv.currcp.objectinfo.color_classes != undefined &&
+                cpv.currcp.objectinfo.color_classes.length > 0) {
+
+                var formatted_color_classes =
+                    cpv.currcp.objectinfo.color_classes.join(', ');
+                $('#objectinfo-extra')
+                    .append(
+                        "<tr>" +
+                            "<th>Color classification</th>" +
+                            "<td>" + formatted_color_classes + "</td>" +
+                            "</tr>"
+                    );
+
+            }
+
+            if (cpv.currcp.objectinfo.neighbors != undefined ||
+                cpv.currcp.objectinfo.gaia_neighbors != undefined) {
+
+                if (cpv.currcp.objectinfo.neighbors > 0) {
+
+                    var formatted_neighbors =
+                        '<strong><em>from LCs in collection</em>:</strong> ' +
+                        cpv.currcp.objectinfo.neighbors + '<br>' +
+                        '<em>closest distance</em>: ' +
+                        math.format(cpv.currcp.objectinfo.closestdistarcsec,4) +
+                        '&Prime;<br>';
+                }
+                else {
+                    var formatted_neighbors = '';
+                }
+
+                if (cpv.currcp.objectinfo.gaia_neighbors > 0) {
+                    var formatted_gaia =
+                        '<strong><em>from GAIA</em>:</strong> ' +
+                        cpv.currcp.objectinfo.gaia_neighbors + '<br>' +
+                        '<em>closest distance</em>: ' +
+                        math.format(
+                            cpv.currcp.objectinfo.gaia_closest_distarcsec,4
+                        ) + '&Prime;<br>' +
+                        '<em>closest G mag (obj - nbr)</em>: ' +
+                        math.format(
+                            cpv.currcp.objectinfo.gaia_closest_gmagdiff,4
+                        ) + ' mag';
+
+                }
+                else {
+                    var formatted_gaia = '';
+                }
+
+                $('#objectinfo-extra')
+                    .append(
+                        "<tr>" +
+                            "<th>Neighbors within " +
+                            math.format(cpv.currcp.objectinfo.searchradarcsec,
+                                        3) + "&Prime;</th>" +
+                            "<td>" + formatted_neighbors +
+                            formatted_gaia +
+                            "</td>" +
+                            "</tr>"
+                    );
+
+            }
 
             // update the magseries plot
             cputils.b64_to_image(cpv.currcp.magseries,
