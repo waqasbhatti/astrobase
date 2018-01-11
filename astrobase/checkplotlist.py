@@ -413,9 +413,16 @@ def main():
         # 'gt', 'le', 'lt', 'eq' and <operand> is a string, float, or int to use
         # when applying <condition>
 
+        # first, take care of sort keys
+        sortdone = False
+
+        # second, take care of any filters
+        filterok = False
+        filterstatements = []
+
         # make sure we only run these operations on checkplot pickles
         if ((args.cptype == 'pkl') and
-            ((sortkey and sortorder) or (filterkey and filtercondition))):
+            ((sortkey and sortorder) or (filterkeys and filterconditions))):
 
             keystoget = []
 
@@ -505,9 +512,6 @@ def main():
             # sorting/filtering
             searchresults = np.array(searchresults)
 
-            # first, take care of sort keys
-            sortdone = False
-
             if sorttargets:
 
                 sorttargets = np.ravel(np.array(sorttargets))
@@ -519,10 +523,6 @@ def main():
                 # sort the search results in the requested order
                 searchresults = searchresults[sortind]
                 sortdone = True
-
-            # second, take care of any filters
-            filterok = False
-            filterstatements = []
 
             if filtertargets:
 
@@ -625,7 +625,7 @@ def main():
 
 
         # if the filter failed, zero out filterkey
-        if not filterok:
+        if (filterkeys and filterconditions) and not filterok:
             filterstatements = []
 
         # generate the output
