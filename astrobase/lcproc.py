@@ -3334,8 +3334,9 @@ def update_checkplotdict_nbrlcs(
 
         # get the light curve
         if not os.path.exists(lcfpath):
-            LOGERROR('neighbor: %s, lightcurve: %s not found, skipping...' %
-                     (objectid, lcfpath))
+            LOGERROR('objectid: %s, neighbor: %s, '
+                     'lightcurve: %s not found, skipping...' %
+                     (checkplotdict['objectid'], objectid, lcfpath))
             continue
 
         lcdict = readerfunc(lcfpath)
