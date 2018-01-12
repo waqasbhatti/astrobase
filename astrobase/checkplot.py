@@ -155,7 +155,7 @@ from .varclass.starfeatures import coord_features, color_features, \
     color_classification, neighbor_features
 from .plotbase import skyview_stamp, \
     PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
-
+from .coordutils import total_proper_motion, reduced_proper_motion
 
 ############
 ## CONFIG ##
@@ -255,11 +255,11 @@ def _make_periodogram(axes,
 
         # get the stamp
         try:
-            dss = skyview_stamp(objectinfo['ra'],
-                                objectinfo['decl'],
-                                convolvewith=finderconvolve,
-                                cachedir=findercachedir,
-                                verbose=verbose)
+            dss, dssheader = skyview_stamp(objectinfo['ra'],
+                                           objectinfo['decl'],
+                                           convolvewith=finderconvolve,
+                                           cachedir=findercachedir,
+                                           verbose=verbose)
             stamp = dss
 
             # inset plot it on the current axes
