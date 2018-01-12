@@ -995,10 +995,13 @@ var cpv = {
             cpv.currcp.varinfo.objectisvar = $('#varcheck').val();
 
             // make sure that we've saved the input varinfo, objectinfo and
-            // comments
+            // comments, period, epoch, etc.
             cpv.currcp.varinfo.vartags = $('#vartags').val();
             cpv.currcp.objectinfo.objecttags = $('#objecttags').val();
             cpv.currcp.objectcomments = $('#objectcomments').val();
+            cpv.currcp.varinfo.objectisvar = parseInt($('#varcheck').val());
+            cpv.currcp.varinfo.varperiod = parseFloat($('#objectperiod').val());
+            cpv.currcp.varinfo.varepoch = parseFloat($('#objectepoch').val());
 
             var cppayload = JSON.stringify(
                 {objectid: cpv.currcp.objectid,
