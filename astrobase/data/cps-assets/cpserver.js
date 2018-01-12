@@ -899,6 +899,110 @@ var cpv = {
             // write the max phasedind
             cpv.maxphasedind = phasedplotindex;
 
+            //
+            // finally, handle the neighbors tab for this object
+            //
+
+            // 1. empty the rows for the gaia table and lcc neighbor list
+            $('#gaia-neighbor-tbody').empty();
+            $('#neighbor-container').empty();
+
+            // 2. update the search radius
+            if (cpv.currcp.objectinfo.searchradarcsec != undefined) {
+                $('#gaia-neighbor-maxdist').html(
+                    cpv.currcp.objectinfo.searchradarcsec
+                );
+                $('#lcc-neighbor-maxdist').html(
+                    cpv.currcp.objectinfo.searchradarcsec
+                );
+            }
+
+            // 3. update the GAIA neighbors
+            if (cpv.currcp.objectinfo.gaia_neighbors != undefined &&
+                cpv.currcp.objectinfo.gaia_neighbors > 0) {
+
+                $('#gaia-neighbor-count').html(
+                    cpv.currcp.objectinfo.gaia_neighbors
+                );
+
+                // for each gaia neighbor, put in a table row
+                var gi = 0;
+
+                for (gi; gi < cpv.currcp.objectinfo.gaia_neighbors; gi++) {
+
+                    var rowhtml = '<tr>' +
+                        '<td>' + cpv.currcp.objectinfo.gaia_nbrids[gi] + '</td>' +
+                        '<td>' + math.format(cpv.currcp.objectinfo.gaia_nbrmags[gi],
+                                             3) + '</td>' +
+                        '<td>' + math.format(cpv.currcp.objectinfo.gaia_nbrdists[gi],
+                                             3)+ '</td>' +
+                        '</tr>';
+                    $('#gaia-neighbor-tbody').append(rowhtml);
+
+                }
+
+            }
+
+            // 4. update the LCC neighbor list
+            if (cpv.currcp.neighbors.length > 0) {
+
+                var ni = 0;
+
+                for (ni; ni < cpv.currcp.neighbors.length; ni++) {
+
+                    var nbrobjectid = cpv.currcp.neighbors[ni].objectid;
+                    var nbrra = cpv.currcp.neighbors[ni].objectinfo.ra;
+                    var nbrdecl = cpv.currcp.neighbors[ni].objectinfo.decl;
+                    var nbrdist = cpv.currcp.neighbors[ni].objectinfo.distarcsec;
+
+                    var rowheader = '<h6>' +
+                        nbrobjectid + ': (&alpha;, &delta;) = (' +
+                        math.format(nbrra, 5) + ', ' +
+                        math.format(nbrra, 5) + '), distance: ' +
+                        math.format(nbrdist,3) + '&Prime;</h6>';
+
+                    // set the column width
+                    var nbrcolw = colwidth + 1;
+
+                    // add the magseries plot for this neighbor
+                    var rowplots = [
+                        '<div class="col-sm-' + nbrcolw + '">' +
+                            '<img src="data:image/png;base64,' +
+                            cpv.currcp.neighbors[ni].magseries +
+                            '" class="img-fluid">' +
+                            '</div>'
+                    ];
+
+                    // for each lspmethod, add the phased LC for the neighbor
+                    var nli = 0;
+                    for (nli; nli < lspmethods.length; nli++) {
+
+                        var thisnphased =
+                            '<div class="col-sm-' + nbrcolw + '">' +
+                            '<img src="data:image/png;base64,' +
+                            cpv.currcp.neighbors[ni][lspmethods[nli]]['plot'] +
+                            '" class="img-fluid">' +
+                            '</div>';
+                        rowplots.push(thisnphased);
+
+                    }
+
+                    // put together this row of plots
+                    var rowplots_str = rowplots.join(' ');
+
+                    // put together this row
+                    var nbrrow = '<div class="row"><div class="col-sm-12">' +
+                        rowheader + '</div></div>' +
+                        '<div class="row">' +
+                        rowplots_str +
+                        '</div>';
+
+                    $('#lcc-neighbor-container').append(nbrrow);
+
+                }
+
+            }
+
 
         }).done(function () {
 

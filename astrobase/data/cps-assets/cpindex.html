@@ -275,9 +275,9 @@
                 <a class="dropdown-item vartag-dn" href="#"
                    data-dnvartag="planet candidate">planet candidate</a>
                 <a class="dropdown-item vartag-dn" href="#"
-                   data-dnvartag="RRab pulsator">RRab pulsator</a>
+                   data-dnvartag="RRab pulsator">RR Lyrae pulsator</a>
                 <a class="dropdown-item vartag-dn" href="#"
-                   data-dnvartag="RRc pulsator">RRc pulsator</a>
+                   data-dnvartag="Cepheid pulsator">Cepheid pulsator</a>
                 <a class="dropdown-item vartag-dn" href="#"
                    data-dnvartag="starspot rotation">starspot rotation</a>
                 <a class="dropdown-item vartag-dn" href="#"
@@ -374,8 +374,16 @@
               <li class="nav-item">
                 <a class="nav-link active"
                    data-toggle="tab"
-                   href="#overview" role="tab">Checkplot Overview</a>
+                   href="#overview" role="tab">Phased LCs</a>
               </li>
+
+              <li class="nav-item">
+                <a class="nav-link"
+                   data-toggle="tab"
+                   href="#neighbors" role="tab">Neighbors</a>
+              </li>
+
+              {% if not readonly %}
 
               <li class="nav-item">
                 <a class="nav-link"
@@ -395,15 +403,13 @@
                    href="#lcfit" role="tab">LC Fit</a>
               </li>
 
-              {% if not readonly %}
+              {% end %}
 
               <li class="nav-item">
                 <a class="nav-link"
                    data-toggle="tab"
                    href="#cpsave" role="tab">Save/Reset</a>
               </li>
-
-              {% end %}
 
 
             </ul>
@@ -419,6 +425,49 @@
             </div>
           </div>
 
+          <!-- this tab panel contains neighbor stuff -->
+          <div class="tab-pane" id="neighbors" role="tabpanel">
+
+            <div class="row tool-header-panel justify-content-center">
+              <div class="col-sm-7">
+
+                <h5><span id="gaia-neighbor-count">0</span> GAIA neighbors within <span id="gaia-neighbor-maxdist"></span>&Prime;</h5>
+
+                <table id="gaia-neighbors" class="table table-sm objectinfo-table">
+                  <thead>
+                    <tr>
+                      <th>GAIA source id</th>
+                      <th>G magnitude</th>
+                      <th>distance [arcsec]</th>
+                    </tr>
+                  </thead>
+                  <tbody id="gaia-neighbor-tbody">
+
+                  </tbody>
+                </table>
+
+              </div>
+            </div>
+
+            <div class="row tool-header-panel">
+              <div class="col-sm-12">
+                <h5><span id="lcc-neighbor-count">0</span> LC collection neighbors within <span id="lcc-neighbor-maxdist">&Prime;</span></h5>
+
+                <p>Neighbors for this object from this light curve collection are listed below in order of increasing distance.
+                  Their unphased LC and phased LCs using the same period-finder methods, and best period and fold
+                  epoch, as for the object are also shown.</p>
+
+              </div>
+            </div>
+
+            <div class="lcc-neighbor-container">
+              <!-- for each neighbor we have a divrow with a heading of objectid, ra, decl, dist -->
+              <!-- then for each periodfinder, the best phased LC for that periodfinder -->
+            </div>
+
+          </div>
+
+          {% if not readonly %}
 
           <!-- this tab panel contains the period-tools -->
           <div class="tab-pane" id="periodsearch" role="tabpanel">
@@ -859,10 +908,12 @@
             </div>
           </div>
 
-          {% if not readonly %}
+          {% end %}
 
           <!-- this tab contains save and export tools -->
           <div class="tab-pane" id="cpsave" role="tabpanel">
+
+            {% if not readonly %}
 
             <!-- this is the save tool results link -->
             <div class="row tool-header-panel">
@@ -889,8 +940,10 @@
 
             </div>
 
+            {% end %}
+
             <!-- this is the save to PNG link -->
-            <div class="row">
+            <div class="row tool-header-panel">
 
               <div class="col-sm-6">
                 <p>All synced object information in the checkplot pickle can be
@@ -909,8 +962,6 @@
             </div>
 
           </div>
-
-          {% end %}
 
         </div>
 
@@ -1025,11 +1076,11 @@
           </tr>
           <tr>
             <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>2</kbd></td>
-            <td>add a <span class="cp-tag">RRab pulsator</span> tag</td>
+            <td>add a <span class="cp-tag">RR Lyrae pulsator</span> tag</td>
           </tr>
           <tr>
             <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>3</kbd></td>
-            <td>add a <span class="cp-tag">RRc pulsator</span> tag</td>
+            <td>add a <span class="cp-tag">Cepheid pulsator</span> tag</td>
           </tr>
           <tr>
             <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>4</kbd></td>
