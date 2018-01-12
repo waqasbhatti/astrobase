@@ -663,8 +663,8 @@ def skyview_stamp(ra, decl,
             frame = np.flipud(frame)
 
         if verbose:
-            LOGINFO('fetched stamp successfully for %s, provenance: %s'
-                    % (repr(formposition[0]), provenance))
+            LOGINFO('fetched stamp successfully for (%.3f, %.3f)'
+                    % (ra, decl))
 
         if convolvewith:
             convolved = aconv.convolve(frame, convolvewith)
