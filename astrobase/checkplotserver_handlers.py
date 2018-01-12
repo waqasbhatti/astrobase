@@ -412,6 +412,44 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 objectid = cpdict['objectid']
                 objectinfo = cpdict['objectinfo']
                 varinfo = cpdict['varinfo']
+                pfmethods = []
+
+                # get the period-finders associated with this object
+                for key in ('pdm','aov','bls','gls','mav','acf','win'):
+                    if key in cpdict:
+                        pfmethods.append(key)
+
+                # handle neighbors for this object
+                neighbors = []
+
+                if 'neighbors' in cpdict and len(cpdict['neighbors']) > 0:
+
+                    nbrlist = cpdict['neighbors']
+
+                    # get each neighbor, its info, and its phased LCs
+                    for nbr in nbrlist:
+
+                        thisnbrdict = {
+                            'objectid':nbr['objectid'],
+                            'objectinfo':{
+                                'ra':nbr['ra'],
+                                'decl':nbr['decl'],
+                                'xpix':nbr['xpix'],
+                                'ypix':nbr['ypix'],
+                                'distarcsec':nbr['dist'],
+                            },
+                            'magseries':nbr['magseries']['plot']
+                        }
+
+                        for pfm in pfmethods:
+                            if pfm in nbr:
+                                thisnbrdict[pfm] = {
+                                    'plot':nbr[pfm][0]['plot'],
+                                    'period':nbr[pfm][0]['period'],
+                                    'epoch':nbr[pfm][0]['epoch']
+                                }
+
+                        neighbors.append(thisnbrdict)
 
                 if 'comments' in cpdict:
                     objectcomments = cpdict['comments']
@@ -442,6 +480,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                         'objectinfo':objectinfo,
                         'objectcomments':objectcomments,
                         'varinfo':varinfo,
+                        'neighbors':neighbors,
                         'finderchart':finderchart,
                         'magseries':magseries,
                         # fallback in case objectinfo doesn't have ndet
@@ -450,135 +489,141 @@ class CheckplotHandler(tornado.web.RequestHandler):
                     }
                 }
 
-                # replace nans with Nones
+                # make sure to replace nans with Nones. frontend JS absolutely
+                # hates NaNs and for some reason, the JSON encoder defined at
+                # the top of this file doesn't deal with them even though it
+                # should
                 for key in resultdict['result']['objectinfo']:
 
                     if (isinstance(resultdict['result']['objectinfo'][key],
                                    float) and
-                        (not np.isfinite(resultdict['result']['objectinfo'][key]))):
+                        (not np.isfinite(resultdict['result'][
+                            'objectinfo'
+                        ][key]))):
                         resultdict['result']['objectinfo'][key] = None
 
 
-                # now get the other stuff
-                for key in ('pdm','aov','bls','gls','mav','acf','win'):
+                # now get the periodograms and phased LCs
+                for key in pfmethods:
 
-                    # we return only the first three phased LCs per periodogram
-                    if key in cpdict:
+                    # get the periodogram for this method
+                    periodogram = cpdict[key]['periodogram']
 
-                        # get the periodogram for this method
-                        periodogram = cpdict[key]['periodogram']
+                    # get the phased LC with best period
+                    phasedlc0plot = cpdict[key][0]['plot']
 
-                        # get the phased LC with best period
-                        phasedlc0plot = cpdict[key][0]['plot']
-
-                        # get the associated fitinfo for this period if it
-                        # exists
-                        if ('lcfit' in cpdict[key][0] and
-                            isinstance(cpdict[key][0]['lcfit'], dict)):
-                            phasedlc0fit = {
-                                'method':(
-                                    cpdict[key][0]['lcfit']['fittype']
-                                    ),
-                                'redchisq':(
-                                    cpdict[key][0]['lcfit']['fitredchisq']
-                                    ),
-                                'chisq':(
-                                    cpdict[key][0]['lcfit']['fitchisq']
-                                    ),
-                                'params':(
-                                    cpdict[key][0][
-                                        'lcfit'
-                                    ]['fitinfo']['finalparams'] if
-                                    'finalparams' in
-                                    cpdict[key][0]['lcfit']['fitinfo'] else None
-                                    )
-                                }
-                        else:
-                            phasedlc0fit = None
+                    # get the associated fitinfo for this period if it
+                    # exists
+                    if ('lcfit' in cpdict[key][0] and
+                        isinstance(cpdict[key][0]['lcfit'], dict)):
+                        phasedlc0fit = {
+                            'method':(
+                                cpdict[key][0]['lcfit']['fittype']
+                                ),
+                            'redchisq':(
+                                cpdict[key][0]['lcfit']['fitredchisq']
+                                ),
+                            'chisq':(
+                                cpdict[key][0]['lcfit']['fitchisq']
+                                ),
+                            'params':(
+                                cpdict[key][0][
+                                    'lcfit'
+                                ]['fitinfo']['finalparams'] if
+                                'finalparams' in
+                                cpdict[key][0]['lcfit']['fitinfo'] else None
+                                )
+                            }
+                    else:
+                        phasedlc0fit = None
 
 
-                        # get the phased LC with 2nd best period
-                        phasedlc1plot = cpdict[key][1]['plot']
+                    # get the phased LC with 2nd best period
+                    phasedlc1plot = cpdict[key][1]['plot']
 
-                        # get the associated fitinfo for this period if it
-                        # exists
-                        if ('lcfit' in cpdict[key][1] and
-                            isinstance(cpdict[key][1]['lcfit'], dict)):
-                            phasedlc1fit = {
-                                'method':(
-                                    cpdict[key][1]['lcfit']['fittype']
-                                    ),
-                                'redchisq':(
-                                    cpdict[key][1]['lcfit']['fitredchisq']
-                                    ),
-                                'chisq':(
-                                    cpdict[key][1]['lcfit']['fitchisq']
-                                    ),
-                                'params':(
-                                    cpdict[key][1][
-                                        'lcfit'
-                                    ]['fitinfo']['finalparams'] if
-                                    'finalparams' in
-                                    cpdict[key][1]['lcfit']['fitinfo'] else None
-                                    )
-                                }
-                        else:
-                            phasedlc1fit = None
+                    # get the associated fitinfo for this period if it
+                    # exists
+                    if ('lcfit' in cpdict[key][1] and
+                        isinstance(cpdict[key][1]['lcfit'], dict)):
+                        phasedlc1fit = {
+                            'method':(
+                                cpdict[key][1]['lcfit']['fittype']
+                                ),
+                            'redchisq':(
+                                cpdict[key][1]['lcfit']['fitredchisq']
+                                ),
+                            'chisq':(
+                                cpdict[key][1]['lcfit']['fitchisq']
+                                ),
+                            'params':(
+                                cpdict[key][1][
+                                    'lcfit'
+                                ]['fitinfo']['finalparams'] if
+                                'finalparams' in
+                                cpdict[key][1]['lcfit']['fitinfo'] else None
+                                )
+                            }
+                    else:
+                        phasedlc1fit = None
 
 
-                        # get the phased LC with 3rd best period
-                        phasedlc2plot = cpdict[key][2]['plot']
+                    # get the phased LC with 3rd best period
+                    phasedlc2plot = cpdict[key][2]['plot']
 
-                        # get the associated fitinfo for this period if it
-                        # exists
-                        if ('lcfit' in cpdict[key][2] and
-                            isinstance(cpdict[key][2]['lcfit'], dict)):
-                            phasedlc2fit = {
-                                'method':(
-                                    cpdict[key][2]['lcfit']['fittype']
-                                    ),
-                                'redchisq':(
-                                    cpdict[key][2]['lcfit']['fitredchisq']
-                                    ),
-                                'chisq':(
-                                    cpdict[key][2]['lcfit']['fitchisq']
-                                    ),
-                                'params':(
-                                    cpdict[key][2][
-                                        'lcfit'
-                                    ]['fitinfo']['finalparams'] if
-                                    'finalparams' in
-                                    cpdict[key][2]['lcfit']['fitinfo'] else None
-                                    )
-                                }
-                        else:
-                            phasedlc2fit = None
+                    # get the associated fitinfo for this period if it
+                    # exists
+                    if ('lcfit' in cpdict[key][2] and
+                        isinstance(cpdict[key][2]['lcfit'], dict)):
+                        phasedlc2fit = {
+                            'method':(
+                                cpdict[key][2]['lcfit']['fittype']
+                                ),
+                            'redchisq':(
+                                cpdict[key][2]['lcfit']['fitredchisq']
+                                ),
+                            'chisq':(
+                                cpdict[key][2]['lcfit']['fitchisq']
+                                ),
+                            'params':(
+                                cpdict[key][2][
+                                    'lcfit'
+                                ]['fitinfo']['finalparams'] if
+                                'finalparams' in
+                                cpdict[key][2]['lcfit']['fitinfo'] else None
+                                )
+                            }
+                    else:
+                        phasedlc2fit = None
 
-                        resultdict['result'][key] = {
-                            'nbestperiods':cpdict[key]['nbestperiods'],
-                            'periodogram':periodogram,
-                            'bestperiod':cpdict[key]['bestperiod'],
-                            'phasedlc0':{
-                                'plot':phasedlc0plot,
-                                'period':float(cpdict[key][0]['period']),
-                                'epoch':float(cpdict[key][0]['epoch']),
-                                'lcfit':phasedlc0fit,
-                            },
-                            'phasedlc1':{
-                                'plot':phasedlc1plot,
-                                'period':float(cpdict[key][1]['period']),
-                                'epoch':float(cpdict[key][1]['epoch']),
-                                'lcfit':phasedlc1fit,
-                            },
-                            'phasedlc2':{
-                                'plot':phasedlc2plot,
-                                'period':float(cpdict[key][2]['period']),
-                                'epoch':float(cpdict[key][2]['epoch']),
-                                'lcfit':phasedlc2fit,
-                            },
-                        }
+                    resultdict['result'][key] = {
+                        'nbestperiods':cpdict[key]['nbestperiods'],
+                        'periodogram':periodogram,
+                        'bestperiod':cpdict[key]['bestperiod'],
+                        'phasedlc0':{
+                            'plot':phasedlc0plot,
+                            'period':float(cpdict[key][0]['period']),
+                            'epoch':float(cpdict[key][0]['epoch']),
+                            'lcfit':phasedlc0fit,
+                        },
+                        'phasedlc1':{
+                            'plot':phasedlc1plot,
+                            'period':float(cpdict[key][1]['period']),
+                            'epoch':float(cpdict[key][1]['epoch']),
+                            'lcfit':phasedlc1fit,
+                        },
+                        'phasedlc2':{
+                            'plot':phasedlc2plot,
+                            'period':float(cpdict[key][2]['period']),
+                            'epoch':float(cpdict[key][2]['epoch']),
+                            'lcfit':phasedlc2fit,
+                        },
+                    }
 
-                # return this via JSON
+                #
+                # end of processing per pfmethod
+                #
+
+                # return the checkplot via JSON
                 self.write(resultdict)
                 self.finish()
 
