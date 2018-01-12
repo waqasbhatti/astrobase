@@ -255,11 +255,11 @@ def _make_periodogram(axes,
 
         # get the stamp
         try:
-            dss = skyview_stamp(objectinfo['ra'],
-                                objectinfo['decl'],
-                                convolvewith=finderconvolve,
-                                cachedir=findercachedir,
-                                verbose=verbose)
+            dss, dssheader = skyview_stamp(objectinfo['ra'],
+                                           objectinfo['decl'],
+                                           convolvewith=finderconvolve,
+                                           cachedir=findercachedir,
+                                           verbose=verbose)
             stamp = dss
 
             # inset plot it on the current axes
