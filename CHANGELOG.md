@@ -1,3 +1,25 @@
+# v0.3.3
+
+## Fixes
+
+- checkplot: add back coordutils imports for checkplot_png, et al.
+- checkplot: added all new star features to cpd objectinfo
+- checkplot: add extra guards against measurements being nan
+- checkplot.checkplot_pickle_to_png: guard against missing nbr LCs
+- checkplot: fix checkplot_png download of finder charts
+- checkplotlist: add a default sortorder and sortkey
+- checkplotlist: fix horrendous bugs when no sorting/filtering specified
+- cpserver: added implementation for neighbors tab
+- cpserver: add GAIA nbrs, dered colors, color classes to web interface
+- cpserver js: fix long-broken arbitrary period, epoch, etc. input
+- cpserver: send neighbor info to the frontend
+- lcproc: check if neighbor LC actually exists before processing it
+- lcproc: guard against insufficient measurements for nbrs too
+- plotbase: fix long-broken stamp fetch that tests ignored
+- services.skyview: add sizepix param, gracefully handle older cache fnames
+- starfeatures.neighbor_features: correctly handle case where there are no GAIA neighbors
+
+
 # v0.3.2
 
 ## Fixes
