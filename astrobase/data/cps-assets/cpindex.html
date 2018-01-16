@@ -420,7 +420,7 @@
 
           <!-- this tab panel contains the phased light curve plots -->
           <div class="tab-pane active" id="overview" role="tabpanel">
-            <div class="row phased-container tool-header-panel">
+            <div class="row phased-container tool-header-panel ">
 
             </div>
           </div>
@@ -428,10 +428,20 @@
           <!-- this tab panel contains neighbor stuff -->
           <div class="tab-pane" id="neighbors" role="tabpanel">
 
-            <div class="row tool-header-panel justify-content-center">
-              <div class="col-sm-7">
+            <div class="row tool-header-panel">
 
-                <h5><span id="gaia-neighbor-count">0</span> GAIA neighbors within <span id="gaia-neighbor-maxdist"></span>&Prime;</h5>
+              <div class="col-sm-6">
+                <h5><span id="lcc-neighbor-count">0</span> LC collection neighbor(s) within <span id="lcc-neighbor-maxdist"></span>&Prime;</h5>
+
+                <p>Neighbors for this object from this light curve collection are listed below in order of increasing distance.
+                  Their unphased LC and phased LCs using the same period-finder methods, and best period and fold
+                  epoch, as for the object are also shown.</p>
+
+              </div>
+
+              <div class="col-sm-6 neighbor-table-row">
+
+                <h5><span id="gaia-neighbor-count">0</span> GAIA neighbor(s) within <span id="gaia-neighbor-maxdist"></span>&Prime;</h5>
 
                 <table id="gaia-neighbors" class="table table-sm objectinfo-table">
                   <thead>
@@ -447,22 +457,14 @@
                 </table>
 
               </div>
+
             </div>
 
-            <div class="row tool-header-panel">
-              <div class="col-sm-12">
-                <h5><span id="lcc-neighbor-count">0</span> LC collection neighbors within <span id="lcc-neighbor-maxdist">&Prime;</span></h5>
+            <div class="row tool-header-panel" id="lcc-neighbor-container">
 
-                <p>Neighbors for this object from this light curve collection are listed below in order of increasing distance.
-                  Their unphased LC and phased LCs using the same period-finder methods, and best period and fold
-                  epoch, as for the object are also shown.</p>
-
-              </div>
-            </div>
-
-            <div class="lcc-neighbor-container">
               <!-- for each neighbor we have a divrow with a heading of objectid, ra, decl, dist -->
               <!-- then for each periodfinder, the best phased LC for that periodfinder -->
+
             </div>
 
           </div>

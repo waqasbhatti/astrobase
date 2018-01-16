@@ -91,6 +91,10 @@ div.tracker-obj {
     margin-bottom: 10px;
 }
 
+.bot-mrg-20px {
+    margin-bottom: 20px;
+}
+
 /* fancy spinner thing - http://tobiasahlin.com/spinkit/
 
 to use this:
@@ -205,4 +209,21 @@ to use this:
 
 .objectinfo-table {
     font-size: 80%;
+}
+
+.neighbor-table-row {
+    height: 200px;
+    overflow-y: auto;
+}
+
+
+.no-gutters {
+  margin-right: 0;
+  margin-left: 0;
+
+  > .col,
+  > [class*="col-"] {
+    padding-right: 0;
+    padding-left: 0;
+  }
 }

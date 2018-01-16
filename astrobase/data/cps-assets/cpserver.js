@@ -834,7 +834,7 @@ var cpv = {
                     // start putting together the container for this method
                     var mcontainer_coltop =
                         '<div class="col-sm-' + colwidth +
-                        '" "data-lspmethod="' + lspmethod + '">';
+                        '" data-lspmethod="' + lspmethod + '">';
                     var mcontainer_colbot = '</div>';
 
                     var periodogram_row =
@@ -904,8 +904,15 @@ var cpv = {
             //
 
             // 1. empty the rows for the gaia table and lcc neighbor list
-            $('#gaia-neighbor-tbody').empty();
             $('#neighbor-container').empty();
+
+            $('#gaia-neighbor-tbody').empty();
+            $('#gaia-neighbor-count').html(
+                cpv.currcp.objectinfo.gaia_neighbors
+            );
+
+            $('#lcc-neighbor-container').empty();
+            $("#lcc-neighbor-count").html(cpv.currcp.neighbors.length);
 
             // 2. update the search radius
             if (cpv.currcp.objectinfo.searchradarcsec != undefined) {
@@ -921,22 +928,19 @@ var cpv = {
             if (cpv.currcp.objectinfo.gaia_neighbors != undefined &&
                 cpv.currcp.objectinfo.gaia_neighbors > 0) {
 
-                $('#gaia-neighbor-count').html(
-                    cpv.currcp.objectinfo.gaia_neighbors
-                );
-
                 // for each gaia neighbor, put in a table row
                 var gi = 0;
 
                 for (gi; gi < cpv.currcp.objectinfo.gaia_neighbors; gi++) {
 
                     var rowhtml = '<tr>' +
-                        '<td>' + cpv.currcp.objectinfo.gaia_nbrids[gi] + '</td>' +
-                        '<td>' + math.format(cpv.currcp.objectinfo.gaia_nbrmags[gi],
-                                             3) + '</td>' +
-                        '<td>' + math.format(cpv.currcp.objectinfo.gaia_nbrdists[gi],
-                                             3)+ '</td>' +
-                        '</tr>';
+                        '<td>' + cpv.currcp.objectinfo.gaia_nbrids[gi] +
+                        '</td>' + '<td>' +
+                        math.format(cpv.currcp.objectinfo.gaia_nbrmags[gi], 3) +
+                        '</td>' + '<td>' + math.format(
+                            cpv.currcp.objectinfo.gaia_nbrdists[gi],
+                            3
+                        ) + '</td>' + '</tr>';
                     $('#gaia-neighbor-tbody').append(rowhtml);
 
                 }
@@ -948,25 +952,67 @@ var cpv = {
 
                 var ni = 0;
 
+                // set the column width
+                var nbrcolw = colwidth - 1;
+
+                // make the plots for the target object
+
+                var rowheader = '<h6>' + 'Target: ' +
+                    cpv.currcp.objectid + ' at (&alpha;, &delta;) = (' +
+                    math.format(cpv.currcp.objectinfo.ra, 5) + ', ' +
+                    math.format(cpv.currcp.objectinfo.decl, 5) + ')</h6>';
+
+                var rowplots = [
+                    '<div class="col-sm-' + nbrcolw + ' mx-0 px-0">' +
+                        '<img src="data:image/png;base64,' +
+                        cpv.currcp.magseries +
+                        '" class="img-fluid">' +
+                        '</div>'
+                ];
+                var nli = 0;
+                for (nli; nli < lspmethods.length; nli++) {
+
+                    var thisnphased =
+                        '<div class="col-sm-' + nbrcolw + ' px-0">' +
+                        '<img src="data:image/png;base64,' +
+                        cpv.currcp[lspmethods[nli]]['phasedlc0']['plot'] +
+                        '" class="img-fluid">' +
+                        '</div>';
+                    rowplots.push(thisnphased);
+
+                }
+
+                // put together this row of plots
+                var rowplots_str = rowplots.join(' ');
+
+                // put together this row
+                var nbrrow = '<div class="row">' +
+                    '<div class="col-sm-12">' +
+                    rowheader + '</div></div>' +
+                    '<div class="row bot-mrg-20px">' +
+                    rowplots_str +
+                    '</div>';
+
+                $('#lcc-neighbor-container').append(nbrrow);
+
+                // now make the plots for the neighbors
                 for (ni; ni < cpv.currcp.neighbors.length; ni++) {
 
                     var nbrobjectid = cpv.currcp.neighbors[ni].objectid;
                     var nbrra = cpv.currcp.neighbors[ni].objectinfo.ra;
                     var nbrdecl = cpv.currcp.neighbors[ni].objectinfo.decl;
-                    var nbrdist = cpv.currcp.neighbors[ni].objectinfo.distarcsec;
+                    var nbrdist =
+                        cpv.currcp.neighbors[ni].objectinfo.distarcsec;
 
-                    var rowheader = '<h6>' +
-                        nbrobjectid + ': (&alpha;, &delta;) = (' +
+                    rowheader = '<h6>' + 'N' + (ni+1) + ': ' +
+                        nbrobjectid + ' at (&alpha;, &delta;) = (' +
                         math.format(nbrra, 5) + ', ' +
-                        math.format(nbrra, 5) + '), distance: ' +
+                        math.format(nbrdecl, 5) + '), distance: ' +
                         math.format(nbrdist,3) + '&Prime;</h6>';
 
-                    // set the column width
-                    var nbrcolw = colwidth + 1;
-
                     // add the magseries plot for this neighbor
-                    var rowplots = [
-                        '<div class="col-sm-' + nbrcolw + '">' +
+                    rowplots = [
+                        '<div class="col-sm-' + nbrcolw + ' mx-0 px-0">' +
                             '<img src="data:image/png;base64,' +
                             cpv.currcp.neighbors[ni].magseries +
                             '" class="img-fluid">' +
@@ -974,11 +1020,10 @@ var cpv = {
                     ];
 
                     // for each lspmethod, add the phased LC for the neighbor
-                    var nli = 0;
-                    for (nli; nli < lspmethods.length; nli++) {
+                    for (nli = 0; nli < lspmethods.length; nli++) {
 
-                        var thisnphased =
-                            '<div class="col-sm-' + nbrcolw + '">' +
+                        thisnphased =
+                            '<div class="col-sm-' + nbrcolw + ' px-0">' +
                             '<img src="data:image/png;base64,' +
                             cpv.currcp.neighbors[ni][lspmethods[nli]]['plot'] +
                             '" class="img-fluid">' +
@@ -988,12 +1033,13 @@ var cpv = {
                     }
 
                     // put together this row of plots
-                    var rowplots_str = rowplots.join(' ');
+                    rowplots_str = rowplots.join(' ');
 
                     // put together this row
-                    var nbrrow = '<div class="row"><div class="col-sm-12">' +
+                    nbrrow = '<div class="row">' +
+                        '<div class="col-sm-12">' +
                         rowheader + '</div></div>' +
-                        '<div class="row">' +
+                        '<div class="row bot-mrg-20px">' +
                         rowplots_str +
                         '</div>';
 
