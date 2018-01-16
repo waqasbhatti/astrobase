@@ -3385,8 +3385,23 @@ def update_checkplotdict_nbrlcs(
         else:
             xtimes, xmags, xerrs = stimes, smags, serrs
 
+
+        # check if this neighbor has enough finite points in its LC
+        # fail early if not enough light curve points
+        if ((xtimes is None) or (xmags is None) or (xerrs is None) or
+            (xtimes.size < 49) or (xmags.size < 49) or (xerrs.size < 49)):
+
+            LOGERROR("one or more of times, mags, errs appear to be None "
+                     "after sig-clipping. are the measurements all nan? "
+                     "can't make neighbor light curve plots "
+                     "for target: %s, neighbor: %s, neighbor LC: %s" %
+                     (checkplotdict['objectid'],
+                      nbr['objectid'],
+                      nbr['lcfpath']))
+            continue
+
         #
-        # now we can start doing stuff
+        # now we can start doing stuff if everything checks out
         #
 
         # 1. make an unphased mag-series plot
