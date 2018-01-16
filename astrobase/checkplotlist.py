@@ -642,6 +642,9 @@ def main():
                 )
             )
 
+            outjson = outjson.replace('|','_')
+            outjson = outjson.replace('@','_')
+
             # ask if the checkplot list JSON should be updated
             if os.path.exists(outjson):
 
