@@ -2389,6 +2389,17 @@ def checkplot_dict(lspinfolist,
                                              magsarefluxes=magsarefluxes,
                                              sigclip=sigclip)
 
+    # fail early if not enough light curve points
+    if ((stimes is None) or (smags is None) and (serrs is None)):
+        LOGERROR("one or more of times, mags, errs appear to be None "
+                 "after sig-clipping. are the measurements all nan? "
+                 "can't make a checkplot for this objectid: %s" %
+                 checkplotdict['objectid'])
+        checkplotdict['magseries'] = None
+        checkplotdict['status'] = 'failed: LC points appear to be all nan'
+        return checkplotdict
+
+
     # this may fix some unpickling issues for astropy.table.Column objects
     # we convert them back to ndarrays
     if isinstance(stimes, astcolumn):
