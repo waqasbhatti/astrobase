@@ -3638,71 +3638,101 @@ def checkplot_pickle_to_png(checkplotin,
             # restrict to top three in priority
             nbrlspmethods = nbrlspmethods[:3]
 
-            # first panel: neighbor objectid, ra, decl, distance, unphased LC
-            nbrlc = Image.open(
-                _base64_to_file(
-                    nbr['magseries']['plot'], None, writetostrio=True
+            try:
+
+                # first panel: neighbor objectid, ra, decl, distance, unphased
+                # LC
+                nbrlc = Image.open(
+                    _base64_to_file(
+                        nbr['magseries']['plot'], None, writetostrio=True
+                    )
                 )
-            )
-            outimg.paste(nbrlc,
-                         (750*0,
-                          (cprows+1)*480 + (erows*480) + (cpderows*480) +
-                          480*nbrind))
+                outimg.paste(nbrlc,
+                             (750*0,
+                              (cprows+1)*480 + (erows*480) + (cpderows*480) +
+                              480*nbrind))
 
-            # overlay the objectinfo
-            objinfodraw.text(
-                (98,
-                 (cprows+1)*480 + (erows*480) + (cpderows*480) +
-                 480*nbrind + 15),
-                ('N%s: %s' % (nbrind + 1, nbr['objectid'])),
-                font=cpfontlarge,
-                fill=(0,0,255,255)
-            )
-            # overlay the objectinfo
-            objinfodraw.text(
-                (98,
-                 (cprows+1)*480 + (erows*480) + (cpderows*480) +
-                 480*nbrind + 50),
-                ('(RA, DEC) = (%.3f, %.3f), distance: %.1f arcsec' %
-                 (nbr['ra'], nbr['decl'], nbr['dist'])),
-                font=cpfontnormal,
-                fill=(0,0,255,255)
-            )
-
-
-            # second panel: phased LC for gls
-            lsp1lc = Image.open(
-                _base64_to_file(
-                    nbr[nbrlspmethods[0]][0]['plot'], None, writetostrio=True
+                # overlay the objectinfo
+                objinfodraw.text(
+                    (98,
+                     (cprows+1)*480 + (erows*480) + (cpderows*480) +
+                     480*nbrind + 15),
+                    ('N%s: %s' % (nbrind + 1, nbr['objectid'])),
+                    font=cpfontlarge,
+                    fill=(0,0,255,255)
                 )
-            )
-            outimg.paste(lsp1lc,
-                         (750*1,
-                          (cprows+1)*480 + (erows*480) + (cpderows*480) +
-                          480*nbrind))
-
-            # second panel: phased LC for gls
-            lsp2lc = Image.open(
-                _base64_to_file(
-                    nbr[nbrlspmethods[1]][0]['plot'], None, writetostrio=True
+                # overlay the objectinfo
+                objinfodraw.text(
+                    (98,
+                     (cprows+1)*480 + (erows*480) + (cpderows*480) +
+                     480*nbrind + 50),
+                    ('(RA, DEC) = (%.3f, %.3f), distance: %.1f arcsec' %
+                     (nbr['ra'], nbr['decl'], nbr['dist'])),
+                    font=cpfontnormal,
+                    fill=(0,0,255,255)
                 )
-            )
-            outimg.paste(lsp2lc,
-                         (750*2,
-                          (cprows+1)*480 + (erows*480) + (cpderows*480) +
-                          480*nbrind))
 
-            # second panel: phased LC for gls
-            lsp3lc = Image.open(
-                _base64_to_file(
-                    nbr[nbrlspmethods[2]][0]['plot'], None, writetostrio=True
+                # second panel: phased LC for gls
+                lsp1lc = Image.open(
+                    _base64_to_file(
+                        nbr[nbrlspmethods[0]][0]['plot'], None,
+                        writetostrio=True
+                    )
                 )
-            )
-            outimg.paste(lsp3lc,
-                         (750*3,
-                          (cprows+1)*480 + (erows*480) + (cpderows*480) +
-                          480*nbrind))
+                outimg.paste(lsp1lc,
+                             (750*1,
+                              (cprows+1)*480 + (erows*480) + (cpderows*480) +
+                              480*nbrind))
 
+                # second panel: phased LC for gls
+                lsp2lc = Image.open(
+                    _base64_to_file(
+                        nbr[nbrlspmethods[1]][0]['plot'], None,
+                        writetostrio=True
+                    )
+                )
+                outimg.paste(lsp2lc,
+                             (750*2,
+                              (cprows+1)*480 + (erows*480) + (cpderows*480) +
+                              480*nbrind))
+
+                # second panel: phased LC for gls
+                lsp3lc = Image.open(
+                    _base64_to_file(
+                        nbr[nbrlspmethods[2]][0]['plot'], None,
+                        writetostrio=True
+                    )
+                )
+                outimg.paste(lsp3lc,
+                             (750*3,
+                              (cprows+1)*480 + (erows*480) + (cpderows*480) +
+                              480*nbrind))
+
+            except Exception as e:
+
+                LOGERROR('neighbor %s does not have a magseries plot, '
+                         'measurements are probably all nan' % nbr['objectid'])
+
+                # overlay the objectinfo
+                objinfodraw.text(
+                    (98,
+                     (cprows+1)*480 + (erows*480) + (cpderows*480) +
+                     480*nbrind + 15),
+                    ('N%s: %s, no light curve!' %
+                     (nbrind + 1, nbr['objectid'])),
+                    font=cpfontlarge,
+                    fill=(0,0,255,255)
+                )
+                # overlay the objectinfo
+                objinfodraw.text(
+                    (98,
+                     (cprows+1)*480 + (erows*480) + (cpderows*480) +
+                     480*nbrind + 50),
+                    ('(RA, DEC) = (%.3f, %.3f), distance: %.1f arcsec' %
+                     (nbr['ra'], nbr['decl'], nbr['dist'])),
+                    font=cpfontnormal,
+                    fill=(0,0,255,255)
+                )
 
     #####################
     ## WRITE FINAL PNG ##
