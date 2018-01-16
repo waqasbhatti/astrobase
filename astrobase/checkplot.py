@@ -2390,7 +2390,8 @@ def checkplot_dict(lspinfolist,
                                              sigclip=sigclip)
 
     # fail early if not enough light curve points
-    if ((stimes is None) or (smags is None) or (serrs is None)):
+    if ((stimes is None) or (smags is None) or (serrs is None) or
+        (stimes.size < 49) or (smags.size < 49) or (serrs.size < 49)):
 
         LOGERROR("one or more of times, mags, errs appear to be None "
                  "after sig-clipping. are the measurements all nan? "
