@@ -1891,8 +1891,8 @@ var cpv = {
 
             // check if we already have this vartag in the list and append it if
             // we don't.
-            if (vartags.indexOf('RRab pulsator') == -1) {
-                vartags.push('RRab pulsator');
+            if (vartags.indexOf('RR Lyrae pulsator') == -1) {
+                vartags.push('RR Lyrae pulsator');
                 vartags = vartags.join(', ');
                 $('#vartags').val(vartags);
             }
@@ -1917,8 +1917,8 @@ var cpv = {
 
             // check if we already have this vartag in the list and append it if
             // we don't.
-            if (vartags.indexOf('RRc pulsator') == -1) {
-                vartags.push('RRc pulsator');
+            if (vartags.indexOf('Cepheid pulsator') == -1) {
+                vartags.push('Cepheid pulsator');
                 vartags = vartags.join(', ');
                 $('#vartags').val(vartags);
             }
