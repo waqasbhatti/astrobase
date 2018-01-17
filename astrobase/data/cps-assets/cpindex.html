@@ -275,13 +275,17 @@
                 <a class="dropdown-item vartag-dn" href="#"
                    data-dnvartag="planet candidate">planet candidate</a>
                 <a class="dropdown-item vartag-dn" href="#"
-                   data-dnvartag="RRab pulsator">RR Lyrae pulsator</a>
+                   data-dnvartag="HADS pulsator">HADS pulsator</a>
+                <a class="dropdown-item vartag-dn" href="#"
+                   data-dnvartag="RR Lyrae pulsator">RR Lyrae pulsator</a>
                 <a class="dropdown-item vartag-dn" href="#"
                    data-dnvartag="Cepheid pulsator">Cepheid pulsator</a>
                 <a class="dropdown-item vartag-dn" href="#"
                    data-dnvartag="starspot rotation">starspot rotation</a>
                 <a class="dropdown-item vartag-dn" href="#"
-                   data-dnvartag="flare star">flare star</a>
+                   data-dnvartag="long period variable">long period variable</a>
+                <a class="dropdown-item vartag-dn" href="#"
+                   data-dnvartag="Mira variable">Mira variable</a>
                 <a class="dropdown-item vartag-dn" href="#"
                    data-dnvartag="contact EB">contact EB</a>
                 <a class="dropdown-item vartag-dn" href="#"
@@ -289,9 +293,15 @@
                 <a class="dropdown-item vartag-dn" href="#"
                    data-dnvartag="detached EB">detached EB</a>
                 <a class="dropdown-item vartag-dn" href="#"
-                   data-dnvartag="weird variability">weird variability</a>
+                   data-dnvartag="flare star">flare star</a>
+                <a class="dropdown-item vartag-dn" href="#"
+                   data-dnvartag="quasi-periodic">quasi-periodic variable</a>
+                <a class="dropdown-item vartag-dn" href="#"
+                   data-dnvartag="multi-periodic">multi-periodic variable</a>
                 <a class="dropdown-item vartag-dn" href="#"
                    data-dnvartag="period harmonic">period harmonic</a>
+                <a class="dropdown-item vartag-dn" href="#"
+                   data-dnvartag="weird variability">weird variability</a>
               </div>
 
             </div>
@@ -320,7 +330,7 @@
                 <a class="dropdown-item objtag-dn" href="#"
                    data-dnobjtag="A star">A star</a>
                 <a class="dropdown-item objtag-dn" href="#"
-                   data-dnobjtag="F or G dwarf">F or G dwarf</a>
+                   data-dnobjtag="F or G star">F or G star</a>
                 <a class="dropdown-item objtag-dn" href="#"
                    data-dnobjtag="red giant">red giant</a>
                 <a class="dropdown-item objtag-dn" href="#"
@@ -381,6 +391,12 @@
                 <a class="nav-link"
                    data-toggle="tab"
                    href="#neighbors" role="tab">Neighbors</a>
+              </li>
+
+              <li class="nav-item">
+                <a class="nav-link"
+                   data-toggle="tab"
+                   href="#xmatches" role="tab">Cross Matches</a>
               </li>
 
               {% if not readonly %}
@@ -467,6 +483,17 @@
 
             </div>
 
+          </div>
+
+          <!-- this tab panel contains xmatch stuff -->
+          <div class="tab-pane" id="xmatches" role="tabpanel">
+            <div class="row tool-header-panel" id="xmatch-content">
+
+              <div class="col-sm-12">
+                <p>No cross-matches for this object found.</p>
+              </div>
+
+            </div>
           </div>
 
           {% if not readonly %}
@@ -1131,7 +1158,7 @@
           </tr>
           <tr>
             <td width="200"><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>4</kbd></td>
-            <td>add a <span class="cp-tag">F or G dwarf</span> tag</td>
+            <td>add a <span class="cp-tag">F or G star</span> tag</td>
           </tr>
           <tr>
             <td width="200"><kbd>alt/cmd</kbd> + <kbd>shift</kbd> + <kbd>5</kbd></td>

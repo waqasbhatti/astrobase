@@ -95,6 +95,8 @@ from astropy.wcs import WCS
 # import from Pillow to generate pngs from checkplot dicts
 from PIL import Image, ImageDraw, ImageFont
 
+# import sps.cKDTree for external catalog xmatches
+from scipy.spatial import cKDTree
 
 
 #############
@@ -2076,10 +2078,82 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
 
 
 
+def _load_xmatch_external_catalogs(xmatchto,
+                                   xmatchkeys):
+    '''This loads the external xmatch catalogs into a dict for use here.
+
+    xmatchto is a list of text files that contain each catalog.
+
+    the text files must be 'CSVs' that use the '|' character as the separator
+    betwen columns. These files should all begin with a header in JSON format on
+    lines starting with the '#' character. this header will define the catalog
+    and contains the name of the catalog and the column definitions. Column
+    definitions must have the column name and the numpy dtype of the columns (in
+    the same format as that expected for the numpy.genfromtxt function). Any
+    line that does not begin with '#' is assumed to be part of the columns in
+    the catalog. An example is shown below.
+
+    # {"name":"NSVS catalog of variable stars",
+    #  "columns":[{"name":"objectid", "dtype":"U20"},
+    #             {"name":"ra", "dtype":"f8"},
+    #             {"name":"decl","dtype":"f8"},
+    #             {"name":"sdssr":"dtype":"f8"},
+    #             {"name":"vartype":"dtype":"U20"}],
+    #  "description":"Contains variable stars from the NSVS catalog"}
+    objectid1 | 45.0 | -20.0 | 12.0 | eclipsing binary
+    objectid2 | 45.0 | -20.0 | 12.0 | RRab
+    objectid3 | 45.0 | -20.0 | 12.0 | eclipsing binary
+    .
+    .
+    .
+
+    xmatchkeys is the list of lists of columns to get out of each xmatchto
+    catalog. this should be the same length as xmatchto and each element here
+    will apply to the respective file in xmatchto.
+
+    '''
+
+
+
+def _xmatch_external_catalogs(checkplotdict,
+                              xmatchdict,
+                              xmatchradiusarcsec=3.0):
+    '''This matches the current object to the external match catalogs in
+    xmatchdict.
+
+    checkplotdict is the usual checkplot dict. this must contain at least
+    'objectid', and in the 'objectinfo' subdict: 'ra', and 'decl'. an 'xmatch'
+    key will be added to this dict, with something like the following dict as
+    the value:
+
+    {'xmatchradiusarcsec':xmatchradiusarcsec,
+     'catalogs':[list of catalog file basenames with stripped extensions]
+     'catalog1':{'name':'Catalog of interesting things',
+                 'found':True,
+                 'info':{'objectid':...,'ra':...,'decl':...,'desc':...}},
+     'catalog2':{'name':'Catalog of more interesting things',
+                 'found':False,
+                 'info':None},
+    .
+    .
+    ....}
+
+    xmatchdict is the dict produced by _load_xmatch_external_catalogs.
+
+    xmatchradiusarcsec is the xmatch radius in arcseconds.
+
+    '''
+
+
+########################
+## READ/WRITE PICKLES ##
+########################
+
 def _write_checkplot_picklefile(checkplotdict,
                                 outfile=None,
                                 protocol=2,
                                 outgzip=False):
+
     '''This writes the checkplotdict to a (gzipped) pickle file.
 
     If outfile is None, writes a (gzipped) pickle file of the form:
@@ -2206,6 +2280,9 @@ def checkplot_dict(lspinfolist,
                    getvarfeatures=True,
                    lclistpkl=None,
                    nbrradiusarcsec=30.0,
+                   xmatchto=None,
+                   xmatchradiusarcsec=3.0,
+                   xmatchkeys=None,
                    lcfitfunc=None,
                    lcfitparams={},
                    externalplots=None,
@@ -2610,6 +2687,9 @@ def checkplot_pickle(lspinfolist,
                      getvarfeatures=True,
                      lclistpkl=None,
                      nbrradiusarcsec=30.0,
+                     xmatchto=None,
+                     xmatchradiusarcsec=30.0,
+                     xmatchkeys=None,
                      externalplots=None,
                      findercmap='gray_r',
                      finderconvolve=None,
@@ -2798,6 +2878,9 @@ def checkplot_pickle(lspinfolist,
         getvarfeatures=getvarfeatures,
         lclistpkl=lclistpkl,
         nbrradiusarcsec=nbrradiusarcsec,
+        xmatchto=xmatchto,
+        xmatchradiusarcsec=xmatchradiusarcsec,
+        xmatchkeys=xmatchkeys,
         lcfitfunc=lcfitfunc,
         lcfitparams=lcfitparams,
         externalplots=externalplots,
