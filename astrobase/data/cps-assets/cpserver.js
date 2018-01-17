@@ -2594,8 +2594,13 @@ var cptools = {
                     if (cpobjectid == currobjectid) {
 
                         // update the select control for the periodogram peaks
-                        // with the best three peaks
+                        // with all best peaks
                         $('#psearch-pgrampeaks').empty();
+
+                        //
+                        // first, get the first 3 peaks
+                        //
+
                         $('#psearch-pgrampeaks').append(
                             '<option value="0|' + lsp.phasedlc0.period +
                                 '|' + lsp.phasedlc0.epoch +
@@ -2617,6 +2622,30 @@ var cptools = {
                                 math.format(lsp.phasedlc2.period, 7) +
                                 '</option>'
                         );
+
+                        //
+                        // then get any more peaks if remaining
+                        //
+                        if (lsp.nbestperiods.length > 3) {
+
+                            var peakind = 3;
+                            for (peakind;
+                                 peakind < lsp.nbestperiods.length;
+                                 peakind++) {
+
+                                $('#psearch-pgrampeaks').append(
+                                    '<option value="' + peakind +
+                                        '|' + lsp.nbestperiods[peakind] +
+                                        '|' + 'auto-minimumlight' +
+                                        '">peak ' + (peakind + 1) + ': ' +
+                                        math.format(
+                                            lsp.nbestperiods[peakind], 7) +
+                                        '</option>'
+                                );
+
+                            }
+
+                        }
 
                         // update the period box with the best period
                         $('#psearch-plotperiod').val(lsp.phasedlc0.period);
@@ -3076,8 +3105,11 @@ var cptools = {
         }
 
         if ((isNaN(plotepoch)) || (plotepoch < 0.0)) {
-            messages.push("plot epoch is invalid")
-            proceed = false;
+            messages.push(
+                "plot epoch not provided or invalid, set to automatic"
+            )
+            proceed = true;
+            plotepoch = null;
         }
 
         if ((isNaN(plotxlim[0])) ||
@@ -3182,6 +3214,10 @@ var cptools = {
                         // #psearch-phasedlc-display
                         cputils.b64_to_image(lsp[lckey]['plot'],
                                              '#psearch-phasedlc-display');
+
+                        // update the text box for epoch using the returned
+                        // value from the plotter
+                        $('#psearch-plotepoch').val(lsp[lckey]['epoch']);
 
                         // update the global object period and epoch with the
                         // period and epoch used here if told to do so

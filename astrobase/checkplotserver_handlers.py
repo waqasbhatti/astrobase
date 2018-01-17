@@ -50,6 +50,8 @@ class FrontendEncoder(json.JSONEncoder):
             return obj.tolist()
         elif isinstance(obj, bytes):
             return obj.decode()
+        elif isinstance(obj, complex):
+            return (obj.real, obj.imag)
         elif isinstance(obj, float) and np.isnan(obj):
             return None
         else:
@@ -104,10 +106,14 @@ from .periodbase import zgls
 zgls.set_logger_parent(__name__)
 from .periodbase import saov
 saov.set_logger_parent(__name__)
+from .periodbase import smav
+smav.set_logger_parent(__name__)
 from .periodbase import spdm
 spdm.set_logger_parent(__name__)
 from .periodbase import kbls
 kbls.set_logger_parent(__name__)
+from .periodbase import macf
+macf.set_logger_parent(__name__)
 
 
 #######################
@@ -142,38 +148,72 @@ CPTOOLMAP = {
     'psearch-gls':{
         'args':('times','mags','errs'),
         'argtypes':(ndarray, ndarray, ndarray),
-        'kwargs':('startp','endp','magsarefluxes','autofreq','stepsize'),
-        'kwargtypes':(float, float, bool, bool, float),
-        'kwargdefs':(None, None, False, True, 1.0e-4),
+        'kwargs':('startp','endp','magsarefluxes',
+                  'autofreq','stepsize','nbestpeaks'),
+        'kwargtypes':(float, float, bool, bool, float, int),
+        'kwargdefs':(None, None, False, True, 1.0e-4, 10),
         'func':zgls.pgen_lsp,
         'resloc':['gls'],
     },
     'psearch-bls':{
         'args':('times','mags','errs'),
         'argtypes':(ndarray, ndarray, ndarray),
-        'kwargs':('startp','endp','magsarefluxes','autofreq','stepsize'),
-        'kwargtypes':(float, float, bool, bool, float),
-        'kwargdefs':(0.1, 100.0, False, True, 1.0e-4),
+        'kwargs':('startp','endp','magsarefluxes',
+                  'autofreq','stepsize','nbestpeaks'),
+        'kwargtypes':(float, float, bool, bool, float, int),
+        'kwargdefs':(0.1, 100.0, False, True, 1.0e-4, 10),
         'func':kbls.bls_parallel_pfind,
         'resloc':['bls'],
     },
     'psearch-pdm':{
         'args':('times','mags','errs'),
         'argtypes':(ndarray, ndarray, ndarray),
-        'kwargs':('startp','endp','magsarefluxes','autofreq','stepsize'),
-        'kwargtypes':(float, float, bool, bool, float),
-        'kwargdefs':(None, None, False, True, 1.0e-4),
+        'kwargs':('startp','endp','magsarefluxes',
+                  'autofreq','stepsize','nbestpeaks'),
+        'kwargtypes':(float, float, bool, bool, float, int),
+        'kwargdefs':(None, None, False, True, 1.0e-4, 10),
         'func':spdm.stellingwerf_pdm,
         'resloc':['pdm'],
     },
     'psearch-aov':{
         'args':('times','mags','errs'),
         'argtypes':(ndarray, ndarray, ndarray),
-        'kwargs':('startp','endp','magsarefluxes','autofreq','stepsize'),
-        'kwargtypes':(float, float, bool, bool, float),
-        'kwargdefs':(None, None, False, True, 1.0e-4),
+        'kwargs':('startp','endp','magsarefluxes',
+                  'autofreq','stepsize','nbestpeaks'),
+        'kwargtypes':(float, float, bool, bool, float,int),
+        'kwargdefs':(None, None, False, True, 1.0e-4, 10),
         'func':saov.aov_periodfind,
         'resloc':['aov'],
+    },
+    'psearch-mav':{
+        'args':('times','mags','errs'),
+        'argtypes':(ndarray, ndarray, ndarray),
+        'kwargs':('startp','endp','magsarefluxes',
+                  'autofreq','stepsize','nbestpeaks'),
+        'kwargtypes':(float, float, bool, bool, float, int),
+        'kwargdefs':(None, None, False, True, 1.0e-4, 10),
+        'func':smav.aovhm_periodfind,
+        'resloc':['mav'],
+    },
+    'psearch-acf':{
+        'args':('times','mags','errs'),
+        'argtypes':(ndarray, ndarray, ndarray),
+        'kwargs':('startp','endp','magsarefluxes',
+                  'autofreq','stepsize'),
+        'kwargtypes':(float, float, bool, bool, float),
+        'kwargdefs':(None, None, False, True, 1.0e-4),
+        'func':macf.macf_period_find,
+        'resloc':['acf'],
+    },
+    'psearch-win':{
+        'args':('times','mags','errs'),
+        'argtypes':(ndarray, ndarray, ndarray),
+        'kwargs':('startp','endp','magsarefluxes',
+                  'autofreq','stepsize', 'nbestpeaks'),
+        'kwargtypes':(float, float, bool, bool, float, int),
+        'kwargdefs':(None, None, False, True, 1.0e-4, 10),
+        'func':zgls.specwindow_lsp,
+        'resloc':['win'],
     },
     ## PLOTTING A NEW PHASED LC ##
     'phasedlc-newplot':{
@@ -966,6 +1006,9 @@ class LCToolHandler(tornado.web.RequestHandler):
         psearch-bls: run BLS with given params
         psearch-pdm: run phase dispersion minimization with given params
         psearch-aov: run analysis-of-variance with given params
+        psearch-mav: run analysis-of-variance (multi-harm) with given params
+        psearch-acf: run ACF period search with given params
+        psearch-win: run spectral window function search with given params
 
         arguments:
 
@@ -1269,6 +1312,12 @@ class LCToolHandler(tornado.web.RequestHandler):
                             # special handling for lists
                             if xargtype is list:
                                 wbarg = [float(x) for x in wbarg]
+                            # special handling for epochs that can be optional
+                            elif xargtype is float and xarg == 'varepoch':
+                                try:
+                                    wbarg = xargtype(wbarg)
+                                except:
+                                    wbarg = None
                             # usual casting for other types
                             else:
                                 wbarg = xargtype(wbarg)
@@ -1334,7 +1383,10 @@ class LCToolHandler(tornado.web.RequestHandler):
                 if lctool in ('psearch-gls',
                               'psearch-bls',
                               'psearch-pdm',
-                              'psearch-aov'):
+                              'psearch-aov',
+                              'psearch-mav',
+                              'psearch-acf',
+                              'psearch-win'):
 
                     lspmethod = resloc[0]
 
@@ -1416,9 +1468,9 @@ class LCToolHandler(tornado.web.RequestHandler):
                         )
 
                         # get what we need out of funcresults when it
-                        # returns. we get the first three peaks/periods
-                        nbestperiods = funcresults['nbestperiods'][:3]
-                        nbestlspvals = funcresults['nbestlspvals'][:3]
+                        # returns.
+                        nbestperiods = funcresults['nbestperiods']
+                        nbestlspvals = funcresults['nbestlspvals']
                         bestperiod = funcresults['bestperiod']
 
                         # generate the periodogram png
@@ -1551,9 +1603,9 @@ class LCToolHandler(tornado.web.RequestHandler):
                             'objectid':objectid,
                             lspmethod:{
                                 'nbestperiods':nbestperiods,
+                                'nbestpeaks':nbestlspvals,
                                 'periodogram':periodogram,
                                 'bestperiod':bestperiod,
-                                'nbestpeaks':nbestlspvals,
                                 'phasedlc0':{
                                     'plot':phasedlc0plot,
                                     'period':phasedlc0period,
@@ -1634,7 +1686,42 @@ class LCToolHandler(tornado.web.RequestHandler):
                         # periodind when returning
                         lctoolargs[2] = -1
 
-                        # run the phased LC function
+                        # if the varepoch is set to None, try to get the
+                        # minimum-light epoch using a spline fit
+                        if lctoolargs[-1] is None:
+                            LOGGER.warning(
+                                'automatically getting min epoch '
+                                'for phased LC plot'
+                            )
+                            try:
+                                spfit = lcfit.spline_fit_magseries(
+                                    lctoolargs[3], # times
+                                    lctoolargs[4], # mags
+                                    lctoolargs[5], # errs
+                                    lctoolargs[6], # period
+                                    magsarefluxes=lctoolkwargs['magsarefluxes'],
+                                    sigclip=None,
+                                    verbose=True
+                                )
+
+                                # set the epoch correctly now for the plot
+                                lctoolargs[-1] = spfit['fitinfo']['fitepoch']
+                                if len(varepoch) != 1:
+                                    lctoolargs[-1] = (
+                                        spfit['fitinfo']['fitepoch'][0]
+                                    )
+
+                        # if the spline fit fails, use the minimum of times as
+                        # epoch as usual
+                            except Exception as e:
+                                LOGGER.exception(
+                                    'spline fit failed, '
+                                    'using min(times) as epoch'
+                                )
+                                lctoolargs[-1] = np.min(lctoolargs[3])
+
+                        # now run the phased LC function with provided args,
+                        # kwargs
                         lctoolfunction = CPTOOLMAP[lctool]['func']
                         funcresults = yield self.executor.submit(
                             lctoolfunction,
