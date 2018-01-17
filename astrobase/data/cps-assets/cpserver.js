@@ -1010,25 +1010,53 @@ var cpv = {
                         math.format(nbrdecl, 5) + '), distance: ' +
                         math.format(nbrdist,3) + '&Prime;</h6>';
 
-                    // add the magseries plot for this neighbor
-                    rowplots = [
-                        '<div class="col-sm-' + nbrcolw + ' mx-0 px-0">' +
-                            '<img src="data:image/png;base64,' +
-                            cpv.currcp.neighbors[ni].magseries +
-                            '" class="img-fluid">' +
-                            '</div>'
-                    ];
+                    if (cpv.currcp.neighbors[ni].magseries != undefined) {
+
+                        // add the magseries plot for this neighbor
+                        rowplots = [
+                            '<div class="col-sm-' + nbrcolw + ' mx-0 px-0">' +
+                                '<img src="data:image/png;base64,' +
+                                cpv.currcp.neighbors[ni].magseries +
+                                '" class="img-fluid">' +
+                                '</div>'
+                        ];
+                    }
+
+                    else {
+                        rowplots = [
+                            '<div class="col-sm-' + nbrcolw + ' mx-0 px-0">' +
+                                '<img src="/static/nolc-available.png"' +
+                                ' class="img-fluid">' +
+                                '</div>'
+                        ];
+
+                    }
 
                     // for each lspmethod, add the phased LC for the neighbor
                     for (nli = 0; nli < lspmethods.length; nli++) {
 
-                        thisnphased =
-                            '<div class="col-sm-' + nbrcolw + ' px-0">' +
-                            '<img src="data:image/png;base64,' +
-                            cpv.currcp.neighbors[ni][lspmethods[nli]]['plot'] +
-                            '" class="img-fluid">' +
-                            '</div>';
-                        rowplots.push(thisnphased);
+                        if (cpv.currcp.neighbors[ni][lspmethods[nli]]
+                            != undefined) {
+
+                            thisnphased =
+                                '<div class="col-sm-' + nbrcolw + ' px-0">' +
+                                '<img src="data:image/png;base64,' +
+                                cpv.currcp.neighbors[ni][lspmethods[nli]]['plot'] +
+                                '" class="img-fluid">' +
+                                '</div>';
+                            rowplots.push(thisnphased);
+
+                        }
+
+                        else {
+                            thisnphased =
+                                '<div class="col-sm-' + nbrcolw + ' px-0">' +
+                                '<img src="/static/nolc-available.png"' +
+                                '" class="img-fluid">' +
+                                '</div>';
+                            rowplots.push(thisnphased);
+
+                        }
 
                     }
 

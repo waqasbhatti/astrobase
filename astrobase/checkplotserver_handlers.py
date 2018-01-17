@@ -437,17 +437,41 @@ class CheckplotHandler(tornado.web.RequestHandler):
                                 'xpix':nbr['xpix'],
                                 'ypix':nbr['ypix'],
                                 'distarcsec':nbr['dist'],
-                            },
-                            'magseries':nbr['magseries']['plot']
+                            }
                         }
 
-                        for pfm in pfmethods:
-                            if pfm in nbr:
-                                thisnbrdict[pfm] = {
-                                    'plot':nbr[pfm][0]['plot'],
-                                    'period':nbr[pfm][0]['period'],
-                                    'epoch':nbr[pfm][0]['epoch']
-                                }
+                        try:
+
+                            nbr_magseries = nbr['magseries']['plot']
+                            thisnbrdict['magseries'] = nbr_magseries
+
+                        except Exception as e:
+
+                            LOGGER.error(
+                                "could not load magseries plot for "
+                                "neighbor %s for object %s"
+                                % (nbr['objectid'],
+                                   cpdict['objectid'])
+                            )
+
+                        try:
+
+                            for pfm in pfmethods:
+                                if pfm in nbr:
+                                    thisnbrdict[pfm] = {
+                                        'plot':nbr[pfm][0]['plot'],
+                                        'period':nbr[pfm][0]['period'],
+                                        'epoch':nbr[pfm][0]['epoch']
+                                    }
+
+                        except Exception as e:
+
+                            LOGGER.error(
+                                "could not load phased LC plots for "
+                                "neighbor %s for object %s"
+                                % (nbr['objectid'],
+                                   cpdict['objectid'])
+                            )
 
                         neighbors.append(thisnbrdict)
 
