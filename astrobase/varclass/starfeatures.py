@@ -220,6 +220,8 @@ def color_features(objectinfo, deredden=True):
         'deredk':np.nan,
         'deredb':np.nan,
         'deredv':np.nan,
+        'bmagfromjhk':False,
+        'vmagfromjhk':False,
         'sdssufromjhk':False,
         'sdssgfromjhk':False,
         'sdssrfromjhk':False,
@@ -273,9 +275,46 @@ def color_features(objectinfo, deredden=True):
     outdict['hmag'] = objectinfo['hmag']
     outdict['kmag'] = objectinfo['kmag']
 
+    # dered these if requested
+    if deredden:
+
+        # calculate the dereddened JHK mags
+        outdict['deredj'] = outdict['jmag'] - outdict['extinctj']
+        outdict['deredh'] = outdict['hmag'] - outdict['extincth']
+        outdict['deredk'] = outdict['kmag'] - outdict['extinctk']
+
+    else:
+
+        outdict['deredj'] = outdict['jmag']
+        outdict['deredh'] = outdict['hmag']
+        outdict['deredk'] = outdict['kmag']
+
+
     #
-    # get the SDSS mags
+    # get the BVugriz mags from the JHK mags if necessary
     #
+    # FIXME: should these be direct dered mag_0 = f(J_0, H_0, K_0) instead?
+    # Bilir+ 2008 uses dereddened colors for their transforms, should check if
+    # we need to do so here
+
+    if ('bmag' not in objectinfo or
+        ('bmag' in objectinfo and objectinfo['bmag'] is None)):
+        outdict['bmag'] = magnitudes.jhk_to_bmag(objectinfo['jmag'],
+                                                 objectinfo['hmag'],
+                                                 objectinfo['kmag'])
+        outdict['bmagfromjhk'] = True
+    else:
+        outdict['bmag'] = objectinfo['bmag']
+
+    if ('vmag' not in objectinfo or
+        ('vmag' in objectinfo and objectinfo['vmag'] is None)):
+        outdict['vmag'] = magnitudes.jhk_to_vmag(objectinfo['jmag'],
+                                                 objectinfo['hmag'],
+                                                 objectinfo['kmag'])
+        outdict['vmagfromjhk'] = True
+    else:
+        outdict['vmag'] = objectinfo['vmag']
+
     if ('sdssu' not in objectinfo or
         ('sdssu' in objectinfo and objectinfo['sdssu'] is None)):
         outdict['sdssu'] = magnitudes.jhk_to_sdssu(objectinfo['jmag'],
@@ -321,21 +360,6 @@ def color_features(objectinfo, deredden=True):
     else:
         outdict['sdssz'] = objectinfo['sdssz']
 
-    #
-    # get the B and V mags
-    #
-    if ('bmag' not in objectinfo or
-        ('bmag' in objectinfo and objectinfo['bmag'] is None)):
-        outdict['bmag'] = np.nan
-    else:
-        outdict['bmag'] = objectinfo['bmag']
-
-    if ('vmag' not in objectinfo or
-        ('vmag' in objectinfo and objectinfo['vmag'] is None)):
-        outdict['vmag'] = np.nan
-    else:
-        outdict['vmag'] = objectinfo['vmag']
-
 
     # calculating dereddened mags:
     # A_x = m - m0_x where m is measured mag, m0 is intrinsic mag
@@ -345,11 +369,6 @@ def color_features(objectinfo, deredden=True):
     # intrinsic color (m_x - m_y)_0 = (m_x - m_y) - (A_x - A_y)
 
     if deredden:
-
-        # calculate the dereddened JHK mags
-        outdict['deredj'] = outdict['jmag'] - outdict['extinctj']
-        outdict['deredh'] = outdict['hmag'] - outdict['extincth']
-        outdict['deredk'] = outdict['kmag'] - outdict['extinctk']
 
         # calculate the dereddened SDSS mags
         outdict['deredu'] = outdict['sdssu'] - outdict['extinctu']
@@ -365,9 +384,6 @@ def color_features(objectinfo, deredden=True):
         outdict['dereddened'] = True
 
     else:
-        outdict['deredj'] = outdict['jmag']
-        outdict['deredh'] = outdict['hmag']
-        outdict['deredk'] = outdict['kmag']
 
         outdict['deredu'] = outdict['sdssu']
         outdict['deredg'] = outdict['sdssg']
