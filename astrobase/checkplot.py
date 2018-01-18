@@ -2853,6 +2853,13 @@ def checkplot_dict(lspinfolist,
                                'plots in: %s to checkplot dict'
                                % repr(externalrow))
 
+        # 7. do any xmatches required
+        checkplotdict = xmatch_external_catalogs(
+            xmatchinfo,
+            checkplotdict,
+            xmatchradiusarcsec=xmatchradiusarcsec
+        )
+
         # the checkplotdict now contains everything we need
         contents = sorted(list(checkplotdict.keys()))
         checkplotdict['status'] = 'ok: contents are %s' % contents
@@ -2871,6 +2878,7 @@ def checkplot_dict(lspinfolist,
 
     # at the end, return the dict
     return checkplotdict
+
 
 
 
