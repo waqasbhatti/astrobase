@@ -2080,8 +2080,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
 
 
 
-def _load_xmatch_external_catalogs(xmatchto,
-                                   xmatchkeys):
+def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
     '''This loads the external xmatch catalogs into a dict for use here.
 
     xmatchto is a list of text files that contain each catalog.
@@ -2115,8 +2114,10 @@ def _load_xmatch_external_catalogs(xmatchto,
     catalog. this should be the same length as xmatchto and each element here
     will apply to the respective file in xmatchto.
 
-    poskeys are the columns in xmatchkeys that correspond to the right ascension
-    and declination. This is ('ra','decl') by default.
+    if outfile is not None, set this to the name of the pickle to write the
+    collect xmatch catalogs to. this pickle can then be loaded transparently by
+    the checkplot_dict, checkplot_pickle functions to provide xmatch info the
+    _xmatch_external_catalog function below.
 
     '''
 
@@ -2156,7 +2157,8 @@ def _load_xmatch_external_catalogs(xmatchto,
                                names=xk,
                                dtype=','.join(catcoldtypes),
                                comments='#',
-                               delimiter='|')
+                               delimiter='|',
+                               autostrip=True)
         catshortname = os.path.splitext(os.path.basename(xc))[0]
 
         #
@@ -2186,14 +2188,22 @@ def _load_xmatch_external_catalogs(xmatchto,
 
         outdict[catshortname] = catoutdict
 
-    return outdict
+    if outfile is not None:
+
+        with open(outfile, 'wb') as outfd:
+            pickle.dump(outdict, outfd, pickle.HIGHEST_PROTOCOL)
+
+        return outfile
+
+    else:
+
+        return outdict
 
 
 
-
-def _xmatch_external_catalogs(checkplotdict,
-                              xmatchdict,
-                              xmatchradiusarcsec=3.0):
+def xmatch_external_catalogs(checkplotdict,
+                             xmatchinfo,
+                             xmatchradiusarcsec=3.0):
     '''This matches the current object to the external match catalogs in
     xmatchdict.
 
@@ -2217,11 +2227,76 @@ def _xmatch_external_catalogs(checkplotdict,
     .
     ....}
 
-    xmatchdict is the dict produced by _load_xmatch_external_catalogs.
+    xmatchinfo is the either a dict produced by load_xmatch_external_catalogs or
+    the pickle produced by the same function.
 
     xmatchradiusarcsec is the xmatch radius in arcseconds.
 
+    NOTE: this modifies checkplotdict IN PLACE.
+
     '''
+
+    # load the xmatch info
+    if isinstance(xmatchinfo, str) and os.path.exists(xmatchinfo):
+        with open(xmatchinfo,'rb') as infd:
+            xmatchdict = pickle.load(infd)
+    elif isinstance(xmatchinfo, dict):
+        xmatchdict = xmatchinfo
+    else:
+        LOGERROR("can't figure out xmatch info, can't xmatch, skipping...")
+        return checkplotdict
+
+
+    #
+    # generate the xmatch spec
+    #
+
+    # get our ra, decl
+    objra = checkplotdict['objectinfo']['ra']
+    objdecl = checkplotdict['objectinfo']['decl']
+
+
+    cosdecl = np.cos(np.radians(objdecl))
+    sindecl = np.sin(np.radians(objdecl))
+    cosra = np.cos(np.radians(objra))
+    sinra = np.sin(np.radians(objra))
+
+    # this is the search distance in xyz unit vectors
+    xyzdist = 2.0 * np.sin(np.radians(xmatchdistarcsec/3600.0)/2.0)
+
+
+    #
+    # now search in each external catalog
+    #
+
+    xmatchresults = {}
+
+    extcats = sorted(list(xmatchinfo.keys()))
+
+    for ecat in extcats:
+
+        # get the kdtree
+        kdt = ecat['kdtree']
+
+        # look up the coordinates
+        kdtindices = kdt.query_ball_point([cosra*cosdecl,
+                                           sinra*cosdecl,
+                                           sindecl],
+                                          xyzdist)
+
+        if kdtindices and len(kdtindices) > 0:
+
+            infoarr = ecat['data'][kdtindices]
+            infodict = {}
+
+        # if we didn't find anything in this catalog, skip to the next one
+        else:
+
+            xmatchresults[ecat] = {'name':ecat['name'],
+                                   'found':False,
+                                   'distarcsec':np.nan,
+                                   'info':None}
+
 
 
 
@@ -2363,9 +2438,8 @@ def checkplot_dict(lspinfolist,
                    getvarfeatures=True,
                    lclistpkl=None,
                    nbrradiusarcsec=30.0,
-                   xmatchto=None,
+                   xmatchinfo=None,
                    xmatchradiusarcsec=3.0,
-                   xmatchkeys=None,
                    lcfitfunc=None,
                    lcfitparams={},
                    externalplots=None,
@@ -2770,9 +2844,8 @@ def checkplot_pickle(lspinfolist,
                      getvarfeatures=True,
                      lclistpkl=None,
                      nbrradiusarcsec=30.0,
-                     xmatchto=None,
-                     xmatchradiusarcsec=30.0,
-                     xmatchkeys=None,
+                     xmatchinfo=None,
+                     xmatchradiusarcsec=3.0,
                      externalplots=None,
                      findercmap='gray_r',
                      finderconvolve=None,
@@ -2961,9 +3034,8 @@ def checkplot_pickle(lspinfolist,
         getvarfeatures=getvarfeatures,
         lclistpkl=lclistpkl,
         nbrradiusarcsec=nbrradiusarcsec,
-        xmatchto=xmatchto,
+        xmatchinfo=xmatchinfo,
         xmatchradiusarcsec=xmatchradiusarcsec,
-        xmatchkeys=xmatchkeys,
         lcfitfunc=lcfitfunc,
         lcfitparams=lcfitparams,
         externalplots=externalplots,
