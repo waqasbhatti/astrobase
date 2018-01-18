@@ -2203,7 +2203,9 @@ def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
 
 def xmatch_external_catalogs(checkplotdict,
                              xmatchinfo,
-                             xmatchradiusarcsec=3.0):
+                             xmatchradiusarcsec=3.0,
+                             returndirect=False,
+                             updatexmatch=True):
     '''This matches the current object to the external match catalogs in
     xmatchdict.
 
@@ -2232,7 +2234,11 @@ def xmatch_external_catalogs(checkplotdict,
 
     xmatchradiusarcsec is the xmatch radius in arcseconds.
 
-    NOTE: this modifies checkplotdict IN PLACE.
+    NOTE: this modifies checkplotdict IN PLACE if returndirect is False. If it
+    is True, then just returns the xmatch results as a dict.
+
+    If updatexmatch is True, any previous 'xmatch' elements in the checkplotdict
+    will be added on to instead of being overwritten.
 
     '''
 
@@ -2329,8 +2335,18 @@ def xmatch_external_catalogs(checkplotdict,
     # should now have match results for all external catalogs
     #
 
-    return xmatchresults
+    if returndirect:
 
+        return xmatchresults
+
+    else:
+
+        if updatexmatch and 'xmatch' in checkplotdict:
+            checkplotdict['xmatch'].update(xmatchresults)
+        else:
+            checkplotdict['xmatch'] = xmatchresults
+
+        return checkplotdict
 
 
 
