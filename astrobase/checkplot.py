@@ -61,6 +61,7 @@ import base64
 import sys
 import hashlib
 import sys
+import json
 
 try:
     import cPickle as pickle
@@ -158,6 +159,7 @@ from .varclass.starfeatures import coord_features, color_features, \
 from .plotbase import skyview_stamp, \
     PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
 from .coordutils import total_proper_motion, reduced_proper_motion
+
 
 ############
 ## CONFIG ##
@@ -2097,12 +2099,14 @@ def _load_xmatch_external_catalogs(xmatchto,
     #  "columns":[{"name":"objectid", "dtype":"U20"},
     #             {"name":"ra", "dtype":"f8"},
     #             {"name":"decl","dtype":"f8"},
-    #             {"name":"sdssr":"dtype":"f8"},
-    #             {"name":"vartype":"dtype":"U20"}],
+    #             {"name":"sdssr","dtype":"f8"},
+    #             {"name":"vartype","dtype":"U20"}],
+    #  "colra":"ra",
+    #  "coldec":"decl",
     #  "description":"Contains variable stars from the NSVS catalog"}
-    objectid1 | 45.0 | -20.0 | 12.0 | eclipsing binary
-    objectid2 | 45.0 | -20.0 | 12.0 | RRab
-    objectid3 | 45.0 | -20.0 | 12.0 | eclipsing binary
+    objectid1 | 45.0  | -20.0 | 12.0 | detached EB
+    objectid2 | 145.0 | 23.0  | 10.0 | RRab
+    objectid3 | 12.0  | 11.0  | 14.0 | Cepheid
     .
     .
     .
@@ -2111,7 +2115,79 @@ def _load_xmatch_external_catalogs(xmatchto,
     catalog. this should be the same length as xmatchto and each element here
     will apply to the respective file in xmatchto.
 
+    poskeys are the columns in xmatchkeys that correspond to the right ascension
+    and declination. This is ('ra','decl') by default.
+
     '''
+
+    outdict = {}
+
+    for xc, xk in zip(xmatchto, xmatchkeys):
+
+        catdef = []
+
+        # read in the defs
+        with open(xc,'rb') as infd:
+            for line in infd:
+                if line.decode().startswith('#'):
+                   catdef.append(
+                       line.decode().replace('#','').strip().rstrip('\n')
+                   )
+                if not line.decode().startswith('#'):
+                    break
+
+        if not len(catdef) > 0:
+            LOGERROR("catalog definition not parseable "
+                     "for catalog: %s, skipping..." % xc)
+            continue
+
+        catdef = ' '.join(catdef)
+        catdefdict = json.loads(catdef)
+
+        # prepare to get the specified columns out of the catalog
+        catcoldtypes = [x['dtype'] for x in catdefdict['columns']
+                        if x['name'] in xk]
+        catcolinds = [i for (i,x) in enumerate(catdefdict['columns']) if
+                      x['name'] in xk]
+
+        # get the specified columns out of the catalog
+        catarr = np.genfromtxt(xc,
+                               usecols=catcolinds,
+                               names=xk,
+                               dtype=','.join(catcoldtypes),
+                               comments='#',
+                               delimiter='|')
+        catshortname = os.path.splitext(os.path.basename(xc))[0]
+
+        #
+        # make a kdtree for this catalog
+        #
+
+        # get the ra and decl columns
+        objra, objdecl = (catarr[catdefdict['colra']],
+                          catarr[catdefdict['coldec']])
+
+        # get the xyz unit vectors from ra,decl
+        cosdecl = np.cos(np.radians(objdecl))
+        sindecl = np.sin(np.radians(objdecl))
+        cosra = np.cos(np.radians(objra))
+        sinra = np.sin(np.radians(objra))
+        xyz = np.column_stack((cosra*cosdecl,sinra*cosdecl, sindecl))
+
+        # generate the kdtree
+        kdt = cKDTree(xyz,copy_data=True)
+
+        # generate the outdict element for this catalog
+        catoutdict = {'kdtree':kdt,
+                      'data':catarr,
+                      'columns':xk,
+                      'name':catdefdict['name'],
+                      'desc':catdefdict['description']}
+
+        outdict[catshortname] = catoutdict
+
+    return outdict
+
 
 
 
@@ -2130,10 +2206,13 @@ def _xmatch_external_catalogs(checkplotdict,
      'catalogs':[list of catalog file basenames with stripped extensions]
      'catalog1':{'name':'Catalog of interesting things',
                  'found':True,
+                 'distarcsec':0.7,
                  'info':{'objectid':...,'ra':...,'decl':...,'desc':...}},
      'catalog2':{'name':'Catalog of more interesting things',
                  'found':False,
+                 'distarcsec':nan,
                  'info':None},
+    .
     .
     .
     ....}
@@ -2143,6 +2222,10 @@ def _xmatch_external_catalogs(checkplotdict,
     xmatchradiusarcsec is the xmatch radius in arcseconds.
 
     '''
+
+
+
+
 
 
 ########################
