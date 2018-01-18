@@ -2145,11 +2145,22 @@ def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
         catdef = ' '.join(catdef)
         catdefdict = json.loads(catdef)
 
-        # prepare to get the specified columns out of the catalog
-        catcoldtypes = [x['dtype'] for x in catdefdict['columns']
-                        if x['name'] in xk]
-        catcolinds = [i for (i,x) in enumerate(catdefdict['columns']) if
-                      x['name'] in xk]
+        catdefcolnames = [x['name'] for x in catdefdict['columns']]
+        catdefdtypes = [x['dtype'] for x in catdefdict['columns']]
+
+        # get the correct column indices and dtypes for the requested columns
+        # from the catdefdict
+
+        catcolinds = []
+        catcoldtypes = []
+
+        for xkcol in xk:
+
+            if xkcol in catdefcolnames:
+
+                xkcolind = catdefcolnames.index(xkcol)
+                catcolinds.append(xkcolind)
+                catcoldtypes.append(catdefdtypes[xkcolind])
 
         # get the specified columns out of the catalog
         catarr = np.genfromtxt(xc,
