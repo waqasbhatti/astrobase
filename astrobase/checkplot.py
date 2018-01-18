@@ -2095,11 +2095,13 @@ def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
     the catalog. An example is shown below.
 
     # {"name":"NSVS catalog of variable stars",
-    #  "columns":[{"name":"objectid", "dtype":"U20"},
-    #             {"name":"ra", "dtype":"f8"},
-    #             {"name":"decl","dtype":"f8"},
-    #             {"name":"sdssr","dtype":"f8"},
-    #             {"name":"vartype","dtype":"U20"}],
+    #  "columns":[
+    #    {"key":"objectid", "dtype":"U20", "name":"Object ID", "unit": null},
+    #    {"key":"ra", "dtype":"f8", "name":"RA", "unit":"deg"},
+    #    {"key":"decl","dtype":"f8", "name": "Declination", "unit":"deg"},
+    #    {"key":"sdssr","dtype":"f8","name":"SDSS r", "unit":"mag"},
+    #    {"key":"vartype","dtype":"U20","name":"Variable type", "unit":null}
+    #  ],
     #  "colra":"ra",
     #  "coldec":"decl",
     #  "description":"Contains variable stars from the NSVS catalog"}
@@ -2150,22 +2152,29 @@ def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
         catdef = ' '.join(catdef)
         catdefdict = json.loads(catdef)
 
-        catdefcolnames = [x['name'] for x in catdefdict['columns']]
+        catdefkeys = [x['key'] for x in catdefdict['columns']]
         catdefdtypes = [x['dtype'] for x in catdefdict['columns']]
+        catdefnames = [x['name'] for x in catdefdict['columns']]
+        catdefunits = [x['unit'] for x in catdefdict['columns']]
 
         # get the correct column indices and dtypes for the requested columns
         # from the catdefdict
 
         catcolinds = []
         catcoldtypes = []
+        catcolnames = []
+        catcolunits = []
 
         for xkcol in xk:
 
-            if xkcol in catdefcolnames:
+            if xkcol in catdefkeys:
 
-                xkcolind = catdefcolnames.index(xkcol)
+                xkcolind = catdefkeys.index(xkcol)
+
                 catcolinds.append(xkcolind)
                 catcoldtypes.append(catdefdtypes[xkcolind])
+                catcolnames.append(catdefnames[xkcolind])
+                catcolunits.append(catdefunits[xkcolind])
 
         # get the specified columns out of the catalog
         catarr = np.genfromtxt(infd,
@@ -2201,6 +2210,8 @@ def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
         catoutdict = {'kdtree':kdt,
                       'data':catarr,
                       'columns':xk,
+                      'colnames':catcolnames,
+                      'colunits':catcolunits,
                       'name':catdefdict['name'],
                       'desc':catdefdict['description']}
 
