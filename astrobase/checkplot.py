@@ -2261,9 +2261,12 @@ def xmatch_external_catalogs(checkplotdict,
     cosra = np.cos(np.radians(objra))
     sinra = np.sin(np.radians(objra))
 
-    # this is the search distance in xyz unit vectors
-    xyzdist = 2.0 * np.sin(np.radians(xmatchdistarcsec/3600.0)/2.0)
+    objxyz = np.column_stack((cosra*cosdecl,
+                              sinra*cosdecl,
+                              sindecl))
 
+    # this is the search distance in xyz unit vectors
+    xyzdist = 2.0 * np.sin(np.radians(xmatchradiusarcsec/3600.0)/2.0)
 
     #
     # now search in each external catalog
@@ -2276,29 +2279,57 @@ def xmatch_external_catalogs(checkplotdict,
     for ecat in extcats:
 
         # get the kdtree
-        kdt = ecat['kdtree']
+        kdt = xmatchinfo[ecat]['kdtree']
 
         # look up the coordinates
-        kdtindices = kdt.query_ball_point([cosra*cosdecl,
-                                           sinra*cosdecl,
-                                           sindecl],
-                                          xyzdist)
+        kdt_dist, kdt_ind = kdt.query(objxyz,
+                                      k=1,
+                                      distance_upper_bound=xyzdist)
 
-        if kdtindices and len(kdtindices) > 0:
+        # sort by matchdist
+        mdsorted = np.argsort(kdt_dist)
+        matchdists = kdt_dist[mdsorted]
+        matchinds = kdt_ind[mdsorted]
 
-            infoarr = ecat['data'][kdtindices]
-            infodict = {}
+        if matchdists[np.isfinite(matchdists)].size == 0:
 
-        # if we didn't find anything in this catalog, skip to the next one
-        else:
-
-            xmatchresults[ecat] = {'name':ecat['name'],
+            xmatchresults[ecat] = {'name':xmatchinfo[ecat]['name'],
                                    'found':False,
                                    'distarcsec':np.nan,
                                    'info':None}
 
+        else:
 
+            for md, mi in zip(matchdists, matchinds):
 
+                if np.isfinite(md) and md < xyzdist:
+
+                    infodict = {}
+
+                    distarcsec = _xyzdist_to_distarcsec(md)
+
+                    for col in xmatchinfo[ecat]['columns']:
+
+                        coldata = xmatchinfo[ecat]['data'][col][mi]
+
+                        if isinstance(coldata, str):
+                            coldata = coldata.strip()
+
+                        infodict[col] = coldata
+
+                    xmatchresults[ecat] = {
+                        'name':xmatchinfo[ecat]['name'],
+                        'found':True,
+                        'distarcsec':distarcsec,
+                        'info':infodict
+                    }
+                    break
+
+    #
+    # should now have match results for all external catalogs
+    #
+
+    return xmatchresults
 
 
 
