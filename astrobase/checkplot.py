@@ -2127,15 +2127,20 @@ def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
 
         catdef = []
 
+        # read in this catalog and transparently handle gzipped files
+        if xc.endswith('.gz'):
+            infd = gzip.open(xc,'rb')
+        else:
+            infd = open(xc,'rb')
+
         # read in the defs
-        with open(xc,'rb') as infd:
-            for line in infd:
-                if line.decode().startswith('#'):
-                   catdef.append(
-                       line.decode().replace('#','').strip().rstrip('\n')
-                   )
-                if not line.decode().startswith('#'):
-                    break
+        for line in infd:
+            if line.decode().startswith('#'):
+               catdef.append(
+                   line.decode().replace('#','').strip().rstrip('\n')
+               )
+            if not line.decode().startswith('#'):
+                break
 
         if not len(catdef) > 0:
             LOGERROR("catalog definition not parseable "
@@ -2163,13 +2168,15 @@ def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
                 catcoldtypes.append(catdefdtypes[xkcolind])
 
         # get the specified columns out of the catalog
-        catarr = np.genfromtxt(xc,
+        catarr = np.genfromtxt(infd,
                                usecols=catcolinds,
                                names=xk,
                                dtype=','.join(catcoldtypes),
                                comments='#',
                                delimiter='|',
                                autostrip=True)
+        infd.close()
+
         catshortname = os.path.splitext(os.path.basename(xc))[0]
 
         #
