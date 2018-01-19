@@ -2885,8 +2885,8 @@ def checkplot_dict(lspinfolist,
         # 7. do any xmatches required
         if xmatchinfo is not None:
             checkplotdict = xmatch_external_catalogs(
-                xmatchinfo,
                 checkplotdict,
+                xmatchinfo,
                 xmatchradiusarcsec=xmatchradiusarcsec
             )
 
