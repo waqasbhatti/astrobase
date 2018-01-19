@@ -757,7 +757,7 @@ def neighbor_features(objectinfo,
                     infd,
                     names=True,
                     delimiter=',',
-                    dtype='i8,f8,f8,f8,f8,f8,f8',
+                    dtype='U20,f8,f8,f8,f8,f8,f8',
                     usecols=(0,1,2,3,4,5,6)
                 )
 
