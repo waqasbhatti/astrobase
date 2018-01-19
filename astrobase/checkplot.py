@@ -160,7 +160,6 @@ from .plotbase import skyview_stamp, \
     PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
 from .coordutils import total_proper_motion, reduced_proper_motion
 
-
 ############
 ## CONFIG ##
 ############
@@ -2232,7 +2231,7 @@ def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
 
 def xmatch_external_catalogs(checkplotdict,
                              xmatchinfo,
-                             xmatchradiusarcsec=3.0,
+                             xmatchradiusarcsec=2.0,
                              returndirect=False,
                              updatexmatch=True,
                              savepickle=None):
@@ -2284,7 +2283,6 @@ def xmatch_external_catalogs(checkplotdict,
         LOGERROR("can't figure out xmatch info, can't xmatch, skipping...")
         return checkplotdict
 
-
     #
     # generate the xmatch spec
     #
@@ -2292,7 +2290,6 @@ def xmatch_external_catalogs(checkplotdict,
     # get our ra, decl
     objra = checkplotdict['objectinfo']['ra']
     objdecl = checkplotdict['objectinfo']['decl']
-
 
     cosdecl = np.cos(np.radians(objdecl))
     sindecl = np.sin(np.radians(objdecl))
