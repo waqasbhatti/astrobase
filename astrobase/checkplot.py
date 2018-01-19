@@ -2883,11 +2883,12 @@ def checkplot_dict(lspinfolist,
                                % repr(externalrow))
 
         # 7. do any xmatches required
-        checkplotdict = xmatch_external_catalogs(
-            xmatchinfo,
-            checkplotdict,
-            xmatchradiusarcsec=xmatchradiusarcsec
-        )
+        if xmatchinfo is not None:
+            checkplotdict = xmatch_external_catalogs(
+                xmatchinfo,
+                checkplotdict,
+                xmatchradiusarcsec=xmatchradiusarcsec
+            )
 
         # the checkplotdict now contains everything we need
         contents = sorted(list(checkplotdict.keys()))
