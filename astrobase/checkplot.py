@@ -2244,7 +2244,6 @@ def xmatch_external_catalogs(checkplotdict,
     the value:
 
     {'xmatchradiusarcsec':xmatchradiusarcsec,
-     'catalogs':[list of catalog file basenames with stripped extensions]
      'catalog1':{'name':'Catalog of interesting things',
                  'found':True,
                  'distarcsec':0.7,
@@ -2309,12 +2308,12 @@ def xmatch_external_catalogs(checkplotdict,
 
     xmatchresults = {}
 
-    extcats = sorted(list(xmatchinfo.keys()))
+    extcats = sorted(list(xmatchdict.keys()))
 
     for ecat in extcats:
 
         # get the kdtree
-        kdt = xmatchinfo[ecat]['kdtree']
+        kdt = xmatchdict[ecat]['kdtree']
 
         # look up the coordinates
         kdt_dist, kdt_ind = kdt.query(objxyz,
@@ -2328,7 +2327,7 @@ def xmatch_external_catalogs(checkplotdict,
 
         if matchdists[np.isfinite(matchdists)].size == 0:
 
-            xmatchresults[ecat] = {'name':xmatchinfo[ecat]['name'],
+            xmatchresults[ecat] = {'name':xmatchdict[ecat]['name'],
                                    'found':False,
                                    'distarcsec':np.nan,
                                    'info':None}
@@ -2343,9 +2342,9 @@ def xmatch_external_catalogs(checkplotdict,
 
                     distarcsec = _xyzdist_to_distarcsec(md)
 
-                    for col in xmatchinfo[ecat]['columns']:
+                    for col in xmatchdict[ecat]['columns']:
 
-                        coldata = xmatchinfo[ecat]['data'][col][mi]
+                        coldata = xmatchdict[ecat]['data'][col][mi]
 
                         if isinstance(coldata, str):
                             coldata = coldata.strip()
@@ -2353,7 +2352,7 @@ def xmatch_external_catalogs(checkplotdict,
                         infodict[col] = coldata
 
                     xmatchresults[ecat] = {
-                        'name':xmatchinfo[ecat]['name'],
+                        'name':xmatchdict[ecat]['name'],
                         'found':True,
                         'distarcsec':distarcsec,
                         'info':infodict
