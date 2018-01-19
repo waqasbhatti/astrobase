@@ -2234,7 +2234,8 @@ def xmatch_external_catalogs(checkplotdict,
                              xmatchinfo,
                              xmatchradiusarcsec=3.0,
                              returndirect=False,
-                             updatexmatch=True):
+                             updatexmatch=True,
+                             savepickle=None):
     '''This matches the current object to the external match catalogs in
     xmatchdict.
 
@@ -2267,6 +2268,9 @@ def xmatch_external_catalogs(checkplotdict,
 
     If updatexmatch is True, any previous 'xmatch' elements in the checkplotdict
     will be added on to instead of being overwritten.
+
+    If savepickle is not None, it should be the name of a checkplot pickle file
+    to write the pickle back to.
 
     '''
 
@@ -2329,7 +2333,7 @@ def xmatch_external_catalogs(checkplotdict,
 
             xmatchresults[ecat] = {'name':xmatchdict[ecat]['name'],
                                    'found':False,
-                                   'distarcsec':np.nan,
+                                   'distarcsec':None,
                                    'info':None}
 
         else:
@@ -2353,9 +2357,13 @@ def xmatch_external_catalogs(checkplotdict,
 
                     xmatchresults[ecat] = {
                         'name':xmatchdict[ecat]['name'],
+                        'desc':xmatchdict[ecat]['desc'],
                         'found':True,
                         'distarcsec':distarcsec,
-                        'info':infodict
+                        'info':infodict,
+                        'colkeys':xmatchdict[ecat]['columns'],
+                        'colnames':xmatchdict[ecat]['colnames'],
+                        'colunit':xmatchdict[ecat]['colunits'],
                     }
                     break
 
@@ -2374,7 +2382,15 @@ def xmatch_external_catalogs(checkplotdict,
         else:
             checkplotdict['xmatch'] = xmatchresults
 
-        return checkplotdict
+
+        if savepickle:
+            cpf = _write_checkplot_picklefile(checkplotdict,
+                                              outfile=savepickle,
+                                              protocol=4)
+            return cpf
+
+        else:
+            return checkplotdict
 
 
 

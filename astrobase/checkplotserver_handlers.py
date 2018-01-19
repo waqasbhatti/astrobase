@@ -52,8 +52,11 @@ class FrontendEncoder(json.JSONEncoder):
             return obj.decode()
         elif isinstance(obj, complex):
             return (obj.real, obj.imag)
-        elif isinstance(obj, float) and np.isnan(obj):
+        elif (isinstance(obj, (float, np.float64, np.float_)) and
+              not np.isfinite(obj)):
             return None
+        elif isinstance(obj, (np.int8, np.int16, np.int32, np.int64)):
+            return int(obj)
         else:
             return json.JSONEncoder.default(self, obj)
 
@@ -515,10 +518,19 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
                         neighbors.append(thisnbrdict)
 
+
+                # load object comments
                 if 'comments' in cpdict:
                     objectcomments = cpdict['comments']
                 else:
                     objectcomments = None
+
+                # load the xmatch results, if any
+                if 'xmatch' in cpdict:
+                    objectxmatch = cpdict['xmatch']
+                else:
+                    objectxmatch = None
+
 
                 # these are base64 which can be provided directly to JS to
                 # generate images (neat!)
@@ -545,6 +557,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                         'objectcomments':objectcomments,
                         'varinfo':varinfo,
                         'neighbors':neighbors,
+                        'xmatch':objectxmatch,
                         'finderchart':finderchart,
                         'magseries':magseries,
                         # fallback in case objectinfo doesn't have ndet
