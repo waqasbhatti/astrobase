@@ -259,7 +259,7 @@ def macf_period_find(
         mags,
         errs,
         fillgaps=0.0,
-        filterwindow=11,
+        filterwindow=521, # set for ground based gappy LCs, see details below
         forcetimebin=None,
         maxlags=None,
         maxacfpeaks=10,
@@ -270,6 +270,10 @@ def macf_period_find(
         sigclip=3.0,
         verbose=True,
         nworkers=None, # doesn't do anything, but for consistent external API
+        startp=None,   # doesn't do anything, but for consistent external API
+        endp=None,     # doesn't do anything, but for consistent external API
+        autofreq=None, # doesn't do anything, but for consistent external API
+        stepsize=None, # doesn't do anything, but for consistent external API
 ):
     '''This finds periods using the McQuillan+ (2013a, 2014) method.
 

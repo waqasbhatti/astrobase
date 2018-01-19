@@ -19,6 +19,8 @@ TO BE IMPLEMENTED:
 
 periodbase.gcep -> Graham et al. (2013) conditional entropy period search
 
+FIXME: add an iterative peak-removal and refit mode to all period-finders here.
+
 '''
 
 

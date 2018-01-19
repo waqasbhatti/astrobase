@@ -148,6 +148,9 @@ CPTOOLMAP = {
         'resloc':[],
     },
     ## PERIOD SEARCH METHODS ##
+    # FIXME: add in sigclip here and to frontend , set it to None by default
+    # because we're reusing the times, mags, errs present in the checkplot dict,
+    # which have been sigclipped already
     'psearch-gls':{
         'args':('times','mags','errs'),
         'argtypes':(ndarray, ndarray, ndarray),
@@ -198,6 +201,7 @@ CPTOOLMAP = {
         'func':smav.aovhm_periodfind,
         'resloc':['mav'],
     },
+    # FIXME: add in the other kwargs for macf_period_find here
     'psearch-acf':{
         'args':('times','mags','errs'),
         'argtypes':(ndarray, ndarray, ndarray),
