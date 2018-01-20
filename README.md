@@ -85,17 +85,12 @@ for your purposes.
 - **[fortney2k7](astrobase/fortney2k7.py)**: giant planet models from Fortney
   et al. 2007, ApJ, 2659, 1661 made importable as Python dicts
 
-- **[hatlc](astrobase/hatlc.py)**: functions to read, filter, and normalize
-  new generation light curves from the HAT data server; the format is described
-  here: http://data.hatsurveys.org/docs/lcformat
+- **[hatsurveys](astrobase/hatsurveys)**: modules to read, filter, and normalize
+  light curves from various HAT surveys
 
 - **[imageutils](astrobase/imageutils.py)**: various functions to deal with
   FITS images: reading headers, generating postage stamps, converting to JPEGs,
   and checking for warps
-
-- **[k2hat](astrobase/k2hat.py)**: functions to read K2 Mission light curves
-    reduced by the HAT Project team; these are available at
-    http://k2.hatsurveys.org.
 
 - **[lcdb](astrobase/lcdb.py)**: a lightweight wrapper around the
   `psycopg2` library to talk to PostgreSQL database servers
@@ -110,11 +105,6 @@ for your purposes.
     keys, (ii) running variability feature calculation and detection, (iii)
     running period-finding, and (iv) object review using the checkplotserver
     webapp for variability classification.
-
-- **[oldhatlc](astrobase/oldhatlc.py)**: functions to read light curves in the
-  older HAT light curve format (i.e. those from http://hatnet.org and
-  http://hatsouth.org); the format is described here:
-  http://hatnet.org/planets/discovery-hatlcs.html#lightcurve-schema
 
 - **[periodbase](astrobase/periodbase)**: parallelized functions (using
   `multiprocessing.map`) to run fast period searches on light curves, including:
@@ -140,13 +130,6 @@ for your purposes.
 - **[plotbase](astrobase/plotbase.py)**: functions to plot light curves, phased
   light curves, periodograms, and download Digitized Sky Survey cutouts from the
   NASA SkyView service.
-
-- **[texthatlc](astrobase/texthatlc.py)**: contains a function to read some
-    original HAT text light curves (.epdlc, .tfalc). These are produced by the
-    HAT pipeline, are most useful for internal HAT work, and may not contain all
-    measurements from overlapping observations or any object metadata. Using the
-    public HAT data server light curves (-hatlc.sqlite.gz, -hatlc.csv.gz) and
-    reading these using **[hatlc](astrobase/hatlc.py)** is recommended instead.
 
 - **[timeutils](astrobase/timeutils.py)**: functions for converting from
   Julian dates to Baryocentric Julian dates, and precessing coordinates between
