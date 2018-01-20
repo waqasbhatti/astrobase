@@ -51,6 +51,74 @@ array([ 16.03474,  16.02773,  16.01826, ...,  15.76997,  15.76577,
 # put this in here because k2hat can be used as a standalone module
 __version__ = '0.3.3'
 
+#############
+## LOGGING ##
+#############
+
+import logging
+from datetime import datetime
+from traceback import format_exc
+
+# setup a logger
+LOGGER = None
+LOGMOD = __name__
+DEBUG = False
+
+def set_logger_parent(parent_name):
+    globals()['LOGGER'] = logging.getLogger('%s.%s' % (parent_name, LOGMOD))
+
+def LOGDEBUG(message):
+    if LOGGER:
+        LOGGER.debug(message)
+    elif DEBUG:
+        print('[%s - DBUG] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGINFO(message):
+    if LOGGER:
+        LOGGER.info(message)
+    else:
+        print('[%s - INFO] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGERROR(message):
+    if LOGGER:
+        LOGGER.error(message)
+    else:
+        print('[%s - ERR!] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGWARNING(message):
+    if LOGGER:
+        LOGGER.warning(message)
+    else:
+        print('[%s - WRN!] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGEXCEPTION(message):
+    if LOGGER:
+        LOGGER.exception(message)
+    else:
+        print(
+            '[%s - EXC!] %s\nexception was: %s' % (
+                datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                message, format_exc()
+                )
+            )
+
+
+#############
+## IMPORTS ##
+#############
+
 import os.path
 
 import gzip
@@ -59,52 +127,6 @@ from datetime import datetime
 from traceback import format_exc
 
 import numpy as np
-
-#############
-## LOGGING ##
-#############
-
-# setup a logger
-LOGGER = None
-
-def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.k2hat' % parent_name)
-
-def LOGDEBUG(message):
-    if LOGGER:
-        LOGGER.debug(message)
-    elif DEBUG:
-        print('%sZ [DBUG]: %s' % (datetime.utcnow().isoformat(), message))
-
-def LOGINFO(message):
-    if LOGGER:
-        LOGGER.info(message)
-    else:
-        print('%sZ [INFO]: %s' % (datetime.utcnow().isoformat(), message))
-
-def LOGERROR(message):
-    if LOGGER:
-        LOGGER.error(message)
-    else:
-        print('%sZ [ERR!]: %s' % (datetime.utcnow().isoformat(), message))
-
-def LOGWARNING(message):
-    if LOGGER:
-        LOGGER.warning(message)
-    else:
-        print('%sZ [WRN!]: %s' % (datetime.utcnow().isoformat(), message))
-
-def LOGEXCEPTION(message):
-    if LOGGER:
-        LOGGER.exception(message)
-    else:
-        print(
-            '%sZ [EXC!]: %s\nexception was: %s' % (
-                datetime.utcnow().isoformat(),
-                message, format_exc()
-                )
-            )
-
 
 
 ########################

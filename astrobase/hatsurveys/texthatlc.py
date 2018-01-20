@@ -11,63 +11,80 @@ Use the read_original_textlc function to read a HAT .tfalc or .epdlc light curve
 file.
 
 '''
-####################
-## SYSTEM IMPORTS ##
-####################
-
-import logging
-from datetime import datetime
-from traceback import format_exc
-
-import numpy as np
-from numpy import nan
-
-from astropy.io import ascii as astascii
 
 #############
 ## LOGGING ##
 #############
 
+import logging
+from datetime import datetime
+from traceback import format_exc
+
 # setup a logger
 LOGGER = None
+LOGMOD = __name__
+DEBUG = False
 
 def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.texthatlc' % parent_name)
+    globals()['LOGGER'] = logging.getLogger('%s.%s' % (parent_name, LOGMOD))
 
 def LOGDEBUG(message):
     if LOGGER:
         LOGGER.debug(message)
     elif DEBUG:
-        print('%sZ [DBUG]: %s' % (datetime.utcnow().isoformat(), message))
+        print('[%s - DBUG] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
 
 def LOGINFO(message):
     if LOGGER:
         LOGGER.info(message)
     else:
-        print('%sZ [INFO]: %s' % (datetime.utcnow().isoformat(), message))
+        print('[%s - INFO] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
 
 def LOGERROR(message):
     if LOGGER:
         LOGGER.error(message)
     else:
-        print('%sZ [ERR!]: %s' % (datetime.utcnow().isoformat(), message))
+        print('[%s - ERR!] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
 
 def LOGWARNING(message):
     if LOGGER:
         LOGGER.warning(message)
     else:
-        print('%sZ [WRN!]: %s' % (datetime.utcnow().isoformat(), message))
+        print('[%s - WRN!] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
 
 def LOGEXCEPTION(message):
     if LOGGER:
         LOGGER.exception(message)
     else:
         print(
-            '%sZ [EXC!]: %s\nexception was: %s' % (
-                datetime.utcnow().isoformat(),
+            '[%s - EXC!] %s\nexception was: %s' % (
+                datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
                 )
             )
+
+
+#############
+## IMPORTS ##
+#############
+
+import numpy as np
+from numpy import nan
+
+from astropy.io import ascii as astascii
+
 
 
 def read_original_textlc(lcpath):

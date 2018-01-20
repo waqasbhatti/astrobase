@@ -8,11 +8,75 @@ McQuillan+ 2014.
 
 '''
 
+#############
+## LOGGING ##
+#############
 
-from multiprocessing import Pool, cpu_count
 import logging
 from datetime import datetime
 from traceback import format_exc
+
+# setup a logger
+LOGGER = None
+LOGMOD = __name__
+DEBUG = False
+
+def set_logger_parent(parent_name):
+    globals()['LOGGER'] = logging.getLogger('%s.%s' % (parent_name, LOGMOD))
+
+def LOGDEBUG(message):
+    if LOGGER:
+        LOGGER.debug(message)
+    elif DEBUG:
+        print('[%s - DBUG] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGINFO(message):
+    if LOGGER:
+        LOGGER.info(message)
+    else:
+        print('[%s - INFO] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGERROR(message):
+    if LOGGER:
+        LOGGER.error(message)
+    else:
+        print('[%s - ERR!] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGWARNING(message):
+    if LOGGER:
+        LOGGER.warning(message)
+    else:
+        print('[%s - WRN!] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGEXCEPTION(message):
+    if LOGGER:
+        LOGGER.exception(message)
+    else:
+        print(
+            '[%s - EXC!] %s\nexception was: %s' % (
+                datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                message, format_exc()
+                )
+            )
+
+
+#############
+## IMPORTS ##
+#############
+
+from multiprocessing import Pool, cpu_count
 
 import numpy as np
 
@@ -33,52 +97,6 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
 
 from scipy.signal import argrelmax, argrelmin, savgol_filter
 from astropy.convolution import convolve, Gaussian1DKernel
-
-
-#############
-## LOGGING ##
-#############
-
-# setup a logger
-LOGGER = None
-
-def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.macf' % parent_name)
-
-def LOGDEBUG(message):
-    if LOGGER:
-        LOGGER.debug(message)
-    elif DEBUG:
-        print('%sZ [DBUG]: %s' % (datetime.utcnow().isoformat(), message))
-
-def LOGINFO(message):
-    if LOGGER:
-        LOGGER.info(message)
-    else:
-        print('%sZ [INFO]: %s' % (datetime.utcnow().isoformat(), message))
-
-def LOGERROR(message):
-    if LOGGER:
-        LOGGER.error(message)
-    else:
-        print('%sZ [ERR!]: %s' % (datetime.utcnow().isoformat(), message))
-
-def LOGWARNING(message):
-    if LOGGER:
-        LOGGER.warning(message)
-    else:
-        print('%sZ [WRN!]: %s' % (datetime.utcnow().isoformat(), message))
-
-def LOGEXCEPTION(message):
-    if LOGGER:
-        LOGGER.exception(message)
-    else:
-        print(
-            '%sZ [EXC!]: %s\nexception was: %s' % (
-                datetime.utcnow().isoformat(),
-                message, format_exc()
-                )
-            )
 
 
 ###################

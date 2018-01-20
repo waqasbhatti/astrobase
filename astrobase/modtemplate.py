@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''{{ name }}.py - {{ author }} ({{ email }}) - {{ month }} {{ year }}
-License: MIT.
+License: MIT - see the LICENSE file for the full text.
 
 '''
 
