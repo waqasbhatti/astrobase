@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''lcproc_batch.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - May 2017
+'''lcproc.batch.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - May 2017
 
 This contains functions that work on single light curve files at a time. The
 intended uses are:
@@ -94,7 +94,7 @@ def dict_get(datadict, keylist):
 LOGGER = None
 
 def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.lcproc' % parent_name)
+    globals()['LOGGER'] = logging.getLogger('%s.batch' % parent_name)
 
 def LOGDEBUG(message):
     if LOGGER:
@@ -319,9 +319,9 @@ def register_custom_lcformat(formatkey,
 
     # get the lcformatdir
     if lcformatdir is None:
-        lcformatdir = os.path.join(os.path.dirname(__file__),
-                                   'data',
-                                   'lcformats')
+        lcformatdir = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                                   '../data',
+                                                   'lcformats'))
 
     formatdict = {'fileglob':fileglob,
                   'timecols':timecols,
