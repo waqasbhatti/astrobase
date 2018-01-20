@@ -37,7 +37,8 @@ except:
     from urllib.request import urlretrieve
 from numpy.testing import assert_allclose
 
-from astrobase import hatlc, periodbase, checkplot
+from astrobase.hatsurveys import hatlc
+from astrobase import periodbase, checkplot
 
 
 ############
