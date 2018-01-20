@@ -3749,10 +3749,11 @@ def checkplot_pickle_to_png(checkplotin,
         )
 
     # GAIA neighbors
-    if ('gaia_neighbors' in cpd['objectinfo'] and
-        np.isfinite(cpd['objectinfo']['gaia_neighbors']) and
-        'searchradarcsec' in cpd['objectinfo'] and
-        cpd['objectinfo']['searchradarcsec']):
+    if ( ('gaia_neighbors' in cpd['objectinfo']) and
+         (cpd['objectinfo']['gaia_neighbors'] is not None) and
+         (np.isfinite(cpd['objectinfo']['gaia_neighbors'])) and
+         ('searchradarcsec' in cpd['objectinfo']) and
+         (cpd['objectinfo']['searchradarcsec']) ):
 
         objinfodraw.text(
             (875, 375),
@@ -3764,10 +3765,12 @@ def checkplot_pickle_to_png(checkplotin,
         )
 
     # closest GAIA neighbor
-    if ('gaia_closest_distarcsec' in cpd['objectinfo'] and
-        np.isfinite(cpd['objectinfo']['gaia_closest_distarcsec']) and
-        'gaia_closest_gmagdiff' in cpd['objectinfo'] and
-        np.isfinite(cpd['objectinfo']['gaia_closest_gmagdiff'])):
+    if ( ('gaia_closest_distarcsec' in cpd['objectinfo']) and
+         (cpd['objectinfo']['gaia_closest_distarcsec'] is not None) and
+         (np.isfinite(cpd['objectinfo']['gaia_closest_distarcsec'])) and
+         ('gaia_closest_gmagdiff' in cpd['objectinfo']) and
+         (cpd['objectinfo']['gaia_closest_gmagdiff'] is not None) and
+         (np.isfinite(cpd['objectinfo']['gaia_closest_gmagdiff'])) ):
 
         objinfodraw.text(
             (875, 400),

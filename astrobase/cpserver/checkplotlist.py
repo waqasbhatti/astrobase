@@ -165,6 +165,11 @@ import glob
 import json
 import argparse
 
+try:
+    import cPickle as pickle
+except:
+    import pickle
+
 # suppress warnings
 import warnings
 warnings.filterwarnings('ignore')
@@ -201,7 +206,7 @@ def key_worker(task):
 
 
     with open(cpf,'rb') as infd:
-        cpd = pickle.load(cpf)
+        cpd = pickle.load(infd)
 
     resultkeys = []
 

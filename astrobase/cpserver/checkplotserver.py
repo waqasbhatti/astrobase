@@ -55,7 +55,7 @@ from tornado.options import define, options
 ## DEFINING URL HANDLERS ##
 ###########################
 
-import astrobase.checkplotserver_handlers as cphandlers
+from . import checkplotserver_handlers as cphandlers
 
 
 ###############################
