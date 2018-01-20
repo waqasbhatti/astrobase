@@ -106,8 +106,8 @@ setup(
     cmdclass={'test':PyTest},
     entry_points={
         'console_scripts':[
-            'checkplotserver=astrobase.checkplotserver:main',
-            'checkplotlist=astrobase.checkplotlist:main',
+            'checkplotserver=astrobase.cpserver.checkplotserver:main',
+            'checkplotlist=astrobase.cpserver.checkplotlist:main',
         ],
     },
     include_package_data=True,
