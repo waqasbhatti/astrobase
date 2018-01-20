@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''oldperiodbase.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
+'''oldpf.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 
 This contains deprecated and incomplete period-finding tools from periodbase.py:
 
@@ -96,7 +96,7 @@ def LOGEXCEPTION(message):
 ## LOCAL IMPORTS ##
 ###################
 
-from .lcmath import phase_magseries, sigclip_magseries, time_bin_magseries, \
+from ..lcmath import phase_magseries, sigclip_magseries, time_bin_magseries, \
     phase_bin_magseries
 
 
