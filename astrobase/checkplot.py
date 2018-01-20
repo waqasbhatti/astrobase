@@ -2092,6 +2092,71 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
 
 
 
+#########################################
+## XMATCHING AGAINST EXTERNAL CATALOGS ##
+#########################################
+
+def _parse_xmatch_catalog_header(xc, xk):
+    '''
+    This parses the header for a catalog file.
+
+    '''
+
+    catdef = []
+
+    # read in this catalog and transparently handle gzipped files
+    if xc.endswith('.gz'):
+        infd = gzip.open(xc,'rb')
+    else:
+        infd = open(xc,'rb')
+
+    # read in the defs
+    for line in infd:
+        if line.decode().startswith('#'):
+           catdef.append(
+               line.decode().replace('#','').strip().rstrip('\n')
+           )
+        if not line.decode().startswith('#'):
+            break
+
+    if not len(catdef) > 0:
+        LOGERROR("catalog definition not parseable "
+                 "for catalog: %s, skipping..." % xc)
+        return None
+
+    catdef = ' '.join(catdef)
+    catdefdict = json.loads(catdef)
+
+    catdefkeys = [x['key'] for x in catdefdict['columns']]
+    catdefdtypes = [x['dtype'] for x in catdefdict['columns']]
+    catdefnames = [x['name'] for x in catdefdict['columns']]
+    catdefunits = [x['unit'] for x in catdefdict['columns']]
+
+    # get the correct column indices and dtypes for the requested columns
+    # from the catdefdict
+
+    catcolinds = []
+    catcoldtypes = []
+    catcolnames = []
+    catcolunits = []
+
+    for xkcol in xk:
+
+        if xkcol in catdefkeys:
+
+            xkcolind = catdefkeys.index(xkcol)
+
+            catcolinds.append(xkcolind)
+            catcoldtypes.append(catdefdtypes[xkcolind])
+            catcolnames.append(catdefnames[xkcolind])
+            catcolunits.append(catdefunits[xkcolind])
+
+
+    return (infd, catdefdict,
+            catcolinds, catcoldtypes, catcolnames, catcolunits)
+
+
+
 def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
     '''This loads the external xmatch catalogs into a dict for use here.
 
@@ -2139,54 +2204,14 @@ def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
 
     for xc, xk in zip(xmatchto, xmatchkeys):
 
-        catdef = []
+        parsed_catdef = _parse_xmatch_catalog_header(xc, xk)
 
-        # read in this catalog and transparently handle gzipped files
-        if xc.endswith('.gz'):
-            infd = gzip.open(xc,'rb')
-        else:
-            infd = open(xc,'rb')
-
-        # read in the defs
-        for line in infd:
-            if line.decode().startswith('#'):
-               catdef.append(
-                   line.decode().replace('#','').strip().rstrip('\n')
-               )
-            if not line.decode().startswith('#'):
-                break
-
-        if not len(catdef) > 0:
-            LOGERROR("catalog definition not parseable "
-                     "for catalog: %s, skipping..." % xc)
+        if not parsed_catdef:
             continue
 
-        catdef = ' '.join(catdef)
-        catdefdict = json.loads(catdef)
-
-        catdefkeys = [x['key'] for x in catdefdict['columns']]
-        catdefdtypes = [x['dtype'] for x in catdefdict['columns']]
-        catdefnames = [x['name'] for x in catdefdict['columns']]
-        catdefunits = [x['unit'] for x in catdefdict['columns']]
-
-        # get the correct column indices and dtypes for the requested columns
-        # from the catdefdict
-
-        catcolinds = []
-        catcoldtypes = []
-        catcolnames = []
-        catcolunits = []
-
-        for xkcol in xk:
-
-            if xkcol in catdefkeys:
-
-                xkcolind = catdefkeys.index(xkcol)
-
-                catcolinds.append(xkcolind)
-                catcoldtypes.append(catdefdtypes[xkcolind])
-                catcolnames.append(catdefnames[xkcolind])
-                catcolunits.append(catdefunits[xkcolind])
+        (infd, catdefdict,
+         catcolinds, catcoldtypes,
+         catcolnames, catcolunits) = parsed_catdef
 
         # get the specified columns out of the catalog
         catarr = np.genfromtxt(infd,
@@ -2199,6 +2224,7 @@ def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
         infd.close()
 
         catshortname = os.path.splitext(os.path.basename(xc))[0]
+        catshortname = catshortname.replace('.csv','')
 
         #
         # make a kdtree for this catalog
