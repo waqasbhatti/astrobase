@@ -26,10 +26,77 @@ IMAGETYP
 
 '''
 
+#############
+## LOGGING ##
+#############
+
+import logging
+from datetime import datetime
+from traceback import format_exc
+
+# setup a logger
+LOGGER = None
+LOGMOD = __name__
+DEBUG = False
+
+def set_logger_parent(parent_name):
+    globals()['LOGGER'] = logging.getLogger('%s.%s' % (parent_name, LOGMOD))
+
+def LOGDEBUG(message):
+    if LOGGER:
+        LOGGER.debug(message)
+    elif DEBUG:
+        print('[%s - DBUG] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGINFO(message):
+    if LOGGER:
+        LOGGER.info(message)
+    else:
+        print('[%s - INFO] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGERROR(message):
+    if LOGGER:
+        LOGGER.error(message)
+    else:
+        print('[%s - ERR!] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGWARNING(message):
+    if LOGGER:
+        LOGGER.warning(message)
+    else:
+        print('[%s - WRN!] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGEXCEPTION(message):
+    if LOGGER:
+        LOGGER.exception(message)
+    else:
+        print(
+            '[%s - EXC!] %s\nexception was: %s' % (
+                datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                message, format_exc()
+                )
+            )
+
+
+#############
+## IMPORTS ##
+#############
+
 import os
 import os.path
 import sys
-import logging
 import glob
 
 import numpy as np
@@ -49,7 +116,7 @@ try:
     from scipy.optimize import curve_fit
     USE_LEASTSQ=0
 except:
-    print('cannot import curve_fit, will use leastsq')
+    LOGWARNING('cannot import curve_fit, will use leastsq')
     USE_LEASTSQ=1
 
 try:
@@ -62,15 +129,10 @@ from astropy import wcs
 from PIL import Image
 from PIL import ImageDraw
 
-# setup a logger
-LOGGER = None
 
-def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.imageutils' % parent_name)
-
-
+####################
 ## FITS UTILITIES ##
-
+####################
 
 def read_fits(fits_file,ext=0):
     '''
@@ -124,11 +186,7 @@ def trim_image(fits_img,
             trimsec = fits_hdr['DATASEC']
         else:
             if custombox is None:
-                if LOGGER:
-                    LOGGER.error('no DATASEC or TRIMSEC in image header')
-                else:
-                    print('cannot trim image, no DATASEC or '
-                          'TRIMSEC in image header')
+                LOGERROR('no DATASEC or TRIMSEC in image header')
                 return
 
     if trimsec != '[0:0,0:0]':
@@ -142,21 +200,13 @@ def trim_image(fits_img,
             trimmed_img = fits_img[datasec_x[0]-1:datasec_x[1],
                                    datasec_y[0]-1:datasec_y[1]]
         except ValueError as e:
-            if LOGGER:
-                LOGGER.error('datasec/trimsec not correctly set in FITS header, '
+            LOGERROR('datasec/trimsec not correctly set in FITS header, '
                              ' not trimming')
-            else:
-                print('datasec/trimsec not correctly set in FITS header, '
-                      ' not trimming')
             trimmed_img = fits_img
 
     else:
-        if LOGGER:
-            LOGGER.error('datasec/trimsec not correctly set in FITS header, '
+        LOGERROR('datasec/trimsec not correctly set in FITS header, '
                          ' not trimming')
-        else:
-            print('datasec/trimsec not correctly set in FITS header, '
-                  ' not trimming')
         trimmed_img = fits_img
 
     return trimmed_img
@@ -205,7 +255,7 @@ def make_superflat(image_glob,
             trimmed_img = trim_image(img, hdr)
             flat_imgs[fits_image] = trimmed_img
             flat_count = flat_count + 1
-            print('found flat %s' % fits_image)
+            LOGINFO('found flat %s' % fits_image)
 
     if flat_count > 1:
 
@@ -293,7 +343,10 @@ def get_header_keyword_list(fits_file,
     return out_dict
 
 
+
+#############################
 ## IMAGE SCALING FUNCTIONS ##
+#############################
 
 def pixel_scale_func(x, m, c):
     return m*x + c
@@ -392,11 +445,6 @@ def zscale_img(img_array,
     min_scale_param = sample_min*scale_params[0] + scale_params[1]
     max_scale_param = sample_max*scale_params[0] + scale_params[1]
 
-    print(min_scale_param,
-          max_scale_param)
-
-    print(np.min(img_array), np.max(img_array))
-
     clipped_image_array = np.clip(img_array, min_scale_param, max_scale_param)
 
     return scale_params[0]*clipped_image_array + scale_params[1]
@@ -484,7 +532,10 @@ def extract_img_background(img_array,
     return backmasked
 
 
+
+#############################
 ## IMAGE SECTION FUNCTIONS ##
+#############################
 
 def img_to_stamps(img,
                   stampsize=256):
@@ -541,10 +592,7 @@ def img_to_stamps(img,
                                    imgsizey-ystampsize:],
                 'bottomright':img[-xstampsize:,-ystampsize:]}
     else:
-        if LOGGER:
-            LOGGER.error('stampsize is too large for this image')
-        else:
-            print('error: stampsize is too large for this image')
+        LOGERROR('stampsize is too large for this image')
         return None
 
 
@@ -830,12 +878,12 @@ def frame_radecbox_to_jpeg(
         # get the WCS header
         if wcsfrom and os.path.exists(wcsfrom):
             w = wcs.WCS(wcsfrom)
-            print('using WCS from external file:')
-            print(w)
+            LOGINFO('using WCS from external file:')
+            LOGINFO(w)
         else:
             w = wcs.WCS(fits_image)
-            print('using WCS from frame:')
-            print(w)
+            LOGINFO('using WCS from frame:')
+            LOGINFO(w)
 
         # convert the radecbox into a pixbox
         if w and radecbox and not radeccenter:
@@ -845,7 +893,7 @@ def frame_radecbox_to_jpeg(
 
             # we use 0 here for the origin because we'll be cutting using
             # np.arrays
-            print('requested coordinate box = %s' % repr(rd))
+            LOGINFO('requested coordinate box = %s' % repr(rd))
             pix = w.all_world2pix(rd,0)
 
         # otherwise, convert the radeccenter into pixcenter
@@ -861,21 +909,21 @@ def frame_radecbox_to_jpeg(
                 ]
             )
 
-            print('requested coordinate box = %s' % repr(rd))
+            LOGINFO('requested coordinate box = %s' % repr(rd))
             pix = w.all_world2pix(rd,0)
 
         else:
 
             if not w:
-                print("no suitable WCS found")
+                LOGERROR("no suitable WCS found")
             else:
-                print("can't specify both radeccenter and "
-                      "radecbox at the same time")
+                LOGERROR("can't specify both radeccenter and "
+                         "radecbox at the same time")
             return None
 
     except Exception as e:
 
-        print('transform from radec to pix failed, reason: %s' % e)
+        LOGEXCEPTION('transform from radec to pix failed')
         return None
 
     # do the cutout using a box generated by the radec -> pix bits above

@@ -98,7 +98,6 @@ setup(
               'astrobase.fakelcs',
               'astrobase.services',
               'astrobase.hatsurveys',
-              'astrobase.checkplot',
               'astrobase.cpserver'],
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,

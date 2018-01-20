@@ -54,6 +54,74 @@ above. In this case, the PNG will look something like:
 
 '''
 
+#############
+## LOGGING ##
+#############
+
+import logging
+from datetime import datetime
+from traceback import format_exc
+
+# setup a logger
+LOGGER = None
+LOGMOD = __name__
+DEBUG = False
+
+def set_logger_parent(parent_name):
+    globals()['LOGGER'] = logging.getLogger('%s.%s' % (parent_name, LOGMOD))
+
+def LOGDEBUG(message):
+    if LOGGER:
+        LOGGER.debug(message)
+    elif DEBUG:
+        print('[%s - DBUG] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGINFO(message):
+    if LOGGER:
+        LOGGER.info(message)
+    else:
+        print('[%s - INFO] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGERROR(message):
+    if LOGGER:
+        LOGGER.error(message)
+    else:
+        print('[%s - ERR!] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGWARNING(message):
+    if LOGGER:
+        LOGGER.warning(message)
+    else:
+        print('[%s - WRN!] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGEXCEPTION(message):
+    if LOGGER:
+        LOGGER.exception(message)
+    else:
+        print(
+            '[%s - EXC!] %s\nexception was: %s' % (
+                datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                message, format_exc()
+                )
+            )
+
+
+#############
+## IMPORTS ##
+#############
+
 import os
 import os.path
 import gzip
@@ -83,10 +151,6 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-import logging
-from datetime import datetime as dtime
-from traceback import format_exc
-
 # import this to check if stimes, smags, serrs are Column objects
 from astropy.table import Column as astcolumn
 
@@ -98,52 +162,6 @@ from PIL import Image, ImageDraw, ImageFont
 
 # import sps.cKDTree for external catalog xmatches
 from scipy.spatial import cKDTree
-
-
-#############
-## LOGGING ##
-#############
-
-# setup a logger
-LOGGER = None
-
-def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.checkplot' % parent_name)
-
-def LOGDEBUG(message):
-    if LOGGER:
-        LOGGER.debug(message)
-    elif DEBUG:
-        print('%sZ [DBUG]: %s' % (dtime.utcnow().isoformat(), message))
-
-def LOGINFO(message):
-    if LOGGER:
-        LOGGER.info(message)
-    else:
-        print('%sZ [INFO]: %s' % (dtime.utcnow().isoformat(), message))
-
-def LOGERROR(message):
-    if LOGGER:
-        LOGGER.error(message)
-    else:
-        print('%sZ [ERR!]: %s' % (dtime.utcnow().isoformat(), message))
-
-def LOGWARNING(message):
-    if LOGGER:
-        LOGGER.warning(message)
-    else:
-        print('%sZ [WRN!]: %s' % (dtime.utcnow().isoformat(), message))
-
-def LOGEXCEPTION(message):
-    if LOGGER:
-        LOGGER.exception(message)
-    else:
-        print(
-            '%sZ [EXC!]: %s\nexception was: %s' % (
-                dtime.utcnow().isoformat(),
-                message, format_exc()
-                )
-            )
 
 
 ###################
@@ -159,11 +177,6 @@ from .varclass.starfeatures import coord_features, color_features, \
 from .plotbase import skyview_stamp, \
     PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
 from .coordutils import total_proper_motion, reduced_proper_motion
-
-############
-## CONFIG ##
-############
-
 
 
 #######################

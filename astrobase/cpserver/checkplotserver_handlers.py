@@ -86,36 +86,36 @@ from tornado import gen
 ## LOCAL IMPORTS ##
 ###################
 
-from . import checkplot
+from .. import checkplot
 checkplot.set_logger_parent(__name__)
 
-from .checkplot import checkplot_pickle_update, checkplot_pickle_to_png, \
+from ..checkplot import checkplot_pickle_update, checkplot_pickle_to_png, \
     _read_checkplot_picklefile, _base64_to_file, _write_checkplot_picklefile
 
 # import these for updating plots due to user input
-from .checkplot import _pkl_finder_objectinfo, _pkl_periodogram, \
+from ..checkplot import _pkl_finder_objectinfo, _pkl_periodogram, \
     _pkl_magseries_plot, _pkl_phased_magseries_plot
 
-from .varclass import varfeatures
+from ..varclass import varfeatures
 varfeatures.set_logger_parent(__name__)
 
-from .varbase import lcfit
+from ..varbase import lcfit
 lcfit.set_logger_parent(__name__)
 
-from .varbase import signals
+from ..varbase import signals
 signals.set_logger_parent(__name__)
 
-from .periodbase import zgls
+from ..periodbase import zgls
 zgls.set_logger_parent(__name__)
-from .periodbase import saov
+from ..periodbase import saov
 saov.set_logger_parent(__name__)
-from .periodbase import smav
+from ..periodbase import smav
 smav.set_logger_parent(__name__)
-from .periodbase import spdm
+from ..periodbase import spdm
 spdm.set_logger_parent(__name__)
-from .periodbase import kbls
+from ..periodbase import kbls
 kbls.set_logger_parent(__name__)
-from .periodbase import macf
+from ..periodbase import macf
 macf.set_logger_parent(__name__)
 
 

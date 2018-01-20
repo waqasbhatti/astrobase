@@ -11,6 +11,73 @@ Contains various useful tools for dealing with time in astronomical contexts.
 '''
 
 import logging
+from datetime import datetime
+from traceback import format_exc
+
+#############
+## LOGGING ##
+#############
+
+# setup a logger
+LOGGER = None
+LOGMOD = __name__
+DEBUG = False
+
+def set_logger_parent(parent_name):
+    globals()['LOGGER'] = logging.getLogger('%s.%s' % (parent_name, LOGMOD))
+
+def LOGDEBUG(message):
+    if LOGGER:
+        LOGGER.debug(message)
+    elif DEBUG:
+        print('[%s - DBUG] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGINFO(message):
+    if LOGGER:
+        LOGGER.info(message)
+    else:
+        print('[%s - INFO] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGERROR(message):
+    if LOGGER:
+        LOGGER.error(message)
+    else:
+        print('[%s - ERR!] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGWARNING(message):
+    if LOGGER:
+        LOGGER.warning(message)
+    else:
+        print('[%s - WRN!] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGEXCEPTION(message):
+    if LOGGER:
+        LOGGER.exception(message)
+    else:
+        print(
+            '[%s - EXC!] %s\nexception was: %s' % (
+                datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                message, format_exc()
+                )
+            )
+
+
+#############
+## IMPORTS ##
+#############
+
 try:
     import ConfigParser
 except:
@@ -31,6 +98,7 @@ import astropy.time as astime
 # we need the jplephem package from Brandon Rhodes to import and use the JPL
 # ephemerides
 from jplephem.spk import SPK
+
 
 
 #################
@@ -61,7 +129,8 @@ except Exception as e:
         'http://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de430.bsp'
     )
 
-    print('JPL kernel de430.bsp not found. Downloading from:\n\n%s\n' % spkurl)
+    LOGINFO('JPL kernel de430.bsp not found. Downloading from:\n\n%s\n' %
+            spkurl)
     try:
         from urllib import urlretrieve
     except:
@@ -77,53 +146,6 @@ except Exception as e:
     else:
         print('failed to download the JPL kernel!')
         HAVEKERNEL = False
-
-
-##############
-## LOGGING  ##
-##############
-
-# setup a logger
-LOGGER = None
-DEBUG = False
-
-def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.timeutils' % parent_name)
-
-def LOGDEBUG(message):
-    if LOGGER:
-        LOGGER.debug(message)
-    elif DEBUG:
-        print('%sZ [DBUG]: %s' % (datetime.utcnow().isoformat(), message))
-
-def LOGINFO(message):
-    if LOGGER:
-        LOGGER.info(message)
-    else:
-        print('%sZ [INFO]: %s' % (datetime.utcnow().isoformat(), message))
-
-def LOGERROR(message):
-    if LOGGER:
-        LOGGER.error(message)
-    else:
-        print('%sZ [ERR!]: %s' % (datetime.utcnow().isoformat(), message))
-
-def LOGWARNING(message):
-    if LOGGER:
-        LOGGER.warning(message)
-    else:
-        print('%sZ [WRN!]: %s' % (datetime.utcnow().isoformat(), message))
-
-def LOGEXCEPTION(message):
-    if LOGGER:
-        LOGGER.exception(message)
-    else:
-        print(
-            '%sZ [EXC!]: %s\nexception was: %s' % (
-                datetime.utcnow().isoformat(),
-                message, format_exc()
-                )
-            )
 
 
 

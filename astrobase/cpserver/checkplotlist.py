@@ -175,7 +175,6 @@ warnings.filterwarnings('ignore')
 from functools import reduce
 from operator import getitem
 
-from astrobase import checkplot
 import numpy as np
 import multiprocessing as mp
 
@@ -201,7 +200,8 @@ def key_worker(task):
     cpf, keys = task
 
 
-    cpd = checkplot._read_checkplot_picklefile(cpf)
+    with open(cpf,'rb') as infd:
+        cpd = pickle.load(cpf)
 
     resultkeys = []
 
