@@ -1113,9 +1113,11 @@ var cpv = {
 
                         xmcrow = [
                             '<div class="row bot-mrg-10px"><div class="col-sm-12">' +
-                                '<h6>Matched to: <strong>' +
+                                '<h6>Matched to: <abbr ' +
+                                 'title="' + xmk['desc'] + ' ">' +
+                                '<strong>' +
                                 xmk['name'] +
-                                '</strong> within ' +
+                                '</strong></abbr> within ' +
                                 math.format(xmk['distarcsec'],3) + '&Prime;' +
                                 '</h6>'
                         ];
@@ -1172,6 +1174,9 @@ var cpv = {
 
                         xmcrow = xmcrow.join(' ');
                         xmcatrows.push(xmcrow)
+                        // enable tooltips
+                        $('[data-toggle="tooltip"]').tooltip();
+
 
                     }
 
