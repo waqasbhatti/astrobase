@@ -456,6 +456,8 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 ## continue after we're good to go ##
                 #####################################
 
+                LOGGER.info('loaded %s' % cpfpath)
+
                 # break out the initial info
                 objectid = cpdict['objectid']
                 objectinfo = cpdict['objectinfo']
@@ -534,7 +536,18 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
                 # load the xmatch results, if any
                 if 'xmatch' in cpdict:
+
                     objectxmatch = cpdict['xmatch']
+
+                    # get rid of those pesky nans
+                    for xmcat in objectxmatch:
+                        if isinstance(objectxmatch[xmcat]['info'], dict):
+                            xminfo = objectxmatch[xmcat]['info']
+                            for xmek in xminfo:
+                                if (isinstance(xminfo[xmek], float) and
+                                    (not np.isfinite(xminfo[xmek]))):
+                                    xminfo[xmek] = None
+
                 else:
                     objectxmatch = None
 
@@ -719,6 +732,8 @@ class CheckplotHandler(tornado.web.RequestHandler):
                               'message':"This checkplot doesn't exist.",
                               'readonly':self.readonly,
                               'result':None}
+
+
                 self.write(resultdict)
                 self.finish()
 

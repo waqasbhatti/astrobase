@@ -2264,7 +2264,7 @@ def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
         # fix adopted from: https://stackoverflow.com/a/38003910
         if sys.platform == 'darwin':
 
-            dumpbytes = pickle.dumps(outdict)
+            dumpbytes = pickle.dumps(outdict, protocol=pickle.HIGHEST_PROTOCOL)
             n_bytes = 2**31
             max_bytes = 2**31 - 1
 
