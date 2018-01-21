@@ -1078,6 +1078,115 @@ var cpv = {
             }
 
 
+            // 5. put together the xmatch info
+
+            // first, reset stuff
+            $('#xmatch-content').html(
+                '<p>No cross-matches for this object were found.</p>'
+            );
+
+            // then, go through the xmatch content
+            if (cpv.currcp.xmatch != undefined) {
+
+                var xmcatrows = [];
+                var xmk = null;
+                var tablecolkeys = null
+                var tablecolnames = null;
+                var tablecolunits = null;
+
+                var xmcrow = null;
+                var tci = 0;
+                var thisunit = '';
+
+                var xm = null;
+
+                for (xm in cpv.currcp.xmatch) {
+
+                    xmk = cpv.currcp.xmatch[xm];
+
+                    // if we found a cross-match, then generate the table for it
+                    if (xmk['found'] == true) {
+
+                        tablecolkeys = xmk['colkeys'];
+                        tablecolnames = xmk['colnames'];
+                        tablecolunits = xmk['colunit'];
+
+                        xmcrow = [
+                            '<div class="row bot-mrg-10px"><div class="col-sm-12">' +
+                                '<h6>Matched to: <strong>' +
+                                xmk['name'] +
+                                '</strong> within ' +
+                                math.format(xmk['distarcsec'],3) + '&Prime;' +
+                                '</h6>'
+                        ];
+
+                        xmcrow.push(
+                            '<table class="table-sm objectinfo-table">' +
+                                '<thead><tr>'
+                        )
+
+
+                        // first, the header row
+                        for (tci = 0;
+                             tci < tablecolkeys.length;
+                             tci++) {
+
+                            if (tablecolunits[tci] != null) {
+                                thisunit = '[' + tablecolunits[tci] + ']';
+                            }
+                            else {
+                                thisunit = '&nbsp;';
+                            }
+
+                            xmcrow.push(
+                                '<th>' +
+                                    tablecolnames[tci] + '<br>' + thisunit +
+                                    '</th>'
+                            );
+
+                        }
+
+                        // close out this row
+                        xmcrow.push(
+                            '</tr></thead><tbody><tr>'
+                        );
+
+                        // next, do the value row
+                        // first, the header row
+                        for (tci = 0;
+                             tci < tablecolkeys.length;
+                             tci++) {
+
+                            xmcrow.push(
+                                '<td>' +
+                                    xmk['info'][tablecolkeys[tci]] +
+                                    '</td>'
+                            );
+
+                        }
+
+                        // close out the table
+                        xmcrow.push(
+                            '</tr></tbody></table></div></div>'
+                        );
+
+                        xmcrow = xmcrow.join(' ');
+                        xmcatrows.push(xmcrow)
+
+                    }
+
+
+                }
+
+                xmcatrows = xmcatrows.join(' ');
+                $('#xmatch-content').html(xmcatrows);
+
+            }
+
+            //
+            // end of main processing for a checkplot
+            //
+
         }).done(function () {
 
             // update the current file trackers
