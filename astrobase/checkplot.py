@@ -2257,8 +2257,24 @@ def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
 
     if outfile is not None:
 
-        with open(outfile, 'wb') as outfd:
-            pickle.dump(outdict, outfd, pickle.HIGHEST_PROTOCOL)
+        # if we're on OSX, we apparently need to save the file in chunks smaller
+        # than 2 GB to make it work right. can't load pickles larger than 4 GB
+        # either, but 3 GB < total size < 4 GB appears to be OK when loading.
+        # also see: https://bugs.python.org/issue24658.
+        # fix adopted from: https://stackoverflow.com/a/38003910
+        if sys.platform == 'darwin':
+
+            dumpbytes = pickle.dumps(outdict)
+            n_bytes = 2**31
+            max_bytes = 2**31 - 1
+
+            with open(outfile, 'wb') as outfd:
+                for idx in range(0, len(dumpbytes), max_bytes):
+                    outfd.write(dumpbytes[idx:idx+max_bytes])
+
+        else:
+            with open(outfile, 'wb') as outfd:
+                pickle.dump(outdict, outfd, pickle.HIGHEST_PROTOCOL)
 
         return outfile
 
@@ -2420,6 +2436,7 @@ def xmatch_external_catalogs(checkplotdict,
 
 
         if savepickle:
+
             cpf = _write_checkplot_picklefile(checkplotdict,
                                               outfile=savepickle,
                                               protocol=4)
