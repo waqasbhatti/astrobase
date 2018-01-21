@@ -469,7 +469,9 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 # handle neighbors for this object
                 neighbors = []
 
-                if 'neighbors' in cpdict and len(cpdict['neighbors']) > 0:
+                if ('neighbors' in cpdict and
+                    cpdict['neighbors'] is not None and
+                    len(cpdict['neighbors'])) > 0:
 
                     nbrlist = cpdict['neighbors']
 

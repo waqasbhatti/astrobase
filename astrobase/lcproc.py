@@ -113,9 +113,9 @@ def dict_get(datadict, keylist):
 ###################
 
 # LC reading functions
-from astrobase.hatlc import read_and_filter_sqlitecurve, read_csvlc, \
-    normalize_lcdict_byinst
-from astrobase.hplc import read_hatpi_textlc, read_hatpi_pklc
+from astrobase.hatsurveys.hatlc import read_and_filter_sqlitecurve, \
+    read_csvlc, normalize_lcdict_byinst
+from astrobase.hatsurveys.hplc import read_hatpi_textlc, read_hatpi_pklc
 from astrobase.astrokep import read_kepler_fitslc, read_kepler_pklc
 
 from astrobase import periodbase, checkplot
