@@ -1,6 +1,5 @@
-recursive-include astrobase/data/cps-assets *
-recursive-include astrobase/data/lcformats *
-# recursive-include notebooks *
+recursive-include astrobase/data *
+recursive-include astrobase/cpserver/cps-assets *
 include LICENSE
 include README.rst
 include astrobase/astrobase.conf

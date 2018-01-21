@@ -202,6 +202,7 @@ CPTOOLMAP = {
         'resloc':['mav'],
     },
     # FIXME: add in the other kwargs for macf_period_find here
+    # FIXME: handle the returned dict from macf_period_find as well
     'psearch-acf':{
         'args':('times','mags','errs'),
         'argtypes':(ndarray, ndarray, ndarray),
