@@ -71,7 +71,7 @@ for your purposes.
   operates on checkplot PNG images. The
   [lightcurve-work](https://github.com/waqasbhatti/astrobase-notebooks/blob/master/lightcurve-work.ipynb) Jupyter notebook goes
   through an example of generating these checkplot PNGs for light curves. See
-  the [checkplot-viewer.js](astrobase/checkplot-viewer.js) file for more
+  the [checkplot-viewer.js](astrobase/cpserver/checkplot-viewer.js) file for more
   instructions and [checkplot-viewer.png](astrobase/data/checkplot-viewer.png)
   for a screenshot.
 

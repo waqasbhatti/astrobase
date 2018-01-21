@@ -3,6 +3,6 @@ recursive-include astrobase/cpserver/cps-assets *
 include LICENSE
 include README.rst
 include astrobase/astrobase.conf
-include astrobase/checkplot-viewer.html
-include astrobase/checkplot-viewer.js
+include astrobase/cpserver/checkplot-viewer.html
+include astrobase/cpserver/checkplot-viewer.js
 recursive-include tests *.py
