@@ -256,8 +256,8 @@ def main():
           'cplistfile':cplistfile,
           'executor':EXECUTOR,
           'readonly':READONLY}),
-        # (r'/cpfile/(.*)',
-        #  tornado.web.StaticFileHandler, {'path': CURRENTDIR})
+        (r'/cpfile/(.*)',
+         tornado.web.StaticFileHandler, {'path': CURRENTDIR})
     ]
 
     #######################

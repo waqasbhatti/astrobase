@@ -505,13 +505,20 @@
             <div class="row tool-header-panel">
 
               <div class="col-sm-6 display-panel">
-                <img class="img-fluid" id="psearch-periodogram-display">
+                <img class="img-fluid" id="psearch-periodogram-display" src="/static/no-tool-results.png">
               </div>
 
               <div class="col-sm-6 display-panel">
-                <img class="img-fluid" id="psearch-phasedlc-display">
+                <img class="img-fluid" id="psearch-phasedlc-display" src="/static/no-tool-results.png">
               </div>
 
+            </div>
+
+            <!-- this contains the plot options -->
+            <div class="row">
+              <div class="col-sm-12">
+                <h5>Plot phased light curves</h5>
+              </div>
             </div>
 
             <!-- this contains the periodogram and phasedlc display controls -->
@@ -565,7 +572,7 @@
 
             </div>
 
-            <!-- this contains the plot options -->
+            <!-- this contains phased LC zoom, binning and overplot tools -->
             <div class="row">
 
               <div class="col-sm-3">
@@ -607,14 +614,51 @@
                   </label>
                 </div>
 
+              </div>
+
+            </div>
+
+            <!-- this contains some LC filtering tools -->
+            <div class="row">
+              <div class="col-sm-12">
+                <h5>Apply Time-series filters</h5>
+              </div>
+            </div>
+
+            <!-- FIXME: we can probably turn the LC plots into canvases, then: -->
+            <!-- 1. get the xy mouse positions for defining the LC time and mag or flux windows -->
+            <!-- 2. send these to the backend -->
+            <!-- 3. use matplotlib's transAxes kwarg to transform canvas position to data coords somehow -->
+            <div class="row">
+
+              <div class="col-sm-6">
+
+                <div class="form-group">
+                  <label for="psearch-timefilters">Apply time (JD - <span class="time0"></span>) filters [<code>t1:t2, t3:t4,...</code>]</label>
+                  <input type="text" class="form-control form-control-sm"
+                         id="psearch-timefilters" value="">
+                </div>
+
+                <div class="form-group">
+                  <label for="psearch:magfilters">Apply flux/mag filters [<code>y1:y2, y3:y4,...</code>]</label>
+                  <input type="text" class="form-control form-control-sm"
+                         id="psearch-magfilters" value="">
+                </div>
 
               </div>
 
+              <div class="col-sm-6">
+                <div class="form-group">
+                  <label for="psearch-sigclip">Use sigma clip for LC [<code>lohi_sig</code> or <code>lo_sig, hi_sig</code>]</label>
+                  <input type="text" class="form-control form-control-sm"
+                         id="psearch-sigclip" value="">
+                </div>
+              </div>
 
             </div>
 
             <!-- this contains the periodogram runner controls -->
-            <div class="row py-1">
+            <div class="row">
 
               <div class="col-sm-6">
 
@@ -632,6 +676,12 @@
                     <option value="acf">Autocorrelation Period Find</option>
                     <option value="win">Timeseries Spectral Window Lomb-Scargle</option>
                   </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="psearch-nbestpeaks">Number of periodogram peaks to retrieve</label>
+                  <input type="text" class="form-control form-control-sm"
+                         id="psearch-nbestpeaks" value="10">
                 </div>
 
                 <div class="form-check">
@@ -659,6 +709,8 @@
 
               <div class="col-sm-6">
 
+                <h5>Period search parameters</h5>
+
                 <div class="form-group">
                   <label for="psearch-startp">Start period [days]</label>
                   <input type="text" class="form-control form-control-sm"
@@ -675,6 +727,9 @@
                   <label for="psearch-freqstep">Frequency step [days<sup>-1</sup>]</label>
                   <input type="text" class="form-control form-control-sm"
                          id="psearch-freqstep" disabled>
+                </div>
+
+                <div id="psearch-extraparams">
                 </div>
 
               </div>

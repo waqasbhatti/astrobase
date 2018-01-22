@@ -474,6 +474,9 @@ var cpv = {
                 twomassidelem.html('');
             }
 
+            // update the time0 placeholders
+            $('.time0').html(cpv.currcp.time0);
+
             // update the finder chart
             cputils.b64_to_image(cpv.currcp.finderchart,
                                  '#finderchart');
@@ -621,10 +624,12 @@ var cpv = {
                                      ' via JHK transform)');
             }
 
-            var mags = '<strong><em>gri</em>:</strong> ' +
+            var mags = '<strong><em>ugriz</em>:</strong> ' +
+                math.format(cpv.currcp.objectinfo.sdssu,5) + ', ' +
                 math.format(cpv.currcp.objectinfo.sdssg,5) + ', ' +
                 math.format(cpv.currcp.objectinfo.sdssr,5) + ', ' +
-                math.format(cpv.currcp.objectinfo.sdssi,5) + '<br>' +
+                math.format(cpv.currcp.objectinfo.sdssi,5) + ', ' +
+                math.format(cpv.currcp.objectinfo.sdssz,5) + '<br>' +
                 '<strong><em>JHK</em>:</strong> ' +
                 math.format(cpv.currcp.objectinfo.jmag,5) + ', ' +
                 math.format(cpv.currcp.objectinfo.hmag,5) + ', ' +
@@ -995,6 +1000,7 @@ var cpv = {
 
                 $('#lcc-neighbor-container').append(nbrrow);
 
+
                 // now make the plots for the neighbors
                 for (ni; ni < cpv.currcp.neighbors.length; ni++) {
 
@@ -1004,10 +1010,36 @@ var cpv = {
                     var nbrdist =
                         cpv.currcp.neighbors[ni].objectinfo.distarcsec;
 
+
+                    // check if this neighbor is present in the current
+                    // collection
+                    var nbrcp = cpv.currfile.replace(
+                        cpv.currcp.objectid,
+                        nbrobjectid
+                    );
+                    var nbrcp_present = cptracker.hasOwnProperty(
+                        nbrcp
+                    );
+
+                    if (nbrcp_present) {
+                        var nbrlink = '<a href="#" class="objload-checkplot" ' +
+                            'data-fname="' + nbrcp + '">' +
+                            nbrobjectid + '</a>';
+                    }
+
+                    else {
+                        var nbrlink = nbrobjectid;
+                    }
+
                     rowheader = '<h6>' + 'N' + (ni+1) + ': ' +
-                        nbrobjectid + ' at (&alpha;, &delta;) = (' +
-                        math.format(nbrra, 5) + ', ' +
-                        math.format(nbrdecl, 5) + '), distance: ' +
+                        nbrlink + ' at (&alpha;, &delta;) = <a href="' +
+                        'http://simbad.u-strasbg.fr/simbad/sim-coo?Coord=' +
+                        nbrra + '+' + nbrdecl +
+                        '&Radius=30&Radius.unit=arcsec" rel="nofollow" ' +
+                        'target="_blank" ' +
+                        'title="SIMBAD search at these coordinates">' +
+                        '(' + math.format(nbrra, 5) + ', ' +
+                        math.format(nbrdecl, 5) + ')</a>, distance: ' +
                         math.format(nbrdist,3) + '&Prime;</h6>';
 
                     if (cpv.currcp.neighbors[ni].magseries != undefined) {
@@ -1721,8 +1753,9 @@ var cpv = {
 
         });
 
-        // clicking on a checkplot file in the sidebar
-        $('#project-status').on('click', '.objload-checkplot', function (evt) {
+        // clicking on a objectid in the sidebar or in the neighbor pane
+        $('#project-status, #lcc-neighbor-container')
+            .on('click', '.objload-checkplot', function (evt) {
 
             evt.preventDefault();
 
@@ -2632,6 +2665,76 @@ var cptools = {
 
         }
 
+
+        // get the specified sigma clip
+        var sigclip = $('#psearch-sigclip').val();
+        if (sigclip.length > 0) {
+
+            // try to see if this is a composite sigma clip for lo, hi
+            if (sigclip.indexOf(',') != -1) {
+
+                sigclip = sigclip.trim().split(',');
+                sigclip = [sigclip[0].trim(), sigclip[1].trim()];
+                sigclip = [parseFloat(sigclip[0]), parseFloat(sigclip[1])];
+
+                if (isNaN(sigclip[0]) || isNaN(sigclip[1]) ||
+                    (sigclip[0] < 0) || (sigclip[1] < 0)) {
+                    messages.push("one or both sigclip values is invalid");
+                    proceed = false;
+                }
+            }
+
+            // if a single sigma clip, parse it
+            else {
+
+                sigclip = parseFloat(sigclip.trim());
+
+                if (isNaN(sigclip) || sigclip < 0) {
+                    messages.push("sigclip value is invalid");
+                    proceed = false;
+                }
+
+                else {
+                    sigclip = [sigclip, sigclip];
+                }
+
+            }
+
+        }
+
+        else {
+            sigclip = null;
+        }
+
+        // check the number of peaks to retrieve
+        var nbestpeaks = $('#psearch-nbestpeaks').val();
+        if (nbestpeaks.length > 0) {
+
+            nbestpeaks = parseInt(nbestpeaks.trim());
+
+            if (isNaN(nbestpeaks) || nbestpeaks < 0) {
+                messages.push("nbestpeaks value is invalid");
+                proceed = false;
+            }
+
+        }
+
+        else {
+            nbestpeaks = 10;
+        }
+
+        // finally, get the lctimefilters and lcmagfilters
+        // these will be processed server-side so nothing is required here
+        var lctimefilters = $('#psearch-timefilters').val();
+        if (lctimefilters.length == 0) {
+            lctimefilters = null;
+        }
+
+        var lcmagfilters = $('#psearch-magfilters').val();
+        if (lcmagfilters.length == 0) {
+            lcmagfilters = null;
+        }
+
         // proceed if we can
         if (proceed) {
 
@@ -2658,31 +2761,77 @@ var cptools = {
 
             if (autofreq) {
 
-                // this is the data object to send to the backend
-                var sentdata = {
-                    objectid: currobjectid,
-                    lctool: lctooltocall,
-                    forcereload: true,
-                    magsarefluxes: magsarefluxes,
-                    autofreq: autofreq
-                };
+                if (lctooltocall == 'psearch-acf') {
+                    var sentdata = {
+                        objectid: currobjectid,
+                        lctool: lctooltocall,
+                        forcereload: true,
+                        magsarefluxes: magsarefluxes,
+                        autofreq: autofreq,
+                        sigclip: sigclip,
+                        maxacfpeaks: nbestpeaks,
+                        lctimefilters: lctimefilters,
+                        lcmagfilters: lcmagfilters
+                    };
 
+                }
+
+                else {
+
+                    // this is the data object to send to the backend
+                    var sentdata = {
+                        objectid: currobjectid,
+                        lctool: lctooltocall,
+                        forcereload: true,
+                        magsarefluxes: magsarefluxes,
+                        autofreq: autofreq,
+                        sigclip: sigclip,
+                        nbestpeaks: nbestpeaks,
+                        lctimefilters: lctimefilters,
+                        lcmagfilters: lcmagfilters
+                    };
+                }
 
             }
 
             else {
 
-                // this is the data object to send to the backend
-                var sentdata = {
-                    objectid: currobjectid,
-                    lctool: lctooltocall,
-                    forcereload: true,
-                    magsarefluxes: magsarefluxes,
-                    autofreq: autofreq,
-                    startp: startp,
-                    endp: endp,
-                    stepsize: freqstep
-                };
+                if (lctooltocall == 'psearch-acf') {
+                    // this is the data object to send to the backend
+                    var sentdata = {
+                        objectid: currobjectid,
+                        lctool: lctooltocall,
+                        forcereload: true,
+                        magsarefluxes: magsarefluxes,
+                        autofreq: autofreq,
+                        startp: startp,
+                        endp: endp,
+                        stepsize: freqstep,
+                        sigclip: sigclip,
+                        maxacfpeaks: nbestpeaks,
+                        lctimefilters: lctimefilters,
+                        lcmagfilters: lcmagfilters
+                    };
+
+                }
+
+                else {
+                    // this is the data object to send to the backend
+                    var sentdata = {
+                        objectid: currobjectid,
+                        lctool: lctooltocall,
+                        forcereload: true,
+                        magsarefluxes: magsarefluxes,
+                        autofreq: autofreq,
+                        startp: startp,
+                        endp: endp,
+                        stepsize: freqstep,
+                        sigclip: sigclip,
+                        nbestpeaks: nbestpeaks,
+                        lctimefilters: lctimefilters,
+                        lcmagfilters: lcmagfilters
+                    };
+                }
 
 
             }
@@ -3247,6 +3396,57 @@ var cptools = {
             proceed = false;
         }
 
+        // get the specified sigma clip
+        var sigclip = $('#psearch-sigclip').val();
+        if (sigclip.length > 0) {
+
+            // try to see if this is a composite sigma clip for lo, hi
+            if (sigclip.indexOf(',') != -1) {
+
+                sigclip = sigclip.trim().split(',');
+                sigclip = [sigclip[0].trim(), sigclip[1].trim()];
+                sigclip = [parseFloat(sigclip[0]), parseFloat(sigclip[1])];
+
+                if (isNaN(sigclip[0]) || isNaN(sigclip[1]) ||
+                    (sigclip[0] < 0) || (sigclip[1] < 0)) {
+                    messages.push("one or both sigclip values is invalid");
+                    proceed = false;
+                }
+            }
+
+            // if a single sigma clip, parse it
+            else {
+
+                sigclip = parseFloat(sigclip.trim());
+
+                if (isNaN(sigclip) || sigclip < 0) {
+                    messages.push("sigclip value is invalid");
+                    proceed = false;
+                }
+
+                else {
+                    sigclip = [sigclip, sigclip];
+                }
+
+            }
+
+        }
+
+        else {
+            sigclip = null;
+        }
+
+        // finally, get the lctimefilters and lcmagfilters
+        // these will be processed server-side so nothing is required here
+        var lctimefilters = $('#psearch-timefilters').val();
+        if (lctimefilters.length == 0) {
+            lctimefilters = null;
+        }
+
+        var lcmagfilters = $('#psearch-magfilters').val();
+        if (lcmagfilters.length == 0) {
+            lcmagfilters = null;
+        }
 
         // don't go any further if the input is valid
         if (!proceed) {
@@ -3297,7 +3497,10 @@ var cptools = {
                 varepoch: plotepoch,
                 xliminsetmode: xliminsetmode,
                 plotxlim: plotxlim,
-                phasebin: phasebin
+                phasebin: phasebin,
+                sigclip: sigclip,
+                lctimefilters: lctimefilters,
+                lcmagfilters: lcmagfilters
             };
 
             console.log(sentdata);
@@ -3851,6 +4054,19 @@ var cptools = {
         ///////////////////////
         // PERIOD SEARCH TAB //
         ///////////////////////
+
+        // periodogram method select - change options as needed
+        $('#psearch-lspmethod').on('change', function (evt) {
+
+            var newval = $(this).val();
+
+            // FIXME: update the psearch param panel for any special params for
+            // this period-finder
+
+
+        });
+
+
 
         // periodogram search - half period
         $('#psearch-halfperiod').on('click', function (evt) {

@@ -24,6 +24,7 @@ import hashlib
 import logging
 from datetime import time
 import time
+from functools import reduce
 
 try:
     from cStringIO import StringIO as strio
@@ -85,6 +86,9 @@ from tornado import gen
 ###################
 ## LOCAL IMPORTS ##
 ###################
+
+from .. import lcmath
+lcmath.set_logger_parent(__name__)
 
 from .. import checkplot
 checkplot.set_logger_parent(__name__)
@@ -159,9 +163,10 @@ CPTOOLMAP = {
         'args':('times','mags','errs'),
         'argtypes':(ndarray, ndarray, ndarray),
         'kwargs':('startp','endp','magsarefluxes',
-                  'autofreq','stepsize','nbestpeaks','sigclip'),
-        'kwargtypes':(float, float, bool, bool, float, int, float),
-        'kwargdefs':(None, None, False, True, 1.0e-4, 10, 10.0),
+                  'autofreq','stepsize','nbestpeaks',
+                  'sigclip[]', 'lctimefilters','lcmagfilters'),
+        'kwargtypes':(float, float, bool, bool, float, int, list, str, str),
+        'kwargdefs':(None, None, False, True, 1.0e-4, 10, None, None, None),
         'func':zgls.pgen_lsp,
         'resloc':['gls'],
     },
@@ -169,9 +174,10 @@ CPTOOLMAP = {
         'args':('times','mags','errs'),
         'argtypes':(ndarray, ndarray, ndarray),
         'kwargs':('startp','endp','magsarefluxes',
-                  'autofreq','stepsize','nbestpeaks','sigclip'),
-        'kwargtypes':(float, float, bool, bool, float, int,float),
-        'kwargdefs':(0.1, 100.0, False, True, 1.0e-4, 10,10.0),
+                  'autofreq','stepsize','nbestpeaks',
+                  'sigclip[]','lctimefilters','lcmagfilters'),
+        'kwargtypes':(float, float, bool, bool, float, int, list, str, str),
+        'kwargdefs':(0.1, 100.0, False, True, 1.0e-4, 10, None, None, None),
         'func':kbls.bls_parallel_pfind,
         'resloc':['bls'],
     },
@@ -179,9 +185,10 @@ CPTOOLMAP = {
         'args':('times','mags','errs'),
         'argtypes':(ndarray, ndarray, ndarray),
         'kwargs':('startp','endp','magsarefluxes',
-                  'autofreq','stepsize','nbestpeaks','sigclip'),
-        'kwargtypes':(float, float, bool, bool, float, int, float),
-        'kwargdefs':(None, None, False, True, 1.0e-4, 10, 10.0),
+                  'autofreq','stepsize','nbestpeaks',
+                  'sigclip[]','lctimefilters','lcmagfilters'),
+        'kwargtypes':(float, float, bool, bool, float, int, list, str, str),
+        'kwargdefs':(None, None, False, True, 1.0e-4, 10, None, None, None),
         'func':spdm.stellingwerf_pdm,
         'resloc':['pdm'],
     },
@@ -189,9 +196,10 @@ CPTOOLMAP = {
         'args':('times','mags','errs'),
         'argtypes':(ndarray, ndarray, ndarray),
         'kwargs':('startp','endp','magsarefluxes',
-                  'autofreq','stepsize','nbestpeaks','sigclip'),
-        'kwargtypes':(float, float, bool, bool, float,int,float),
-        'kwargdefs':(None, None, False, True, 1.0e-4, 10,10.0),
+                  'autofreq','stepsize','nbestpeaks',
+                  'sigclip[]','lctimefilters','lcmagfilters'),
+        'kwargtypes':(float, float, bool, bool, float, int, list, str, str),
+        'kwargdefs':(None, None, False, True, 1.0e-4, 10, None, None, None),
         'func':saov.aov_periodfind,
         'resloc':['aov'],
     },
@@ -199,9 +207,10 @@ CPTOOLMAP = {
         'args':('times','mags','errs'),
         'argtypes':(ndarray, ndarray, ndarray),
         'kwargs':('startp','endp','magsarefluxes',
-                  'autofreq','stepsize','nbestpeaks','sigclip'),
-        'kwargtypes':(float, float, bool, bool, float, int,float),
-        'kwargdefs':(None, None, False, True, 1.0e-4, 10,10.0),
+                  'autofreq','stepsize','nbestpeaks',
+                  'sigclip[]','lctimefilters','lcmagfilters'),
+        'kwargtypes':(float, float, bool, bool, float, int, list, str, str),
+        'kwargdefs':(None, None, False, True, 1.0e-4, 10, None, None, None),
         'func':smav.aovhm_periodfind,
         'resloc':['mav'],
     },
@@ -211,9 +220,10 @@ CPTOOLMAP = {
         'args':('times','mags','errs'),
         'argtypes':(ndarray, ndarray, ndarray),
         'kwargs':('startp','endp','magsarefluxes',
-                  'autofreq','stepsize','sigclip','filterwindow'),
-        'kwargtypes':(float, float, bool, bool, float, float),
-        'kwargdefs':(None, None, False, True, 1.0e-4, 3.0, 721),
+                  'autofreq','stepsize','smoothacf',
+                  'sigclip[]','lctimefilters','lcmagfilters'),
+        'kwargtypes':(float, float, bool, bool, int, list, str, str),
+        'kwargdefs':(None, None, False, True, 1.0e-4, 721, None, None, None),
         'func':macf.macf_period_find,
         'resloc':['acf'],
     },
@@ -221,9 +231,10 @@ CPTOOLMAP = {
         'args':('times','mags','errs'),
         'argtypes':(ndarray, ndarray, ndarray),
         'kwargs':('startp','endp','magsarefluxes',
-                  'autofreq','stepsize', 'nbestpeaks', 'sigclip'),
-        'kwargtypes':(float, float, bool, bool, float, int, float),
-        'kwargdefs':(None, None, False, True, 1.0e-4, 10, 10.0),
+                  'autofreq','stepsize', 'nbestpeaks',
+                  'sigclip[]','lctimefilters','lcmagfilters'),
+        'kwargtypes':(float, float, bool, bool, float, int, list, str, str),
+        'kwargdefs':(None, None, False, True, 1.0e-4, 10, None, None, None),
         'func':zgls.specwindow_lsp,
         'resloc':['win'],
     },
@@ -234,12 +245,15 @@ CPTOOLMAP = {
         'argtypes':(None, str, int, ndarray, ndarray, ndarray, float, float),
         'kwargs':('xliminsetmode','magsarefluxes',
                   'phasewrap','phasesort',
-                  'phasebin','plotxlim[]'),
-        'kwargtypes':(bool, bool, bool, bool, float, list),
-        'kwargdefs':(False, False, True, True, 0.002, [-0.8,0.8]),
+                  'phasebin','plotxlim[]',
+                  'sigclip[]','lctimefilters','lcmagfilters'),
+        'kwargtypes':(bool, bool, bool, bool, float, list, list, str, str),
+        'kwargdefs':(False, False, True, True, 0.002, [-0.8,0.8],
+                     None, None, None),
         'func':_pkl_phased_magseries_plot,
         'resloc':[],
     },
+    # FIXME: add sigclip, lctimefilters, and lcmagfilters for all of these
     ## VARIABILITY TOOLS ##
     'var-varfeatures':{
         'args':('times','mags','errs'),
@@ -268,6 +282,7 @@ CPTOOLMAP = {
         'func':signals.mask_signal,
         'resloc':['signals','mask'],
     },
+    # FIXME: add sigclip, lctimefilters, and lcmagfilters for all of these
     ## FITTING FUNCTIONS TO LIGHT CURVES ##
     # this is a special call to just subtract an already fit function from the
     # current light curve
@@ -576,6 +591,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                     'message':'found checkplot %s' % self.checkplotfname,
                     'readonly':self.readonly,
                     'result':{
+                        'time0':'%.3f' % cpdict['magseries']['times'].min(),
                         'objectid':objectid,
                         'objectinfo':objectinfo,
                         'objectcomments':objectcomments,
@@ -1498,6 +1514,128 @@ class LCToolHandler(tornado.web.RequestHandler):
                     # otherwise, we have to rerun the periodogram method
                     else:
 
+                        # see if sigclip is set. if so, then do the sigclip on
+                        # the times, mags, errs
+                        if lctoolkwargs['sigclip'] is not None:
+
+                            wtimes, wmags, werrs = lcmath.sigclip_magseries(
+                                lctoolargs[0],
+                                lctoolargs[1],
+                                lctoolargs[2],
+                                sigclip=lctoolkwargs['sigclip'],
+                                magsarefluxes=lctoolkwargs['magsarefluxes']
+                            )
+
+                            lctoolargs[0] = wtimes
+                            lctoolargs[1] = wmags
+                            lctoolargs[2] = werrs
+
+                        #
+                        # process the LC filters now
+                        #
+
+                        # see if the lctimefilters are set
+                        if lctoolkwargs['lctimefilters']:
+
+                            wtimes, wmags, werrs = (lctoolargs[0],
+                                                    lctoolargs[1],
+                                                    lctoolargs[2])
+                            filtermasks = [
+                                np.full_like(wtimes, False, dtype=np.bool_)
+                            ]
+
+                            # parse the time filter strings
+                            filterstr = lctoolkwargs['lctimefilters']
+
+                            filters = filterstr.split(',')
+                            filters = [
+                                x.strip().lstrip('(').rstrip(')').strip()
+                                for x in filters
+                            ]
+
+                            for filt in filters:
+
+                                try:
+
+                                    thisfilt = filt.split('-')
+                                    filt_lo = float(thisfilt[0])
+                                    filt_hi = float(thisfilt[1])
+
+                                    filtermasks.append(
+                                        ((wtimes - cptimes.min()) < filt_hi) &
+                                        ((wtimes - cptimes.min()) > filt_lo)
+                                    )
+
+                                except:
+                                    continue
+
+                            # finally, apply the filters if applicable
+                            if len(filtermasks) > 0:
+
+                                # apply the filters using an OR
+                                filterind = np.column_stack(filtermasks)
+                                filterind = np.any(filterind, axis=1)
+
+                                lctoolargs[0] = wtimes[filterind]
+                                lctoolargs[1] = wmags[filterind]
+                                lctoolargs[2] = werrs[filterind]
+
+
+                        # see if the lcmagfilters are set
+                        if lctoolkwargs['lcmagfilters']:
+
+                            wtimes, wmags, werrs = (lctoolargs[0],
+                                                    lctoolargs[1],
+                                                    lctoolargs[2])
+                            filtermasks = [
+                                np.full_like(wtimes, False, dtype=np.bool_)
+                            ]
+
+                            # parse the time filter strings
+                            filterstr = lctoolkwargs['lcmagfilters']
+
+                            filters = filterstr.split(',')
+                            filters = [
+                                x.strip().strip()
+                                for x in filters
+                            ]
+
+                            for filt in filters:
+
+                                try:
+
+                                    thisfilt = filt.split(':')
+                                    filt_lo = float(thisfilt[0])
+                                    filt_hi = float(thisfilt[1])
+
+                                    filtermasks.append(
+                                        (wmags < filt_hi) &
+                                        (wmags > filt_lo)
+                                    )
+
+                                except:
+                                    continue
+
+                            # finally, apply the filters if applicable
+                            if len(filtermasks) > 0:
+
+                                # apply the filters using an OR
+                                filterind = np.column_stack(filtermasks)
+                                filterind = np.any(filterind, axis=1)
+
+                                lctoolargs[0] = wtimes[filterind]
+                                lctoolargs[1] = wmags[filterind]
+                                lctoolargs[2] = werrs[filterind]
+
+                        # at the end of processing, remove from lctookwargs
+                        # since the pfmethod doesn't know about this
+                        del lctoolkwargs['lctimefilters']
+                        del lctoolkwargs['lcmagfilters']
+
+                        #
+                        # now run the period finder and get results
+                        #
+
                         # run the period finder
                         lctoolfunction = CPTOOLMAP[lctool]['func']
                         funcresults = yield self.executor.submit(
@@ -1523,17 +1661,17 @@ class LCToolHandler(tornado.web.RequestHandler):
                         phasedlcargs0 = (None,
                                         lspmethod,
                                         -1,
-                                        cptimes,
-                                        cpmags,
-                                        cperrs,
+                                        lctoolargs[0],
+                                        lctoolargs[1],
+                                        lctoolargs[2],
                                         nbestperiods[0],
                                         'min')
                         phasedlcargs1 = (None,
                                         lspmethod,
                                         -1,
-                                        cptimes,
-                                        cpmags,
-                                        cperrs,
+                                        lctoolargs[0],
+                                        lctoolargs[1],
+                                        lctoolargs[2],
                                         nbestperiods[1],
                                         'min')
                         phasedlcargs2 = (None,
@@ -1725,6 +1863,122 @@ class LCToolHandler(tornado.web.RequestHandler):
                         # periodind when returning
                         lctoolargs[2] = -1
 
+                        # see if sigclip is set. if so, then do the sigclip on
+                        # the times, mags, errs
+                        if lctoolkwargs['sigclip'] is not None:
+                            stimes, smags, serrs = lcmath.sigclip_magseries(
+                                lctoolargs[3],
+                                lctoolargs[4],
+                                lctoolargs[5],
+                                sigclip=lctoolkwargs['sigclip'],
+                                magsarefluxes=lctoolkwargs['magsarefluxes']
+                            )
+                        else:
+                            stimes, smags, serrs = (lctoolargs[3],
+                                                    lctoolargs[4],
+                                                    lctoolargs[5])
+
+
+                        #
+                        # process the LC filters now
+                        #
+
+                        # see if the lctimefilters are set
+                        if lctoolkwargs['lctimefilters']:
+
+                            wtimes, wmags, werrs = stimes, smags, serrs
+
+                            filtermasks = [
+                                np.full_like(wtimes, False, dtype=np.bool_)
+                            ]
+
+                            # parse the time filter strings
+                            filterstr = lctoolkwargs['lctimefilters']
+
+                            filters = filterstr.split(',')
+                            filters = [
+                                x.strip().lstrip('(').rstrip(')').strip()
+                                for x in filters
+                            ]
+
+                            for filt in filters:
+
+                                try:
+
+                                    thisfilt = filt.split('-')
+                                    filt_lo = float(thisfilt[0])
+                                    filt_hi = float(thisfilt[1])
+
+                                    filtermasks.append(
+                                        ((wtimes - cptimes.min()) < filt_hi) &
+                                        ((wtimes - cptimes.min()) > filt_lo)
+                                    )
+
+                                except:
+                                    continue
+
+                            # finally, apply the filters if applicable
+                            if len(filtermasks) > 0:
+
+                                # apply the filters using an OR
+                                filterind = np.column_stack(filtermasks)
+                                filterind = np.any(filterind, axis=1)
+
+                                stimes = wtimes[filterind]
+                                smags = wmags[filterind]
+                                serrs = werrs[filterind]
+
+
+                        # see if the lcmagfilters are set
+                        if lctoolkwargs['lcmagfilters']:
+
+                            wtimes, wmags, werrs = stimes, smags, serrs
+                            filtermasks = [
+                                np.full_like(wtimes, False, dtype=np.bool_)
+                            ]
+
+                            # parse the time filter strings
+                            filterstr = lctoolkwargs['lcmagfilters']
+
+                            filters = filterstr.split(',')
+                            filters = [
+                                x.strip().strip()
+                                for x in filters
+                            ]
+
+                            for filt in filters:
+
+                                try:
+
+                                    thisfilt = filt.split(':')
+                                    filt_lo = float(thisfilt[0])
+                                    filt_hi = float(thisfilt[1])
+
+                                    filtermasks.append(
+                                        (wmags < filt_hi) &
+                                        (wmags > filt_lo)
+                                    )
+
+                                except:
+                                    continue
+
+                            # finally, apply the filters if applicable
+                            if len(filtermasks) > 0:
+
+                                # apply the filters using an OR
+                                filterind = np.column_stack(filtermasks)
+                                filterind = np.any(filterind, axis=1)
+
+                                stimes = wtimes[filterind]
+                                smags = wmags[filterind]
+                                serrs = werrs[filterind]
+
+                        # at the end of processing, remove from lctookwargs
+                        # since the pfmethod doesn't know about this
+                        del lctoolkwargs['lctimefilters']
+                        del lctoolkwargs['lcmagfilters']
+
+
                         # if the varepoch is set to None, try to get the
                         # minimum-light epoch using a spline fit
                         if lctoolargs[-1] is None:
@@ -1734,9 +1988,9 @@ class LCToolHandler(tornado.web.RequestHandler):
                             )
                             try:
                                 spfit = lcfit.spline_fit_magseries(
-                                    lctoolargs[3], # times
-                                    lctoolargs[4], # mags
-                                    lctoolargs[5], # errs
+                                    stimes, # times
+                                    smags, # mags
+                                    serrs, # errs
                                     lctoolargs[6], # period
                                     magsarefluxes=lctoolkwargs['magsarefluxes'],
                                     sigclip=None,
@@ -1745,6 +1999,7 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                                 # set the epoch correctly now for the plot
                                 lctoolargs[-1] = spfit['fitinfo']['fitepoch']
+
                                 if len(spfit['fitinfo']['fitepoch']) != 1:
                                     lctoolargs[-1] = (
                                         spfit['fitinfo']['fitepoch'][0]
@@ -1753,14 +2008,22 @@ class LCToolHandler(tornado.web.RequestHandler):
                         # if the spline fit fails, use the minimum of times as
                         # epoch as usual
                             except Exception as e:
+
                                 LOGGER.exception(
                                     'spline fit failed, '
                                     'using min(times) as epoch'
                                 )
-                                lctoolargs[-1] = np.min(lctoolargs[3])
+
+                                lctoolargs[-1] = np.min(stimes)
 
                         # now run the phased LC function with provided args,
                         # kwargs
+
+                        # final times, mags, errs
+                        lctoolargs[3] = stimes
+                        lctoolargs[4] = smags
+                        lctoolargs[5] = serrs
+
                         lctoolfunction = CPTOOLMAP[lctool]['func']
                         funcresults = yield self.executor.submit(
                             lctoolfunction,
