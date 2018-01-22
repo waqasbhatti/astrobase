@@ -1557,14 +1557,31 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                                 try:
 
-                                    thisfilt = filt.split('-')
-                                    filt_lo = float(thisfilt[0])
-                                    filt_hi = float(thisfilt[1])
+                                    thisfilt = filt.split(':')
+                                    if len(thisfilt) == 2:
 
-                                    filtermasks.append(
-                                        ((wtimes - cptimes.min()) < filt_hi) &
-                                        ((wtimes - cptimes.min()) > filt_lo)
-                                    )
+                                        filt_lo = float(thisfilt[0])
+                                        filt_hi = float(thisfilt[1])
+
+                                        filtermasks.append(
+                                            ((wtimes - cptimes.min()) < filt_hi) &
+                                            ((wtimes - cptimes.min()) > filt_lo)
+                                        )
+
+                                    elif (len(thisfilt) == 3 and
+                                          thisfilt[0].strip() == 'not'):
+
+
+                                        filt_lo = float(thisfilt[1])
+                                        filt_hi = float(thisfilt[2])
+
+                                        filtermasks.append(np.logical_not(
+                                            (((wtimes - cptimes.min()) < filt_hi) &
+                                             ((wtimes - cptimes.min()) > filt_lo))
+                                        ))
+
+                                    else:
+                                        continue
 
                                 except:
                                     continue
@@ -1605,13 +1622,31 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 try:
 
                                     thisfilt = filt.split(':')
-                                    filt_lo = float(thisfilt[0])
-                                    filt_hi = float(thisfilt[1])
+                                    if len(thisfilt) == 2:
 
-                                    filtermasks.append(
-                                        (wmags < filt_hi) &
-                                        (wmags > filt_lo)
-                                    )
+                                        filt_lo = float(thisfilt[0])
+                                        filt_hi = float(thisfilt[1])
+
+                                        filtermasks.append(
+                                            (wmags < filt_hi) &
+                                            (wmags > filt_lo)
+                                        )
+
+                                    elif (len(thisfilt) == 3 and
+                                          thisfilt[0].strip() == 'not'):
+
+
+                                        filt_lo = float(thisfilt[1])
+                                        filt_hi = float(thisfilt[2])
+
+                                        filtermasks.append(np.logical_not(
+                                            ((wmags < filt_hi) &
+                                             (wmags > filt_lo))
+                                        ))
+
+                                    else:
+                                        continue
+
 
                                 except:
                                     continue
@@ -1677,9 +1712,9 @@ class LCToolHandler(tornado.web.RequestHandler):
                         phasedlcargs2 = (None,
                                         lspmethod,
                                         -1,
-                                        cptimes,
-                                        cpmags,
-                                        cperrs,
+                                        lctoolargs[0],
+                                        lctoolargs[1],
+                                        lctoolargs[2],
                                         nbestperiods[2],
                                         'min')
 
@@ -1905,14 +1940,31 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                                 try:
 
-                                    thisfilt = filt.split('-')
-                                    filt_lo = float(thisfilt[0])
-                                    filt_hi = float(thisfilt[1])
+                                    thisfilt = filt.split(':')
+                                    if len(thisfilt) == 2:
 
-                                    filtermasks.append(
-                                        ((wtimes - cptimes.min()) < filt_hi) &
-                                        ((wtimes - cptimes.min()) > filt_lo)
-                                    )
+                                        filt_lo = float(thisfilt[0])
+                                        filt_hi = float(thisfilt[1])
+
+                                        filtermasks.append(
+                                            ((wtimes - cptimes.min()) < filt_hi) &
+                                            ((wtimes  - cptimes.min()) > filt_lo)
+                                        )
+
+                                    elif (len(thisfilt) == 3 and
+                                          thisfilt[0].strip() == 'not'):
+
+
+                                        filt_lo = float(thisfilt[1])
+                                        filt_hi = float(thisfilt[2])
+
+                                        filtermasks.append(np.logical_not(
+                                            (((wtimes - cptimes.min()) < filt_hi) &
+                                             ((wtimes - cptimes.min()) > filt_lo))
+                                        ))
+
+                                    else:
+                                        continue
 
                                 except:
                                     continue
@@ -1951,13 +2003,30 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 try:
 
                                     thisfilt = filt.split(':')
-                                    filt_lo = float(thisfilt[0])
-                                    filt_hi = float(thisfilt[1])
+                                    if len(thisfilt) == 2:
 
-                                    filtermasks.append(
-                                        (wmags < filt_hi) &
-                                        (wmags > filt_lo)
-                                    )
+                                        filt_lo = float(thisfilt[0])
+                                        filt_hi = float(thisfilt[1])
+
+                                        filtermasks.append(
+                                            (wmags < filt_hi) &
+                                            (wmags > filt_lo)
+                                        )
+
+                                    elif (len(thisfilt) == 3 and
+                                          thisfilt[0].strip() == 'not'):
+
+
+                                        filt_lo = float(thisfilt[1])
+                                        filt_hi = float(thisfilt[2])
+
+                                        filtermasks.append(np.logical_not(
+                                            ((wmags < filt_hi) &
+                                             (wmags > filt_lo))
+                                        ))
+
+                                    else:
+                                        continue
 
                                 except:
                                     continue

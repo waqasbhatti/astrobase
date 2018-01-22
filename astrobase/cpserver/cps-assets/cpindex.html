@@ -621,7 +621,7 @@
             <!-- this contains some LC filtering tools -->
             <div class="row">
               <div class="col-sm-12">
-                <h5>Apply Time-series filters</h5>
+                <h5>Apply light curve measurement filters</h5>
               </div>
             </div>
 
@@ -634,13 +634,13 @@
               <div class="col-sm-6">
 
                 <div class="form-group">
-                  <label for="psearch-timefilters">Apply time (JD - <span class="time0"></span>) filters [<code>t1:t2, t3:t4,...</code>]</label>
+                  <label for="psearch-timefilters">Apply time (JD - <span class="time0"></span>) filters [<code>t1:t2, not:t3:t4,...</code>]</label>
                   <input type="text" class="form-control form-control-sm"
                          id="psearch-timefilters" value="">
                 </div>
 
                 <div class="form-group">
-                  <label for="psearch:magfilters">Apply flux/mag filters [<code>y1:y2, y3:y4,...</code>]</label>
+                  <label for="psearch:magfilters">Apply flux/mag filters [<code>y1:y2, not:y3:y4,...</code>]</label>
                   <input type="text" class="form-control form-control-sm"
                          id="psearch-magfilters" value="">
                 </div>
