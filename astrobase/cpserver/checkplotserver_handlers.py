@@ -2093,6 +2093,10 @@ class LCToolHandler(tornado.web.RequestHandler):
                         lctoolargs[4] = smags
                         lctoolargs[5] = serrs
 
+                        # the sigclip kwarg isn't used here since we did this
+                        # already earlier
+                        del lctoolkwargs['sigclip']
+
                         lctoolfunction = CPTOOLMAP[lctool]['func']
                         funcresults = yield self.executor.submit(
                             lctoolfunction,
