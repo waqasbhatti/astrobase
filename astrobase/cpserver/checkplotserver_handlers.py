@@ -1741,7 +1741,7 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                                 # set the epoch correctly now for the plot
                                 lctoolargs[-1] = spfit['fitinfo']['fitepoch']
-                                if len(varepoch) != 1:
+                                if len(spfit['fitinfo']['fitepoch']) != 1:
                                     lctoolargs[-1] = (
                                         spfit['fitinfo']['fitepoch'][0]
                                     )
