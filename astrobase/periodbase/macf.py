@@ -277,7 +277,7 @@ def macf_period_find(
         mags,
         errs,
         fillgaps=0.0,
-        filterwindow=521, # set for ground based gappy LCs, see details below
+        filterwindow=721, # set for ground based gappy LCs, see details below
         forcetimebin=None,
         maxlags=None,
         maxacfpeaks=10,
@@ -451,6 +451,12 @@ def macf_period_find(
     return {'bestperiod':bestperiod,
             'bestlspval':bestlspval,
             'nbestpeaks':maxacfpeaks,
+            # for compliance with the common pfmethod API
+            'nbestperiods':[
+                fitbestperiod, naivebestperiod,
+                peakres['relpeaklags'][2:maxacfpeaks]*acfres['cadence']
+            ],
+            'nbestlspvals':peakres['relpeakheights'],
             'lspvals':xacf,
             'periods':xlags*acfres['cadence'],
             'acf':xacf,
