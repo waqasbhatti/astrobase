@@ -2384,6 +2384,7 @@ def xmatch_external_catalogs(checkplotdict,
         if matchdists[np.isfinite(matchdists)].size == 0:
 
             xmatchresults[ecat] = {'name':xmatchdict[ecat]['name'],
+                                   'desc':xmatchdict[ecat]['desc'],
                                    'found':False,
                                    'distarcsec':None,
                                    'info':None}
