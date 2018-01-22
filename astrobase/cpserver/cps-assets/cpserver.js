@@ -1144,7 +1144,8 @@ var cpv = {
                         tablecolunits = xmk['colunit'];
 
                         xmcrow = [
-                            '<div class="row bot-mrg-10px"><div class="col-sm-12">' +
+                            '<div class="row my-1">' +
+                                '<div class="col-sm-12 px-1 py-1">' +
                                 '<h6>Matched to: <abbr ' +
                                  'title="' + xmk['desc'] + ' ">' +
                                 '<strong>' +
@@ -1206,12 +1207,22 @@ var cpv = {
 
                         xmcrow = xmcrow.join(' ');
                         xmcatrows.push(xmcrow)
-                        // enable tooltips
-                        $('[data-toggle="tooltip"]').tooltip();
-
 
                     }
 
+                    else {
+
+                        xmcatrows.push(
+                            '<div class="row my-1">' +
+                                '<div class="col-sm-12 px-1 py-1">' +
+                                '<h6>No matches found in <abbr ' +
+                                 'title="' + xmk['desc'] + ' ">' +
+                                '<strong>' +
+                                xmk['name'] +
+                                '</strong></abbr></h6></div></div>'
+                        );
+
+                    }
 
                 }
 
