@@ -277,11 +277,11 @@ def macf_period_find(
         mags,
         errs,
         fillgaps=0.0,
-        filterwindow=721, # set for ground based gappy LCs, see details below
+        filterwindow=11,
         forcetimebin=None,
         maxlags=None,
         maxacfpeaks=10,
-        smoothacf=21,
+        smoothacf=21, # set for Kepler-type LCs, see details below
         smoothfunc=_smooth_acf_savgol,
         smoothfunckwargs={},
         magsarefluxes=False,
