@@ -13,6 +13,10 @@ lightcurves (like phasing, sigma-clipping, etc.)
 ## LOGGING ##
 #############
 
+import logging
+from datetime import datetime
+from traceback import format_exc
+
 # setup a logger
 LOGGER = None
 LOGMOD = __name__
