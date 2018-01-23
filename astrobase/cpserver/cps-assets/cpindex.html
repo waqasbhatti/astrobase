@@ -1284,6 +1284,14 @@
   // get the already reviewed objects from the checkplot-filelist.json file
   cptracker.all_reviewed_from_cplist();
 
+  // load the names of the checkplots into cptracker.checkplotlist
+  var cpl_elems = $('#checkplotlist li a');
+  $.each(cpl_elems, function (index, elem) {
+
+    cptracker.checkplotlist.push(elem.getAttribute('data-fname'));
+
+  });
+
   });
 
 

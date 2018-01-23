@@ -37,6 +37,9 @@ var cputils = {
 // and provides functions to save everything to CSV or JSON
 var cptracker = {
 
+    // this is a list of all checkplots
+    checkplotlist: [],
+
     // this is the actual object that will get written to JSON or CSV
     cpdata: {},
 
@@ -1013,16 +1016,15 @@ var cpv = {
 
                     // check if this neighbor is present in the current
                     // collection
-                    var nbrcp = cpv.currfile.replace(
+                    var nbrcp = $('#checkplot-current').text().replace(
                         cpv.currcp.objectid,
                         nbrobjectid
                     );
-                    var nbrcp_present = cptracker.hasOwnProperty(
-                        nbrcp
-                    );
 
-                    if (nbrcp_present) {
-                        var nbrlink = '<a href="#" class="objload-checkplot" ' +
+                    if (cptracker.checkplotlist.indexOf(nbrcp) != -1) {
+                        var nbrlink =
+                            '<a title="load the checkplot for this object" ' +
+                            'href="#" class="nbrload-checkplot" ' +
                             'data-fname="' + nbrcp + '">' +
                             nbrobjectid + '</a>';
                     }
@@ -1764,9 +1766,29 @@ var cpv = {
 
         });
 
-        // clicking on a objectid in the sidebar or in the neighbor pane
-        $('#project-status, #lcc-neighbor-container')
-            .on('click', '.objload-checkplot', function (evt) {
+        $('#lcc-neighbor-container').on('click','.nbrload-checkplot', function (e) {
+
+            e.preventDefault();
+
+            var filetoload = $(this).attr('data-fname');
+
+            // save the currentcp if one exists, use the load_checkplot as a
+            // callback to load the next one
+            if (('objectid' in cpv.currcp) && (cpv.currfile.length > 0))  {
+                cpv.save_checkplot(cpv.load_checkplot,filetoload);
+            }
+
+            else {
+                // ask the backend for this file
+                cpv.load_checkplot(filetoload);
+            }
+
+
+        });
+
+
+        // clicking on a objectid in the sidebar
+        $('#project-status').on('click', '.objload-checkplot', function (evt) {
 
             evt.preventDefault();
 
@@ -4073,6 +4095,22 @@ var cptools = {
 
             // FIXME: update the psearch param panel for any special params for
             // this period-finder
+            var extraparamelem = $('#psearch-extramparams');
+            extraparamelem.empty();
+
+            if (newval == 'acf') {
+
+                extraparamelem.append(
+                    '<div class="form-group">' +
+                        '<label for="psearch-smoothacf">' +
+                        'ACF smoothing parameter' +
+                        '</label>' +
+                        '<input type="text" ' +
+                        'class="form-control form-control-sm" ' +
+                        'id="psearch-smoothacf" value="521"></div>'
+                );
+
+            }
 
 
         });
