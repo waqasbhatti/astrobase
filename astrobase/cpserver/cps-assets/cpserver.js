@@ -1146,7 +1146,7 @@ var cpv = {
                         tablecolunits = xmk['colunit'];
 
                         xmcrow = [
-                            '<div class="row my-1">' +
+                            '<div class="row mt-1">' +
                                 '<div class="col-sm-12 px-1 py-1">' +
                                 '<h6>Matched to: <abbr ' +
                                  'title="' + xmk['desc'] + ' ">' +
@@ -1215,7 +1215,7 @@ var cpv = {
                     else {
 
                         xmcatrows.push(
-                            '<div class="row my-1">' +
+                            '<div class="row mt-1">' +
                                 '<div class="col-sm-12 px-1 py-1">' +
                                 '<h6>No matches found in <abbr ' +
                                  'title="' + xmk['desc'] + ' ">' +
