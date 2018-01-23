@@ -514,6 +514,85 @@
 
             </div>
 
+            <!-- this contains the periodogram runner controls -->
+            <div class="row">
+
+              <div class="col-sm-6">
+
+                <h5>Run a new period search</h5>
+
+                <div class="form-group">
+                  <label for="psearch-lspmethod">Period search method</label>
+                  <select class="custom-select form-control form-control-sm"
+                          id="psearch-lspmethod" name="psearch-lspmethod">
+                    <option value="gls" selected>Generalized Lomb-Scargle</option>
+                    <option value="pdm">Phase Dispersion Minimization</option>
+                    <option value="bls">Box Least-squared Search</option>
+                    <option value="aov">Analysis of Variance</option>
+                    <option value="mav">Multi-harmonic Analysis of Variance</option>
+                    <option value="acf">Autocorrelation Period Find</option>
+                    <option value="win">Timeseries Spectral Window Lomb-Scargle</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="psearch-nbestpeaks">Number of periodogram peaks to retrieve</label>
+                  <input type="text" class="form-control form-control-sm"
+                         id="psearch-nbestpeaks" value="10">
+                </div>
+
+                <div class="form-check">
+                  <label class="form-check-label">
+                    <input type="checkbox" id="psearch-autofreq"
+                           class="form-check-input" checked>
+                    Use automatic frequency step and period coverage
+                  </label>
+                </div>
+
+                <div class="form-check">
+                  <label class="form-check-label">
+                    <input type="checkbox" id="psearch-magsarefluxes"
+                           class="form-check-input">
+                    Light curve measurements are fluxes
+                  </label>
+                </div>
+
+                <button type="submit" id="psearch-start"
+                        class="btn btn-primary btn-block">
+                  Run period search
+                </button>
+
+              </div>
+
+              <div class="col-sm-6">
+
+                <h5>Period search parameters</h5>
+
+                <div class="form-group">
+                  <label for="psearch-startp">Start period [days]</label>
+                  <input type="text" class="form-control form-control-sm"
+                         id="psearch-startp" disabled>
+                </div>
+
+                <div class="form-group">
+                  <label for="psearch-endp">End period [days]</label>
+                  <input type="text" class="form-control form-control-sm"
+                         id="psearch-endp" disabled>
+                </div>
+
+                <div class="form-group">
+                  <label for="psearch-freqstep">Frequency step [days<sup>-1</sup>]</label>
+                  <input type="text" class="form-control form-control-sm"
+                         id="psearch-freqstep" disabled>
+                </div>
+
+                <div id="psearch-extraparams">
+                </div>
+
+              </div>
+
+            </div>
+
             <!-- this contains the plot options -->
             <div class="row">
               <div class="col-sm-12">
@@ -657,85 +736,6 @@
 
             </div>
 
-            <!-- this contains the periodogram runner controls -->
-            <div class="row">
-
-              <div class="col-sm-6">
-
-                <h5>Run a new period search</h5>
-
-                <div class="form-group">
-                  <label for="psearch-lspmethod">Period search method</label>
-                  <select class="custom-select form-control form-control-sm"
-                          id="psearch-lspmethod" name="psearch-lspmethod">
-                    <option value="gls" selected>Generalized Lomb-Scargle</option>
-                    <option value="pdm">Phase Dispersion Minimization</option>
-                    <option value="bls">Box Least-squared Search</option>
-                    <option value="aov">Analysis of Variance</option>
-                    <option value="mav">Multi-harmonic Analysis of Variance</option>
-                    <option value="acf">Autocorrelation Period Find</option>
-                    <option value="win">Timeseries Spectral Window Lomb-Scargle</option>
-                  </select>
-                </div>
-
-                <div class="form-group">
-                  <label for="psearch-nbestpeaks">Number of periodogram peaks to retrieve</label>
-                  <input type="text" class="form-control form-control-sm"
-                         id="psearch-nbestpeaks" value="10">
-                </div>
-
-                <div class="form-check">
-                  <label class="form-check-label">
-                    <input type="checkbox" id="psearch-autofreq"
-                           class="form-check-input" checked>
-                    Use automatic frequency step and period coverage
-                  </label>
-                </div>
-
-                <div class="form-check">
-                  <label class="form-check-label">
-                    <input type="checkbox" id="psearch-magsarefluxes"
-                           class="form-check-input">
-                    Light curve measurements are fluxes
-                  </label>
-                </div>
-
-                <button type="submit" id="psearch-start"
-                        class="btn btn-primary btn-block">
-                  Run period search
-                </button>
-
-              </div>
-
-              <div class="col-sm-6">
-
-                <h5>Period search parameters</h5>
-
-                <div class="form-group">
-                  <label for="psearch-startp">Start period [days]</label>
-                  <input type="text" class="form-control form-control-sm"
-                         id="psearch-startp" disabled>
-                </div>
-
-                <div class="form-group">
-                  <label for="psearch-endp">End period [days]</label>
-                  <input type="text" class="form-control form-control-sm"
-                         id="psearch-endp" disabled>
-                </div>
-
-                <div class="form-group">
-                  <label for="psearch-freqstep">Frequency step [days<sup>-1</sup>]</label>
-                  <input type="text" class="form-control form-control-sm"
-                         id="psearch-freqstep" disabled>
-                </div>
-
-                <div id="psearch-extraparams">
-                </div>
-
-              </div>
-
-
-            </div>
 
           </div>
 
