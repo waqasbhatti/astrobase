@@ -3730,6 +3730,105 @@ def parallel_cp_pfdir(pfpickledir,
                        nworkers=nworkers)
 
 
+###############################
+## ADDING INFO TO CHECKPLOTS ##
+###############################
+
+def xmatch_cplist_external_catalogs(cplist,
+                                    extcatlist,
+                                    extcatcols,
+                                    xmatchradiusarcsec=2.0,
+                                    updateexisting=True,
+                                    resultstodir=None):
+    '''This xmatches external catalogs to a collection of checkplots in cpdir.
+
+    cplist is a list of checkplot files to process.
+
+    extcatlist is a list of catalog filenames in the format required by the
+    checkplot.load_xmatch_external_catalogs.
+
+    extcatcols is a list of lists of columns per ext catalog to use, again in
+    the format required by checkplot.load_xmatch_external_catalogs.
+
+    xmatchradiusarcsec is the match radius to use in arcseconds.
+
+    updateexisting if True, will only update the xmatch dict in each checkplot
+    pickle. If False, will overwrite the xmatch dict with results from the
+    current run.
+
+    If resultstodir is not None, then it must be a directory to write the
+    resulting checkplots after xmatch is done to. This can be used to keep the
+    original checkplots in pristine condition for some reason.
+
+    '''
+
+
+
+def xmatch_cpdir_external_catalogs(cpdir,
+                                   extcatlist,
+                                   extcatcols,
+                                   cpfileglob='checkplot-*.pkl*'
+                                   xmatchradiusarcsec=2.0,
+                                   updateexisting=True,
+                                   resultstodir=None):
+    '''This xmatches external catalogs to all checkplots in cpdir.
+
+    All arguments are the same as for xmatch_cplist_external_catalogs, except
+    for:
+
+    cpdir is the directory to search in for checkplots.
+
+    cpfileglob is the fileglob to use in searching for checkplots.
+
+    '''
+
+################################
+## POST-PROCESSING CHECKPLOTS ##
+################################
+
+
+def finalize_checkplot(cpx,
+                       outdir,
+                       objfits=None):
+    '''This is used to prevent any further changes to the checkplot.
+
+    cpx is the checkplot dict or pickle to process.
+
+    outdir is the directory to where the final pickle will be written. If this
+    is set to the same dir as cpx and cpx is a pickle, the function will return
+    a failure. This is meant to keep the in-process checkplots separate from the
+    finalized versions.
+
+    objfits if not None should be a file path to a FITS file containing a WCS
+    header and this object. This will be used to make a stamp cutout of the
+    object using the actual image it was detected on. This will be a useful
+    comparison to the usual DSS POSS-RED2 image used by the checkplots.
+
+    Use this function after all variable classification, period-finding, and
+    object xmatches are done. This function will add a 'final' key to the
+    checkplot, which will contain:
+
+    - a phased LC plot with the period and epoch set after review using the
+      times, mags, errs after any appropriate filtering and sigclip was done in
+      the checkplotserver UI
+
+    - The unphased LC using the times, mags, errs after any appropriate
+      filtering and sigclip was done in the checkplotserver UI
+
+    - the same plots for any LC collection neighbors
+
+    - the survey cutout for the object if objfits is provided and checks out
+
+    These items will be shown in a special 'Final' tab in the checkplotserver
+    webapp. The final tab will also contain downloadable links for the checkplot
+    pickle in pkl and PNG format, as well as the final times, mags, errs as a
+    gzipped CSV with a header containing all of this info (will be readable by
+    the usual astrobase.hatsurveys.hatlc module).
+
+    '''
+
+
+
 
 ##########################
 ## BINNING LIGHT CURVES ##
@@ -3743,6 +3842,7 @@ def timebinlc(lcfile,
               magcols=None,
               errcols=None,
               minbinelems=7):
+
     '''
     This bins the given light curve file in time using binsizesec.
 

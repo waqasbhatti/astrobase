@@ -563,10 +563,9 @@
                   </label>
                 </div>
 
-                <button type="submit" id="psearch-start"
-                        class="btn btn-primary btn-block">
-                  Run period search
-                </button>
+                <!-- this contains extra options for each specific period finders -->
+                <div id="psearch-pf-extraparams">
+                </div>
 
               </div>
 
@@ -598,38 +597,24 @@
                   </label>
                 </div>
 
+                <button type="submit" id="psearch-start"
+                        class="btn btn-primary btn-block">
+                  Run period search
+                </button>
+
               </div>
 
             </div>
-
-
-            <!-- this contains extra options for each specific period finders -->
-            <div class="row" id="psearch-pf-extraparams">
-            </div>
-
-
-            <!-- this has the periodogram and phased LC displays -->
-            <div class="row tool-header-panel">
-
-              <div class="col-sm-6 display-panel">
-                <img class="img-fluid" id="psearch-periodogram-display" src="/static/no-tool-results.png">
-              </div>
-
-              <div class="col-sm-6 display-panel">
-                <img class="img-fluid" id="psearch-phasedlc-display" src="/static/no-tool-results.png">
-              </div>
-
-            </div>
-
 
             <!-- this contains the periodogram and phasedlc display controls -->
-            <div class="row">
+            <div class="row mt-3">
 
               <div class="col-sm-3">
                 <div class="form-group">
-                  <label for="psearch-pgrampeaks">For periodogram peak</label>
+                  <label for="psearch-pgrampeaks">Phased LC for spec peak</label>
                   <select class="custom-select form-control"
                           id="psearch-pgrampeaks" name="psearch-pgrampeaks">
+                    <option value="none">no tool results yet</option>
                   </select>
                 </div>
               </div>
@@ -669,6 +654,19 @@
                     Plot LC
                   </button>
                 </div>
+              </div>
+
+            </div>
+
+            <!-- this has the periodogram and phased LC displays -->
+            <div class="row">
+
+              <div class="col-sm-6 display-panel">
+                <img class="img-fluid" id="psearch-periodogram-display" src="/static/no-tool-results.png">
+              </div>
+
+              <div class="col-sm-6 display-panel">
+                <img class="img-fluid" id="psearch-phasedlc-display" src="/static/no-tool-results.png">
               </div>
 
             </div>
