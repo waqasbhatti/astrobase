@@ -601,6 +601,14 @@ var cpv = {
 
             var magnotices = [];
 
+            if (cpv.currcp.objectinfo.bmagfromjhk != undefined &&
+                cpv.currcp.objectinfo.bmagfromjhk) {
+                magnotices.push('B');
+            }
+            if (cpv.currcp.objectinfo.vmagfromjhk != undefined &&
+                cpv.currcp.objectinfo.vmagfromjhk) {
+                magnotices.push('V');
+            }
             if (cpv.currcp.objectinfo.sdssufromjhk != undefined &&
                 cpv.currcp.objectinfo.sdssufromjhk) {
                 magnotices.push('u');

@@ -127,8 +127,14 @@
           </div>
         </div>
 
+        <!-- this is a cheesy tag cloud. clicking on a tag, restricts the reviewed list to only those objects (with a reset button) -->
+        <div class="row pt-1">
+          <div class="col-sm-12 text-sm-center" id="objtag-cloud">
+          </div>
+        </div>
+
         <!-- this is the location of the JSON file -->
-        <div class="row py-1">
+        <div class="row pb-1">
           <div class="col-sm-12 text-sm-center">
             {% if readonly %}
             <p class="text-muted">The checkplotserver is in read-only mode. <strong>Changes will not be saved</strong>.</p>
