@@ -806,10 +806,11 @@ class CheckplotHandler(tornado.web.RequestHandler):
             cpcontents = json.loads(cpcontents)
 
             # the only keys in cpdict that can updated from the UI are from
-            # varinfo, objectinfo (objecttags) and comments
+            # varinfo, objectinfo (objecttags), uifilters, and comments
             updated = {'varinfo': cpcontents['varinfo'],
                        'objectinfo':cpcontents['objectinfo'],
-                       'comments':cpcontents['comments']}
+                       'comments':cpcontents['comments'],
+                       'uifilters':cpcontents['uifilters']}
 
             # we need to reform the self.cpfile so it points to the full path
             cpfpath = os.path.join(

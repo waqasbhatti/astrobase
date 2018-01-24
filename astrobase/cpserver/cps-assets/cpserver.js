@@ -1352,11 +1352,20 @@ var cpv = {
             cpv.currcp.varinfo.varperiod = parseFloat($('#objectperiod').val());
             cpv.currcp.varinfo.varepoch = parseFloat($('#objectepoch').val());
 
+            // make sure we also save the applied filters in the period-search
+            // tab
+            cpv.currcp.uifilters = {
+                psearch_timefilters:$('#psearch-timefilters').val(),
+                psearch_magfilters:$('#psearch-magfilters').val(),
+                psearch_sigclip:$('#psearch-sigclip').val()
+            }
+
             var cppayload = JSON.stringify(
                 {objectid: cpv.currcp.objectid,
                  objectinfo: cpv.currcp.objectinfo,
                  varinfo: cpv.currcp.varinfo,
-                 comments: cpv.currcp.objectcomments}
+                 comments: cpv.currcp.objectcomments,
+                 uifilters: cpv.currcp.uifilters}
             );
 
             // first, generate the object to send with the POST request
