@@ -923,9 +923,17 @@ var cpv = {
             $('#neighbor-container').empty();
 
             $('#gaia-neighbor-tbody').empty();
-            $('#gaia-neighbor-count').html(
-                cpv.currcp.objectinfo.gaia_neighbors
-            );
+
+            if (cpv.currcp.objectinfo.gaia_neighbors != undefined) {
+
+                $('#gaia-neighbor-count').html(
+                    cpv.currcp.objectinfo.gaia_neighbors
+                );
+            }
+
+            else {
+                $('#gaia-neighbor-count').html('0');
+            }
 
             $('#lcc-neighbor-container').empty();
             $("#lcc-neighbor-count").html(cpv.currcp.neighbors.length);
@@ -941,13 +949,12 @@ var cpv = {
             }
 
             // 3. update the GAIA neighbors
-            if (cpv.currcp.objectinfo.gaia_neighbors != undefined &&
-                cpv.currcp.objectinfo.gaia_neighbors > 0) {
+            if (cpv.currcp.objectinfo.gaia_status.indexOf('ok') != -1) {
 
                 // for each gaia neighbor, put in a table row
                 var gi = 0;
 
-                for (gi; gi < cpv.currcp.objectinfo.gaia_neighbors; gi++) {
+                for (gi; gi < cpv.currcp.objectinfo.gaia_ids.length; gi++) {
 
                     // special formatting for the object itself
                     if (gi == 0) {
