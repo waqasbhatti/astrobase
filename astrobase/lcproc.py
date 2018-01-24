@@ -124,7 +124,9 @@ from astrobase.lcmath import normalize_magseries, \
     time_bin_magseries_with_errs, sigclip_magseries
 from astrobase.periodbase.kbls import bls_snr
 
-from astrobase.checkplot import _pkl_magseries_plot, _pkl_phased_magseries_plot
+from astrobase.checkplot import _pkl_magseries_plot, \
+    _pkl_phased_magseries_plot, xmatch_external_catalogs, \
+    _read_checkplot_picklefile, _write_checkplot_picklefile
 
 from astrobase.magnitudes import jhk_to_sdssr
 
@@ -3812,8 +3814,7 @@ def parallel_cp_pfdir(pfpickledir,
 ###############################
 
 def xmatch_cplist_external_catalogs(cplist,
-                                    extcatlist,
-                                    extcatcols,
+                                    xmatchpkl,
                                     xmatchradiusarcsec=2.0,
                                     updateexisting=True,
                                     resultstodir=None):
@@ -3821,11 +3822,8 @@ def xmatch_cplist_external_catalogs(cplist,
 
     cplist is a list of checkplot files to process.
 
-    extcatlist is a list of catalog filenames in the format required by the
-    checkplot.load_xmatch_external_catalogs.
-
-    extcatcols is a list of lists of columns per ext catalog to use, again in
-    the format required by checkplot.load_xmatch_external_catalogs.
+    xmatchpkl is a pickle prepared with the
+    checkplot.load_xmatch_external_catalogs function.
 
     xmatchradiusarcsec is the match radius to use in arcseconds.
 
@@ -3839,11 +3837,57 @@ def xmatch_cplist_external_catalogs(cplist,
 
     '''
 
+    # load the external catalog
+    with open(xmatchpkl,'rb') as infd:
+        xmd = pickle.load(infd)
+
+    # match each object. this is fairly fast, so this is not parallelized at the
+    # moment
+
+    status_dict = {}
+
+    for cpf in cplist:
+
+        cpd = _read_checkplot_picklefile(cpf)
+
+        try:
+
+            # match in place
+            xmatch_external_catalogs(cpd, xmd,
+                                     xmatchradiusarcsec=xmatchradiusarcsec,
+                                     updatexmatch=updateexisting)
+
+            for xmi in cpd['xmatch']:
+
+                if cpd['xmatch'][xmi]['found']:
+                    LOGINFO('checkplot %s: %s matched to %s, '
+                            'match dist: %s arcsec' %
+                            (os.path.basename(cpf),
+                             cpd['objectid'],
+                             cpd['xmatch'][xmi]['name'],
+                             cpd['xmatch'][xmi]['distarcsec']))
+
+                if not resultstodir:
+                    outcpf = checkplot._write_checkplot_picklefile(cpd,
+                                                                   outfile=cpf)
+                else:
+                    xcpf = os.path.join(resultstodir, os.path.basename(cpf))
+                    outcpf = checkplot._write_checkplot_picklefile(cpd,
+                                                                   outfile=xcpf)
+
+            status_dict[cpf] = outcpf
+
+        except Exception as e:
+
+            LOGEXCEPTION('failed to match objects for %s' % cpf)
+            status_dict[cpf] = None
+
+    return status_dict
+
 
 
 def xmatch_cpdir_external_catalogs(cpdir,
-                                   extcatlist,
-                                   extcatcols,
+                                   xmatchpkl,
                                    cpfileglob='checkplot-*.pkl*',
                                    xmatchradiusarcsec=2.0,
                                    updateexisting=True,
@@ -3858,6 +3902,16 @@ def xmatch_cpdir_external_catalogs(cpdir,
     cpfileglob is the fileglob to use in searching for checkplots.
 
     '''
+
+    cplist = glob.glob(os.path.join(cpdir, cpfileglob))
+
+    return xmatch_cplist_external_catalogs(
+        cplist,
+        xmatchpkl,
+        xmatchradiusarcsec=xmatchradiusarcsec,
+        updateexisting=updateexisting,
+        resultstodir=resultstodir
+    )
 
 
 
