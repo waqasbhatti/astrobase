@@ -3645,12 +3645,12 @@ def runcp(pfpickle,
         # normalize here if not using special normalization
         if normfunc is None:
             ntimes, nmags = normalize_magseries(
-                stimes, smags,
+                times, mags,
                 magsarefluxes=magsarefluxes
             )
-            xtimes, xmags, xerrs = ntimes, nmags, serrs
+            xtimes, xmags, xerrs = ntimes, nmags, errs
         else:
-            xtimes, xmags, xerrs = stimes, smags, serrs
+            xtimes, xmags, xerrs = times, mags, errs
 
         # generate the checkplotdict
         cpd = checkplot.checkplot_dict(
@@ -3844,7 +3844,7 @@ def xmatch_cplist_external_catalogs(cplist,
 def xmatch_cpdir_external_catalogs(cpdir,
                                    extcatlist,
                                    extcatcols,
-                                   cpfileglob='checkplot-*.pkl*'
+                                   cpfileglob='checkplot-*.pkl*',
                                    xmatchradiusarcsec=2.0,
                                    updateexisting=True,
                                    resultstodir=None):
