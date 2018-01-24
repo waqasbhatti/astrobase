@@ -99,21 +99,23 @@ def LOGEXCEPTION(message):
 from time import time as unixtime
 import pickle
 import gzip
+import os.path
 
 import numpy as np
 from scipy.spatial import cKDTree, KDTree
 
+from astropy.wcs import WCS
 
 ###################
 ## LOCAL IMPORTS ##
 ###################
 
 from .. import magnitudes, coordutils
-from ..services import dust, gaia
+from ..services import dust, gaia, skyview
 
 dust.set_logger_parent(__name__)
 gaia.set_logger_parent(__name__)
-
+skyview.set_logger_parent(__name__)
 
 #########################
 ## COORDINATE FEATURES ##
@@ -781,29 +783,93 @@ def neighbor_features(objectinfo,
                     usecols=(0,1,2,3,4,5,6)
                 )
 
-            if gaia_objlist.size > 1:
+            if gaia_objlist.size > 0:
+
+                # if we have GAIA results, we can get xypositions of all of
+                # these objects on the object skyview stamp
+                stampres = skyview.get_stamp(objectinfo['ra'],
+                                             objectinfo['decl'])
+
+                if (stampres and
+                    'fitsfile' in stampres and
+                    stampres['fitsfile'] is not None and
+                    os.path.exists(stampres['fitsfile'])):
+
+                    stampwcs = WCS(stampres['fitsfile'])
+
+                    gaia_xypos = stampwcs.all_world2pix(
+                        np.column_stack((gaia_objlist['ra'],
+                                         gaia_objlist['dec'])),
+                        1
+                    )
+
+                else:
+
+                    gaia_xypos = None
+
 
                 # the first object is likely the match to the object itself
                 if gaia_objlist['dist_arcsec'][0] < 3.0:
 
-                    gaia_nneighbors = gaia_objlist[1:].size
-                    gaia_nbr_ids = gaia_objlist['source_id'][1:]
-                    gaia_nbr_dists = gaia_objlist['dist_arcsec'][1:]
-                    gaia_nbr_mags = gaia_objlist['phot_g_mean_mag'][1:]
+                    if gaia_objlist.size > 1:
 
-                    gaia_closest_distarcsec = gaia_objlist['dist_arcsec'][1]
-                    gaia_closest_gmagdiff = (
-                        gaia_objlist['phot_g_mean_mag'][0] -
-                        gaia_objlist['phot_g_mean_mag'][1]
-                    )
+                        gaia_nneighbors = gaia_objlist[1:].size
+
+                        gaia_status = (
+                            'ok: object and %s neighbors found' %
+                            gaia_nneighbors
+                        )
+
+                        # the first in each array is the object
+                        gaia_ids = gaia_objlist['source_id']
+                        gaia_dists = gaia_objlist['dist_arcsec']
+                        gaia_mags = gaia_objlist['phot_g_mean_mag']
+
+                        gaia_closest_distarcsec = gaia_objlist['dist_arcsec'][1]
+                        gaia_closest_gmagdiff = (
+                            gaia_objlist['phot_g_mean_mag'][0] -
+                            gaia_objlist['phot_g_mean_mag'][1]
+                        )
+
+                    else:
+
+                        LOGWARNING('object found in GAIA at (%.3f,%.3f), '
+                                   'but no neighbors' % (objectinfo['ra'],
+                                                         objectinfo['decl']))
+
+                        gaia_nneighbors = 0
+
+                        gaia_status = (
+                            'ok: only object found'
+                        )
+
+                        # the first in each array is the object
+                        gaia_ids = gaia_objlist['source_id']
+                        gaia_dists = gaia_objlist['dist_arcsec']
+                        gaia_mags = gaia_objlist['phot_g_mean_mag']
+
+                        gaia_closest_distarcsec = np.nan
+                        gaia_closest_gmagdiff = np.nan
+
 
                 # otherwise, the object wasn't found in GAIA for some reason
                 else:
 
+                    LOGWARNING('failed: no GAIA objects found within '
+                               '%s of object position (%.3f, %.3f), '
+                               'closest object is at %.3f arcsec away' %
+                               (3.0, objectinfo['ra'], objectinfo['decl'],
+                                gaia_objlist['dist_arcsec'][0]))
+
+                    gaia_status = ('failed: no object within 3 '
+                                   'arcsec, closest = %.3f arcsec' %
+                                   gaia_objlist['dist_arcsec'][0])
+
                     gaia_nneighbors = np.nan
-                    gaia_nbr_ids = None
-                    gaia_nbr_dists = None
-                    gaia_nbr_mags = None
+
+                    gaia_ids = gaia_objlist['source_id']
+                    gaia_dists = gaia_objlist['dist_arcsec']
+                    gaia_mags = gaia_objlist['phot_g_mean_mag']
 
                     gaia_closest_distarcsec = np.nan
                     gaia_closest_gmagdiff = np.nan
@@ -812,31 +878,42 @@ def neighbor_features(objectinfo,
             # or this object is not covered by GAIA. return nothing
             else:
 
+                LOGERROR('no GAIA objects at this position')
+
+                gaia_status = 'failed: no GAIA objects at this position'
                 gaia_nneighbors = 0
-                gaia_nbr_ids = None
-                gaia_nbr_dists = None
-                gaia_nbr_mags = None
+                gaia_ids = None
+                gaia_dists = None
+                gaia_mags = None
 
                 gaia_closest_distarcsec = np.nan
                 gaia_closest_gmagdiff = np.nan
 
             # update the resultdict with gaia stuff
             resultdict.update(
-                {'gaia_neighbors':gaia_nneighbors,
-                 'gaia_nbrids':gaia_nbr_ids,
-                 'gaia_nbrdists':gaia_nbr_dists,
-                 'gaia_nbrmags':gaia_nbr_mags,
+                {'gaia_status':gaia_status,
+                 'gaia_neighbors':gaia_nneighbors,
+                 'gaia_ids':gaia_ids,
+                 'gaia_xypos':gaia_xypos,
+                 'gaia_dists':gaia_dists,
+                 'gaia_mags':gaia_mags,
                  'gaia_closest_distarcsec':gaia_closest_distarcsec,
                  'gaia_closest_gmagdiff':gaia_closest_gmagdiff}
             )
 
         else:
 
+            LOGERROR('GAIA query did not return a '
+                     'result for object at (%.3f, %.3f)' % (objectinfo['ra'],
+                                                            objectinfo['decl']))
+
             resultdict.update(
-                {'gaia_neighbors':np.nan,
-                 'gaia_nbrids':None,
-                 'gaia_nbrdists':None,
-                 'gaia_nbrmags':None,
+                {'gaia_status':'TAP query failed',
+                 'gaia_neighbors':np.nan,
+                 'gaia_ids':None,
+                 'gaia_xypos':None,
+                 'gaia_dists':None,
+                 'gaia_mags':None,
                  'gaia_closest_distarcsec':np.nan,
                  'gaia_closest_gmagdiff':np.nan}
             )
@@ -844,11 +921,15 @@ def neighbor_features(objectinfo,
 
     else:
 
+        LOGERROR('objectinfo does not have ra or decl')
+
         resultdict.update(
-            {'gaia_neighbors':np.nan,
-             'gaia_nbrids':None,
-             'gaia_nbrdists':None,
-             'gaia_nbrmags':None,
+            {'gaia_status':'no ra/decl for object',
+             'gaia_neighbors':np.nan,
+             'gaia_ids':None,
+             'gaia_xypos':None,
+             'gaia_dists':None,
+             'gaia_mags':None,
              'gaia_closest_distarcsec':np.nan,
              'gaia_closest_gmagdiff':np.nan}
         )
