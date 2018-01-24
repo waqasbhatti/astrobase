@@ -949,18 +949,45 @@ var cpv = {
 
                 for (gi; gi < cpv.currcp.objectinfo.gaia_neighbors; gi++) {
 
-                    var rowhtml = '<tr class="gaia-objectlist-row" ' +
-                        'data-gaiaid="' + cpv.currcp.objectinfo.gaia_ids[gi] +
-                        '" data-xpos="' + cpv.currcp.objectinfo.gaia_xypos[gi][0] +
-                        '" data-ypos="' + cpv.currcp.objectinfo.gaia_xypos[gi][1] +
-                        '" >' +
-                        '<td>' + cpv.currcp.objectinfo.gaia_ids[gi] +
-                        '</td>' + '<td>' +
-                        math.format(cpv.currcp.objectinfo.gaia_mags[gi], 3) +
-                        '</td>' + '<td>' + math.format(
-                            cpv.currcp.objectinfo.gaia_dists[gi],
-                            3
-                        ) + '</td>' + '</tr>';
+                    // special formatting for the object itself
+                    if (gi == 0) {
+                        var rowhtml = '<tr class="gaia-objectlist-row ' +
+                            'text-primary' +
+                            '" ' +
+                            'data-gaiaid="' +
+                            cpv.currcp.objectinfo.gaia_ids[gi] +
+                            '" data-xpos="' +
+                            cpv.currcp.objectinfo.gaia_xypos[gi][0] +
+                            '" data-ypos="' +
+                            cpv.currcp.objectinfo.gaia_xypos[gi][1] +
+                            '" >' +
+                            '<td>obj: ' + cpv.currcp.objectinfo.gaia_ids[gi] +
+                            '</td>' + '<td>' +
+                            math.format(cpv.currcp.objectinfo.gaia_mags[gi], 3) +
+                            '</td>' + '<td>' + math.format(
+                                cpv.currcp.objectinfo.gaia_dists[gi],
+                                3
+                            ) + '</td>' + '</tr>';
+                    }
+
+                    else {
+                        var rowhtml = '<tr class="gaia-objectlist-row" ' +
+                            'data-gaiaid="' +
+                            cpv.currcp.objectinfo.gaia_ids[gi] +
+                            '" data-xpos="' +
+                            cpv.currcp.objectinfo.gaia_xypos[gi][0] +
+                            '" data-ypos="' +
+                            cpv.currcp.objectinfo.gaia_xypos[gi][1] +
+                            '" >' +
+                            '<td>' + cpv.currcp.objectinfo.gaia_ids[gi] +
+                            '</td>' + '<td>' +
+                            math.format(cpv.currcp.objectinfo.gaia_mags[gi], 3) +
+                            '</td>' + '<td>' + math.format(
+                                cpv.currcp.objectinfo.gaia_dists[gi],
+                                3
+                            ) + '</td>' + '</tr>';
+                    }
+
                     $('#gaia-neighbor-tbody').append(rowhtml);
 
                 }

@@ -627,7 +627,14 @@
 
               <div class="col-sm-4">
                 <div class="form-group">
-                  <label for="psearch-plotperiod">Modify period [days]</label>
+                  <label for="psearch-plotperiod">
+                    Period [days]
+                    <strong>
+                    <a href="#" id="psearch-period-aliases">
+                      [common aliases]
+                    </a>
+                    </strong>
+                  </label>
                   <div class="input-group">
                     <span class="input-group-btn">
                       <button class="btn btn-secondary"
@@ -646,7 +653,13 @@
 
               <div class="col-sm-3">
                 <div class="form-group">
-                  <label for="psearch-plotepoch">Modify epoch [JD]</label>
+                  <label for="psearch-plotepoch">
+                    Epoch [JD]
+                    <strong>
+                      <a href="#" id="psearch-addhalfp-epoch">[+1/2 P]</a>
+                      <a href="#" id="psearch-subhalfp-epoch">[-1/2 P]</a>
+                    </strong>
+                  </label>
                   <input type="text" class="form-control"
                          id="psearch-plotepoch">
                 </div>
