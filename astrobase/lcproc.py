@@ -3342,6 +3342,17 @@ def update_checkplotdict_nbrlcs(
     (fileglob, readerfunc, dtimecols, dmagcols,
      derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
 
+    # get our object's magcols to compare to the neighbor
+    objmagcols = {}
+    for mc in ('bmag','vmag','rmag','imag','jmag','hmag','kmag',
+               'sdssu','sdssg','sdssr','sdssi','sdssz'):
+        if (mc in checkplotdict['objectinfo'] and
+            checkplot['objectinfo'][mc] is not None and
+            np.isfinite(checkplot['objectinfo'][mc])):
+
+            objmagcols[mc] = checkplot['objectinfo'][mc]
+
+
     # if there are actually neighbors, go through them in order
     for nbr in checkplotdict['neighbors']:
 
@@ -3422,6 +3433,50 @@ def update_checkplotdict_nbrlcs(
         #
         # now we can start doing stuff if everything checks out
         #
+
+        # 0. get this neighbor's magcols and get the magdiff and colordiff
+        # between it and the object
+
+        nbrmagcols = {}
+
+        for mc in objmagcols:
+
+            if (('objectinfo' in lcdict) and
+                (isinstance(lcdict['objectinfo'], dict)) and
+                (mc in lcdict['objectinfo']) and
+                (lcdict['objectinfo'][mc] is not None) and
+                (np.isfinite(lcdict['objectinfo'][mc]))):
+                nbrmagcols[mc] = lcdict['objectinfo'][mc]
+
+
+        # now calculate the magdiffs
+        magdiffs = {}
+        for omc in objmagcols:
+            magdiffs[omc] = objmagcols[omc] - nbrmagcols[omc]
+
+
+        # calculate colors and colordiffs
+        colordiffs = {}
+        for ctrio in (['bmag','vmag','bvcolor'],
+                      ['vmag','kmag','vkcolor'],
+                      ['jmag','kmag','jkcolor'],
+                      ['sdssi','jmag','ijcolor'],
+                      ['sdssg','kmag','gkcolor'],
+                      ['sdssg','sdssr','grcolor']):
+            m1, m2, color = ctrio
+
+            if (m1 in objmagcols and
+                m2 in objmagcols and
+                m1 in nbrmagcols and
+                m2 in nbrmagcols):
+
+                objcolor = objmagcols[m1] - objmagcols[m2]
+                nbrcolor = nbrmagcols[m1] - nbrmagcols[m2]
+                colordiffs[color] = objcolor - nbrcolor
+
+        # finally, add all the color and magdiff info to the nbr dict
+        nbr.update({'magdiffs':magdiffs,
+                    'colordiffs':colordiffs})
 
         # 1. make an unphased mag-series plot
         nbrdict = _pkl_magseries_plot(xtimes,
@@ -3608,8 +3663,9 @@ def runcp(pfpickle,
             xmatchradiusarcsec=xmatchradiusarcsec,
             sigclip=sigclip,
             verbose=False,
-            normto=False # we've done the renormalization already, so this is
-                         # not needed and just messes up the plot
+            normto=cprenorm # we've done the renormalization already, so this
+                            # should be False by default. just messes up the
+                            # plots otherwise, destroying LPVs in particular
         )
 
         # include any neighbor information as well
