@@ -3482,6 +3482,7 @@ def update_checkplotdict_nbrlcs(
 def runcp(pfpickle,
           outdir,
           lcbasedir,
+          cprenorm=False,
           lclistpkl=None,
           nbrradiusarcsec=30.0,
           xmatchinfo=None,
@@ -3542,6 +3543,10 @@ def runcp(pfpickle,
     if isinstance(lcdict, tuple) and isinstance(lcdict[0], dict):
         lcdict = lcdict[0]
 
+    # normalize using the special function if specified
+    if normfunc is not None:
+       lcdict = normfunc(lcdict)
+
     cpfs = []
 
     for tcol, mcol, ecol in zip(timecols, magcols, errcols):
@@ -3582,17 +3587,29 @@ def runcp(pfpickle,
         if 'objectid' not in lcdict['objectinfo']:
             lcdict['objectinfo']['objectid'] = objectid
 
+        # normalize here if not using special normalization
+        if normfunc is None:
+            ntimes, nmags = normalize_magseries(
+                stimes, smags,
+                magsarefluxes=magsarefluxes
+            )
+            xtimes, xmags, xerrs = ntimes, nmags, serrs
+        else:
+            xtimes, xmags, xerrs = stimes, smags, serrs
+
         # generate the checkplotdict
         cpd = checkplot.checkplot_dict(
             pflist,
-            times, mags, errs,
+            xtimes, xmags, xerrs,
             objectinfo=lcdict['objectinfo'],
             lclistpkl=lclistpkl,
             nbrradiusarcsec=nbrradiusarcsec,
             xmatchinfo=xmatchinfo,
             xmatchradiusarcsec=xmatchradiusarcsec,
             sigclip=sigclip,
-            verbose=False
+            verbose=False,
+            normto=False # we've done the renormalization already, so this is
+                         # not needed and just messes up the plot
         )
 
         # include any neighbor information as well
@@ -3640,6 +3657,7 @@ def runcp_worker(task):
 def parallel_cp(pfpicklelist,
                 outdir,
                 lcbasedir,
+                cprenorm=False,
                 lclistpkl=None,
                 nbrradiusarcsec=45.0,
                 xmatchinfo=None,
@@ -3672,7 +3690,8 @@ def parallel_cp(pfpicklelist,
                   'nbrradiusarcsec':nbrradiusarcsec,
                   'xmatchinfo':xmatchinfo,
                   'xmatchradiusarcsec':xmatchradiusarcsec,
-                  'sigclip':sigclip}) for
+                  'sigclip':sigclip,
+                  'cprenorm':cprenorm}) for
                 x in pfpicklelist]
 
     resultfutures = []
@@ -3691,6 +3710,7 @@ def parallel_cp(pfpicklelist,
 def parallel_cp_pfdir(pfpickledir,
                       outdir,
                       lcbasedir,
+                      cprenorm=False,
                       lclistpkl=None,
                       nbrradiusarcsec=30.0,
                       xmatchinfo=None,
@@ -3722,6 +3742,7 @@ def parallel_cp_pfdir(pfpickledir,
                        xmatchinfo=xmatchinfo,
                        xmatchradiusarcsec=xmatchradiusarcsec,
                        sigclip=sigclip,
+                       cprenorm=cprenorm,
                        maxobjects=maxobjects,
                        lcformat=lcformat,
                        timecols=timecols,

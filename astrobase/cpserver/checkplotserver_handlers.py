@@ -152,13 +152,6 @@ CPTOOLMAP = {
         'resloc':[],
     },
     ## PERIOD SEARCH METHODS ##
-    # FIXME: add in sigclip here and to frontend , set it to None by default
-    # because we're reusing the times, mags, errs present in the checkplot dict,
-    # which have been sigclipped already
-    # FIXME: add in a way to get plots and pf for user-defined intervals of time
-    # and user-defined mag windows. this can be as simple as a nice text box
-    # where the user can put in some binary operators to define these plot
-    # windows. later, we'll use a nice plot select tool.
     'psearch-gls':{
         'args':('times','mags','errs'),
         'argtypes':(ndarray, ndarray, ndarray),
