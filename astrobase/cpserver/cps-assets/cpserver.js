@@ -963,7 +963,19 @@ var cpv = {
             }
 
             // 3. update the GAIA neighbors
-            if (cpv.currcp.objectinfo.gaia_status.indexOf('ok') != -1) {
+            if (cpv.currcp.objectinfo.hasOwnProperty('gaia_status')) {
+                var gaia_ok =
+                    cpv.currcp.objectinfo.gaia_status.indexOf('ok') != -1;
+            }
+            else if cpv.currcp.objectinfo.hasOwnProperty('gaia_neighbors') {
+                var gaia_ok =
+                    (cpv.currcp.objectinfo.gaia_neighbors != null);
+            }
+            else {
+                var gaia_ok = false;
+            }
+
+            if (gaia_ok) {
 
                 // for each gaia neighbor, put in a table row
                 var gi = 0;
