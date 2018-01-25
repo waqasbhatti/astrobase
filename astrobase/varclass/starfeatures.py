@@ -859,7 +859,7 @@ def neighbor_features(objectinfo,
                                '%s of object position (%.3f, %.3f), '
                                'closest object is at %.3f arcsec away' %
                                (3.0, objectinfo['ra'], objectinfo['decl'],
-                                gaia_objlist['dist_arcsec'][0]))
+                                gaia_objlist['dist_arcsec']))
 
                     gaia_status = ('failed: no object within 3 '
                                    'arcsec, closest = %.3f arcsec' %
