@@ -480,10 +480,24 @@ var cpv = {
             // update the time0 placeholders
             $('.time0').html(cpv.currcp.time0);
 
+            // clear the items in the period-search tab
+            $('#psearch-timefilters').val('');
+            $('#psearch-magfilters').val('');
+            $('#psearch-sigclip').val('');
+            $("#psearch-pgrampeaks").html(
+                '<option value="none">no tool results yet</option>'
+            );
+            $('#psearch-plotperiod').val('');
+            $('#psearch-plotepoch').val('');
+            $('#psearch-plotperiod').val('');
+            $('#psearch-periodogram-display')
+                .attr('src','/static/no-tool-results.png');
+            $('#psearch-phasedlc-display')
+                .attr('src','/static/no-tool-results.png');
+
             // update the finder chart
             cputils.b64_to_image(cpv.currcp.finderchart,
                                  '#finderchart');
-
 
             var hatstations = cpv.currcp.objectinfo.stations;
             if (hatstations != undefined && hatstations) {
@@ -1193,7 +1207,7 @@ var cpv = {
 
                         xmcrow = [
                             '<div class="row mt-1">' +
-                                '<div class="col-sm-12 px-1 py-1">' +
+                                '<div class="col-sm-12">' +
                                 '<h6>Matched to: <abbr ' +
                                  'title="' + xmk['desc'] + ' ">' +
                                 '<strong>' +
@@ -3152,6 +3166,7 @@ var cptools = {
                 var errmsg = '<span class="text-danger">' +
                     reqmsg  + '</span>';
                 $('#alert-box').html(errmsg);
+
 
 
             });
