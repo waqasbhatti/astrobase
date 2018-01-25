@@ -1240,11 +1240,27 @@ var cpv = {
                              tci < tablecolkeys.length;
                              tci++) {
 
-                            xmcrow.push(
-                                '<td>' +
-                                    xmk['info'][tablecolkeys[tci]] +
-                                    '</td>'
-                            );
+                            // format float things
+                            if (tablecolunits[tci] != null) {
+                                xmcrow.push(
+                                    '<td>' +
+                                        math.format(
+                                            xmk['info'][tablecolkeys[tci]],
+                                            4
+                                        ) +
+                                        '</td>'
+                                );
+                            }
+
+                            // otherwise, leave them alone
+                            else {
+                                xmcrow.push(
+                                    '<td>' +
+                                        xmk['info'][tablecolkeys[tci]] +
+                                        '</td>'
+                                );
+                            }
+
 
                         }
 
