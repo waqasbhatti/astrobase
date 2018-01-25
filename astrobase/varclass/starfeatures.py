@@ -809,7 +809,7 @@ def neighbor_features(objectinfo,
 
 
                 # the first object is likely the match to the object itself
-                if gaia_objlist['dist_arcsec'][0] < 3.0:
+                if np.atleast_1d(gaia_objlist['dist_arcsec'])[0] < 3.0:
 
                     if gaia_objlist.size > 1:
 
