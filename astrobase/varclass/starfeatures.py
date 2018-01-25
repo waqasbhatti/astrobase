@@ -887,6 +887,7 @@ def neighbor_features(objectinfo,
                 gaia_ids = None
                 gaia_dists = None
                 gaia_mags = None
+                gaia_xypos = None
 
                 gaia_closest_distarcsec = np.nan
                 gaia_closest_gmagdiff = np.nan
