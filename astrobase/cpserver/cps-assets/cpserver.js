@@ -967,7 +967,7 @@ var cpv = {
                 var gaia_ok =
                     cpv.currcp.objectinfo.gaia_status.indexOf('ok') != -1;
             }
-            else if cpv.currcp.objectinfo.hasOwnProperty('gaia_neighbors') {
+            else if (cpv.currcp.objectinfo.hasOwnProperty('gaia_neighbors')) {
                 var gaia_ok =
                     (cpv.currcp.objectinfo.gaia_neighbors != null);
             }
