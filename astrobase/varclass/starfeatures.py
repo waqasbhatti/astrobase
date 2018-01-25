@@ -808,8 +808,10 @@ def neighbor_features(objectinfo,
                     gaia_xypos = None
 
 
+                gaia_objlist = np.atleast_1d(gaia_objlist)
+
                 # the first object is likely the match to the object itself
-                if np.atleast_1d(gaia_objlist['dist_arcsec'])[0] < 3.0:
+                if gaia_objlist['dist_arcsec'][0] < 3.0:
 
                     if gaia_objlist.size > 1:
 
@@ -859,7 +861,7 @@ def neighbor_features(objectinfo,
                                '%s of object position (%.3f, %.3f), '
                                'closest object is at %.3f arcsec away' %
                                (3.0, objectinfo['ra'], objectinfo['decl'],
-                                gaia_objlist['dist_arcsec']))
+                                gaia_objlist['dist_arcsec'][0]))
 
                     gaia_status = ('failed: no object within 3 '
                                    'arcsec, closest = %.3f arcsec' %
