@@ -3451,13 +3451,15 @@ def update_checkplotdict_nbrlcs(
                 (mc in lcdict['objectinfo']) and
                 (lcdict['objectinfo'][mc] is not None) and
                 (np.isfinite(lcdict['objectinfo'][mc]))):
+
                 nbrmagcols[mc] = lcdict['objectinfo'][mc]
 
 
         # now calculate the magdiffs
         magdiffs = {}
         for omc in objmagcols:
-            magdiffs[omc] = objmagcols[omc] - nbrmagcols[omc]
+            if omc in nbrmagcols:
+                magdiffs[omc] = objmagcols[omc] - nbrmagcols[omc]
 
 
         # calculate colors and colordiffs
