@@ -661,11 +661,11 @@ def color_classification(colorfeatures, pmfeatures):
 
 
 
-def neighbor_features(objectinfo,
-                      lclist_kdtree,
-                      neighbor_radius_arcsec,
-                      verbose=True):
-    '''Gets several neighbor features:
+def neighbor_gaia_features(objectinfo,
+                           lclist_kdtree,
+                           neighbor_radius_arcsec,
+                           verbose=True):
+    '''Gets several neighbor and GAIA features:
 
     from the given light curve catalog:
     - distance to closest neighbor in arcsec
@@ -674,6 +674,8 @@ def neighbor_features(objectinfo,
     from the GAIA DR1 catalog:
     - distance to closest neighbor in arcsec
     - total number of all neighbors within 2 x neighbor_radius_arcsec
+    - gets the parallax for the object and neighbors
+    - calculates the absolute GAIA mag and G-K color for use in CMDs
 
     objectinfo is the objectinfo dict from an object light curve
 
@@ -779,9 +781,11 @@ def neighbor_features(objectinfo,
                     infd,
                     names=True,
                     delimiter=',',
-                    dtype='U20,f8,f8,f8,f8,f8,f8',
-                    usecols=(0,1,2,3,4,5,6)
+                    dtype='U20,f8,f8,f8,f8,f8,f8,f8,f8',
+                    usecols=(0,1,2,3,4,5,6,7,8)
                 )
+
+            gaia_objlist = np.atleast_1d(gaia_objlist)
 
             if gaia_objlist.size > 0:
 
@@ -808,8 +812,6 @@ def neighbor_features(objectinfo,
                     gaia_xypos = None
 
 
-                gaia_objlist = np.atleast_1d(gaia_objlist)
-
                 # the first object is likely the match to the object itself
                 if gaia_objlist['dist_arcsec'][0] < 3.0:
 
@@ -818,15 +820,22 @@ def neighbor_features(objectinfo,
                         gaia_nneighbors = gaia_objlist[1:].size
 
                         gaia_status = (
-                            'ok: object and %s neighbors found' %
+                            'ok: object found with %s neighbors' %
                             gaia_nneighbors
                         )
 
                         # the first in each array is the object
                         gaia_ids = gaia_objlist['source_id']
-                        gaia_dists = gaia_objlist['dist_arcsec']
                         gaia_mags = gaia_objlist['phot_g_mean_mag']
+                        gaia_parallaxes = gaia_objlist['parallax']
+                        gaia_parallax_errs = gaia_objlist['parallax_error']
 
+                        gaia_absolute_mags = magnitudes.absolute_gaia_magnitude(
+                            gaia_mags, gaia_parallaxes
+                        )
+                        gaiak_colors = gaia_mags - objectinfo['kmag']
+
+                        gaia_dists = gaia_objlist['dist_arcsec']
                         gaia_closest_distarcsec = gaia_objlist['dist_arcsec'][1]
                         gaia_closest_gmagdiff = (
                             gaia_objlist['phot_g_mean_mag'][0] -
@@ -847,9 +856,15 @@ def neighbor_features(objectinfo,
 
                         # the first in each array is the object
                         gaia_ids = gaia_objlist['source_id']
-                        gaia_dists = gaia_objlist['dist_arcsec']
                         gaia_mags = gaia_objlist['phot_g_mean_mag']
+                        gaia_parallaxes = gaia_objlist['parallax']
+                        gaia_parallax_errs = gaia_objlist['parallax_error']
+                        gaia_absolute_mags = magnitudes.gaia_absolute_magnitude(
+                            gaia_mags, gaia_parallaxes
+                        )
+                        gaiak_colors = gaia_mags - objectinfo['kmag']
 
+                        gaia_dists = gaia_objlist['dist_arcsec']
                         gaia_closest_distarcsec = np.nan
                         gaia_closest_gmagdiff = np.nan
 
@@ -870,9 +885,15 @@ def neighbor_features(objectinfo,
                     gaia_nneighbors = np.nan
 
                     gaia_ids = gaia_objlist['source_id']
-                    gaia_dists = gaia_objlist['dist_arcsec']
                     gaia_mags = gaia_objlist['phot_g_mean_mag']
+                    gaia_parallaxes = gaia_objlist['parallax']
+                    gaia_parallax_errs = gaia_objlist['parallax_error']
+                    gaia_absolute_mags = magnitudes.gaia_absolute_magnitude(
+                        gaia_mags, gaia_parallaxes
+                    )
+                    gaiak_colors = gaia_mags - objectinfo['kmag']
 
+                    gaia_dists = gaia_objlist['dist_arcsec']
                     gaia_closest_distarcsec = np.nan
                     gaia_closest_gmagdiff = np.nan
 
@@ -883,12 +904,17 @@ def neighbor_features(objectinfo,
                 LOGERROR('no GAIA objects at this position')
 
                 gaia_status = 'failed: no GAIA objects at this position'
-                gaia_nneighbors = 0
+                gaia_nneighbors = np.nan
                 gaia_ids = None
-                gaia_dists = None
                 gaia_mags = None
-                gaia_xypos = None
 
+                gaia_xypos = None
+                gaia_parallaxes = None
+                gaia_parallax_errs = None
+                gaia_absolute_mags = None
+                gaiak_colors = None
+
+                gaia_dists = None
                 gaia_closest_distarcsec = np.nan
                 gaia_closest_gmagdiff = np.nan
 
@@ -898,8 +924,12 @@ def neighbor_features(objectinfo,
                  'gaia_neighbors':gaia_nneighbors,
                  'gaia_ids':gaia_ids,
                  'gaia_xypos':gaia_xypos,
-                 'gaia_dists':gaia_dists,
                  'gaia_mags':gaia_mags,
+                 'gaia_parallaxes':gaia_parallaxes,
+                 'gaia_parallax_errs':gaia_parallax_errs,
+                 'gaia_absolute_mags':gaia_absolute_mags,
+                 'gaiak_colors':gaiak_colors,
+                 'gaia_dists':gaia_dists,
                  'gaia_closest_distarcsec':gaia_closest_distarcsec,
                  'gaia_closest_gmagdiff':gaia_closest_gmagdiff}
             )
@@ -911,12 +941,16 @@ def neighbor_features(objectinfo,
                                                             objectinfo['decl']))
 
             resultdict.update(
-                {'gaia_status':'TAP query failed',
+                {'gaia_status':'failed: GAIA TAP query failed',
                  'gaia_neighbors':np.nan,
                  'gaia_ids':None,
                  'gaia_xypos':None,
-                 'gaia_dists':None,
                  'gaia_mags':None,
+                 'gaia_parallaxes':None,
+                 'gaia_parallax_errs':None,
+                 'gaia_absolute_mags':None,
+                 'gaiak_colors':None,
+                 'gaia_dists':None,
                  'gaia_closest_distarcsec':np.nan,
                  'gaia_closest_gmagdiff':np.nan}
             )
@@ -927,12 +961,16 @@ def neighbor_features(objectinfo,
         LOGERROR('objectinfo does not have ra or decl')
 
         resultdict.update(
-            {'gaia_status':'no ra/decl for object',
+            {'gaia_status':'failed: no ra/decl for object',
              'gaia_neighbors':np.nan,
              'gaia_ids':None,
              'gaia_xypos':None,
-             'gaia_dists':None,
              'gaia_mags':None,
+             'gaia_parallaxes':None,
+             'gaia_parallax_errs':None,
+             'gaia_absolute_mags':None,
+             'gaiak_colors':None,
+             'gaia_dists':None,
              'gaia_closest_distarcsec':np.nan,
              'gaia_closest_gmagdiff':np.nan}
         )

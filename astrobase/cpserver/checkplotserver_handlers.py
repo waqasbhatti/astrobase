@@ -612,6 +612,16 @@ class CheckplotHandler(tornado.web.RequestHandler):
                         ][key]))):
                         resultdict['result']['objectinfo'][key] = None
 
+                    elif (isinstance(resultdict['result']['objectinfo'][key],
+                                     ndarray)):
+
+                        thisval = resultdict['result']['objectinfo'][key]
+                        thisval = thisval.tolist()
+                        for i, v in enumerate(thisval):
+                            if isinstance(v,float) and (not(np.isfinite(v))):
+                                thisval[i] = None
+                        resultdict['result']['objectinfo'][key] = thisval
+
 
                 # now get the periodograms and phased LCs
                 for key in pfmethods:
