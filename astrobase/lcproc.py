@@ -2758,6 +2758,8 @@ def plot_variability_thresholds(varthreshpkl,
     This makes plots for the variability threshold distributions.
 
     '''
+    import matplotlib
+    matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
     if lcformat not in LCFORM or lcformat is None:
@@ -3950,6 +3952,9 @@ def colormagdiagram_cplist(cplist,
     generated CMD.
 
     '''
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
 
     # first, we'll collect all of the info
     cplist_objectids = []
@@ -3960,21 +3965,39 @@ def colormagdiagram_cplist(cplist,
 
         cpd = _read_checkplot_picklefile(cpf)
         cplist_objectids.append(cpd['objectid'])
-        cplist_mags.append(cpd[yaxis_mag])
-        cplist_colors.append(cpd[color_mag1] - cpd[color_mag2])
+        cplist_mags.append(cpd['objectinfo'][yaxis_mag])
+        cplist_colors.append(cpd['objectinfo'][color_mag1] -
+                             cpd['objectinfo'][color_mag2])
 
     # convert these to arrays
     cplist_objectids = np.array(cplist_objectids)
     cplist_mags = np.array(cplist_mags)
     cplist_colors = np.array(cplist_colors)
 
+    # prepare the outdict and save it
+    cmddict = {'objectids':cplist_objectids,
+               'mags':cplist_mags,
+               'colors':cplist_colors,
+               'kwargs':{'color_mag1':color_mag1,
+                         'color_mag2':color_mag2,
+                         'yaxis_mag':yaxis_mag}}
+    # make the scatter plot
+    plt.scatter(cplist_colors, cplist_mags, rasterized=True)
 
+    # add the axes labels, etc.
 
+    # let's pickle the figure so we can make quick changes to it if needed
+    # http://fredborg-braedstrup.dk/blog/2014/10/10/saving-mpl-figures-using-pickle/
 
+    # save the pickled figure and dict for fast retrieval later
+    if savecmd:
+        with open(savecmd,'wb') as outfd:
+            pickle.dump(cmddict, outfd, pickle.HIGHEST_PROTOCOL)
 
+    # return the cmddict. this can be used by individual checkplot plotters to
+    # add their object highlight, using the TBD checkplot.add_cmdplot fn
 
-
-
+    return cmddict
 
 
 
