@@ -340,7 +340,8 @@ def tap_query(querystr,
                         for chunk in resreq.iter_content(chunk_size=65536):
                             outfd.write(chunk)
 
-                LOGINFO('done. rows in result: %s' % result_nrows)
+                if verbose:
+                    LOGINFO('done. rows in result: %s' % result_nrows)
                 tablefname = cachefname
 
             except Exception as e:
@@ -398,10 +399,12 @@ def tap_query(querystr,
 def objectlist_conesearch(racenter,
                           declcenter,
                           searchradiusarcsec,
+                          table='gaiadr1.gaia_source',
                           columns=['source_id',
                                    'ra','dec',
                                    'phot_g_mean_mag',
-                                   'l','b'],
+                                   'l','b',
+                                   'parallax', 'parallax_error'],
                           returnformat='csv',
                           forcefetch=False,
                           cachedir='~/.astrobase/gaia-cache',
@@ -434,20 +437,20 @@ def objectlist_conesearch(racenter,
     query = (
         "select {columns}, "
         "(DISTANCE(POINT('ICRS', "
-        "gaiadr1.gaia_source.ra, gaiadr1.gaia_source.dec), "
+        "{table}.ra, {table}.dec), "
         "POINT('ICRS', {ra_center}, {decl_center})))*3600.0 AS dist_arcsec "
-        "from gaiadr1.gaia_source where "
-        "CONTAINS(POINT('ICRS',gaiadr1.gaia_source.ra,"
-        "gaiadr1.gaia_source.dec),"
+        "from {table} where "
+        "CONTAINS(POINT('ICRS',{table}.ra,"
+        "{table}.dec),"
         "CIRCLE('ICRS',{ra_center},{decl_center},{search_radius}))=1 "
         "ORDER by dist_arcsec asc "
     )
 
-    formatted_query = query.format(ra_center=racenter,
+    formatted_query = query.format(table=table,
+                                   ra_center=racenter,
                                    decl_center=declcenter,
                                    search_radius=searchradiusarcsec/3600.0,
                                    columns=', '.join(columns))
-
 
     return tap_query(formatted_query,
                      returnformat=returnformat,
@@ -461,10 +464,12 @@ def objectlist_conesearch(racenter,
 
 
 def objectlist_radeclbox(radeclbox,
+                         table='gaiadr1.gaia_source',
                          columns=['source_id',
                                   'ra','dec',
                                   'phot_g_mean_mag',
-                                  'l','b'],
+                                  'l','b',
+                                  'parallax, parallax_error'],
                          returnformat='csv',
                          forcefetch=False,
                          cachedir='~/.astrobase/gaia-cache',
@@ -496,10 +501,8 @@ def objectlist_radeclbox(radeclbox,
     # this was generated using the awesome query generator at:
     # https://gea.esac.esa.int/archive/
     query = (
-        "select {columns} "
-        "from gaiadr1.gaia_source where "
-        "CONTAINS(POINT('ICRS',gaiadr1.gaia_source.ra,"
-        "gaiadr1.gaia_source.dec),"
+        "select {columns} from {table} where "
+        "CONTAINS(POINT('ICRS',{table}.ra, {table}.dec),"
         "BOX('ICRS',{ra_center},{decl_center},{ra_width},{decl_height}))=1"
     )
 
@@ -509,7 +512,8 @@ def objectlist_radeclbox(radeclbox,
     ra_width = ra_max - ra_min
     decl_height = decl_max - decl_min
 
-    formatted_query = query.format(columns=', '.join(columns),
+    formatted_query = query.format(table=table,
+                                   columns=', '.join(columns),
                                    ra_center=ra_center,
                                    decl_center=decl_center,
                                    ra_width=ra_width,
