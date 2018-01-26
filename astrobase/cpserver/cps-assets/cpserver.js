@@ -499,6 +499,8 @@ var cpv = {
             cputils.b64_to_image(cpv.currcp.finderchart,
                                  '#finderchart');
 
+
+            // get the HAT stations
             var hatstations = cpv.currcp.objectinfo.stations;
             if (hatstations != undefined && hatstations) {
 
@@ -509,6 +511,7 @@ var cpv = {
                 var splitstations = '';
             }
 
+            // get the number of detections
             var objndet = cpv.currcp.objectinfo.ndet;
 
             if (objndet == undefined) {
@@ -521,6 +524,13 @@ var cpv = {
                 '</strong><br>' +
                 '<strong>LC points:</strong> ' + objndet;
             $('#hatinfo').html(hatinfo);
+
+
+            // get the GAIA status (useful for G mags, colors, etc.)
+            var gaia_ok =
+                cpv.currcp.objectinfo.gaia_status.indexOf('ok') != -1;
+            var gaia_message =
+                cpv.currcp.objectinfo.gaia_status.split(':')[1];
 
             //
             // get the coordinates
@@ -606,8 +616,20 @@ var cpv = {
                 objectgl + ', ' + objectgb + '<br>' +
                 '<strong>Total PM:</strong> ' + objectpm + '<br>' +
                 '<strong>Reduced PM<sub>J</sub>:</strong> ' + objectrpmj;
-            $('#coordspm').html(coordspm);
 
+            // see if we can get the GAIA parallax as well
+            if (gaia_ok && cpv.currcp.objectinfo.gaia_parallaxes[0]) {
+
+                var gaia_parallax = math.format(
+                    cpv.currcp.objectinfo.gaia_parallaxes[0], 5
+                );
+                coordspm = coordspm + '<br>' +
+                    '<strong>GAIA parallax:</strong> ' +
+                    gaia_parallax + 'mas';
+
+            }
+
+            $('#coordspm').html(coordspm);
 
             //
             // handle the mags
@@ -649,6 +671,17 @@ var cpv = {
                                      ' via JHK transform)');
             }
 
+            if (gaia_ok) {
+                var gaiamag = cpv.currcp.objectinfo.gaia_mags[0];
+                var gaiakcolor = cpv.currcp.objectinfo.gaiak_colors[0];
+                var gaiaabsmag = cpv.currcp.objectinfo.gaia_absolute_mags[0];
+            }
+            else {
+                var gaiamag = null;
+                var gaiakcolor = null;
+                var gaiaabsmag = null;
+            }
+
             var mags = '<strong><em>ugriz</em>:</strong> ' +
                 math.format(cpv.currcp.objectinfo.sdssu,5) + ', ' +
                 math.format(cpv.currcp.objectinfo.sdssg,5) + ', ' +
@@ -661,7 +694,11 @@ var cpv = {
                 math.format(cpv.currcp.objectinfo.kmag,5) + '<br>' +
                 '<strong><em>BV</em>:</strong> ' +
                 math.format(cpv.currcp.objectinfo.bmag,5) + ', ' +
-                math.format(cpv.currcp.objectinfo.vmag,5);
+                math.format(cpv.currcp.objectinfo.vmag,5) + '<br>' +
+                '<strong><em>GAIA G</em>:</strong> ' +
+                math.format(gaiamag,5) + ', ' +
+                '<strong><em>GAIA M<sub>G</sub></em>:</strong> ' +
+                math.format(gaiaabsmag,5);
             $('#mags').html(mags);
 
             //
@@ -728,8 +765,10 @@ var cpv = {
 
             }
 
+
+            // neighbors
             if (cpv.currcp.objectinfo.neighbors != undefined ||
-                cpv.currcp.objectinfo.gaia_neighbors != undefined) {
+                cpv.currcp.objectinfo.gaia_ids.length > 0 ) {
 
                 if (cpv.currcp.objectinfo.neighbors > 0) {
 
@@ -741,25 +780,28 @@ var cpv = {
                         '&Prime;<br>';
                 }
                 else {
-                    var formatted_neighbors = '';
+                    var formatted_neighbors =
+                        '<strong><em>from LCs in collection</em>:</strong> 0<br>';
                 }
 
-                if (cpv.currcp.objectinfo.gaia_neighbors > 0) {
+                if (gaia_ok) {
                     var formatted_gaia =
                         '<strong><em>from GAIA</em>:</strong> ' +
-                        cpv.currcp.objectinfo.gaia_neighbors + '<br>' +
+                        (cpv.currcp.objectinfo.gaia_ids.length - 1) + '<br>' +
                         '<em>closest distance</em>: ' +
                         math.format(
-                            cpv.currcp.objectinfo.gaia_closest_distarcsec,4
+                            cpv.currcp.objectinfo.gaia_closest_distarcsec, 4
                         ) + '&Prime;<br>' +
                         '<em>closest G mag (obj - nbr)</em>: ' +
                         math.format(
-                            cpv.currcp.objectinfo.gaia_closest_gmagdiff,4
+                            cpv.currcp.objectinfo.gaia_closest_gmagdiff, 4
                         ) + ' mag';
 
                 }
                 else {
-                    var formatted_gaia = '';
+                    var formatted_gaia =
+                        '<strong><em>GAIA query failed</em>:</strong> ' +
+                        gaia_message;
                 }
 
                 $('#objectinfo-extra')
@@ -773,6 +815,7 @@ var cpv = {
                             "</td>" +
                             "</tr>"
                     );
+
 
             }
 
@@ -963,18 +1006,6 @@ var cpv = {
             }
 
             // 3. update the GAIA neighbors
-            if (cpv.currcp.objectinfo.hasOwnProperty('gaia_status')) {
-                var gaia_ok =
-                    cpv.currcp.objectinfo.gaia_status.indexOf('ok') != -1;
-            }
-            else if (cpv.currcp.objectinfo.hasOwnProperty('gaia_neighbors')) {
-                var gaia_ok =
-                    (cpv.currcp.objectinfo.gaia_neighbors != null);
-            }
-            else {
-                var gaia_ok = false;
-            }
-
             if (gaia_ok) {
 
                 // for each gaia neighbor, put in a table row
@@ -995,15 +1026,34 @@ var cpv = {
                             cpv.currcp.objectinfo.gaia_xypos[gi][1] +
                             '" >' +
                             '<td>obj: ' + cpv.currcp.objectinfo.gaia_ids[gi] +
-                            '</td>' + '<td>' +
-                            math.format(cpv.currcp.objectinfo.gaia_mags[gi], 3) +
-                            '</td>' + '<td>' + math.format(
-                                cpv.currcp.objectinfo.gaia_dists[gi],
-                                3
-                            ) + '</td>' + '</tr>';
+                            '</td>' +
+                            '<td>' + math.format(
+                                cpv.currcp.objectinfo.gaia_dists[gi], 3
+                            ) +
+                            '</td>' +
+                            '<td>' +
+                            math.format(
+                                cpv.currcp.objectinfo.gaia_parallaxes[gi], 3
+                            ) + ' &plusmn; ' +
+                            math.format(
+                                cpv.currcp.objectinfo.gaia_parallax_errs[gi], 3
+                            ) +
+                            '</td>' +
+                            '<td>' +
+                            math.format(
+                                cpv.currcp.objectinfo.gaia_mags[gi], 3
+                            ) +
+                            '</td>' +
+                            '<td>' +
+                            math.format(
+                                cpv.currcp.objectinfo.gaia_absolute_mags[gi], 3
+                            ) +
+                            '</td>' +
+                            '</tr>';
                     }
 
                     else {
+
                         var rowhtml = '<tr class="gaia-objectlist-row" ' +
                             'data-gaiaid="' +
                             cpv.currcp.objectinfo.gaia_ids[gi] +
@@ -1013,14 +1063,64 @@ var cpv = {
                             cpv.currcp.objectinfo.gaia_xypos[gi][1] +
                             '" >' +
                             '<td>' + cpv.currcp.objectinfo.gaia_ids[gi] +
-                            '</td>' + '<td>' +
-                            math.format(cpv.currcp.objectinfo.gaia_mags[gi], 3) +
-                            '</td>' + '<td>' + math.format(
-                                cpv.currcp.objectinfo.gaia_dists[gi],
-                                3
-                            ) + '</td>' + '</tr>';
+                            '</td>' +
+                            '<td>' + math.format(
+                                cpv.currcp.objectinfo.gaia_dists[gi], 3
+                            ) +
+                            '</td>' +
+                            '<td>' +
+                            math.format(
+                                cpv.currcp.objectinfo.gaia_parallaxes[gi], 3
+                            ) + ' &plusmn; ' +
+                            math.format(
+                                cpv.currcp.objectinfo.gaia_parallax_errs[gi], 3
+                            ) +
+                            '</td>' +
+                            '<td>' +
+                            math.format(
+                                cpv.currcp.objectinfo.gaia_mags[gi], 3
+                            ) +
+                            '</td>' +
+                            '<td>' +
+                            math.format(
+                                cpv.currcp.objectinfo.gaia_absolute_mags[gi], 3
+                            ) +
+                            '</td>' +
+                            '</tr>';
+
                     }
 
+                    $('#gaia-neighbor-tbody').append(rowhtml);
+
+                }
+
+            }
+
+            // if GAIA xmatch failed, fill in the table without special
+            // formatting if possible
+            else {
+
+                // for each gaia neighbor, put in a table row
+                var gi = 0;
+
+                // put in any rows of neighbors if there are any
+                for (gi; gi < cpv.currcp.objectinfo.gaia_ids.length; gi++) {
+
+                    var rowhtml = '<tr class="gaia-objectlist-row" ' +
+                        'data-gaiaid="' +
+                        cpv.currcp.objectinfo.gaia_ids[gi] +
+                        '" data-xpos="' +
+                        cpv.currcp.objectinfo.gaia_xypos[gi][0] +
+                        '" data-ypos="' +
+                        cpv.currcp.objectinfo.gaia_xypos[gi][1] +
+                        '" >' +
+                        '<td>' + cpv.currcp.objectinfo.gaia_ids[gi] +
+                        '</td>' + '<td>' +
+                        math.format(cpv.currcp.objectinfo.gaia_mags[gi], 3) +
+                        '</td>' + '<td>' + math.format(
+                            cpv.currcp.objectinfo.gaia_dists[gi],
+                            3
+                        ) + '</td>' + '</tr>';
                     $('#gaia-neighbor-tbody').append(rowhtml);
 
                 }
@@ -1272,7 +1372,7 @@ var cpv = {
                                     '<td>' +
                                         math.format(
                                             xmk['info'][tablecolkeys[tci]],
-                                            4
+                                            5
                                         ) +
                                         '</td>'
                                 );

@@ -452,16 +452,7 @@
 
             <div class="row tool-header-panel">
 
-              <div class="col-sm-6">
-                <h5><span id="lcc-neighbor-count">0</span> LC collection neighbor(s) within <span id="lcc-neighbor-maxdist"></span>&Prime;</h5>
-
-                <p>Neighbors for this object from this light curve collection are listed below in order of increasing distance.
-                  Their unphased LC and phased LCs using the same period-finder methods, and best period and fold
-                  epoch, as for the object are also shown.</p>
-
-              </div>
-
-              <div class="col-sm-6 neighbor-table-row">
+              <div class="col-sm-7 neighbor-table-row">
 
                 <h5><span id="gaia-neighbor-count">0</span> GAIA neighbor(s) within <span id="gaia-neighbor-maxdist"></span>&Prime;</h5>
 
@@ -469,14 +460,25 @@
                   <thead>
                     <tr>
                       <th>GAIA source id</th>
-                      <th>G magnitude</th>
-                      <th>distance [arcsec]</th>
+                      <th>distance<br>[arcsec]</th>
+                      <th>parallax<br>[mas]</th>
+                      <th><em>G<br>[mag]</em></th>
+                      <th><em>M<sub>G</sub><br>[mag]</em></th>
                     </tr>
                   </thead>
                   <tbody id="gaia-neighbor-tbody">
 
                   </tbody>
                 </table>
+
+              </div>
+
+              <div class="col-sm-5">
+                <h5><span id="lcc-neighbor-count">0</span> LC collection neighbor(s) within <span id="lcc-neighbor-maxdist"></span>&Prime;</h5>
+
+                <p>Neighbors for this object from this light curve collection are listed below in order of increasing distance.
+                  Their unphased LC and phased LCs using the same period-finder methods, and best period and fold
+                  epoch, as for the object are also shown.</p>
 
               </div>
 
