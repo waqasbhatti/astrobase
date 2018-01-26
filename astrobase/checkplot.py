@@ -173,7 +173,7 @@ from .lcmath import phase_magseries, phase_bin_magseries, \
 from .varbase.lcfit import spline_fit_magseries
 from .varclass.varfeatures import all_nonperiodic_features
 from .varclass.starfeatures import coord_features, color_features, \
-    color_classification, neighbor_features
+    color_classification, neighbor_gaia_features
 from .plotbase import skyview_stamp, \
     PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
 from .coordutils import total_proper_motion, reduced_proper_motion
@@ -1531,9 +1531,9 @@ def _pkl_finder_objectinfo(objectinfo,
         # next, get the color classification
         colorclass = color_classification(colorfeat, coordfeat)
 
-        # finally, get the neighbor features
-        nbrfeat = neighbor_features(objectinfo, kdt, nbrradiusarcsec,
-                                    verbose=False)
+        # get the neighbor features and GAIA info
+        nbrfeat = neighbor_gaia_features(objectinfo, kdt, nbrradiusarcsec,
+                                         verbose=False)
 
         # update the objectinfo dict with everything
         objectinfo.update(colorfeat)

@@ -681,6 +681,7 @@ def filter_lclist(listpickle,
                   externalcolnames=['objectid','ra','decl'],
                   externalcoldtypes='U20,f8,f8',
                   externalcolsep=None,
+                  externalcommentchar='#',
                   conesearch=None,
                   columnfilters=None,
                   conesearchworkers=1,
@@ -789,7 +790,8 @@ def filter_lclist(listpickle,
                                    usecols=externalcolnums,
                                    delimiter=externalcolsep,
                                    names=externalcolnames,
-                                   dtype=externalcoldtypes)
+                                   dtype=externalcoldtypes,
+                                   comments=externalcommentchar)
 
             ext_cosdecl = np.cos(np.radians(extcat['decl']))
             ext_sindecl = np.sin(np.radians(extcat['decl']))
@@ -971,6 +973,7 @@ def filter_lclist(listpickle,
         return filteredlcfnames, filteredobjectids, ext_matching_objects
     else:
         return filteredlcfnames, filteredobjectids
+
 
 
 ##########################
@@ -3912,6 +3915,60 @@ def xmatch_cpdir_external_catalogs(cpdir,
         updateexisting=updateexisting,
         resultstodir=resultstodir
     )
+
+
+
+
+def colormagdiagram_cplist(cplist,
+                           color_mag1='gaiamag',
+                           color_mag2 ='kmag',
+                           yaxis_mag='gaia_absmag',
+                           savecmd=None):
+    '''This makes a CMD for each checkplot highlighting the object in
+    the individual checkplot.
+
+    cplist is a list of checkplot pickles to process.
+
+    color_mag1 and color_mag2 are the keys in each checkplot's objectinfo dict
+    to use for the color x-axis: color = color_mag1 - color_mag2
+
+    yaxis_mag is the key in each checkplot's objectinfo dict to use as the
+    (absolute) magnitude y axis.
+
+    The CMDs for each checkplot will be written back to the checkplot objectinfo
+    dict as a base64 encoded image so they can be displayed easily.
+
+    If savecmd is not None, then it's the file path to a pickle where this
+    function will save all the colors, mags, and the base64 encoded image of the
+    generated CMD.
+
+    '''
+
+    # first, we'll collect all of the info
+    cplist_objectids = []
+    cplist_mags = []
+    cplist_colors = []
+
+    for cp in cplist:
+
+        cpd = _read_checkplot_picklefile(cpf)
+        cplist_objectids.append(cpd['objectid'])
+        cplist_mags.append(cpd[yaxis_mag])
+        cplist_colors.append(cpd[color_mag1] - cpd[color_mag2])
+
+    # convert these to arrays
+    cplist_objectids = np.array(cplist_objectids)
+    cplist_mags = np.array(cplist_mags)
+    cplist_colors = np.array(cplist_colors)
+
+
+
+
+
+
+
+
+
 
 
 
