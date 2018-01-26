@@ -859,7 +859,7 @@ def neighbor_gaia_features(objectinfo,
                         gaia_mags = gaia_objlist['phot_g_mean_mag']
                         gaia_parallaxes = gaia_objlist['parallax']
                         gaia_parallax_errs = gaia_objlist['parallax_error']
-                        gaia_absolute_mags = magnitudes.gaia_absolute_magnitude(
+                        gaia_absolute_mags = magnitudes.absolute_gaia_magnitude(
                             gaia_mags, gaia_parallaxes
                         )
                         gaiak_colors = gaia_mags - objectinfo['kmag']
@@ -888,7 +888,7 @@ def neighbor_gaia_features(objectinfo,
                     gaia_mags = gaia_objlist['phot_g_mean_mag']
                     gaia_parallaxes = gaia_objlist['parallax']
                     gaia_parallax_errs = gaia_objlist['parallax_error']
-                    gaia_absolute_mags = magnitudes.gaia_absolute_magnitude(
+                    gaia_absolute_mags = magnitudes.absolute_gaia_magnitude(
                         gaia_mags, gaia_parallaxes
                     )
                     gaiak_colors = gaia_mags - objectinfo['kmag']
