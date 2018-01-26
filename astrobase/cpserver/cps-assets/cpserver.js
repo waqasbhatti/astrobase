@@ -625,7 +625,7 @@ var cpv = {
                 );
                 coordspm = coordspm + '<br>' +
                     '<strong>GAIA parallax:</strong> ' +
-                    gaia_parallax + 'mas';
+                    gaia_parallax + ' mas';
 
             }
 

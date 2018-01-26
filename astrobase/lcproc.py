@@ -3352,10 +3352,10 @@ def update_checkplotdict_nbrlcs(
     for mc in ('bmag','vmag','rmag','imag','jmag','hmag','kmag',
                'sdssu','sdssg','sdssr','sdssi','sdssz'):
         if (mc in checkplotdict['objectinfo'] and
-            checkplot['objectinfo'][mc] is not None and
-            np.isfinite(checkplot['objectinfo'][mc])):
+            checkplotdict['objectinfo'][mc] is not None and
+            np.isfinite(checkplotdict['objectinfo'][mc])):
 
-            objmagcols[mc] = checkplot['objectinfo'][mc]
+            objmagcols[mc] = checkplotdict['objectinfo'][mc]
 
 
     # if there are actually neighbors, go through them in order
@@ -3792,8 +3792,8 @@ def parallel_cp_pfdir(pfpickledir,
 
     pfpicklelist = sorted(glob.glob(os.path.join(pfpickledir, pfpickleglob)))
 
-    LOGINFO('found %s period-finding pickles, running cp...' % len(pfpicklelist))
-
+    LOGINFO('found %s period-finding pickles, running cp...' %
+            len(pfpicklelist))
 
     return parallel_cp(pfpicklelist,
                        outdir,
