@@ -4463,4 +4463,4 @@ def add_cmds_cpdir(cpdir, cmdpkl,
     return add_cmds_cplist(cplist,
                            cmdpkl,
                            require_cmd_magcolor=require_cmd_magcolor,
-                           save_cmd_pngs=False)
+                           save_cmd_pngs=save_cmd_pngs)
