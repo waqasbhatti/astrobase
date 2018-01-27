@@ -4354,6 +4354,9 @@ def add_cmd_to_checkplot(cpx, cmdpkl,
             thiscmd_label = '%s-%s/%s' % (c1,
                                           c2,
                                           ym)
+            thiscmd_title = r'%s-%s/%s' % (CMD_LABELS[c1],
+                                           CMD_LABELS[c2],
+                                           CMD_LABELS[ym])
 
             # make the scatter plot
             fig = plt.figure(figsize=(10,8))
@@ -4374,7 +4377,7 @@ def add_cmd_to_checkplot(cpx, cmdpkl,
 
             plt.xlabel(r'$%s - %s$' % (CMD_LABELS[c1], CMD_LABELS[c2]))
             plt.ylabel(r'$%s$' % CMD_LABELS[ym])
-            plt.title('%s color-magnitude diagram' % thiscmd_label)
+            plt.title('%s - $%s$ CMD' % (cpdict['objectid'], thiscmd_title))
             plt.gca().invert_yaxis()
 
             # now save the figure to strio and put it back in the checkplot
