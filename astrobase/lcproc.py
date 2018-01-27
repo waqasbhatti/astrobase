@@ -3928,11 +3928,29 @@ def xmatch_cpdir_external_catalogs(cpdir,
 
 
 
+CMD_LABELS = {
+    'bmag':r'B',
+    'vmag':r'V',
+    'rmag':r'R',
+    'imag':r'I',
+    'jmag':r'J',
+    'hmag':r'H',
+    'kmag':r'K_s',
+    'sdssu':r'u',
+    'sdssg':r'g',
+    'sdssr':r'r',
+    'sdssi':r'i',
+    'sdssz':r'z',
+    'gaiamag':r'G',
+    'gaia_absmag':r'M_G',
+}
+
+
 def colormagdiagram_cplist(cplist,
+                           outpkl,
                            color_mag1='gaiamag',
                            color_mag2 ='kmag',
-                           yaxis_mag='gaia_absmag',
-                           savecmd=None):
+                           yaxis_mag='gaia_absmag'):
     '''This makes a CMD for each checkplot highlighting the object in
     the individual checkplot.
 
@@ -3982,23 +4000,26 @@ def colormagdiagram_cplist(cplist,
                          'color_mag2':color_mag2,
                          'yaxis_mag':yaxis_mag}}
     # make the scatter plot
+    fig = plt.figure(figsize=(10,8))
     plt.scatter(cplist_colors, cplist_mags, rasterized=True)
-
-    # add the axes labels, etc.
+    plt.xlabel(r'$%s - %s$' % (CMD_LABELS[color_mag1], CMD_LABELS[color_mag2]))
+    plt.ylabel(r'$%s$' % (CMD_LABELS[yaxis_mag],))
+    plt.title('color-magnitude diagram')
 
     # let's pickle the figure so we can make quick changes to it if needed
     # http://fredborg-braedstrup.dk/blog/2014/10/10/saving-mpl-figures-using-pickle/
+    cmddict = cmddict['cmdfig'] = fig
 
     # save the pickled figure and dict for fast retrieval later
-    if savecmd:
-        with open(savecmd,'wb') as outfd:
-            pickle.dump(cmddict, outfd, pickle.HIGHEST_PROTOCOL)
+    with open(savecmd,'wb') as outfd:
+        pickle.dump(cmddict, outfd, pickle.HIGHEST_PROTOCOL)
+
+    plt.close('all')
 
     # return the cmddict. this can be used by individual checkplot plotters to
     # add their object highlight, using the TBD checkplot.add_cmdplot fn
 
     return cmddict
-
 
 
 
