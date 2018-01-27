@@ -3929,20 +3929,21 @@ def xmatch_cpdir_external_catalogs(cpdir,
 
 
 CMD_LABELS = {
-    'bmag':r'B',
-    'vmag':r'V',
-    'rmag':r'R',
-    'imag':r'I',
-    'jmag':r'J',
-    'hmag':r'H',
-    'kmag':r'K_s',
-    'sdssu':r'u',
-    'sdssg':r'g',
-    'sdssr':r'r',
-    'sdssi':r'i',
-    'sdssz':r'z',
-    'gaiamag':r'G',
-    'gaia_absmag':r'M_G',
+    'bmag':'B',
+    'vmag':'V',
+    'rmag':'',
+    'imag':'I',
+    'jmag':'J',
+    'hmag':'H',
+    'kmag':'K_s',
+    'sdssu':'u',
+    'sdssg':'g',
+    'sdss':'r',
+    'sdssi':'i',
+    'sdssz':'z',
+    'gaiamag':'G',
+    'gaia_absmag':'M_G',
+    'rpmj':'\mathrm{RPM}_{J}',
 }
 
 
@@ -3983,9 +3984,22 @@ def colormagdiagram_cplist(cplist,
 
         cpd = _read_checkplot_picklefile(cpf)
         cplist_objectids.append(cpd['objectid'])
-        cplist_mags.append(cpd['objectinfo'][yaxis_mag])
-        cplist_colors.append(cpd['objectinfo'][color_mag1] -
-                             cpd['objectinfo'][color_mag2])
+
+
+        if (yaxis_mag in cpd['objectinfo'] and
+            cpd['objectinfo'][yaxis_mag] is not None):
+            cplist_mags.append(cpd['objectinfo'][yaxis_mag])
+        else:
+            cplist_mags.append(np.nan)
+
+        if (color_mag1 in cpd['objectinfo'] and
+            cpd['objectinfo'][color_mag1] is not None and
+            color_mag2 in cpd['objectinfo'] and
+            cpd['objectinfo'][color_mag2] is not None):
+            cplist_colors.append(cpd['objectinfo'][color_mag1] -
+                                 cpd['objectinfo'][color_mag2])
+        else:
+            cplist_colors.append(np.nan)
 
     # convert these to arrays
     cplist_objectids = np.array(cplist_objectids)
