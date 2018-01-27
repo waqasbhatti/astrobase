@@ -81,16 +81,23 @@ import os.path
 import sys
 try:
     import cPickle as pickle
+    from cStringIO import StringIO as strio
 except:
     import pickle
+    from io import BytesIO as strio
 import gzip
 import glob
 import shutil
 import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
+import base64
 
 import numpy as np
 import scipy.spatial as sps
+
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 try:
     from tqdm import tqdm
@@ -977,6 +984,227 @@ def filter_lclist(listpickle,
 
 
 ##########################
+## BINNING LIGHT CURVES ##
+##########################
+
+def timebinlc(lcfile,
+              binsizesec,
+              outdir=None,
+              lcformat='hat-sql',
+              timecols=None,
+              magcols=None,
+              errcols=None,
+              minbinelems=7):
+
+    '''
+    This bins the given light curve file in time using binsizesec.
+
+    '''
+
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    (fileglob, readerfunc, dtimecols, dmagcols,
+     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+    # override the default timecols, magcols, and errcols
+    # using the ones provided to the function
+    if timecols is None:
+        timecols = dtimecols
+    if magcols is None:
+        magcols = dmagcols
+    if errcols is None:
+        errcols = derrcols
+
+    # get the LC into a dict
+    lcdict = readerfunc(lcfile)
+    if isinstance(lcdict, tuple) and isinstance(lcdict[0],dict):
+        lcdict = lcdict[0]
+
+    # skip already binned light curves
+    if 'binned' in lcdict:
+        LOGERROR('this light curve appears to be binned already, skipping...')
+        return None
+
+    for tcol, mcol, ecol in zip(timecols, magcols, errcols):
+
+        # dereference the columns and get them from the lcdict
+        if '.' in tcol:
+            tcolget = tcol.split('.')
+        else:
+            tcolget = [tcol]
+        times = dict_get(lcdict, tcolget)
+
+        if '.' in mcol:
+            mcolget = mcol.split('.')
+        else:
+            mcolget = [mcol]
+        mags = dict_get(lcdict, mcolget)
+
+        if '.' in ecol:
+            ecolget = ecol.split('.')
+        else:
+            ecolget = [ecol]
+        errs = dict_get(lcdict, ecolget)
+
+        # normalize here if not using special normalization
+        if normfunc is None:
+            ntimes, nmags = normalize_magseries(
+                times, mags,
+                magsarefluxes=magsarefluxes
+            )
+
+            times, mags, errs = ntimes, nmags, errs
+
+        # now bin the mag series as requested
+        binned = time_bin_magseries_with_errs(times,
+                                              mags,
+                                              errs,
+                                              binsize=binsizesec,
+                                              minbinelems=minbinelems)
+
+        # put this into the special binned key of the lcdict
+
+        # we use mcolget[-1] here so we can deal with dereferenced magcols like
+        # sap.sap_flux or pdc.pdc_sapflux
+        if 'binned' not in lcdict:
+            lcdict['binned'] = {mcolget[-1]: {'times':binned['binnedtimes'],
+                                              'mags':binned['binnedmags'],
+                                              'errs':binned['binnederrs'],
+                                              'nbins':binned['nbins'],
+                                              'timebins':binned['jdbins'],
+                                              'binsizesec':binsizesec}}
+
+        else:
+            lcdict['binned'][mcolget[-1]] = {'times':binned['binnedtimes'],
+                                             'mags':binned['binnedmags'],
+                                             'errs':binned['binnederrs'],
+                                             'nbins':binned['nbins'],
+                                             'timebins':binned['jdbins'],
+                                             'binsizesec':binsizesec}
+
+
+    # done with binning for all magcols, now generate the output file
+    # this will always be a pickle
+
+    if outdir is None:
+        outdir = os.path.dirname(lcfile)
+
+    outfile = os.path.join(outdir, '%s-binned%.1fsec-%s.pkl' %
+                           (lcdict['objectid'], binsizesec, lcformat))
+
+    with open(outfile, 'wb') as outfd:
+        pickle.dump(lcdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
+
+    return outfile
+
+
+
+def timebinlc_worker(task):
+    '''
+    This is a parallel worker for the function below.
+
+    task[0] = lcfile
+    task[1] = binsizesec
+    task[3] = {'outdir','lcformat','timecols','magcols','errcols','minbinelems'}
+
+    '''
+
+    lcfile, binsizesec, kwargs = task
+
+    try:
+        binnedlc = timebinlc(lcfile, binsizesec, **kwargs)
+        LOGINFO('%s binned using %s sec -> %s OK' %
+                (lcfile, binsizesec, binnedlc))
+    except Exception as e:
+        LOGEXCEPTION('failed to bin %s using binsizesec = %s' % (lcfile,
+                                                                 binsizesec))
+        return None
+
+
+
+def parallel_timebin(lclist,
+                     binsizesec,
+                     maxobjects=None,
+                     outdir=None,
+                     lcformat='hat-sql',
+                     timecols=None,
+                     magcols=None,
+                     errcols=None,
+                     minbinelems=7,
+                     nworkers=32,
+                     maxworkertasks=1000):
+    '''
+    This bins all the light curves in lclist using binsizesec.
+
+    '''
+
+    if outdir and not os.path.exists(outdir):
+        os.mkdir(outdir)
+
+    if maxobjects is not None:
+        lclist = lclist[:maxobjects]
+
+    tasks = [(x, binsizesec, {'outdir':outdir,
+                              'lcformat':lcformat,
+                              'timecols':timecols,
+                              'magcols':magcols,
+                              'errcols':errcols,
+                              'minbinelems':minbinelems}) for x in lclist]
+
+    pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
+    results = pool.map(timebinlc_worker, tasks)
+    pool.close()
+    pool.join()
+
+    resdict = {os.path.basename(x):y for (x,y) in zip(lclist, results)}
+
+    return resdict
+
+
+
+def parallel_timebin_lcdir(lcdir,
+                           binsizesec,
+                           maxobjects=None,
+                           outdir=None,
+                           lcformat='hat-sql',
+                           timecols=None,
+                           magcols=None,
+                           errcols=None,
+                           minbinelems=7,
+                           nworkers=32,
+                           maxworkertasks=1000):
+    '''
+    This bins all the light curves in lcdir using binsizesec.
+
+    '''
+
+    # get the light curve glob associated with specified lcformat
+    if lcformat not in LCFORM or lcformat is None:
+        LOGERROR('unknown light curve format specified: %s' % lcformat)
+        return None
+
+    (fileglob, readerfunc, dtimecols, dmagcols,
+     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+    lclist = sorted(glob.glob(os.path.join(lcdir, fileglob)))
+
+    return parallel_timebin_lclist(lclist,
+                                   binsizesec,
+                                   maxobjects=maxobjects,
+                                   outdir=outdir,
+                                   lcformat=lcformat,
+                                   timecols=timecols,
+                                   magcols=magcols,
+                                   errcols=errcols,
+                                   minbinelems=minbinelems,
+                                   nworkers=nworkers,
+                                   maxworkertasks=maxworkertasks)
+
+
+
+##########################
 ## VARIABILITY FEATURES ##
 ##########################
 
@@ -1613,6 +1841,7 @@ def periodicfeatures_worker(task):
     except Exception as e:
 
         LOGEXCEPTION('failed to get periodicfeatures for %s' % pfpickle)
+
 
 
 def serial_periodicfeatures(pfpkl_list,
@@ -2758,10 +2987,6 @@ def plot_variability_thresholds(varthreshpkl,
     This makes plots for the variability threshold distributions.
 
     '''
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-
     if lcformat not in LCFORM or lcformat is None:
         LOGERROR('unknown light curve format specified: %s' % lcformat)
         return None
@@ -3821,6 +4046,7 @@ def parallel_cp_pfdir(pfpickledir,
                        nworkers=nworkers)
 
 
+
 ###############################
 ## ADDING INFO TO CHECKPLOTS ##
 ###############################
@@ -3949,32 +4175,20 @@ CMD_LABELS = {
 
 def colormagdiagram_cplist(cplist,
                            outpkl,
-                           color_mag1='gaiamag',
-                           color_mag2 ='kmag',
-                           yaxis_mag='gaia_absmag'):
-    '''This makes a CMD for each checkplot highlighting the object in
-    the individual checkplot.
+                           color_mag1=['gaiamag','sdssg'],
+                           color_mag2=['kmag','kmag'],
+                           yaxis_mag=['gaia_absmag','rpmj']):
+    '''This makes a CMD for all objects in cplist.
 
     cplist is a list of checkplot pickles to process.
 
-    color_mag1 and color_mag2 are the keys in each checkplot's objectinfo dict
-    to use for the color x-axis: color = color_mag1 - color_mag2
+    color_mag1 and color_mag2 are lists of keys in each checkplot's objectinfo
+    dict to use for the color x-axes: color = color_mag1 - color_mag2
 
-    yaxis_mag is the key in each checkplot's objectinfo dict to use as the
-    (absolute) magnitude y axis.
-
-    The CMDs for each checkplot will be written back to the checkplot objectinfo
-    dict as a base64 encoded image so they can be displayed easily.
-
-    If savecmd is not None, then it's the file path to a pickle where this
-    function will save all the colors, mags, and the base64 encoded image of the
-    generated CMD.
+    yaxis_mag is a list of keys in each checkplot's objectinfo dict to use as
+    the (absolute) magnitude y axes.
 
     '''
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-
     # first, we'll collect all of the info
     cplist_objectids = []
     cplist_mags = []
@@ -3985,48 +4199,42 @@ def colormagdiagram_cplist(cplist,
         cpd = _read_checkplot_picklefile(cpf)
         cplist_objectids.append(cpd['objectid'])
 
+        thiscp_mags = []
+        thiscp_colors = []
 
-        if (yaxis_mag in cpd['objectinfo'] and
-            cpd['objectinfo'][yaxis_mag] is not None):
-            cplist_mags.append(cpd['objectinfo'][yaxis_mag])
-        else:
-            cplist_mags.append(np.nan)
+        for cm1, cm2, ym in zip(color_mag1, color_mag2, yaxis_mag):
 
-        if (color_mag1 in cpd['objectinfo'] and
-            cpd['objectinfo'][color_mag1] is not None and
-            color_mag2 in cpd['objectinfo'] and
-            cpd['objectinfo'][color_mag2] is not None):
-            cplist_colors.append(cpd['objectinfo'][color_mag1] -
-                                 cpd['objectinfo'][color_mag2])
-        else:
-            cplist_colors.append(np.nan)
+            if (ym in cpd['objectinfo'] and
+                cpd['objectinfo'][ym] is not None):
+                thiscp_mags.append(cpd['objectinfo'][ym])
+            else:
+                thiscp_mags.append(np.nan)
+
+            if (cm1 in cpd['objectinfo'] and
+                cpd['objectinfo'][cm1] is not None and
+                cm2 in cpd['objectinfo'] and
+                cpd['objectinfo'][cm2] is not None):
+                thiscp_colors.append(cpd['objectinfo'][cm1] -
+                                     cpd['objectinfo'][cm2])
+            else:
+                thiscp_colors.append(np.nan)
+
+        cplist_mags.append(thiscp_mags)
+        cplist_colors.append(thiscp_colors)
+
 
     # convert these to arrays
     cplist_objectids = np.array(cplist_objectids)
     cplist_mags = np.array(cplist_mags)
     cplist_colors = np.array(cplist_colors)
 
-    # prepare the outdict and save it
+    # prepare the outdict
     cmddict = {'objectids':cplist_objectids,
                'mags':cplist_mags,
                'colors':cplist_colors,
-               'kwargs':{'color_mag1':color_mag1,
-                         'color_mag2':color_mag2,
-                         'yaxis_mag':yaxis_mag}}
-    # make the scatter plot
-    fig = plt.figure(figsize=(10,8))
-    plt.scatter(cplist_colors,
-                cplist_mags,
-                rasterized=True,
-                s=8,marker='.')
-    plt.xlabel(r'$%s - %s$' % (CMD_LABELS[color_mag1], CMD_LABELS[color_mag2]))
-    plt.ylabel(r'$%s$' % (CMD_LABELS[yaxis_mag],))
-    plt.title('color-magnitude diagram')
-    plt.gca().invert_yaxis()
-
-    # let's pickle the figure so we can make quick changes to it if needed
-    # http://fredborg-braedstrup.dk/blog/2014/10/10/saving-mpl-figures-using-pickle/
-    cmddict['cmdfig'] = fig
+               'color_mag1':color_mag1,
+               'color_mag2':color_mag2,
+               'yaxis_mag':yaxis_mag}
 
     # save the pickled figure and dict for fast retrieval later
     with open(outpkl,'wb') as outfd:
@@ -4034,228 +4242,222 @@ def colormagdiagram_cplist(cplist,
 
     plt.close('all')
 
-    # return the cmddict. this can be used by individual checkplot plotters to
-    # add their object highlight, using the TBD checkplot.add_cmdplot fn
-
     return cmddict
 
 
 
-##########################
-## BINNING LIGHT CURVES ##
-##########################
+def colormagdiagram_cpdir(cpdir,
+                          outpkl,
+                          cpfileglob='checkplot*.pkl*',
+                          color_mag1=['gaiamag','sdssg'],
+                          color_mag2=['kmag','kmag'],
+                          yaxis_mag=['gaia_absmag','rpmj']):
+    '''This makes a CMD for all objects in cpdir.
 
-def timebinlc(lcfile,
-              binsizesec,
-              outdir=None,
-              lcformat='hat-sql',
-              timecols=None,
-              magcols=None,
-              errcols=None,
-              minbinelems=7):
+    All params are the same as for colormagdiagram_cplist, except for:
 
-    '''
-    This bins the given light curve file in time using binsizesec.
+    cpfileglob: the fileglob to use to find the checkplot pickles in cpdir.
 
     '''
 
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    cplist = glob.glob(os.path.join(cpdir, cpfileglob))
+
+    return colormagdiagram_cplist(cplist,
+                                  outpkl,
+                                  color_mag1=color_mag1,
+                                  color_mag2=color_mag2,
+                                  yaxis_mag=yaxis_mag)
+
+
+
+def add_cmd_to_checkplot(cpx, cmdpkl,
+                         require_cmd_magcolor=True,
+                         save_cmd_pngs=False):
+    '''This adds CMD figures to the checkplot dict or pickle cpx.
+
+    Looks up the CMDs in the cmdpkl, adds the object in the checkplot as a
+    gold(-ish) star in the plot, and then saves the figure to a base64 encoded
+    PNG, which can then be read and used by the checkplotserver.
+
+    If require_cmd_magcolor is True, a plot will not be made if the color and
+    mag keys required by the CMD are not present or are nan in this checkplot's
+    objectinfo dict.
+
+    If save_cmd_png = True, then will save the CMD plots made as PNGs to the
+    same directory as cpx. If cpx is a dict, will save them to the current
+    directory.
+
+    '''
+
+    # get the checkplot
+    if isinstance(cpx, str) and os.path.exists(cpx):
+        cpdict = _read_checkplot_picklefile(cpx)
+    elif isinstance(cpx, dict):
+        cpdict = cpx
+    else:
+        LOGERROR('unknown type of checkplot provided as the cpx arg')
         return None
 
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+    # get the CMD
+    if isinstance(cmdpkl, str) and os.path.exists(cmdpkl):
+        with open(cmdpkl, 'rb') as infd:
+            cmd = pickle.load(infd)
+    elif isinstance(cmdpkl, dict):
+        cmd = cmdpkl
 
-    # override the default timecols, magcols, and errcols
-    # using the ones provided to the function
-    if timecols is None:
-        timecols = dtimecols
-    if magcols is None:
-        magcols = dmagcols
-    if errcols is None:
-        errcols = derrcols
 
-    # get the LC into a dict
-    lcdict = readerfunc(lcfile)
-    if isinstance(lcdict, tuple) and isinstance(lcdict[0],dict):
-        lcdict = lcdict[0]
+    cpdict['colormagdiagram'] = {}
 
-    # skip already binned light curves
-    if 'binned' in lcdict:
-        LOGERROR('this light curve appears to be binned already, skipping...')
-        return None
+    # get the mags and colors from the CMD dict
+    cplist_mags = cmd['mags']
+    cplist_colors = cmd['colors']
 
-    for tcol, mcol, ecol in zip(timecols, magcols, errcols):
+    # now make the CMD plots for each color-mag combination in the CMD
+    for c1, c2, ym, ind in zip(cmd['color_mag1'],
+                               cmd['color_mag2'],
+                               cmd['yaxis_mag'],
+                               range(len(cmd['color_mag1']))):
 
-        # dereference the columns and get them from the lcdict
-        if '.' in tcol:
-            tcolget = tcol.split('.')
+        # get these from the checkplot for this object
+        if (c1 in cpdict['objectinfo'] and
+            cpdict['objectinfo'][c1] is not None):
+            c1mag = cpdict['objectinfo'][c1]
         else:
-            tcolget = [tcol]
-        times = dict_get(lcdict, tcolget)
+            c1mag = np.nan
 
-        if '.' in mcol:
-            mcolget = mcol.split('.')
+        if (c2 in cpdict['objectinfo'] and
+            cpdict['objectinfo'][c2] is not None):
+            c2mag = cpdict['objectinfo'][c2]
         else:
-            mcolget = [mcol]
-        mags = dict_get(lcdict, mcolget)
+            c2mag = np.nan
 
-        if '.' in ecol:
-            ecolget = ecol.split('.')
+        if (ym in cpdict['objectinfo'] and
+            cpdict['objectinfo'][ym] is not None):
+            ymmag = cpdict['objectinfo'][ym]
         else:
-            ecolget = [ecol]
-        errs = dict_get(lcdict, ecolget)
+            ymmag = np.nan
 
-        # normalize here if not using special normalization
-        if normfunc is None:
-            ntimes, nmags = normalize_magseries(
-                times, mags,
-                magsarefluxes=magsarefluxes
-            )
+        if (require_cmd_magcolor and
+            not (np.isfinite(c1mag) and
+                 np.isfinite(c2mag) and
+                 np.isfinite(ymmag))):
 
-            times, mags, errs = ntimes, nmags, errs
+            LOGWARNING("required color: %s-%s or mag: %s are not "
+                       "in this checkplot's objectinfo dict "
+                       "(objectid: %s), skipping CMD..." %
+                       (c1, c2, ym, cpdict['objectid']))
+            continue
 
-        # now bin the mag series as requested
-        binned = time_bin_magseries_with_errs(times,
-                                              mags,
-                                              errs,
-                                              binsize=binsizesec,
-                                              minbinelems=minbinelems)
+        # make the CMD for this color-mag combination
+        try:
 
-        # put this into the special binned key of the lcdict
+            thiscmd_label = '%s-%s/%s' % (c1,
+                                          c2,
+                                          ym)
 
-        # we use mcolget[-1] here so we can deal with dereferenced magcols like
-        # sap.sap_flux or pdc.pdc_sapflux
-        if 'binned' not in lcdict:
-            lcdict['binned'] = {mcolget[-1]: {'times':binned['binnedtimes'],
-                                              'mags':binned['binnedmags'],
-                                              'errs':binned['binnederrs'],
-                                              'nbins':binned['nbins'],
-                                              'timebins':binned['jdbins'],
-                                              'binsizesec':binsizesec}}
+            # make the scatter plot
+            fig = plt.figure(figsize=(10,8))
+            plt.plot(cplist_colors[:,ind],
+                     cplist_mags[:,ind],
+                     rasterized=True,
+                     marker='o',
+                     linestyle='none',
+                     mew=0,
+                     ms=3)
 
-        else:
-            lcdict['binned'][mcolget[-1]] = {'times':binned['binnedtimes'],
-                                             'mags':binned['binnedmags'],
-                                             'errs':binned['binnederrs'],
-                                             'nbins':binned['nbins'],
-                                             'timebins':binned['jdbins'],
-                                             'binsizesec':binsizesec}
+            # put this object on the plot
+            plt.plot([c1mag - c2mag], [ymmag],
+                     ms=20,
+                     color='#b0ff05',
+                     marker='*',
+                     mew=0)
 
+            plt.xlabel(r'$%s - %s$' % (CMD_LABELS[c1], CMD_LABELS[c2]))
+            plt.ylabel(r'$%s$' % CMD_LABELS[ym])
+            plt.title('%s color-magnitude diagram' % thiscmd_label)
+            plt.gca().invert_yaxis()
 
-    # done with binning for all magcols, now generate the output file
-    # this will always be a pickle
+            # now save the figure to strio and put it back in the checkplot
+            cmdpng = strio()
+            plt.savefig(cmdpng, bbox_inches='tight',
+                           pad_inches=0.0, format='png')
+            cmdpng.seek(0)
+            cmdb64 = base64.b64encode(cmdpng.read())
 
-    if outdir is None:
-        outdir = os.path.dirname(lcfile)
+            plt.close('all')
+            plt.gcf().clear()
 
-    outfile = os.path.join(outdir, '%s-binned%.1fsec-%s.pkl' %
-                           (lcdict['objectid'], binsizesec, lcformat))
+            cpdict['colormagdiagram']['%s-%s/%s' % (c1,c2,ym)] = cmdb64
 
-    with open(outfile, 'wb') as outfd:
-        pickle.dump(lcdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
+            # if we're supposed to export to PNG, do so
+            if save_cmd_pngs:
 
-    return outfile
+                if isinstance(cpx, str):
+                    outpng = os.path.join(os.path.dirname(cpx),
+                                          'cmd-%s-%s-%s.%s.png' %
+                                          (cpdict['objectid'],
+                                           c1,c2,ym))
+                else:
+                    outpng = 'cmd-%s-%s-%s.%s.png' % (cpdict['objectid'],
+                                                      c1,c2,ym)
 
+                pngf = checkplot._base64_to_file(cmdb64, outpng)
 
-
-def timebinlc_worker(task):
-    '''
-    This is a parallel worker for the function below.
-
-    task[0] = lcfile
-    task[1] = binsizesec
-    task[3] = {'outdir','lcformat','timecols','magcols','errcols','minbinelems'}
-
-    '''
-
-    lcfile, binsizesec, kwargs = task
-
-    try:
-        binnedlc = timebinlc(lcfile, binsizesec, **kwargs)
-        LOGINFO('%s binned using %s sec -> %s OK' %
-                (lcfile, binsizesec, binnedlc))
-    except Exception as e:
-        LOGEXCEPTION('failed to bin %s using binsizesec = %s' % (lcfile,
-                                                                 binsizesec))
-        return None
+        except Exception as e:
+            LOGEXCEPTION('CMD for %s-%s/%s does not exist in %s, skipping...' %
+                         (c1, c2, ym, cmdpkl))
+            continue
 
 
+    #
+    # end of making CMDs
+    #
 
-def parallel_timebin(lclist,
-                     binsizesec,
-                     maxobjects=None,
-                     outdir=None,
-                     lcformat='hat-sql',
-                     timecols=None,
-                     magcols=None,
-                     errcols=None,
-                     minbinelems=7,
-                     nworkers=32,
-                     maxworkertasks=1000):
-    '''
-    This bins all the light curves in lclist using binsizesec.
-
-    '''
-
-    if outdir and not os.path.exists(outdir):
-        os.mkdir(outdir)
-
-    if maxobjects is not None:
-        lclist = lclist[:maxobjects]
-
-    tasks = [(x, binsizesec, {'outdir':outdir,
-                              'lcformat':lcformat,
-                              'timecols':timecols,
-                              'magcols':magcols,
-                              'errcols':errcols,
-                              'minbinelems':minbinelems}) for x in lclist]
-
-    pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
-    results = pool.map(timebinlc_worker, tasks)
-    pool.close()
-    pool.join()
-
-    resdict = {os.path.basename(x):y for (x,y) in zip(lclist, results)}
-
-    return resdict
+    if isinstance(cpx, str):
+        cpf = _write_checkplot_picklefile(cpdict, outfile=cpx, protocol=4)
+        return cpf
+    elif isinstance(cpx, dict):
+        return cpdict
 
 
 
-def parallel_timebin_lcdir(lcdir,
-                           binsizesec,
-                           maxobjects=None,
-                           outdir=None,
-                           lcformat='hat-sql',
-                           timecols=None,
-                           magcols=None,
-                           errcols=None,
-                           minbinelems=7,
-                           nworkers=32,
-                           maxworkertasks=1000):
-    '''
-    This bins all the light curves in lcdir using binsizesec.
+def add_cmds_cplist(cplist, cmdpkl,
+                    require_cmd_magcolor=True,
+                    save_cmd_pngs=False):
+    '''This adds CMDs for each object in cplist.
+
+    NOTE: If the object doesn't have the color and mag keys required in its
+    objectinfo dict for the CMD plot, it won't appear on the CMD.
 
     '''
 
-    # get the light curve glob associated with specified lcformat
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
-        return None
+    # load the CMD first to save on IO
+    with open(cmdpkl,'rb') as infd:
+        cmd = pickle.load(infd)
 
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+    for cpf in cplist:
 
-    lclist = sorted(glob.glob(os.path.join(lcdir, fileglob)))
+        add_cmd_to_checkplot(cpf, cmd,
+                             require_cmd_magcolor=require_cmd_magcolor,
+                             save_cmd_pngs=save_cmd_pngs)
 
-    return parallel_timebin_lclist(lclist,
-                                   binsizesec,
-                                   maxobjects=maxobjects,
-                                   outdir=outdir,
-                                   lcformat=lcformat,
-                                   timecols=timecols,
-                                   magcols=magcols,
-                                   errcols=errcols,
-                                   minbinelems=minbinelems,
-                                   nworkers=nworkers,
-                                   maxworkertasks=maxworkertasks)
+
+
+def add_cmds_cpdir(cpdir, cmdpkl,
+                   cpfileglob='checkplot*.pkl*',
+                   require_cmd_magcolor=True,
+                   save_cmd_pngs=False):
+    '''This adds CMDs for each object in cpdir.
+
+    All params are the same as for add_cmds_cplist, except for:
+
+    cpfileglob: the fileglob to use to find the checkplot pickles in cpdir.
+
+    '''
+
+    cplist = glob.glob(os.path.join(cpdir, cpfileglob))
+
+    return add_cmds_cplist(cplist,
+                           cmdpkl,
+                           require_cmd_magcolor=require_cmd_magcolor,
+                           save_cmd_pngs=False)
