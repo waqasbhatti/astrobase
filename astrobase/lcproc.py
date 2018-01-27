@@ -4015,7 +4015,10 @@ def colormagdiagram_cplist(cplist,
                          'yaxis_mag':yaxis_mag}}
     # make the scatter plot
     fig = plt.figure(figsize=(10,8))
-    plt.scatter(cplist_colors, cplist_mags, rasterized=True)
+    plt.scatter(cplist_colors,
+                cplist_mags,
+                rasterized=True,
+                s=8,marker='.')
     plt.xlabel(r'$%s - %s$' % (CMD_LABELS[color_mag1], CMD_LABELS[color_mag2]))
     plt.ylabel(r'$%s$' % (CMD_LABELS[yaxis_mag],))
     plt.title('color-magnitude diagram')
