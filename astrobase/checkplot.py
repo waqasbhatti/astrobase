@@ -1545,9 +1545,13 @@ def _pkl_finder_objectinfo(objectinfo,
         if 'ok' in objectinfo['gaia_status']:
             objectinfo['gaiamag'] = objectinfo['gaia_mags'][0]
             objectinfo['gaia_absmag'] = objectinfo['gaia_absolute_mags'][0]
+            objectinfo['gaia_parallax'] = objectinfo['gaia_parallaxes'][0]
+            objectinfo['gaia_parallax_err'] = objectinfo['gaia_parallax_errs'][0]
         else:
             objectinfo['gaiamag'] = np.nan
             objectinfo['gaia_absmag'] = np.nan
+            objectinfo['gaia_parallax'] = np.nan
+            objectinfo['gaia_parallax_err'] = np.nan
 
         # put together the initial checkplot pickle dictionary
         # this will be updated by the functions below as appropriate
