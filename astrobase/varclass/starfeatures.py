@@ -851,7 +851,7 @@ def neighbor_gaia_features(objectinfo,
                         gaia_nneighbors = 0
 
                         gaia_status = (
-                            'ok: only object found'
+                            'ok: object found but no neighbors'
                         )
 
                         # the first in each array is the object

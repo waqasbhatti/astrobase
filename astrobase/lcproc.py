@@ -3980,7 +3980,7 @@ def colormagdiagram_cplist(cplist,
     cplist_mags = []
     cplist_colors = []
 
-    for cp in cplist:
+    for cpf in cplist:
 
         cpd = _read_checkplot_picklefile(cpf)
         cplist_objectids.append(cpd['objectid'])
@@ -4019,13 +4019,14 @@ def colormagdiagram_cplist(cplist,
     plt.xlabel(r'$%s - %s$' % (CMD_LABELS[color_mag1], CMD_LABELS[color_mag2]))
     plt.ylabel(r'$%s$' % (CMD_LABELS[yaxis_mag],))
     plt.title('color-magnitude diagram')
+    plt.gca().invert_yaxis()
 
     # let's pickle the figure so we can make quick changes to it if needed
     # http://fredborg-braedstrup.dk/blog/2014/10/10/saving-mpl-figures-using-pickle/
-    cmddict = cmddict['cmdfig'] = fig
+    cmddict['cmdfig'] = fig
 
     # save the pickled figure and dict for fast retrieval later
-    with open(savecmd,'wb') as outfd:
+    with open(outpkl,'wb') as outfd:
         pickle.dump(cmddict, outfd, pickle.HIGHEST_PROTOCOL)
 
     plt.close('all')

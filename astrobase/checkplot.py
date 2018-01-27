@@ -1541,6 +1541,14 @@ def _pkl_finder_objectinfo(objectinfo,
         objectinfo.update(colorclass)
         objectinfo.update(nbrfeat)
 
+        # update GAIA info so it's available at the first level
+        if 'ok' in objectinfo['gaia_status']:
+            objectinfo['gaiamag'] = objectinfo['gaia_mags'][0]
+            objectinfo['gaia_absmag'] = objectinfo['gaia_absolute_mags'][0]
+        else:
+            objectinfo['gaiamag'] = np.nan
+            objectinfo['gaia_absmag'] = np.nan
+
         # put together the initial checkplot pickle dictionary
         # this will be updated by the functions below as appropriate
         # and will written out as a gzipped pickle at the end of processing
