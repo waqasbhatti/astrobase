@@ -4157,14 +4157,14 @@ def xmatch_cpdir_external_catalogs(cpdir,
 CMD_LABELS = {
     'bmag':'B',
     'vmag':'V',
-    'rmag':'',
+    'rmag':'R',
     'imag':'I',
     'jmag':'J',
     'hmag':'H',
     'kmag':'K_s',
     'sdssu':'u',
     'sdssg':'g',
-    'sdss':'r',
+    'sdssr':'r',
     'sdssi':'i',
     'sdssz':'z',
     'gaiamag':'G',
@@ -4386,6 +4386,7 @@ def add_cmd_to_checkplot(cpx, cmdpkl,
                            pad_inches=0.0, format='png')
             cmdpng.seek(0)
             cmdb64 = base64.b64encode(cmdpng.read())
+            cmdpng.close()
 
             plt.close('all')
             plt.gcf().clear()
