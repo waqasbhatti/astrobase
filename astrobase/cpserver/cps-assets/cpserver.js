@@ -847,8 +847,12 @@ var cpv = {
                 $('#varcheck').val(0);
 
             }
+
+            // get the period and epoch
             $('#objectperiod').val(cpv.currcp.varinfo.varperiod);
             $('#objectepoch').val(cpv.currcp.varinfo.varepoch);
+
+            // update the rest of the object info
             $('#objecttags').val(cpv.currcp.objectinfo.objecttags);
             $('#objectcomments').val(cpv.currcp.objectcomments);
             $('#vartags').val(cpv.currcp.varinfo.vartags);
@@ -976,7 +980,7 @@ var cpv = {
             cpv.maxphasedind = phasedplotindex;
 
             //
-            // finally, handle the neighbors tab for this object
+            // handle the neighbors tab for this object
             //
 
             // 1. empty the rows for the gaia table and lcc neighbor list
@@ -3583,7 +3587,7 @@ var cptools = {
         var phasebin = parseFloat($('#psearch-binphase').val());
 
         var periodind = $('#psearch-pgrampeaks').val();
-        if (periodind === null) {
+        if (periodind === null || periodind == 'none') {
             periodind = 0;
         }
         else {
