@@ -620,7 +620,7 @@ var cpv = {
                 '<strong>Total PM:</strong> ' + objectpm + '<br>' +
                 '<strong>Reduced PM<sub>J</sub>:</strong> ' + objectrpmj;
 
-            // see if we can get the GAIA parallax as well
+            // see if we can get the GAIA parallax
             if (gaia_ok && cpv.currcp.objectinfo.gaia_parallaxes[0]) {
 
                 var gaia_parallax = math.format(
@@ -678,11 +678,28 @@ var cpv = {
                 var gaiamag = cpv.currcp.objectinfo.gaia_mags[0];
                 var gaiakcolor = cpv.currcp.objectinfo.gaiak_colors[0];
                 var gaiaabsmag = cpv.currcp.objectinfo.gaia_absolute_mags[0];
+
+                // get the GAIA CMD if available
+                if ( cpv.currcp.hasOwnProperty('colormagdiagram') &&
+                     cpv.currcp.colormagdiagram.hasOwnProperty(
+                         'gaiamag-kmag/gaia_absmag'
+                     ) ) {
+                    var gaiacmd = cpv.currcp.colormagdiagram[
+                        'gaiamag-kmag/gaia_absmag'
+                    ];
+
+                }
+                else {
+                    var gaiacmd = null;
+                }
+
+
             }
             else {
                 var gaiamag = null;
                 var gaiakcolor = null;
                 var gaiaabsmag = null;
+                var gaiacmd = null;
             }
 
             var mags = '<strong><em>ugriz</em>:</strong> ' +
@@ -702,7 +719,31 @@ var cpv = {
                 math.format(gaiamag,5) + ', ' +
                 '<strong><em>GAIA M<sub>G</sub></em>:</strong> ' +
                 math.format(gaiaabsmag,5);
+
+            if (gaiacmd != null) {
+
+                var gaiadd =
+                    '<div class="dropdown">' +
+                    '<a href="#" ' +
+                    'title="Click to see the GAIA color-magnitude ' +
+                    'diagram for this object" ' +
+                    'id="gaia-dropdown" data-toggle="dropdown" ' +
+                    'aria-haspopup="true" aria-expanded="false">' +
+                    '<strong>GAIA color magnitude diagram</strong>' +
+                    '</a>' +
+                    '<div class="dropdown-menu text-sm-center gaia-dn" ' +
+                    'aria-labelledby="gaia-dropdown">' +
+                    '<img id="gaia-cmd-plot" class="img-fluid">' +
+                    '</div></div>'
+                mags = mags + gaiadd;
+
+            }
+
             $('#mags').html(mags);
+
+            if (gaiacmd != null) {
+                cputils.b64_to_image(gaiacmd, '#gaia-cmd-plot');
+            }
 
             //
             // handle the colors
@@ -987,17 +1028,9 @@ var cpv = {
             $('#neighbor-container').empty();
 
             $('#gaia-neighbor-tbody').empty();
-
-            if (cpv.currcp.objectinfo.gaia_neighbors != undefined) {
-
-                $('#gaia-neighbor-count').html(
-                    cpv.currcp.objectinfo.gaia_neighbors
-                );
-            }
-
-            else {
-                $('#gaia-neighbor-count').html('0');
-            }
+            $('#gaia-neighbor-count').html(
+                cpv.currcp.objectinfo.gaia_ids.length
+            );
 
             $('#lcc-neighbor-container').empty();
             $("#lcc-neighbor-count").html(cpv.currcp.neighbors.length);
@@ -1113,21 +1146,39 @@ var cpv = {
                 // put in any rows of neighbors if there are any
                 for (gi; gi < cpv.currcp.objectinfo.gaia_ids.length; gi++) {
 
-                    var rowhtml = '<tr class="gaia-objectlist-row" ' +
-                        'data-gaiaid="' +
-                        cpv.currcp.objectinfo.gaia_ids[gi] +
-                        '" data-xpos="' +
-                        cpv.currcp.objectinfo.gaia_xypos[gi][0] +
-                        '" data-ypos="' +
-                        cpv.currcp.objectinfo.gaia_xypos[gi][1] +
-                        '" >' +
-                        '<td>' + cpv.currcp.objectinfo.gaia_ids[gi] +
-                        '</td>' + '<td>' +
-                        math.format(cpv.currcp.objectinfo.gaia_mags[gi], 3) +
-                        '</td>' + '<td>' + math.format(
-                            cpv.currcp.objectinfo.gaia_dists[gi],
-                            3
-                        ) + '</td>' + '</tr>';
+                        var rowhtml = '<tr class="gaia-objectlist-row" ' +
+                            'data-gaiaid="' +
+                            cpv.currcp.objectinfo.gaia_ids[gi] +
+                            '" data-xpos="' +
+                            cpv.currcp.objectinfo.gaia_xypos[gi][0] +
+                            '" data-ypos="' +
+                            cpv.currcp.objectinfo.gaia_xypos[gi][1] +
+                            '" >' +
+                            '<td>' + cpv.currcp.objectinfo.gaia_ids[gi] +
+                            '</td>' +
+                            '<td>' + math.format(
+                                cpv.currcp.objectinfo.gaia_dists[gi], 3
+                            ) +
+                            '</td>' +
+                            '<td>' +
+                            math.format(
+                                cpv.currcp.objectinfo.gaia_parallaxes[gi], 3
+                            ) + ' &plusmn; ' +
+                            math.format(
+                                cpv.currcp.objectinfo.gaia_parallax_errs[gi], 3
+                            ) +
+                            '</td>' +
+                            '<td>' +
+                            math.format(
+                                cpv.currcp.objectinfo.gaia_mags[gi], 3
+                            ) +
+                            '</td>' +
+                            '<td>' +
+                            math.format(
+                                cpv.currcp.objectinfo.gaia_absolute_mags[gi], 3
+                            ) +
+                            '</td>' +
+                            '</tr>';
                     $('#gaia-neighbor-tbody').append(rowhtml);
 
                 }
@@ -1459,6 +1510,9 @@ var cpv = {
 
             // FIXME: when we load the checkplot, load it's cptools results into
             // the cptools.current object.
+
+            // re-initialize all popovers
+            $('[data-toggle="popover"]').popover();
 
             // highlight the file in the sidebar list
             $("a.checkplot-load")

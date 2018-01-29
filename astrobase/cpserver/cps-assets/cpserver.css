@@ -227,3 +227,8 @@ to use this:
     padding-left: 0;
   }
 }
+
+.gaia-dn {
+    width: 600px;
+    padding: 0.5rem;
+}

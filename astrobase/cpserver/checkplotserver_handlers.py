@@ -563,12 +563,24 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 else:
                     objectxmatch = None
 
+                # load the colormagdiagram object
+                if 'colormagdiagram' in cpdict:
+                    colormagdiagram = cpdict['colormagdiagram']
+                else:
+                    colormagdiagram = None
 
                 # these are base64 which can be provided directly to JS to
                 # generate images (neat!)
                 finderchart = cpdict['finderchart']
                 magseries = cpdict['magseries']['plot']
                 cpstatus = cpdict['status']
+
+                # load the uifilters if present
+                if 'uifilters' in cpdict:
+                    uifilters = cpdict['uifilters']
+                else:
+                    uifilters = None
+
 
                 # FIXME: add in other stuff required by the frontend
                 # - signals
@@ -587,8 +599,10 @@ class CheckplotHandler(tornado.web.RequestHandler):
                         'time0':'%.3f' % cpdict['magseries']['times'].min(),
                         'objectid':objectid,
                         'objectinfo':objectinfo,
+                        'colormagdiagram':colormagdiagram,
                         'objectcomments':objectcomments,
                         'varinfo':varinfo,
+                        'uifilters':uifilters,
                         'neighbors':neighbors,
                         'xmatch':objectxmatch,
                         'finderchart':finderchart,
