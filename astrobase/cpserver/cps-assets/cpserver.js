@@ -674,32 +674,18 @@ var cpv = {
                                      ' via JHK transform)');
             }
 
+            // set up the cmdplots property for currcp
+            cpv.currcp.cmdplots = [];
+
             if (gaia_ok) {
                 var gaiamag = cpv.currcp.objectinfo.gaia_mags[0];
                 var gaiakcolor = cpv.currcp.objectinfo.gaiak_colors[0];
                 var gaiaabsmag = cpv.currcp.objectinfo.gaia_absolute_mags[0];
-
-                // get the GAIA CMD if available
-                if ( cpv.currcp.hasOwnProperty('colormagdiagram') &&
-                     cpv.currcp.colormagdiagram.hasOwnProperty(
-                         'gaiamag-kmag/gaia_absmag'
-                     ) ) {
-                    var gaiacmd = cpv.currcp.colormagdiagram[
-                        'gaiamag-kmag/gaia_absmag'
-                    ];
-
-                }
-                else {
-                    var gaiacmd = null;
-                }
-
-
             }
             else {
                 var gaiamag = null;
                 var gaiakcolor = null;
                 var gaiaabsmag = null;
-                var gaiacmd = null;
             }
 
             var mags = '<strong><em>ugriz</em>:</strong> ' +
@@ -720,30 +706,7 @@ var cpv = {
                 '<strong><em>GAIA M<sub>G</sub></em>:</strong> ' +
                 math.format(gaiaabsmag,5);
 
-            if (gaiacmd != null) {
-
-                var gaiadd =
-                    '<div class="dropdown">' +
-                    '<a href="#" ' +
-                    'title="Click to see the GAIA color-magnitude ' +
-                    'diagram for this object" ' +
-                    'id="gaia-dropdown" data-toggle="dropdown" ' +
-                    'aria-haspopup="true" aria-expanded="false">' +
-                    '<strong>GAIA color magnitude diagram</strong>' +
-                    '</a>' +
-                    '<div class="dropdown-menu text-sm-center gaia-dn" ' +
-                    'aria-labelledby="gaia-dropdown">' +
-                    '<img id="gaia-cmd-plot" class="img-fluid">' +
-                    '</div></div>'
-                mags = mags + gaiadd;
-
-            }
-
             $('#mags').html(mags);
-
-            if (gaiacmd != null) {
-                cputils.b64_to_image(gaiacmd, '#gaia-cmd-plot');
-            }
 
             //
             // handle the colors
@@ -792,8 +755,12 @@ var cpv = {
             //
             // additional stuff
             //
+
+            // first, empty out the extra info table
             $("#objectinfo-extra").empty();
 
+
+            // add the color classification if available
             if (cpv.currcp.objectinfo.color_classes != undefined &&
                 cpv.currcp.objectinfo.color_classes.length > 0) {
 
@@ -860,6 +827,64 @@ var cpv = {
                             "</tr>"
                     );
 
+
+            }
+
+            // get the CMDs for this object if there are any
+            if (cpv.currcp.hasOwnProperty('colormagdiagram')) {
+
+                var cmdlist = Object.getOwnPropertyNames(
+                    cpv.currcp.colormagdiagram
+                );
+
+                var cmdkey = '<tr><th>' +
+                    'Color-magnitude diagrams' +
+                    '</th>';
+
+                var cmdval = '<td>';
+                var cmdimgs = [];
+
+                // prepare the img divs
+                var cmdi = 0;
+                for (cmdi; cmdi < cmdlist.length; cmdi++) {
+
+                    var thiscmdlabel = cmdlist[cmdi];
+                    var thiscmdplot = cpv.currcp.colormagdiagram[cmdlist[cmdi]];
+
+                    var cmddd =
+                        '<div class="dropdown">' +
+                        '<a href="#" ' +
+                        'title="Click to see the ' +
+                        thiscmdlabel +
+                        ' color-magnitude ' +
+                        'diagram for this object" ' +
+                        'id="cmd-' + cmdi +
+                        '-dropdown" data-toggle="dropdown" ' +
+                        'aria-haspopup="true" aria-expanded="false">' +
+                        '<strong>' + thiscmdlabel + ' CMD</strong>' +
+                        '</a>' +
+                        '<div class="dropdown-menu text-sm-center cmd-dn" ' +
+                        'aria-labelledby="cmd-' + cmdi + '-dropdown">' +
+                        '<img id="cmd-' + cmdi +'-plot" class="img-fluid">' +
+                        '</div></div>';
+                    cmdval = cmdval + cmddd;
+                    cmdimgs.push('#cmd-' + cmdi + '-plot');
+
+                }
+
+
+                cmdval = cmdkey + cmdval + '</td></tr>';
+                $('#objectinfo-extra').append(cmdval);
+
+                // now populate the img divs with the actual CMD images
+                cmdi = 0;
+                for (cmdi; cmdi < cmdlist.length; cmdi++) {
+
+                    var thiscmdlabel = cmdlist[cmdi];
+                    var thiscmdplot = cpv.currcp.colormagdiagram[thiscmdlabel];
+                    cputils.b64_to_image(thiscmdplot, cmdimgs[cmdi]);
+
+                }
 
             }
 
