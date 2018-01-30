@@ -489,27 +489,29 @@ var cpv = {
             $('.time0').html(cpv.currcp.time0);
 
             // set the items in the filters from existing if possible
-            if (cpv.currcp.hasOwnProperty('uiflters')) {
+            if (cpv.currcp.hasOwnProperty('uifilters')) {
 
-                if (cpv.currcp.uiflters.psearch_timefilters != null) {
+                if (cpv.currcp.uifilters.psearch_timefilters != null) {
                     $('#psearch-timefilters').val(
-                        cpv.currcp.uiflters.psearch_timefilters
+                        cpv.currcp.uifilters.psearch_timefilters
                     );
                 }
                 else {
                     $('#psearch-timefilters').val('');
                 }
-                if (cpv.currcp.uiflters.psearch_magfilters != null) {
+
+                if (cpv.currcp.uifilters.psearch_magfilters != null) {
                     $('#psearch-magfilters').val(
-                        cpv.currcp.uiflters.psearch_magfilters
+                        cpv.currcp.uifilters.psearch_magfilters
                     );
                 }
                 else {
                     $('#psearch-magfilters').val('');
                 }
-                if (cpv.currcp.uiflters.psearch_sigclip != null) {
+
+                if (cpv.currcp.uifilters.psearch_sigclip != null) {
                     $('#psearch-sigclip').val(
-                        cpv.currcp.uiflters.psearch_sigclip
+                        cpv.currcp.uifilters.psearch_sigclip
                     );
                 }
                 else {
