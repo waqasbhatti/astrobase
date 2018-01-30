@@ -579,7 +579,9 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 if 'uifilters' in cpdict:
                     uifilters = cpdict['uifilters']
                 else:
-                    uifilters = None
+                    uifilters = {'psearch_magfilters':None,
+                                 'psearch_sigclip':None,
+                                 'psearch_timefilters':None}
 
 
                 # FIXME: add in other stuff required by the frontend

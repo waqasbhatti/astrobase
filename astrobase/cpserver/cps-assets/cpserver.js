@@ -480,28 +480,91 @@ var cpv = {
                 twomassidelem.html('');
             }
 
+
+            //
+            // first, update the period search tab
+            //
+
             // update the time0 placeholders
             $('.time0').html(cpv.currcp.time0);
 
-            // clear the items in the period-search tab
-            $('#psearch-timefilters').val('');
-            $('#psearch-magfilters').val('');
-            $('#psearch-sigclip').val('');
-            $("#psearch-pgrampeaks").html(
-                '<option value="none">no tool results yet</option>'
-            );
-            $('#psearch-plotperiod').val('');
-            $('#psearch-plotepoch').val('');
-            $('#psearch-plotperiod').val('');
+            // set the items in the filters from existing if possible
+            if (cpv.currcp.hasOwnProperty('uiflters')) {
+
+                if (cpv.currcp.uiflters.psearch_timefilters != null) {
+                    $('#psearch-timefilters').val(
+                        cpv.currcp.uiflters.psearch_timefilters
+                    );
+                }
+                else {
+                    $('#psearch-timefilters').val('');
+                }
+                if (cpv.currcp.uiflters.psearch_magfilters != null) {
+                    $('#psearch-magfilters').val(
+                        cpv.currcp.uiflters.psearch_magfilters
+                    );
+                }
+                else {
+                    $('#psearch-magfilters').val('');
+                }
+                if (cpv.currcp.uiflters.psearch_sigclip != null) {
+                    $('#psearch-sigclip').val(
+                        cpv.currcp.uiflters.psearch_sigclip
+                    );
+                }
+                else {
+                    $('#psearch-sigclip').val('');
+                }
+
+            }
+
+            // otherwise, use default nothing
+            else {
+                $('#psearch-timefilters').val('');
+                $('#psearch-magfilters').val('');
+                $('#psearch-sigclip').val('');
+            }
+
+            //
+            // set up the rest of period-search tab
+            //
+
+            // set the period and epoch from the current period and epoch
+            if (cpv.currcp.varinfo.varperiod != null &&
+                cpv.currcp.varinfo.varepoch != null) {
+
+                $('#psearch-plotperiod').val(cpv.currcp.varinfo.varperiod);
+                $('#psearch-plotepoch').val(cpv.currcp.varinfo.varepoch);
+                $("#psearch-pgrampeaks").html(
+                    '<option value="0|' + cpv.currcp.varinfo.varperiod + '|' +
+                        cpv.currcp.varinfo.varepoch +
+                        '">prev. saved period</option>'
+                );
+
+            }
+
+            else {
+                $("#psearch-pgrampeaks").html(
+                    '<option value="none">no tool results yet</option>'
+                );
+                $('#psearch-plotperiod').val('');
+                $('#psearch-plotepoch').val('');
+            }
+
+            // these are the plot frames, nothing by default
             $('#psearch-periodogram-display')
                 .attr('src','/static/no-tool-results.png');
             $('#psearch-phasedlc-display')
                 .attr('src','/static/no-tool-results.png');
 
+
+            //
+            // update object information now
+            //
+
             // update the finder chart
             cputils.b64_to_image(cpv.currcp.finderchart,
                                  '#finderchart');
-
 
             // get the HAT stations
             var hatstations = cpv.currcp.objectinfo.stations;
@@ -4422,6 +4485,32 @@ var cptools = {
             }
 
         });
+
+
+        // periodogram search - add half period to epoch
+        $('#psearch-addhalfp-epoch').on('click', function (evt) {
+
+            evt.preventDefault();
+            var plotperiod = parseFloat($('#psearch-plotperiod').val());
+            var plotepoch = parseFloat($('#psearch-plotepoch').val());
+            if (!isNaN(plotperiod) && !isNaN(plotepoch)) {
+                $('#psearch-plotepoch').val(plotepoch + plotperiod/2.0);
+            }
+
+        });
+
+        // periodogram search - subtract half period to epoch
+        $('#psearch-subhalfp-epoch').on('click', function (evt) {
+
+            evt.preventDefault();
+            var plotperiod = parseFloat($('#psearch-plotperiod').val());
+            var plotepoch = parseFloat($('#psearch-plotepoch').val());
+            if (!isNaN(plotperiod) && !isNaN(plotepoch)) {
+                $('#psearch-plotepoch').val(plotepoch - plotperiod/2.0);
+            }
+
+        });
+
 
         // periodogram search - plot phased LC
         $('#psearch-makephasedlc').on('click', function (evt) {

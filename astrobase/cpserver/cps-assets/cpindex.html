@@ -645,11 +645,6 @@
                 <div class="form-group">
                   <label for="psearch-plotperiod">
                     Period [days]
-                    <strong>
-                    <a href="#" id="psearch-period-aliases">
-                      [common aliases]
-                    </a>
-                    </strong>
                   </label>
                   <div class="input-group">
                     <span class="input-group-btn">
@@ -1302,13 +1297,15 @@
   // load the names of the checkplots into cptracker.checkplotlist
   var cpl_elems = $('#checkplotlist li a');
   $.each(cpl_elems, function (index, elem) {
-
     cptracker.checkplotlist.push(elem.getAttribute('data-fname'));
+  });
+
 
   });
 
+  $(function () {
+    $('[data-toggle="popover"]').popover();
   });
-
 
 </script>
 {% end %}
