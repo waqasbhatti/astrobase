@@ -452,11 +452,11 @@ def macf_period_find(
             'bestlspval':bestlspval,
             'nbestpeaks':maxacfpeaks,
             # for compliance with the common pfmethod API
-            'nbestperiods':[
-                fitbestperiod, naivebestperiod,
-                peakres['relpeaklags'][2:maxacfpeaks]*acfres['cadence']
-            ],
-            'nbestlspvals':peakres['relpeakheights'],
+            'nbestperiods':np.concatenate([
+                [fitbestperiod],
+                peakres['relpeaklags'][1:maxacfpeaks]*acfres['cadence']
+            ]),
+            'nbestlspvals':peakres['maxacfs'][:maxacfpeaks],
             'lspvals':xacf,
             'periods':xlags*acfres['cadence'],
             'acf':xacf,
