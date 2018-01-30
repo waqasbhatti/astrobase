@@ -491,7 +491,8 @@ var cpv = {
             // set the items in the filters from existing if possible
             if (cpv.currcp.hasOwnProperty('uifilters')) {
 
-                if (cpv.currcp.uifilters.psearch_timefilters != null) {
+                if (cpv.currcp.uifilters != null &&
+                    cpv.currcp.uifilters.psearch_timefilters != null) {
                     $('#psearch-timefilters').val(
                         cpv.currcp.uifilters.psearch_timefilters
                     );
@@ -500,7 +501,8 @@ var cpv = {
                     $('#psearch-timefilters').val('');
                 }
 
-                if (cpv.currcp.uifilters.psearch_magfilters != null) {
+                if (cpv.currcp.uifilters != null &&
+                    cpv.currcp.uifilters.psearch_magfilters != null) {
                     $('#psearch-magfilters').val(
                         cpv.currcp.uifilters.psearch_magfilters
                     );
@@ -509,7 +511,8 @@ var cpv = {
                     $('#psearch-magfilters').val('');
                 }
 
-                if (cpv.currcp.uifilters.psearch_sigclip != null) {
+                if (cpv.currcp.uifilters != null &&
+                    cpv.currcp.uifilters.psearch_sigclip != null) {
                     $('#psearch-sigclip').val(
                         cpv.currcp.uifilters.psearch_sigclip
                     );
