@@ -2250,12 +2250,12 @@ var cpv = {
         //////////////
 
         // ctrl+right: save this, move to next checkplot
-        Mousetrap.bind(['ctrl+right','shift+right'], function() {
+        Mousetrap.bind(['ctrl+right','alt+shift+right'], function() {
             $('.checkplot-next').click();
         });
 
         // ctrl+left: save this, move to prev checkplot
-        Mousetrap.bind(['ctrl+left','shift+left'], function() {
+        Mousetrap.bind(['ctrl+left','alt+shift+left'], function() {
             $('.checkplot-prev').click();
         });
 

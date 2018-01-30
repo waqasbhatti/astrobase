@@ -232,3 +232,7 @@ to use this:
     width: 600px;
     padding: 0.5rem;
 }
+
+.modal-content {
+    width: 900px;
+}
