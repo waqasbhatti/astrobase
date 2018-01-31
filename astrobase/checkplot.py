@@ -3542,7 +3542,7 @@ def checkplot_pickle_to_png(checkplotin,
 
     # find the font we need from the package data
     fontpath = os.path.join(os.path.dirname(__file__),
-                            'data',
+                            'cpserver',
                             'cps-assets',
                             'DejaVuSans.ttf')
     # load the font
