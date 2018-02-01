@@ -216,6 +216,9 @@ to use this:
     overflow-y: auto;
 }
 
+.neighbor-num {
+    color: blue;
+}
 
 .no-gutters {
   margin-right: 0;

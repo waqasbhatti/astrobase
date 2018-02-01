@@ -958,7 +958,7 @@ var cpv = {
 
             // update the magseries plot
             cputils.b64_to_image(cpv.currcp.magseries,
-                                '.magseriesplot');
+                                 '.magseriesplot');
 
             // update the varinfo
             if (cpv.currcp.varinfo.objectisvar == 1) {
@@ -1356,7 +1356,9 @@ var cpv = {
                         var nbrlink = nbrobjectid;
                     }
 
-                    rowheader = '<h6>' + 'N' + (ni+1) + ': ' +
+                    rowheader = '<h6>' + '<span class="neighbor-num">N' +
+                        (ni+1) +
+                        '</span>: ' +
                         nbrlink + ' at (&alpha;, &delta;) = <a href="' +
                         'http://simbad.u-strasbg.fr/simbad/sim-coo?Coord=' +
                         nbrra + '+' + nbrdecl +
