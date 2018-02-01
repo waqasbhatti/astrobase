@@ -1555,7 +1555,7 @@ var cpv = {
 
                         xmcatrows.push(
                             '<div class="row mt-1">' +
-                                '<div class="col-sm-12 px-1 py-1">' +
+                                '<div class="col-sm-12">' +
                                 '<h6>No matches found in <abbr ' +
                                  'title="' + xmk['desc'] + ' ">' +
                                 '<strong>' +

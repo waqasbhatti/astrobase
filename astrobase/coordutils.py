@@ -17,6 +17,7 @@ import numpy as np
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 
+import scipy.spatial as sps
 
 #######################
 ## ANGLE CONVERSIONS ##
@@ -286,6 +287,7 @@ def xmatch_basic(ra1, dec1, ra2, dec2, match_radius=5.0):
         return (False,min_dist_arcsec)
 
 
+
 def xmatch_neighbors(ra1, dec1, ra2, dec2, match_radius=60.0,
                      includeself=False,sortresults=True):
     '''
@@ -338,11 +340,122 @@ def xmatch_neighbors(ra1, dec1, ra2, dec2, match_radius=60.0,
         return (False,)
 
 
+
+######################
+## KDTREE FUNCTIONS ##
+######################
+
+def make_kdtree(ra, decl):
+    '''
+    This makes a scipy.spatial.CKDTree on ra, decl.
+
+    '''
+
+    # get the xyz unit vectors from ra,decl
+    # since i had to remind myself:
+    # https://en.wikipedia.org/wiki/Equatorial_coordinate_system
+    cosdecl = np.cos(np.radians(decl))
+    sindecl = np.sin(np.radians(decl))
+    cosra = np.cos(np.radians(ra))
+    sinra = np.sin(np.radians(ra))
+    xyz = np.column_stack((cosra*cosdecl,sinra*cosdecl, sindecl))
+
+    # generate the kdtree
+    kdt = sps.cKDTree(xyz,copy_data=True)
+
+    return kdt
+
+
+
+def conesearch_kdtree(kdtree,
+                      racenter, declcenter,
+                      searchradiusdeg,
+                      conesearchworkers=1):
+    '''
+    This does a cone-search around (racenter, declcenter) in kdtree.
+
+    Returns the indices of kdtree.data that match the specified criteria.
+
+    '''
+
+    cosdecl = np.cos(np.radians(declcenter))
+    sindecl = np.sin(np.radians(declcenter))
+    cosra = np.cos(np.radians(racenter))
+    sinra = np.sin(np.radians(racenter))
+
+    # this is the search distance in xyz unit vectors
+    xyzdist = 2.0 * np.sin(np.radians(searchradius)/2.0)
+
+    # look up the coordinates
+    kdtindices = kdtree.query_ball_point([cosra*cosdecl,
+                                          sinra*cosdecl,
+                                          sindecl],
+                                         xyzdist,
+                                         n_jobs=conesearchworkers)
+
+    return kdtindices
+
+
+
+def xmatch_kdtree(kdtree,
+                  extra, extdecl,
+                  xmatchdistdeg,
+                  closestonly=True):
+    '''This cross-matches between kdtree and (extra, extdecl) arrays.
+
+    Returns the indices of the kdtree and the indices of extra, extdecl that
+    xmatch successfully.
+
+    If closestonly is True, then this function returns only the closest matching
+    indices in (extra, extdecl) for each object in kdtree if there are any
+    matches. Otherwise, it returns a list of indices in (extra, extdecl) for all
+    matches within xmatchdistdeg between kdtree and (extra, extdecl).
+
+    '''
+
+    ext_cosdecl = np.cos(np.radians(extdecl))
+    ext_sindecl = np.sin(np.radians(extdecl))
+    ext_cosra = np.cos(np.radians(extra))
+    ext_sinra = np.sin(np.radians(extra))
+
+    ext_xyz = np.column_stack((ext_cosra*ext_cosdecl,
+                               ext_sinra*ext_cosdecl,
+                               ext_sindecl))
+    ext_xyzdist = 2.0 * np.sin(np.radians(xmatchdistdeg)/2.0)
+
+    # get our kdtree
+    our_kdt = kdtree
+
+    # get the external kdtree
+    ext_kdt = sps.cKDTree(ext_xyz)
+
+    # do a query_ball_tree
+    extkd_matchinds = ext_kdt.query_ball_tree(our_kdt, ext_xyzdist)
+
+    ext_matchinds = []
+    kdt_matchinds = []
+
+    for extind, mind in enumerate(extkd_matchinds):
+        if len(mind) > 0:
+            # our object indices
+            kdt_matchinds.append(extind)
+
+            # external object indices
+            if closestonly:
+                ext_matchinds.append(mind[0])
+            else:
+                ext_matchinds.append(mind)
+
+    return kdt_matchinds, ext_matchinds
+
+
+
 ###################
 ## PROPER MOTION ##
 ###################
 
 def total_proper_motion(pmra, pmdecl, decl):
+
     '''
     This calculates the total proper motion of an object.
 
