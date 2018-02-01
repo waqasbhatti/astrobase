@@ -166,9 +166,9 @@
 
   </div>
 
+
   <div class="col-sm-10">
 
-    <!-- instructions and nav bar go here -->
     <div class="row">
       <div class="col-sm-12 text-sm-center">
         <p><a href="#" class="checkplot-prev"><strong>&larr;</strong> previous</a> |
@@ -178,12 +178,12 @@
       </div>
     </div>
 
-    <!-- first row: finderchart, objectinfo, varinfo, unphased LC -->
-    <div class="row objectinfo-row">
 
-      <div class="col-md-3">
+    <div class="row">
 
-        <div class="row">
+      <div class="col-sm-3">
+
+        <div class="row objectinfo-row">
           <div class="col-sm-12 text-sm-center">
 
             <h4 id="objectid">objectid</h4>
@@ -205,48 +205,6 @@
 
           </div>
         </div>
-
-      </div>
-
-      <div class="col-md-4">
-
-        <table id="objectinfo-basic"
-               class="table table-sm objectinfo-table">
-
-          <tr>
-            <th>Observations</th>
-            <td id="hatinfo">blah</td>
-          </tr>
-          <tr>
-            <th>Coords and PM</th>
-            <td id="coordspm">blah</td>
-          </tr>
-          <tr>
-            <th>Magnitudes<span id="magnotice"></span></th>
-            <td id="mags">blah</td>
-          </tr>
-          <tr>
-            <th>Colors<span id="derednotice"></span></th>
-            <td id="colors">blah</td>
-          </tr>
-
-        </table>
-
-        <table id="objectinfo-extra" class="table table-sm objectinfo-table">
-        </table>
-
-      </div>
-
-      <div class="col-md-5">
-        <img class="img-fluid" id="magseriesplot">
-      </div>
-
-    </div>
-
-    <div class="row">
-
-      <!-- this column contains variability controls -->
-      <div class="col-sm-3">
 
         <div class="row">
           <div class="col-sm-12">
@@ -274,7 +232,7 @@
               <div class="dropdown-menu dropdown-menu-right"
                    aria-labelledby="vartag-dropdown">
                 <h6 class="dropdown-header">Add a tag from the list below<br>(or
-                type in a new one)</h6>
+                  type in a new one)</h6>
                 <a class="dropdown-item vartag-dn" href="#"
                    data-dnvartag="planet candidate">planet candidate</a>
                 <a class="dropdown-item vartag-dn" href="#"
@@ -330,7 +288,7 @@
               <div class="dropdown-menu dropdown-menu-right"
                    aria-labelledby="objtag-dropdown">
                 <h6 class="dropdown-header">Add a tag from the list below<br>(or
-                type in a new one)</h6>
+                  type in a new one)</h6>
                 <a class="dropdown-item objtag-dn" href="#"
                    data-dnobjtag="white dwarf">white dwarf</a>
                 <a class="dropdown-item objtag-dn" href="#"
@@ -391,675 +349,725 @@
 
       </div>
 
-      <!-- contains the periodogram and phased LCs for each method-->
-      <!-- each method gets their own column with as many rows as necessary -->
+
       <div class="col-sm-9">
 
         <div class="row">
+
+          <!-- contains the periodogram and phased LCs for each method-->
+          <!-- each method gets their own column with as many rows as necessary -->
           <div class="col-sm-12">
-            <ul class="nav nav-tabs" role="tablist">
 
-              <li class="nav-item">
-                <a class="nav-link active"
-                   data-toggle="tab"
-                   href="#overview" role="tab">Phased LCs</a>
-              </li>
+            <div class="row">
+              <div class="col-sm-12">
+                <ul class="nav nav-tabs" role="tablist">
 
-              <li class="nav-item">
-                <a class="nav-link"
-                   data-toggle="tab"
-                   href="#neighbors" role="tab">Neighbors</a>
-              </li>
+                  <li class="nav-item">
+                    <a class="nav-link active"
+                       data-toggle="tab"
+                       href="#overview" role="tab">Overview</a>
+                  </li>
 
-              <li class="nav-item">
-                <a class="nav-link"
-                   data-toggle="tab"
-                   href="#xmatches" role="tab">Cross Matches</a>
-              </li>
+                  <li class="nav-item">
+                    <a class="nav-link"
+                       data-toggle="tab"
+                       href="#phasedlcs" role="tab">Phased LCs</a>
+                  </li>
+
+                  <li class="nav-item">
+                    <a class="nav-link"
+                       data-toggle="tab"
+                       href="#xmatches" role="tab">Cross Matches</a>
+                  </li>
+
+                  {% if not readonly %}
+
+                  <li class="nav-item">
+                    <a class="nav-link"
+                       data-toggle="tab"
+                       href="#periodsearch" role="tab">Period Search</a>
+                  </li>
+
+                  <!-- FIXME: finish these later, disabled for now -->
+                  <!-- <li class="nav-item"> -->
+                  <!--   <a class="nav-link" -->
+                  <!--      data-toggle="tab" -->
+                  <!--      href="#variability" role="tab">Variability</a> -->
+                  <!-- </li> -->
+
+                  <!-- <li class="nav-item"> -->
+                  <!--   <a class="nav-link" -->
+                  <!--      data-toggle="tab" -->
+                  <!--      href="#lcfit" role="tab">LC Fit</a> -->
+                  <!-- </li> -->
+
+                  {% end %}
+
+                  <li class="nav-item">
+                    <a class="nav-link"
+                       data-toggle="tab"
+                       href="#cpsave" role="tab">Save/Reset</a>
+                  </li>
+
+
+                </ul>
+              </div>
+            </div>
+
+            <div class="tab-content">
+
+
+              <!-- this tab panel contains an overview of the object -->
+              <div class="tab-pane active" id="overview" role="tabpanel">
+                <div class="row mt-2">
+
+                  <div class="col-md-5">
+
+                    <table id="objectinfo-basic"
+                           class="table table-sm objectinfo-table">
+
+                      <tr>
+                        <th>Observations</th>
+                        <td id="hatinfo">blah</td>
+                      </tr>
+                      <tr>
+                        <th>Coords and PM</th>
+                        <td id="coordspm">blah</td>
+                      </tr>
+                      <tr>
+                        <th>Magnitudes<span id="magnotice"></span></th>
+                        <td id="mags">blah</td>
+                      </tr>
+                      <tr>
+                        <th>Colors<span id="derednotice"></span></th>
+                        <td id="colors">blah</td>
+                      </tr>
+
+                    </table>
+
+                    <table id="objectinfo-extra" class="table table-sm objectinfo-table">
+                    </table>
+
+                  </div>
+
+                  <div class="col-md-7">
+                    <img class="img-fluid" id="magseriesplot">
+                  </div>
+
+                </div>
+
+                <div class="row">
+
+                  <div class="col-sm-5">
+                    <h5><span id="lcc-neighbor-count">0</span> LC collection neighbor(s) within <span id="lcc-neighbor-maxdist"></span>&Prime;</h5>
+
+                    <p class="align-middle">Neighbors for this object from this light curve collection are listed below in order of increasing distance.  Their unphased LC and phased LCs using the same period-finder methods, and best period and fold epoch, as for the object are also shown.</p>
+
+                  </div>
+
+                  <div class="col-sm-7 neighbor-table-row">
+
+                    <h5><span id="gaia-neighbor-count">0</span> GAIA neighbor(s) within <span id="gaia-neighbor-maxdist"></span>&Prime;</h5>
+
+                    <table id="gaia-neighbors" class="table table-sm objectinfo-table table-hover">
+                      <thead>
+                        <tr>
+                          <th>GAIA source id<br>&nbsp;</th>
+                          <th>distance<br>[arcsec]</th>
+                          <th>parallax<br>[mas]</th>
+                          <th><em>G</em><br>[mag]</th>
+                          <th><em>M<sub>G</sub></em><br>[mag]</th>
+                        </tr>
+                      </thead>
+                      <tbody id="gaia-neighbor-tbody">
+
+                      </tbody>
+                    </table>
+
+                  </div>
+
+                </div>
+
+                <div class="row tool-header-panel" id="lcc-neighbor-container">
+
+                  <!-- for each neighbor we have a divrow with a heading of objectid, ra, decl, dist -->
+                  <!-- then for each periodfinder, the best phased LC for that periodfinder -->
+
+                </div>
+
+              </div>
+
+
+              <!-- this tab panel contains the phased light curve plots -->
+              <div class="tab-pane" id="phasedlcs" role="tabpanel">
+                <div class="row phased-container tool-header-panel ">
+
+                </div>
+              </div>
+
+              <!-- this tab panel contains xmatch stuff -->
+              <div class="tab-pane" id="xmatches" role="tabpanel">
+                <div class="row tool-header-panel">
+
+                  <div class="col-sm-12" id="xmatch-content">
+                    <p>No cross-matches for this object found.</p>
+                  </div>
+
+                </div>
+              </div>
 
               {% if not readonly %}
 
-              <li class="nav-item">
-                <a class="nav-link"
-                   data-toggle="tab"
-                   href="#periodsearch" role="tab">Period Search</a>
-              </li>
+              <!-- this tab panel contains the period-tools -->
+              <div class="tab-pane" id="periodsearch" role="tabpanel">
 
-              <li class="nav-item">
-                <a class="nav-link"
-                   data-toggle="tab"
-                   href="#variability" role="tab">Variability</a>
-              </li>
+                <!-- this contains the periodogram runner controls -->
+                <div class="row tool-header-panel">
 
-              <li class="nav-item">
-                <a class="nav-link"
-                   data-toggle="tab"
-                   href="#lcfit" role="tab">LC Fit</a>
-              </li>
+                  <div class="col-sm-6">
+
+                    <div class="form-group">
+                      <label for="psearch-lspmethod">Period search method</label>
+                      <select class="custom-select form-control form-control-sm"
+                              id="psearch-lspmethod" name="psearch-lspmethod">
+                        <option value="gls" selected>Generalized Lomb-Scargle</option>
+                        <option value="pdm">Phase Dispersion Minimization</option>
+                        <option value="bls">Box Least-squared Search</option>
+                        <option value="aov">Analysis of Variance</option>
+                        <option value="mav">Multi-harmonic Analysis of Variance</option>
+                        <option value="acf">Autocorrelation Period Find</option>
+                        <option value="win">Timeseries Spectral Window Lomb-Scargle</option>
+                      </select>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-sm-6">
+                        <div class="form-group">
+                          <label for="psearch-nbestpeaks">Periodogram peaks to get</label>
+                          <input type="text" class="form-control form-control-sm"
+                                 id="psearch-nbestpeaks" value="10">
+                        </div>
+                      </div>
+
+                      <div class="col-sm-6">
+                        <div class="form-group">
+                          <label for="psearch-freqstep">Frequency step [days<sup>-1</sup>]</label>
+                          <input type="text" class="form-control form-control-sm"
+                                 id="psearch-freqstep" disabled>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row">
+                      <div class="col-sm-6">
+                        <div class="form-group">
+                          <label for="psearch-startp">Start period [days]</label>
+                          <input type="text" class="form-control form-control-sm"
+                                 id="psearch-startp" disabled>
+                        </div>
+                      </div>
+                      <div class="col-sm-6">
+                        <div class="form-group">
+                          <label for="psearch-endp">End period [days]</label>
+                          <input type="text" class="form-control form-control-sm"
+                                 id="psearch-endp" disabled>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="form-check">
+                      <label class="form-check-label">
+                        <input type="checkbox" id="psearch-autofreq"
+                               class="form-check-input" checked>
+                        Use automatic frequency step and period coverage
+                      </label>
+                    </div>
+
+                    <!-- this contains extra options for each specific period finders -->
+                    <div id="psearch-pf-extraparams">
+                    </div>
+
+                  </div>
+
+                  <div class="col-sm-6">
+
+                    <div class="form-group">
+                      <label for="psearch-timefilters">Apply time (JD - <span class="time0"></span>) filters [<code>t1:t2, not:t3:t4,...</code>]</label>
+                      <input type="text" class="form-control form-control-sm"
+                             id="psearch-timefilters" value="">
+                    </div>
+
+                    <div class="form-group">
+                      <label for="psearch-magfilters">Apply flux/mag filters [<code>y1:y2, not:y3:y4,...</code>]</label>
+                      <input type="text" class="form-control form-control-sm"
+                             id="psearch-magfilters" value="">
+                    </div>
+
+                    <div class="form-group">
+                      <label for="psearch-sigclip">Use sigma clip for LC [<code>lohi_sig</code> or <code>lo_sig, hi_sig</code>]</label>
+                      <input type="text" class="form-control form-control-sm"
+                             id="psearch-sigclip" value="">
+                    </div>
+
+                    <div class="form-check">
+                      <label class="form-check-label">
+                        <input type="checkbox" id="psearch-magsarefluxes"
+                               class="form-check-input">
+                        Light curve measurements are fluxes
+                      </label>
+                    </div>
+
+                    <button type="submit" id="psearch-start"
+                            class="btn btn-primary btn-block">
+                      Run period search
+                    </button>
+
+                  </div>
+
+                </div>
+
+                <!-- this contains the periodogram and phasedlc display controls -->
+                <div class="row mt-3">
+
+                  <div class="col-sm-3">
+                    <div class="form-group">
+                      <label for="psearch-pgrampeaks">Phased LC for spec peak</label>
+                      <select class="custom-select form-control"
+                              id="psearch-pgrampeaks" name="psearch-pgrampeaks">
+                        <option value="none">no tool results yet</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="col-sm-4">
+                    <div class="form-group">
+                      <label for="psearch-plotperiod">
+                        Period [days]
+                      </label>
+                      <div class="input-group">
+                        <span class="input-group-btn">
+                          <button class="btn btn-secondary"
+                                  type="button" id="psearch-halfperiod">1/2</button>
+                        </span>
+                        <input type="text" id="psearch-plotperiod"
+                               class="form-control">
+                        <span class="input-group-btn">
+                          <button class="btn btn-secondary"
+                                  type="button"
+                                  id="psearch-doubleperiod">&times; 2</button>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-sm-3">
+                    <div class="form-group">
+                      <label for="psearch-plotepoch">
+                        Epoch [JD]
+                        <strong>
+                          <a href="#" id="psearch-addhalfp-epoch">[+1/2 P]</a>
+                          <a href="#" id="psearch-subhalfp-epoch">[-1/2 P]</a>
+                        </strong>
+                      </label>
+                      <input type="text" class="form-control"
+                             id="psearch-plotepoch">
+                    </div>
+                  </div>
+
+                  <div class="col-sm-2">
+                    <div class="form-group">
+                      <label for="psearch-makephasedlc">&nbsp;</label>
+                      <button type="submit" id="psearch-makephasedlc"
+                              class="btn btn-success form-control">
+                        Plot LC
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- this has the periodogram and phased LC displays -->
+                <div class="row">
+
+                  <div class="col-sm-6 display-panel">
+                    <img class="img-fluid" id="psearch-periodogram-display" src="/static/no-tool-results.png">
+                  </div>
+
+                  <div class="col-sm-6 display-panel">
+                    <img class="img-fluid" id="psearch-phasedlc-display" src="/static/no-tool-results.png">
+                  </div>
+
+                </div>
+
+                <!-- this contains phased LC zoom, binning and overplot tools -->
+                <div class="row">
+
+                  <div class="col-sm-3">
+
+                    <div class="form-group">
+                      <label for="psearch-plotxlim">Zoom plot to phase range</label>
+                      <input type="text" class="form-control"
+                             id="psearch-plotxlim" value="[-0.8, 0.8]">
+                    </div>
+
+                  </div>
+
+                  <div class="col-sm-5">
+
+                    <div class="form-group">
+                      <label for="psearch-binphase">Overplot a binned LC with
+                        phase bin size</label>
+                      <input type="text" class="form-control"
+                             id="psearch-binphase" value="0.002">
+                    </div>
+
+                  </div>
+
+                  <div class="col-sm-4">
+
+                    <div class="form-check">
+                      <label class="form-check-label">
+                        <input type="checkbox" id="psearch-updateperiod"
+                               class="form-check-input">
+                        Update object period from plot
+                      </label>
+                    </div>
+
+                    <div class="form-check">
+                      <label class="form-check-label">
+                        <input type="checkbox" id="psearch-updateepoch"
+                               class="form-check-input">
+                        Update object epoch from plot
+                      </label>
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+
+              <!-- FIXME: finish these later, disabled for now -->
+              <!-- <\!-- this tab panel contains variability tools -\-> -->
+              <!-- <div class="tab-pane" id="variability" role="tabpanel"> -->
+
+              <!--   <\!-- this has the phased LC display -\-> -->
+              <!--   <div class="row tool-header-panel"> -->
+
+              <!--     <div class="col-sm-8 display-panel text-sm-center col-centered" -->
+              <!--          id="var-phasedlc-display"> -->
+              <!--     </div> -->
+
+              <!--   </div> -->
+
+              <!--   <\!-- this contains the periodogram and phasedlc display controls -\-> -->
+              <!--   <div class="row"> -->
+
+              <!--     <div class="col-sm-3"> -->
+              <!--       <div class="form-group"> -->
+              <!--         <label for="var-pgrampeaks">For periodogram peak</label> -->
+              <!--         <select class="custom-select form-control" -->
+              <!--                 id="var-pgrampeaks" name="var-pgrampeaks"> -->
+              <!--         </select> -->
+              <!--       </div> -->
+              <!--     </div> -->
+
+              <!--     <div class="col-sm-4"> -->
+              <!--       <div class="form-group"> -->
+              <!--         <label for="var-plotperiod">Modify period [days]</label> -->
+              <!--         <div class="input-group"> -->
+              <!--           <span class="input-group-btn"> -->
+              <!--             <button class="btn btn-secondary" type="button" id="var-halfperiod">1/2</button> -->
+              <!--           </span> -->
+              <!--           <input type="text" class="form-control"> -->
+              <!--           <span class="input-group-btn"> -->
+              <!--             <button class="btn btn-secondary" type="button" id="var-doubleperiod">&times; 2</button> -->
+              <!--           </span> -->
+              <!--         </div> -->
+              <!--       </div> -->
+              <!--     </div> -->
+
+              <!--     <div class="col-sm-3"> -->
+              <!--       <div class="form-group"> -->
+              <!--         <label for="var-plotepoch">Modify epoch [JD]</label> -->
+              <!--         <input type="text" class="form-control" -->
+              <!--                id="var-plotepoch"> -->
+              <!--       </div> -->
+              <!--     </div> -->
+
+              <!--     <div class="col-sm-2"> -->
+              <!--       <div class="form-group"> -->
+              <!--         <label for="var-makephasedlc">&nbsp;</label> -->
+              <!--         <button type="submit" id="var-makephasedlc" -->
+              <!--                 class="btn btn-secondary form-control"> -->
+              <!--           Plot LC -->
+              <!--         </button> -->
+              <!--       </div> -->
+              <!--     </div> -->
+
+              <!--   </div> -->
+
+              <!--   <div class="row py-1"> -->
+
+              <!--     <div class="col-sm-4"> -->
+
+              <!--       <\!-- this returns a JSON from the backend to HTML table -\-> -->
+              <!--       <\!-- can download the table as CSV or JSON -\-> -->
+              <!--       <\!-- can save results to the cpdict['varinfo']['features'] -\-> -->
+              <!--       <\!-- these are reloaded from the checkplot if present already -\-> -->
+              <!--       <h5>Variability features</h5> -->
+
+              <!--       <form> -->
+              <!--         <button type="submit" id="get-varfeatures" -->
+              <!--                 class="btn btn-primary btn-block">Get -->
+              <!--           variability features</button> -->
+              <!--       </form> -->
+
+              <!--       <\!-- results go into a table here -\-> -->
+              <!--       <div id="var-varfeatures-results" class="py-1"> -->
+
+              <!--       </div> -->
+
+              <!--     </div> -->
+
+              <!--     <\!-- this pre-whitens a periodic signal from the light curve -\-> -->
+              <!--     <\!-- the results can then be reused in the period-search tools -\-> -->
+              <!--     <\!-- can save results to cpdict['signals']['whiten'] -\-> -->
+              <!--     <div class="col-sm-4"> -->
+
+              <!--       <h5>Pre-whiten light curve</h5> -->
+
+              <!--     </div> -->
+
+
+              <!--     <\!-- this subtracts a periodic signal from the light curve -\-> -->
+              <!--     <\!-- the results can then be reused in the period-search tools -\-> -->
+              <!--     <\!-- can save results to cpdict['signals']['mask'] -\-> -->
+              <!--     <div class="col-sm-4"> -->
+
+              <!--       <h5>Mask periodic signal</h5> -->
+
+              <!--     </div> -->
+
+              <!--   </div> -->
+
+              <!-- </div> -->
+
+              <!-- <\!-- this tab panel contains lcfit tools -\-> -->
+              <!-- <div class="tab-pane" id="lcfit" role="tabpanel"> -->
+
+              <!--   <\!-- this has the phased LC display -\-> -->
+              <!--   <div class="row tool-header-panel"> -->
+
+              <!--     <div class="col-sm-8 display-panel text-sm-center col-centered" -->
+              <!--          id="lcfit-phasedlc-display"> -->
+              <!--     </div> -->
+
+              <!--   </div> -->
+
+              <!--   <\!-- this contains the periodogram and phasedlc display controls -\-> -->
+              <!--   <div class="row"> -->
+
+              <!--     <div class="col-sm-3"> -->
+              <!--       <div class="form-group"> -->
+              <!--         <label for="lcfit-pgrampeaks">For periodogram peak</label> -->
+              <!--         <select class="custom-select form-control" -->
+              <!--                 id="lcfit-pgrampeaks" name="lcfit-pgrampeaks"> -->
+              <!--         </select> -->
+              <!--       </div> -->
+              <!--     </div> -->
+
+              <!--     <div class="col-sm-4"> -->
+              <!--       <div class="form-group"> -->
+              <!--         <label for="lcfit-plotperiod">Modify period [days]</label> -->
+              <!--         <div class="input-group"> -->
+              <!--           <span class="input-group-btn"> -->
+              <!--             <button class="btn btn-secondary" type="button">1/2</button> -->
+              <!--           </span> -->
+              <!--           <input type="text" class="form-control"> -->
+              <!--           <span class="input-group-btn"> -->
+              <!--             <button class="btn btn-secondary" type="button">&times; 2</button> -->
+              <!--           </span> -->
+              <!--         </div> -->
+              <!--       </div> -->
+              <!--     </div> -->
+
+              <!--     <div class="col-sm-3"> -->
+              <!--       <div class="form-group"> -->
+              <!--         <label for="lcfit-plotepoch">Modify epoch [JD]</label> -->
+              <!--         <input type="text" class="form-control" -->
+              <!--                id="lcfit-plotepoch"> -->
+              <!--       </div> -->
+              <!--     </div> -->
+
+              <!--     <div class="col-sm-2"> -->
+              <!--       <div class="form-group"> -->
+              <!--         <label for="lcfit-makephasedlc">&nbsp;</label> -->
+              <!--         <button type="submit" id="lcfit-makephasedlc" -->
+              <!--                 class="btn btn-secondary form-control"> -->
+              <!--           Plot LC -->
+              <!--         </button> -->
+              <!--       </div> -->
+              <!--     </div> -->
+
+              <!--   </div> -->
+
+
+              <!--   <div class="row py-1"> -->
+
+              <!--     <div class="col-sm-6"> -->
+
+              <!--       <h5>Fit functions to light curve</h5> -->
+
+              <!--       <\!-- this does fitting using Fourier, spline, legendre, savgol -\-> -->
+              <!--       <\!-- can download the resulting plot as PNG -\-> -->
+              <!--       <\!-- can save results to cpdict['fitinfo'][method] -\-> -->
+              <!--       <div class="form-group"> -->
+              <!--         <label for="lcfit-type">Fit method</label> -->
+              <!--         <select class="custom-select form-control form-control-sm" -->
+              <!--                 id="lcfit-fitmethod" -->
+              <!--                 name="lcfit-fitmethod"> -->
+              <!--           <option value="fourier" selected>Fourier fit</option> -->
+              <!--           <option value="spline">Spline fit</option> -->
+              <!--           <option value="legendre">Legendre polynomial fit</option> -->
+              <!--           <option value="savgol">Savitsky-Golay smoothed fit</option> -->
+              <!--         </select> -->
+              <!--       </div> -->
+
+              <!--       <div class="form-check"> -->
+              <!--         <label class="form-check-label"> -->
+              <!--           <input type="checkbox" id="lcfit-magsarefluxes" -->
+              <!--                  class="form-check-input"> -->
+              <!--           Light curve measurements are fluxes -->
+              <!--         </label> -->
+              <!--       </div> -->
+
+              <!--       <button type="submit" id="lcfit-start" -->
+              <!--               class="btn btn-primary btn-block"> -->
+              <!--         Run light curve fit -->
+              <!--       </button> -->
+
+              <!--       <div class="py-1"> -->
+
+              <!--         <h5>Fit results</h5> -->
+
+              <!--         <div id="lcfit-results"> -->
+
+              <!--         </div> -->
+
+              <!--         <button type="submit" id="lcfit-update-mags" -->
+              <!--                 class="btn btn-secondary btn-block"> -->
+              <!--           Subtract fit and use resulting LC -->
+              <!--         </button> -->
+
+
+              <!--       </div> -->
+
+              <!--     </div> -->
+
+              <!--     <div class="col-sm-6"> -->
+
+              <!--       <div class="form-group"> -->
+              <!--         <label for="lcfit-fourierfitorder">Fourier fit order</label> -->
+              <!--         <input type="text" class="form-control form-control-sm" -->
+              <!--                id="lcfit-fourierfitorder" value="6"> -->
+              <!--       </div> -->
+
+              <!--       <div class="form-group"> -->
+              <!--         <label for="lcfit-splinefitknots">Spline knot fraction</label> -->
+              <!--         <input type="text" class="form-control form-control-sm" -->
+              <!--                id="lcfit-splinefitknots" value="0.002"> -->
+              <!--       </div> -->
+
+              <!--       <div class="form-group"> -->
+              <!--         <label for="lcfit-legendrepolyorder"> -->
+              <!--           Lengendre polynomial order -->
+              <!--         </label> -->
+              <!--         <input type="text" class="form-control form-control-sm" -->
+              <!--                id="lcfit-legendrepolyorder" value="10"> -->
+              <!--       </div> -->
+
+              <!--       <div class="form-group"> -->
+              <!--         <label for="lcfit-savgolwinlength"> -->
+              <!--           Savitsky-Golay window length -->
+              <!--         </label> -->
+              <!--         <input type="text" class="form-control form-control-sm" -->
+              <!--                id="lcfit-savgolwinlength"> -->
+              <!--       </div> -->
+
+              <!--     </div> -->
+
+              <!--   </div> -->
+              <!-- </div> -->
 
               {% end %}
 
-              <li class="nav-item">
-                <a class="nav-link"
-                   data-toggle="tab"
-                   href="#cpsave" role="tab">Save/Reset</a>
-              </li>
+              <!-- this tab contains save and export tools -->
+              <div class="tab-pane" id="cpsave" role="tabpanel">
 
+                {% if not readonly %}
 
-            </ul>
+                <!-- this is the save tool results link -->
+                <div class="row tool-header-panel">
+
+                  <div class="col-sm-6">
+                    <p>All results from light curve tools applied to this object are
+                      being saved to a temporary location and will kept around until
+                      they are sychronized to the checkplot pickle. Syncing these
+                      results will <strong>overwrite</strong> previous values in the
+                      checkplot pickle. Resetting all unsynced results will remove
+                      all current tool results and reload the pickle.</p>
+                  </div>
+
+                  <div class="col-sm-6 py-1">
+                    <button type="submit" id="save-cptool-results"
+                            class="btn btn-danger btn-block">
+                      Sync current LC tool results to checkplot pickle
+                    </button>
+                    <button type="submit" id="reset-cptool-results"
+                            class="btn btn-warning btn-block">
+                      Reset all unsynced LC tool results
+                    </button>
+                  </div>
+
+                </div>
+
+                {% end %}
+
+                <!-- this is the save to PNG link -->
+                <div class="row tool-header-panel">
+
+                  <div class="col-sm-6">
+                    <p>All synced object information in the checkplot pickle can be
+                      exported as a PNG file. This will include the object name,
+                      finder chart, period and epoch, variability and object tags,
+                      comments, the light curve, and finally, periodograms and phased
+                      light curves for all period-finding methods used.
+                  </div>
+
+                  <div class="col-sm-6 py-1">
+                    <button type="submit" id="save-to-png"
+                            class="btn btn-secondary btn-block">
+                      Export synced info from checkplot pickle to PNG
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
           </div>
+
+
         </div>
 
-        <div class="tab-content">
-
-          <!-- this tab panel contains the phased light curve plots -->
-          <div class="tab-pane active" id="overview" role="tabpanel">
-            <div class="row phased-container tool-header-panel ">
-
-            </div>
-          </div>
-
-          <!-- this tab panel contains neighbor stuff -->
-          <div class="tab-pane" id="neighbors" role="tabpanel">
-
-            <div class="row tool-header-panel">
-
-              <div class="col-sm-5">
-                <h5><span id="lcc-neighbor-count">0</span> LC collection neighbor(s) within <span id="lcc-neighbor-maxdist"></span>&Prime;</h5>
-
-                <p class="align-middle">Neighbors for this object from this light curve collection are listed below in order of increasing distance.  Their unphased LC and phased LCs using the same period-finder methods, and best period and fold epoch, as for the object are also shown.</p>
-
-              </div>
-
-              <div class="col-sm-7 neighbor-table-row">
-
-                <h5><span id="gaia-neighbor-count">0</span> GAIA neighbor(s) within <span id="gaia-neighbor-maxdist"></span>&Prime;</h5>
-
-                <table id="gaia-neighbors" class="table table-sm objectinfo-table table-hover">
-                  <thead>
-                    <tr>
-                      <th>GAIA source id<br>&nbsp;</th>
-                      <th>distance<br>[arcsec]</th>
-                      <th>parallax<br>[mas]</th>
-                      <th><em>G</em><br>[mag]</th>
-                      <th><em>M<sub>G</sub></em><br>[mag]</th>
-                    </tr>
-                  </thead>
-                  <tbody id="gaia-neighbor-tbody">
-
-                  </tbody>
-                </table>
-
-              </div>
-
-            </div>
-
-            <div class="row tool-header-panel" id="lcc-neighbor-container">
-
-              <!-- for each neighbor we have a divrow with a heading of objectid, ra, decl, dist -->
-              <!-- then for each periodfinder, the best phased LC for that periodfinder -->
-
-            </div>
-
-          </div>
-
-          <!-- this tab panel contains xmatch stuff -->
-          <div class="tab-pane" id="xmatches" role="tabpanel">
-            <div class="row tool-header-panel">
-
-              <div class="col-sm-12" id="xmatch-content">
-                <p>No cross-matches for this object found.</p>
-              </div>
-
-            </div>
-          </div>
-
-          {% if not readonly %}
-
-          <!-- this tab panel contains the period-tools -->
-          <div class="tab-pane" id="periodsearch" role="tabpanel">
-
-            <!-- this contains the periodogram runner controls -->
-            <div class="row tool-header-panel">
-
-              <div class="col-sm-6">
-
-                <div class="form-group">
-                  <label for="psearch-lspmethod">Period search method</label>
-                  <select class="custom-select form-control form-control-sm"
-                          id="psearch-lspmethod" name="psearch-lspmethod">
-                    <option value="gls" selected>Generalized Lomb-Scargle</option>
-                    <option value="pdm">Phase Dispersion Minimization</option>
-                    <option value="bls">Box Least-squared Search</option>
-                    <option value="aov">Analysis of Variance</option>
-                    <option value="mav">Multi-harmonic Analysis of Variance</option>
-                    <option value="acf">Autocorrelation Period Find</option>
-                    <option value="win">Timeseries Spectral Window Lomb-Scargle</option>
-                  </select>
-                </div>
-
-                <div class="row">
-                  <div class="col-sm-6">
-                    <div class="form-group">
-                      <label for="psearch-nbestpeaks">Periodogram peaks to get</label>
-                      <input type="text" class="form-control form-control-sm"
-                             id="psearch-nbestpeaks" value="10">
-                    </div>
-                  </div>
-
-                  <div class="col-sm-6">
-                    <div class="form-group">
-                      <label for="psearch-freqstep">Frequency step [days<sup>-1</sup>]</label>
-                      <input type="text" class="form-control form-control-sm"
-                             id="psearch-freqstep" disabled>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="row">
-                  <div class="col-sm-6">
-                    <div class="form-group">
-                      <label for="psearch-startp">Start period [days]</label>
-                      <input type="text" class="form-control form-control-sm"
-                             id="psearch-startp" disabled>
-                    </div>
-                  </div>
-                  <div class="col-sm-6">
-                    <div class="form-group">
-                      <label for="psearch-endp">End period [days]</label>
-                      <input type="text" class="form-control form-control-sm"
-                             id="psearch-endp" disabled>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="form-check">
-                  <label class="form-check-label">
-                    <input type="checkbox" id="psearch-autofreq"
-                           class="form-check-input" checked>
-                    Use automatic frequency step and period coverage
-                  </label>
-                </div>
-
-                <!-- this contains extra options for each specific period finders -->
-                <div id="psearch-pf-extraparams">
-                </div>
-
-              </div>
-
-              <div class="col-sm-6">
-
-                <div class="form-group">
-                  <label for="psearch-timefilters">Apply time (JD - <span class="time0"></span>) filters [<code>t1:t2, not:t3:t4,...</code>]</label>
-                  <input type="text" class="form-control form-control-sm"
-                         id="psearch-timefilters" value="">
-                </div>
-
-                <div class="form-group">
-                  <label for="psearch-magfilters">Apply flux/mag filters [<code>y1:y2, not:y3:y4,...</code>]</label>
-                  <input type="text" class="form-control form-control-sm"
-                         id="psearch-magfilters" value="">
-                </div>
-
-                <div class="form-group">
-                  <label for="psearch-sigclip">Use sigma clip for LC [<code>lohi_sig</code> or <code>lo_sig, hi_sig</code>]</label>
-                  <input type="text" class="form-control form-control-sm"
-                         id="psearch-sigclip" value="">
-                </div>
-
-                <div class="form-check">
-                  <label class="form-check-label">
-                    <input type="checkbox" id="psearch-magsarefluxes"
-                           class="form-check-input">
-                    Light curve measurements are fluxes
-                  </label>
-                </div>
-
-                <button type="submit" id="psearch-start"
-                        class="btn btn-primary btn-block">
-                  Run period search
-                </button>
-
-              </div>
-
-            </div>
-
-            <!-- this contains the periodogram and phasedlc display controls -->
-            <div class="row mt-3">
-
-              <div class="col-sm-3">
-                <div class="form-group">
-                  <label for="psearch-pgrampeaks">Phased LC for spec peak</label>
-                  <select class="custom-select form-control"
-                          id="psearch-pgrampeaks" name="psearch-pgrampeaks">
-                    <option value="none">no tool results yet</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="col-sm-4">
-                <div class="form-group">
-                  <label for="psearch-plotperiod">
-                    Period [days]
-                  </label>
-                  <div class="input-group">
-                    <span class="input-group-btn">
-                      <button class="btn btn-secondary"
-                              type="button" id="psearch-halfperiod">1/2</button>
-                    </span>
-                    <input type="text" id="psearch-plotperiod"
-                           class="form-control">
-                    <span class="input-group-btn">
-                      <button class="btn btn-secondary"
-                              type="button"
-                              id="psearch-doubleperiod">&times; 2</button>
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-sm-3">
-                <div class="form-group">
-                  <label for="psearch-plotepoch">
-                    Epoch [JD]
-                    <strong>
-                      <a href="#" id="psearch-addhalfp-epoch">[+1/2 P]</a>
-                      <a href="#" id="psearch-subhalfp-epoch">[-1/2 P]</a>
-                    </strong>
-                  </label>
-                  <input type="text" class="form-control"
-                         id="psearch-plotepoch">
-                </div>
-              </div>
-
-              <div class="col-sm-2">
-                <div class="form-group">
-                  <label for="psearch-makephasedlc">&nbsp;</label>
-                  <button type="submit" id="psearch-makephasedlc"
-                          class="btn btn-success form-control">
-                    Plot LC
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
-            <!-- this has the periodogram and phased LC displays -->
-            <div class="row">
-
-              <div class="col-sm-6 display-panel">
-                <img class="img-fluid" id="psearch-periodogram-display" src="/static/no-tool-results.png">
-              </div>
-
-              <div class="col-sm-6 display-panel">
-                <img class="img-fluid" id="psearch-phasedlc-display" src="/static/no-tool-results.png">
-              </div>
-
-            </div>
-
-            <!-- this contains phased LC zoom, binning and overplot tools -->
-            <div class="row">
-
-              <div class="col-sm-3">
-
-                <div class="form-group">
-                  <label for="psearch-plotxlim">Zoom plot to phase range</label>
-                  <input type="text" class="form-control"
-                         id="psearch-plotxlim" value="[-0.8, 0.8]">
-                </div>
-
-              </div>
-
-              <div class="col-sm-5">
-
-                <div class="form-group">
-                  <label for="psearch-binphase">Overplot a binned LC with
-                  phase bin size</label>
-                  <input type="text" class="form-control"
-                         id="psearch-binphase" value="0.002">
-                </div>
-
-              </div>
-
-              <div class="col-sm-4">
-
-                <div class="form-check">
-                  <label class="form-check-label">
-                    <input type="checkbox" id="psearch-updateperiod"
-                           class="form-check-input">
-                    Update object period from plot
-                  </label>
-                </div>
-
-                <div class="form-check">
-                  <label class="form-check-label">
-                    <input type="checkbox" id="psearch-updateepoch"
-                           class="form-check-input">
-                    Update object epoch from plot
-                  </label>
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          <!-- this tab panel contains variability tools -->
-          <div class="tab-pane" id="variability" role="tabpanel">
-
-            <!-- this has the phased LC display -->
-            <div class="row tool-header-panel">
-
-              <div class="col-sm-8 display-panel text-sm-center col-centered"
-                   id="var-phasedlc-display">
-              </div>
-
-            </div>
-
-            <!-- this contains the periodogram and phasedlc display controls -->
-            <div class="row">
-
-              <div class="col-sm-3">
-                <div class="form-group">
-                  <label for="var-pgrampeaks">For periodogram peak</label>
-                  <select class="custom-select form-control"
-                          id="var-pgrampeaks" name="var-pgrampeaks">
-                  </select>
-                </div>
-              </div>
-
-              <div class="col-sm-4">
-                <div class="form-group">
-                  <label for="var-plotperiod">Modify period [days]</label>
-                  <div class="input-group">
-                    <span class="input-group-btn">
-                      <button class="btn btn-secondary" type="button" id="var-halfperiod">1/2</button>
-                    </span>
-                    <input type="text" class="form-control">
-                    <span class="input-group-btn">
-                      <button class="btn btn-secondary" type="button" id="var-doubleperiod">&times; 2</button>
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-sm-3">
-                <div class="form-group">
-                  <label for="var-plotepoch">Modify epoch [JD]</label>
-                  <input type="text" class="form-control"
-                         id="var-plotepoch">
-                </div>
-              </div>
-
-              <div class="col-sm-2">
-                <div class="form-group">
-                  <label for="var-makephasedlc">&nbsp;</label>
-                  <button type="submit" id="var-makephasedlc"
-                          class="btn btn-secondary form-control">
-                    Plot LC
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
-            <div class="row py-1">
-
-              <div class="col-sm-4">
-
-                <!-- this returns a JSON from the backend to HTML table -->
-                <!-- can download the table as CSV or JSON -->
-                <!-- can save results to the cpdict['varinfo']['features'] -->
-                <!-- these are reloaded from the checkplot if present already -->
-                <h5>Variability features</h5>
-
-                <form>
-                  <button type="submit" id="get-varfeatures"
-                          class="btn btn-primary btn-block">Get
-                    variability features</button>
-                </form>
-
-                <!-- results go into a table here -->
-                <div id="var-varfeatures-results" class="py-1">
-
-                </div>
-
-              </div>
-
-              <!-- this pre-whitens a periodic signal from the light curve -->
-              <!-- the results can then be reused in the period-search tools -->
-              <!-- can save results to cpdict['signals']['whiten'] -->
-              <div class="col-sm-4">
-
-                <h5>Pre-whiten light curve</h5>
-
-              </div>
-
-
-              <!-- this subtracts a periodic signal from the light curve -->
-              <!-- the results can then be reused in the period-search tools -->
-              <!-- can save results to cpdict['signals']['mask'] -->
-              <div class="col-sm-4">
-
-                <h5>Mask periodic signal</h5>
-
-              </div>
-
-            </div>
-
-          </div>
-
-          <!-- this tab panel contains lcfit tools -->
-          <div class="tab-pane" id="lcfit" role="tabpanel">
-
-            <!-- this has the phased LC display -->
-            <div class="row tool-header-panel">
-
-              <div class="col-sm-8 display-panel text-sm-center col-centered"
-                   id="lcfit-phasedlc-display">
-              </div>
-
-            </div>
-
-            <!-- this contains the periodogram and phasedlc display controls -->
-            <div class="row">
-
-              <div class="col-sm-3">
-                <div class="form-group">
-                  <label for="lcfit-pgrampeaks">For periodogram peak</label>
-                  <select class="custom-select form-control"
-                          id="lcfit-pgrampeaks" name="lcfit-pgrampeaks">
-                  </select>
-                </div>
-              </div>
-
-              <div class="col-sm-4">
-                <div class="form-group">
-                  <label for="lcfit-plotperiod">Modify period [days]</label>
-                  <div class="input-group">
-                    <span class="input-group-btn">
-                      <button class="btn btn-secondary" type="button">1/2</button>
-                    </span>
-                    <input type="text" class="form-control">
-                    <span class="input-group-btn">
-                      <button class="btn btn-secondary" type="button">&times; 2</button>
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="col-sm-3">
-                <div class="form-group">
-                  <label for="lcfit-plotepoch">Modify epoch [JD]</label>
-                  <input type="text" class="form-control"
-                         id="lcfit-plotepoch">
-                </div>
-              </div>
-
-              <div class="col-sm-2">
-                <div class="form-group">
-                  <label for="lcfit-makephasedlc">&nbsp;</label>
-                  <button type="submit" id="lcfit-makephasedlc"
-                          class="btn btn-secondary form-control">
-                    Plot LC
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
-
-            <div class="row py-1">
-
-              <div class="col-sm-6">
-
-                <h5>Fit functions to light curve</h5>
-
-                <!-- this does fitting using Fourier, spline, legendre, savgol -->
-                <!-- can download the resulting plot as PNG -->
-                <!-- can save results to cpdict['fitinfo'][method] -->
-                <div class="form-group">
-                  <label for="lcfit-type">Fit method</label>
-                  <select class="custom-select form-control form-control-sm"
-                          id="lcfit-fitmethod"
-                          name="lcfit-fitmethod">
-                    <option value="fourier" selected>Fourier fit</option>
-                    <option value="spline">Spline fit</option>
-                    <option value="legendre">Legendre polynomial fit</option>
-                    <option value="savgol">Savitsky-Golay smoothed fit</option>
-                  </select>
-                </div>
-
-                <div class="form-check">
-                  <label class="form-check-label">
-                    <input type="checkbox" id="lcfit-magsarefluxes"
-                           class="form-check-input">
-                    Light curve measurements are fluxes
-                  </label>
-                </div>
-
-                <button type="submit" id="lcfit-start"
-                        class="btn btn-primary btn-block">
-                  Run light curve fit
-                </button>
-
-                <div class="py-1">
-
-                  <h5>Fit results</h5>
-
-                  <div id="lcfit-results">
-
-                  </div>
-
-                  <button type="submit" id="lcfit-update-mags"
-                          class="btn btn-secondary btn-block">
-                    Subtract fit and use resulting LC
-                  </button>
-
-
-                </div>
-
-              </div>
-
-              <div class="col-sm-6">
-
-                <div class="form-group">
-                  <label for="lcfit-fourierfitorder">Fourier fit order</label>
-                  <input type="text" class="form-control form-control-sm"
-                         id="lcfit-fourierfitorder" value="6">
-                </div>
-
-                <div class="form-group">
-                  <label for="lcfit-splinefitknots">Spline knot fraction</label>
-                  <input type="text" class="form-control form-control-sm"
-                         id="lcfit-splinefitknots" value="0.002">
-                </div>
-
-                <div class="form-group">
-                  <label for="lcfit-legendrepolyorder">
-                    Lengendre polynomial order
-                  </label>
-                  <input type="text" class="form-control form-control-sm"
-                         id="lcfit-legendrepolyorder" value="10">
-                </div>
-
-                <div class="form-group">
-                  <label for="lcfit-savgolwinlength">
-                    Savitsky-Golay window length
-                  </label>
-                  <input type="text" class="form-control form-control-sm"
-                         id="lcfit-savgolwinlength">
-                </div>
-
-              </div>
-
-            </div>
-          </div>
-
-          {% end %}
-
-          <!-- this tab contains save and export tools -->
-          <div class="tab-pane" id="cpsave" role="tabpanel">
-
-            {% if not readonly %}
-
-            <!-- this is the save tool results link -->
-            <div class="row tool-header-panel">
-
-              <div class="col-sm-6">
-                <p>All results from light curve tools applied to this object are
-                  being saved to a temporary location and will kept around until
-                  they are sychronized to the checkplot pickle. Syncing these
-                  results will <strong>overwrite</strong> previous values in the
-                  checkplot pickle. Resetting all unsynced results will remove
-                  all current tool results and reload the pickle.</p>
-              </div>
-
-              <div class="col-sm-6 py-1">
-                <button type="submit" id="save-cptool-results"
-                        class="btn btn-danger btn-block">
-                  Sync current LC tool results to checkplot pickle
-                </button>
-                <button type="submit" id="reset-cptool-results"
-                        class="btn btn-warning btn-block">
-                  Reset all unsynced LC tool results
-                </button>
-              </div>
-
-            </div>
-
-            {% end %}
-
-            <!-- this is the save to PNG link -->
-            <div class="row tool-header-panel">
-
-              <div class="col-sm-6">
-                <p>All synced object information in the checkplot pickle can be
-                exported as a PNG file. This will include the object name,
-                finder chart, period and epoch, variability and object tags,
-                comments, the light curve, and finally, periodograms and phased
-                light curves for all period-finding methods used.
-              </div>
-
-              <div class="col-sm-6 py-1">
-                <button type="submit" id="save-to-png"
-                        class="btn btn-secondary btn-block">
-                  Export synced info from checkplot pickle to PNG
-                </button>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
 
       </div>
 
 
     </div>
-
 
   </div>
 
