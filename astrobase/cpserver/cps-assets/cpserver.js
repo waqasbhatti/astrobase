@@ -1438,14 +1438,17 @@ var cpv = {
             // 5. put together the xmatch info
 
             // first, reset stuff
-            $('#xmatch-content').html(
+            $('#unmatched-catalogs').html(
                 '<p>No cross-matches for this object were found.</p>'
             );
+            $('#matched-catalogs').empty();
 
             // then, go through the xmatch content
             if (cpv.currcp.xmatch != undefined) {
 
                 var xmcatrows = [];
+                var unxmcatrows = [];
+
                 var xmk = null;
                 var tablecolkeys = null
                 var tablecolnames = null;
@@ -1553,7 +1556,7 @@ var cpv = {
 
                     else {
 
-                        xmcatrows.push(
+                        unxmcatrows.push(
                             '<div class="row mt-1">' +
                                 '<div class="col-sm-12">' +
                                 '<h6>No matches found in <abbr ' +
@@ -1568,7 +1571,10 @@ var cpv = {
                 }
 
                 xmcatrows = xmcatrows.join(' ');
-                $('#xmatch-content').html(xmcatrows);
+                unxmcatrows = unxmcatrows.join(' ');
+
+                $('#matched-catalogs').html(xmcatrows);
+                $('#unmatched-catalogs').html(unxmcatrows);
 
             }
 
