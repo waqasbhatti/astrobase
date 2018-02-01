@@ -36,8 +36,8 @@
 /*     height: 360px; */
 /* } */
 
-img#magseriesplot {
-    min-height: 300px;
+img.magseriesplot {
+    min-height: 250px;
     max-height: 360px;
 }
 

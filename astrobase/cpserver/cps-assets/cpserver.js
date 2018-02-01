@@ -958,7 +958,7 @@ var cpv = {
 
             // update the magseries plot
             cputils.b64_to_image(cpv.currcp.magseries,
-                                '#magseriesplot');
+                                '.magseriesplot');
 
             // update the varinfo
             if (cpv.currcp.varinfo.objectisvar == 1) {
