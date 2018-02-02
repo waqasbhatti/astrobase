@@ -1,3 +1,72 @@
+# v0.3.4
+
+## Fixes
+
+- checkplot: added `xmatch_external_catalogs` fn
+- checkplot: add `load_xmatch_external_catalog` fn
+- checkplot: correctly handle xmatch pickles > 2 GB on OSX
+- checkplot, cpserver: various fixes to imports and nan-handling
+- checkplot: fix location for font
+- checkplot, lcproc: change default nbr radius to 60 arcsec
+- `checkplot.load_xmatch_external_catalogs`: fix col ordering issue
+- `checkplot.load_xmatch_external_catalogs`: handle gzipped files transparently
+- checkplot: some reorganization for xmatch functions
+- checkplot: `starfeatures.neighbor_features` -> `neighbor_gaia_features`
+- `checkplot.xmatch_external_catalogs`: return updated checkplotdict
+- coordutils: add general kdtree functions
+- cp JS: handle GAIA status
+- cp.load_xmatch...: add column names, units to import for later table making
+- cpserver: add display of GAIA CMD for object if available
+- cpserver: added xmatch results to frontend xmatch tab
+- cpserver: add new pfmethods, make phased LCs for best 10 pgram peaks
+- cpserver, cp: fix JSON encoder to handle more weird things
+- cpserver: default nav shortcut key now shift instead of ctrl
+- cpserver: handle case where neighbors don't have LCs
+- cpserver: handle nans better in arrays sent to frontend
+- cpserver: handle nans from xmatch results
+- cpserver.js: add abbr for xmatch catalog description
+- cpserver.js: add xypos to GAIA neighbor display, for TBD cutout overlay
+- cpserver: make ACF period search actually work from the frontend
+- cps handlers: fix unneeded sigclip kwarg
+- cps: LC filtering/sigclip for periodsearch tab, TODO: per-PF params
+- cps periodsearch tab: add not:t1:t2,... and not:y1:y2,... filters as well
+- cps: save UI filters back to the checkplot pickle
+- cps: slightly better notifications for no xmatches found
+- cps UI: add extra period-finder params to period-search tab
+- cps UI: better GAIA display, show parallaxes, abs mags
+- cps UI: better xmatch display
+- cps UI: clear periodsearch elems on checkplot load
+- cps UI: fancier GAIA nbr list, TBD controls for epoch, period aliases
+- cps UI: fix keyboard shortcuts a bit
+- cps UI: format float cols in xmatch tables
+- cps UI: link to neighbors' checkplots if they're in current collection
+- cps UI: load previously saved period/epoch for plotting in psearch-tab
+- cps UI: more small fixes
+- cps UI: reorganized for better workflow, disabled TBD elements for now
+- cps UI: show all available CMDs in the checkplot pickle
+- cps UI: some more fixes
+- cp UI: add some more var/obj tags available by default
+- lcmath: add missing imports
+- lcproc: add xmatch drivers
+- lcproc, checkplot: put in xmatch kwargs and calls
+- lcproc: fixed bugs with new neighbor processing
+- lcproc: fixing bugs with new neighbor processing...
+- lcproc: fix issue with missing LC renorm for runcp
+- lcproc: get color/mag diffs between object and LCC neighbors
+- lcproc: implemented functions to add CMDs to checkplots
+- magnitudes: add GAIA absolute mag calc
+- more reorg, TODO: fix import paths for everything, hoist stuff
+- periodbase.macf: fix filterwindow kwarg
+- README.md: update for new cps UI
+- README: update after moving lots of stuff around
+- services.gaia: also get parallaxes from the gaia_source table if available
+- setup.py: add cpserver subpackage
+- some TODO notes, macf: add kwargs for external consistency
+- starfeatures: attempt to handle no close GAIA matches
+- starfeatures: get BV from JHK if necessary
+- starfeatures: get GAIA xy positions on object Skyview cutout
+
+
 # v0.3.3
 
 ## Fixes
