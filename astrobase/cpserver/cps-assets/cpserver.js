@@ -2264,6 +2264,30 @@ var cpv = {
         });
 
 
+        //////////
+        // TABS //
+        //////////
+
+        // alt+shift+o: overview tab
+        Mousetrap.bind('alt+shift+o', function() {
+            $('#overview-tab').click();
+        });
+
+        // alt+shift+l: overview tab
+        Mousetrap.bind('alt+shift+l', function() {
+            $('#phasedlcs-tab').click();
+        });
+
+        // alt+shift+x: overview tab
+        Mousetrap.bind('alt+shift+x', function() {
+            $('#xmatches-tab').click();
+        });
+
+        // alt+shift+p: overview tab
+        Mousetrap.bind('alt+shift+p', function() {
+            $('#periodsearch-tab').click();
+        });
+
         //////////////
         // MOVEMENT //
         //////////////

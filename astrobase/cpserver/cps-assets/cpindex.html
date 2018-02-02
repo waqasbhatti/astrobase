@@ -171,9 +171,11 @@
 
     <div class="row">
       <div class="col-sm-12 text-sm-center">
-        <p><a href="#" class="checkplot-prev"><strong>&larr;</strong> previous</a> |
+        <p><a href="#" class="checkplot-prev"
+              title="go to the previous checkplot [alt+shift+left]"><strong>&larr;</strong> previous</a> |
           <span id="checkplot-current"></span> |
-          <a href="#" class="checkplot-next">next <strong>&rarr;</strong></a>
+          <a href="#" class="checkplot-next"
+             title="go to the next checkplot [alt+shift+right]">next <strong>&rarr;</strong></a>
         </p>
       </div>
     </div>
@@ -363,28 +365,28 @@
                 <ul class="nav nav-tabs" role="tablist">
 
                   <li class="nav-item">
-                    <a class="nav-link active"
-                       data-toggle="tab"
+                    <a class="nav-link active" id="overview-tab"
+                       data-toggle="tab" title="object overview [alt+shift+o]"
                        href="#overview" role="tab">Overview</a>
                   </li>
 
                   <li class="nav-item">
-                    <a class="nav-link"
-                       data-toggle="tab"
+                    <a class="nav-link" id="phasedlcs-tab"
+                       data-toggle="tab" title="phased light curves [alt+shift+l]"
                        href="#phasedlcs" role="tab">Phased LCs</a>
                   </li>
 
                   <li class="nav-item">
-                    <a class="nav-link"
-                       data-toggle="tab"
+                    <a class="nav-link" id="xmatches-tab"
+                       data-toggle="tab" title="cross-matches for this object [alt+shift+x]"
                        href="#xmatches" role="tab">Cross Matches</a>
                   </li>
 
                   {% if not readonly %}
 
                   <li class="nav-item">
-                    <a class="nav-link"
-                       data-toggle="tab"
+                    <a class="nav-link" id="periodsearch-tab"
+                       data-toggle="tab" title="run a new period-search [alt+shift+p]"
                        href="#periodsearch" role="tab">Period Search</a>
                   </li>
 
@@ -1102,15 +1104,37 @@
 
       <div class="modal-body">
 
+        <h6>Switching between tabs</h6>
+
+        <table class="table table-sm">
+          <tr>
+            <td width="200"><kbd>alt</kbd> + <kbd>shift</kbd> + <kbd>o</kbd></td>
+            <td>open the object overview tab</td>
+          </tr>
+          <tr>
+            <td width="200"><kbd>alt</kbd> + <kbd>shift</kbd> + <kbd>l</kbd></td>
+            <td>open the phased light curves tab</td>
+          </tr>
+          <tr>
+            <td width="200"><kbd>alt</kbd> + <kbd>shift</kbd> + <kbd>x</kbd></td>
+            <td>open the cross-match information tab</td>
+          </tr>
+          <tr>
+            <td width="200"><kbd>alt</kbd> + <kbd>shift</kbd> + <kbd>p</kbd></td>
+            <td>open the period-search tab</td>
+          </tr>
+        </table>
+
+
         <h6>Moving around and editing</h6>
 
         <table class="table table-sm">
           <tr>
-            <td width="200"><kbd>ctrl</kbd> + <kbd>&rarr;</kbd><br>(<kbd>alt</kbd> + <kbd>shift</kbd> + <kbd>&rarr;</kbd>)</td>
+            <td width="200"><kbd>alt</kbd> + <kbd>shift</kbd> + <kbd>&rarr;</kbd></td>
             <td>save the current checkplot and move to next in list</td>
           </tr>
           <tr>
-            <td width="200"><kbd>ctrl</kbd> + <kbd>&larr;</kbd><br>(<kbd>alt</kbd> + <kbd>shift</kbd> + <kbd>&larr;</kbd>)</td>
+            <td width="200"><kbd>alt</kbd> + <kbd>shift</kbd> + <kbd>&larr;</kbd></td>
             <td>save the current checkplot and move to previous in list</td>
           </tr>
           <tr>
@@ -1133,23 +1157,6 @@
             <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd> + <kbd>backspace</kbd></td>
             <td>clear all object information (var flag, period, epoch, var
             tags, object tags, comments)</td>
-          </tr>
-        </table>
-
-        <h6>Setting best period and epoch</h6>
-
-        <table class="table table-sm">
-          <tr>
-            <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd>
-            + <kbd>&darr;</kbd></td>
-            <td>move to the next phased light curve plot and set its period and
-            epoch as the current best period and epoch</td>
-          </tr>
-          <tr>
-            <td width="200"><kbd>ctrl</kbd> + <kbd>shift</kbd>
-            + <kbd>&uarr;</kbd></td>
-            <td>move to the previous phased light curve plot and set its period
-            and epoch as the current best period and epoch</td>
           </tr>
         </table>
 
