@@ -1279,53 +1279,61 @@ var cpv = {
             }
 
             // 4. update the LCC neighbor list
-            if (cpv.currcp.neighbors.length > 0) {
 
-                var ni = 0;
+            //
+            // first, add the target in any case
+            //
 
-                // set the column width
-                var nbrcolw = colwidth - 1;
+            var ni = 0;
 
-                // make the plots for the target object
+            // set the column width
+            var nbrcolw = colwidth - 1;
 
-                var rowheader = '<h6>' + 'Target: ' +
-                    cpv.currcp.objectid + ' at (&alpha;, &delta;) = (' +
-                    math.format(cpv.currcp.objectinfo.ra, 5) + ', ' +
-                    math.format(cpv.currcp.objectinfo.decl, 5) + ')</h6>';
+            // make the plots for the target object
 
-                var rowplots = [
-                    '<div class="col-sm-' + nbrcolw + ' mx-0 px-0">' +
-                        '<img src="data:image/png;base64,' +
-                        cpv.currcp.magseries +
-                        '" class="img-fluid">' +
-                        '</div>'
-                ];
-                var nli = 0;
-                for (nli; nli < lspmethods.length; nli++) {
+            var rowheader = '<h6>' + 'Target: ' +
+                cpv.currcp.objectid + ' at (&alpha;, &delta;) = (' +
+                math.format(cpv.currcp.objectinfo.ra, 5) + ', ' +
+                math.format(cpv.currcp.objectinfo.decl, 5) + ')</h6>';
 
-                    var thisnphased =
-                        '<div class="col-sm-' + nbrcolw + ' px-0">' +
-                        '<img src="data:image/png;base64,' +
-                        cpv.currcp[lspmethods[nli]]['phasedlc0']['plot'] +
-                        '" class="img-fluid">' +
-                        '</div>';
-                    rowplots.push(thisnphased);
+            var rowplots = [
+                '<div class="col-sm-' + nbrcolw + ' mx-0 px-0">' +
+                    '<img src="data:image/png;base64,' +
+                    cpv.currcp.magseries +
+                    '" class="img-fluid">' +
+                    '</div>'
+            ];
+            var nli = 0;
+            for (nli; nli < lspmethods.length; nli++) {
 
-                }
-
-                // put together this row of plots
-                var rowplots_str = rowplots.join(' ');
-
-                // put together this row
-                var nbrrow = '<div class="row">' +
-                    '<div class="col-sm-12">' +
-                    rowheader + '</div></div>' +
-                    '<div class="row bot-mrg-20px">' +
-                    rowplots_str +
+                var thisnphased =
+                    '<div class="col-sm-' + nbrcolw + ' px-0">' +
+                    '<img src="data:image/png;base64,' +
+                    cpv.currcp[lspmethods[nli]]['phasedlc0']['plot'] +
+                    '" class="img-fluid">' +
                     '</div>';
+                rowplots.push(thisnphased);
 
-                $('#lcc-neighbor-container').append(nbrrow);
+            }
 
+            // put together this row of plots
+            var rowplots_str = rowplots.join(' ');
+
+            // put together this row
+            var nbrrow = '<div class="row">' +
+                '<div class="col-sm-12">' +
+                rowheader + '</div></div>' +
+                '<div class="row bot-mrg-20px">' +
+                rowplots_str +
+                '</div>';
+
+            $('#lcc-neighbor-container').append(nbrrow);
+
+            //
+            // then, add the neighbors if there are any
+            //
+
+            if (cpv.currcp.neighbors.length > 0) {
 
                 // now make the plots for the neighbors
                 for (ni; ni < cpv.currcp.neighbors.length; ni++) {
