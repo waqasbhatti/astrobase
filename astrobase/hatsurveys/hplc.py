@@ -10,7 +10,7 @@ produced by the HATPI prototype system's image-subtraction photometry pipeline.
 '''
 
 # put this in here because hplc can be used as a standalone module
-__version__ = '0.3.3'
+__version__ = '0.3.4'
 
 
 #############
