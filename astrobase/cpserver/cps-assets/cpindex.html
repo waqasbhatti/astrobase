@@ -534,7 +534,48 @@
 
                   <div class="col-sm-6">
 
+                    <div class="row">
+                      <div class="col-sm-12">
+                        <img class="img-fluid magseriesplot">
+                      </div>
+                    </div>
+
                     <div class="form-group">
+                      <label for="psearch-timefilters">Apply time (JD - <span class="time0"></span>) filters [<code>t1:t2, not:t3:t4,...</code>]</label>
+                      <input type="text" class="form-control form-control-sm"
+                             id="psearch-timefilters" value="">
+                    </div>
+
+                    <div class="form-group">
+                      <label for="psearch-magfilters">Apply flux/mag filters [<code>y1:y2, not:y3:y4,...</code>]</label>
+                      <input type="text" class="form-control form-control-sm"
+                             id="psearch-magfilters" value="">
+                    </div>
+
+                    <div class="form-group">
+                      <label for="psearch-sigclip">Use sigma clip for LC [<code>lohi_sig</code> or <code>lo_sig, hi_sig</code>]</label>
+                      <input type="text" class="form-control form-control-sm"
+                             id="psearch-sigclip" value="">
+                    </div>
+
+                    <div class="form-check">
+                      <label class="form-check-label">
+                        <input type="checkbox" id="psearch-magsarefluxes"
+                               class="form-check-input">
+                        Light curve measurements are fluxes
+                      </label>
+                    </div>
+
+                  </div>
+
+                  <div class="col-sm-6">
+
+                    <button type="submit" id="psearch-start"
+                            class="btn btn-primary btn-block">
+                      Run a new period search
+                    </button>
+
+                    <div class="form-group mt-1">
                       <label for="psearch-lspmethod">Period search method</label>
                       <select class="custom-select form-control form-control-sm"
                               id="psearch-lspmethod" name="psearch-lspmethod">
@@ -591,49 +632,17 @@
                       </label>
                     </div>
 
+                    <div class="form-group">
+                      <label for="psearch-periodepsilon">
+                        Min P diff. for periodogram peak search [days]
+                      </label>
+                      <input type="text" name="periodepsilon"
+                             class="form-control form-control-sm pf-extraparam"
+                             id="psearch-periodepsilon" value="0.1">
+                    </div>
+
                     <!-- this contains extra options for each specific period finders -->
                     <div id="psearch-pf-extraparams">
-                    </div>
-
-                    <button type="submit" id="psearch-start"
-                            class="btn btn-primary btn-block">
-                      Run a new period search
-                    </button>
-
-                  </div>
-
-                  <div class="col-sm-6">
-
-                    <div class="row">
-                      <div class="col-sm-12">
-                        <img class="img-fluid magseriesplot">
-                      </div>
-                    </div>
-
-                    <div class="form-group">
-                      <label for="psearch-timefilters">Apply time (JD - <span class="time0"></span>) filters [<code>t1:t2, not:t3:t4,...</code>]</label>
-                      <input type="text" class="form-control form-control-sm"
-                             id="psearch-timefilters" value="">
-                    </div>
-
-                    <div class="form-group">
-                      <label for="psearch-magfilters">Apply flux/mag filters [<code>y1:y2, not:y3:y4,...</code>]</label>
-                      <input type="text" class="form-control form-control-sm"
-                             id="psearch-magfilters" value="">
-                    </div>
-
-                    <div class="form-group">
-                      <label for="psearch-sigclip">Use sigma clip for LC [<code>lohi_sig</code> or <code>lo_sig, hi_sig</code>]</label>
-                      <input type="text" class="form-control form-control-sm"
-                             id="psearch-sigclip" value="">
-                    </div>
-
-                    <div class="form-check">
-                      <label class="form-check-label">
-                        <input type="checkbox" id="psearch-magsarefluxes"
-                               class="form-check-input">
-                        Light curve measurements are fluxes
-                      </label>
                     </div>
 
                   </div>
@@ -641,7 +650,7 @@
                 </div>
 
                 <!-- this contains the periodogram and phasedlc display controls -->
-                <div class="row mt-3">
+                <div class="row mt-2">
 
                   <div class="col-sm-3">
                     <div class="form-group">

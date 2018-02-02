@@ -287,11 +287,12 @@ def macf_period_find(
         magsarefluxes=False,
         sigclip=3.0,
         verbose=True,
-        nworkers=None, # doesn't do anything, but for consistent external API
-        startp=None,   # doesn't do anything, but for consistent external API
-        endp=None,     # doesn't do anything, but for consistent external API
-        autofreq=None, # doesn't do anything, but for consistent external API
-        stepsize=None, # doesn't do anything, but for consistent external API
+        periodepsilon=0.1, # doesn't do anything, for consistent external API
+        nworkers=None,     # doesn't do anything, for consistent external API
+        startp=None,       # doesn't do anything, for consistent external API
+        endp=None,         # doesn't do anything, for consistent external API
+        autofreq=None,     # doesn't do anything, for consistent external API
+        stepsize=None,     # doesn't do anything, for consistent external API
 ):
     '''This finds periods using the McQuillan+ (2013a, 2014) method.
 

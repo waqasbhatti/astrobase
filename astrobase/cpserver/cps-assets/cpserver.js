@@ -3147,7 +3147,7 @@ var cptools = {
             nbestpeaks = 10;
         }
 
-        // finally, get the lctimefilters and lcmagfilters
+        // get the lctimefilters and lcmagfilters
         // these will be processed server-side so nothing is required here
         var lctimefilters = $('#psearch-timefilters').val();
         if (lctimefilters.length == 0) {
@@ -3158,6 +3158,15 @@ var cptools = {
         if (lcmagfilters.length == 0) {
             lcmagfilters = null;
         }
+
+        var extraparams = {};
+
+        // finally, get the extra parameters for this periodogram method
+        $('.pf-extraparam').each(function (index) {
+            extraparams[$(this).attr('name')] = $(this).val();
+        });
+
+        console.log(extraparams);
 
         // proceed if we can
         if (proceed) {
@@ -3259,6 +3268,16 @@ var cptools = {
 
 
             }
+
+            // update the sentdata with the extraparams
+            var ei = 0;
+            var ep = Object.getOwnPropertyNames(extraparams);
+
+            for (ei; ei < ep.length; ei++) {
+                sentdata[ep[ei]] = extraparams[ep[ei]];
+            }
+
+            console.log(sentdata);
 
             // make the call
             $.getJSON(ajaxurl, sentdata, function (recvdata) {
@@ -4487,7 +4506,7 @@ var cptools = {
 
             // FIXME: update the psearch param panel for any special params for
             // this period-finder
-            var extraparamelem = $('#psearch-extramparams');
+            var extraparamelem = $('#psearch-pf-extraparams');
             extraparamelem.empty();
 
             if (newval == 'acf') {
@@ -4497,17 +4516,115 @@ var cptools = {
                         '<label for="psearch-smoothacf">' +
                         'ACF smoothing parameter' +
                         '</label>' +
-                        '<input type="text" ' +
-                        'class="form-control form-control-sm" ' +
-                        'id="psearch-smoothacf" value="521"></div>'
+                        '<input type="text" name="smoothacf" ' +
+                        'class="form-control form-control-sm pf-extraparam" ' +
+                        'id="psearch-smoothacf" value="721"></div>'
+                );
+
+                extraparamelem.append(
+                    '<div class="form-group">' +
+                        '<label for="psearch-fillgaps">' +
+                        'Fill value for time-series gaps' +
+                        '</label>' +
+                        '<input type="text" name="fillgaps" ' +
+                        'class="form-control form-control-sm pf-extraparam" ' +
+                        'id="psearch-fillgaps" value="0.0"></div>'
+                );
+
+
+            }
+
+            else if (newval == 'aov') {
+
+                extraparamelem.append(
+                    '<div class="form-group">' +
+                        '<label for="psearch-phasebinsize">' +
+                        'Phase bin size' +
+                        '</label>' +
+                        '<input type="text" name="phasebinsize" ' +
+                        'class="form-control form-control-sm pf-extraparam" ' +
+                        'id="psearch-phasebinsize" value="0.05"></div>'
+                );
+
+                extraparamelem.append(
+                    '<div class="form-group">' +
+                        '<label for="psearch-mindetperbin">' +
+                        'Min observations per phase bin' +
+                        '</label>' +
+                        '<input type="text" name="mindetperbin" ' +
+                        'class="form-control form-control-sm pf-extraparam" ' +
+                        'id="psearch-mindetperbin" value="9"></div>'
                 );
 
             }
 
+            else if (newval == 'bls') {
+
+                extraparamelem.append(
+                    '<div class="form-group">' +
+                        '<label for="psearch-mintransitduration">' +
+                        'Min transit duration [fractional phase]' +
+                        '</label>' +
+                        '<input type="text" name="mintransitduration" ' +
+                        'class="form-control form-control-sm pf-extraparam" ' +
+                        'id="psearch-mintransitduration" value="0.01"></div>'
+                );
+
+                extraparamelem.append(
+                    '<div class="form-group">' +
+                        '<label for="psearch-maxtransitduration">' +
+                        'Max transit duration [fractional phase]' +
+                        '</label>' +
+                        '<input type="text" name="maxtransitduration" ' +
+                        'class="form-control form-control-sm pf-extraparam" ' +
+                        'id="psearch-maxtransitduration" value="0.8"></div>'
+                );
+
+            }
+
+            else if (newval == 'gls') {
+
+            }
+
+            else if (newval == 'mav') {
+
+                extraparamelem.append(
+                    '<div class="form-group">' +
+                        '<label for="psearch-nharmonics">' +
+                        'Number of harmonics' +
+                        '</label>' +
+                        '<input type="text" name="nharmonics" ' +
+                        'class="form-control form-control-sm pf-extraparam" ' +
+                        'id="psearch-nharmonics" value="6"></div>'
+                );
+
+            }
+
+            else if (newval == 'pdm') {
+
+                extraparamelem.append(
+                    '<div class="form-group">' +
+                        '<label for="psearch-phasebinsize">' +
+                        'Phase bin size' +
+                        '</label>' +
+                        '<input type="text" name="phasebinsize" ' +
+                        'class="form-control form-control-sm pf-extraparam" ' +
+                        'id="psearch-phasebinsize" value="0.05"></div>'
+                );
+
+                extraparamelem.append(
+                    '<div class="form-group">' +
+                        '<label for="psearch-mindetperbin">' +
+                        'Min observations per phase bin' +
+                        '</label>' +
+                        '<input type="text" name="mindetperbin" ' +
+                        'class="form-control form-control-sm pf-extraparam" ' +
+                        'id="psearch-mindetperbin" value="9"></div>'
+                );
+
+            }
 
         });
-
-
 
         // periodogram search - half period
         $('#psearch-halfperiod').on('click', function (evt) {
