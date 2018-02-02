@@ -63,7 +63,7 @@ for your purposes.
   [lightcurves-and-checkplots](https://github.com/waqasbhatti/astrobase-notebooks/blob/master/lightcurves-and-checkplots.ipynb)
   Jupyter notebook details how to do this and goes through a full example.
 
-  ![Checkplot Server](astrobase/data/checkplotserver-th.png?raw=true)
+  ![Checkplot Server](astrobase/data/checkplotserver.png?raw=true)
 
   PNG images: Alternatively, if you want to simply glance through lots of
   checkplots (e.g. for an initial look at a collection of light curves), there's
