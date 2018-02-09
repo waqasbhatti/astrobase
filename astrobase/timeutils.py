@@ -126,7 +126,7 @@ except Exception as e:
 
     # this is the URL to the SPK
     spkurl = (
-        'http://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de430.bsp'
+        'https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de430.bsp'
     )
 
     LOGINFO('JPL kernel de430.bsp not found. Downloading from:\n\n%s\n' %
