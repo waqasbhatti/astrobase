@@ -82,7 +82,7 @@ for your purposes.
   function suitable for use in long-running scripts and the like; this uses the
   provided credentials and server to send messages
 
-- **[fortney2k7](astrobase/fortney2k7.py)**: giant planet models from Fortney
+- **[fortney2k7](astrobase/services/fortney2k7.py)**: giant planet models from Fortney
   et al. 2007, ApJ, 2659, 1661 made importable as Python dicts
 
 - **[hatsurveys](astrobase/hatsurveys)**: modules to read, filter, and normalize
