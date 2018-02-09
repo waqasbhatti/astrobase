@@ -1,3 +1,9 @@
+# v0.3.5
+
+## Fixes
+
+- MANIFEST.in: removed pngs from examples to cut down on dist size
+
 # v0.3.4
 
 ## Fixes
