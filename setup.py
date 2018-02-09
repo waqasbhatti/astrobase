@@ -54,6 +54,7 @@ INSTALL_REQUIRES = [
     'pyeebls',
     'tqdm',
     'scikit-learn',
+    'futures;python_version<"3.2"',
 ]
 
 EXTRAS_REQUIRE = {
@@ -64,8 +65,8 @@ EXTRAS_REQUIRE = {
 # FIXME: need to think about fixing this because Py3 will completely
 # ignore this and we usually run python setup.py dist from Py3
 # for now, we'll get rid of the wheel format and see if that fixes this
-if sys.version_info.major < 3:
-    INSTALL_REQUIRES.append('futures')
+# if sys.version_info.major < 3:
+#     INSTALL_REQUIRES.append('futures')
 
 #############################
 ## RUN SETUP FOR ASTROBASE ##

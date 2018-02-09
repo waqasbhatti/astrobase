@@ -9,3 +9,4 @@ pyeebls
 requests
 tqdm
 scikit-learn
+futures;python_version<"3.2"
