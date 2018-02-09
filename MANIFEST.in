@@ -1,3 +1,4 @@
+global-exclude *.bsp
 global-exclude *.pkl
 recursive-exclude astrobase/data *.png
 recursive-include astrobase/data/lcformats/ *
