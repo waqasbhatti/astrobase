@@ -4,25 +4,7 @@
 '''
 imageutils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2013
 
-This contains various utilities for:
-
-- generating stamps for an image, converting an image to JPEGs
-- getting the value of a certain keyword from the FITS header for a series of
-  FITS files
-
-Important FITS header keywords:
-
-FOCUS (steps)
-BJD
-MIDTIME (HH:MM:SS.SSS - middle of exposure)
-MIDDATE (YYYY-MM-DD - middle of exposure)
-TIMESYS (should be UTC)
-OBJECT (field name)
-JD (JD of middle exposure)
-HA (hour angle)
-Z (zenith distance)
-ABORTED (0 = exp not aborted, 1 = aborted exp)
-IMAGETYP
+This contains various utilities for handling FITS files.
 
 '''
 
@@ -108,10 +90,10 @@ import numpy.random as npr
 import scipy.misc
 import scipy.ndimage
 import scipy
+from scipy.interpolate import UnivariateSpline
 
 from scipy.optimize import leastsq
 USE_LEASTSQ = 1
-
 try:
     from scipy.optimize import curve_fit
     USE_LEASTSQ=0
@@ -120,21 +102,21 @@ except:
     USE_LEASTSQ=1
 
 try:
-    import pyfits
-except:
     from astropy.io import fits as pyfits
-
+except:
+    import pyfits
 from astropy import wcs
 
 from PIL import Image
 from PIL import ImageDraw
 
 
-####################
-## FITS UTILITIES ##
-####################
 
-def read_fits(fits_file,ext=0):
+########################
+## READING FITS FILES ##
+########################
+
+def read_fits(fits_file, ext=0):
     '''
     Shortcut function to get the header and data from a fits file and a given
     extension.
@@ -147,6 +129,7 @@ def read_fits(fits_file,ext=0):
     hdulist.close()
 
     return img_data, img_header
+
 
 
 def read_fits_header(fits_file, ext=0):
@@ -162,12 +145,83 @@ def read_fits_header(fits_file, ext=0):
 
 
 
+def compressed_fits_ext(fits_file):
+    '''
+    Check if a fits file is a compressed FITS file. Return the extension numbers
+    of the compressed image as a list if these exist, otherwise, return None.
+
+    '''
+
+    hdulist = pyfits.open(fits_file)
+
+    compressed_img_exts = []
+
+    for i, ext in enumerate(hdulist):
+        if isinstance(ext,pyfits.hdu.compressed.CompImageHDU):
+            compressed_img_exts.append(i)
+
+    hdulist.close()
+
+    if len(compressed_img_exts) < 1:
+        return None
+    else:
+        return compressed_img_exts
+
+
+
+############################
+## FITS HEADER OPERATIONS ##
+############################
+
+def get_header_keyword(fits_file,
+                       keyword,
+                       ext=0):
+    '''
+    Get the value of a header keyword in a fits file optionally using an
+    extension.
+
+    '''
+    hdulist = pyfits.open(fits_file)
+
+    if keyword in hdulist[ext].header:
+        val = hdulist[ext].header[keyword]
+    else:
+        val = None
+
+    hdulist.close()
+    return val
+
+
+
+def get_header_keyword_list(fits_file,
+                            keyword_list,
+                            ext=0):
+
+    hdulist = pyfits.open(fits_file)
+
+    out_dict = {}
+
+    for keyword in keyword_list:
+
+        if keyword in hdulist[ext].header:
+            out_dict[keyword] = hdulist[ext].header[keyword]
+        else:
+            out_dict[keyword] = None
+
+    hdulist.close()
+    return out_dict
+
+
+
+###########################
+## FITS IMAGE OPERATIONS ##
+###########################
+
 def trim_image(fits_img,
                fits_hdr,
                custombox=None):
     '''
     Returns a trimmed image using the TRIMSEC header of the image header.
-    FIXME: check if this does the right thing.
 
     custombox is a string of the form [Xlo:Xhi,Ylo:Yhi] and will trim the image
     to a custom size.
@@ -210,6 +264,84 @@ def trim_image(fits_img,
         trimmed_img = fits_img
 
     return trimmed_img
+
+
+
+def bias_overscan_correction(fits_img,
+                             fits_header,
+                             inplace=False,
+                             biassec_keyword='BIASSEC',
+                             custom_biassec=None):
+    '''This does a bias overscan correction for the image.
+
+    fits_img is a hdulist[x].data ndarray for FITS extension x
+
+    fits_header is a hdulist[x].header structure for FITS extension x.
+
+    biassec_keyword is the FITS header keyword to use to get the bias overscan
+    section of the FITS image. If this keyword isn't found, the function will
+    fall back to custom_biassec.
+
+    custom_biassec is the bias section to use if biassec_keyword is not present
+    in the FITS header or as an override.
+
+    This returns the fits_img with the bias overscan correction subtracted.
+
+    '''
+
+    if not inplace:
+        fitsimg = fits_img[::]
+    else:
+        fitsimg = fits_img
+
+    if biassec_keyword in header and not custom_biassec:
+        biassec = header[biassec_keyword]
+    elif custom_biassec:
+        biassec = custom_biassec
+    else:
+        LOGERROR("no BIASSEC defined, can't continue")
+        return None
+
+    # parse the bias section
+    biassec = biassec.strip('[]')
+    xslice, yslice = biassec.split(',')
+    xslicelo, xslicehi = (int(x) for x in xslice.split(':'))
+    yslicelo, yslicehi = (int(y) for y in yslice.split(':'))
+
+    # to handle some casting issues in newer numpy
+    if fits_image.dtype is not np.dtype('float64'):
+        fitsimg = fitsimg.astype(np.float64)
+
+    # calculate the medians along the short axis of the biassec.  we do this
+    # because some cameras have biassecs as extra cols and some have them as
+    # extra rows. we assume that the short axis is the more significant one
+    # NOTE: numpy convention is y,x and we use FITS pixnum - 1 since they start
+    # from 1 and numpy starts at 0
+    overscan = fitsimg[yslicelo-1:yslicehi, xslicelo-1:xslicehi]
+    overscan_shape = overscan.shape
+    if overscan_shape[1] > overscan_shape[0]:
+        medax = 1
+    else:
+        medax = 0
+
+    medians = np.median(overscan, axis=medax)
+    medvar = np.arange(medians.size)
+
+    # fit a spline and do the correction
+    try:
+
+        overscan_spl = UnivariateSpline(medvar, medians)
+        fitsimg[:, xslicelo-1:xslicehi] = (
+            fitsimg[:, xslicelo-1:xslicehi] -
+            overscan_spl(medvar)
+        )
+
+        return fitsimg
+
+    except Exception as e:
+
+        LOGEXCEPTION("could not fit spline to BIASSEC, can't continue")
+        return None
 
 
 
@@ -279,69 +411,6 @@ def make_superflat(image_glob,
     else:
 
         return None
-
-
-
-def compressed_fits_ext(fits_file):
-    '''
-    Check if a fits file is a compressed FITS file. Return the extension numbers
-    of the compressed image as a list if these exist, otherwise, return None.
-
-    '''
-
-    hdulist = pyfits.open(fits_file)
-
-    compressed_img_exts = []
-
-    for i, ext in enumerate(hdulist):
-        if isinstance(ext,pyfits.hdu.compressed.CompImageHDU):
-            compressed_img_exts.append(i)
-
-    hdulist.close()
-
-    if len(compressed_img_exts) < 1:
-        return None
-    else:
-        return compressed_img_exts
-
-
-def get_header_keyword(fits_file,
-                       keyword,
-                       ext=0):
-    '''
-    Get the value of a header keyword in a fits file optionally using an
-    extension.
-
-    '''
-    hdulist = pyfits.open(fits_file)
-
-    if keyword in hdulist[ext].header:
-        val = hdulist[ext].header[keyword]
-    else:
-        val = None
-
-    hdulist.close()
-    return val
-
-
-def get_header_keyword_list(fits_file,
-                            keyword_list,
-                            ext=0):
-
-    hdulist = pyfits.open(fits_file)
-
-    out_dict = {}
-
-    for keyword in keyword_list:
-
-        if keyword in hdulist[ext].header:
-            out_dict[keyword] = hdulist[ext].header[keyword]
-        else:
-            out_dict[keyword] = None
-
-    hdulist.close()
-    return out_dict
-
 
 
 #############################
