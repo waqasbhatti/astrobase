@@ -822,7 +822,9 @@ def filter_lclist(listpickle,
             for extind, mind in enumerate(extkd_matchinds):
                 if len(mind) > 0:
                     ext_matches.append(mind[0])
-                    ext_matching_objects.append(extcat['objectid'][extind])
+
+                    # get the whole matching row for the ext objects recarray
+                    ext_matching_objects.append(extcat[extind])
 
             ext_matches = np.array(ext_matches)
 
