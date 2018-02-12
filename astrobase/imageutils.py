@@ -331,6 +331,8 @@ def bias_overscan_correction(fits_img,
     try:
 
         overscan_spl = UnivariateSpline(medvar, medians)
+
+        # FIXME: this will need to change for arbitrary axis biassec
         fitsimg[:, xslicelo-1:xslicehi] = (
             fitsimg[:, xslicelo-1:xslicehi] -
             overscan_spl(medvar)
