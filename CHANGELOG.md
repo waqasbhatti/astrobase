@@ -1,3 +1,14 @@
+# v0.3.6
+
+## Fixes
+
+- imageutils: some reorganization
+- kbls.bls_snr: fix for not using the same kwargs from the initial BLS run
+- lcproc.filter_lclist: get the whole matching row for xmatches
+- MANIFEST.in: ignore JPL ephemerides too
+- setup.py: use pip>=6 req format, fix conditional py2 dep on future pkg
+- timeutils: use HTTPS url for JPL ephem download
+
 # v0.3.5
 
 ## Fixes
