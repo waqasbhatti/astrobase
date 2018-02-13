@@ -229,6 +229,9 @@ def bls_serial_pfind(times, mags, errs,
                                              magsarefluxes=magsarefluxes,
                                              sigclip=sigclip)
 
+    # figure out the best number of phasebins to use
+    nphasebins = int(np.ceil(2.0/mintransitduration))
+
     # make sure there are enough points to calculate a spectrum
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
 
@@ -236,16 +239,12 @@ def bls_serial_pfind(times, mags, errs,
         if autofreq:
 
             # use heuristic to figure out best timestep
-            # see http://www.astro.princeton.edu/~jhartman/vartools.html
             stepsize = 0.25*mintransitduration/(stimes.max()-stimes.min())
 
             # now figure out the frequencies to use
             minfreq = 1.0/endp
             maxfreq = 1.0/startp
             nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
-
-            # figure out the best number of phasebins to use
-            nphasebins = int(np.ceil(2.0/mintransitduration))
 
             # say what we're using
             if verbose:
@@ -525,6 +524,10 @@ def bls_parallel_pfind(
                                              magsarefluxes=magsarefluxes,
                                              sigclip=sigclip)
 
+    # figure out the best number of phasebins to use
+    # see http://www.astro.princeton.edu/~jhartman/vartools.html
+    nphasebins = int(np.ceil(2.0/mintransitduration))
+
     # make sure there are enough points to calculate a spectrum
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
 
@@ -539,10 +542,6 @@ def bls_parallel_pfind(
             minfreq = 1.0/endp
             maxfreq = 1.0/startp
             nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
-
-            # figure out the best number of phasebins to use
-            # see http://www.astro.princeton.edu/~jhartman/vartools.html
-            nphasebins = int(np.ceil(2.0/mintransitduration))
 
             # say what we're using
             if verbose:
@@ -895,13 +894,16 @@ def bls_snr(blsdict,
             # see if we need to rerun bls_serial_pfind
             if not assumeserialbls:
 
-                # run bls_serial_pfind
+                # run bls_serial_pfind with the kwargs copied over from the
+                # initial run. replace only the startp, endp, and verbose kwarg
+                # values
+                prevkwargs = blsdict['kwargs'].copy()
+                prevkwargs['verbose'] = verbose
+                prevkwargs['startp'] = startp
+                prevkwargs['endp'] = endp
+
                 blsres = bls_serial_pfind(times, mags, errs,
-                                          magsarefluxes=magsarefluxes,
-                                          startp=startp,
-                                          endp=endp,
-                                          sigclip=sigclip,
-                                          verbose=False)
+                                          **prevkwargs)
 
             else:
                 blsres = blsdict

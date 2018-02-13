@@ -442,7 +442,8 @@ def phase_magseries(times, mags, period, epoch, wrap=True, sort=True):
     '''
 
     # find all the finite values of the magnitudes and times
-    finiteind = np.isfinite(mags)
+    finiteind = np.isfinite(mags) & np.isfinite(times)
+
     finite_times = times[finiteind]
     finite_mags = mags[finiteind]
 
