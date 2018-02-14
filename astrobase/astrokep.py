@@ -1126,7 +1126,9 @@ def epd_kepler_lightcurve(lcdict,
     # fit the the smoothed mags and find better coeffs
     leastsqfit = leastsq(_epd_residual,
                          initcoeffs,
-                         args=(fluxes, xcc, ycc, background, background_err))
+                         args=(smoothedfluxes,
+                               xcc, ycc,
+                               background, background_err))
 
     # if the fit succeeds, then get the EPD fluxes
     if leastsqfit[-1] in (1,2,3,4):
