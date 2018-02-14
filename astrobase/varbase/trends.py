@@ -86,7 +86,7 @@ npr.seed(RANDSEED)
 from numpy import isfinite as npisfinite, median as npmedian, \
     abs as npabs, pi as MPI
 
-from scipy.optimization import leastsq
+from scipy.optimize import leastsq
 from scipy.signal import medfilt, savgol_filter
 from astropy.convolution import convolve, Gaussian1DKernel
 
@@ -182,7 +182,7 @@ def epd_magseries(times, mags, errs,
                   magsarefluxes=False,
                   sigclip=3.0,
                   epdsmooth_windowsize=27,
-                  epdsmooth_func=_smooth_savgol,
+                  epdsmooth_func=smooth_magseries_savgol,
                   epdsmooth_extraparams=None):
     '''Detrends a magnitude series using External Parameter Decorrelation.
 
@@ -270,7 +270,7 @@ def rfepd_magseries(times, mags, errs,
                     magsarefluxes=False,
                     epdsmooth=False,
                     epdsmooth_windowsize=27,
-                    epdsmooth_func=_smooth_savgol,
+                    epdsmooth_func=smooth_magseries_savgol,
                     epdsmooth_extraparams=None,
                     rf_subsample=0.5,
                     rf_ntrees=200,
