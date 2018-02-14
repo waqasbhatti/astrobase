@@ -79,120 +79,290 @@ def LOGEXCEPTION(message):
 
 
 import numpy as np
-from numpy import isfinite as npisfinite, median as npmedian, abs as npabs
+import numpy.random as npr
+RANDSEED = 0xdecaff
+npr.seed(RANDSEED)
 
-from scipy.linalg import lstsq
+from numpy import isfinite as npisfinite, median as npmedian, \
+    abs as npabs, pi as MPI
+
+from scipy.optimization import leastsq
+from scipy.signal import medfilt, savgol_filter
+from astropy.convolution import convolve, Gaussian1DKernel
+
+# for random forest EPD
+from sklearn.ensemble import RandomForestRegressor
 
 
-###################
-## EPD FUNCTIONS ##
-###################
 
-def epd_diffmags(coeff, fsv, fdv, fkv, xcc, ycc, bgv, bge, mag):
+#########################
+## SMOOTHING FUNCTIONS ##
+#########################
+
+def smooth_magseries_medfilt(mags, windowsize):
     '''
-    This calculates the difference in mags after EPD coefficients are
-    calculated.
-
-    final EPD mags = median(magseries) + epd_diffmags()
-
-    '''
-
-    return -(coeff[0]*fsv**2. +
-             coeff[1]*fsv +
-             coeff[2]*fdv**2. +
-             coeff[3]*fdv +
-             coeff[4]*fkv**2. +
-             coeff[5]*fkv +
-             coeff[6] +
-             coeff[7]*fsv*fdv +
-             coeff[8]*fsv*fkv +
-             coeff[9]*fdv*fkv +
-             coeff[10]*np.sin(2*np.pi*xcc) +
-             coeff[11]*np.cos(2*np.pi*xcc) +
-             coeff[12]*np.sin(2*np.pi*ycc) +
-             coeff[13]*np.cos(2*np.pi*ycc) +
-             coeff[14]*np.sin(4*np.pi*xcc) +
-             coeff[15]*np.cos(4*np.pi*xcc) +
-             coeff[16]*np.sin(4*np.pi*ycc) +
-             coeff[17]*np.cos(4*np.pi*ycc) +
-             coeff[18]*bgv +
-             coeff[19]*bge -
-             mag)
-
-
-def epd_magseries(mag, fsv, fdv, fkv, xcc, ycc, bgv, bge,
-                  smooth=21, sigmaclip=3.0):
-    '''
-    Detrends a magnitude series given in mag using accompanying values of S in
-    fsv, D in fdv, K in fkv, x coords in xcc, y coords in ycc, background in
-    bgv, and background error in bge. smooth is used to set a smoothing
-    parameter for the fit function.
-
-    This returns EPD mag corrections. To convert RMx to EPx, do:
-
-    EPx = RMx + correction
+    This smooths the magseries with a median filter.
 
     '''
 
-    # find all the finite values of the magnitude
-    finiteind = np.isfinite(mag)
+    return medfilt(mags, windowsize)
 
-    # calculate median and stdev
-    mag_median = np.median(mag[finiteind])
-    mag_stdev = np.nanstd(mag)
 
-    # if we're supposed to sigma clip, do so
-    if sigmaclip:
-        excludeind = abs(mag - mag_median) < sigmaclip*mag_stdev
-        finalind = finiteind & excludeind
-    else:
-        finalind = finiteind
 
-    final_mag = mag[finalind]
-    final_len = len(final_mag)
+def smooth_magseries_gaussfilt(mags, windowsize, windowfwhm=7):
+    '''
+    This smooths the magseries with a Gaussian kernel.
 
-    if DEBUG:
-        print('final epd fit mag len = %s' % final_len)
+    '''
+
+    convkernel = Gaussian1DKernel(windowfwhm, x_size=windowsize)
+    smoothed = convolve(mags, convkernel, boundary='extend')
+    return smoothed
+
+
+
+def smooth_magseries_savgol(mags, windowsize, polyorder=2):
+    '''
+    This smooths the magseries with a Savitsky-Golay filter.
+
+    '''
+
+    smoothed = savgol_filter(mags, windowsize, polyorder)
+    return smoothed
+
+
+
+###################################################
+## HAT-SPECIFIC EXTERNAL PARAMETER DECORRELATION ##
+###################################################
+
+def _epd_function(coeffs, fsv, fdv, fkv, xcc, ycc, bgv, bge):
+    '''
+    This is the EPD function to fit using a smoothed mag-series.
+
+    '''
+
+    return (coeffs[0]*fsv*fsv +
+            coeffs[1]*fsv +
+            coeffs[2]*fdv*fdv +
+            coeffs[3]*fdv +
+            coeffs[4]*fkv*fkv +
+            coeffs[5]*fkv +
+            coeffs[6] +
+            coeffs[7]*fsv*fdv +
+            coeffs[8]*fsv*fkv +
+            coeffs[9]*fdv*fkv +
+            coeffs[10]*np.sin(2*MPI*xcc) +
+            coeffs[11]*np.cos(2*MPI*xcc) +
+            coeffs[12]*np.sin(2*MPI*ycc) +
+            coeffs[13]*np.cos(2*MPI*ycc) +
+            coeffs[14]*np.sin(4*MPI*xcc) +
+            coeffs[15]*np.cos(4*MPI*xcc) +
+            coeffs[16]*np.sin(4*MPI*ycc) +
+            coeffs[17]*np.cos(4*MPI*ycc) +
+            coeffs[18]*bgv +
+            coeffs[19]*bge)
+
+
+
+def _epd_residual(coeffs, mags, fsv, fdv, fkv, xcc, ycc, bgv, bge):
+    '''
+    This is the residual function to minimize using scipy.optimize.leastsq.
+
+    '''
+
+    f = _epd_function(coeffs, fsv, fdv, fkv, xcc, ycc, bgv, bge)
+    residual = mags - f
+    return residual
+
+
+
+def epd_magseries(times, mags, errs,
+                  fsv, fdv, fkv, xcc, ycc, bgv, bge,
+                  magsarefluxes=False,
+                  sigclip=3.0,
+                  epdsmooth_windowsize=27,
+                  epdsmooth_func=_smooth_savgol,
+                  epdsmooth_extraparams=None):
+    '''Detrends a magnitude series using External Parameter Decorrelation.
+
+    The HAT light-curve-specific external parameters are:
+
+    S: the 'fsv' column,
+    D: the 'fdv' column,
+    K: the 'fkv' column,
+    x coords: the 'xcc' column,
+    y coords: the 'ycc' column,
+    background: the 'bgv' column,
+    background error: the 'bge' column
+
+    epdsmooth_windowsize is the number of points to smooth over to generate a
+    smoothed light curve to train the regressor against.
+
+    epdsmooth_func sets the smoothing filter function to use. A Savitsky-Golay
+    filter is used to smooth the light curve by default.
+
+    epdsmooth_extraparams is a dict of any extra filter params to supply to the
+    smoothing function.
+
+    NOTE: The errs are completely ignored and returned unchanged (except for
+    sigclip and finite filtering).
+
+    '''
+
+    stimes, smags, serrs, separams = sigclip_magseries_with_extparams(
+        times, mags, errs,
+        [fsv, fdv, fkv, xcc, ycc, bgv, bge],
+        sigclip=sigclip,
+        magsarefluxes=magsarefluxes
+    )
+    sfsv, sfdv, sfkv, sxcc, sycc, sbgv, sbge = separams
 
     # smooth the signal
-    smoothedmag = medfilt(final_mag, smooth)
+    if isinstance(epdsmooth_extraparams, dict):
+        smoothedmags = epdsmooth_func(smags,
+                                      epdsmooth_windowsize,
+                                      **epdsmooth_extraparams)
+    else:
+        smoothedmags = epdsmooth_func(smags, epdsmooth_windowsize)
 
-    # make the linear equation matrix
-    epdmatrix = np.c_[fsv[finalind]**2.0,
-                      fsv[finalind],
-                      fdv[finalind]**2.0,
-                      fdv[finalind],
-                      fkv[finalind]**2.0,
-                      fkv[finalind],
-                      np.ones(final_len),
-                      fsv[finalind]*fdv[finalind],
-                      fsv[finalind]*fkv[finalind],
-                      fdv[finalind]*fkv[finalind],
-                      np.sin(2*np.pi*xcc[finalind]),
-                      np.cos(2*np.pi*xcc[finalind]),
-                      np.sin(2*np.pi*ycc[finalind]),
-                      np.cos(2*np.pi*ycc[finalind]),
-                      np.sin(4*np.pi*xcc[finalind]),
-                      np.cos(4*np.pi*xcc[finalind]),
-                      np.sin(4*np.pi*ycc[finalind]),
-                      np.cos(4*np.pi*ycc[finalind]),
-                      bgv[finalind],
-                      bge[finalind]]
+    # initial fit coeffs
+    initcoeffs = npones(20)
 
-    # solve the equation epdmatrix * x = smoothedmag
-    # return the EPD differential mags if the solution succeeds
-    try:
+    # fit the smoothed mags and find the EPD function coefficients
+    leastsqfit = leastsq(_epd_residual,
+                         initcoeffs,
+                         args=(smoothedmags,
+                               sfsv, sfdv, sfkv, sxcc, sycc, sbgv, sbge))
 
-        coeffs, residuals, rank, singulars = lstsq(epdmatrix, smoothedmag)
+    # if the fit succeeds, then get the EPD mags
+    if leastsqfit[-1] in (1,2,3,4):
 
-        if DEBUG:
-            print('coeffs = %s, residuals = %s' % (coeffs, residuals))
+        fitcoeffs = leastsqfit[0]
+        epdfit = _epd_function(fitcoeffs,
+                               sfsv, sfdv, sfkv, sxcc, sycc, sbgv, sbge)
 
-        return epd_diffmags(coeffs, fsv, fdv, fkv, xcc, ycc, bgv, bge, mag)
+        epdmags = npmedian(smags) + smags - epdfit
+
+        retdict = {'times':stimes,
+                   'mags':epdmags,
+                   'errs':serrs,
+                   'fitcoeffs':fitcoeffs,
+                   'fitinfo':leastsqfit}
+
+        return retdict
 
     # if the solution fails, return nothing
-    except Exception as e:
+    else:
 
-        LOGEXCEPTION('%sZ: EPD solution did not converge! Error was: %s' %
-                     (datetime.utcnow().isoformat(), e))
+        LOGERROR('EPD fit did not converge')
         return None
+
+
+
+#######################
+## RANDOM FOREST EPD ##
+#######################
+
+def rfepd_magseries(times, mags, errs,
+                    externalparam_arrs,
+                    sigclip=3.0,
+                    magsarefluxes=False,
+                    epdsmooth=False,
+                    epdsmooth_windowsize=27,
+                    epdsmooth_func=_smooth_savgol,
+                    epdsmooth_extraparams=None,
+                    rf_subsample=0.5,
+                    rf_ntrees=200,
+                    rf_extraparams=None):
+    '''This uses a RandomForestRegressor to trend-filter the given magseries.
+
+    times and mags are ndarrays of time and magnitude values to filter.
+
+    extparam_arrs is a list of ndarrays of external parameters to decorrelate
+    against. These should all be the same size as times and mags.
+
+    epdsmooth_windowsize is the number of points to smooth over to generate a
+    smoothed light curve to train the regressor against.
+
+    epdsmooth_func sets the smoothing filter function to use. A Savitsky-Golay
+    filter is used to smooth the light curve by default.
+
+    epdsmooth_extraparams is a dict of any extra filter params to supply to the
+    smoothing function.
+
+    rf_subsample is the fraction of the size of the mags array to use for
+    training the random forest regressor.
+
+    rf_ntrees is the number of trees to use for the RandomForestRegressor.
+
+    rf_extraparams is any extra params to provide to the RandomForestRegressor
+    instance as a dict.
+
+    Returns a dict with decorrelated mags and the usual info from the
+    RandomForestRegressor: variable importances, etc.
+
+    '''
+
+    stimes, smags, serrs, eparams = sigclip_magseries_with_extparams(
+        times, mags, errs,
+        externalparam_arrs,
+        sigclip=sigclip,
+        magsarefluxes=magsarefluxes
+    )
+
+    # smoothing is optional for RFR because we train on a fraction of the mag
+    # series and so should not require a smoothed input to fit a function to
+    if epdsmooth:
+
+        # smooth the signal
+        if isinstance(epdsmooth_extraparams, dict):
+            smoothedmags = epdsmooth_func(smags,
+                                          epdsmooth_windowsize,
+                                          **epdsmooth_extraparams)
+        else:
+            smoothedmags = epdsmooth_func(smags,
+                                          epdsmooth_windowsize)
+
+    else:
+
+         smoothedmags = smags
+
+
+    # set up the regressor
+    if isinstance(rf_extraparams, dict):
+        RFR = RandomForestRegressor(n_estimators=rf_ntrees,
+                                    **rf_extraparams)
+    else:
+        RFR = RandomForestRegressor(n_estimators=rf_ntrees)
+
+    # collect the features
+    features = np.column_stack(eparams)
+
+    # fit, then generate the predicted values, then get corrected values
+
+    # we fit on a randomly selected subsample of all the mags
+    featureindices = np.arange(smoothedmags.size)
+    training_indices = npr.choice(featureindices,
+                                  size=int(rf_subsample*smoothedmags.size),
+                                  replace=False)
+
+    RFR.fit(features[:,training_indices], smoothedmags[training_indices])
+
+    # predict on the full feature set
+    flux_corrections = RFR.predict(features)
+    corrected_smags = npmedian(smags) + smags - flux_corrections
+
+    retdict = {'times':stimes,
+               'mags':corrected_smags,
+               'errs':serrs,
+               'feature_importances':RFR.feature_importances_,
+               'regressor':RFR}
+
+    return retdict
+
+
+
+#####################################
+## TREND FILTERING ALGORITHM (TFA) ##
+#####################################
