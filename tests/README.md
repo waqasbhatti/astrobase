@@ -21,14 +21,27 @@ $ python setup.py test
 
 # Test module list
 
-## test_endtoend.py
+## test_periodbase.py
 
 This tests the following:
 
 - downloads a light curve from the github repository notebooks/nb-data dir
 - reads the light curve using astrobase.hatlc
-- runs the GLS, PDM, AoV, and BLS functions on the LC
-- creates a checkplot PNG, twolsp PNG, and pickle using these results
+- runs the GLS, WIN, PDM, AoV, BLS, AoVMH, and ACF period finders on the LC
 
-These will take 5-7 minutes to run, depending on your CPU speed and number of
-cores.
+## test_lcfit.py
+
+This tests the following:
+
+- downloads a light curve from the github repository notebooks/nb-data dir
+- reads the light curve using astrobase.hatlc
+- fits the light curve using Fourier, SavGol, Legendre, transit model, and
+  eclipsing binary models
+
+## test_checkplot.py
+
+This tests the following:
+
+- downloads a light curve from the github repository notebooks/nb-data dir
+- reads the light curve using astrobase.hatlc
+- creates a checkplot PNG, twolsp PNG, and pickle using these results
