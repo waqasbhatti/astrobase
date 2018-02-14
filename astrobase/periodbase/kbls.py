@@ -229,14 +229,14 @@ def bls_serial_pfind(times, mags, errs,
                                              magsarefluxes=magsarefluxes,
                                              sigclip=sigclip)
 
-    # figure out the best number of phasebins to use
-    nphasebins = int(np.ceil(2.0/mintransitduration))
-
     # make sure there are enough points to calculate a spectrum
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
 
         # if we're setting up everything automatically
         if autofreq:
+
+            # figure out the best number of phasebins to use
+            nphasebins = int(np.ceil(2.0/mintransitduration))
 
             # use heuristic to figure out best timestep
             stepsize = 0.25*mintransitduration/(stimes.max()-stimes.min())
@@ -248,7 +248,8 @@ def bls_serial_pfind(times, mags, errs,
 
             # say what we're using
             if verbose:
-                LOGINFO('autofreq: using stepsize: %s, min P: %s, '
+                LOGINFO('autofreq: using AUTOMATIC values for '
+                        'stepsize: %s, min P: %s, '
                         'max P: %s, nfreq: %s, nphasebins: %s, '
                         'min transit duration: %s, max transit duration: %s' %
                         (stepsize, startp, endp, nfreq, nphasebins,
@@ -264,7 +265,8 @@ def bls_serial_pfind(times, mags, errs,
 
             # say what we're using
             if verbose:
-                LOGINFO('manualfreq: using stepsize: %s, min P: %s, '
+                LOGINFO('manualfreq: using PROVIDED values for '
+                        'stepsize: %s, min P: %s, '
                         'max P: %s, nfreq: %s, nphasebins: %s, '
                         'min transit duration: %s, max transit duration: %s' %
                         (stepsize, startp, endp, nfreq, nphasebins,
@@ -524,18 +526,16 @@ def bls_parallel_pfind(
                                              magsarefluxes=magsarefluxes,
                                              sigclip=sigclip)
 
-    # figure out the best number of phasebins to use
-    # see http://www.astro.princeton.edu/~jhartman/vartools.html
-    nphasebins = int(np.ceil(2.0/mintransitduration))
-
     # make sure there are enough points to calculate a spectrum
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
 
         # if we're setting up everything automatically
         if autofreq:
 
+            # figure out the best number of phasebins to use
+            nphasebins = int(np.ceil(2.0/mintransitduration))
+
             # use heuristic to figure out best timestep
-            # see http://www.astro.princeton.edu/~jhartman/vartools.html
             stepsize = 0.25*mintransitduration/(stimes.max()-stimes.min())
 
             # now figure out the frequencies to use
@@ -545,7 +545,8 @@ def bls_parallel_pfind(
 
             # say what we're using
             if verbose:
-                LOGINFO('autofreq: using stepsize: %s, min P: %s, '
+                LOGINFO('autofreq: using AUTOMATIC values for '
+                        'stepsize: %s, min P: %s, '
                         'max P: %s, nfreq: %s, nphasebins: %s, '
                         'min transit duration: %s, max transit duration: %s' %
                         (stepsize, startp, endp, nfreq, nphasebins,
@@ -561,7 +562,8 @@ def bls_parallel_pfind(
 
             # say what we're using
             if verbose:
-                LOGINFO('manualfreq: using stepsize: %s, min P: %s, '
+                LOGINFO('manualfreq: using PROVIDED values for '
+                        'stepsize: %s, min P: %s, '
                         'max P: %s, nfreq: %s, nphasebins: %s, '
                         'min transit duration: %s, max transit duration: %s' %
                         (stepsize, startp, endp, nfreq, nphasebins,
@@ -569,6 +571,7 @@ def bls_parallel_pfind(
                 LOGINFO('manualfreq: minfreq: %s, maxfreq: %s' %
                         (minfreq,maxfreq))
 
+        # check the minimum frequency
         if minfreq < (1.0/(stimes.max() - stimes.min())):
 
             minfreq = 2.0/(stimes.max() - stimes.min())
@@ -776,8 +779,13 @@ def bls_snr(blsdict,
             npeaks=None,
             assumeserialbls=False,
             verbose=True):
-    '''Calculates the signal-to-pink noise ratio for each best peak in the BLS
+    '''Calculates the signal to noise ratio for each best peak in the BLS
     periodogram.
+
+    This calculates two values of SNR:
+
+    SNR = transit model depth / RMS of light curve with transit model subtracted
+    altSNR = transit model depth / RMS of light curve inside transit
 
     blsdict is the output of either bls_parallel_pfind or bls_serial_pfind.
 
@@ -802,32 +810,8 @@ def bls_snr(blsdict,
     global best peaks in the periodogram, so we need to rerun bls_serial_pfind
     around each peak in blsdict['nbestperiods'] to get correct values for these.
 
-    FIXME: check if this method of getting an SNR makes sense. We're dividing
-    the transit depth by the rms of the residuals of the mag series after the
-    BLS box model is subtracted. This doesn't look right. Also, this is an SNR
-    for the transit signal, not the BLS peak itself.
-
     FIXME: for now, we're only doing simple RMS. Need to calculate red and
-    white-noise RMS as outlined below (similar to what's done in J. Hartman's
-    vartools).
-
-    This is supposed to work like so:
-
-    - get the nbestperiods out of blsdict
-
-    - run bls_serial_pfind for each period index i in nbestperiods with:
-
-      - startp[i] = nbestperiod[i] - pdelta
-
-      - endp[i] = nbestperiod[i] + pdelta
-
-      - get the blsresult dict
-
-      - in the blsresult dict, get the transdepth, transduration,
-        transingressbin, and transegressbin values
-
-      - generate a BLS eclipse model in phase space, using these values and
-        subtract this model from the phased light curve at the best period.
+    white-noise RMS as outlined below:
 
       - calculate the white noise rms and the red noise rms of the residual.
 
