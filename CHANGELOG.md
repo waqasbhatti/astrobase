@@ -1,3 +1,12 @@
+# v0.3.7
+
+## Fixes
+
+- kbls: fixing nphasebins and messaging about autofreq
+- lcfit: add legendre fit coeffs to output dict
+- test_lcfit: rtol fix
+- tests: added lcfit, periodbase tests, `test_endtoend` -> `test_checkplot`
+
 # v0.3.6
 
 ## Fixes
