@@ -427,6 +427,214 @@ def sigclip_magseries(times, mags, errs,
 
 
 
+def sigclip_magseries_with_extparams(times, mags, errs, extparams,
+                                     sigclip=None,
+                                     iterative=False,
+                                     magsarefluxes=False):
+    '''Select the finite times, magnitudes (or fluxes), and errors from the passed
+    values, and apply symmetric or asymmetric sigma clipping to them.  Returns
+    sigma-clipped times, mags, and errs. Uses the same indices to filter out the
+    values of all arrays in the extparams list.
+
+    Args:
+        times (np.array): ...
+
+        mags (np.array): numpy array to sigma-clip. Does not assume all values
+        are finite. Does not assume anything about whether they're
+        positive/negative.
+
+        errs (np.array): ...
+
+        extparams (list of np.arrays): external parameters to also filter using
+        the same indices as used for sigma-clipping.
+
+        iterative (bool): True if you want iterative sigma-clipping.
+
+        magsarefluxes (bool): True if your "mags" are in fact fluxes, i.e. if
+        "dimming" corresponds to your "mags" getting smaller.
+
+        sigclip (float or list): If float, apply symmetric sigma clipping. If
+        list, e.g., [10., 3.], will sigclip out greater than 10-sigma dimmings
+        and greater than 3-sigma brightenings. Here the meaning of "dimming"
+        and "brightening" is set by *physics* (not the magnitude system), which
+        is why the `magsarefluxes` kwarg must be correctly set.
+
+    Returns:
+        stimes, smags, serrs: (sigmaclipped values of each).
+
+    '''
+
+    returnerrs = True
+
+    # fake the errors if they don't exist
+    # this is inconsequential to sigma-clipping
+    # we don't return these dummy values if the input errs are None
+    if errs is None:
+        # assume 0.1% errors if not given
+        # this should work for mags and fluxes
+        errs = 0.001*mags
+        returnerrs = False
+
+    # filter the input times, mags, errs; do sigclipping and normalization
+    find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
+    ftimes, fmags, ferrs = times[find], mags[find], errs[find]
+
+    # apply the same indices to the external parameters
+    for epi, eparr in enumerate(extparams):
+        extparams[epi] = eparr[find]
+
+    # get the median and stdev = 1.483 x MAD
+    median_mag = npmedian(fmags)
+    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
+
+    # sigclip next for a single sigclip value
+    if sigclip and isinstance(sigclip,float):
+
+        if not iterative:
+
+            sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
+
+            stimes = ftimes[sigind]
+            smags = fmags[sigind]
+            serrs = ferrs[sigind]
+
+            # apply the same indices to the external parameters
+            for epi, eparr in enumerate(extparams):
+                extparams[epi] = eparr[sigind]
+
+        else:
+
+            #
+            # iterative version adapted from scipy.stats.sigmaclip
+            #
+            delta = 1
+
+            this_times = ftimes
+            this_mags = fmags
+            this_errs = ferrs
+
+            while delta:
+
+                this_median = npmedian(this_mags)
+                this_stdev = (npmedian(npabs(this_mags - this_median))) * 1.483
+                this_size = this_mags.size
+
+                # apply the sigclip
+                tsi = (npabs(this_mags - this_median)) < (sigclip * this_stdev)
+
+                # update the arrays
+                this_times = this_times[tsi]
+                this_mags = this_mags[tsi]
+                this_errs = this_errs[tsi]
+
+                # apply the same indices to the external parameters
+                for epi, eparr in enumerate(extparams):
+                    extparams[epi] = eparr[tsi]
+
+                # update delta and go to the top of the loop
+                delta = this_size - this_mags.size
+
+            # final sigclipped versions
+            stimes, smags, serrs = this_times, this_mags, this_errs
+
+
+    # this handles sigclipping for asymmetric +ve and -ve clip values
+    elif sigclip and isinstance(sigclip,list) and len(sigclip) == 2:
+
+        # sigclip is passed as [dimmingclip, brighteningclip]
+        dimmingclip = sigclip[0]
+        brighteningclip = sigclip[1]
+
+        if not iterative:
+
+            if magsarefluxes:
+                nottoodimind = (
+                    (fmags - median_mag) > (-dimmingclip*stddev_mag)
+                )
+                nottoobrightind = (
+                    (fmags - median_mag) < (brighteningclip*stddev_mag)
+                )
+            else:
+                nottoodimind = (
+                    (fmags - median_mag) < (dimmingclip*stddev_mag)
+                )
+                nottoobrightind = (
+                    (fmags - median_mag) > (-brighteningclip*stddev_mag)
+                )
+
+            sigind = nottoodimind & nottoobrightind
+
+            stimes = ftimes[sigind]
+            smags = fmags[sigind]
+            serrs = ferrs[sigind]
+
+            # apply the same indices to the external parameters
+            for epi, eparr in enumerate(extparams):
+                extparams[epi] = eparr[sigind]
+
+        else:
+
+            #
+            # iterative version adapted from scipy.stats.sigmaclip
+            #
+            delta = 1
+
+            this_times = ftimes
+            this_mags = fmags
+            this_errs = ferrs
+
+            while delta:
+
+                this_median = npmedian(this_mags)
+                this_stdev = (npmedian(npabs(this_mags - this_median))) * 1.483
+                this_size = this_mags.size
+
+                if magsarefluxes:
+                    nottoodimind = (
+                        (this_mags - this_median) > (-dimmingclip*this_stdev)
+                    )
+                    nottoobrightind = (
+                        (this_mags - this_median) < (brighteningclip*this_stdev)
+                    )
+                else:
+                    nottoodimind = (
+                        (this_mags - this_median) < (dimmingclip*this_stdev)
+                    )
+                    nottoobrightind = (
+                        (this_mags - this_median) > (-brighteningclip*this_stdev)
+                    )
+
+                # apply the sigclip
+                tsi = nottoodimind & nottoobrightind
+
+                # update the arrays
+                this_times = this_times[tsi]
+                this_mags = this_mags[tsi]
+                this_errs = this_errs[tsi]
+
+                # apply the same indices to the external parameters
+                for epi, eparr in enumerate(extparams):
+                    extparams[epi] = eparr[tsi]
+
+                # update delta and go to top of the loop
+                delta = this_size - this_mags.size
+
+            # final sigclipped versions
+            stimes, smags, serrs = this_times, this_mags, this_errs
+
+    else:
+
+        stimes = ftimes
+        smags = fmags
+        serrs = ferrs
+
+    if returnerrs:
+        return stimes, smags, serrs, extparams
+    else:
+        return stimes, smags, None, extparams
+
+
+
 #################
 ## PHASING LCS ##
 #################
