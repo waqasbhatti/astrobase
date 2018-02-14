@@ -866,6 +866,7 @@ def legendre_fit_magseries(times, mags, errs, period,
     # domain in [-1,1], in which Legendre polynomials are a complete basis.
 
     p = Legendre.fit(phase, pmags, legendredeg)
+    coeffs = p.coef
     fitmags = p(phase)
 
     # Now compute the chisq and red-chisq.
@@ -898,7 +899,8 @@ def legendre_fit_magseries(times, mags, errs, period,
         'fitinfo':{
             'legendredeg':legendredeg,
             'fitmags':fitmags,
-            'fitepoch':magseriesepoch
+            'fitepoch':magseriesepoch,
+            'finalparams':coeffs,
         },
         'fitchisq':fitchisq,
         'fitredchisq':fitredchisq,
