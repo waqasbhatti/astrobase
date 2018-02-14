@@ -248,14 +248,14 @@ def bls_serial_pfind(times, mags, errs,
 
             # say what we're using
             if verbose:
-                LOGINFO('autofreq: using AUTOMATIC values for '
-                        'stepsize: %s, min P: %s, '
-                        'max P: %s, nfreq: %s, nphasebins: %s, '
+                LOGINFO('min P: %s, max P: %s, nfreq: %s, '
+                        'minfreq: %s, maxfreq: %s' % (startp, endp, nfreq,
+                                                      minfreq, maxfreq))
+                LOGINFO('autofreq = True: using AUTOMATIC values for '
+                        'freq stepsize: %s, nphasebins: %s, '
                         'min transit duration: %s, max transit duration: %s' %
-                        (stepsize, startp, endp, nfreq, nphasebins,
+                        (stepsize, nphasebins,
                          mintransitduration, maxtransitduration))
-                LOGINFO('autofreq: minfreq: %s, maxfreq: %s' % (minfreq,
-                                                                maxfreq))
 
         else:
 
@@ -265,14 +265,14 @@ def bls_serial_pfind(times, mags, errs,
 
             # say what we're using
             if verbose:
-                LOGINFO('manualfreq: using PROVIDED values for '
-                        'stepsize: %s, min P: %s, '
-                        'max P: %s, nfreq: %s, nphasebins: %s, '
+                LOGINFO('min P: %s, max P: %s, nfreq: %s, '
+                        'minfreq: %s, maxfreq: %s' % (startp, endp, nfreq,
+                                                      minfreq, maxfreq))
+                LOGINFO('autofreq = False: using PROVIDED values for '
+                        'freq stepsize: %s, nphasebins: %s, '
                         'min transit duration: %s, max transit duration: %s' %
-                        (stepsize, startp, endp, nfreq, nphasebins,
+                        (stepsize, nphasebins,
                          mintransitduration, maxtransitduration))
-                LOGINFO('manualfreq: minfreq: %s, maxfreq: %s' %
-                        (minfreq,maxfreq))
 
 
         if nfreq > 5.0e5:
@@ -545,14 +545,14 @@ def bls_parallel_pfind(
 
             # say what we're using
             if verbose:
-                LOGINFO('autofreq: using AUTOMATIC values for '
-                        'stepsize: %s, min P: %s, '
-                        'max P: %s, nfreq: %s, nphasebins: %s, '
+                LOGINFO('min P: %s, max P: %s, nfreq: %s, '
+                        'minfreq: %s, maxfreq: %s' % (startp, endp, nfreq,
+                                                      minfreq, maxfreq))
+                LOGINFO('autofreq = True: using AUTOMATIC values for '
+                        'freq stepsize: %s, nphasebins: %s, '
                         'min transit duration: %s, max transit duration: %s' %
-                        (stepsize, startp, endp, nfreq, nphasebins,
+                        (stepsize, nphasebins,
                          mintransitduration, maxtransitduration))
-                LOGINFO('autofreq: minfreq: %s, maxfreq: %s' % (minfreq,
-                                                                maxfreq))
 
         else:
 
@@ -562,14 +562,14 @@ def bls_parallel_pfind(
 
             # say what we're using
             if verbose:
-                LOGINFO('manualfreq: using PROVIDED values for '
-                        'stepsize: %s, min P: %s, '
-                        'max P: %s, nfreq: %s, nphasebins: %s, '
+                LOGINFO('min P: %s, max P: %s, nfreq: %s, '
+                        'minfreq: %s, maxfreq: %s' % (startp, endp, nfreq,
+                                                      minfreq, maxfreq))
+                LOGINFO('autofreq = False: using PROVIDED values for '
+                        'freq stepsize: %s, nphasebins: %s, '
                         'min transit duration: %s, max transit duration: %s' %
-                        (stepsize, startp, endp, nfreq, nphasebins,
+                        (stepsize, nphasebins,
                          mintransitduration, maxtransitduration))
-                LOGINFO('manualfreq: minfreq: %s, maxfreq: %s' %
-                        (minfreq,maxfreq))
 
         # check the minimum frequency
         if minfreq < (1.0/(stimes.max() - stimes.min())):
