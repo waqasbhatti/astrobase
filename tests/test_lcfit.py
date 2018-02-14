@@ -57,11 +57,11 @@ def test_fourierfit():
 
     '''
 
-    FOURIERPARAMS = np.array([
-        -0.22551607, -0.03259999,  0.06764816,  0.03392241,  0.06109763,
-        -0.03714063, -0.0492521 ,  1.67286661, -5.27918099, -0.23971117,
-        -3.23509531, -0.24212243, -0.20960743, -3.36844062
-    ])
+    FOURIERPARAMS = np.array(
+        [-0.20722085, -0.03259998,  0.06764817,  0.03392241,  0.06109763,
+         -0.03714063, -0.0492521 ,  1.6819149 , -5.27918097, -0.23971138,
+         -3.23509529, -0.24212238, -0.20960648, -3.36844061]
+    )
 
     lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
 
@@ -78,7 +78,7 @@ def test_fourierfit():
 
     assert_allclose(fit['fitredchisq'], 2.892135304465803, rtol=1.0e-6)
     assert_allclose(fit['fitinfo']['fitepoch'], np.array([56853.3082622]))
-    assert_allclose(fit['fitinfo']['finalparams'], FOURIERPARAMS, rtol=1.0e-6)
+    assert_allclose(fit['fitinfo']['finalparams'], FOURIERPARAMS, rtol=1.0e-5)
 
 
 
