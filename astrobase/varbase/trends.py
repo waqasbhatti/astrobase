@@ -85,6 +85,7 @@ npr.seed(RANDSEED)
 
 from numpy import isfinite as npisfinite, median as npmedian, \
     abs as npabs, pi as MPI
+from numpy.linalg import lstsq
 
 from scipy.optimize import leastsq
 from scipy.signal import medfilt, savgol_filter
@@ -131,12 +132,145 @@ def smooth_magseries_savgol(mags, windowsize, polyorder=2):
     return smoothed
 
 
+########################################
+## OLD EPD FUNCTIONS (USED FOR HATPI) ##
+########################################
+
+def old_epd_diffmags(coeff, fsv, fdv, fkv, xcc, ycc, bgv, bge, mag):
+    '''
+    This calculates the difference in mags after EPD coefficients are
+    calculated.
+
+    final EPD mags = median(magseries) + epd_diffmags()
+
+    '''
+
+    return -(coeff[0]*fsv**2. +
+             coeff[1]*fsv +
+             coeff[2]*fdv**2. +
+             coeff[3]*fdv +
+             coeff[4]*fkv**2. +
+             coeff[5]*fkv +
+             coeff[6] +
+             coeff[7]*fsv*fdv +
+             coeff[8]*fsv*fkv +
+             coeff[9]*fdv*fkv +
+             coeff[10]*np.sin(2*np.pi*xcc) +
+             coeff[11]*np.cos(2*np.pi*xcc) +
+             coeff[12]*np.sin(2*np.pi*ycc) +
+             coeff[13]*np.cos(2*np.pi*ycc) +
+             coeff[14]*np.sin(4*np.pi*xcc) +
+             coeff[15]*np.cos(4*np.pi*xcc) +
+             coeff[16]*np.sin(4*np.pi*ycc) +
+             coeff[17]*np.cos(4*np.pi*ycc) +
+             coeff[18]*bgv +
+             coeff[19]*bge -
+             mag)
+
+
+
+def old_epd_magseries(times, mags, errs,
+                      fsv, fdv, fkv, xcc, ycc, bgv, bge,
+                      epdsmooth_windowsize=21,
+                      epdsmooth_sigclip=3.0,
+                      epdsmooth_func=smooth_magseries_medfilt,
+                      epdsmooth_extraparams=None):
+    '''
+    Detrends a magnitude series given in mag using accompanying values of S in
+    fsv, D in fdv, K in fkv, x coords in xcc, y coords in ycc, background in
+    bgv, and background error in bge. smooth is used to set a smoothing
+    parameter for the fit function. Does EPD voodoo.
+
+    '''
+
+    # find all the finite values of the magsnitude
+    finiteind = np.isfinite(mags)
+
+    # calculate median and stdev
+    mags_median = np.median(mags[finiteind])
+    mags_stdev = np.nanstd(mags)
+
+    # if we're supposed to sigma clip, do so
+    if epdsmooth_sigclip:
+        excludeind = abs(mags - mags_median) < epdsmooth_sigclip*mags_stdev
+        finalind = finiteind & excludeind
+    else:
+        finalind = finiteind
+
+    final_mags = mags[finalind]
+    final_len = len(final_mags)
+
+    # smooth the signal
+    if isinstance(epdsmooth_extraparams, dict):
+        smoothedmags = epdsmooth_func(final_mags,
+                                      epdsmooth_windowsize,
+                                      **epdsmooth_extraparams)
+    else:
+        smoothedmags = epdsmooth_func(final_mags, epdsmooth_windowsize)
+
+    # make the linear equation matrix
+    epdmatrix = np.c_[fsv[finalind]**2.0,
+                      fsv[finalind],
+                      fdv[finalind]**2.0,
+                      fdv[finalind],
+                      fkv[finalind]**2.0,
+                      fkv[finalind],
+                      np.ones(final_len),
+                      fsv[finalind]*fdv[finalind],
+                      fsv[finalind]*fkv[finalind],
+                      fdv[finalind]*fkv[finalind],
+                      np.sin(2*np.pi*xcc[finalind]),
+                      np.cos(2*np.pi*xcc[finalind]),
+                      np.sin(2*np.pi*ycc[finalind]),
+                      np.cos(2*np.pi*ycc[finalind]),
+                      np.sin(4*np.pi*xcc[finalind]),
+                      np.cos(4*np.pi*xcc[finalind]),
+                      np.sin(4*np.pi*ycc[finalind]),
+                      np.cos(4*np.pi*ycc[finalind]),
+                      bgv[finalind],
+                      bge[finalind]]
+
+    # solve the matrix equation [epdmatrix] . [x] = [smoothedmags]
+    # return the EPD differential magss if the solution succeeds
+    try:
+
+        coeffs, residuals, rank, singulars = lstsq(epdmatrix, smoothedmags,
+                                                   rcond=None)
+
+        if DEBUG:
+            print('coeffs = %s, residuals = %s' % (coeffs, residuals))
+
+
+        retdict = {'times':times,
+                   'mags':(mags_median +
+                           old_epd_diffmags(coeffs, fsv, fdv,
+                                            fkv, xcc, ycc, bgv, bge, mags)),
+                   'errs':errs,
+                   'fitcoeffs':coeffs,
+                   'residuals':residuals}
+
+        return retdict
+
+    # if the solution fails, return nothing
+    except Exception as e:
+
+        LOGEXCEPTION('EPD solution did not converge')
+
+        retdict = {'times':times,
+                   'mags':np.full_like(mags, np.nan),
+                   'errs':errs,
+                   'fitcoeffs':coeffs,
+                   'residuals':residuals}
+
+        return retdict
+
+
 
 ###################################################
 ## HAT-SPECIFIC EXTERNAL PARAMETER DECORRELATION ##
 ###################################################
 
-def _epd_function(coeffs, fsv, fdv, fkv, xcc, ycc, bgv, bge):
+def _epd_function(coeffs, fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd):
     '''
     This is the EPD function to fit using a smoothed mag-series.
 
@@ -161,24 +295,27 @@ def _epd_function(coeffs, fsv, fdv, fkv, xcc, ycc, bgv, bge):
             coeffs[16]*np.sin(4*MPI*ycc) +
             coeffs[17]*np.cos(4*MPI*ycc) +
             coeffs[18]*bgv +
-            coeffs[19]*bge)
+            coeffs[19]*bge +
+            coeffs[20]*iha +
+            coeffs[21]*izd
+    )
 
 
 
-def _epd_residual(coeffs, mags, fsv, fdv, fkv, xcc, ycc, bgv, bge):
+def _epd_residual(coeffs, mags, fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd):
     '''
     This is the residual function to minimize using scipy.optimize.leastsq.
 
     '''
 
-    f = _epd_function(coeffs, fsv, fdv, fkv, xcc, ycc, bgv, bge)
+    f = _epd_function(coeffs, fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd)
     residual = mags - f
     return residual
 
 
 
 def epd_magseries(times, mags, errs,
-                  fsv, fdv, fkv, xcc, ycc, bgv, bge,
+                  fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd,
                   magsarefluxes=False,
                   epdsmooth_sigclip=3.0,
                   epdsmooth_windowsize=21,
@@ -195,6 +332,8 @@ def epd_magseries(times, mags, errs,
     y coords: the 'ycc' column,
     background: the 'bgv' column,
     background error: the 'bge' column
+    hour angle: the 'iha' column
+    zenith distance: the 'izd' column
 
     epdsmooth_windowsize is the number of points to smooth over to generate a
     smoothed light curve to train the regressor against.
@@ -212,21 +351,25 @@ def epd_magseries(times, mags, errs,
 
     finind = np.isfinite(times) & np.isfinite(mags) & np.isfinite(errs)
     ftimes, fmags, ferrs = times[::][finind], mags[::][finind], errs[::][finind]
-    ffsv, ffdv, ffkv, fxcc, fycc, fbgv, fbge = (fsv[::][finind],
-                                                fdv[::][finind],
-                                                fkv[::][finind],
-                                                xcc[::][finind],
-                                                ycc[::][finind],
-                                                bgv[::][finind],
-                                                bge[::][finind])
+    ffsv, ffdv, ffkv, fxcc, fycc, fbgv, fbge, fiha, fizd = (
+        fsv[::][finind],
+        fdv[::][finind],
+        fkv[::][finind],
+        xcc[::][finind],
+        ycc[::][finind],
+        bgv[::][finind],
+        bge[::][finind],
+        iha[::][finind],
+        izd[::][finind],
+    )
 
     stimes, smags, serrs, separams = sigclip_magseries_with_extparams(
         times, mags, errs,
-        [fsv, fdv, fkv, xcc, ycc, bgv, bge],
+        [fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd],
         sigclip=epdsmooth_sigclip,
         magsarefluxes=magsarefluxes
     )
-    sfsv, sfdv, sfkv, sxcc, sycc, sbgv, sbge = separams
+    sfsv, sfdv, sfkv, sxcc, sycc, sbgv, sbge, siha, sizd = separams
 
     # smooth the signal
     if isinstance(epdsmooth_extraparams, dict):
@@ -237,20 +380,23 @@ def epd_magseries(times, mags, errs,
         smoothedmags = epdsmooth_func(smags, epdsmooth_windowsize)
 
     # initial fit coeffs
-    initcoeffs = np.ones(20)
+    initcoeffs = np.zeros(22)
 
     # fit the smoothed mags and find the EPD function coefficients
     leastsqfit = leastsq(_epd_residual,
                          initcoeffs,
                          args=(smoothedmags,
-                               sfsv, sfdv, sfkv, sxcc, sycc, sbgv, sbge))
+                               sfsv, sfdv, sfkv, sxcc,
+                               sycc, sbgv, sbge, siha, sizd),
+                         full_output=True)
 
     # if the fit succeeds, then get the EPD mags
     if leastsqfit[-1] in (1,2,3,4):
 
         fitcoeffs = leastsqfit[0]
         epdfit = _epd_function(fitcoeffs,
-                               ffsv, ffdv, ffkv, fxcc, fycc, fbgv, fbge)
+                               ffsv, ffdv, ffkv, fxcc, fycc,
+                               fbgv, fbge, fiha, fizd)
 
         epdmags = npmedian(fmags) + fmags - epdfit
 
@@ -258,7 +404,8 @@ def epd_magseries(times, mags, errs,
                    'mags':epdmags,
                    'errs':ferrs,
                    'fitcoeffs':fitcoeffs,
-                   'fitinfo':leastsqfit}
+                   'fitinfo':leastsqfit,
+                   'fitmags':epdfit}
 
         return retdict
 
@@ -282,15 +429,20 @@ def rfepd_magseries(times, mags, errs,
                     epdsmooth_windowsize=21,
                     epdsmooth_func=smooth_magseries_savgol,
                     epdsmooth_extraparams=None,
-                    rf_subsample=0.75,
-                    rf_ntrees=200,
-                    rf_extraparams=None):
-    '''This uses a RandomForestRegressor to trend-filter the given magseries.
+                    rf_subsample=0.5,
+                    rf_ntrees=300,
+                    rf_extraparams={'criterion':'mse',
+                                    'oob_score':False,
+                                    'n_jobs':-1}):
+    '''This uses a RandomForestRegressor to de-correlate the given magseries.
 
-    times and mags are ndarrays of time and magnitude values to filter.
+    times, mags, errs are ndarrays of time and magnitude values to filter.
 
-    extparam_arrs is a list of ndarrays of external parameters to decorrelate
-    against. These should all be the same size as times and mags.
+    externalparam_arrs is a list of ndarrays of external parameters to
+    decorrelate against. These should all be the same size as times, mags, errs.
+
+    epdsmooth = True sets the training light curve to be a smoothed version of
+    the sigma-clipped light curve.
 
     epdsmooth_windowsize is the number of points to smooth over to generate a
     smoothed light curve to train the regressor against.
@@ -358,10 +510,17 @@ def rfepd_magseries(times, mags, errs,
     # fit, then generate the predicted values, then get corrected values
 
     # we fit on a randomly selected subsample of all the mags
-    featureindices = np.arange(smoothedmags.size)
-    training_indices = npr.choice(featureindices,
-                                  size=int(rf_subsample*smoothedmags.size),
-                                  replace=False)
+    if rf_subsample < 1.0:
+        featureindices = np.arange(smoothedmags.size)
+
+        # these are sorted because time-order should be important
+        training_indices = np.sort(
+            npr.choice(featureindices,
+                       size=int(rf_subsample*smoothedmags.size),
+                       replace=False)
+        )
+    else:
+        training_indices = np.arange(smoothedmags.size)
 
     RFR.fit(features[training_indices,:], smoothedmags[training_indices])
 
