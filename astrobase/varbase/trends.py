@@ -93,7 +93,7 @@ from astropy.convolution import convolve, Gaussian1DKernel
 # for random forest EPD
 from sklearn.ensemble import RandomForestRegressor
 
-
+from ..lcmath import sigclip_magseries_with_extparams
 
 #########################
 ## SMOOTHING FUNCTIONS ##
@@ -180,8 +180,8 @@ def _epd_residual(coeffs, mags, fsv, fdv, fkv, xcc, ycc, bgv, bge):
 def epd_magseries(times, mags, errs,
                   fsv, fdv, fkv, xcc, ycc, bgv, bge,
                   magsarefluxes=False,
-                  sigclip=3.0,
-                  epdsmooth_windowsize=27,
+                  epdsmooth_sigclip=3.0,
+                  epdsmooth_windowsize=21,
                   epdsmooth_func=smooth_magseries_savgol,
                   epdsmooth_extraparams=None):
     '''Detrends a magnitude series using External Parameter Decorrelation.
@@ -210,10 +210,20 @@ def epd_magseries(times, mags, errs,
 
     '''
 
+    finind = np.isfinite(times) & np.isfinite(mags) & np.isfinite(errs)
+    ftimes, fmags, ferrs = times[::][finind], mags[::][finind], errs[::][finind]
+    ffsv, ffdv, ffkv, fxcc, fycc, fbgv, fbge = (fsv[::][finind],
+                                                fdv[::][finind],
+                                                fkv[::][finind],
+                                                xcc[::][finind],
+                                                ycc[::][finind],
+                                                bgv[::][finind],
+                                                bge[::][finind])
+
     stimes, smags, serrs, separams = sigclip_magseries_with_extparams(
         times, mags, errs,
         [fsv, fdv, fkv, xcc, ycc, bgv, bge],
-        sigclip=sigclip,
+        sigclip=epdsmooth_sigclip,
         magsarefluxes=magsarefluxes
     )
     sfsv, sfdv, sfkv, sxcc, sycc, sbgv, sbge = separams
@@ -227,7 +237,7 @@ def epd_magseries(times, mags, errs,
         smoothedmags = epdsmooth_func(smags, epdsmooth_windowsize)
 
     # initial fit coeffs
-    initcoeffs = npones(20)
+    initcoeffs = np.ones(20)
 
     # fit the smoothed mags and find the EPD function coefficients
     leastsqfit = leastsq(_epd_residual,
@@ -240,13 +250,13 @@ def epd_magseries(times, mags, errs,
 
         fitcoeffs = leastsqfit[0]
         epdfit = _epd_function(fitcoeffs,
-                               sfsv, sfdv, sfkv, sxcc, sycc, sbgv, sbge)
+                               ffsv, ffdv, ffkv, fxcc, fycc, fbgv, fbge)
 
-        epdmags = npmedian(smags) + smags - epdfit
+        epdmags = npmedian(fmags) + fmags - epdfit
 
-        retdict = {'times':stimes,
+        retdict = {'times':ftimes,
                    'mags':epdmags,
-                   'errs':serrs,
+                   'errs':ferrs,
                    'fitcoeffs':fitcoeffs,
                    'fitinfo':leastsqfit}
 
@@ -266,13 +276,13 @@ def epd_magseries(times, mags, errs,
 
 def rfepd_magseries(times, mags, errs,
                     externalparam_arrs,
-                    sigclip=3.0,
                     magsarefluxes=False,
                     epdsmooth=False,
-                    epdsmooth_windowsize=27,
+                    epdsmooth_sigclip=3.0,
+                    epdsmooth_windowsize=21,
                     epdsmooth_func=smooth_magseries_savgol,
                     epdsmooth_extraparams=None,
-                    rf_subsample=0.5,
+                    rf_subsample=0.75,
                     rf_ntrees=200,
                     rf_extraparams=None):
     '''This uses a RandomForestRegressor to trend-filter the given magseries.
@@ -303,11 +313,17 @@ def rfepd_magseries(times, mags, errs,
     RandomForestRegressor: variable importances, etc.
 
     '''
+    # get finite times, mags, errs
+    finind = np.isfinite(times) & np.isfinite(mags) & np.isfinite(errs)
+    ftimes, fmags, ferrs = times[::][finind], mags[::][finind], errs[::][finind]
+    finalparam_arrs = []
+    for ep in externalparam_arrs:
+        finalparam_arrs.append(ep[::][finind])
 
     stimes, smags, serrs, eparams = sigclip_magseries_with_extparams(
         times, mags, errs,
         externalparam_arrs,
-        sigclip=sigclip,
+        sigclip=epdsmooth_sigclip,
         magsarefluxes=magsarefluxes
     )
 
@@ -347,15 +363,15 @@ def rfepd_magseries(times, mags, errs,
                                   size=int(rf_subsample*smoothedmags.size),
                                   replace=False)
 
-    RFR.fit(features[:,training_indices], smoothedmags[training_indices])
+    RFR.fit(features[training_indices,:], smoothedmags[training_indices])
 
     # predict on the full feature set
-    flux_corrections = RFR.predict(features)
-    corrected_smags = npmedian(smags) + smags - flux_corrections
+    flux_corrections = RFR.predict(np.column_stack(finalparam_arrs))
+    corrected_fmags = npmedian(fmags) + fmags - flux_corrections
 
-    retdict = {'times':stimes,
-               'mags':corrected_smags,
-               'errs':serrs,
+    retdict = {'times':ftimes,
+               'mags':corrected_fmags,
+               'errs':ferrs,
                'feature_importances':RFR.feature_importances_,
                'regressor':RFR}
 
