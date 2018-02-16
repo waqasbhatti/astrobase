@@ -88,10 +88,6 @@ for your purposes.
 - **[hatsurveys](astrobase/hatsurveys)**: modules to read, filter, and normalize
   light curves from various HAT surveys
 
-- **[imageutils](astrobase/imageutils.py)**: various functions to deal with
-  FITS images: reading headers, generating postage stamps, converting to JPEGs,
-  and checking for warps
-
 - **[lcdb](astrobase/lcdb.py)**: a lightweight wrapper around the
   `psycopg2` library to talk to PostgreSQL database servers
 
@@ -130,6 +126,10 @@ for your purposes.
 - **[plotbase](astrobase/plotbase.py)**: functions to plot light curves, phased
   light curves, periodograms, and download Digitized Sky Survey cutouts from the
   NASA SkyView service.
+
+- **[services](astrobase/services)**: modules and functions to query various
+  astronomical catalogs and data services, including GAIA, TRILEGAL, NASA
+  SkyView, and 2MASS DUST.
 
 - **[timeutils](astrobase/timeutils.py)**: functions for converting from
   Julian dates to Baryocentric Julian dates, and precessing coordinates between
