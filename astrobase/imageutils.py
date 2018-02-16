@@ -80,6 +80,8 @@ import os
 import os.path
 import sys
 import glob
+import multiprocessing as mp
+import pickle
 
 import numpy as np
 np.seterr(all='ignore')
@@ -213,6 +215,122 @@ def get_header_keyword_list(fits_file,
 
 
 
+def fits_header_worker(task):
+    '''
+    This wraps get_header_keyword_list for the parallel_get_fits_headers
+    function below.
+
+    A task is a list:
+
+    [fits_file, keyword_list, extension]
+
+    '''
+
+    return task[0], get_header_keyword_list(task[0], task[1], ext=task[2])
+
+
+
+def parallel_get_fits_headers(fitsdir,
+                              keywordlist,
+                              fitsglob='*.fits',
+                              nworkers=4,
+                              maxworkertasks=1000,
+                              fitsext=0):
+    '''
+    This gets the specified keywords in keywordlist from the FITS headers for
+    all files in the directory fitsdir, optionally filtering by the glob
+    fitsglob.
+
+    '''
+
+    # get a list of all fits files in the directory
+    fitslist = glob.glob(os.path.join(fitsdir, fitsglob))
+
+    LOGINFO('found %s FITS images in %s, getting keywords %s...' %
+            (len(fitslist), fitsdir, keywordlist))
+
+    pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
+
+    tasks = [
+        [os.path.abspath(x), keywordlist, fitsext]
+        for x in fitslist
+    ]
+
+    # fire up the pool of workers
+    results = pool.map(fits_header_worker, tasks)
+
+    # wait for the processes to complete work
+    pool.close()
+    pool.join()
+
+    # this is the return dictionary
+    returndict = {x:y for (x,y) in results}
+    return returndict
+
+
+
+def get_image_types(fitsdir,
+                    typekeyword='IMAGETYP',
+                    datekeyword='DATE-OBS',
+                    fitsglob='*.fits',
+                    nworkers=4,
+                    maxworkertasks=1000,
+                    fitsext=0):
+    '''
+    This goes through all the files in fitsdir, and writes pickled dictionaries
+    listing imagetypes for all of them. Uses parallel_get_fits_headers above.
+
+    '''
+
+    # get all the imagetypes for all files in this directory
+    fitsdir_imagetypes = parallel_get_fits_headers(
+        fitsdir,
+        [typekeyword, datekeyword],
+        fitsglob=fitsglob,
+        nworkers=nworkers,
+        maxworkertasks=maxworkertasks,
+        fitsext=fitsext
+        )
+
+    if not fitsdir_imagetypes:
+        LOGERROR('no images found in %s, skipping' % fitsdir)
+        return None
+
+    # get the distinct image types
+    all_imagetypes = list(set([fitsdir_imagetypes[x]['IMAGETYP'] for
+                               x in fitsdir_imagetypes]))
+
+    # get the distinct observation dates
+    all_obsdates = list(set([fitsdir_imagetypes[x]['DATE-OBS'] for
+                             x in fitsdir_imagetypes]))
+
+    outpicklepath = os.path.join(os.path.abspath(fitsdir),
+                                 'fits-image-types.pkl')
+    outpicklef = open(outpicklepath,'wb')
+
+    outpickledict = {}
+
+    for obsdate in all_obsdates:
+
+        outpickledict[obsdate] = {}
+
+        for imagetype in all_imagetypes:
+
+            outpickledict[obsdate][imagetype] = []
+
+            for image in fitsdir_imagetypes:
+
+                if fitsdir_imagetypes[image]['IMAGETYP'] == imagetype:
+
+                    outpickledict[obsdate][imagetype].append(image)
+
+    pickle.dump(outpickledict, outpicklef, pickle.HIGHEST_PROTOCOL)
+    outpicklef.close()
+
+    return outpickledict
+
+
+
 ###########################
 ## FITS IMAGE OPERATIONS ##
 ###########################
@@ -332,13 +450,20 @@ def bias_overscan_correction(fits_img,
 
         overscan_spl = UnivariateSpline(medvar, medians)
 
-        # FIXME: this will need to change for arbitrary axis biassec
-        fitsimg[:, xslicelo-1:xslicehi] = (
-            fitsimg[:, xslicelo-1:xslicehi] -
-            overscan_spl(medvar)
-        )
+        # FIXME: check if this is correct
+        if medax == 1:
+            fitsimg[:, xslicelo-1:xslicehi] = (
+                fitsimg[:, xslicelo-1:xslicehi] -
+                overscan_spl(medvar)
+            )
+        else:
+            fitsimg[yslicelo-1:yslicehi, :] = (
+                fitsimg[yslicelo-1:yslicehi, :] -
+                overscan_spl(medvar)
+            )
 
         return fitsimg
+
 
     except Exception as e:
 
