@@ -2714,7 +2714,7 @@ def checkplot_dict(lspinfolist,
     the sigclip is applied symmetrically. in the second case, the first sigclip
     in the list is applied to +ve magnitude deviations (fainter) and the second
     sigclip in the list is applied to -ve magnitude deviations (brighter).
-    An example list would be `[10.,-3.]` (for 10 sigma dimmings, 3 sigma
+    An example list would be `[10.,3.]` (for 10 sigma dimmings, 3 sigma
     brightenings).
 
     bestperiodhighlight sets whether user wants a background on the phased light
