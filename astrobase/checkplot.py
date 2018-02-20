@@ -2713,7 +2713,7 @@ def checkplot_dict(lspinfolist,
     sigclip is either a single float or a list of two floats. in the first case,
     the sigclip is applied symmetrically. in the second case, the first sigclip
     in the list is applied to +ve magnitude deviations (fainter) and the second
-    sigclip in the list is appleid to -ve magnitude deviations (brighter).
+    sigclip in the list is applied to -ve magnitude deviations (brighter).
     An example list would be `[10.,-3.]` (for 10 sigma dimmings, 3 sigma
     brightenings).
 
@@ -3127,7 +3127,7 @@ def checkplot_pickle(lspinfolist,
     sigclip is either a single float or a list of two floats. in the first case,
     the sigclip is applied symmetrically. in the second case, the first sigclip
     in the list is applied to +ve magnitude deviations (fainter) and the second
-    sigclip in the list is appleid to -ve magnitude deviations (brighter).
+    sigclip in the list is applied to -ve magnitude deviations (brighter).
     An example list would be `[10.,-3.]` (for 10 sigma dimmings, 3 sigma
     brightenings).
 
