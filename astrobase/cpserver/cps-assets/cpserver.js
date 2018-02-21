@@ -598,10 +598,20 @@ var cpv = {
 
 
             // get the GAIA status (useful for G mags, colors, etc.)
-            var gaia_ok =
-                cpv.currcp.objectinfo.gaia_status.indexOf('ok') != -1;
-            var gaia_message =
-                cpv.currcp.objectinfo.gaia_status.split(':')[1];
+            if (cpv.currcp.objectinfo.gaia_status != undefined) {
+                var gaia_ok =
+                    cpv.currcp.objectinfo.gaia_status.indexOf('ok') != -1;
+                var gaia_message =
+                    cpv.currcp.objectinfo.gaia_status.split(':')[1];
+            }
+
+            else {
+                var gaia_ok = false;
+                var gaia_message = (
+                    'no RA/DEC provided, so no GAIA cross-match possible'
+                );
+                console.log('no GAIA info');
+            }
 
             //
             // get the coordinates
@@ -747,7 +757,12 @@ var cpv = {
 
             if (gaia_ok) {
                 var gaiamag = cpv.currcp.objectinfo.gaia_mags[0];
-                var gaiakcolor = cpv.currcp.objectinfo.gaiak_colors[0];
+                if (cpv.currcp.objectinfo.gaiak_colors != null) {
+                    var gaiakcolor = cpv.currcp.objectinfo.gaiak_colors[0];
+                }
+                else {
+                    var gaiakcolor = null;
+                }
                 var gaiaabsmag = cpv.currcp.objectinfo.gaia_absolute_mags[0];
             }
             else {
@@ -847,7 +862,8 @@ var cpv = {
 
             // neighbors
             if (cpv.currcp.objectinfo.neighbors != undefined ||
-                cpv.currcp.objectinfo.gaia_ids.length > 0 ) {
+                (cpv.currcp.objectinfo.gaia_ids != undefined &&
+                 cpv.currcp.objectinfo.gaia_ids.length > 0) ) {
 
                 if (cpv.currcp.objectinfo.neighbors > 0) {
 
@@ -899,7 +915,8 @@ var cpv = {
             }
 
             // get the CMDs for this object if there are any
-            if (cpv.currcp.hasOwnProperty('colormagdiagram')) {
+            if (cpv.currcp.hasOwnProperty('colormagdiagram') &&
+                cpv.currcp.colormagdiagram != null) {
 
                 var cmdlist = Object.getOwnPropertyNames(
                     cpv.currcp.colormagdiagram
@@ -1121,9 +1138,14 @@ var cpv = {
             $('#neighbor-container').empty();
 
             $('#gaia-neighbor-tbody').empty();
-            $('#gaia-neighbor-count').html(
-                cpv.currcp.objectinfo.gaia_ids.length
-            );
+            if (cpv.currcp.objectinfo.gaia_ids != undefined) {
+                $('#gaia-neighbor-count').html(
+                    cpv.currcp.objectinfo.gaia_ids.length
+                );
+            }
+            else {
+                $('#gaia-neighbor-count').html('No');
+            }
 
             $('#lcc-neighbor-container').empty();
             $("#lcc-neighbor-count").html(cpv.currcp.neighbors.length);
@@ -1231,7 +1253,7 @@ var cpv = {
 
             // if GAIA xmatch failed, fill in the table without special
             // formatting if possible
-            else {
+            else if (cpv.currcp.objectinfo.gaia_ids != undefined) {
 
                 // for each gaia neighbor, put in a table row
                 var gi = 0;
