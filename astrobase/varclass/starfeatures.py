@@ -833,7 +833,11 @@ def neighbor_gaia_features(objectinfo,
                         gaia_absolute_mags = magnitudes.absolute_gaia_magnitude(
                             gaia_mags, gaia_parallaxes
                         )
-                        gaiak_colors = gaia_mags - objectinfo['kmag']
+                        if ('kmag' in objectinfo and
+                            objectinfo['kmag'] is not None):
+                            gaiak_colors = gaia_mags - objectinfo['kmag']
+                        else:
+                            gaiak_colors = None
 
                         gaia_dists = gaia_objlist['dist_arcsec']
                         gaia_closest_distarcsec = gaia_objlist['dist_arcsec'][1]
@@ -862,7 +866,11 @@ def neighbor_gaia_features(objectinfo,
                         gaia_absolute_mags = magnitudes.absolute_gaia_magnitude(
                             gaia_mags, gaia_parallaxes
                         )
-                        gaiak_colors = gaia_mags - objectinfo['kmag']
+                        if ('kmag' in objectinfo and
+                            objectinfo['kmag'] is not None):
+                            gaiak_colors = gaia_mags - objectinfo['kmag']
+                        else:
+                            gaiak_colors = None
 
                         gaia_dists = gaia_objlist['dist_arcsec']
                         gaia_closest_distarcsec = np.nan
