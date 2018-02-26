@@ -521,12 +521,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 objectid = cpdict['objectid']
                 objectinfo = cpdict['objectinfo']
                 varinfo = cpdict['varinfo']
-                pfmethods = []
-
-                # get the period-finders associated with this object
-                for key in ('pdm','aov','bls','gls','mav','acf','win'):
-                    if key in cpdict:
-                        pfmethods.append(key)
+                pfmethods = cpdict['pfmethods']
 
                 # handle neighbors for this object
                 neighbors = []
@@ -659,6 +654,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                         # fallback in case objectinfo doesn't have ndet
                         'magseries_ndet':cpdict['magseries']['times'].size,
                         'cpstatus':cpstatus,
+                        'pfmethods':pfmethods
                     }
                 }
 

@@ -3265,7 +3265,12 @@ def runpf(lcfile,
 
             # run each of the requested period-finder functions
             resultdict[mcolget[-1]] = {}
-            for pfm, pfkw in zip(pfmethods, pfkwargs):
+
+            pfmkeys = []
+
+            for pfmind, pfm, pfkw in zip(range(len(pfmethods)),
+                                         pfmethods,
+                                         pfkwargs):
 
                 pf_func = PFMETHODS[pfm]
 
@@ -3276,8 +3281,14 @@ def runpf(lcfile,
                                   'magsarefluxes':magsarefluxes,
                                   'sigclip':sigclip})
 
+                # we'll always prefix things with their index to allow multiple
+                # invocations and results from the same period-finder (for
+                # different period ranges, for example).
+                pfmkey = '%s-%s' % (pfmind, pfm)
+                pfmkeys.append(pfmkey)
+
                 # run this period-finder and save its results to the output dict
-                resultdict[mcolget[-1]][pfm] = pf_func(
+                resultdict[mcolget[-1]][pfmkey] = pf_func(
                     times, mags, errs,
                     **pf_kwargs
                 )
@@ -3286,48 +3297,64 @@ def runpf(lcfile,
             #
             # done with running the period finders
             #
+            # append the pfmkeys list to the magcol dict
+            resultdict[mcolget[-1]]['pfmethods'] = pfmkeys
 
-            # check if we need to get the SNR for BLS
+            # check if we need to get the SNR from any BLS pfresults
             if 'bls' in pfmethods and getblssnr:
 
-                try:
+                # we need to scan thru the pfmethods to get to any BLS pfresults
+                for pfmk in resultdict[mcolget[-1]]['pfmethods']:
 
-                    bls = resultdict[mcolget[-1]]['bls']
+                    if 'bls' in pfmk:
 
-                    # calculate the SNR for the BLS as well
-                    blssnr = bls_snr(bls, times, mags, errs,
-                                     magsarefluxes=magsarefluxes,
-                                     verbose=False)
+                        try:
 
-                    # add the SNR results to the BLS result dict
-                    resultdict[mcolget[-1]]['bls'].update({
-                        'snr':blssnr['snr'],
-                        'altsnr':blssnr['altsnr'],
-                        'transitdepth':blssnr['transitdepth'],
-                        'transitduration':blssnr['transitduration'],
-                    })
+                            bls = resultdict[mcolget[-1]]['bls']
 
-                except Exception as e:
+                            # calculate the SNR for the BLS as well
+                            blssnr = bls_snr(bls, times, mags, errs,
+                                             magsarefluxes=magsarefluxes,
+                                             verbose=False)
 
-                    LOGEXCEPTION('could not calculate BLS SNR for %s' %
-                                 lcfile)
-                    # add the SNR null results to the BLS result dict
-                    resultdict[mcolget[-1]]['bls'].update({
-                        'snr':[np.nan,np.nan,np.nan,np.nan,np.nan],
-                        'altsnr':[np.nan,np.nan,np.nan,np.nan,np.nan],
-                        'transitdepth':[np.nan,np.nan,np.nan,np.nan,np.nan],
-                        'transitduration':[np.nan,np.nan,np.nan,np.nan,np.nan],
-                    })
+                            # add the SNR results to the BLS result dict
+                            resultdict[mcolget[-1]][pfmk].update({
+                                'snr':blssnr['snr'],
+                                'altsnr':blssnr['altsnr'],
+                                'transitdepth':blssnr['transitdepth'],
+                                'transitduration':blssnr['transitduration'],
+                            })
+
+                        except Exception as e:
+
+                            LOGEXCEPTION('could not calculate BLS SNR for %s' %
+                                         lcfile)
+                            # add the SNR null results to the BLS result dict
+                            resultdict[mcolget[-1]][pfmk].update({
+                                'snr':[np.nan,np.nan,np.nan,np.nan,np.nan],
+                                'altsnr':[np.nan,np.nan,np.nan,np.nan,np.nan],
+                                'transitdepth':[np.nan,np.nan,np.nan,
+                                                np.nan,np.nan],
+                                'transitduration':[np.nan,np.nan,np.nan,
+                                                   np.nan,np.nan],
+                            })
 
             elif 'bls' in pfmethods:
 
-                # add the SNR null results to the BLS result dict
-                resultdict[mcolget[-1]]['bls'].update({
-                    'snr':[np.nan,np.nan,np.nan,np.nan,np.nan],
-                    'altsnr':[np.nan,np.nan,np.nan,np.nan,np.nan],
-                    'transitdepth':[np.nan,np.nan,np.nan,np.nan,np.nan],
-                    'transitduration':[np.nan,np.nan,np.nan,np.nan,np.nan],
-                })
+                # we need to scan thru the pfmethods to get to any BLS pfresults
+                for pfmk in resultdict[mcolget[-1]]['pfmethods']:
+
+                    if 'bls' in pfmk:
+
+                        # add the SNR null results to the BLS result dict
+                        resultdict[mcolget[-1]][pfmk].update({
+                            'snr':[np.nan,np.nan,np.nan,np.nan,np.nan],
+                            'altsnr':[np.nan,np.nan,np.nan,np.nan,np.nan],
+                            'transitdepth':[np.nan,np.nan,np.nan,
+                                            np.nan,np.nan],
+                            'transitduration':[np.nan,np.nan,np.nan,
+                                               np.nan,np.nan],
+                        })
 
 
         # once all mag cols have been processed, write out the pickle
@@ -3729,40 +3756,39 @@ def update_checkplotdict_nbrlcs(
 
         # for each lspmethod in the checkplot, make a corresponding plot for
         # this neighbor
-        for lspt in PFMETHODS:
+        for lspt in checkplotdict['pfmethods']:
 
-            if lspt in checkplotdict:
+            # initialize this lspmethod entry
+            nbr[lspt] = {}
 
-                # initialize this lspmethod entry
-                nbr[lspt] = {}
+            # we only care about the best period and its options
+            operiod, oepoch = (checkplotdict[lspt][0]['period'],
+                               checkplotdict[lspt][0]['epoch'])
+            (ophasewrap, ophasesort, ophasebin,
+             ominbinelems, oplotxlim) = (
+                 checkplotdict[lspt][0]['phasewrap'],
+                 checkplotdict[lspt][0]['phasesort'],
+                 checkplotdict[lspt][0]['phasebin'],
+                 checkplotdict[lspt][0]['minbinelems'],
+                 checkplotdict[lspt][0]['plotxlim'],
+             )
 
-                # we only care about the best period and its options
-                operiod, oepoch = (checkplotdict[lspt][0]['period'],
-                                   checkplotdict[lspt][0]['epoch'])
-                (ophasewrap, ophasesort, ophasebin,
-                 ominbinelems, oplotxlim) = (
-                     checkplotdict[lspt][0]['phasewrap'],
-                     checkplotdict[lspt][0]['phasesort'],
-                     checkplotdict[lspt][0]['phasebin'],
-                     checkplotdict[lspt][0]['minbinelems'],
-                     checkplotdict[lspt][0]['plotxlim'],
-                 )
-
-                # make the phasedlc plot for this period
-                nbr = _pkl_phased_magseries_plot(
-                    nbr,
-                    lspt,
-                    0,
-                    xtimes, xmags, xerrs,
-                    operiod, oepoch,
-                    phasewrap=ophasewrap,
-                    phasesort=ophasesort,
-                    phasebin=ophasebin,
-                    minbinelems=ominbinelems,
-                    plotxlim=oplotxlim,
-                    magsarefluxes=magsarefluxes,
-                    verbose=verbose
-                )
+            # make the phasedlc plot for this period
+            nbr = _pkl_phased_magseries_plot(
+                nbr,
+                lspt.split('-')[1], # this splits '<pfindex>-<pfmethod>'
+                0,
+                xtimes, xmags, xerrs,
+                operiod, oepoch,
+                phasewrap=ophasewrap,
+                phasesort=ophasesort,
+                phasebin=ophasebin,
+                minbinelems=ominbinelems,
+                plotxlim=oplotxlim,
+                magsarefluxes=magsarefluxes,
+                verbose=verbose,
+                override_pfmethod=lspt
+            )
 
     # at this point, this neighbor's dict should be up to date with all
     # info, magseries plot, and all phased LC plots
@@ -3866,14 +3892,9 @@ def runcp(pfpickle,
             ecolget = [ecol]
         errs = dict_get(lcdict, ecolget)
 
-
-        pflist = []
-
-        # pick up all of the period-finding methods in this pfresults pkl
-        for pfmethod in PFMETHODS:
-            if pfmethod in pfresults[mcolget[-1]]:
-                pflist.append(pfresults[mcolget[-1]][pfmethod])
-
+        # get all the period-finder results from this magcol
+        pflist = [pfresults[mcolget[-1]][x]
+                  for x in pfresults[mcolget[-1]]['pfmethods']]
 
         # generate the output filename
         outfile = os.path.join(outdir,

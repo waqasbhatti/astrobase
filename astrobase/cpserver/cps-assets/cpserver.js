@@ -1011,37 +1011,8 @@ var cpv = {
             // update the phased light curves
 
             // first, count the number of methods we have in the cp
-            var lspmethods = [];
-            var ncols = 0;
-
-            if ('pdm' in cpv.currcp) {
-                lspmethods.push('pdm');
-                ncols = ncols + 1;
-            }
-            if ('gls' in cpv.currcp) {
-                lspmethods.push('gls');
-                ncols = ncols + 1;
-            }
-            if ('bls' in cpv.currcp) {
-                lspmethods.push('bls');
-                ncols = ncols + 1;
-            }
-            if ('aov' in cpv.currcp) {
-                lspmethods.push('aov');
-                ncols = ncols + 1;
-            }
-            if ('mav' in cpv.currcp) {
-                lspmethods.push('mav');
-                ncols = ncols + 1;
-            }
-            if ('acf' in cpv.currcp) {
-                lspmethods.push('acf');
-                ncols = ncols + 1;
-            }
-            if ('win' in cpv.currcp) {
-                lspmethods.push('win');
-                ncols = ncols + 1;
-            }
+            var lspmethods = cpv.currcp.pfmethods;
+            var ncols = lspmethods.length;
 
             var colwidth = 12/ncols;
 

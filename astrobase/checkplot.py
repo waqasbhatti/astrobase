@@ -1624,7 +1624,9 @@ def _pkl_finder_objectinfo(objectinfo,
 
 
 
-def _pkl_periodogram(lspinfo, plotdpi=100):
+def _pkl_periodogram(lspinfo,
+                     plotdpi=100,
+                     override_pfmethod=None):
     '''This returns the periodogram plot PNG as base64, plus info as a dict.
 
     '''
@@ -1681,17 +1683,33 @@ def _pkl_periodogram(lspinfo, plotdpi=100):
     # close the stringio buffer
     pgrampng.close()
 
-    # this is the dict to return
-    checkplotdict = {
-        lspinfo['method']:{
-            'periods':periods,
-            'lspvals':lspvals,
-            'bestperiod':bestperiod,
-            'nbestperiods':nbestperiods,
-            'nbestlspvals':nbestlspvals,
-            'periodogram':pgramb64,
+    if not override_pfmethod:
+
+        # this is the dict to return
+        checkplotdict = {
+            lspinfo['method']:{
+                'periods':periods,
+                'lspvals':lspvals,
+                'bestperiod':bestperiod,
+                'nbestperiods':nbestperiods,
+                'nbestlspvals':nbestlspvals,
+                'periodogram':pgramb64,
+            }
         }
-    }
+
+    else:
+
+        # this is the dict to return
+        checkplotdict = {
+            override_pfmethod:{
+                'periods':periods,
+                'lspvals':lspvals,
+                'bestperiod':bestperiod,
+                'nbestperiods':nbestperiods,
+                'nbestlspvals':nbestlspvals,
+                'periodogram':pgramb64,
+            }
+        }
 
     return checkplotdict
 
@@ -1790,7 +1808,8 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                                magsarefluxes=False,
                                directreturn=False,
                                overplotfit=None,
-                               verbose=True):
+                               verbose=True,
+                               override_pfmethod=None):
     '''This returns the phased magseries plot PNG as base64 plus info as a dict.
 
     checkplotdict is an existing checkplotdict to update. If it's None or
@@ -2099,7 +2118,11 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
     # it at the appropriate lspmethod and periodind
     else:
 
-        checkplotdict[lspmethod][periodind] = retdict
+        if override_pfmethod:
+            checkplotdict[override_pfmethod][periodind] = retdict
+        else:
+            checkplotdict[lspmethod][periodind] = retdict
+
         return checkplotdict
 
 
@@ -2840,7 +2863,9 @@ def checkplot_dict(lspinfolist,
         # 2. for each lspinfo in lspinfolist, read it in (from pkl or pkl.gz
         # if necessary), make the periodogram, make the phased mag series plots
         # for each of the nbestperiods in each lspinfo dict
-        for lspinfo in lspinfolist:
+        checkplot_pfmethods = []
+
+        for lspind, lspinfo in enumerate(lspinfolist):
 
             # get the LSP from a pickle file transparently
             if isinstance(lspinfo,str) and os.path.exists(lspinfo):
@@ -2854,14 +2879,18 @@ def checkplot_dict(lspinfolist,
                         lspinfo = pickle.load(infd)
 
             # make the periodogram first
-            periodogramdict = _pkl_periodogram(lspinfo,plotdpi=plotdpi)
+
+            # we'll prepend the lspmethod index to allow for multiple same
+            # lspmethods
+            override_pfmethod = '%s-%s' % (lspind, lspinfo['method'])
+
+            periodogramdict = _pkl_periodogram(
+                lspinfo,
+                plotdpi=plotdpi,
+                override_pfmethod=override_pfmethod
+            )
 
             # update the checkplotdict.
-
-            # NOTE: periodograms and phased light curves are indexed by
-            # lspmethod. this means if you have multiple lspinfo objects of the
-            # same lspmethod, the latest one will always overwrite the earlier
-            # ones.
             checkplotdict.update(periodogramdict)
 
             # now, make the phased light curve plots for each of the
@@ -2904,23 +2933,34 @@ def checkplot_dict(lspinfolist,
                     magsarefluxes=magsarefluxes,
                     xliminsetmode=xliminsetmode,
                     xgridlines=xgridlines,
-                    verbose=verbose
+                    verbose=verbose,
+                    override_pfmethod=override_pfmethod,
                 )
 
             # if there's an snr key for this lspmethod, add the info in it to
             # the checkplotdict as well
             if 'snr' in lspinfo:
-                checkplotdict[lspinfo['method']]['snr'] = lspinfo['snr']
+                checkplotdict[lspinfo[override_pfmethod]]['snr'] = (
+                    lspinfo['snr']
+                )
             if 'altsnr' in lspinfo:
-                checkplotdict[lspinfo['method']]['altsnr'] = lspinfo['altsnr']
+                checkplotdict[lspinfo[override_pfmethod]]['altsnr'] = (
+                    lspinfo['altsnr']
+                )
             if 'transitdepth' in lspinfo:
-                checkplotdict[lspinfo['method']]['transitdepth'] = (
+                checkplotdict[lspinfo[override_pfmethod]]['transitdepth'] = (
                     lspinfo['transitdepth']
                 )
             if 'transitduration' in lspinfo:
-                checkplotdict[lspinfo['method']]['transitduration'] = (
+                checkplotdict[lspinfo[override_pfmethod]]['transitduration'] = (
                     lspinfo['transitduration']
                 )
+
+            checkplot_pfmethods.append(override_pfmethod)
+
+        #
+        # end of processing each pfmethod
+        #
 
         ## update the checkplot dict with some other stuff that's needed by
         ## checkplotserver
@@ -2936,7 +2976,6 @@ def checkplot_dict(lspinfolist,
                 serrs,
                 magsarefluxes=magsarefluxes,
             )
-
 
         # 5. add a signals key:val. this will be used by checkplotserver's
         # pre-whitening and masking functions. these will write to
@@ -2976,8 +3015,13 @@ def checkplot_dict(lspinfolist,
         checkplotdict['status'] = 'ok: contents are %s' % contents
 
         if verbose:
-            LOGINFO('checkplot dict complete for %s' % checkplotdict['objectid'])
+            LOGINFO('checkplot dict complete for %s' %
+                    checkplotdict['objectid'])
             LOGINFO('checkplot dict contents: %s' % contents)
+
+
+        # 8. update the pfmethods key
+        checkplotdict['pfmethods'] = checkplot_pfmethods
 
     # otherwise, we don't have enough LC points, return nothing
     else:
@@ -2989,7 +3033,6 @@ def checkplot_dict(lspinfolist,
 
     # at the end, return the dict
     return checkplotdict
-
 
 
 
@@ -3485,15 +3528,8 @@ def checkplot_pickle_to_png(checkplotin,
     # - the first row is for object info
     # - the rest are for periodograms and phased LCs, one row per method
     # if there are more than three phased LC plots per method, we'll only plot 3
-    cplspmethods = []
-    cprows = 0
-
-    # get checkplot pickle rows
-    # we don't use the window function here
-    for lspmethod in ('gls','pdm','bls','aov','mav','acf','win'):
-        if lspmethod in cpd:
-            cplspmethods.append(lspmethod)
-            cprows = cprows + 1
+    cplspmethods = cpd['pfmethods']
+    cprows = len(cplspmethods)
 
     # add in any extra rows from neighbors
     if 'neighbors' in cpd and cpd['neighbors'] and len(cpd['neighbors']) > 0:
@@ -4038,7 +4074,7 @@ def checkplot_pickle_to_png(checkplotin,
             # order of priority: 'gls','pdm','bls','aov','mav','acf','win'
             nbrlspmethods = []
 
-            for lspmethod in ('gls','pdm','bls','aov','mav','acf','win'):
+            for lspmethod in cpd['pfmethods']:
                 if lspmethod in nbr:
                     nbrlspmethods.append(lspmethod)
 
