@@ -389,8 +389,8 @@ def bls_serial_pfind(times, mags, errs,
                 # period and from all the other existing best periods by
                 # periodepsilon to make sure we jump to an entire different
                 # peak in the periodogram
-                if (perioddiff > periodepsilon and
-                    all(x > periodepsilon for x in bestperiodsdiff)):
+                if (perioddiff > (periodepsilon*prevperiod) and
+                    all(x > (periodepsilon*prevperiod) for x in bestperiodsdiff)):
                     nbestperiods.append(period)
                     nbestlspvals.append(lspval)
                     peakcount = peakcount + 1
@@ -699,8 +699,8 @@ def bls_parallel_pfind(
             # period and from all the other existing best periods by
             # periodepsilon to make sure we jump to an entire different
             # peak in the periodogram
-            if (perioddiff > periodepsilon and
-                all(x > periodepsilon for x in bestperiodsdiff)):
+            if (perioddiff > (periodepsilon*prevperiod) and
+                all(x > (periodepsilon*prevperiod) for x in bestperiodsdiff)):
                 nbestperiods.append(period)
                 nbestlspvals.append(lspval)
                 peakcount = peakcount + 1
