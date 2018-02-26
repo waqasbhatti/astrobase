@@ -3990,18 +3990,19 @@ def checkplot_pickle_to_png(checkplotin,
         # best phased LC comes next #
         #############################
 
-        if (cpd[lspmethod] and cpd[lspmethod][0]):
+        if (cpd[lspmethod] and 0 in cpd[lspmethod] and cpd[lspmethod][0]):
 
             plc1 = Image.open(
             _base64_to_file(cpd[lspmethod][0]['plot'], None, writetostrio=True)
             )
             outimg.paste(plc1,(750,480 + 480*lspmethodind))
 
+
         #################################
         # 2nd best phased LC comes next #
         #################################
 
-        if (cpd[lspmethod] and cpd[lspmethod][1]):
+        if (cpd[lspmethod] and 1 in cpd[lspmethod] and cpd[lspmethod][1]):
 
             plc2 = Image.open(
             _base64_to_file(cpd[lspmethod][1]['plot'], None, writetostrio=True)
@@ -4012,7 +4013,7 @@ def checkplot_pickle_to_png(checkplotin,
         # 3rd best phased LC comes next #
         #################################
 
-        if (cpd[lspmethod] and cpd[lspmethod][2]):
+        if (cpd[lspmethod] and 2 in cpd[lspmethod] and cpd[lspmethod][2]):
 
             plc3 = Image.open(
             _base64_to_file(cpd[lspmethod][2]['plot'], None, writetostrio=True)
