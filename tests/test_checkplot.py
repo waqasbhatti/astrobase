@@ -57,7 +57,7 @@ def on_download_chunk(transferred,blocksize,totalsize):
 
 # get the light curve if it's not there
 modpath = os.path.abspath(__file__)
-LCPATH = os.path.abspath(os.path.join(os.path.dirname(modpath),
+LCPATH = os.path.abspath(os.path.join(os.getcwd(),
                                       'HAT-772-0554686-V0-DR0-hatlc.sqlite.gz'))
 if not os.path.exists(LCPATH):
     localf, headerr = urlretrieve(
@@ -335,3 +335,54 @@ def test_checkplot_pickle_topng():
 
     exportedpng = checkplot.checkplot_pickle_to_png(cpd, 'exported-checkplot.png')
     assert (exportedpng and os.path.exists(exportedpng))
+
+
+
+def test_checkplot_with_multiple_same_pfmethods():
+    '''
+    This tests running the same period-finder for different period ranges.
+
+    '''
+
+    outpath = os.path.join(os.path.dirname(LCPATH),
+                           'test-checkplot.pkl')
+
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
+
+    gls_1 = periodbase.pgen_lsp(lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+                                startp=0.01,endp=0.1)
+    gls_2 = periodbase.pgen_lsp(lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+                                startp=0.1,endp=300.0)
+    pdm_1 = periodbase.stellingwerf_pdm(lcd['rjd'],
+                                        lcd['aep_000'],
+                                        lcd['aie_000'],
+                                        startp=0.01,endp=0.1)
+    pdm_2 = periodbase.stellingwerf_pdm(lcd['rjd'],
+                                        lcd['aep_000'],
+                                        lcd['aie_000'],
+                                        startp=0.1,endp=300.0)
+
+    assert isinstance(gls_1, dict)
+    assert isinstance(gls_2, dict)
+    assert isinstance(pdm_1, dict)
+    assert isinstance(pdm_2, dict)
+
+    cpf = checkplot.checkplot_pickle(
+        [gls_1, gls_2, pdm_1, pdm_2],
+        lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+        outfile=outpath,
+        objectinfo=lcd['objectinfo']
+    )
+
+    assert os.path.exists(cpf)
+    assert os.path.abspath(cpf) == os.path.abspath(outpath)
+
+    cpd = checkplot._read_checkplot_picklefile(cpf)
+    pfmethods = list(cpd['pfmethods'])
+
+    assert len(pfmethods) == 4
+
+    assert '0-gls' in pfmethods
+    assert '1-gls' in pfmethods
+    assert '2-pdm' in pfmethods
+    assert '3-pdm' in pfmethods
