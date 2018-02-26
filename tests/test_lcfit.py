@@ -9,6 +9,7 @@ This tests the following:
 
 '''
 from __future__ import print_function
+import os
 import os.path
 try:
     from urllib import urlretrieve
@@ -38,7 +39,7 @@ def on_download_chunk(transferred,blocksize,totalsize):
 
 # get the light curve if it's not there
 modpath = os.path.abspath(__file__)
-LCPATH = os.path.abspath(os.path.join(os.path.dirname(modpath),
+LCPATH = os.path.abspath(os.path.join(os.getcwd(),
                                       'HAT-772-0554686-V0-DR0-hatlc.sqlite.gz'))
 if not os.path.exists(LCPATH):
     localf, headerr = urlretrieve(

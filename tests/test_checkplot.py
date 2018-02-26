@@ -30,6 +30,7 @@ $ python setup.py test
 
 '''
 from __future__ import print_function
+import os
 import os.path
 try:
     from urllib import urlretrieve
@@ -208,13 +209,15 @@ def test_checkplot_pickle_read():
     assert isinstance(cpd, dict)
 
     cpdkeys = set(list(cpd.keys()))
-    testset = {'comments', 'finderchart', 'sigclip', 'objectid',
-               'pdm', 'gls', 'objectinfo', 'status', 'varinfo',
-               'normto', 'magseries', 'normmingap'}
+
+    testset = {'0-gls', '1-pdm', 'comments', 'externalplots',
+               'finderchart', 'magseries', 'neighbors', 'normmingap',
+               'normto', 'objectid', 'objectinfo', 'pfmethods', 'sigclip',
+               'signals', 'status', 'varinfo'}
     assert (testset - cpdkeys) == set()
 
-    assert_allclose(cpd['gls']['bestperiod'], 1.54289477)
-    assert_allclose(cpd['pdm']['bestperiod'], 3.08578956)
+    assert_allclose(cpd['0-gls']['bestperiod'], 1.54289477)
+    assert_allclose(cpd['0-pdm']['bestperiod'], 3.08578956)
 
 
 
@@ -256,13 +259,14 @@ def test_checkplot_pickle_update():
     assert isinstance(cpd, dict)
 
     cpdkeys = set(list(cpd.keys()))
-    testset = {'comments', 'finderchart', 'sigclip', 'objectid',
-               'pdm', 'gls', 'objectinfo', 'status', 'varinfo',
-               'normto', 'magseries', 'normmingap'}
+    testset = {'0-gls', '1-pdm', 'comments', 'externalplots',
+               'finderchart', 'magseries', 'neighbors', 'normmingap',
+               'normto', 'objectid', 'objectinfo', 'pfmethods', 'sigclip',
+               'signals', 'status', 'varinfo'}
     assert (testset - cpdkeys) == set()
 
-    assert_allclose(cpd['gls']['bestperiod'], 1.54289477)
-    assert_allclose(cpd['pdm']['bestperiod'], 3.08578956)
+    assert_allclose(cpd['0-gls']['bestperiod'], 1.54289477)
+    assert_allclose(cpd['1-pdm']['bestperiod'], 3.08578956)
 
     # test update write to pickle
     cpd['comments'] = ('this is a test of the checkplot pickle '
@@ -312,13 +316,14 @@ def test_checkplot_pickle_topng():
     assert isinstance(cpd, dict)
 
     cpdkeys = set(list(cpd.keys()))
-    testset = {'comments', 'finderchart', 'sigclip', 'objectid',
-               'pdm', 'gls', 'objectinfo', 'status', 'varinfo',
-               'normto', 'magseries', 'normmingap'}
+    testset = {'0-gls', '1-pdm', 'comments', 'externalplots',
+               'finderchart', 'magseries', 'neighbors', 'normmingap',
+               'normto', 'objectid', 'objectinfo', 'pfmethods', 'sigclip',
+               'signals', 'status', 'varinfo'}
     assert (testset - cpdkeys) == set()
 
-    assert_allclose(cpd['gls']['bestperiod'], 1.54289477)
-    assert_allclose(cpd['pdm']['bestperiod'], 3.08578956)
+    assert_allclose(cpd['0-gls']['bestperiod'], 1.54289477)
+    assert_allclose(cpd['1-pdm']['bestperiod'], 3.08578956)
 
     # test update write to pickle
     cpd['comments'] = ('this is a test of the checkplot pickle '
@@ -331,7 +336,7 @@ def test_checkplot_pickle_topng():
 
     # export to PNG
     cpd['varinfo']['objectisvar'] = "1"
-    cpd['varinfo']['varperiod'] = cpd['pdm']['bestperiod']
+    cpd['varinfo']['varperiod'] = cpd['1-pdm']['bestperiod']
 
     exportedpng = checkplot.checkplot_pickle_to_png(cpd, 'exported-checkplot.png')
     assert (exportedpng and os.path.exists(exportedpng))
