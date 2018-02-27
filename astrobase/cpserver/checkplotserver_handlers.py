@@ -375,6 +375,11 @@ CPTOOLMAP = {
 }
 
 
+############
+## CONFIG ##
+############
+
+PFMETHODS = ['gls','pdm','acf','aov','mav','bls','win']
 
 
 #####################
@@ -521,7 +526,14 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 objectid = cpdict['objectid']
                 objectinfo = cpdict['objectinfo']
                 varinfo = cpdict['varinfo']
-                pfmethods = cpdict['pfmethods']
+
+                if 'pfmethods' in cpdict:
+                    pfmethods = cpdict['pfmethods']
+                else:
+                    pfmethods = []
+                    for pfm in PFMETHODS:
+                        if pfm in cpdict:
+                            pfmethods.append(pfm)
 
                 # handle neighbors for this object
                 neighbors = []
