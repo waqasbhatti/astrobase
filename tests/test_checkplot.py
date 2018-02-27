@@ -217,7 +217,7 @@ def test_checkplot_pickle_read():
     assert (testset - cpdkeys) == set()
 
     assert_allclose(cpd['0-gls']['bestperiod'], 1.54289477)
-    assert_allclose(cpd['0-pdm']['bestperiod'], 3.08578956)
+    assert_allclose(cpd['1-pdm']['bestperiod'], 3.08578956)
 
 
 
