@@ -1,3 +1,23 @@
+# v0.3.8
+
+## Fixes
+
+- astrokep: fix EPD application
+- checkplot.cp2png: guard against missing phased LCs for nbestperiods
+- checkplot: fix docstring
+- cp: multiple invocations of the same period-finder method allowed now
+- cpserver: handle previous-gen checkplot pickles correctly
+- cpserver.js: better handle missing checkplot info from GAIA, etc.
+- imageutils: some more tools added
+- lcmath: add `sigclip_magseries_with_extparams`
+- periodbase: periodepsilon now a fraction diff instead of actual diff
+- `starfeatures.neighbor_gaia_features`: handle missing K mag
+- test_lcfit: fix expected val for weird tiny diff in fit coeffs on test runner
+- tests: added test for #34
+- tests: various fixes
+- varbase/trends: added implementation of classic EPD and random-forest EPD
+
+
 # v0.3.7
 
 ## Fixes
