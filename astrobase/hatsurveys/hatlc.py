@@ -73,7 +73,7 @@ normalize_lcdict_byinst(lcdict, magcols='all', normto='sdssr', debugmode=False)
 There's an IPython notebook describing the use of this module and accompanying
 modules from the astrobase package at:
 
-https://github.com/waqasbhatti/astrobase/blob/master/notebooks/lightcurve-work.ipynb
+https://github.com/waqasbhatti/astrobase-notebooks/blob/master/lightcurve-work.ipynb
 
 '''
 
