@@ -871,6 +871,7 @@ def checkplot_png(lspinfo,
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
                 except Exception as e:
+                    # FIXME: make this less annoying and try a savgol fit as well
                     LOGEXCEPTION('spline fit failed, using min(times) as epoch')
                     varepoch = npmin(stimes)
 
@@ -1144,6 +1145,7 @@ def twolsp_checkplot_png(lspinfo1,
                     varepoch = spfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
+                # FIXME: make this less annoying and try a savgol fit as well
                 except Exception as e:
                     LOGEXCEPTION('spline fit failed, using min(times) as epoch')
                     varepoch = npmin(stimes)
@@ -1197,6 +1199,7 @@ def twolsp_checkplot_png(lspinfo1,
                     varepoch = spfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
+                # FIXME: make this less annoying and try a savgol fit as well
                 except Exception as e:
                     LOGEXCEPTION('spline fit failed, using min(times) as epoch')
                     varepoch = npmin(stimes)
@@ -1867,6 +1870,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
             varepoch = spfit['fitinfo']['fitepoch']
             if len(varepoch) != 1:
                 varepoch = varepoch[0]
+        # FIXME: make this less annoying and try a savgol fit as well
         except Exception as e:
             LOGEXCEPTION('spline fit failed, using min(times) as epoch')
             varepoch = npmin(stimes)
