@@ -3715,116 +3715,302 @@ def checkplot_pickle_to_png(checkplotin,
             fill=(0,0,0,255)
         )
 
-    # magnitudes
-    objinfodraw.text(
-        (875, 200),
-        ('Magnitudes'),
-        font=cpfontnormal,
-        fill=(0,0,0,255)
-    )
-    objinfodraw.text(
-        (1125, 200),
-        ('gri: %.3f, %.3f, %.3f' %
-         ((cpd['objectinfo']['sdssg'] if
-           ('sdssg' in cpd['objectinfo'] and
-            cpd['objectinfo']['sdssg'] is not None)
-           else npnan),
-          (cpd['objectinfo']['sdssr'] if
-           ('sdssr' in cpd['objectinfo'] and
-            cpd['objectinfo']['sdssr'] is not None)
-           else npnan),
-          (cpd['objectinfo']['sdssi'] if
-           ('sdssi' in cpd['objectinfo'] and
-            cpd['objectinfo']['sdssi'] is not None)
-           else npnan))),
-        font=cpfontnormal,
-        fill=(0,0,0,255)
-    )
-    objinfodraw.text(
-        (1125, 225),
-        ('JHK: %.3f, %.3f, %.3f' %
-         ((cpd['objectinfo']['jmag'] if
-           ('jmag' in cpd['objectinfo'] and
-            cpd['objectinfo']['jmag'] is not None)
-           else npnan),
-          (cpd['objectinfo']['hmag'] if
-           ('hmag' in cpd['objectinfo'] and
-            cpd['objectinfo']['hmag'] is not None)
-           else npnan),
-          (cpd['objectinfo']['kmag'] if
-           ('kmag' in cpd['objectinfo'] and
-            cpd['objectinfo']['kmag'] is not None)
-           else npnan))),
-        font=cpfontnormal,
-        fill=(0,0,0,255)
-    )
-    objinfodraw.text(
-        (1125, 250),
-        ('BV: %.3f, %.3f' %
-         ((cpd['objectinfo']['bmag'] if
-           ('bmag' in cpd['objectinfo'] and
-            cpd['objectinfo']['bmag'] is not None)
-           else npnan),
-          (cpd['objectinfo']['vmag'] if
-           ('vmag' in cpd['objectinfo'] and
-            cpd['objectinfo']['vmag'] is not None)
-           else npnan))),
-        font=cpfontnormal,
-        fill=(0,0,0,255)
-    )
+    # here, we have to deal with two generations of objectinfo dicts
 
-    # colors
-    if ('dereddened' in cpd['objectinfo'] and
-        cpd['objectinfo']['dereddened'] == True):
-        deredlabel = "(dereddened)"
+    # first, deal with the new generation of objectinfo dicts
+    if 'available_dereddened_bands' in cpd['objectinfo']:
+
+        #
+        # first, we deal with the bands and mags
+        #
+        # magnitudes
+        if ('dereddened' in cpd['objectinfo'] and
+            cpd['objectinfo']['dereddened'] == True):
+            deredlabel = "(dereddened)"
+        else:
+            deredlabel = ""
+        objinfodraw.text(
+            (600, 200),
+            'Magnitudes %s' % deredlabel,
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+
+        # process the dereddened bands preferentially
+        if len(cpd['objectinfo']['available_dereddened_bands']) > 0:
+
+            # we'll get all the available mags (dereddened versions preferred)
+            for bandind, band, label in zip(
+                    range(len(cpd['objectinfo']['available_dereddened_bands'])),
+                    cpd['objectinfo']['available_dereddened_bands'],
+                    cpd['objectinfo']['available_dereddened_band_labels']
+            ):
+
+                thisbandmag = cpd['objectinfo'][band]
+
+                # we'll draw stuff in three rows depending on the number of
+                # bands we have to use
+                if bandind < 4:
+
+                    thispos = (800+100*bandind, 200)
+
+                    objinfodraw.text(
+                        thispos,
+                        '%s: %.3f' % (label, thisbandmag),
+                        font=cpfontnormal,
+                        fill=(0,0,0,255)
+                    )
+
+                elif 4 < bandind < 8:
+
+                    thispos = (800+100*bandind, 225)
+
+                    objinfodraw.text(
+                        thispos,
+                        '%s: %.3f' % (label, thisbandmag),
+                        font=cpfontnormal,
+                        fill=(0,0,0,255)
+                    )
+
+                else:
+
+                    thispos = (800+100*bandind, 250)
+
+                    objinfodraw.text(
+                        thispos,
+                        '%s: %.3f' % (label, thisbandmag),
+                        font=cpfontnormal,
+                        fill=(0,0,0,255)
+                    )
+
+        # if dereddened mags aren't available, use the observed mags
+        elif len(cpd['objectinfo']['available_bands']) > 0:
+
+            # we'll get all the available mags (dereddened versions preferred)
+            for bandind, band, label in zip(
+                    range(len(cpd['objectinfo']['available_bands'])),
+                    cpd['objectinfo']['available_bands'],
+                    cpd['objectinfo']['available_band_labels']
+            ):
+
+                thisbandmag = cpd['objectinfo'][band]
+
+                # we'll draw stuff in three rows depending on the number of
+                # bands we have to use
+                if bandind < 4:
+
+                    thispos = (800+100*bandind, 200)
+
+                    objinfodraw.text(
+                        thispos,
+                        '%s: %.3f' % (label, thisbandmag),
+                        font=cpfontnormal,
+                        fill=(0,0,0,255)
+                    )
+
+                elif 4 < bandind < 8:
+
+                    thispos = (800+100*bandind, 225)
+
+                    objinfodraw.text(
+                        thispos,
+                        '%s: %.3f' % (label, thisbandmag),
+                        font=cpfontnormal,
+                        fill=(0,0,0,255)
+                    )
+
+                else:
+
+                    thispos = (800+100*bandind, 250)
+
+                    objinfodraw.text(
+                        thispos,
+                        '%s: %.3f' % (label, thisbandmag),
+                        font=cpfontnormal,
+                        fill=(0,0,0,255)
+                    )
+
+
+        #
+        # next, deal with the colors
+        #
+        # colors
+        if ('dereddened' in cpd['objectinfo'] and
+            cpd['objectinfo']['dereddened'] == True):
+            deredlabel = "(dereddened)"
+        else:
+            deredlabel = ""
+
+        objinfodraw.text(
+            (600, 275),
+            'Colors %s' % deredlabel,
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+
+        if len(cpd['objectinfo']['available_colors']) > 0:
+
+            # we'll get all the available mags (dereddened versions preferred)
+            for colorind, color, colorlabel in zip(
+                    range(len(cpd['objectinfo']['available_colors'])),
+                    cpd['objectinfo']['available_colors'],
+                    cpd['objectinfo']['available_color_labels']
+            ):
+
+                thiscolor = cpd['objectinfo'][color]
+
+                # we'll draw stuff in three rows depending on the number of
+                # bands we have to use
+                if colorind < 4:
+
+                    thispos = (800+150*colorind, 275)
+
+                    objinfodraw.text(
+                        thispos,
+                        '%s: %.3f' % (colorlabel, thiscolor),
+                        font=cpfontnormal,
+                        fill=(0,0,0,255)
+                    )
+
+                elif 4 < colorind < 8:
+
+                    thispos = (800+150*colorind, 300)
+
+                    objinfodraw.text(
+                        thispos,
+                        '%s: %.3f' % (colorlabel, thiscolor),
+                        font=cpfontnormal,
+                        fill=(0,0,0,255)
+                    )
+
+                else:
+
+                    thispos = (800+150*colorind, 325)
+
+                    objinfodraw.text(
+                        thispos,
+                        '%s: %.3f' % (colorlabel, thiscolor),
+                        font=cpfontnormal,
+                        fill=(0,0,0,255)
+                    )
+
+    # otherwise, deal with older generation of checkplots
     else:
-        deredlabel = ""
 
-    objinfodraw.text(
-        (875, 275),
-        'Colors %s' % deredlabel,
-        font=cpfontnormal,
-        fill=(0,0,0,255)
-    )
+        objinfodraw.text(
+            (875, 200),
+            ('Magnitudes'),
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
 
-    objinfodraw.text(
-        (1125, 275),
-        ('B - V: %.3f, V - K: %.3f' %
-         ( (cpd['objectinfo']['bvcolor'] if
-            ('bvcolor' in cpd['objectinfo'] and
-             cpd['objectinfo']['bvcolor'] is not None)
-            else npnan),
-           (cpd['objectinfo']['vkcolor'] if
-            ('vkcolor' in cpd['objectinfo'] and
-             cpd['objectinfo']['vkcolor'] is not None)
-            else npnan) )),
-        font=cpfontnormal,
-        fill=(0,0,0,255)
-    )
-    objinfodraw.text(
-        (1125, 300),
-        ('i - J: %.3f, g - K: %.3f' %
-         ( (cpd['objectinfo']['ijcolor'] if
-            ('ijcolor' in cpd['objectinfo'] and
-             cpd['objectinfo']['ijcolor'] is not None)
-            else npnan),
-           (cpd['objectinfo']['gkcolor'] if
-            ('gkcolor' in cpd['objectinfo'] and
-             cpd['objectinfo']['gkcolor'] is not None)
-            else npnan) )),
-        font=cpfontnormal,
-        fill=(0,0,0,255)
-    )
-    objinfodraw.text(
-        (1125, 325),
-        ('J - K: %.3f' %
-         ( (cpd['objectinfo']['jkcolor'] if
-            ('jkcolor' in cpd['objectinfo'] and
-             cpd['objectinfo']['jkcolor'] is not None)
-            else npnan),) ),
-        font=cpfontnormal,
-        fill=(0,0,0,255)
-    )
+        objinfodraw.text(
+            (1125, 200),
+            ('gri: %.3f, %.3f, %.3f' %
+             ((cpd['objectinfo']['sdssg'] if
+               ('sdssg' in cpd['objectinfo'] and
+                cpd['objectinfo']['sdssg'] is not None)
+               else npnan),
+              (cpd['objectinfo']['sdssr'] if
+               ('sdssr' in cpd['objectinfo'] and
+                cpd['objectinfo']['sdssr'] is not None)
+               else npnan),
+              (cpd['objectinfo']['sdssi'] if
+               ('sdssi' in cpd['objectinfo'] and
+                cpd['objectinfo']['sdssi'] is not None)
+               else npnan))),
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+        objinfodraw.text(
+            (1125, 225),
+            ('JHK: %.3f, %.3f, %.3f' %
+             ((cpd['objectinfo']['jmag'] if
+               ('jmag' in cpd['objectinfo'] and
+                cpd['objectinfo']['jmag'] is not None)
+               else npnan),
+              (cpd['objectinfo']['hmag'] if
+               ('hmag' in cpd['objectinfo'] and
+                cpd['objectinfo']['hmag'] is not None)
+               else npnan),
+              (cpd['objectinfo']['kmag'] if
+               ('kmag' in cpd['objectinfo'] and
+                cpd['objectinfo']['kmag'] is not None)
+               else npnan))),
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+        objinfodraw.text(
+            (1125, 250),
+            ('BV: %.3f, %.3f' %
+             ((cpd['objectinfo']['bmag'] if
+               ('bmag' in cpd['objectinfo'] and
+                cpd['objectinfo']['bmag'] is not None)
+               else npnan),
+              (cpd['objectinfo']['vmag'] if
+               ('vmag' in cpd['objectinfo'] and
+                cpd['objectinfo']['vmag'] is not None)
+               else npnan))),
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+
+        # colors
+        if ('dereddened' in cpd['objectinfo'] and
+            cpd['objectinfo']['dereddened'] == True):
+            deredlabel = "(dereddened)"
+        else:
+            deredlabel = ""
+
+        objinfodraw.text(
+            (875, 275),
+            'Colors %s' % deredlabel,
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+
+        objinfodraw.text(
+            (1125, 275),
+            ('B - V: %.3f, V - K: %.3f' %
+             ( (cpd['objectinfo']['bvcolor'] if
+                ('bvcolor' in cpd['objectinfo'] and
+                 cpd['objectinfo']['bvcolor'] is not None)
+                else npnan),
+               (cpd['objectinfo']['vkcolor'] if
+                ('vkcolor' in cpd['objectinfo'] and
+                 cpd['objectinfo']['vkcolor'] is not None)
+                else npnan) )),
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+        objinfodraw.text(
+            (1125, 300),
+            ('i - J: %.3f, g - K: %.3f' %
+             ( (cpd['objectinfo']['ijcolor'] if
+                ('ijcolor' in cpd['objectinfo'] and
+                 cpd['objectinfo']['ijcolor'] is not None)
+                else npnan),
+               (cpd['objectinfo']['gkcolor'] if
+                ('gkcolor' in cpd['objectinfo'] and
+                 cpd['objectinfo']['gkcolor'] is not None)
+                else npnan) )),
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+        objinfodraw.text(
+            (1125, 325),
+            ('J - K: %.3f' %
+             ( (cpd['objectinfo']['jkcolor'] if
+                ('jkcolor' in cpd['objectinfo'] and
+                 cpd['objectinfo']['jkcolor'] is not None)
+                else npnan),) ),
+            font=cpfontnormal,
+            fill=(0,0,0,255)
+        )
+
+    #
+    # rest of the object information
+    #
 
     # color classification
     if ('color_classes' in cpd['objectinfo'] and
