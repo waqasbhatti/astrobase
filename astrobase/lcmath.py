@@ -80,7 +80,7 @@ def LOGEXCEPTION(message):
 import multiprocessing as mp
 
 import numpy as np
-from numpy import isfinite as npisfinite, median as npmedian, mean as npmean, abs as npabs, stddev as npstddev
+from numpy import isfinite as npisfinite, median as npmedian, mean as npmean, abs as npabs, std as npstddev
 
 from scipy.spatial import cKDTree as kdtree
 from scipy.signal import medfilt
@@ -247,7 +247,7 @@ def sigclip_magseries(times, mags, errs,
                       sigclip=None,
                       iterative=False,
                       niterations=None,
-                      meanormedian='median'
+                      meanormedian='median',
                       magsarefluxes=False):
     '''
     Select the finite times, magnitudes (or fluxes), and errors from the
@@ -308,7 +308,7 @@ def sigclip_magseries(times, mags, errs,
     # get the center value and stdev 
     if meanormedian == 'median':  # stddev = 1.483 x MAD
         center_mag = npmedian(fmags)
-        stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
+        stddev_mag = (npmedian(npabs(fmags - center_mag))) * 1.483
     elif meanormedian == 'mean':
         center_mag = npmean(fmags)
         stddev_mag = npstddev(fmags)
@@ -346,7 +346,7 @@ def sigclip_magseries(times, mags, errs,
                         this_stdev = npstddev(this_mags)
                     elif meanormedian == 'median':
                         this_center = npmedian(this_mags)
-                        this_stdev = (npmedian(npabs(this_mags - this_median))) * 1.483
+                        this_stdev = (npmedian(npabs(this_mags - this_center))) * 1.483
                     this_size = this_mags.size
 
                     # apply the sigclip
@@ -373,7 +373,8 @@ def sigclip_magseries(times, mags, errs,
                         this_stdev = npstddev(this_mags)
                     elif meanormedian == 'median':
                         this_center = npmedian(this_mags)
-                        this_stdev = (npmedian(npabs(this_mags - this_median))) * 1.483
+                        this_stdev = (npmedian(npabs(this_mags - this_center))) * 1.483
+                    this_size = this_mags.size
                         
                     # apply the sigclip
                     tsi = (npabs(this_mags - this_center)) < (sigclip * this_stdev)
@@ -441,7 +442,7 @@ def sigclip_magseries(times, mags, errs,
                         this_stdev = npstddev(this_mags)
                     elif meanormedian == 'median':
                         this_center = npmedian(this_mags)
-                        this_stdev = (npmedian(npabs(this_mags - this_median))) * 1.483
+                        this_stdev = (npmedian(npabs(this_mags - this_center))) * 1.483
                     this_size = this_mags.size
 
                     if magsarefluxes:
@@ -484,7 +485,7 @@ def sigclip_magseries(times, mags, errs,
                         this_stdev = npstddev(this_mags)
                     elif meanormedian == 'median':
                         this_center = npmedian(this_mags)
-                        this_stdev = (npmedian(npabs(this_mags - this_median))) * 1.483
+                        this_stdev = (npmedian(npabs(this_mags - this_center))) * 1.483
                     this_size = this_mags.size
 
                     if magsarefluxes:
