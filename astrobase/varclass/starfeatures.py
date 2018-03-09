@@ -186,131 +186,206 @@ def coord_features(objectinfo):
 ## COLOR FEATURE FUNCTIONS ##
 #############################
 
-def color_features(objectinfo, deredden=True):
+BANDPASSES_COLORS = {
+    'umag':{'dustkey':'CTIO U',
+            'colors':[['umag-bmag','U - B'],
+                      ['umag-vmag','U - V'],
+                      ['umag-sdssg','U - g']]},
+    'bmag':{'dustkey':'CTIO B',
+            'colors':[['umag-bmag','U - B'],
+                      ['bmag-vmag','B - V']]},
+    'vmag':{'dustkey':'CTIO V',
+            'colors':[['umag-vmag','U - V'],
+                      ['bmag-vmag','B - V'],
+                      ['vmag-rmag','V - R'],
+                      ['vmag-imag','V - I'],
+                      ['vmag-kmag','V - K']]},
+    'rmag':{'dustkey':'CTIO R',
+            'colors':[['vmag-rmag','V - R'],
+                      ['rmag-imag','R - I']]},
+    'imag':{'dustkey':'CTIO I',
+            'colors':[['sdssg-imag','g - I'],
+                      ['vmag-imag','V - I'],
+                      ['rmag-imag','R - I'],
+                      ['bmag-imag','B - I']]},
+    'jmag':{'dustkey':'2MASS J',
+            'colors':[['jmag-hmag','J - H'],
+                      ['jmag-kmag','J - Ks'],
+                      ['sdssg-jmag','g - J'],
+                      ['sdssi-jmag','i - J']]},
+    'hmag':{'dustkey':'2MASS H',
+            'colors':[['jmag-hmag','J - H'],
+                      ['hmag-kmag','H - Ks']]},
+    'kmag':{'dustkey':'2MASS Ks',
+            'colors':[['sdssg-kmag','g - Ks'],
+                      ['vmag-kmag','V - Ks'],
+                      ['hmag-kmag','H - Ks'],
+                      ['jmag-kmag','J - Ks']]},
+    'sdssu':{'dustkey':'SDSS u',
+             'colors':[['sdssu-sdssg','u - g'],
+                       ['sdssu-vmag','u - V']]},
+    'sdssg':{'dustkey':'SDSS g',
+             'colors':[['sdssg-sdssr','g - r'],
+                       ['sdssg-sdssi','g - i'],
+                       ['sdssg-kmag','g - Ks'],
+                       ['sdssu-sdssg','u - g'],
+                       ['umag-sdssg','U - g'],
+                       ['sdssg-jmag','g - J']]},
+    'sdssr':{'dustkey':'SDSS r',
+             'colors':[['sdssr-sdssi','r - i'],
+                       ['sdssg-sdssr','g - r']]},
+    'sdssi':{'dustkey':'SDSS i',
+             'colors':[['sdssr-sdssi','r - i'],
+                       ['sdssi-sdssz','i - z'],
+                       ['sdssg-sdssi','g - i'],
+                       ['sdssi-jmag','i - J'],
+                       ['sdssi-wise1','i - W1']]},
+    'sdssz':{'dustkey':'SDSS z',
+             'colors':[['sdssi-sdssz','i - z'],
+                       ['sdssz-wise2','z - W2'],
+                       ['sdssg-sdssz','g - z']]},
+    'ujmag':{'dustkey':'UKIRT J',
+             'colors':[['ujmag-uhmag','uJ - uH'],
+                       ['ujmag-ukmag','uJ - uK'],
+                       ['sdssg-ujmag','g - uJ'],
+                       ['sdssi-ujmag','i - uJ']]},
+    'uhmag':{'dustkey':'UKIRT H',
+             'colors':[['ujmag-uhmag','uJ - uH'],
+                       ['uhmag-ukmag','uH - uK']]},
+    'ukmag':{'dustkey':'UKIRT K',
+             'colors':[['sdssg-ukmag','g - uK'],
+                       ['vmag-ukmag','V - uK'],
+                       ['uhmag-ukmag','uH - uK'],
+                       ['ujmag-ukmag','uJ - uK']]},
+    'irac1':{'dustkey':'IRAC-1',
+             'colors':[['sdssi-irac1','i - I1'],
+                       ['irac1-irac2','I1 - I2']]},
+    'irac2':{'dustkey':'IRAC-2',
+             'colors':[['irac1-irac2','I1 - I2'],
+                       ['irac2-irac3','I2 - I3']]},
+    'irac3':{'dustkey':'IRAC-3',
+             'colors':[['irac3-irac4','I3 - I4']]},
+    'irac4':{'dustkey':'IRAC-4',
+             'colors':[['irac3-irac4','I3 - I4']]},
+    'wise1':{'dustkey':'WISE-1',
+            'colors':[['sdssi-wise1','i - W1'],
+                      ['wise1-wise2','W1 - W2']]},
+    'wise2':{'dustkey':'WISE-2',
+             'colors':[['wise1-wise2','W1 - W2'],
+                       ['wise2-wise3','W2 - W3']]},
+    'wise3':{'dustkey':None,
+             'colors':[['wise2-wise3','W2 - W3']]},
+    'wise4':{'dustkey':None,
+             'colors':[['wise3-wise4','W3 - W4']]},
+}
+
+
+
+def color_features(in_objectinfo,
+                   deredden=True,
+                   custom_bandpasses=None):
     '''Stellar colors and dereddened stellar colors using 2MASS DUST API:
 
     http://irsa.ipac.caltech.edu/applications/DUST/docs/dustProgramInterface.html
 
-    Requires at least ra, decl, jmag, hmag, kmag.
+    Requires at least 'ra', and 'decl' as keys in the objectinfo with the right
+    ascension and declination of the object, and one or more of the following
+    keys in the objectinfo dict for object magnitudes. These are basically taken
+    from the available reddening bandpasses from the 2MASS DUST service:
 
-    If sdssu, sdssg, sdssr, sdssi, sdssz aren't provided, they'll be calculated
-    using the JHK mags and the conversion functions in astrobase.magnitudes.
+    'umag'  -> U mag             -> colors: U-B, U-V, U-g
+    'bmag'  -> B mag             -> colors: U-B, B-V
+    'vmag'  -> V mag             -> colors: U-V, B-V, V-R, V-I, V-K
+    'rmag'  -> R mag             -> colors: V-R, R-I
+    'imag'  -> I mag             -> colors: g-I, V-I, R-I, B-I
+    'jmag'  -> 2MASS J mag       -> colors: J-H, J-K, g-J, i-J
+    'hmag'  -> 2MASS H mag       -> colors: J-H, H-K
+    'kmag'  -> 2MASS Ks mag      -> colors: g-Ks, H-Ks, J-Ks, V-Ks
+    'sdssu' -> SDSS u mag        -> colors: u-g, u-V
+    'sdssg' -> SDSS g mag        -> colors: g-r, g-i, g-K, u-g, U-g, g-J
+    'sdssr' -> SDSS r mag        -> colors: r-i, g-r
+    'sdssi' -> SDSS i mag        -> colors: r-i, i-z, g-i, i-J, i-W1
+    'sdssz' -> SDSS z mag        -> colors: i-z, z-W2, g-z
+    'ujmag' -> UKIRT J mag       -> colors: J-H, H-K, J-K, g-J, i-J
+    'uhmag' -> UKIRT H mag       -> colors: J-H, H-K
+    'ukmag' -> UKIRT K mag       -> colors: g-K, H-K, J-K, V-K
+    'irac1' -> Spitzer IRAC1 mag -> colors: i-I1, I1-I2
+    'irac2' -> Spitzer IRAC2 mag -> colors: I1-I2, I2-I3
+    'irac3' -> Spitzer IRAC3 mag -> colors: I2-I3
+    'irac4' -> Spitzer IRAC4 mag -> colors: I3-I4
+    'wise1' -> WISE W1 mag       -> colors: i-W1, W1-W2
+    'wise2' -> WISE W2 mag       -> colors: W1-W2, W2-W3
+    'wise3' -> WISE W3 mag       -> colors: W2-W3
+    'wise4' -> WISE W4 mag       -> colors: W3-W4
 
-    '''
+    If B, V, u, g, r, i, z aren't provided but 2MASS J, H, K are all provided,
+    the former will be calculated using the 2MASS JHKs -> BVugriz conversion
+    functions in astrobase.magnitudes.
 
-    # this is the default output dict
-    outdict = {
-        'ugcolor':np.nan,
-        'grcolor':np.nan,
-        'ricolor':np.nan,
-        'izcolor':np.nan,
-        'jhcolor':np.nan,
-        'hkcolor':np.nan,
-        'jkcolor':np.nan,
-        'ijcolor':np.nan,
-        'gjcolor':np.nan,
-        'gkcolor':np.nan,
-        'bvcolor':np.nan,
-        'vkcolor':np.nan,
-        'extinctj':np.nan,
-        'extincth':np.nan,
-        'extinctk':np.nan,
-        'extinctu':np.nan,
-        'extinctg':np.nan,
-        'extinctr':np.nan,
-        'extincti':np.nan,
-        'extinctz':np.nan,
-        'extinctb':np.nan,
-        'extinctv':np.nan,
-        'sdssu':np.nan,
-        'sdssg':np.nan,
-        'sdssr':np.nan,
-        'sdssi':np.nan,
-        'sdssz':np.nan,
-        'jmag':np.nan,
-        'hmag':np.nan,
-        'kmag':np.nan,
-        'bmag':np.nan,
-        'vmag':np.nan,
-        'deredu':np.nan,
-        'deredg':np.nan,
-        'deredr':np.nan,
-        'deredi':np.nan,
-        'deredz':np.nan,
-        'deredj':np.nan,
-        'deredh':np.nan,
-        'deredk':np.nan,
-        'deredb':np.nan,
-        'deredv':np.nan,
-        'bmagfromjhk':False,
-        'vmagfromjhk':False,
-        'sdssufromjhk':False,
-        'sdssgfromjhk':False,
-        'sdssrfromjhk':False,
-        'sdssifromjhk':False,
-        'sdsszfromjhk':False,
-        'dereddened':False
+    deredden = True will make sure all colors use dereddened mags where
+    possible.
+
+    custom_bandpasses is a dict used to define any custom bandpasses in the
+    objectdict you want to make this function aware of and generate colors
+    for. Use the format below for this dict:
+
+    {
+    '<bandpass_key_1>':{'dustkey':'<twomass_dust_key_1>',
+                        'colors':[['<bandkey1>-<bandkey2>','<BAND1> - <BAND2>'],
+                                  ['<bandkey3>-<bandkey4>','<BAND3> - <BAND4>']]},
+    .
+    ...
+    .
+    '<bandpass_key_N>':{'dustkey':'<twomass_dust_key_N>',
+                        'colors':[['<bandkey1>-<bandkey2>','<BAND1> - <BAND2>'],
+                                  ['<bandkey3>-<bandkey4>','<BAND3> - <BAND4>']]},
     }
 
-    # if we don't have JHK, we can't continue
-    if not ('jmag' in objectinfo and objectinfo['jmag'] is not None and
-            'hmag' in objectinfo and objectinfo['hmag'] is not None and
-            'kmag' in objectinfo and objectinfo['kmag'] is not None):
-        LOGERROR("one or more of J, H, K mags not found in "
-                 "objectinfo dict, can't continue")
-        return outdict
+    where:
 
+    bandpass_key is a key to use to refer to this bandpass in the objectinfo
+    dict by checkplot_pickle, and subsequent operations by the
+    checkplotserver, e.g. 'sdssg' for SDSS g band
 
-    if (not ('ra' in objectinfo and 'decl' in objectinfo)):
-        LOGERROR("ra or decl not found in objectinfo dict "
-                 "for dereddening, can't continue")
-        return outdict
+    twomass_dust_key is the key to use in the 2MASS DUST result table for
+    reddening per band-pass. For example, given the following DUST result table
+    (using http://irsa.ipac.caltech.edu/applications/DUST/):
 
+    |Filter_name|LamEff |A_over_E_B_V_SandF|A_SandF|A_over_E_B_V_SFD|A_SFD|
+    |char       |float  |float             |float  |float           |float|
+    |           |microns|                  |mags   |                |mags |
+     CTIO U       0.3734              4.107   0.209            4.968 0.253
+     CTIO B       0.4309              3.641   0.186            4.325 0.221
+     CTIO V       0.5517              2.682   0.137            3.240 0.165
+    .
+    .
+    ...
 
-    # first, get the extinction table for this object
-    extinction = dust.extinction_query(objectinfo['ra'],
-                                       objectinfo['decl'],
-                                       verbose=False)
+    the twomass_dust_key for 'vmag' would be 'CTIO V'. If you want to skip DUST
+    lookup and want to pass in a specific reddening magnitude for your bandpass,
+    use a float for the value of twomass_dust_key. If you want to skip DUST
+    lookup entirely for this bandpass, use None for the value of
+    twomass_dust_key.
 
-    if deredden and not extinction:
-        LOGERROR("could not retrieve extinction info from "
-                 "2MASS DUST, can't continue")
-        return outdict
+    the 'colors' list contains color definitions for all colors you want to
+    generate using this bandpass. this list contains elements of the form:
 
-    if deredden:
+    ['<bandkey1>-<bandkey2>','<BAND1> - <BAND2>']
 
-        outdict['extinctj'] = extinction['Amag']['2MASS J']['sf11']
-        outdict['extincth'] = extinction['Amag']['2MASS H']['sf11']
-        outdict['extinctk'] = extinction['Amag']['2MASS Ks']['sf11']
+    where the the first item is the bandpass keys making up this color, and the
+    second item is the label for this color to be used by the frontends
+    (i.e. checkplotserver and checkplot_pickle_to_png). An example:
 
-        outdict['extinctu'] = extinction['Amag']['SDSS u']['sf11']
-        outdict['extinctg'] = extinction['Amag']['SDSS g']['sf11']
-        outdict['extinctr'] = extinction['Amag']['SDSS r']['sf11']
-        outdict['extincti'] = extinction['Amag']['SDSS i']['sf11']
-        outdict['extinctz'] = extinction['Amag']['SDSS z']['sf11']
+    ['sdssu-sdssg','u - g']
 
-        outdict['extinctb'] = extinction['Amag']['CTIO B']['sf11']
-        outdict['extinctv'] = extinction['Amag']['CTIO V']['sf11']
+    '''
+    objectinfo = in_objectinfo.copy()
 
-    # get the 2MASS mags
-    outdict['jmag'] = objectinfo['jmag']
-    outdict['hmag'] = objectinfo['hmag']
-    outdict['kmag'] = objectinfo['kmag']
-
-    # dered these if requested
-    if deredden:
-
-        # calculate the dereddened JHK mags
-        outdict['deredj'] = outdict['jmag'] - outdict['extinctj']
-        outdict['deredh'] = outdict['hmag'] - outdict['extincth']
-        outdict['deredk'] = outdict['kmag'] - outdict['extinctk']
-
-    else:
-
-        outdict['deredj'] = outdict['jmag']
-        outdict['deredh'] = outdict['hmag']
-        outdict['deredk'] = outdict['kmag']
-
+    # this is the initial output dict
+    outdict = {'available_bands':[],
+               'available_colors':[],
+               'available_color_labels':[],
+               'deredden':deredden}
 
     #
     # get the BVugriz mags from the JHK mags if necessary
@@ -319,120 +394,225 @@ def color_features(objectinfo, deredden=True):
     # Bilir+ 2008 uses dereddened colors for their transforms, should check if
     # we need to do so here
 
-    if ('bmag' not in objectinfo or
-        ('bmag' in objectinfo and objectinfo['bmag'] is None)):
-        outdict['bmag'] = magnitudes.jhk_to_bmag(objectinfo['jmag'],
-                                                 objectinfo['hmag'],
-                                                 objectinfo['kmag'])
-        outdict['bmagfromjhk'] = True
-    else:
-        outdict['bmag'] = objectinfo['bmag']
+    if ('jmag' in objectinfo and
+        objectinfo['jmag'] is not None and
+        np.isfinite(objectinfo['jmag']) and
+        'hmag' in objectinfo and
+        objectinfo['hmag'] is not None and
+        np.isfinite(objectinfo['hmag']) and
+        'kmag' in objectinfo and
+        objectinfo['kmag'] is not None and
+        np.isfinite(objectinfo['kmag'])):
 
-    if ('vmag' not in objectinfo or
-        ('vmag' in objectinfo and objectinfo['vmag'] is None)):
-        outdict['vmag'] = magnitudes.jhk_to_vmag(objectinfo['jmag'],
-                                                 objectinfo['hmag'],
-                                                 objectinfo['kmag'])
-        outdict['vmagfromjhk'] = True
-    else:
-        outdict['vmag'] = objectinfo['vmag']
+        if ('bmag' not in objectinfo or
+            ('bmag' in objectinfo and objectinfo['bmag'] is None)):
+            objectinfo['bmag'] = magnitudes.jhk_to_bmag(objectinfo['jmag'],
+                                                        objectinfo['hmag'],
+                                                        objectinfo['kmag'])
+            outdict['bmagfromjhk'] = True
+        else:
+            outdict['bmagfromjhk'] = False
 
-    if ('sdssu' not in objectinfo or
-        ('sdssu' in objectinfo and objectinfo['sdssu'] is None)):
-        outdict['sdssu'] = magnitudes.jhk_to_sdssu(objectinfo['jmag'],
-                                                   objectinfo['hmag'],
-                                                   objectinfo['kmag'])
-        outdict['sdssufromjhk'] = True
-    else:
-        outdict['sdssu'] = objectinfo['sdssu']
-
-    if ('sdssg' not in objectinfo or
-        ('sdssg' in objectinfo and objectinfo['sdssg'] is None)):
-        outdict['sdssg'] = magnitudes.jhk_to_sdssg(objectinfo['jmag'],
-                                                   objectinfo['hmag'],
-                                                   objectinfo['kmag'])
-        outdict['sdssgfromjhk'] = True
-    else:
-        outdict['sdssg'] = objectinfo['sdssg']
-
-    if ('sdssr' not in objectinfo or
-        ('sdssr' in objectinfo and objectinfo['sdssr'] is None)):
-        outdict['sdssr'] = magnitudes.jhk_to_sdssr(objectinfo['jmag'],
-                                                   objectinfo['hmag'],
-                                                   objectinfo['kmag'])
-        outdict['sdssrfromjhk'] = True
-    else:
-        outdict['sdssr'] = objectinfo['sdssr']
-
-    if ('sdssi' not in objectinfo or
-        ('sdssi' in objectinfo and objectinfo['sdssi'] is None)):
-        outdict['sdssi'] = magnitudes.jhk_to_sdssi(objectinfo['jmag'],
-                                                   objectinfo['hmag'],
-                                                   objectinfo['kmag'])
-        outdict['sdssifromjhk'] = True
-    else:
-        outdict['sdssi'] = objectinfo['sdssi']
-
-    if ('sdssz' not in objectinfo or
-        ('sdssz' in objectinfo and objectinfo['sdssz'] is None)):
-        outdict['sdssz'] = magnitudes.jhk_to_sdssz(objectinfo['jmag'],
-                                                   objectinfo['hmag'],
-                                                   objectinfo['kmag'])
-        outdict['sdsszfromjhk'] = True
-    else:
-        outdict['sdssz'] = objectinfo['sdssz']
+        if ('vmag' not in objectinfo or
+            ('vmag' in objectinfo and objectinfo['vmag'] is None)):
+            objectinfo['vmag'] = magnitudes.jhk_to_vmag(objectinfo['jmag'],
+                                                        objectinfo['hmag'],
+                                                        objectinfo['kmag'])
+            outdict['vmagfromjhk'] = True
+        else:
+            outdict['vmagfromjhk'] = False
 
 
-    # calculating dereddened mags:
-    # A_x = m - m0_x where m is measured mag, m0 is intrinsic mag
-    # m0_x = m - A_x
-    #
-    # so for two bands x, y:
-    # intrinsic color (m_x - m_y)_0 = (m_x - m_y) - (A_x - A_y)
+        if ('sdssu' not in objectinfo or
+            ('sdssu' in objectinfo and objectinfo['sdssu'] is None)):
+            objectinfo['sdssu'] = magnitudes.jhk_to_sdssu(objectinfo['jmag'],
+                                                          objectinfo['hmag'],
+                                                          objectinfo['kmag'])
+            outdict['sdssufromjhk'] = True
+        else:
+            outdict['sdssufromjhk'] = False
 
+        if ('sdssg' not in objectinfo or
+            ('sdssg' in objectinfo and objectinfo['sdssg'] is None)):
+            objectinfo['sdssg'] = magnitudes.jhk_to_sdssg(objectinfo['jmag'],
+                                                          objectinfo['hmag'],
+                                                          objectinfo['kmag'])
+            outdict['sdssgfromjhk'] = True
+        else:
+            outdict['sdssgfromjhk'] = False
+
+        if ('sdssr' not in objectinfo or
+            ('sdssr' in objectinfo and objectinfo['sdssr'] is None)):
+            objectinfo['sdssr'] = magnitudes.jhk_to_sdssr(objectinfo['jmag'],
+                                                          objectinfo['hmag'],
+                                                          objectinfo['kmag'])
+            outdict['sdssrfromjhk'] = True
+        else:
+            outdict['sdssrfromjhk'] = False
+
+        if ('sdssi' not in objectinfo or
+            ('sdssi' in objectinfo and objectinfo['sdssi'] is None)):
+            objectinfo['sdssi'] = magnitudes.jhk_to_sdssi(objectinfo['jmag'],
+                                                          objectinfo['hmag'],
+                                                          objectinfo['kmag'])
+            outdict['sdssifromjhk'] = True
+        else:
+            outdict['sdssifromjhk'] = False
+
+        if ('sdssz' not in objectinfo or
+            ('sdssz' in objectinfo and objectinfo['sdssz'] is None)):
+            objectinfo['sdssz'] = magnitudes.jhk_to_sdssz(objectinfo['jmag'],
+                                                          objectinfo['hmag'],
+                                                          objectinfo['kmag'])
+            outdict['sdsszfromjhk'] = True
+        else:
+            outdict['sdsszfromjhk'] = False
+
+
+    # now handle dereddening if possible
     if deredden:
 
-        # calculate the dereddened SDSS mags
-        outdict['deredu'] = outdict['sdssu'] - outdict['extinctu']
-        outdict['deredg'] = outdict['sdssg'] - outdict['extinctg']
-        outdict['deredr'] = outdict['sdssr'] - outdict['extinctr']
-        outdict['deredi'] = outdict['sdssi'] - outdict['extincti']
-        outdict['deredz'] = outdict['sdssz'] - outdict['extinctz']
+        try:
 
-        # calculate the dereddened B and V mags
-        outdict['deredb'] = outdict['bmag'] - outdict['extinctb']
-        outdict['deredv'] = outdict['vmag'] - outdict['extinctv']
+            # first, get the extinction table for this object
+            extinction = dust.extinction_query(objectinfo['ra'],
+                                               objectinfo['decl'],
+                                               verbose=False)
 
-        outdict['dereddened'] = True
+        except Exception as e:
+
+            LOGERROR("deredden = True but 'ra', 'decl' keys not present "
+                     "or invalid in objectinfo dict, ignoring reddening...")
+            extinction = None
 
     else:
 
-        outdict['deredu'] = outdict['sdssu']
-        outdict['deredg'] = outdict['sdssg']
-        outdict['deredr'] = outdict['sdssr']
-        outdict['deredi'] = outdict['sdssi']
-        outdict['deredz'] = outdict['sdssz']
+        extinction = None
 
-        outdict['deredb'] = outdict['bmag']
-        outdict['deredv'] = outdict['vmag']
+    # go through the objectdict and pick out the mags we have available from the
+    # BANDPASSES_COLORS dict
+
+    # update our bandpasses_colors dict with any custom ones the user defined
+    our_bandpasses_colors = BANDPASSES_COLORS.copy()
+    if custom_bandpasses is not None and isinstance(custom_bandpasses, dict):
+        our_bandpasses_colors.update(custom_bandpasses)
+
+    for mk in our_bandpasses_colors:
+
+        if (mk in objectinfo and
+            objectinfo[mk] is not None and
+            np.isfinite(objectinfo[mk])):
+
+            # add this to the outdict
+            outdict[mk] = objectinfo[mk]
+            outdict['available_bands'].append(mk)
+
+            #
+            # deredden it if possible
+            #
+            # calculating dereddened mags:
+            # A_x = m - m0_x where m is measured mag, m0 is intrinsic mag
+            # m0_x = m - A_x
+            #
+            # so for two bands x, y:
+            # intrinsic color (m_x - m_y)_0 = (m_x - m_y) - (A_x - A_y)
+
+            thisdustkey = our_bandpasses_colors[mk]['dustkey']
+
+            if (deredden and extinction):
+
+                # check if the dustkey is None, float, or str to figure out how
+                # to retrieve the reddening
+                if (thisdustkey is not None and
+                    isinstance(thisdustkey, str) and
+                    thisdustkey in extinction['Amag'] and
+                    np.isfinite(extinction['Amag'][thisdustkey]['sf11'])):
+
+                    outdict['extinction_%s' % mk] = (
+                        extinction['Amag'][thisdustkey]['sf11']
+                    )
+
+                elif (thisdustkey is not None and
+                      isinstance(thisdustkey, float)):
+
+                    outdict['extinction_%s' % mk] = thisdustkey
+
+                else:
+
+                    outdict['extinction_%s' % mk] = 0.0
+
+                # apply the extinction
+                outdict['dered_%s' % mk] = (
+                    outdict[mk] - outdict['extinction_%s' % mk]
+                )
+                outdict['available_bands'].append('dered_%s' % mk)
+
+                # get all the colors to generate for this bandpass
+                for colorspec in BANDPASSES_COLORS[mk]['colors']:
+
+                    # only add this if the color's not there already
+                    if colorspec[0] not in outdict:
+
+                        colorkey, colorlabel = colorspec
+
+                        # look for the bands to make this color
+
+                        # if it's not found now, this should work when we come
+                        # around for the next bandpass for this color
+
+                        band1, band2 = colorkey.split('-')
+
+                        if ('dered_%s' % band1 in outdict and
+                            'dered_%s' % band2 in outdict and
+                            np.isfinite(outdict['dered_%s' % band1]) and
+                            np.isfinite(outdict['dered_%s' % band2])):
+
+                            outdict[colorkey] = (
+                                outdict['dered_%s' % band1] -
+                                outdict['dered_%s' % band2]
+                            )
+                            outdict['available_colors'].append(colorkey)
+                            outdict['available_color_labels'].append(colorlabel)
 
 
-    # finally, calculate the colors
-    outdict['ugcolor'] = outdict['deredu'] - outdict['deredg']
-    outdict['grcolor'] = outdict['deredg'] - outdict['deredr']
-    outdict['ricolor'] = outdict['deredr'] - outdict['deredi']
-    outdict['izcolor'] = outdict['deredi'] - outdict['deredz']
+            else:
 
-    outdict['jhcolor'] = outdict['deredj'] - outdict['deredh']
-    outdict['hkcolor'] = outdict['deredh'] - outdict['deredk']
-    outdict['jkcolor'] = outdict['deredj'] - outdict['deredk']
+                outdict['extinction_%s' % mk] = 0.0
+                outdict['dered_%s' % mk] = outdict[mk]
 
-    outdict['ijcolor'] = outdict['deredi'] - outdict['deredj']
-    outdict['gjcolor'] = outdict['deredg'] - outdict['deredj']
-    outdict['gkcolor'] = outdict['deredg'] - outdict['deredk']
+                # get all the colors to generate for this bandpass
+                for colorspec in BANDPASSES_COLORS[mk]['colors']:
 
-    outdict['bvcolor'] = outdict['deredb'] - outdict['deredv']
-    outdict['vkcolor'] = outdict['deredv'] - outdict['deredk']
+                    # only add this if the color's not there already
+                    if colorspec[0] not in outdict:
+
+                        colorkey, colorlabel = colorspec
+
+                        # look for the bands to make this color
+
+                        # if it's not found now, this should work when we come
+                        # around for the next bandpass for this color
+
+                        band1, band2 = colorkey.split('-')
+
+                        if (band1 in outdict and
+                            band2 in outdict and
+                            np.isfinite(outdict[band1]) and
+                            np.isfinite(outdict[band2])):
+
+                            outdict[colorkey] = (
+                                outdict[band1] -
+                                outdict[band2]
+                            )
+                            outdict['available_colors'].append(colorkey)
+                            outdict['available_color_labels'].append(colorlabel)
+
+
+        # if this bandpass was not found in the objectinfo dict, ignore it
+        else:
+
+            outdict[mk] = None
+
 
     return outdict
 
@@ -501,6 +681,8 @@ def color_classification(colorfeatures, pmfeatures):
     - SDSS M-dwarf catalog (West+ 2008)
     - Helmi+ 2003
     - Bochanski+ 2014
+
+    FIXME: update this with the new bandpass keys for SDSS mags
 
     '''
 
