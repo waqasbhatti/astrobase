@@ -191,43 +191,53 @@ def coord_features(objectinfo):
 
 BANDPASSES_COLORS = {
     'umag':{'dustkey':'CTIO U',
+            'label':'U',
             'colors':[['umag-bmag','U - B'],
                       ['umag-vmag','U - V'],
                       ['umag-sdssg','U - g']]},
     'bmag':{'dustkey':'CTIO B',
+            'label':'B',
             'colors':[['umag-bmag','U - B'],
                       ['bmag-vmag','B - V']]},
     'vmag':{'dustkey':'CTIO V',
+            'label':'V',
             'colors':[['umag-vmag','U - V'],
                       ['bmag-vmag','B - V'],
                       ['vmag-rmag','V - R'],
                       ['vmag-imag','V - I'],
                       ['vmag-kmag','V - K']]},
     'rmag':{'dustkey':'CTIO R',
+            'label':'R',
             'colors':[['vmag-rmag','V - R'],
                       ['rmag-imag','R - I']]},
     'imag':{'dustkey':'CTIO I',
+            'label':'I',
             'colors':[['sdssg-imag','g - I'],
                       ['vmag-imag','V - I'],
                       ['rmag-imag','R - I'],
                       ['bmag-imag','B - I']]},
     'jmag':{'dustkey':'2MASS J',
+            'label':'J',
             'colors':[['jmag-hmag','J - H'],
                       ['jmag-kmag','J - Ks'],
                       ['sdssg-jmag','g - J'],
                       ['sdssi-jmag','i - J']]},
     'hmag':{'dustkey':'2MASS H',
+            'label':'H',
             'colors':[['jmag-hmag','J - H'],
                       ['hmag-kmag','H - Ks']]},
     'kmag':{'dustkey':'2MASS Ks',
+            'label':'Ks',
             'colors':[['sdssg-kmag','g - Ks'],
                       ['vmag-kmag','V - Ks'],
                       ['hmag-kmag','H - Ks'],
                       ['jmag-kmag','J - Ks']]},
     'sdssu':{'dustkey':'SDSS u',
+             'label':'u',
              'colors':[['sdssu-sdssg','u - g'],
                        ['sdssu-vmag','u - V']]},
     'sdssg':{'dustkey':'SDSS g',
+             'label':'g',
              'colors':[['sdssg-sdssr','g - r'],
                        ['sdssg-sdssi','g - i'],
                        ['sdssg-kmag','g - Ks'],
@@ -235,50 +245,64 @@ BANDPASSES_COLORS = {
                        ['umag-sdssg','U - g'],
                        ['sdssg-jmag','g - J']]},
     'sdssr':{'dustkey':'SDSS r',
+             'label':'r',
              'colors':[['sdssr-sdssi','r - i'],
                        ['sdssg-sdssr','g - r']]},
     'sdssi':{'dustkey':'SDSS i',
+             'label':'i',
              'colors':[['sdssr-sdssi','r - i'],
                        ['sdssi-sdssz','i - z'],
                        ['sdssg-sdssi','g - i'],
                        ['sdssi-jmag','i - J'],
                        ['sdssi-wise1','i - W1']]},
     'sdssz':{'dustkey':'SDSS z',
+             'label':'z',
              'colors':[['sdssi-sdssz','i - z'],
                        ['sdssz-wise2','z - W2'],
                        ['sdssg-sdssz','g - z']]},
     'ujmag':{'dustkey':'UKIRT J',
+             'label':'uJ',
              'colors':[['ujmag-uhmag','uJ - uH'],
                        ['ujmag-ukmag','uJ - uK'],
                        ['sdssg-ujmag','g - uJ'],
                        ['sdssi-ujmag','i - uJ']]},
     'uhmag':{'dustkey':'UKIRT H',
+             'label':'uH',
              'colors':[['ujmag-uhmag','uJ - uH'],
                        ['uhmag-ukmag','uH - uK']]},
     'ukmag':{'dustkey':'UKIRT K',
+             'label':'uK',
              'colors':[['sdssg-ukmag','g - uK'],
                        ['vmag-ukmag','V - uK'],
                        ['uhmag-ukmag','uH - uK'],
                        ['ujmag-ukmag','uJ - uK']]},
     'irac1':{'dustkey':'IRAC-1',
+             'label':'I1',
              'colors':[['sdssi-irac1','i - I1'],
                        ['irac1-irac2','I1 - I2']]},
     'irac2':{'dustkey':'IRAC-2',
+             'label':'I2',
              'colors':[['irac1-irac2','I1 - I2'],
                        ['irac2-irac3','I2 - I3']]},
     'irac3':{'dustkey':'IRAC-3',
+             'label':'I3',
              'colors':[['irac3-irac4','I3 - I4']]},
     'irac4':{'dustkey':'IRAC-4',
+             'label':'I4',
              'colors':[['irac3-irac4','I3 - I4']]},
     'wise1':{'dustkey':'WISE-1',
+             'label':'W1',
             'colors':[['sdssi-wise1','i - W1'],
                       ['wise1-wise2','W1 - W2']]},
     'wise2':{'dustkey':'WISE-2',
+             'label':'W2',
              'colors':[['wise1-wise2','W1 - W2'],
                        ['wise2-wise3','W2 - W3']]},
     'wise3':{'dustkey':None,
+             'label':'W3',
              'colors':[['wise2-wise3','W2 - W3']]},
     'wise4':{'dustkey':None,
+             'label':'W4',
              'colors':[['wise3-wise4','W3 - W4']]},
 }
 
@@ -335,12 +359,14 @@ def color_features(in_objectinfo,
 
     {
     '<bandpass_key_1>':{'dustkey':'<twomass_dust_key_1>',
+                        'label':'<band_label_1>'
                         'colors':[['<bandkey1>-<bandkey2>','<BAND1> - <BAND2>'],
                                   ['<bandkey3>-<bandkey4>','<BAND3> - <BAND4>']]},
     .
     ...
     .
     '<bandpass_key_N>':{'dustkey':'<twomass_dust_key_N>',
+                        'label':'<band_label_N>'
                         'colors':[['<bandkey1>-<bandkey2>','<BAND1> - <BAND2>'],
                                   ['<bandkey3>-<bandkey4>','<BAND3> - <BAND4>']]},
     }
@@ -371,6 +397,9 @@ def color_features(in_objectinfo,
     lookup entirely for this bandpass, use None for the value of
     twomass_dust_key.
 
+    `band_label` is the label to use for this bandpass, e.g. 'W1' for WISE-1
+    band, 'u' for SDSS u, etc.
+
     the 'colors' list contains color definitions for all colors you want to
     generate using this bandpass. this list contains elements of the form:
 
@@ -387,10 +416,15 @@ def color_features(in_objectinfo,
     objectinfo = in_objectinfo.copy()
 
     # this is the initial output dict
-    outdict = {'available_bands':[],
-               'available_colors':[],
-               'available_color_labels':[],
-               'deredden':deredden}
+    outdict = {
+        'available_bands':[],
+        'available_band_labels':[],
+        'available_dereddened_bands':[],
+        'available_dereddened_band_labels':[],
+        'available_colors':[],
+        'available_color_labels':[],
+        'dereddened':deredden
+    }
 
     #
     # get the BVugriz mags from the JHK mags if necessary
@@ -500,7 +534,7 @@ def color_features(in_objectinfo,
     else:
 
         extinction = None
-        outdict['deredden'] = False
+        outdict['dereddened'] = False
 
     # go through the objectdict and pick out the mags we have available from the
     # BANDPASSES_COLORS dict
@@ -516,12 +550,16 @@ def color_features(in_objectinfo,
             objectinfo[mk] is not None and
             np.isfinite(objectinfo[mk])):
 
+            thisbandlabel = our_bandpasses_colors[mk]['label']
+            thisdustkey = our_bandpasses_colors[mk]['dustkey']
+
             # add this to the outdict
             outdict[mk] = objectinfo[mk]
             outdict['available_bands'].append(mk)
+            outdict['available_band_labels'].append(thisbandlabel)
 
             #
-            # deredden it if possible
+            # deredden if possible
             #
             # calculating dereddened mags:
             # A_x = m - m0_x where m is measured mag, m0 is intrinsic mag
@@ -529,9 +567,6 @@ def color_features(in_objectinfo,
             #
             # so for two bands x, y:
             # intrinsic color (m_x - m_y)_0 = (m_x - m_y) - (A_x - A_y)
-
-            thisdustkey = our_bandpasses_colors[mk]['dustkey']
-
             if (deredden and extinction):
 
                 # check if the dustkey is None, float, or str to figure out how
@@ -558,7 +593,10 @@ def color_features(in_objectinfo,
                 outdict['dered_%s' % mk] = (
                     outdict[mk] - outdict['extinction_%s' % mk]
                 )
-                outdict['available_bands'].append('dered_%s' % mk)
+                outdict['available_dereddened_bands'].append('dered_%s' % mk)
+                outdict['available_dereddened_band_labels'].append(
+                    thisbandlabel
+                )
 
                 # get all the colors to generate for this bandpass
                 for colorspec in BANDPASSES_COLORS[mk]['colors']:
