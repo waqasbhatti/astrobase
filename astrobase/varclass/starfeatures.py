@@ -14,16 +14,19 @@ keys outlined below. This should usually be taken from a light curve file.
     'decl': declination in degrees. REQUIRED: all functions below,
     'pmra': propermotion in RA in mas/yr. REQUIRED: coord_features,
     'pmdecl': propermotion in DEC in mas/yr. REQUIRED: coord_features,
-    'jmag': 2MASS J mag. REQUIRED: color_features,
-    'hmag': 2MASS H mag. REQUIRED: color_features,
-    'kmag': 2MASS Ks mag. REQUIRED: color_features,
-    'bmag': Cousins B mag. optional: color_features,
-    'vmag': Cousins V mag. optional: color_features,
-    'sdssu': SDSS u mag. optional: color_features,
-    'sdssg': SDSS g mag. optional: color_features,
-    'sdssr': SDSS r mag. optional: color_features,
-    'sdssi': SDSS i mag. optional: color_features,
-    'sdssz': SDSS z mag. optional: color_features,
+    'umag': Cousins U mag. OPTIONAL: color_features,
+    'bmag': Cousins B mag. OPTIONAL: color_features,
+    'vmag': Cousins V mag. OPTIONAL: color_features,
+    'rmag': Cousins R mag. OPTIONAL: color_features,
+    'imag': Cousins I mag. OPTIONAL: color_features,
+    'jmag': 2MASS J mag. OPTIONAL: color_features,
+    'hmag': 2MASS H mag. OPTIONAL: color_features,
+    'kmag': 2MASS Ks mag. OPTIONAL: color_features,
+    'sdssu': SDSS u mag. OPTIONAL: color_features,
+    'sdssg': SDSS g mag. OPTIONAL: color_features,
+    'sdssr': SDSS r mag. OPTIONAL: color_features,
+    'sdssi': SDSS i mag. OPTIONAL: color_features,
+    'sdssz': SDSS z mag. OPTIONAL: color_features,
 }
 
 '''
@@ -288,10 +291,10 @@ def color_features(in_objectinfo,
 
     http://irsa.ipac.caltech.edu/applications/DUST/docs/dustProgramInterface.html
 
-    Requires at least 'ra', and 'decl' as keys in the objectinfo with the right
-    ascension and declination of the object, and one or more of the following
-    keys in the objectinfo dict for object magnitudes. These are basically taken
-    from the available reddening bandpasses from the 2MASS DUST service:
+    `in_objectinfo` is a dict that contains the object's magnitudes and
+    positions. This requires at least 'ra', and 'decl' as keys in the
+    in_objectinfo dict which correspond to the right ascension and declination
+    of the object, and one or more of the following keys for object magnitudes:
 
     'umag'  -> U mag             -> colors: U-B, U-V, U-g
     'bmag'  -> B mag             -> colors: U-B, B-V
@@ -318,14 +321,15 @@ def color_features(in_objectinfo,
     'wise3' -> WISE W3 mag       -> colors: W2-W3
     'wise4' -> WISE W4 mag       -> colors: W3-W4
 
-    If B, V, u, g, r, i, z aren't provided but 2MASS J, H, K are all provided,
-    the former will be calculated using the 2MASS JHKs -> BVugriz conversion
-    functions in astrobase.magnitudes.
+    These are basically taken from the available reddening bandpasses from the
+    2MASS DUST service. If B, V, u, g, r, i, z aren't provided but 2MASS J, H,
+    Ks are all provided, the former will be calculated using the 2MASS JHKs ->
+    BVugriz conversion functions in astrobase.magnitudes.
 
-    deredden = True will make sure all colors use dereddened mags where
+    `deredden` = True will make sure all colors use dereddened mags where
     possible.
 
-    custom_bandpasses is a dict used to define any custom bandpasses in the
+    `custom_bandpasses` is a dict used to define any custom bandpasses in the
     objectdict you want to make this function aware of and generate colors
     for. Use the format below for this dict:
 
@@ -343,11 +347,11 @@ def color_features(in_objectinfo,
 
     where:
 
-    bandpass_key is a key to use to refer to this bandpass in the objectinfo
-    dict by checkplot_pickle, and subsequent operations by the
-    checkplotserver, e.g. 'sdssg' for SDSS g band
+    `bandpass_key` is a key to use to refer to this bandpass in the objectinfo
+    dict by checkplot_pickle, and subsequent operations by the checkplotserver,
+    e.g. 'sdssg' for SDSS g band
 
-    twomass_dust_key is the key to use in the 2MASS DUST result table for
+    `twomass_dust_key` is the key to use in the 2MASS DUST result table for
     reddening per band-pass. For example, given the following DUST result table
     (using http://irsa.ipac.caltech.edu/applications/DUST/):
 
@@ -379,6 +383,7 @@ def color_features(in_objectinfo,
     ['sdssu-sdssg','u - g']
 
     '''
+
     objectinfo = in_objectinfo.copy()
 
     # this is the initial output dict
@@ -405,7 +410,8 @@ def color_features(in_objectinfo,
         np.isfinite(objectinfo['kmag'])):
 
         if ('bmag' not in objectinfo or
-            ('bmag' in objectinfo and objectinfo['bmag'] is None)):
+            ('bmag' in objectinfo and objectinfo['bmag'] is None) or
+            ('bmag' in objectinfo and not np.isfinite(objectinfo['bmag']))):
             objectinfo['bmag'] = magnitudes.jhk_to_bmag(objectinfo['jmag'],
                                                         objectinfo['hmag'],
                                                         objectinfo['kmag'])
@@ -414,7 +420,8 @@ def color_features(in_objectinfo,
             outdict['bmagfromjhk'] = False
 
         if ('vmag' not in objectinfo or
-            ('vmag' in objectinfo and objectinfo['vmag'] is None)):
+            ('vmag' in objectinfo and objectinfo['vmag'] is None) or
+            ('vmag' in objectinfo and not np.isfinite(objectinfo['vmag']))):
             objectinfo['vmag'] = magnitudes.jhk_to_vmag(objectinfo['jmag'],
                                                         objectinfo['hmag'],
                                                         objectinfo['kmag'])
@@ -424,7 +431,8 @@ def color_features(in_objectinfo,
 
 
         if ('sdssu' not in objectinfo or
-            ('sdssu' in objectinfo and objectinfo['sdssu'] is None)):
+            ('sdssu' in objectinfo and objectinfo['sdssu'] is None) or
+            ('sdssu' in objectinfo and not np.isfinite(objectinfo['sdssu']))):
             objectinfo['sdssu'] = magnitudes.jhk_to_sdssu(objectinfo['jmag'],
                                                           objectinfo['hmag'],
                                                           objectinfo['kmag'])
@@ -433,7 +441,8 @@ def color_features(in_objectinfo,
             outdict['sdssufromjhk'] = False
 
         if ('sdssg' not in objectinfo or
-            ('sdssg' in objectinfo and objectinfo['sdssg'] is None)):
+            ('sdssg' in objectinfo and objectinfo['sdssg'] is None) or
+            ('sdssg' in objectinfo and not np.isfinite(objectinfo['sdssg']))):
             objectinfo['sdssg'] = magnitudes.jhk_to_sdssg(objectinfo['jmag'],
                                                           objectinfo['hmag'],
                                                           objectinfo['kmag'])
@@ -442,7 +451,8 @@ def color_features(in_objectinfo,
             outdict['sdssgfromjhk'] = False
 
         if ('sdssr' not in objectinfo or
-            ('sdssr' in objectinfo and objectinfo['sdssr'] is None)):
+            ('sdssr' in objectinfo and objectinfo['sdssr'] is None) or
+            ('sdssr' in objectinfo and not np.isfinite(objectinfo['sdssr']))):
             objectinfo['sdssr'] = magnitudes.jhk_to_sdssr(objectinfo['jmag'],
                                                           objectinfo['hmag'],
                                                           objectinfo['kmag'])
@@ -451,7 +461,8 @@ def color_features(in_objectinfo,
             outdict['sdssrfromjhk'] = False
 
         if ('sdssi' not in objectinfo or
-            ('sdssi' in objectinfo and objectinfo['sdssi'] is None)):
+            ('sdssi' in objectinfo and objectinfo['sdssi'] is None) or
+            ('sdssi' in objectinfo and not np.isfinite(objectinfo['sdssi']))):
             objectinfo['sdssi'] = magnitudes.jhk_to_sdssi(objectinfo['jmag'],
                                                           objectinfo['hmag'],
                                                           objectinfo['kmag'])
@@ -460,7 +471,8 @@ def color_features(in_objectinfo,
             outdict['sdssifromjhk'] = False
 
         if ('sdssz' not in objectinfo or
-            ('sdssz' in objectinfo and objectinfo['sdssz'] is None)):
+            ('sdssz' in objectinfo and objectinfo['sdssz'] is None) or
+            ('sdssz' in objectinfo and not np.isfinite(objectinfo['sdssz']))):
             objectinfo['sdssz'] = magnitudes.jhk_to_sdssz(objectinfo['jmag'],
                                                           objectinfo['hmag'],
                                                           objectinfo['kmag'])
@@ -488,6 +500,7 @@ def color_features(in_objectinfo,
     else:
 
         extinction = None
+        outdict['deredden'] = False
 
     # go through the objectdict and pick out the mags we have available from the
     # BANDPASSES_COLORS dict
@@ -578,7 +591,7 @@ def color_features(in_objectinfo,
             else:
 
                 outdict['extinction_%s' % mk] = 0.0
-                outdict['dered_%s' % mk] = outdict[mk]
+                outdict['dered_%s' % mk] = np.nan
 
                 # get all the colors to generate for this bandpass
                 for colorspec in BANDPASSES_COLORS[mk]['colors']:
@@ -597,6 +610,8 @@ def color_features(in_objectinfo,
 
                         if (band1 in outdict and
                             band2 in outdict and
+                            outdict[band1] is not None and
+                            outdict[band2] is not None and
                             np.isfinite(outdict[band1]) and
                             np.isfinite(outdict[band2])):
 
@@ -611,7 +626,7 @@ def color_features(in_objectinfo,
         # if this bandpass was not found in the objectinfo dict, ignore it
         else:
 
-            outdict[mk] = None
+            outdict[mk] = np.nan
 
 
     return outdict
@@ -623,11 +638,16 @@ def mdwarf_subtype_from_sdsscolor(ri_color, iz_color):
     # calculate the spectral type index and the spectral type spread of the
     # object. sti is calculated by fitting a line to the locus in r-i and i-z
     # space for M dwarfs in West+ 2007
-    obj_sti = 0.875274*ri_color + 0.483628*(iz_color + 0.00438)
-    obj_sts = -0.483628*ri_color + 0.875274*(iz_color + 0.00438)
+    if np.isfinite(ri_color) and np.isfinite(iz_color):
+        obj_sti = 0.875274*ri_color + 0.483628*(iz_color + 0.00438)
+        obj_sts = -0.483628*ri_color + 0.875274*(iz_color + 0.00438)
+    else:
+        obj_sti = np.nan
+        obj_sts = np.nan
 
     # possible M star if sti is >= 0.666 but <= 3.4559
-    if ((obj_sti > 0.666) and (obj_sti < 3.4559)):
+    if (np.isfinite(obj_sti) and np.isfinite(obj_sts) and
+        (obj_sti > 0.666) and (obj_sti < 3.4559)):
 
         # decide which M subclass object this is
         if ((obj_sti > 0.6660) and (obj_sti < 0.8592)):
@@ -666,6 +686,7 @@ def mdwarf_subtype_from_sdsscolor(ri_color, iz_color):
     return m_class, obj_sti, obj_sts
 
 
+
 def color_classification(colorfeatures, pmfeatures):
     '''This calculates rough classifications based on star colors from ugrizJHK.
 
@@ -682,8 +703,6 @@ def color_classification(colorfeatures, pmfeatures):
     - Helmi+ 2003
     - Bochanski+ 2014
 
-    FIXME: update this with the new bandpass keys for SDSS mags
-
     '''
 
     possible_classes = []
@@ -697,43 +716,136 @@ def color_classification(colorfeatures, pmfeatures):
         return possible_classes
 
     # dered mags
-    u, g, r, i, z, j, h, k = (colorfeatures['deredu'],
-                              colorfeatures['deredg'],
-                              colorfeatures['deredr'],
-                              colorfeatures['deredi'],
-                              colorfeatures['deredz'],
-                              colorfeatures['deredj'],
-                              colorfeatures['deredh'],
-                              colorfeatures['deredk'])
+    if ( ('dered_sdssu' in colorfeatures) and
+         (colorfeatures['dered_sdssu'] is not None) and
+         (np.isfinite(colorfeatures['dered_sdssu'])) ):
+        u = colorfeatures['dered_sdssu']
+    else:
+        u = np.nan
+
+    if ( ('dered_sdssg' in colorfeatures) and
+         (colorfeatures['dered_sdssg'] is not None) and
+         (np.isfinite(colorfeatures['dered_sdssg'])) ):
+        g = colorfeatures['dered_sdssg']
+    else:
+        g = np.nan
+
+    if ( ('dered_sdssr' in colorfeatures) and
+         (colorfeatures['dered_sdssr'] is not None) and
+         (np.isfinite(colorfeatures['dered_sdssr'])) ):
+        r = colorfeatures['dered_sdssr']
+    else:
+        r = np.nan
+
+    if ( ('dered_sdssi' in colorfeatures) and
+         (colorfeatures['dered_sdssi'] is not None) and
+         (np.isfinite(colorfeatures['dered_sdssi'])) ):
+        i = colorfeatures['dered_sdssi']
+    else:
+        i = np.nan
+
+    if ( ('dered_sdssz' in colorfeatures) and
+         (colorfeatures['dered_sdssz'] is not None) and
+         (np.isfinite(colorfeatures['dered_sdssz'])) ):
+        z = colorfeatures['dered_sdssz']
+    else:
+        z = np.nan
+
+    if ( ('dered_jmag' in colorfeatures) and
+         (colorfeatures['dered_jmag'] is not None) and
+         (np.isfinite(colorfeatures['dered_jmag'])) ):
+        j = colorfeatures['dered_jmag']
+    else:
+        j = np.nan
+
+    if ( ('dered_hmag' in colorfeatures) and
+         (colorfeatures['dered_hmag'] is not None) and
+         (np.isfinite(colorfeatures['dered_hmag'])) ):
+        h = colorfeatures['dered_hmag']
+    else:
+        h = np.nan
+
+    if ( ('dered_kmag' in colorfeatures) and
+         (colorfeatures['dered_kmag'] is not None) and
+         (np.isfinite(colorfeatures['dered_kmag'])) ):
+        k = colorfeatures['dered_kmag']
+    else:
+        k = np.nan
+
 
     # measured mags
-    um, gm, rm, im, zm = (colorfeatures['sdssu'],
-                          colorfeatures['sdssg'],
-                          colorfeatures['sdssr'],
-                          colorfeatures['sdssi'],
-                          colorfeatures['sdssz'])
+    if 'sdssu' in colorfeatures and colorfeatures['sdssu'] is not None:
+        um = colorfeatures['sdssu']
+    else:
+        um = np.nan
+    if 'sdssg' in colorfeatures and colorfeatures['sdssg'] is not None:
+        gm = colorfeatures['sdssg']
+    else:
+        gm = np.nan
+    if 'sdssr' in colorfeatures and colorfeatures['sdssr'] is not None:
+        rm = colorfeatures['sdssr']
+    else:
+        rm = np.nan
+    if 'sdssi' in colorfeatures and colorfeatures['sdssi'] is not None:
+        im = colorfeatures['sdssi']
+    else:
+        im = np.nan
+    if 'sdssz' in colorfeatures and colorfeatures['sdssz'] is not None:
+        zm = colorfeatures['sdssz']
+    else:
+        zm = np.nan
+    if 'jmag' in colorfeatures and colorfeatures['jmag'] is not None:
+        jm = colorfeatures['jmag']
+    else:
+        jm = np.nan
+    if 'hmag' in colorfeatures and colorfeatures['hmag'] is not None:
+        hm = colorfeatures['hmag']
+    else:
+        hm = np.nan
+    if 'kmag' in colorfeatures and colorfeatures['kmag'] is not None:
+        km = colorfeatures['kmag']
+    else:
+        km = np.nan
+
 
     # reduced proper motion
     rpmj = pmfeatures['rpmj'] if np.isfinite(pmfeatures['rpmj']) else None
 
     # now generate the various color indices
     # color-gravity index
-    v_color = 0.283*(u-g)-0.354*(g-r)+0.455*(r-i)+0.766*(i-z)
+    if (np.isfinite(u) and np.isfinite(g) and
+        np.isfinite(r) and np.isfinite(i) and
+        np.isfinite(z)):
+        v_color = 0.283*(u-g)-0.354*(g-r)+0.455*(r-i)+0.766*(i-z)
+    else:
+        v_color = np.nan
 
     # metallicity index p1
-    p1_color = 0.91*(u-g)+0.415*(g-r)-1.28
+    if (np.isfinite(u) and np.isfinite(g) and np.isfinite(r)):
+        p1_color = 0.91*(u-g)+0.415*(g-r)-1.28
+    else:
+        p1_color = np.nan
 
     # metallicity index l
-    l_color = -0.436*u + 1.129*g - 0.119*r - 0.574*i + 0.1984
+    if (np.isfinite(u) and np.isfinite(g) and
+        np.isfinite(r) and np.isfinite(i)):
+        l_color = -0.436*u + 1.129*g - 0.119*r - 0.574*i + 0.1984
+    else:
+        l_color = np.nan
 
     # metallicity index s
-    s_color = -0.249*u + 0.794*g - 0.555*r + 0.124
+    if (np.isfinite(u) and np.isfinite(g) and np.isfinite(r)):
+        s_color = -0.249*u + 0.794*g - 0.555*r + 0.124
+    else:
+        s_color = np.nan
 
-    # RR Lyrae ug index
-    d_ug = (u-g) + 0.67*(g-r) - 1.07
+    # RR Lyrae ug and gr indexes
+    if (np.isfinite(u) and np.isfinite(g) and np.isfinite(r)):
+        d_ug = (u-g) + 0.67*(g-r) - 1.07
+        d_gr = 0.45*(u-g) - (g-r) - 0.12
+    else:
+        d_ug, d_gr = np.nan, np.nan
 
-    # RR Lyrae gr index
-    d_gr = 0.45*(u-g) - (g-r) - 0.12
 
     # check the M subtype
     m_subtype, m_sti, m_sts = mdwarf_subtype_from_sdsscolor(r-i, i-z)
@@ -743,69 +855,89 @@ def color_classification(colorfeatures, pmfeatures):
         possible_classes.append('d' + m_subtype)
 
     # white dwarf
-    if ( ((g-r) < -0.2) and ((g-r) > -1.0) and
+    if ( np.isfinite(u) and np.isfinite(g) and np.isfinite(r) and
+         ((g-r) < -0.2) and ((g-r) > -1.0) and
          ((u-g) < 0.7) and ((u-g) > -1) and
          ((u-g+2*(g-r)) < -0.1) ):
         possible_classes.append('WD/sdO/sdB')
 
     # A/BHB/BStrg
-    if ( ((u-g) < 1.5) and ((u-g) > 0.8) and
+    if ( np.isfinite(u) and np.isfinite(g) and np.isfinite(r) and
+         ((u-g) < 1.5) and ((u-g) > 0.8) and
          ((g-r) < 0.2) and ((g-r) > -0.5) ):
         possible_classes.append('A/BHB/blustrg')
 
     # F turnoff/sub-dwarf
-    if ( (p1_color < -0.25) and (p1_color > -0.7) and
+    if ( (np.isfinite(p1_color) and np.isfinite(p1_color) and
+          np.isfinite(u) and np.isfinite(g) and np.isfinite(r) ) and
+         (p1_color < -0.25) and (p1_color > -0.7) and
          ((u-g) < 1.4) and ((u-g) > 0.4) and
          ((g-r) < 0.7) and ((g-r) > 0.2) ):
         possible_classes.append('Fturnoff/sdF')
 
     # low metallicity
-    if ( ((g-r) < 0.75) and ((g-r) > -0.5) and
+    if ( (np.isfinite(u) and np.isfinite(g) and np.isfinite(r) and
+          np.isfinite(l_color)) and
+         ((g-r) < 0.75) and ((g-r) > -0.5) and
          ((u-g) < 3.0) and ((u-g) > 0.6) and
          (l_color > 0.135) ):
         possible_classes.append('lowmetal')
 
     # low metallicity giants from Helmi+ 2003
-    if ( (-0.1 < p1_color < 0.6) and (s_color > 0.05) ):
+    if ( (np.isfinite(p1_color) and np.isfinite(s_color)) and
+         (-0.1 < p1_color < 0.6) and (s_color > 0.05) ):
         possible_classes.append('lowmetalgiant')
 
     # F/G star
-    if ( ((g-r) < 0.48) and ((g-r) > 0.2) ):
+    if ( (np.isfinite(g) and np.isfinite(g) and np.isfinite(r)) and
+         ((g-r) < 0.48) and ((g-r) > 0.2) ):
         possible_classes.append('F/G')
 
     # G dwarf
-    if ( ((g-r) < 0.55) and ((g-r) > 0.48) ):
+    if ( (np.isfinite(g) and np.isfinite(r)) and
+         ((g-r) < 0.55) and ((g-r) > 0.48) ):
         possible_classes.append('dG')
 
     # K giant
-    if ( ((g-r) > 0.35) and ((g-r) < 0.7) and
+    if ( (np.isfinite(u) and np.isfinite(g) and
+          np.isfinite(r) and np.isfinite(i) and
+          np.isfinite(l_color)) and
+         ((g-r) > 0.35) and ((g-r) < 0.7) and
          (l_color > 0.07) and ((u-g) > 0.7) and ((u-g) < 4.0) and
          ((r-i) > 0.15) and ((r-i) < 0.6) ):
         possible_classes.append('gK')
 
     # AGB
-    if ( ((u-g) < 3.5) and ((u-g) > 2.5) and
+    if ( (np.isfinite(u) and np.isfinite(g) and
+          np.isfinite(r) and np.isfinite(s_color)) and
+         ((u-g) < 3.5) and ((u-g) > 2.5) and
          ((g-r) < 1.3) and ((g-r) > 0.9) and
          (s_color < -0.06) ):
         possible_classes.append('AGB')
 
     # K dwarf
-    if ( ((g-r) < 0.75) and ((g-r) > 0.55) ):
+    if ( (np.isfinite(g) and np.isfinite(r)) and
+         ((g-r) < 0.75) and ((g-r) > 0.55) ):
         possible_classes.append('dK')
 
     # M subdwarf
-    if ( ((g-r) > 1.6) and ((r-i) < 1.3) and ((r-i) > 0.95) ):
+    if ( (np.isfinite(g) and np.isfinite(r) and np.isfinite(i)) and
+         ((g-r) > 1.6) and ((r-i) < 1.3) and ((r-i) > 0.95) ):
         possible_classes.append('sdM')
 
     # M giant colors from Bochanski+ 2014
-    if ( ((j-k) > 1.02) and
+    if ( (np.isfinite(j) and np.isfinite(h) and np.isfinite(k) and
+          np.isfinite(g) and np.isfinite(i)) and
+         ((j-k) > 1.02) and
          ((j-h) < (0.561*(j-k) + 0.46)) and
          ((j-h) > (0.561*(j-k) + 0.14)) and
          ((g-i) > (0.932*(i-k) - 0.872)) ):
         possible_classes.append('gM')
 
     # MS+WD pair
-    if ( ((um-gm) < 2.25) and ((gm-rm) > -0.2) and
+    if ( (np.isfinite(um) and np.isfinite(gm) and
+          np.isfinite(rm) and np.isfinite(im)) and
+         ((um-gm) < 2.25) and ((gm-rm) > -0.2) and
          ((gm-rm) < 1.2) and ((rm-im) > 0.5) and
          ((rm-im) < 2.0) and
          ((gm-rm) > (-19.78*(rm-im)+11.13)) and
@@ -813,12 +945,17 @@ def color_classification(colorfeatures, pmfeatures):
         possible_classes.append('MSWD')
 
     # brown dwarf
-    if ( (zm < 19.5) and (um > 21.0) and (gm > 22.0) and
+    if ( (np.isfinite(um) and np.isfinite(gm) and np.isfinite(rm) and
+          np.isfinite(im) and np.isfinite(zm)) and
+         (zm < 19.5) and (um > 21.0) and (gm > 22.0) and
          (rm > 21.0) and ((im - zm) > 1.7) ):
         possible_classes.append('BD')
 
     # RR Lyrae candidate
-    if ( ((u-g) > 0.98) and ((u-g) < 1.3) and
+    if ( (np.isfinite(u) and np.isfinite(g) and np.isfinite(r) and
+          np.isfinite(i) and np.isfinite(z) and np.isfinite(d_ug) and
+          np.isfinite(d_gr)) and
+         ((u-g) > 0.98) and ((u-g) < 1.3) and
          (d_ug > -0.05) and (d_ug < 0.35) and
          (d_gr > 0.06) and (d_gr < 0.55) and
          ((r-i) > -0.15) and ((r-i) < 0.22) and
@@ -826,9 +963,10 @@ def color_classification(colorfeatures, pmfeatures):
         possible_classes.append('RRL')
 
     # QSO color
-    if ( (((u-g) > -0.1) and ((u-g) < 0.7) and
-          ((g-r) > -0.3) and ((g-r) < 0.5)) or
-         ((u-g) > (1.6*(g-r) + 1.34)) ):
+    if ( (np.isfinite(u) and np.isfinite(g) and np.isfinite(r)) and
+         ( (((u-g) > -0.1) and ((u-g) < 0.7) and
+            ((g-r) > -0.3) and ((g-r) < 0.5)) or
+           ((u-g) > (1.6*(g-r) + 1.34)) ) ):
         possible_classes.append('QSO')
 
     return {'color_classes':possible_classes,
