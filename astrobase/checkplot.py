@@ -3552,7 +3552,15 @@ def checkplot_pickle_to_png(checkplotin,
     # - the first row is for object info
     # - the rest are for periodograms and phased LCs, one row per method
     # if there are more than three phased LC plots per method, we'll only plot 3
-    cplspmethods = cpd['pfmethods']
+    if 'pfmethods' in cpd:
+        cplspmethods = cpd['pfmethods']
+    else:
+        cplspmethods = []
+        for pfm in METHODSHORTLABELS:
+            if pfm in cpd:
+                cplspmethods.append(pfm)
+
+
     cprows = len(cplspmethods)
 
     # add in any extra rows from neighbors
@@ -3623,7 +3631,7 @@ def checkplot_pickle_to_png(checkplotin,
 
     # objectid
     objinfodraw.text(
-        (875, 25),
+        (625, 25),
         cpd['objectid'] if cpd['objectid'] else 'no objectid',
         font=cpfontlarge,
         fill=(0,0,255,255)
@@ -3631,7 +3639,7 @@ def checkplot_pickle_to_png(checkplotin,
     # twomass id
     if 'twomassid' in cpd['objectinfo']:
         objinfodraw.text(
-            (875, 60),
+            (625, 60),
             ('2MASS J%s' % cpd['objectinfo']['twomassid']
              if cpd['objectinfo']['twomassid']
              else ''),
@@ -3641,7 +3649,7 @@ def checkplot_pickle_to_png(checkplotin,
     # ndet
     if 'ndet' in cpd['objectinfo']:
         objinfodraw.text(
-            (875, 85),
+            (625, 85),
             ('LC points: %s' % cpd['objectinfo']['ndet']
              if cpd['objectinfo']['ndet'] is not None
              else ''),
@@ -3650,21 +3658,21 @@ def checkplot_pickle_to_png(checkplotin,
         )
     else:
         objinfodraw.text(
-            (875, 85),
+            (625, 85),
             ('LC points: %s' % cpd['magseries']['times'].size),
             font=cpfontnormal,
             fill=(0,0,0,255)
         )
     # coords and PM
     objinfodraw.text(
-        (875, 125),
+        (625, 125),
         ('Coords and PM'),
         font=cpfontnormal,
         fill=(0,0,0,255)
     )
     if 'ra' in cpd['objectinfo'] and 'decl' in cpd['objectinfo']:
         objinfodraw.text(
-            (1125, 125),
+            (900, 125),
             (('RA, Dec: %.3f, %.3f' %
               (cpd['objectinfo']['ra'], cpd['objectinfo']['decl']))
              if (cpd['objectinfo']['ra'] is not None and
@@ -3675,7 +3683,7 @@ def checkplot_pickle_to_png(checkplotin,
         )
     else:
         objinfodraw.text(
-            (1125, 125),
+            (900, 125),
             'RA, Dec: nan, nan',
             font=cpfontnormal,
             fill=(0,0,0,255)
@@ -3683,7 +3691,7 @@ def checkplot_pickle_to_png(checkplotin,
 
     if 'propermotion' in cpd['objectinfo']:
         objinfodraw.text(
-            (1125, 150),
+            (900, 150),
             (('Total PM: %.5f mas/yr' % cpd['objectinfo']['propermotion'])
              if (cpd['objectinfo']['propermotion'] is not None)
              else ''),
@@ -3692,7 +3700,7 @@ def checkplot_pickle_to_png(checkplotin,
         )
     else:
         objinfodraw.text(
-            (1125, 150),
+            (900, 150),
             'Total PM: nan',
             font=cpfontnormal,
             fill=(0,0,0,255)
@@ -3700,7 +3708,7 @@ def checkplot_pickle_to_png(checkplotin,
 
     if 'rpmj' in cpd['objectinfo']:
         objinfodraw.text(
-            (1125, 175),
+            (900, 175),
             (('Reduced PM [Jmag]: %.3f' % cpd['objectinfo']['rpmj'])
              if (cpd['objectinfo']['rpmj'] is not None)
              else ''),
@@ -3709,7 +3717,7 @@ def checkplot_pickle_to_png(checkplotin,
         )
     else:
         objinfodraw.text(
-            (1125, 175),
+            (900, 175),
             'Reduced PM [Jmag]: nan',
             font=cpfontnormal,
             fill=(0,0,0,255)
@@ -3724,69 +3732,18 @@ def checkplot_pickle_to_png(checkplotin,
         # first, we deal with the bands and mags
         #
         # magnitudes
-        if ('dereddened' in cpd['objectinfo'] and
-            cpd['objectinfo']['dereddened'] == True):
-            deredlabel = "(dereddened)"
-        else:
-            deredlabel = ""
         objinfodraw.text(
-            (600, 200),
-            'Magnitudes %s' % deredlabel,
+            (625, 200),
+            'Magnitudes',
             font=cpfontnormal,
             fill=(0,0,0,255)
         )
 
-        # process the dereddened bands preferentially
-        if len(cpd['objectinfo']['available_dereddened_bands']) > 0:
-
-            # we'll get all the available mags (dereddened versions preferred)
-            for bandind, band, label in zip(
-                    range(len(cpd['objectinfo']['available_dereddened_bands'])),
-                    cpd['objectinfo']['available_dereddened_bands'],
-                    cpd['objectinfo']['available_dereddened_band_labels']
-            ):
-
-                thisbandmag = cpd['objectinfo'][band]
-
-                # we'll draw stuff in three rows depending on the number of
-                # bands we have to use
-                if bandind < 4:
-
-                    thispos = (800+100*bandind, 200)
-
-                    objinfodraw.text(
-                        thispos,
-                        '%s: %.3f' % (label, thisbandmag),
-                        font=cpfontnormal,
-                        fill=(0,0,0,255)
-                    )
-
-                elif 4 < bandind < 8:
-
-                    thispos = (800+100*bandind, 225)
-
-                    objinfodraw.text(
-                        thispos,
-                        '%s: %.3f' % (label, thisbandmag),
-                        font=cpfontnormal,
-                        fill=(0,0,0,255)
-                    )
-
-                else:
-
-                    thispos = (800+100*bandind, 250)
-
-                    objinfodraw.text(
-                        thispos,
-                        '%s: %.3f' % (label, thisbandmag),
-                        font=cpfontnormal,
-                        fill=(0,0,0,255)
-                    )
-
+        # process the various bands
         # if dereddened mags aren't available, use the observed mags
-        elif len(cpd['objectinfo']['available_bands']) > 0:
+        if len(cpd['objectinfo']['available_bands']) > 0:
 
-            # we'll get all the available mags (dereddened versions preferred)
+            # we'll get all the available mags
             for bandind, band, label in zip(
                     range(len(cpd['objectinfo']['available_bands'])),
                     cpd['objectinfo']['available_bands'],
@@ -3797,9 +3754,9 @@ def checkplot_pickle_to_png(checkplotin,
 
                 # we'll draw stuff in three rows depending on the number of
                 # bands we have to use
-                if bandind < 4:
+                if bandind in (0,1,2,3,4):
 
-                    thispos = (800+100*bandind, 200)
+                    thispos = (900+125*bandind, 200)
 
                     objinfodraw.text(
                         thispos,
@@ -3808,9 +3765,11 @@ def checkplot_pickle_to_png(checkplotin,
                         fill=(0,0,0,255)
                     )
 
-                elif 4 < bandind < 8:
+                elif bandind in (5,6,7,8,9):
 
-                    thispos = (800+100*bandind, 225)
+                    rowbandind = bandind - 5
+
+                    thispos = (900+125*rowbandind, 225)
 
                     objinfodraw.text(
                         thispos,
@@ -3821,7 +3780,9 @@ def checkplot_pickle_to_png(checkplotin,
 
                 else:
 
-                    thispos = (800+100*bandind, 250)
+                    rowbandind = bandind - 10
+
+                    thispos = (900+125*rowbandind, 250)
 
                     objinfodraw.text(
                         thispos,
@@ -3842,7 +3803,7 @@ def checkplot_pickle_to_png(checkplotin,
             deredlabel = ""
 
         objinfodraw.text(
-            (600, 275),
+            (625, 275),
             'Colors %s' % deredlabel,
             font=cpfontnormal,
             fill=(0,0,0,255)
@@ -3861,9 +3822,9 @@ def checkplot_pickle_to_png(checkplotin,
 
                 # we'll draw stuff in three rows depending on the number of
                 # bands we have to use
-                if colorind < 4:
+                if colorind in (0,1,2,3,4):
 
-                    thispos = (800+150*colorind, 275)
+                    thispos = (900+150*colorind, 275)
 
                     objinfodraw.text(
                         thispos,
@@ -3872,9 +3833,22 @@ def checkplot_pickle_to_png(checkplotin,
                         fill=(0,0,0,255)
                     )
 
-                elif 4 < colorind < 8:
+                elif colorind in (5,6,7,8,9):
 
-                    thispos = (800+150*colorind, 300)
+                    thisrowind = colorind - 5
+                    thispos = (900+150*thisrowind, 300)
+
+                    objinfodraw.text(
+                        thispos,
+                        '%s: %.3f' % (colorlabel, thiscolor),
+                        font=cpfontnormal,
+                        fill=(0,0,0,255)
+                    )
+
+                elif colorind in (10,11,12,13,14):
+
+                    thisrowind = colorind - 10
+                    thispos = (900+150*thisrowind, 325)
 
                     objinfodraw.text(
                         thispos,
@@ -3885,7 +3859,8 @@ def checkplot_pickle_to_png(checkplotin,
 
                 else:
 
-                    thispos = (800+150*colorind, 325)
+                    thisrowind = colorind - 15
+                    thispos = (900+150*thisrowind, 325)
 
                     objinfodraw.text(
                         thispos,
@@ -3898,14 +3873,14 @@ def checkplot_pickle_to_png(checkplotin,
     else:
 
         objinfodraw.text(
-            (875, 200),
+            (625, 200),
             ('Magnitudes'),
             font=cpfontnormal,
             fill=(0,0,0,255)
         )
 
         objinfodraw.text(
-            (1125, 200),
+            (900, 200),
             ('gri: %.3f, %.3f, %.3f' %
              ((cpd['objectinfo']['sdssg'] if
                ('sdssg' in cpd['objectinfo'] and
@@ -3923,7 +3898,7 @@ def checkplot_pickle_to_png(checkplotin,
             fill=(0,0,0,255)
         )
         objinfodraw.text(
-            (1125, 225),
+            (900, 225),
             ('JHK: %.3f, %.3f, %.3f' %
              ((cpd['objectinfo']['jmag'] if
                ('jmag' in cpd['objectinfo'] and
@@ -3941,7 +3916,7 @@ def checkplot_pickle_to_png(checkplotin,
             fill=(0,0,0,255)
         )
         objinfodraw.text(
-            (1125, 250),
+            (900, 250),
             ('BV: %.3f, %.3f' %
              ((cpd['objectinfo']['bmag'] if
                ('bmag' in cpd['objectinfo'] and
@@ -3963,14 +3938,14 @@ def checkplot_pickle_to_png(checkplotin,
             deredlabel = ""
 
         objinfodraw.text(
-            (875, 275),
+            (625, 275),
             'Colors %s' % deredlabel,
             font=cpfontnormal,
             fill=(0,0,0,255)
         )
 
         objinfodraw.text(
-            (1125, 275),
+            (900, 275),
             ('B - V: %.3f, V - K: %.3f' %
              ( (cpd['objectinfo']['bvcolor'] if
                 ('bvcolor' in cpd['objectinfo'] and
@@ -3984,7 +3959,7 @@ def checkplot_pickle_to_png(checkplotin,
             fill=(0,0,0,255)
         )
         objinfodraw.text(
-            (1125, 300),
+            (900, 300),
             ('i - J: %.3f, g - K: %.3f' %
              ( (cpd['objectinfo']['ijcolor'] if
                 ('ijcolor' in cpd['objectinfo'] and
@@ -3998,7 +3973,7 @@ def checkplot_pickle_to_png(checkplotin,
             fill=(0,0,0,255)
         )
         objinfodraw.text(
-            (1125, 325),
+            (900, 325),
             ('J - K: %.3f' %
              ( (cpd['objectinfo']['jkcolor'] if
                 ('jkcolor' in cpd['objectinfo'] and
@@ -4017,7 +3992,7 @@ def checkplot_pickle_to_png(checkplotin,
         cpd['objectinfo']['color_classes']):
 
         objinfodraw.text(
-            (875, 350),
+            (625, 375),
             ('star classification by color: %s' %
              (', '.join(cpd['objectinfo']['color_classes']))),
             font=cpfontnormal,
@@ -4032,7 +4007,7 @@ def checkplot_pickle_to_png(checkplotin,
          (cpd['objectinfo']['searchradarcsec']) ):
 
         objinfodraw.text(
-            (875, 375),
+            (625, 400),
             ('%s GAIA close neighbors within %.1f arcsec' %
              (cpd['objectinfo']['gaia_neighbors'],
               cpd['objectinfo']['searchradarcsec'])),
@@ -4049,7 +4024,7 @@ def checkplot_pickle_to_png(checkplotin,
          (np.isfinite(cpd['objectinfo']['gaia_closest_gmagdiff'])) ):
 
         objinfodraw.text(
-            (875, 400),
+            (625, 425),
             ('closest GAIA neighbor is %.1f arcsec away, '
              'GAIA mag (obj-nbr): %.3f' %
              (cpd['objectinfo']['gaia_closest_distarcsec'],
@@ -4069,7 +4044,7 @@ def checkplot_pickle_to_png(checkplotin,
         for objtagline in range(nobjtaglines):
             objtagslice = ','.join(objtagsplit[objtagline*3:objtagline*3+3])
             objinfodraw.text(
-                (875, 450+objtagline*25),
+                (625, 450+objtagline*25),
                 objtagslice,
                 font=cpfontnormal,
                 fill=(135, 54, 0, 255)
@@ -4102,7 +4077,7 @@ def checkplot_pickle_to_png(checkplotin,
         objvarflag = 'Variable star flag: %s' % objisvar
 
     objinfodraw.text(
-        (1600, 125),
+        (1650, 125),
         objvarflag,
         font=cpfontnormal,
         fill=(0,0,0,255)
@@ -4110,7 +4085,7 @@ def checkplot_pickle_to_png(checkplotin,
 
     # period
     objinfodraw.text(
-        (1600, 150),
+        (1650, 150),
         ('Period [days]: %.6f' %
          (cpd['varinfo']['varperiod']
           if cpd['varinfo']['varperiod'] is not None
@@ -4121,7 +4096,7 @@ def checkplot_pickle_to_png(checkplotin,
 
     # epoch
     objinfodraw.text(
-        (1600, 175),
+        (1650, 175),
         ('Epoch [JD]: %.6f' %
          (cpd['varinfo']['varepoch']
           if cpd['varinfo']['varepoch'] is not None
@@ -4141,7 +4116,7 @@ def checkplot_pickle_to_png(checkplotin,
         for vartagline in range(nvartaglines):
             vartagslice = ','.join(vartagsplit[vartagline*3:vartagline*3+3])
             objinfodraw.text(
-                (1600, 225+vartagline*25),
+                (1650, 225+vartagline*25),
                 vartagslice,
                 font=cpfontnormal,
                 fill=(135, 54, 0, 255)
@@ -4160,7 +4135,7 @@ def checkplot_pickle_to_png(checkplotin,
                 commentsplit[commentline*10:commentline*10+10]
             )
             objinfodraw.text(
-                (1600, 325+commentline*25),
+                (1650, 325+commentline*25),
                 commentslice,
                 font=cpfontnormal,
                 fill=(0,0,0,255)
