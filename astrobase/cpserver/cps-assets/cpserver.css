@@ -239,3 +239,7 @@ to use this:
 .modal-content {
     width: 900px;
 }
+
+.no-wrap-break {
+    white-space: nowrap;
+}

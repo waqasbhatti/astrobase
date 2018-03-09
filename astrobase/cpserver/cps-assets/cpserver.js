@@ -52,8 +52,11 @@ var cptracker = {
         'objectinfo.stations',
         'objectinfo.ndet',
         'objectinfo.objecttags',
+        'objectinfo.umag',
         'objectinfo.bmag',
         'objectinfo.vmag',
+        'objectinfo.rmag',
+        'objectinfo.imag',
         'objectinfo.sdssu',
         'objectinfo.sdssg',
         'objectinfo.sdssr',
@@ -62,6 +65,17 @@ var cptracker = {
         'objectinfo.jmag',
         'objectinfo.hmag',
         'objectinfo.kmag',
+        'objectinfo.ujmag',
+        'objectinfo.uhmag',
+        'objectinfo.ukmag',
+        'objectinfo.irac1',
+        'objectinfo.irac2',
+        'objectinfo.irac3',
+        'objectinfo.irac4',
+        'objectinfo.wise1',
+        'objectinfo.wise2',
+        'objectinfo.wise3',
+        'objectinfo.wise4',
         'objectinfo.deredb',
         'objectinfo.deredv',
         'objectinfo.deredu',
@@ -72,6 +86,30 @@ var cptracker = {
         'objectinfo.deredj',
         'objectinfo.deredh',
         'objectinfo.deredk',
+        'objectinfo.dered_umag',
+        'objectinfo.dered_bmag',
+        'objectinfo.dered_vmag',
+        'objectinfo.dered_rmag',
+        'objectinfo.dered_imag',
+        'objectinfo.dered_jmag',
+        'objectinfo.dered_hmag',
+        'objectinfo.dered_kmag',
+        'objectinfo.dered_sdssu',
+        'objectinfo.dered_sdssg',
+        'objectinfo.dered_sdssr',
+        'objectinfo.dered_sdssi',
+        'objectinfo.dered_sdssz',
+        'objectinfo.dered_ujmag',
+        'objectinfo.dered_uhmag',
+        'objectinfo.dered_ukmag',
+        'objectinfo.dered_irac1',
+        'objectinfo.dered_irac2',
+        'objectinfo.dered_irac3',
+        'objectinfo.dered_irac4',
+        'objectinfo.dered_wise1',
+        'objectinfo.dered_wise2',
+        'objectinfo.dered_wise3',
+        'objectinfo.dered_wise4',
         'objectinfo.bvcolor',
         'objectinfo.gjcolor',
         'objectinfo.ijcolor',
@@ -82,7 +120,25 @@ var cptracker = {
         'objectinfo.grcolor',
         'objectinfo.ricolor',
         'objectinfo.izcolor',
+        'objectinfo.sdssu-sdssg',
+        'objectinfo.sdssg-sdssr',
+        'objectinfo.sdssr-sdssi',
+        'objectinfo.sdssi-sdssz',
+        'objectinfo.sdssg-sdssi',
+        'objectinfo.sdssg-jmag',
+        'objectinfo.sdssg-kmag',
+        'objectinfo.umag-bmag',
+        'objectinfo.bmag-vmag',
+        'objectinfo.vmag-rmag',
+        'objectinfo.vmag-imag',
+        'objectinfo.rmag-imag',
+        'objectinfo.vmag-kmag',
+        'objectinfo.jmag-hmag',
+        'objectinfo.hmag-kmag',
+        'objectinfo.jmag-kmag',
         'objectinfo.dereddened',
+        'objectinfo.bmagfromjhk',
+        'objectinfo.vmagfromjhk',
         'objectinfo.sdssufromjhk',
         'objectinfo.sdssgfromjhk',
         'objectinfo.sdssrfromjhk',
@@ -126,6 +182,19 @@ var cptracker = {
         'objectinfo.extinctj',
         'objectinfo.extincth',
         'objectinfo.extinctk',
+        'objectinfo.extinction_umag',
+        'objectinfo.extinction_bmag',
+        'objectinfo.extinction_vmag',
+        'objectinfo.extinction_rmag',
+        'objectinfo.extinction_imag',
+        'objectinfo.extinction_sdssu',
+        'objectinfo.extinction_sdssg',
+        'objectinfo.extinction_sdssr',
+        'objectinfo.extinction_sdssi',
+        'objectinfo.extinction_sdssz',
+        'objectinfo.extinction_jmag',
+        'objectinfo.extinction_hmag',
+        'objectinfo.extinction_kmag',
         'varinfo.objectisvar',
         'varinfo.varperiod',
         'varinfo.varepoch',
@@ -771,69 +840,163 @@ var cpv = {
                 var gaiaabsmag = null;
             }
 
-            var mags = '<strong><em>ugriz</em>:</strong> ' +
-                math.format(cpv.currcp.objectinfo.sdssu,5) + ', ' +
-                math.format(cpv.currcp.objectinfo.sdssg,5) + ', ' +
-                math.format(cpv.currcp.objectinfo.sdssr,5) + ', ' +
-                math.format(cpv.currcp.objectinfo.sdssi,5) + ', ' +
-                math.format(cpv.currcp.objectinfo.sdssz,5) + '<br>' +
-                '<strong><em>JHK</em>:</strong> ' +
-                math.format(cpv.currcp.objectinfo.jmag,5) + ', ' +
-                math.format(cpv.currcp.objectinfo.hmag,5) + ', ' +
-                math.format(cpv.currcp.objectinfo.kmag,5) + '<br>' +
-                '<strong><em>BV</em>:</strong> ' +
-                math.format(cpv.currcp.objectinfo.bmag,5) + ', ' +
-                math.format(cpv.currcp.objectinfo.vmag,5) + '<br>' +
-                '<strong><em>GAIA G</em>:</strong> ' +
-                math.format(gaiamag,5) + ', ' +
-                '<strong><em>GAIA M<sub>G</sub></em>:</strong> ' +
-                math.format(gaiaabsmag,5);
-
-            $('#mags').html(mags);
-
             //
-            // handle the colors
+            // now we need to handle both generations of checkplots
             //
 
-            if (cpv.currcp.objectinfo.dereddened != undefined &&
-                cpv.currcp.objectinfo.dereddened) {
+            // this is for the current generation of checkplots
+            if (cpv.currcp.objectinfo.hasOwnProperty('available_bands')) {
 
-                $('#derednotice').html('<br>(dereddened)');
+                var mind = 0;
+                var cind = 0;
+                var mlen = cpv.currcp.objectinfo['available_bands'].length;
+                var clen = cpv.currcp.objectinfo['available_colors'].length;
 
-                var colors =
-                    '<strong><em>(B - V)<sub>0</sub></em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.bvcolor,4) + ',  ' +
-                    '<strong><em>(V - K)<sub>0</sub></em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.vkcolor,4) + '<br>' +
-                    '<strong><em>(J - K)<sub>0</sub></em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.jkcolor,4) + ',  ' +
-                    '<strong><em>(i - J)<sub>0</sub></em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.ijcolor,4) + '<br>' +
-                    '<strong><em>(g - K)<sub>0</sub></em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.gkcolor,4) + ',  ' +
-                    '<strong><em>(g - r)<sub>0</sub></em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.grcolor,4);
+                var maglabel_pairs = [];
+                var colorlabel_pairs = [];
+
+                var thiskey = null;
+                var thislabel = null;
+                var thisval = null;
+
+                // generate the mag-label pairs
+                for (mind; mind < mlen; mind++) {
+
+                    thiskey = cpv.currcp.objectinfo['available_bands'][mind];
+                    thislabel =
+                        cpv.currcp.objectinfo['available_band_labels'][mind];
+                    thisval = math.format(cpv.currcp.objectinfo[thiskey],
+                                          5);
+                    maglabel_pairs.push('<span class="no-wrap-break">' +
+                                        '<strong><em>' +
+                                        thislabel +
+                                        '</em>:</strong> ' +
+                                        thisval +
+                                       '</span>');
+
+                }
+
+                // generate the color-label pairs
+                for (cind; cind < clen; cind++) {
+
+                    thiskey = cpv.currcp.objectinfo['available_colors'][cind];
+                    thislabel =
+                        cpv.currcp.objectinfo['available_color_labels'][cind];
+                    thisval = math.format(cpv.currcp.objectinfo[thiskey],
+                                          4);
+
+                    if (cpv.currcp.objectinfo.dereddened != undefined &&
+                        cpv.currcp.objectinfo.dereddened) {
+                        thislabel = '(' + thislabel
+                            + ')<sub>0</sub>';
+                        $('#derednotice').html('<br>(dereddened)');
+                    }
+                    else {
+                        thislabel = '(' + thislabel + ')';
+                    }
+
+                    colorlabel_pairs.push('<span class="no-wrap-break">' +
+                                          '<strong><em>' +
+                                          thislabel +
+                                          '</em>:</strong> ' +
+                                          thisval +
+                                          '</span>');
+
+                }
+
+
+                // now add the GAIA information if it exists
+                maglabel_pairs.push(
+                    '<span class="no-wrap-break">' +
+                        '<strong><em>GAIA G</em>:</strong> ' +
+                        math.format(gaiamag,5) +
+                        '</span>'
+                );
+                maglabel_pairs.push(
+                    '<span class="no-wrap-break">' +
+                        '<strong><em>GAIA M<sub>G</sub></em>:</strong> ' +
+                        math.format(gaiaabsmag,5) +
+                        '</span>'
+                );
+
+
+                maglabel_pairs = maglabel_pairs.join(', ');
+                colorlabel_pairs = colorlabel_pairs.join(', ');
+
+                $('#mags').html(maglabel_pairs);
+                $('#colors').html(colorlabel_pairs);
 
             }
 
+            // this is for the older generation of checkplots
             else {
-                var colors =
-                    '<strong><em>(B - V)</em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.bvcolor,4) + ',  ' +
-                    '<strong><em>(V - K)</em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.vkcolor,4) + '<br>' +
-                    '<strong><em>(J - K)</em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.jkcolor,4) + ',  ' +
-                    '<strong><em>(i - J)</em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.ijcolor,4) + '<br>' +
-                    '<strong><em>(g - K)</em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.gkcolor,4) + ',  ' +
-                    '<strong><em>(g - r)</em>:</strong> ' +
-                    math.format(cpv.currcp.objectinfo.grcolor,4);
+
+                var mags = '<strong><em>ugriz</em>:</strong> ' +
+                    math.format(cpv.currcp.objectinfo.sdssu,5) + ', ' +
+                    math.format(cpv.currcp.objectinfo.sdssg,5) + ', ' +
+                    math.format(cpv.currcp.objectinfo.sdssr,5) + ', ' +
+                    math.format(cpv.currcp.objectinfo.sdssi,5) + ', ' +
+                    math.format(cpv.currcp.objectinfo.sdssz,5) + '<br>' +
+                    '<strong><em>JHK</em>:</strong> ' +
+                    math.format(cpv.currcp.objectinfo.jmag,5) + ', ' +
+                    math.format(cpv.currcp.objectinfo.hmag,5) + ', ' +
+                    math.format(cpv.currcp.objectinfo.kmag,5) + '<br>' +
+                    '<strong><em>BV</em>:</strong> ' +
+                    math.format(cpv.currcp.objectinfo.bmag,5) + ', ' +
+                    math.format(cpv.currcp.objectinfo.vmag,5) + '<br>' +
+                    '<strong><em>GAIA G</em>:</strong> ' +
+                    math.format(gaiamag,5) + ', ' +
+                    '<strong><em>GAIA M<sub>G</sub></em>:</strong> ' +
+                    math.format(gaiaabsmag,5);
+
+                $('#mags').html(mags);
+
+                //
+                // handle the colors
+                //
+
+                if (cpv.currcp.objectinfo.dereddened != undefined &&
+                    cpv.currcp.objectinfo.dereddened) {
+
+                    $('#derednotice').html('<br>(dereddened)');
+
+                    var colors =
+                        '<strong><em>(B - V)<sub>0</sub></em>:</strong> ' +
+                        math.format(cpv.currcp.objectinfo.bvcolor,4) + ',  ' +
+                        '<strong><em>(V - K)<sub>0</sub></em>:</strong> ' +
+                        math.format(cpv.currcp.objectinfo.vkcolor,4) + '<br>' +
+                        '<strong><em>(J - K)<sub>0</sub></em>:</strong> ' +
+                        math.format(cpv.currcp.objectinfo.jkcolor,4) + ',  ' +
+                        '<strong><em>(i - J)<sub>0</sub></em>:</strong> ' +
+                        math.format(cpv.currcp.objectinfo.ijcolor,4) + '<br>' +
+                        '<strong><em>(g - K)<sub>0</sub></em>:</strong> ' +
+                        math.format(cpv.currcp.objectinfo.gkcolor,4) + ',  ' +
+                        '<strong><em>(g - r)<sub>0</sub></em>:</strong> ' +
+                        math.format(cpv.currcp.objectinfo.grcolor,4);
+
+                }
+
+                else {
+                    var colors =
+                        '<strong><em>(B - V)</em>:</strong> ' +
+                        math.format(cpv.currcp.objectinfo.bvcolor,4) + ',  ' +
+                        '<strong><em>(V - K)</em>:</strong> ' +
+                        math.format(cpv.currcp.objectinfo.vkcolor,4) + '<br>' +
+                        '<strong><em>(J - K)</em>:</strong> ' +
+                        math.format(cpv.currcp.objectinfo.jkcolor,4) + ',  ' +
+                        '<strong><em>(i - J)</em>:</strong> ' +
+                        math.format(cpv.currcp.objectinfo.ijcolor,4) + '<br>' +
+                        '<strong><em>(g - K)</em>:</strong> ' +
+                        math.format(cpv.currcp.objectinfo.gkcolor,4) + ',  ' +
+                        '<strong><em>(g - r)</em>:</strong> ' +
+                        math.format(cpv.currcp.objectinfo.grcolor,4);
+                }
+
+                // format the colors
+                $('#colors').html(colors);
+
             }
 
-            // format the colors
-            $('#colors').html(colors);
 
             //
             // additional stuff
@@ -841,7 +1004,6 @@ var cpv = {
 
             // first, empty out the extra info table
             $("#objectinfo-extra").empty();
-
 
             // add the color classification if available
             if (cpv.currcp.objectinfo.color_classes != undefined &&
