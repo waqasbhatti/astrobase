@@ -2156,6 +2156,7 @@ def get_starfeatures(lcfile,
                      lcflist,
                      neighbor_radius_arcsec,
                      deredden=True,
+                     custom_bandpasses=custom_bandpasses,
                      lcformat='hat-sql'):
     '''This runs the functions from astrobase.varclass.starfeatures on a single
     light curve file.
@@ -2204,8 +2205,11 @@ def get_starfeatures(lcfile,
         coordfeat = starfeatures.coord_features(lcdict['objectinfo'])
 
         # next, run the color features
-        colorfeat = starfeatures.color_features(lcdict['objectinfo'],
-                                                deredden=deredden)
+        colorfeat = starfeatures.color_features(
+            lcdict['objectinfo'],
+            deredden=deredden,
+            custom_bandpasses=custom_bandpasses
+        )
 
         # run a rough color classification
         colorclass = starfeatures.color_classification(colorfeat,
@@ -2261,12 +2265,14 @@ def starfeatures_worker(task):
 
     try:
         (lcfile, outdir, kdtree, objlist,
-         lcflist, neighbor_radius_arcsec, deredden, lcformat) = task
+         lcflist, neighbor_radius_arcsec,
+         deredden, custom_bandpasses, lcformat) = task
 
         return get_starfeatures(lcfile, outdir,
                                 kdtree, objlist, lcflist,
                                 neighbor_radius_arcsec,
                                 deredden=deredden,
+                                custom_bandpasses=custom_bandpasses,
                                 lcformat=lcformat)
     except:
         return None
@@ -2278,6 +2284,7 @@ def serial_starfeatures(lclist,
                         neighbor_radius_arcsec,
                         maxobjects=None,
                         deredden=True,
+                        custom_bandpasses=custom_bandpasses,
                         lcformat='hat-sql',
                         nworkers=None):
     '''This drives the starfeatures function for a collection of LCs.
@@ -2310,7 +2317,8 @@ def serial_starfeatures(lclist,
     objlcfl = kdt_dict['objects']['lcfname']
 
     tasks = [(x, outdir, kdt, objlist, objlcfl,
-              neighbor_radius_arcsec, deredden, lcformat) for x in lclist]
+              neighbor_radius_arcsec,
+              deredden, custom_bandpasses, lcformat) for x in lclist]
 
     for task in tqdm(tasks):
         result = starfeatures_worker(task)
@@ -2323,6 +2331,7 @@ def parallel_starfeatures(lclist,
                           neighbor_radius_arcsec,
                           maxobjects=None,
                           deredden=True,
+                          custom_bandpasses=custom_bandpasses,
                           lcformat='hat-sql',
                           nworkers=None):
     '''
@@ -2350,7 +2359,8 @@ def parallel_starfeatures(lclist,
     objlcfl = kdt_dict['objects']['lcfname']
 
     tasks = [(x, outdir, kdt, objlist, objlcfl,
-              neighbor_radius_arcsec, deredden, lcformat) for x in lclist]
+              neighbor_radius_arcsec,
+              deredden, custom_bandpasses, lcformat) for x in lclist]
 
     with ProcessPoolExecutor(max_workers=nworkers) as executor:
         resultfutures = executor.map(starfeatures_worker, tasks)
@@ -2368,6 +2378,7 @@ def parallel_starfeatures_lcdir(lcdir,
                                 neighbor_radius_arcsec,
                                 maxobjects=None,
                                 deredden=True,
+                                custom_bandpasses=custom_bandpasses,
                                 lcformat='hat-sql',
                                 nworkers=None,
                                 recursive=True):
@@ -2425,6 +2436,7 @@ def parallel_starfeatures_lcdir(lcdir,
                                      lclistpickle,
                                      neighbor_radius_arcsec,
                                      deredden=deredden,
+                                     custom_bandpasses=custom_bandpasses,
                                      maxobjects=maxobjects,
                                      lcformat=lcformat,
                                      nworkers=nworkers)
@@ -3605,8 +3617,15 @@ def update_checkplotdict_nbrlcs(
 
     # get our object's magkeys to compare to the neighbor
     objmagkeys = {}
-    for mc in ('bmag','vmag','rmag','imag','jmag','hmag','kmag',
-               'sdssu','sdssg','sdssr','sdssi','sdssz'):
+
+    # handle diff generations of checkplots
+    if 'available_bands' in checkplotdict['objectinfo']:
+        mclist = checkplotdict['objectinfo']['available_bands']
+    else:
+        mclist =  ('bmag','vmag','rmag','imag','jmag','hmag','kmag',
+                   'sdssu','sdssg','sdssr','sdssi','sdssz')
+
+    for mc in mclist:
         if (mc in checkplotdict['objectinfo'] and
             checkplotdict['objectinfo'][mc] is not None and
             np.isfinite(checkplotdict['objectinfo'][mc])):
@@ -3650,16 +3669,19 @@ def update_checkplotdict_nbrlcs(
 
                 nbrmagkeys[mc] = lcdict['objectinfo'][mc]
 
-
         # now calculate the magdiffs
         magdiffs = {}
         for omc in objmagkeys:
             if omc in nbrmagkeys:
                 magdiffs[omc] = objmagkeys[omc] - nbrmagkeys[omc]
 
-
         # calculate colors and colordiffs
         colordiffs = {}
+
+        # generate the list of colors to get
+        # NOTE: here, we don't really bother with new/old gen checkplots
+        # maybe change this later to handle arbitrary colors
+
         for ctrio in (['bmag','vmag','bvcolor'],
                       ['vmag','kmag','vkcolor'],
                       ['jmag','kmag','jkcolor'],
@@ -4178,6 +4200,7 @@ def xmatch_cpdir_external_catalogs(cpdir,
 
 
 CMD_LABELS = {
+    'umag':'U',
     'bmag':'B',
     'vmag':'V',
     'rmag':'R',
