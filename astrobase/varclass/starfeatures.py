@@ -164,7 +164,7 @@ def coord_features(objectinfo):
         gl, gb = coordutils.equatorial_to_galactic(objectinfo['ra'],
                                                    objectinfo['decl'])
 
-        LOGWARNING("one or more of pmra, pmdecl, jmag "
+        LOGWARNING("one or more of the 'pmra', 'pmdecl', 'jmag' keys "
                    "are missing from the input objectinfo dict, "
                    "can't get proper motion features")
 
@@ -175,8 +175,9 @@ def coord_features(objectinfo):
 
     else:
 
-        LOGERROR("one or more of pmra, pmdecl, jmag, ra, decl "
-                 "are missing from the input objectinfo dict, can't continue")
+        LOGERROR("one or more of the 'pmra', 'pmdecl', 'jmag', "
+                 "'ra', 'decl' keys are missing from the input "
+                 "objectinfo dict, can't get proper motion or coord features")
         return {'propermotion':np.nan,
                 'gl':np.nan,
                 'gb':np.nan,
@@ -1192,7 +1193,8 @@ def neighbor_gaia_features(objectinfo,
                             gaia_mags, gaia_parallaxes
                         )
                         if ('kmag' in objectinfo and
-                            objectinfo['kmag'] is not None):
+                            objectinfo['kmag'] is not None and
+                            np.isfinite(objectinfo['kmag'])):
                             gaiak_colors = gaia_mags - objectinfo['kmag']
                         else:
                             gaiak_colors = None
@@ -1225,7 +1227,8 @@ def neighbor_gaia_features(objectinfo,
                             gaia_mags, gaia_parallaxes
                         )
                         if ('kmag' in objectinfo and
-                            objectinfo['kmag'] is not None):
+                            objectinfo['kmag'] is not None,
+                            np.isfinite(objectinfo['kmag'])):
                             gaiak_colors = gaia_mags - objectinfo['kmag']
                         else:
                             gaiak_colors = None
@@ -1257,7 +1260,12 @@ def neighbor_gaia_features(objectinfo,
                     gaia_absolute_mags = magnitudes.absolute_gaia_magnitude(
                         gaia_mags, gaia_parallaxes
                     )
-                    gaiak_colors = gaia_mags - objectinfo['kmag']
+                    if ('kmag' in objectinfo and
+                        objectinfo['kmag'] is not None and
+                        np.isfinite(objectinfo['kmag'])):
+                        gaiak_colors = gaia_mags - objectinfo['kmag']
+                    else:
+                        gaiak_colors = None
 
                     gaia_dists = gaia_objlist['dist_arcsec']
                     gaia_closest_distarcsec = np.nan
@@ -1324,7 +1332,9 @@ def neighbor_gaia_features(objectinfo,
 
     else:
 
-        LOGERROR('objectinfo does not have ra or decl')
+        LOGERROR("one or more of the 'ra', 'decl' keys "
+                 "are missing from the objectinfo dict, "
+                 "can't get GAIA or LC collection neighbor features")
 
         resultdict.update(
             {'gaia_status':'failed: no ra/decl for object',
