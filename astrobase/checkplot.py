@@ -1559,8 +1559,25 @@ def _pkl_finder_objectinfo(objectinfo,
             neighbors = None
             kdt = None
 
-        # now that we have the finder chart, get the rest of the object
-        # information
+    # if we don't have ra, dec info, then everything is none up to this point
+    else:
+
+        finderb64 = None
+        neighbors = None
+        kdt = None
+
+    #
+    # end of finder chart operations
+    #
+
+    # now that we have the finder chart, get the rest of the object
+    # information
+
+    # get the rest of the features, these don't necessarily rely on ra, dec and
+    # should degrade gracefully if these aren't provided
+    if isinstance(objectinfo, dict):
+
+        objectid = objectinfo['objectid']
 
         # first, the color features
         colorfeat = color_features(objectinfo,
@@ -2873,6 +2890,36 @@ def checkplot_dict(lspinfolist,
 
     '''
 
+    # if an objectinfo dict is absent, we'll generate a fake objectid based on
+    # the second five time and mag array values. this should be OK to ID the
+    # object across repeated runs of this function with the same times, mags,
+    # errs, but should provide enough uniqueness otherwise (across different
+    # times/mags array inputs). this is all done so we can still save checkplots
+    # correctly to pickles after reviewing them using checkplotserver
+    try:
+        objuuid = hashlib.sha512(times[5:10].tostring() +
+                                 mags[5:10].tostring()).hexdigest()[:5]
+    except Exception as e:
+        if verbose:
+            LOGWARNING('times, mags, and errs may have too few items')
+            objuuid = hashlib.sha512(times.tostring() +
+                                     mags.tostring()).hexdigest()[:5]
+
+    if (objectinfo is None):
+        if verbose:
+            LOGWARNING('no objectinfo dict provided as kwarg, '
+                       'adding a randomly generated objectid')
+        objectinfo = {'objectid':objuuid}
+
+    elif ((isinstance(objectinfo, dict) and 'objectid' not in objectinfo) or
+          (isinstance(objectinfo, dict) and 'objectid' in objectinfo and
+         (objectinfo['objectid'] is None or objectinfo['objectid'] == ''))):
+        if verbose:
+            LOGWARNING('adding a randomly generated objectid '
+                       'since none was provided in objectinfo dict')
+        objectinfo['objectid'] = objuuid
+
+
     # 0. get the objectinfo and finder chart and initialize the checkplotdict
     checkplotdict = _pkl_finder_objectinfo(objectinfo,
                                            varinfo,
@@ -2889,32 +2936,10 @@ def checkplot_dict(lspinfolist,
                                            verbose=verbose,
                                            findercachedir=findercachedir)
 
-    # if an objectinfo dict is absent, we'll generate a fake objectid based on
-    # the second five time and mag array values. this should be OK to ID the
-    # object across repeated runs of this function with the same times, mags,
-    # errs, but should provide enough uniqueness otherwise (across different
-    # times/mags array inputs). this is all done so we can still save checkplots
-    # correctly to pickles after reviewing them using checkplotserver
-
     # try again to get the right objectid
     if (objectinfo and isinstance(objectinfo, dict) and
         'objectid' in objectinfo and objectinfo['objectid']):
         checkplotdict['objectid'] = objectinfo['objectid']
-
-    # if this doesn't work, generate a random one
-    if checkplotdict['objectid'] is None:
-        try:
-            objuuid = hashlib.sha512(times[5:10].tostring() +
-                                     mags[5:10].tostring()).hexdigest()[:5]
-        except Exception as e:
-            LOGWARNING('times, mags, and errs may have too few items')
-            objuuid = hashlib.sha512(times.tostring() +
-                                     mags.tostring()).hexdigest()[:5]
-
-        LOGWARNING('no objectid provided in objectinfo keyword arg, '
-                   'generated from times[5:10] + mags[5:10]: %s' % objuuid)
-        checkplotdict['objectid'] = objuuid
-
 
     # filter the input times, mags, errs; do sigclipping and normalization
     stimes, smags, serrs = sigclip_magseries(times,
