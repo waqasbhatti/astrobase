@@ -2181,7 +2181,7 @@ def _pkl_phased_magseries_plot(checkplotdict,
     retdict = {
         'plot':phasedseriesb64,
         'period':varperiod,
-        'epoch':varepoch,
+        'epoch':plotvarepoch,
         'phase':plotphase,
         'phasedmags':plotmags,
         'binphase':binplotphase,
