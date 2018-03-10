@@ -313,12 +313,15 @@ def sigclip_magseries(times, mags, errs,
         center_mag = npmean(fmags)
         stddev_mag = npstddev(fmags)
     else:
-        LOGERROR("Unrecognized meanormedian value given to sigclip_magseries: " + str(meanormedian))
+        LOGWARNING("Unrecognized meanormedian value given to sigclip_magseries: %s, defaulting to 'median'" % meanormedian)
+        meanormedian = 'median'
+        center_mag = npmedian(fmags)
+        stddev_mag = (npmedian(npabs(fmags - center_mag))) * 1.483
 
     # sigclip next for a single sigclip value
     if sigclip and isinstance(sigclip,float):
 
-        if not iterative and niterations == None:
+        if not iterative and niterations is None:
 
             sigind = (npabs(fmags - center_mag)) < (sigclip * stddev_mag)
 
@@ -333,7 +336,7 @@ def sigclip_magseries(times, mags, errs,
             #
             
             # First, if niterations is not set, iterate until covergence
-            if niterations == None:
+            if niterations is None:
                 delta = 1
 
                 this_times = ftimes
@@ -400,7 +403,7 @@ def sigclip_magseries(times, mags, errs,
         dimmingclip = sigclip[0]
         brighteningclip = sigclip[1]
 
-        if not iterative and niterations == None:
+        if not iterative and niterations is None:
 
             if magsarefluxes:
                 nottoodimind = (
@@ -428,7 +431,7 @@ def sigclip_magseries(times, mags, errs,
             #
             # iterative version adapted from scipy.stats.sigmaclip
             #
-            if niterations == None:
+            if niterations  None:
                 delta = 1
 
                 this_times = ftimes
