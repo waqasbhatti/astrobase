@@ -36,7 +36,8 @@ try:
     from urllib import urlretrieve
 except:
     from urllib.request import urlretrieve
-from numpy.testing import assert_allclose
+from numpy.testing import assert_allclose, assert_almost_equal, assert_equal
+import numpy as np
 
 from astrobase.hatsurveys import hatlc
 from astrobase import periodbase, checkplot
@@ -702,7 +703,7 @@ def test_checkplot_pickle_varepoch_handling(capsys):
     '''
 
     outpath = os.path.join(os.path.dirname(LCPATH),
-                           'test-checkplot.png')
+                           'test-checkplot.pkl')
 
     lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
     gls = periodbase.pgen_lsp(lcd['rjd'], lcd['aep_000'], lcd['aie_000'])
@@ -841,3 +842,173 @@ def test_checkplot_pickle_varepoch_handling(capsys):
 
     for expected, plotline in zip(lookfor,plotoutlines):
         assert expected in plotline
+
+
+
+def test_checkplot_pickle_missing_objectinfo():
+    '''This tests if checkplot_pickle can handle various
+    missing information in the input objectinfo dict.
+
+    '''
+
+    outpath = os.path.join(os.path.dirname(LCPATH),
+                           'test-checkplot.pkl')
+
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
+    gls = periodbase.pgen_lsp(lcd['rjd'], lcd['aep_000'], lcd['aie_000'])
+
+    assert isinstance(gls, dict)
+    assert_allclose(gls['bestperiod'], 1.54289477)
+
+
+    # 1. handle case of no information whatsoever
+    # should auto-generate the objectid in this case
+    cpd = checkplot.checkplot_dict(
+        [gls],
+        lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+    )
+
+    assert 'objectid' in cpd and cpd['objectid'] == '3f935'
+
+
+    # 2. handle case of g, r, i mags with no ra, dec provided
+    # should have sdssg, sdssr, sdssi, and g-r, r-i, g-i available
+    cpd = checkplot.checkplot_dict(
+        [gls],
+        lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+        objectinfo={'sdssg':12.4,'sdssr':12.2,'sdssi':12.0}
+    )
+
+    assert 'objectid' in cpd and cpd['objectid'] is not None
+
+    assert ('sdssg' in cpd['objectinfo'] and
+            cpd['objectinfo']['sdssg'] is not None and
+            np.isfinite(cpd['objectinfo']['sdssg']))
+    assert_almost_equal(12.4, cpd['objectinfo']['sdssg'])
+
+    assert ('sdssr' in cpd['objectinfo'] and
+            cpd['objectinfo']['sdssr'] is not None and
+            np.isfinite(cpd['objectinfo']['sdssr']))
+    assert_almost_equal(12.2, cpd['objectinfo']['sdssr'])
+
+    assert ('sdssi' in cpd['objectinfo'] and
+            cpd['objectinfo']['sdssi'] is not None and
+            np.isfinite(cpd['objectinfo']['sdssi']))
+    assert_almost_equal(12.0, cpd['objectinfo']['sdssi'])
+
+    assert ('sdssg-sdssr' in cpd['objectinfo'] and
+            cpd['objectinfo']['sdssg-sdssr'] is not None and
+            np.isfinite(cpd['objectinfo']['sdssg-sdssr']))
+    assert_almost_equal(0.2, cpd['objectinfo']['sdssg-sdssr'])
+
+    assert ('sdssr-sdssi' in cpd['objectinfo'] and
+            cpd['objectinfo']['sdssr-sdssi'] is not None and
+            np.isfinite(cpd['objectinfo']['sdssr-sdssi']))
+    assert_almost_equal(0.2, cpd['objectinfo']['sdssr-sdssi'])
+
+    assert ('sdssi' in cpd['objectinfo'] and
+            cpd['objectinfo']['sdssg-sdssi'] is not None and
+            np.isfinite(cpd['objectinfo']['sdssg-sdssi']))
+    assert_almost_equal(0.4, cpd['objectinfo']['sdssg-sdssi'])
+
+
+    # 3. handle case of J, H, K, objectid provided with no ra, dec
+    # we should now have BVugriz auto-generated from JHK and the various colors
+    #
+    cpd = checkplot.checkplot_dict(
+        [gls],
+        lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+        objectinfo={'jmag':12.4,'hmag':12.2,'kmag':12.0,
+                    'objectid':'hello-there'}
+    )
+
+    assert 'objectid' in cpd and cpd['objectid'] == 'hello-there'
+
+    expected_bands = ['bmag',
+                      'vmag',
+                      'jmag',
+                      'hmag',
+                      'kmag',
+                      'sdssu',
+                      'sdssg',
+                      'sdssr',
+                      'sdssi',
+                      'sdssz']
+    expected_colors = ['bmag-vmag',
+                       'jmag-hmag',
+                       'vmag-kmag',
+                       'hmag-kmag',
+                       'jmag-kmag',
+                       'sdssu-vmag',
+                       'sdssg-kmag',
+                       'sdssu-sdssg',
+                       'sdssg-jmag',
+                       'sdssg-sdssr',
+                       'sdssr-sdssi',
+                       'sdssg-sdssi',
+                       'sdssi-jmag',
+                       'sdssi-sdssz',
+                       'sdssg-sdssz']
+
+    assert_equal(expected_bands, cpd['objectinfo']['available_bands'])
+    assert_equal(expected_colors, cpd['objectinfo']['available_colors'])
+
+
+    # 4. handle class of J, H, K, no objectid, ra, dec
+    # should have everything with dereddening, GAIA neighbors, finder chart,
+    # color classification for object
+    cpd = checkplot.checkplot_dict(
+        [gls],
+        lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+        objectinfo={'jmag':13.303,'hmag':12.65,'kmag':12.461,
+                    'ra':219.450491,'decl':-56.816551}
+    )
+
+    expected_bands = ['bmag',
+                      'vmag',
+                      'jmag',
+                      'hmag',
+                      'kmag',
+                      'sdssu',
+                      'sdssg',
+                      'sdssr',
+                      'sdssi',
+                      'sdssz']
+    expected_colors = ['bmag-vmag',
+                       'jmag-hmag',
+                       'vmag-kmag',
+                       'hmag-kmag',
+                       'jmag-kmag',
+                       'sdssu-vmag',
+                       'sdssg-kmag',
+                       'sdssu-sdssg',
+                       'sdssg-jmag',
+                       'sdssg-sdssr',
+                       'sdssr-sdssi',
+                       'sdssg-sdssi',
+                       'sdssi-jmag',
+                       'sdssi-sdssz',
+                       'sdssg-sdssz']
+    expected_gaia_id = '5891733847714174336'
+    expected_gaia_dist = 0.12319158
+    expected_gaia_closest_nbrdist = 7.3144285163756155
+    expected_gaia_mag = 15.6820624
+    expected_gb, expected_gl = 3.0933098295258104, 317.13437783525336
+    expected_color_classes = ['WD/sdO/sdB']
+
+    assert 'objectid' in cpd and cpd['objectid'] == '3f935'
+    assert_equal(expected_color_classes, cpd['objectinfo']['color_classes'])
+
+    assert_equal(expected_bands, cpd['objectinfo']['available_bands'])
+    assert_equal(expected_colors, cpd['objectinfo']['available_colors'])
+
+    assert_equal(expected_gaia_id, cpd['objectinfo']['gaia_ids'][0])
+    assert_almost_equal(expected_gaia_dist, cpd['objectinfo']['gaia_dists'][0])
+    assert_almost_equal(expected_gaia_closest_nbrdist,
+                        cpd['objectinfo']['gaia_closest_distarcsec'])
+    assert_almost_equal(expected_gaia_mag, cpd['objectinfo']['gaia_mags'][0])
+
+    assert_almost_equal(expected_gb, cpd['objectinfo']['gb'])
+    assert_almost_equal(expected_gl, cpd['objectinfo']['gl'])
+
+    assert cpd['finderchart'] is not None
