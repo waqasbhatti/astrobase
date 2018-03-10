@@ -880,16 +880,18 @@ def checkplot_png(lspinfo,
                                                  sigclip=None,
                                                  magsarefluxes=magsarefluxes,
                                                  verbose=verbose)
-                    varpoch = sgfit['fitinfo']['fitepoch']
+                    varepoch = sgfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
 
                 finally:
 
-                    LOGERROR('could not find a min epoch time, '
-                             'using min(times) as the epoch for '
-                             'the phase-folded LC')
-                    varepoch = npmin(stimes)
+                    if isinstance(varepoch, str) and varepoch == 'min':
+
+                        LOGERROR('could not find a min epoch time, '
+                                 'using min(times) as the epoch for '
+                                 'the phase-folded LC')
+                        varepoch = npmin(stimes)
 
 
             if verbose:
@@ -1174,16 +1176,17 @@ def twolsp_checkplot_png(lspinfo1,
                                                  sigclip=None,
                                                  magsarefluxes=magsarefluxes,
                                                  verbose=verbose)
-                    varpoch = sgfit['fitinfo']['fitepoch']
+                    varepoch = sgfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
 
                 finally:
 
-                    LOGERROR('could not find a min epoch time, '
-                             'using min(times) as the epoch for '
-                             'the phase-folded LC')
-                    varepoch = npmin(stimes)
+                    if isinstance(varepoch, str) and varepoch == 'min':
+                        LOGERROR('could not find a min epoch time, '
+                                 'using min(times) as the epoch for '
+                                 'the phase-folded LC')
+                        varepoch = npmin(stimes)
 
             if verbose:
                 LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
@@ -1246,17 +1249,18 @@ def twolsp_checkplot_png(lspinfo1,
                                                  sigclip=None,
                                                  magsarefluxes=magsarefluxes,
                                                  verbose=verbose)
-                    varpoch = sgfit['fitinfo']['fitepoch']
+                    varepoch = sgfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
 
                 finally:
 
-                    LOGERROR('could not find a min epoch time, '
-                             'using min(times) as the epoch for '
-                             'the phase-folded LC')
+                    if isinstance(varepoch, str) and varepoch == 'min':
+                        LOGERROR('could not find a min epoch time, '
+                                 'using min(times) as the epoch for '
+                                 'the phase-folded LC')
 
-                    varepoch = npmin(stimes)
+                        varepoch = npmin(stimes)
 
             if verbose:
                 LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
@@ -1949,17 +1953,19 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                                          sigclip=None,
                                          magsarefluxes=magsarefluxes,
                                          verbose=verbose)
-            varpoch = sgfit['fitinfo']['fitepoch']
+            varepoch = sgfit['fitinfo']['fitepoch']
             if len(varepoch) != 1:
                 varepoch = varepoch[0]
 
         finally:
 
-            LOGERROR('could not find a min epoch time, '
-                     'using min(times) as the epoch for '
-                     'the phase-folded LC')
+            if isinstance(varepoch, str) and varepoch == 'min':
 
-            varepoch = npmin(stimes)
+                LOGERROR('could not find a min epoch time, '
+                         'using min(times) as the epoch for '
+                         'the phase-folded LC')
+
+                varepoch = npmin(stimes)
 
 
     if verbose:
