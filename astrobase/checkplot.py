@@ -423,7 +423,7 @@ def _make_magseries_plot(axes,
 
 def _make_phased_magseries_plot(axes,
                                 periodind,
-                                stimes, smags,
+                                stimes, smags, serrs,
                                 varperiod, varepoch,
                                 phasewrap, phasesort,
                                 phasebin, minbinelems,
@@ -431,13 +431,65 @@ def _make_phased_magseries_plot(axes,
                                 lspmethod,
                                 xliminsetmode=False,
                                 twolspmode=False,
-                                magsarefluxes=False):
+                                magsarefluxes=False,
+                                verbose=True):
     '''makes the phased magseries plot tile.
 
     if xliminsetmode = True, then makes a zoomed-in plot with the provided
     plotxlim as the main x limits, and the full plot as an inset.
 
     '''
+
+    # figure out the epoch, if it's None, use the min of the time
+    if varepoch is None:
+        varepoch = npmin(stimes)
+
+    # if the varepoch is 'min', then fit a spline to the light curve
+    # phased using the min of the time, find the fit mag minimum and use
+    # the time for that as the varepoch
+    elif isinstance(varepoch,str) and varepoch == 'min':
+
+        try:
+            spfit = spline_fit_magseries(stimes,
+                                         smags,
+                                         serrs,
+                                         varperiod,
+                                         magsarefluxes=magsarefluxes,
+                                         sigclip=None,
+                                         verbose=verbose)
+            varepoch = spfit['fitinfo']['fitepoch']
+            if len(varepoch) != 1:
+                varepoch = varepoch[0]
+
+
+        except Exception as e:
+
+            LOGERROR('spline fit failed, trying SavGol fit')
+
+            sgfit = savgol_fit_magseries(stimes,
+                                         smags,
+                                         serrs,
+                                         varperiod,
+                                         sigclip=None,
+                                         magsarefluxes=magsarefluxes,
+                                         verbose=verbose)
+            varepoch = sgfit['fitinfo']['fitepoch']
+            if len(varepoch) != 1:
+                varepoch = varepoch[0]
+
+        finally:
+
+            if isinstance(varepoch, str) and varepoch == 'min':
+
+                LOGERROR('could not find a min epoch time, '
+                         'using min(times) as the epoch for '
+                         'the phase-folded LC')
+
+                varepoch = npmin(stimes)
+
+    if verbose:
+        LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
+                        (varperiod, varepoch))
 
     # phase the magseries
     phasedlc = phase_magseries(stimes,
@@ -848,56 +900,6 @@ def checkplot_png(lspinfo,
 
         for periodind, varperiod in enumerate(lspbestperiods):
 
-            # figure out the epoch, if it's None, use the min of the time
-            if varepoch is None:
-                varepoch = npmin(stimes)
-
-            # if the varepoch is 'min', then fit a spline to the light curve
-            # phased using the min of the time, find the fit mag minimum and use
-            # the time for that as the varepoch
-            elif isinstance(varepoch,str) and varepoch == 'min':
-
-                try:
-                    spfit = spline_fit_magseries(stimes,
-                                                 smags,
-                                                 serrs,
-                                                 varperiod,
-                                                 sigclip=None,
-                                                 magsarefluxes=magsarefluxes,
-                                                 verbose=verbose)
-                    varepoch = spfit['fitinfo']['fitepoch']
-                    if len(varepoch) != 1:
-                        varepoch = varepoch[0]
-
-                except Exception as e:
-
-                    LOGERROR('spline fit failed, trying a SavGol fit')
-
-                    sgfit = savgol_fit_magseries(stimes,
-                                                 smags,
-                                                 serrs,
-                                                 varperiod,
-                                                 sigclip=None,
-                                                 magsarefluxes=magsarefluxes,
-                                                 verbose=verbose)
-                    varepoch = sgfit['fitinfo']['fitepoch']
-                    if len(varepoch) != 1:
-                        varepoch = varepoch[0]
-
-                finally:
-
-                    if isinstance(varepoch, str) and varepoch == 'min':
-
-                        LOGERROR('could not find a min epoch time, '
-                                 'using min(times) as the epoch for '
-                                 'the phase-folded LC')
-                        varepoch = npmin(stimes)
-
-
-            if verbose:
-                LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
-                        (varperiod, varepoch))
-
             # make sure the best period phased LC plot stands out
             if periodind == 0 and bestperiodhighlight:
                 if MPLVERSION >= (2,0,0):
@@ -907,13 +909,14 @@ def checkplot_png(lspinfo,
 
             _make_phased_magseries_plot(axes[periodind+2],
                                         periodind,
-                                        stimes, smags,
+                                        stimes, smags, serrs,
                                         varperiod, varepoch,
                                         phasewrap, phasesort,
                                         phasebin, minbinelems,
                                         plotxlim, lspmethod,
                                         xliminsetmode=xliminsetmode,
-                                        magsarefluxes=magsarefluxes)
+                                        magsarefluxes=magsarefluxes,
+                                        verbose=verbose)
 
         # end of plotting for each ax
 
@@ -1144,53 +1147,6 @@ def twolsp_checkplot_png(lspinfo1,
                                                   lspbestperiods1[:3],
                                                   [axes[3], axes[4], axes[5]]):
 
-            # figure out the epoch, if it's None, use the min of the time
-            if varepoch is None:
-                varepoch = npmin(stimes)
-
-            # if the varepoch is 'min', then fit a spline to the light curve
-            # phased using the min of the time, find the fit mag minimum and use
-            # the time for that as the varepoch
-            elif isinstance(varepoch,str) and varepoch == 'min':
-
-                try:
-                    spfit = spline_fit_magseries(stimes,
-                                                 smags,
-                                                 serrs,
-                                                 varperiod,
-                                                 sigclip=None,
-                                                 magsarefluxes=magsarefluxes,
-                                                 verbose=verbose)
-                    varepoch = spfit['fitinfo']['fitepoch']
-                    if len(varepoch) != 1:
-                        varepoch = varepoch[0]
-
-                except Exception as e:
-
-                    LOGERROR('spline fit failed, trying a SavGol fit')
-
-                    sgfit = savgol_fit_magseries(stimes,
-                                                 smags,
-                                                 serrs,
-                                                 varperiod,
-                                                 sigclip=None,
-                                                 magsarefluxes=magsarefluxes,
-                                                 verbose=verbose)
-                    varepoch = sgfit['fitinfo']['fitepoch']
-                    if len(varepoch) != 1:
-                        varepoch = varepoch[0]
-
-                finally:
-
-                    if isinstance(varepoch, str) and varepoch == 'min':
-                        LOGERROR('could not find a min epoch time, '
-                                 'using min(times) as the epoch for '
-                                 'the phase-folded LC')
-                        varepoch = npmin(stimes)
-
-            if verbose:
-                LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
-                        (varperiod, varepoch))
 
             # make sure the best period phased LC plot stands out
             if periodind == 0 and bestperiodhighlight:
@@ -1201,14 +1157,15 @@ def twolsp_checkplot_png(lspinfo1,
 
             _make_phased_magseries_plot(plotaxes,
                                         periodind,
-                                        stimes, smags,
+                                        stimes, smags, serrs,
                                         varperiod, varepoch,
                                         phasewrap, phasesort,
                                         phasebin, minbinelems,
                                         plotxlim, lspmethod1,
                                         twolspmode=True,
                                         magsarefluxes=magsarefluxes,
-                                        xliminsetmode=xliminsetmode)
+                                        xliminsetmode=xliminsetmode,
+                                        verbose=verbose)
 
         ##########################################################
         ### NOW PLOT PHASED LCS FOR 3 BEST PERIODS IN LSPINFO2 ###
@@ -1217,54 +1174,6 @@ def twolsp_checkplot_png(lspinfo1,
                                                   lspbestperiods2[:3],
                                                   [axes[6], axes[7], axes[8]]):
 
-            # figure out the epoch, if it's None, use the min of the time
-            if varepoch is None:
-                varepoch = npmin(stimes)
-
-            # if the varepoch is 'min', then fit a spline to the light curve
-            # phased using the min of the time, find the fit mag minimum and use
-            # the time for that as the varepoch
-            elif isinstance(varepoch,str) and varepoch == 'min':
-
-                try:
-                    spfit = spline_fit_magseries(stimes,
-                                                 smags,
-                                                 serrs,
-                                                 varperiod,
-                                                 magsarefluxes=magsarefluxes,
-                                                 sigclip=None,
-                                                 verbose=verbose)
-                    varepoch = spfit['fitinfo']['fitepoch']
-                    if len(varepoch) != 1:
-                        varepoch = varepoch[0]
-
-                except Exception as e:
-
-                    LOGERROR('spline fit failed, trying SavGol fit')
-
-                    sgfit = savgol_fit_magseries(stimes,
-                                                 smags,
-                                                 serrs,
-                                                 varperiod,
-                                                 sigclip=None,
-                                                 magsarefluxes=magsarefluxes,
-                                                 verbose=verbose)
-                    varepoch = sgfit['fitinfo']['fitepoch']
-                    if len(varepoch) != 1:
-                        varepoch = varepoch[0]
-
-                finally:
-
-                    if isinstance(varepoch, str) and varepoch == 'min':
-                        LOGERROR('could not find a min epoch time, '
-                                 'using min(times) as the epoch for '
-                                 'the phase-folded LC')
-
-                        varepoch = npmin(stimes)
-
-            if verbose:
-                LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
-                        (varperiod, varepoch))
 
             # make sure the best period phased LC plot stands out
             if periodind == 0 and bestperiodhighlight:
@@ -1275,14 +1184,15 @@ def twolsp_checkplot_png(lspinfo1,
 
             _make_phased_magseries_plot(plotaxes,
                                         periodind,
-                                        stimes, smags,
+                                        stimes, smags, serrs,
                                         varperiod, varepoch,
                                         phasewrap, phasesort,
                                         phasebin, minbinelems,
                                         plotxlim, lspmethod2,
                                         twolspmode=True,
                                         magsarefluxes=magsarefluxes,
-                                        xliminsetmode=xliminsetmode)
+                                        xliminsetmode=xliminsetmode,
+                                        verbose=verbose)
 
         # end of plotting for each ax
 
