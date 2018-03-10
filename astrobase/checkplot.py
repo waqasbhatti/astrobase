@@ -246,8 +246,6 @@ def _make_periodogram(axes,
                     'finder chart for %s at RA: %.3f, DEC: %.3f' %
                     (objectid, objectinfo['ra'], objectinfo['decl']))
 
-        # FIXME: get mag info from astroquery or HATDS if needed
-
 
         # calculate colors
         if ('bmag' in objectinfo and 'vmag' in objectinfo and
@@ -870,10 +868,29 @@ def checkplot_png(lspinfo,
                     varepoch = spfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
+
                 except Exception as e:
-                    # FIXME: make this less annoying and try a savgol fit as well
-                    LOGEXCEPTION('spline fit failed, using min(times) as epoch')
+
+                    LOGERROR('spline fit failed, trying a SavGol fit')
+
+                    sgfit = savgol_fit_magseries(stimes,
+                                                 smags,
+                                                 serrs,
+                                                 varperiod,
+                                                 sigclip=None,
+                                                 magsarefluxes=magsarefluxes,
+                                                 verbose=verbose)
+                    varpoch = sgfit['fitinfo']['fitepoch']
+                    if len(varepoch) != 1:
+                        varepoch = varepoch[0]
+
+                finally:
+
+                    LOGERROR('could not find a min epoch time, '
+                             'using min(times) as the epoch for '
+                             'the phase-folded LC')
                     varepoch = npmin(stimes)
+
 
             if verbose:
                 LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
@@ -1145,9 +1162,27 @@ def twolsp_checkplot_png(lspinfo1,
                     varepoch = spfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
-                # FIXME: make this less annoying and try a savgol fit as well
+
                 except Exception as e:
-                    LOGEXCEPTION('spline fit failed, using min(times) as epoch')
+
+                    LOGERROR('spline fit failed, trying a SavGol fit')
+
+                    sgfit = savgol_fit_magseries(stimes,
+                                                 smags,
+                                                 serrs,
+                                                 varperiod,
+                                                 sigclip=None,
+                                                 magsarefluxes=magsarefluxes,
+                                                 verbose=verbose)
+                    varpoch = sgfit['fitinfo']['fitepoch']
+                    if len(varepoch) != 1:
+                        varepoch = varepoch[0]
+
+                finally:
+
+                    LOGERROR('could not find a min epoch time, '
+                             'using min(times) as the epoch for '
+                             'the phase-folded LC')
                     varepoch = npmin(stimes)
 
             if verbose:
@@ -1199,9 +1234,28 @@ def twolsp_checkplot_png(lspinfo1,
                     varepoch = spfit['fitinfo']['fitepoch']
                     if len(varepoch) != 1:
                         varepoch = varepoch[0]
-                # FIXME: make this less annoying and try a savgol fit as well
+
                 except Exception as e:
-                    LOGEXCEPTION('spline fit failed, using min(times) as epoch')
+
+                    LOGERROR('spline fit failed, trying SavGol fit')
+
+                    sgfit = savgol_fit_magseries(stimes,
+                                                 smags,
+                                                 serrs,
+                                                 varperiod,
+                                                 sigclip=None,
+                                                 magsarefluxes=magsarefluxes,
+                                                 verbose=verbose)
+                    varpoch = sgfit['fitinfo']['fitepoch']
+                    if len(varepoch) != 1:
+                        varepoch = varepoch[0]
+
+                finally:
+
+                    LOGERROR('could not find a min epoch time, '
+                             'using min(times) as the epoch for '
+                             'the phase-folded LC')
+
                     varepoch = npmin(stimes)
 
             if verbose:
@@ -1882,10 +1936,31 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
             varepoch = spfit['fitinfo']['fitepoch']
             if len(varepoch) != 1:
                 varepoch = varepoch[0]
-        # FIXME: make this less annoying and try a savgol fit as well
+
+
         except Exception as e:
-            LOGEXCEPTION('spline fit failed, using min(times) as epoch')
+
+            LOGERROR('spline fit failed, trying SavGol fit')
+
+            sgfit = savgol_fit_magseries(stimes,
+                                         smags,
+                                         serrs,
+                                         varperiod,
+                                         sigclip=None,
+                                         magsarefluxes=magsarefluxes,
+                                         verbose=verbose)
+            varpoch = sgfit['fitinfo']['fitepoch']
+            if len(varepoch) != 1:
+                varepoch = varepoch[0]
+
+        finally:
+
+            LOGERROR('could not find a min epoch time, '
+                     'using min(times) as the epoch for '
+                     'the phase-folded LC')
+
             varepoch = npmin(stimes)
+
 
     if verbose:
         LOGINFO('plotting %s phased LC with period %s: %.6f, epoch: %.5f' %
