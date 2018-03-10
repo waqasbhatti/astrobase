@@ -80,7 +80,7 @@ def LOGEXCEPTION(message):
 import multiprocessing as mp
 
 import numpy as np
-from numpy import isfinite as npisfinite, median as npmedian, abs as npabs
+from numpy import isfinite as npisfinite, median as npmedian, mean as npmean, abs as npabs, std as npstddev
 
 from scipy.spatial import cKDTree as kdtree
 from scipy.signal import medfilt
@@ -246,6 +246,8 @@ def normalize_magseries(times,
 def sigclip_magseries(times, mags, errs,
                       sigclip=None,
                       iterative=False,
+                      niterations=None,
+                      meanormedian='median',
                       magsarefluxes=False):
     '''
     Select the finite times, magnitudes (or fluxes), and errors from the
@@ -261,7 +263,19 @@ def sigclip_magseries(times, mags, errs,
 
         errs (np.array): ...
 
-        iterative (bool): True if you want iterative sigma-clipping.
+        iterative (bool): True if you want iterative sigma-clipping. If 
+        niterations is not set and this is True, sigma-clipping is iterated
+        until no more points are removed.
+        
+        niterations (int): maximum number of iterations to perform for 
+        sigma-clipping. If None, the iterative arg takes precedence, and 
+        iterative=True will sigma-clip until no more points are removed.
+        If niterations is not None and iterative is False, niterations takes
+        precedence and iteration will occur.
+        
+        meanormedian (string): either 'mean' for sigma-clipping based on the
+        mean value, or 'median' for sigma-clipping based on the median value.
+        Default is 'median'.
 
         magsarefluxes (bool): True if your "mags" are in fact fluxes, i.e. if
         "dimming" corresponds to your "mags" getting smaller.
@@ -291,16 +305,25 @@ def sigclip_magseries(times, mags, errs,
     find = npisfinite(times) & npisfinite(mags) & npisfinite(errs)
     ftimes, fmags, ferrs = times[find], mags[find], errs[find]
 
-    # get the median and stdev = 1.483 x MAD
-    median_mag = npmedian(fmags)
-    stddev_mag = (npmedian(npabs(fmags - median_mag))) * 1.483
+    # get the center value and stdev 
+    if meanormedian == 'median':  # stddev = 1.483 x MAD
+        center_mag = npmedian(fmags)
+        stddev_mag = (npmedian(npabs(fmags - center_mag))) * 1.483
+    elif meanormedian == 'mean':
+        center_mag = npmean(fmags)
+        stddev_mag = npstddev(fmags)
+    else:
+        LOGWARNING("Unrecognized meanormedian value given to sigclip_magseries: %s, defaulting to 'median'" % meanormedian)
+        meanormedian = 'median'
+        center_mag = npmedian(fmags)
+        stddev_mag = (npmedian(npabs(fmags - center_mag))) * 1.483
 
     # sigclip next for a single sigclip value
     if sigclip and isinstance(sigclip,float):
 
-        if not iterative:
+        if not iterative and niterations is None:
 
-            sigind = (npabs(fmags - median_mag)) < (sigclip * stddev_mag)
+            sigind = (npabs(fmags - center_mag)) < (sigclip * stddev_mag)
 
             stimes = ftimes[sigind]
             smags = fmags[sigind]
@@ -311,28 +334,63 @@ def sigclip_magseries(times, mags, errs,
             #
             # iterative version adapted from scipy.stats.sigmaclip
             #
-            delta = 1
+            
+            # First, if niterations is not set, iterate until covergence
+            if niterations is None:
+                delta = 1
 
-            this_times = ftimes
-            this_mags = fmags
-            this_errs = ferrs
+                this_times = ftimes
+                this_mags = fmags
+                this_errs = ferrs
 
-            while delta:
+                while delta:
+                    if meanormedian == 'mean':
+                        this_center = npmean(this_mags)
+                        this_stdev = npstddev(this_mags)
+                    elif meanormedian == 'median':
+                        this_center = npmedian(this_mags)
+                        this_stdev = (npmedian(npabs(this_mags - this_center))) * 1.483
+                    this_size = this_mags.size
 
-                this_median = npmedian(this_mags)
-                this_stdev = (npmedian(npabs(this_mags - this_median))) * 1.483
-                this_size = this_mags.size
+                    # apply the sigclip
+                    tsi = (npabs(this_mags - this_center)) < (sigclip * this_stdev)
 
-                # apply the sigclip
-                tsi = (npabs(this_mags - this_median)) < (sigclip * this_stdev)
+                    # update the arrays
+                    this_times = this_times[tsi]
+                    this_mags = this_mags[tsi]
+                    this_errs = this_errs[tsi]
 
-                # update the arrays
-                this_times = this_times[tsi]
-                this_mags = this_mags[tsi]
-                this_errs = this_errs[tsi]
+                    # update delta and go to the top of the loop
+                    delta = this_size - this_mags.size
+                    
+            else: # If iterating only a certain number of times
+                this_times = ftimes
+                this_mags = fmags
+                this_errs = ferrs
+                
+                iter_num = 0
+                delta = 1
+                while iter_num < niterations and delta:
+                    if meanormedian == 'mean':
+                        this_center = npmean(this_mags)
+                        this_stdev = npstddev(this_mags)
+                    elif meanormedian == 'median':
+                        this_center = npmedian(this_mags)
+                        this_stdev = (npmedian(npabs(this_mags - this_center))) * 1.483
+                    this_size = this_mags.size
+                        
+                    # apply the sigclip
+                    tsi = (npabs(this_mags - this_center)) < (sigclip * this_stdev)
 
-                # update delta and go to the top of the loop
-                delta = this_size - this_mags.size
+                    # update the arrays
+                    this_times = this_times[tsi]
+                    this_mags = this_mags[tsi]
+                    this_errs = this_errs[tsi]
+
+                    # update the number of iterations and delta and 
+                    # go to the top of the loop
+                    delta = this_size - this_mags.size
+                    iter_num += 1 
 
             # final sigclipped versions
             stimes, smags, serrs = this_times, this_mags, this_errs
@@ -345,21 +403,21 @@ def sigclip_magseries(times, mags, errs,
         dimmingclip = sigclip[0]
         brighteningclip = sigclip[1]
 
-        if not iterative:
+        if not iterative and niterations is None:
 
             if magsarefluxes:
                 nottoodimind = (
-                    (fmags - median_mag) > (-dimmingclip*stddev_mag)
+                    (fmags - center_mag) > (-dimmingclip*stddev_mag)
                 )
                 nottoobrightind = (
-                    (fmags - median_mag) < (brighteningclip*stddev_mag)
+                    (fmags - center_mag) < (brighteningclip*stddev_mag)
                 )
             else:
                 nottoodimind = (
-                    (fmags - median_mag) < (dimmingclip*stddev_mag)
+                    (fmags - center_mag) < (dimmingclip*stddev_mag)
                 )
                 nottoobrightind = (
-                    (fmags - median_mag) > (-brighteningclip*stddev_mag)
+                    (fmags - center_mag) > (-brighteningclip*stddev_mag)
                 )
 
             sigind = nottoodimind & nottoobrightind
@@ -373,43 +431,93 @@ def sigclip_magseries(times, mags, errs,
             #
             # iterative version adapted from scipy.stats.sigmaclip
             #
-            delta = 1
+            if niterations  None:
+                delta = 1
 
-            this_times = ftimes
-            this_mags = fmags
-            this_errs = ferrs
+                this_times = ftimes
+                this_mags = fmags
+                this_errs = ferrs
 
-            while delta:
+                while delta:
 
-                this_median = npmedian(this_mags)
-                this_stdev = (npmedian(npabs(this_mags - this_median))) * 1.483
-                this_size = this_mags.size
+                    if meanormedian == 'mean':
+                        this_center = npmean(this_mags)
+                        this_stdev = npstddev(this_mags)
+                    elif meanormedian == 'median':
+                        this_center = npmedian(this_mags)
+                        this_stdev = (npmedian(npabs(this_mags - this_center))) * 1.483
+                    this_size = this_mags.size
 
-                if magsarefluxes:
-                    nottoodimind = (
-                        (this_mags - this_median) > (-dimmingclip*this_stdev)
-                    )
-                    nottoobrightind = (
-                        (this_mags - this_median) < (brighteningclip*this_stdev)
-                    )
-                else:
-                    nottoodimind = (
-                        (this_mags - this_median) < (dimmingclip*this_stdev)
-                    )
-                    nottoobrightind = (
-                        (this_mags - this_median) > (-brighteningclip*this_stdev)
-                    )
+                    if magsarefluxes:
+                        nottoodimind = (
+                            (this_mags - this_center) > (-dimmingclip*this_stdev)
+                        )
+                        nottoobrightind = (
+                            (this_mags - this_center) < (brighteningclip*this_stdev)
+                        )
+                    else:
+                        nottoodimind = (
+                            (this_mags - this_center) < (dimmingclip*this_stdev)
+                        )
+                        nottoobrightind = (
+                            (this_mags - this_center) > (-brighteningclip*this_stdev)
+                        )
 
-                # apply the sigclip
-                tsi = nottoodimind & nottoobrightind
+                    # apply the sigclip
+                    tsi = nottoodimind & nottoobrightind
 
-                # update the arrays
-                this_times = this_times[tsi]
-                this_mags = this_mags[tsi]
-                this_errs = this_errs[tsi]
+                    # update the arrays
+                    this_times = this_times[tsi]
+                    this_mags = this_mags[tsi]
+                    this_errs = this_errs[tsi]
 
-                # update delta and go to top of the loop
-                delta = this_size - this_mags.size
+                    # update delta and go to top of the loop
+                    delta = this_size - this_mags.size
+                    
+            else: # If iterating only a certain number of times
+                this_times = ftimes
+                this_mags = fmags
+                this_errs = ferrs
+
+                iter_num = 0
+                delta = 1
+                while iter_num < niterations and delta:
+                    
+                    if meanormedian == 'mean':
+                        this_center = npmean(this_mags)
+                        this_stdev = npstddev(this_mags)
+                    elif meanormedian == 'median':
+                        this_center = npmedian(this_mags)
+                        this_stdev = (npmedian(npabs(this_mags - this_center))) * 1.483
+                    this_size = this_mags.size
+
+                    if magsarefluxes:
+                        nottoodimind = (
+                            (this_mags - this_center) > (-dimmingclip*this_stdev)
+                        )
+                        nottoobrightind = (
+                            (this_mags - this_center) < (brighteningclip*this_stdev)
+                        )
+                    else:
+                        nottoodimind = (
+                            (this_mags - this_center) < (dimmingclip*this_stdev)
+                        )
+                        nottoobrightind = (
+                            (this_mags - this_center) > (-brighteningclip*this_stdev)
+                        )
+
+                    # apply the sigclip
+                    tsi = nottoodimind & nottoobrightind
+
+                    # update the arrays
+                    this_times = this_times[tsi]
+                    this_mags = this_mags[tsi]
+                    this_errs = this_errs[tsi]
+
+                    # update the number of iterations and delta 
+                    # and go to top of the loop
+                    delta = this_size - this_mags.size
+                    iter_num += 1
 
             # final sigclipped versions
             stimes, smags, serrs = this_times, this_mags, this_errs
