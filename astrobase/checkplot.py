@@ -440,14 +440,16 @@ def _make_phased_magseries_plot(axes,
 
     '''
 
+    plotvarepoch = None
+
     # figure out the epoch, if it's None, use the min of the time
     if varepoch is None:
-        varepoch = npmin(stimes)
+        plotvarepoch = npmin(stimes)
 
     # if the varepoch is 'min', then fit a spline to the light curve
     # phased using the min of the time, find the fit mag minimum and use
     # the time for that as the varepoch
-    elif isinstance(varepoch,str) and varepoch == 'min':
+    elif isinstance(varepoch, str) and varepoch == 'min':
 
         try:
             spfit = spline_fit_magseries(stimes,
@@ -457,10 +459,9 @@ def _make_phased_magseries_plot(axes,
                                          magsarefluxes=magsarefluxes,
                                          sigclip=None,
                                          verbose=verbose)
-            varepoch = spfit['fitinfo']['fitepoch']
-            if len(varepoch) != 1:
-                varepoch = varepoch[0]
-
+            plotvarepoch = spfit['fitinfo']['fitepoch']
+            if len(plotvarepoch) != 1:
+                plotvarepoch = varepoch[0]
 
         except Exception as e:
 
@@ -473,29 +474,46 @@ def _make_phased_magseries_plot(axes,
                                          sigclip=None,
                                          magsarefluxes=magsarefluxes,
                                          verbose=verbose)
-            varepoch = sgfit['fitinfo']['fitepoch']
-            if len(varepoch) != 1:
-                varepoch = varepoch[0]
+            plotvarepoch = sgfit['fitinfo']['fitepoch']
+            if len(plotvarepoch) != 1:
+                plotvarepoch = plotvarepoch[0]
 
         finally:
 
-            if isinstance(varepoch, str) and varepoch == 'min':
+            if plotvarepoch is None:
 
                 LOGERROR('could not find a min epoch time, '
                          'using min(times) as the epoch for '
                          'the phase-folded LC')
 
-                varepoch = npmin(stimes)
+                plotvarepoch = npmin(stimes)
+
+    elif isinstance(varepoch, list):
+
+        try:
+            plotvarepoch = varepoch[periodind]
+        except:
+            LOGEXCEPTION(
+                "varepoch provided in list form either doesn't match "
+                "the length of nbestperiods from the period-finder "
+                "result, or something else went wrong. using min(times) "
+                "as the epoch instead"
+            )
+            plotvarepoch = min(times)
+
+    # the final case is to use the provided varepoch directly
+    else:
+        plotvarepoch = varepoch
 
     if verbose:
         LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
-                        (varperiod, varepoch))
+                        (varperiod, plotvarepoch))
 
     # phase the magseries
     phasedlc = phase_magseries(stimes,
                                smags,
                                varperiod,
-                               varepoch,
+                               plotvarepoch,
                                wrap=phasewrap,
                                sort=phasesort)
     plotphase = phasedlc['phase']
@@ -569,33 +587,33 @@ def _make_phased_magseries_plot(axes,
         plottitle = '%s best period: %.6f d - epoch: %.5f' % (
             METHODSHORTLABELS[lspmethod],
             varperiod,
-            varepoch
+            plotvarepoch
         )
     elif periodind == 1 and not twolspmode:
         plottitle = '%s best period x 0.5: %.6f d - epoch: %.5f' % (
             METHODSHORTLABELS[lspmethod],
             varperiod,
-            varepoch
+            plotvarepoch
         )
     elif periodind == 2 and not twolspmode:
         plottitle = '%s best period x 2: %.6f d - epoch: %.5f' % (
             METHODSHORTLABELS[lspmethod],
             varperiod,
-            varepoch
+            plotvarepoch
         )
     elif periodind > 2 and not twolspmode:
         plottitle = '%s peak %s: %.6f d - epoch: %.5f' % (
             METHODSHORTLABELS[lspmethod],
             periodind-1,
             varperiod,
-            varepoch
+            plotvarepoch
         )
     elif periodind > 0:
         plottitle = '%s peak %s: %.6f d - epoch: %.5f' % (
             METHODSHORTLABELS[lspmethod],
             periodind+1,
             varperiod,
-            varepoch
+            plotvarepoch
         )
 
     axes.set_title(plottitle)
@@ -775,6 +793,26 @@ def checkplot_png(lspinfo,
 
     This can be useful to see effects of wide-field telescopes with large pixel
     sizes (like HAT) on the blending of sources.
+
+    varepoch sets the time of minimum light finding strategy for the checkplot:
+
+                                               the epoch used for all phased
+    if varepoch is None                     -> light curve plots will be
+                                               min(times)
+
+    if varepoch is a single string == 'min' -> automatic epoch finding for all
+                                               periods using light curve fits
+
+    if varepoch is a single float           -> this epoch will be used for all
+                                               phased light curve plots
+
+    if varepoch is a list of floats            each epoch will be applied to
+    with length == len(nbestperiods)        -> the phased light curve for each
+    from period-finder results                 period specifically
+
+    NOTE: for checkplot_png, if you use a list for varepoch, it must be of
+    length len(lspinfo['nbestperiods']) + 2, because we insert half and twice
+    the period into the best periods list to make those phased LC plots.
 
     findercachedir is the directory where the downloaded stamp FITS files
     go. Repeated calls to this function will then use the cached version of the
@@ -1011,6 +1049,23 @@ def twolsp_checkplot_png(lspinfo1,
     the output file name from lspinfo1 if lspinfo1 is a string filename pointing
     to a (gzipped) pickle containing the results dict from a period-finding
     routine similar to those in periodbase.
+
+    varepoch sets the time of minimum light finding strategy for the checkplot:
+
+                                               the epoch used for all phased
+    if varepoch is None                     -> light curve plots will be
+                                               min(times)
+
+    if varepoch is a single string == 'min' -> automatic epoch finding for all
+                                               periods using light curve fits
+
+    if varepoch is a single float           -> this epoch will be used for all
+                                               phased light curve plots
+
+    if varepoch is a list of floats            each epoch will be applied to
+    with length == 3 (i.e. best 3 for       -> the phased light curve for each
+    each of the two period-finder results)     period specifically
+
 
     '''
 
@@ -1776,9 +1831,12 @@ def _pkl_magseries_plot(stimes, smags, serrs,
 
 
 
-def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
+def _pkl_phased_magseries_plot(checkplotdict,
+                               lspmethod,
+                               periodind,
                                stimes, smags, serrs,
                                varperiod, varepoch,
+                               lspmethodind=0,
                                phasewrap=True,
                                phasesort=True,
                                phasebin=0.002,
@@ -1830,9 +1888,11 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
     # open the figure instance
     phasedseriesfig = plt.figure(figsize=(7.5,4.8),dpi=plotdpi)
 
+    plotvarepoch = None
+
     # figure out the epoch, if it's None, use the min of the time
     if varepoch is None:
-        varepoch = npmin(stimes)
+        plotvarepoch = npmin(stimes)
 
     # if the varepoch is 'min', then fit a spline to the light curve
     # phased using the min of the time, find the fit mag minimum and use
@@ -1847,9 +1907,9 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                                          magsarefluxes=magsarefluxes,
                                          sigclip=None,
                                          verbose=verbose)
-            varepoch = spfit['fitinfo']['fitepoch']
-            if len(varepoch) != 1:
-                varepoch = varepoch[0]
+            plotvarepoch = spfit['fitinfo']['fitepoch']
+            if len(plotvarepoch) != 1:
+                plotvarepoch = plotvarepoch[0]
 
 
         except Exception as e:
@@ -1863,24 +1923,43 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
                                          sigclip=None,
                                          magsarefluxes=magsarefluxes,
                                          verbose=verbose)
-            varepoch = sgfit['fitinfo']['fitepoch']
-            if len(varepoch) != 1:
-                varepoch = varepoch[0]
+            plotvarepoch = sgfit['fitinfo']['fitepoch']
+            if len(plotvarepoch) != 1:
+                plotvarepoch = plotvarepoch[0]
 
         finally:
 
-            if isinstance(varepoch, str) and varepoch == 'min':
+            if plotvarepoch is None:
 
                 LOGERROR('could not find a min epoch time, '
                          'using min(times) as the epoch for '
                          'the phase-folded LC')
 
-                varepoch = npmin(stimes)
+                plotvarepoch = npmin(stimes)
+
+    # special case with varepoch lists per each period-finder method
+    elif isinstance(varepoch, dict):
+
+        try:
+            thisvarepoch = varepoch[lspmethodind]
+            plotvarepoch = thisvarepoch[periodind]
+        except:
+            LOGEXCEPTION(
+                "varepoch provided in list form either doesn't match "
+                "the length of nbestperiods from the period-finder "
+                "result, or something else went wrong. using min(times) "
+                "as the epoch instead"
+            )
+            plotvarepoch = min(times)
+
+    # the final case is to use the provided varepoch directly
+    else:
+        plotvarepoch = varepoch
 
 
     if verbose:
         LOGINFO('plotting %s phased LC with period %s: %.6f, epoch: %.5f' %
-                (lspmethod, periodind, varperiod, varepoch))
+                (lspmethod, periodind, varperiod, plotvarepoch))
 
     # make the plot title based on the lspmethod
     if periodind == 0:
@@ -1888,7 +1967,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
             (METHODSHORTLABELS[lspmethod] if lspmethod in METHODSHORTLABELS
              else lspmethod),
             varperiod,
-            varepoch
+            plotvarepoch
         )
     elif periodind > 0:
         plottitle = '%s peak %s: %.6f d - epoch: %.5f' % (
@@ -1896,13 +1975,13 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
              else lspmethod),
             periodind+1,
             varperiod,
-            varepoch
+            plotvarepoch
         )
     elif periodind == -1:
         plottitle = '%s period: %.6f d - epoch: %.5f' % (
             lspmethod,
             varperiod,
-            varepoch
+            plotvarepoch
         )
 
 
@@ -1910,7 +1989,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
     phasedlc = phase_magseries(stimes,
                                smags,
                                varperiod,
-                               varepoch,
+                               plotvarepoch,
                                wrap=phasewrap,
                                sort=phasesort)
     plotphase = phasedlc['phase']
@@ -1963,7 +2042,7 @@ def _pkl_phased_magseries_plot(checkplotdict, lspmethod, periodind,
         fitphasedlc = phase_magseries(plotfittimes,
                                       plotfitmags,
                                       varperiod,
-                                      varepoch,
+                                      plotvarepoch,
                                       wrap=phasewrap,
                                       sort=phasesort)
         plotfitphase = fitphasedlc['phase']
@@ -2742,6 +2821,24 @@ def checkplot_dict(lspinfolist,
     will automatically retrieve these plot PNGs and put them into the exported
     checkplot PNG.
 
+    varepoch sets the time of minimum light finding strategy for the checkplot:
+
+                                               the epoch used for all phased
+    if varepoch is None                     -> light curve plots will be
+                                               min(times)
+
+    if varepoch is a single string == 'min' -> automatic epoch finding for all
+                                               periods using light curve fits
+
+    if varepoch is a single float           -> this epoch will be used for all
+                                               phased light curve plots
+
+    if varepoch is a dict of lists             each epoch will be applied for
+    each of which has floats with           -> the phased light curve for each
+    list length == nperiodstouse               period for each period-finder
+    from period-finder results                 method specifically
+
+
     sigclip is either a single float or a list of two floats. in the first case,
     the sigclip is applied symmetrically. in the second case, the first sigclip
     in the list is applied to +ve magnitude deviations (fainter) and the second
@@ -2933,6 +3030,7 @@ def checkplot_dict(lspinfolist,
                     nbpind,
                     stimes, smags, serrs,
                     nbperiod, varepoch,
+                    lspmethodind=lspind,
                     phasewrap=phasewrap,
                     phasesort=phasesort,
                     phasebin=phasebin,
