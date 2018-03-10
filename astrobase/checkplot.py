@@ -1938,11 +1938,11 @@ def _pkl_phased_magseries_plot(checkplotdict,
                 plotvarepoch = npmin(stimes)
 
     # special case with varepoch lists per each period-finder method
-    elif isinstance(varepoch, dict):
+    elif isinstance(varepoch, list):
 
         try:
-            thisvarepoch = varepoch[lspmethodind]
-            plotvarepoch = thisvarepoch[periodind]
+            thisvarepochlist = varepoch[lspmethodind]
+            plotvarepoch = thisvarepochlist[periodind]
         except:
             LOGEXCEPTION(
                 "varepoch provided in list form either doesn't match "
@@ -2833,7 +2833,7 @@ def checkplot_dict(lspinfolist,
     if varepoch is a single float           -> this epoch will be used for all
                                                phased light curve plots
 
-    if varepoch is a dict of lists             each epoch will be applied for
+    if varepoch is a list of lists             each epoch will be applied for
     each of which has floats with           -> the phased light curve for each
     list length == nperiodstouse               period for each period-finder
     from period-finder results                 method specifically
