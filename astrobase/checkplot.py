@@ -429,6 +429,7 @@ def _make_phased_magseries_plot(axes,
                                 phasebin, minbinelems,
                                 plotxlim,
                                 lspmethod,
+                                lspmethodind=0,
                                 xliminsetmode=False,
                                 twolspmode=False,
                                 magsarefluxes=False,
@@ -491,7 +492,15 @@ def _make_phased_magseries_plot(axes,
     elif isinstance(varepoch, list):
 
         try:
-            plotvarepoch = varepoch[periodind]
+
+            if twolspmode:
+
+                thisvarepochlist = varepoch[lspmethodind]
+                plotvarepoch = thisvarepochlist[periodind]
+
+            else:
+                plotvarepoch = varepoch[periodind]
+
         except:
             LOGEXCEPTION(
                 "varepoch provided in list form either doesn't match "
@@ -499,7 +508,7 @@ def _make_phased_magseries_plot(axes,
                 "result, or something else went wrong. using min(times) "
                 "as the epoch instead"
             )
-            plotvarepoch = min(times)
+            plotvarepoch = npmin(stimes)
 
     # the final case is to use the provided varepoch directly
     else:
@@ -1062,9 +1071,10 @@ def twolsp_checkplot_png(lspinfo1,
     if varepoch is a single float           -> this epoch will be used for all
                                                phased light curve plots
 
-    if varepoch is a list of floats            each epoch will be applied to
-    with length == 3 (i.e. best 3 for       -> the phased light curve for each
-    each of the two period-finder results)     period specifically
+    if varepoch is a list of lists             each epoch will be applied each
+    of floats with length == 3              -> to the phased light curve for
+    (i.e. for each of the best 3 periods       each period from each
+     from the two period-finder results)       period-finder specifically
 
 
     '''
@@ -1217,6 +1227,7 @@ def twolsp_checkplot_png(lspinfo1,
                                         phasewrap, phasesort,
                                         phasebin, minbinelems,
                                         plotxlim, lspmethod1,
+                                        lspmethodind=0,
                                         twolspmode=True,
                                         magsarefluxes=magsarefluxes,
                                         xliminsetmode=xliminsetmode,
@@ -1244,6 +1255,7 @@ def twolsp_checkplot_png(lspinfo1,
                                         phasewrap, phasesort,
                                         phasebin, minbinelems,
                                         plotxlim, lspmethod2,
+                                        lspmethodind=1,
                                         twolspmode=True,
                                         magsarefluxes=magsarefluxes,
                                         xliminsetmode=xliminsetmode,
@@ -1950,7 +1962,7 @@ def _pkl_phased_magseries_plot(checkplotdict,
                 "result, or something else went wrong. using min(times) "
                 "as the epoch instead"
             )
-            plotvarepoch = min(times)
+            plotvarepoch = npmin(stimes)
 
     # the final case is to use the provided varepoch directly
     else:
