@@ -391,3 +391,453 @@ def test_checkplot_with_multiple_same_pfmethods():
     assert '1-gls' in pfmethods
     assert '2-pdm' in pfmethods
     assert '3-pdm' in pfmethods
+
+
+def test_checkplot_png_varepoch_handling(capsys):
+    '''This tests the various different ways to give varepoch to checkplot_png.
+
+    Uses the py.test capsys fixture to capture stdout and see if we reported the
+    correct epoch being used.
+
+    '''
+
+    outpath = os.path.join(os.path.dirname(LCPATH),
+                           'test-checkplot.png')
+
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
+    gls = periodbase.pgen_lsp(lcd['rjd'], lcd['aep_000'], lcd['aie_000'])
+
+    assert isinstance(gls, dict)
+    assert_allclose(gls['bestperiod'], 1.54289477)
+
+
+    # 1. usual handling where epoch is None
+    # should use min(times) as epoch all the time
+    cpf = checkplot.checkplot_png(gls,
+                                  lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+                                  outfile=outpath,
+                                  objectinfo=lcd['objectinfo'],
+                                  varepoch=None)
+
+    assert os.path.exists(outpath)
+
+    # capture the stdout
+    captured = capsys.readouterr()
+
+    # see if we used the correct periods and epochs
+    splitout = captured.out.split('\n')
+
+    # plot output lines
+    plotoutlines = [x for x in splitout if 'plotting phased LC' in x]
+
+    # these are the periods and epochs to match per line
+    lookfor = ['period 1.542895, epoch 56092.64056',
+               'period 0.771447, epoch 56092.64056',
+               'period 3.085790, epoch 56092.64056',
+               'period 0.771304, epoch 56092.64056',
+               'period 0.514234, epoch 56092.64056',
+               'period 3.085790, epoch 56092.64056',
+               'period 3.029397, epoch 56092.64056']
+
+    for expected, plotline in zip(lookfor,plotoutlines):
+        assert expected in plotline
+
+
+    # 2. handle varepoch = 'min'
+    cpf = checkplot.checkplot_png(gls,
+                                  lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+                                  outfile=outpath,
+                                  objectinfo=lcd['objectinfo'],
+                                  varepoch='min')
+
+    assert os.path.exists(outpath)
+
+    # capture the stdout
+    captured = capsys.readouterr()
+
+    # see if we used the correct periods and epochs
+    splitout = captured.out.split('\n')
+
+    # plot output lines
+    plotoutlines = [x for x in splitout if 'plotting phased LC' in x]
+
+    # these are the periods and epochs to match per line
+    lookfor = ['period 1.542895, epoch 56341.11968',
+               'period 0.771447, epoch 56848.65894',
+               'period 3.085790, epoch 56828.62835',
+               'period 0.771304, epoch 56856.46618',
+               'period 0.514234, epoch 56889.88470',
+               'period 3.085790, epoch 56828.62835',
+               'period 3.029397, epoch 56799.51745']
+
+    for expected, plotline in zip(lookfor,plotoutlines):
+        assert expected in plotline
+
+
+    # 3. handle varepoch = some float
+    cpf = checkplot.checkplot_png(gls,
+                                  lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+                                  outfile=outpath,
+                                  objectinfo=lcd['objectinfo'],
+                                  varepoch=56000.5)
+
+    assert os.path.exists(outpath)
+
+    # capture the stdout
+    captured = capsys.readouterr()
+
+    # see if we used the correct periods and epochs
+    splitout = captured.out.split('\n')
+
+    # plot output lines
+    plotoutlines = [x for x in splitout if 'plotting phased LC' in x]
+
+    # these are the periods and epochs to match per line
+    lookfor = ['period 1.542895, epoch 56000.50000',
+               'period 0.771447, epoch 56000.50000',
+               'period 3.085790, epoch 56000.50000',
+               'period 0.771304, epoch 56000.50000',
+               'period 0.514234, epoch 56000.50000',
+               'period 3.085790, epoch 56000.50000',
+               'period 3.029397, epoch 56000.50000']
+
+    for expected, plotline in zip(lookfor,plotoutlines):
+        assert expected in plotline
+
+
+    # 4. handle varepoch = list of floats
+    cpf = checkplot.checkplot_png(gls,
+                                  lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+                                  outfile=outpath,
+                                  objectinfo=lcd['objectinfo'],
+                                  varepoch=[56000.1,56000.2,
+                                            56000.3,56000.4,
+                                            56000.5,56000.6,
+                                            56000.7])
+
+    assert os.path.exists(outpath)
+
+    # capture the stdout
+    captured = capsys.readouterr()
+
+    # see if we used the correct periods and epochs
+    splitout = captured.out.split('\n')
+
+    # plot output lines
+    plotoutlines = [x for x in splitout if 'plotting phased LC' in x]
+
+    # these are the periods and epochs to match per line
+    lookfor = ['period 1.542895, epoch 56000.10000',
+               'period 0.771447, epoch 56000.20000',
+               'period 3.085790, epoch 56000.30000',
+               'period 0.771304, epoch 56000.40000',
+               'period 0.514234, epoch 56000.50000',
+               'period 3.085790, epoch 56000.60000',
+               'period 3.029397, epoch 56000.70000']
+
+    for expected, plotline in zip(lookfor,plotoutlines):
+        assert expected in plotline
+
+
+
+def test_twolsp_checkplot_png_varepoch_handling(capsys):
+    '''This tests the various different ways to give varepoch
+    to twolsp_checkplot_png.
+
+    Uses the py.test capsys fixture to capture stdout and see if we reported the
+    correct epoch being used.
+
+    '''
+
+    outpath = os.path.join(os.path.dirname(LCPATH),
+                           'test-checkplot.png')
+
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
+    gls = periodbase.pgen_lsp(lcd['rjd'], lcd['aep_000'], lcd['aie_000'])
+    pdm = periodbase.stellingwerf_pdm(lcd['rjd'],
+                                      lcd['aep_000'],
+                                      lcd['aie_000'])
+
+    assert isinstance(gls, dict)
+    assert_allclose(gls['bestperiod'], 1.54289477)
+
+    # 1. usual handling where epoch is None
+    # should use min(times) as epoch all the time
+    cpf = checkplot.twolsp_checkplot_png(
+        gls, pdm,
+        lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+        outfile=outpath,
+        objectinfo=lcd['objectinfo'],
+        varepoch=None
+    )
+
+    assert os.path.exists(outpath)
+
+    # capture the stdout
+    captured = capsys.readouterr()
+
+    # see if we used the correct periods and epochs
+    splitout = captured.out.split('\n')
+
+    # plot output lines
+    plotoutlines = [x for x in splitout if 'plotting phased LC' in x]
+
+    # these are the periods and epochs to match per line
+    lookfor = ['period 1.542895, epoch 56092.64056',
+               'period 0.771304, epoch 56092.64056',
+               'period 0.514234, epoch 56092.64056',
+               'period 3.085790, epoch 56092.64056',
+               'period 1.542895, epoch 56092.64056',
+               'period 6.157824, epoch 56092.64056']
+
+    for expected, plotline in zip(lookfor,plotoutlines):
+        assert expected in plotline
+
+
+    # 2. handle varepoch = 'min'
+    cpf = checkplot.twolsp_checkplot_png(
+        gls, pdm,
+        lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+        outfile=outpath,
+        objectinfo=lcd['objectinfo'],
+        varepoch='min'
+    )
+
+    assert os.path.exists(outpath)
+
+    # capture the stdout
+    captured = capsys.readouterr()
+
+    # see if we used the correct periods and epochs
+    splitout = captured.out.split('\n')
+
+    # plot output lines
+    plotoutlines = [x for x in splitout if 'plotting phased LC' in x]
+
+    # these are the periods and epochs to match per line
+    lookfor = ['period 1.542895, epoch 56341.11968',
+               'period 0.771304, epoch 56856.46618',
+               'period 0.514234, epoch 56889.88470',
+               'period 3.085790, epoch 56828.62835',
+               'period 1.542895, epoch 56341.11968',
+               'period 6.157824, epoch 56154.33367']
+
+    for expected, plotline in zip(lookfor,plotoutlines):
+        assert expected in plotline
+
+
+    # 3. handle varepoch = some float
+    cpf = checkplot.twolsp_checkplot_png(
+        gls, pdm,
+        lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+        outfile=outpath,
+        objectinfo=lcd['objectinfo'],
+        varepoch=56000.5
+    )
+
+    assert os.path.exists(outpath)
+
+    # capture the stdout
+    captured = capsys.readouterr()
+
+    # see if we used the correct periods and epochs
+    splitout = captured.out.split('\n')
+
+    # plot output lines
+    plotoutlines = [x for x in splitout if 'plotting phased LC' in x]
+
+    # these are the periods and epochs to match per line
+    lookfor = ['period 1.542895, epoch 56000.50000',
+               'period 0.771304, epoch 56000.50000',
+               'period 0.514234, epoch 56000.50000',
+               'period 3.085790, epoch 56000.50000',
+               'period 1.542895, epoch 56000.50000',
+               'period 6.157824, epoch 56000.50000']
+
+    for expected, plotline in zip(lookfor,plotoutlines):
+        assert expected in plotline
+
+
+    # 4. handle varepoch = list of floats
+    cpf = checkplot.twolsp_checkplot_png(
+        gls, pdm,
+        lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+        outfile=outpath,
+        objectinfo=lcd['objectinfo'],
+        varepoch=[[56000.1,56000.2,56000.3],
+                  [56000.4,56000.5,56000.6]]
+    )
+
+    assert os.path.exists(outpath)
+
+    # capture the stdout
+    captured = capsys.readouterr()
+
+    # see if we used the correct periods and epochs
+    splitout = captured.out.split('\n')
+
+    # plot output lines
+    plotoutlines = [x for x in splitout if 'plotting phased LC' in x]
+
+    # these are the periods and epochs to match per line
+    lookfor = ['period 1.542895, epoch 56000.10000',
+               'period 0.771304, epoch 56000.20000',
+               'period 0.514234, epoch 56000.30000',
+               'period 3.085790, epoch 56000.40000',
+               'period 1.542895, epoch 56000.50000',
+               'period 6.157824, epoch 56000.60000']
+
+    for expected, plotline in zip(lookfor,plotoutlines):
+        assert expected in plotline
+
+
+
+def test_checkplot_pickle_varepoch_handling(capsys):
+    '''This tests the various different ways to give varepoch
+    to checkplot_pickle.
+
+    Uses the py.test capsys fixture to capture stdout and see if we reported the
+    correct epoch being used.
+
+    '''
+
+    outpath = os.path.join(os.path.dirname(LCPATH),
+                           'test-checkplot.png')
+
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
+    gls = periodbase.pgen_lsp(lcd['rjd'], lcd['aep_000'], lcd['aie_000'])
+    pdm = periodbase.stellingwerf_pdm(lcd['rjd'],
+                                      lcd['aep_000'],
+                                      lcd['aie_000'])
+
+    assert isinstance(gls, dict)
+    assert_allclose(gls['bestperiod'], 1.54289477)
+
+    # 1. usual handling where epoch is None
+    # should use min(times) as epoch all the time
+    cpf = checkplot.checkplot_pickle(
+        [gls, pdm],
+        lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+        outfile=outpath,
+        objectinfo=lcd['objectinfo'],
+        varepoch=None
+    )
+
+    assert os.path.exists(outpath)
+
+    # capture the stdout
+    captured = capsys.readouterr()
+
+    # see if we used the correct periods and epochs
+    splitout = captured.out.split('\n')
+
+    # plot output lines
+    plotoutlines = [x for x in splitout if 'phased LC with period' in x]
+
+    # these are the periods and epochs to match per line
+    lookfor = ['gls phased LC with period 0: 1.542895, epoch: 56092.64056',
+               'gls phased LC with period 1: 0.771304, epoch: 56092.64056',
+               'gls phased LC with period 2: 0.514234, epoch: 56092.64056',
+               'pdm phased LC with period 0: 3.085790, epoch: 56092.64056',
+               'pdm phased LC with period 1: 1.542895, epoch: 56092.64056',
+               'pdm phased LC with period 2: 6.157824, epoch: 56092.64056']
+
+    for expected, plotline in zip(lookfor,plotoutlines):
+        assert expected in plotline
+
+
+    # 2. handle varepoch = 'min'
+    cpf = checkplot.checkplot_pickle(
+        [gls, pdm],
+        lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+        outfile=outpath,
+        objectinfo=lcd['objectinfo'],
+        varepoch='min'
+    )
+
+    assert os.path.exists(outpath)
+
+    # capture the stdout
+    captured = capsys.readouterr()
+
+    # see if we used the correct periods and epochs
+    splitout = captured.out.split('\n')
+
+    # plot output lines
+    plotoutlines = [x for x in splitout if 'phased LC with period' in x]
+
+    # these are the periods and epochs to match per line
+    lookfor = ['gls phased LC with period 0: 1.542895, epoch: 56341.11968',
+               'gls phased LC with period 1: 0.771304, epoch: 56856.46618',
+               'gls phased LC with period 2: 0.514234, epoch: 56889.88470',
+               'pdm phased LC with period 0: 3.085790, epoch: 56828.62835',
+               'pdm phased LC with period 1: 1.542895, epoch: 56341.11968',
+               'pdm phased LC with period 2: 6.157824, epoch: 56154.33367']
+
+    for expected, plotline in zip(lookfor,plotoutlines):
+        assert expected in plotline
+
+
+    # 3. handle varepoch = some float
+    cpf = checkplot.checkplot_pickle(
+        [gls, pdm],
+        lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+        outfile=outpath,
+        objectinfo=lcd['objectinfo'],
+        varepoch=56000.5
+    )
+
+    assert os.path.exists(outpath)
+
+    # capture the stdout
+    captured = capsys.readouterr()
+
+    # see if we used the correct periods and epochs
+    splitout = captured.out.split('\n')
+
+    # plot output lines
+    plotoutlines = [x for x in splitout if 'phased LC with period' in x]
+
+    # these are the periods and epochs to match per line
+    lookfor = ['gls phased LC with period 0: 1.542895, epoch: 56000.50000',
+               'gls phased LC with period 1: 0.771304, epoch: 56000.50000',
+               'gls phased LC with period 2: 0.514234, epoch: 56000.50000',
+               'pdm phased LC with period 0: 3.085790, epoch: 56000.50000',
+               'pdm phased LC with period 1: 1.542895, epoch: 56000.50000',
+               'pdm phased LC with period 2: 6.157824, epoch: 56000.50000']
+
+    for expected, plotline in zip(lookfor,plotoutlines):
+        assert expected in plotline
+
+
+    # 4. handle varepoch = list of floats
+    cpf = checkplot.checkplot_pickle(
+        [gls, pdm],
+        lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
+        outfile=outpath,
+        objectinfo=lcd['objectinfo'],
+        varepoch=[[56000.1,56000.2,56000.3],
+                  [56000.4,56000.5,56000.6]]
+    )
+
+    assert os.path.exists(outpath)
+
+    # capture the stdout
+    captured = capsys.readouterr()
+
+    # see if we used the correct periods and epochs
+    splitout = captured.out.split('\n')
+
+    # plot output lines
+    plotoutlines = [x for x in splitout if 'phased LC with period' in x]
+
+    # these are the periods and epochs to match per line
+    lookfor = ['gls phased LC with period 0: 1.542895, epoch: 56000.10000',
+               'gls phased LC with period 1: 0.771304, epoch: 56000.20000',
+               'gls phased LC with period 2: 0.514234, epoch: 56000.30000',
+               'pdm phased LC with period 0: 3.085790, epoch: 56000.40000',
+               'pdm phased LC with period 1: 1.542895, epoch: 56000.50000',
+               'pdm phased LC with period 2: 6.157824, epoch: 56000.60000']
+
+    for expected, plotline in zip(lookfor,plotoutlines):
+        assert expected in plotline
