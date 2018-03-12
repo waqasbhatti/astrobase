@@ -13,6 +13,7 @@ These are Tornado handlers for serving checkplots and operating on them.
 ####################
 
 import os
+import sys
 import os.path
 import gzip
 try:
@@ -24,7 +25,7 @@ import hashlib
 import logging
 from datetime import time
 import time
-from functools import reduce
+from functools import reduce, partial
 
 try:
     from cStringIO import StringIO as strio
@@ -1746,12 +1747,13 @@ class LCToolHandler(tornado.web.RequestHandler):
                         # now run the period finder and get results
                         #
 
-                        # run the period finder
                         lctoolfunction = CPTOOLMAP[lctool]['func']
+
+                        # run the period finder
                         funcresults = yield self.executor.submit(
                             lctoolfunction,
                             *lctoolargs,
-                            **lctoolkwargs,
+                            **lctoolkwargs
                         )
 
                         # get what we need out of funcresults when it
@@ -2173,10 +2175,11 @@ class LCToolHandler(tornado.web.RequestHandler):
                         del lctoolkwargs['sigclip']
 
                         lctoolfunction = CPTOOLMAP[lctool]['func']
+
                         funcresults = yield self.executor.submit(
                             lctoolfunction,
                             *lctoolargs,
-                            **lctoolkwargs,
+                            **lctoolkwargs
                         )
 
                         # save these to the tempcpdict
@@ -2292,7 +2295,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                         funcresults = yield self.executor.submit(
                             lctoolfunction,
                             *lctoolargs,
-                            **lctoolkwargs,
+                            **lctoolkwargs
                         )
 
                         # save these to the tempcpdict
@@ -2409,10 +2412,11 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                         # send in a stringio object for the fitplot kwarg
                         lctoolkwargs['plotfit'] = strio()
+
                         funcresults = yield self.executor.submit(
                             lctoolfunction,
                             *lctoolargs,
-                            **lctoolkwargs,
+                            **lctoolkwargs
                         )
 
                         # we turn the returned fitplotfile fd into a base64
@@ -2569,7 +2573,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                         funcresults = yield self.executor.submit(
                             lctoolfunction,
                             *lctoolargs,
-                            **lctoolkwargs,
+                            **lctoolkwargs
                         )
 
                         # now that we have the fit results, generate a fitplot.
