@@ -183,6 +183,7 @@ from operator import getitem
 import numpy as np
 import multiprocessing as mp
 
+from astrobase.checkplot import _read_checkplot_picklefile
 
 ######################
 ## HELPER FUNCTIONS ##
@@ -204,9 +205,7 @@ def key_worker(task):
     '''
     cpf, keys = task
 
-
-    with open(cpf,'rb') as infd:
-        cpd = pickle.load(infd)
+    cpd = _read_checkplot_picklefile(cpf)
 
     resultkeys = []
 
@@ -444,7 +443,13 @@ def main():
                 # these to mean actual integer indexes of lists or integer keys
                 # for dicts this allows us to move into arrays easily by
                 # indexing them
-                sortkeys = [(int(x) if x.isdecimal() else x) for x in sortkeys]
+
+                if sys.version_info[:2] < (3,4):
+                    sortkeys = [(int(x) if x.isdigit() else x)
+                                for x in sortkeys]
+                else:
+                    sortkeys = [(int(x) if x.isdecimal() else x)
+                                for x in sortkeys]
 
                 keystoget.append(sortkeys)
 
@@ -653,11 +658,24 @@ def main():
             # ask if the checkplot list JSON should be updated
             if os.path.exists(outjson):
 
-                answer = input('There is an existing '
-                               'checkplot list file in this '
-                               'directory:\n    %s\nDo you want to '
-                               'overwrite it completely? (default: no) [y/n] ' %
-                               outjson)
+                if sys.version_info[:2] < (3,0):
+
+                    answer = raw_input(
+                        'There is an existing '
+                        'checkplot list file in this '
+                        'directory:\n    %s\nDo you want to '
+                        'overwrite it completely? (default: no) [y/n] ' %
+                        outjson
+                    )
+                else:
+
+                    answer = input(
+                        'There is an existing '
+                        'checkplot list file in this '
+                        'directory:\n    %s\nDo you want to '
+                        'overwrite it completely? (default: no) [y/n] ' %
+                    outjson
+                    )
 
                 # if it's OK to overwrite, then do so
                 if answer and answer == 'y':
