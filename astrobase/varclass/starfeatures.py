@@ -308,6 +308,13 @@ BANDPASSES_COLORS = {
 }
 
 
+BANDPASS_LIST = ['umag','bmag','vmag','rmag','imag',
+                 'jmag','hmag','kmag',
+                 'sdssu','sdssg','sdssr','sdssi','sdssz',
+                 'ujmag','uhmag','ukmag',
+                 'irac1','irac2','irac3','irac4',
+                 'wise1','wise2','wise3','wise4']
+
 
 def color_features(in_objectinfo,
                    deredden=True,
@@ -424,7 +431,7 @@ def color_features(in_objectinfo,
         'available_dereddened_band_labels':[],
         'available_colors':[],
         'available_color_labels':[],
-        'dereddened':deredden
+        'dereddened':False
     }
 
     #
@@ -531,6 +538,7 @@ def color_features(in_objectinfo,
             LOGERROR("deredden = True but 'ra', 'decl' keys not present "
                      "or invalid in objectinfo dict, ignoring reddening...")
             extinction = None
+            outdict['dereddened'] = False
 
     else:
 
@@ -542,10 +550,18 @@ def color_features(in_objectinfo,
 
     # update our bandpasses_colors dict with any custom ones the user defined
     our_bandpasses_colors = BANDPASSES_COLORS.copy()
+    our_bandpass_list = BANDPASS_LIST[::]
+
     if custom_bandpasses is not None and isinstance(custom_bandpasses, dict):
+
         our_bandpasses_colors.update(custom_bandpasses)
 
-    for mk in our_bandpasses_colors:
+        # also update the list
+        for key in custom_bandpasses:
+            if key not in our_bandpass_list:
+                our_bandpass_list.append(key)
+
+    for mk in our_bandpass_list:
 
         if (mk in objectinfo and
             objectinfo[mk] is not None and
@@ -556,6 +572,7 @@ def color_features(in_objectinfo,
 
             # add this to the outdict
             outdict[mk] = objectinfo[mk]
+
             outdict['available_bands'].append(mk)
             outdict['available_band_labels'].append(thisbandlabel)
 
@@ -569,6 +586,8 @@ def color_features(in_objectinfo,
             # so for two bands x, y:
             # intrinsic color (m_x - m_y)_0 = (m_x - m_y) - (A_x - A_y)
             if (deredden and extinction):
+
+                outdict['dereddened'] = True
 
                 # check if the dustkey is None, float, or str to figure out how
                 # to retrieve the reddening
@@ -627,8 +646,10 @@ def color_features(in_objectinfo,
                             outdict['available_color_labels'].append(colorlabel)
 
 
+            # handle no dereddening
             else:
 
+                outdict['dereddened'] = False
                 outdict['extinction_%s' % mk] = 0.0
                 outdict['dered_%s' % mk] = np.nan
 
