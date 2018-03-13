@@ -2693,11 +2693,6 @@ def _read_checkplot_picklefile(checkplotpickle):
             with gzip.open(checkplotpickle,'rb') as infd:
                 cpdict = pickle.load(infd, encoding='latin1')
 
-            LOGWARNING('pickle %s was probably from Python 2 '
-                       'and failed to load without using "latin1" encoding. '
-                       'This is probably a numpy issue: '
-                       'http://stackoverflow.com/q/11305790' % checkplotpickle)
-
     else:
 
         try:
@@ -2708,11 +2703,6 @@ def _read_checkplot_picklefile(checkplotpickle):
 
             with open(checkplotpickle,'rb') as infd:
                 cpdict = pickle.load(infd, encoding='latin1')
-
-            LOGWARNING('pickle %s was probably from Python 2 '
-                       'and failed to load without using "latin1" encoding. '
-                       'This is probably a numpy issue: '
-                       'http://stackoverflow.com/q/11305790' % checkplotpickle)
 
     return cpdict
 
