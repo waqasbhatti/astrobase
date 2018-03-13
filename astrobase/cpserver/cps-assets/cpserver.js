@@ -564,6 +564,8 @@ var cpv = {
 
             cpv.currcp = data.result;
 
+            console.log(cpv.currcp);
+
             /////////////////////////////////////////////////
             // update the UI with elems for this checkplot //
             /////////////////////////////////////////////////
@@ -1838,7 +1840,7 @@ var cpv = {
         }).fail (function (xhr) {
 
             $('#alert-box').html('could not load checkplot <strong>' +
-                           filename + '</strong>!');
+                                 filename + '</strong>!');
 
         });
 

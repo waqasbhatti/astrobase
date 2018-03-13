@@ -694,6 +694,27 @@ class CheckplotHandler(tornado.web.RequestHandler):
                                 thisval[i] = None
                         resultdict['result']['objectinfo'][key] = thisval
 
+                # remove nans from varinfo as well
+                for key in resultdict['result']['varinfo']:
+
+                    if (isinstance(resultdict['result']['varinfo'][key],
+                                   float) and
+                        (not np.isfinite(resultdict['result'][
+                            'varinfo'
+                        ][key]))):
+                        resultdict['result']['varinfo'][key] = None
+
+                    elif (isinstance(resultdict['result']['varinfo'][key],
+                                     ndarray)):
+
+                        thisval = resultdict['result']['varinfo'][key]
+                        thisval = thisval.tolist()
+                        for i, v in enumerate(thisval):
+                            if isinstance(v,float) and (not(np.isfinite(v))):
+                                thisval[i] = None
+                        resultdict['result']['varinfo'][key] = thisval
+
+
 
                 # now get the periodograms and phased LCs
                 for key in pfmethods:
