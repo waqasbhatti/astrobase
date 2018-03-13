@@ -1324,7 +1324,7 @@ var cpv = {
             // empty the neighbor container and then set its max-width
             $('#lcc-neighbor-container').empty();
             $('#lcc-neighbor-container').width(
-                375 + lspmethods.length*375
+                300 + lspmethods.length*300
             );
 
             $("#lcc-neighbor-count").html(cpv.currcp.neighbors.length);
