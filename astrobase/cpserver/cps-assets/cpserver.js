@@ -1213,7 +1213,7 @@ var cpv = {
             var lspmethods = cpv.currcp.pfmethods;
             var ncols = lspmethods.length;
 
-            var colwidth = 12/ncols;
+            var colwidth = math.ceil(12/ncols);
 
             // zero out previous stuff
             $('.phased-container').empty();
