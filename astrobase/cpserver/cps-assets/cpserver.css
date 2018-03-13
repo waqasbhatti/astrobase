@@ -54,6 +54,7 @@ img.magseriesplot {
 
 .phased-container-col {
     overflow-y: auto;
+    min-width: 375px;
 }
 
 .phasedlc-container-row:link {

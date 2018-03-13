@@ -564,8 +564,6 @@ var cpv = {
 
             cpv.currcp = data.result;
 
-            console.log(cpv.currcp);
-
             /////////////////////////////////////////////////
             // update the UI with elems for this checkplot //
             /////////////////////////////////////////////////
@@ -1213,7 +1211,12 @@ var cpv = {
             var lspmethods = cpv.currcp.pfmethods;
             var ncols = lspmethods.length;
 
-            var colwidth = math.ceil(12/ncols);
+            // enlarge the width of the phased container so it overflows in x
+            // this should be handled correctly hopefully
+            var phasedcontainer_maxwidth = ncols*375;
+            $('.phased-container').width(phasedcontainer_maxwidth);
+
+            var colwidth = math.floor(12/ncols);
 
             // zero out previous stuff
             $('.phased-container').empty();
@@ -1235,7 +1238,8 @@ var cpv = {
                     // start putting together the container for this method
                     var mcontainer_coltop =
                         '<div class="col-sm-' + colwidth +
-                        '" data-lspmethod="' + lspmethod + '">';
+                        ' phased-container-col" data-lspmethod="' +
+                        lspmethod + '">';
                     var mcontainer_colbot = '</div>';
 
                     var periodogram_row =
@@ -1317,7 +1321,12 @@ var cpv = {
                 $('#gaia-neighbor-count').html('No');
             }
 
+            // empty the neighbor container and then set its max-width
             $('#lcc-neighbor-container').empty();
+            $('#lcc-neighbor-container').width(
+                375 + lspmethods.length*375
+            );
+
             $("#lcc-neighbor-count").html(cpv.currcp.neighbors.length);
 
             // 2. update the search radius
@@ -1479,7 +1488,8 @@ var cpv = {
             var ni = 0;
 
             // set the column width
-            var nbrcolw = colwidth - 1;
+            var nbrcolw = math.floor(12/(1 + lspmethods.length));
+            console.log(colwidth + ' ' + nbrcolw);
 
             // make the plots for the target object
 
@@ -1499,7 +1509,7 @@ var cpv = {
             for (nli; nli < lspmethods.length; nli++) {
 
                 var thisnphased =
-                    '<div class="col-sm-' + nbrcolw + ' px-0">' +
+                    '<div class="col-sm-' + nbrcolw + ' mx-0 px-0">' +
                     '<img src="data:image/png;base64,' +
                     cpv.currcp[lspmethods[nli]]['phasedlc0']['plot'] +
                     '" class="img-fluid">' +
@@ -2359,6 +2369,8 @@ var cpv = {
             var canvasheight = canvas.height;
             var ctx = canvas.getContext('2d');
 
+            // FIXME: check if astropy.wcs returns y, x and we've been doing
+            // this wrong all this time
             var thisx = $(this).attr('data-xpos');
             var thisy = $(this).attr('data-ypos');
 
@@ -3418,8 +3430,6 @@ var cptools = {
             extraparams[$(this).attr('name')] = $(this).val();
         });
 
-        console.log(extraparams);
-
         // proceed if we can
         if (proceed) {
 
@@ -3528,8 +3538,6 @@ var cptools = {
             for (ei; ei < ep.length; ei++) {
                 sentdata[ep[ei]] = extraparams[ep[ei]];
             }
-
-            console.log(sentdata);
 
             // make the call
             $.getJSON(ajaxurl, sentdata, function (recvdata) {
@@ -4198,8 +4206,6 @@ var cptools = {
                 lctimefilters: lctimefilters,
                 lcmagfilters: lcmagfilters
             };
-
-            console.log(sentdata);
 
             // make the call
             $.getJSON(ajaxurl, sentdata, function (recvdata) {
