@@ -28,7 +28,40 @@ var cputils = {
         var datauri = 'data:image/png;base64,' + str;
         $(targetelem).attr('src',datauri);
 
-    }
+    },
+
+    // this displays a base64 encoded image on the canvas
+    b64_to_canvas: function (str, targetelem) {
+
+        var datauri = 'data:image/png;base64,' + str;
+        var newimg = new Image();
+        var canvas = document.getElementById(targetelem.replace('#',''));
+
+        var imgheight = 300;
+        var imgwidth = 300;
+        var cnvwidth = canvas.width;
+        canvas.height = cnvwidth;
+        var imgscale = cnvwidth/imgwidth;
+
+        var ctx = canvas.getContext('2d');
+
+        // this event listener will fire when the image is loaded
+        newimg.addEventListener('load', function () {
+            ctx.drawImage(newimg,
+                          0,
+                          0,
+                          imgwidth*imgscale,
+                          imgheight*imgscale);
+        });
+
+        // load the image and fire the listener
+        newimg.src = datauri;
+
+    },
+
+    // this holds imagedata for the canvas so we can restore changed parts of
+    // the image
+    pixeltracker: null
 
 };
 
@@ -637,8 +670,10 @@ var cpv = {
             //
 
             // update the finder chart
-            cputils.b64_to_image(cpv.currcp.finderchart,
-                                 '#finderchart');
+            // cputils.b64_to_image(cpv.currcp.finderchart,
+            //                      '#finderchart');
+            cputils.b64_to_canvas(cpv.currcp.finderchart,
+                                  '#finderchart');
 
             // get the HAT stations
             var hatstations = cpv.currcp.objectinfo.stations;
@@ -2288,6 +2323,8 @@ var cpv = {
 
         });
 
+        // this loads the neighbor's checkplot if it's in the current LC
+        // collection loaded into the checkplotserver
         $('#lcc-neighbor-container').on('click','.nbrload-checkplot', function (e) {
 
             e.preventDefault();
@@ -2305,6 +2342,64 @@ var cpv = {
                 cpv.load_checkplot(filetoload);
             }
 
+
+        });
+
+
+        // this handles the hover per objectid row to highlight the object in
+        // the finder chart
+        $('#gaia-neighbors').on('mouseover','.gaia-objectlist-row', function (e) {
+
+            e.preventDefault();
+
+            var canvas = document.getElementById('finderchart');
+            var canvaswidth = canvas.width;
+            var canvasheight = canvas.height;
+            var ctx = canvas.getContext('2d');
+
+            var thisx = $(this).attr('data-xpos');
+            var thisy = $(this).attr('data-ypos');
+
+            var cnvx = thisx * canvaswidth/300.0;
+
+            // y is from the top of the image for canvas
+            // FITS coords are from the bottom of the image
+            var cnvy = (300.0 - thisy) * canvasheight/300.0;
+
+            // save the damaged part of the image
+            cputils.pixeltracker = ctx.getImageData(cnvx-20,cnvy-20,40,40);
+
+            ctx.strokeStyle = 'green';
+            ctx.lineWidth = 3.0
+            ctx.strokeRect(cnvx-7.5,cnvy-7.5,12.5,12.5);
+
+        });
+
+        // this handles the repair to the canvas after the user mouses out of
+        // the row
+        $('#gaia-neighbors').on('mouseout','.gaia-objectlist-row', function (e) {
+
+            e.preventDefault();
+
+            var canvas = document.getElementById('finderchart');
+            var canvaswidth = canvas.width;
+            var canvasheight = canvas.height;
+            var ctx = canvas.getContext('2d');
+
+            var thisx = $(this).attr('data-xpos');
+            var thisy = $(this).attr('data-ypos');
+
+            var cnvx = thisx * canvaswidth/300.0;
+
+            // y is from the top of the image for canvas
+            // FITS coords are from the bottom of the image
+            var cnvy = (300.0 - thisy) * canvasheight/300.0;
+
+            // restore the imagedata if we have any
+            if (cputils.pixeltracker != null) {
+                ctx.putImageData(cputils.pixeltracker,
+                                 cnvx-20, cnvy-20);
+            }
 
         });
 

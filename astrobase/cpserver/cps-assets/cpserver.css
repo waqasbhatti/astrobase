@@ -243,3 +243,7 @@ to use this:
 .no-wrap-break {
     white-space: nowrap;
 }
+
+canvas#finderchart {
+    width: 100%;
+}
