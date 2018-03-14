@@ -1327,16 +1327,35 @@ var cpv = {
                 300 + lspmethods.length*300
             );
 
-            $("#lcc-neighbor-count").html(cpv.currcp.neighbors.length);
+            if (cpv.currcp.neighbors != undefined &&
+                cpv.currcp.neighbors.length > 0) {
+                $("#lcc-neighbor-count").html(cpv.currcp.neighbors.length);
+            }
+            else {
+                $("#lcc-neighbor-count").html('No');
+            }
 
             // 2. update the search radius
             if (cpv.currcp.objectinfo.searchradarcsec != undefined) {
                 $('#gaia-neighbor-maxdist').html(
-                    cpv.currcp.objectinfo.searchradarcsec
+                    ' within ' +
+                        cpv.currcp.objectinfo.searchradarcsec +
+                        '&Prime;'
                 );
                 $('#lcc-neighbor-maxdist').html(
-                    cpv.currcp.objectinfo.searchradarcsec
+                    ' within ' +
+                        cpv.currcp.objectinfo.searchradarcsec +
+                        '&Prime;'
                 );
+            }
+            else {
+                $('#gaia-neighbor-maxdist').html(
+                    ''
+                );
+                $('#lcc-neighbor-maxdist').html(
+                    ''
+                );
+
             }
 
             // 3. update the GAIA neighbors
