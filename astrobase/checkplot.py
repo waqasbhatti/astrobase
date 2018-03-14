@@ -3412,16 +3412,10 @@ def checkplot_pickle(lspinfolist,
     if ((sys.version_info[0:2] >= (3,4) and not pickleprotocol) or
         (pickleprotocol > 2)):
         pickleprotocol = 4
-        if verbose:
-            LOGWARNING('the output pickle uses protocol v4 '
-                       'which IS NOT backwards compatible with Python 2.7')
 
     elif ((sys.version_info[0:2] >= (3,0) and not pickleprotocol) or
         (pickleprotocol > 2)):
         pickleprotocol = 3
-        if verbose:
-            LOGWARNING('the output pickle uses protocol v3 '
-                       'which IS NOT backwards compatible with Python 2.7')
 
     # for Python == 2.7; use v2
     elif sys.version_info[0:2] == (2,7) and not pickleprotocol:
@@ -3556,16 +3550,10 @@ def checkplot_pickle_update(currentcp, updatedcp,
     if ((sys.version_info[0:2] >= (3,4) and not pickleprotocol) or
         (pickleprotocol > 2)):
         pickleprotocol = 4
-        if verbose:
-            LOGWARNING('the output pickle uses protocol v4 '
-                       'which IS NOT backwards compatible with Python 2.7')
 
-    if ((sys.version_info[0:2] >= (3,0) and not pickleprotocol) or
+    elif ((sys.version_info[0:2] >= (3,0) and not pickleprotocol) or
         (pickleprotocol > 2)):
         pickleprotocol = 3
-        if verbose:
-            LOGWARNING('the output pickle uses protocol v3 '
-                       'which IS NOT backwards compatible with Python 2.7')
 
     # for Python == 2.7; use v2
     elif sys.version_info[0:2] == (2,7) and not pickleprotocol:
