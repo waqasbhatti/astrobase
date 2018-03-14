@@ -2,8 +2,6 @@
 
 ## New stuff
 
-- checkplot: can now make checkplots with multiple instances of the same
-  period-finder method (e.g. to probe different time domains)
 - checkplot: can now provide epochs for folding phased light curves as input,
   overriding the default light curve time-of-minimum finding strategy
 - starfeatures and checkplot: can now use arbitrary mags and colors in input
