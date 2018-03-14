@@ -1,3 +1,45 @@
+# v0.3.9
+
+## New stuff
+
+- checkplot: can now make checkplots with multiple instances of the same
+  period-finder method (e.g. to probe different time domains)
+- checkplot: can now provide epochs for folding phased light curves as input,
+  overriding the default light curve time-of-minimum finding strategy
+- starfeatures and checkplot: can now use arbitrary mags and colors in input
+  objectinfo dicts, can add custom bandpasses as well
+- checkplotserver UI: added highlight for each GAIA neighbor in the DSS finder
+  chart as cursor mouses over its row in the GAIA neighbor list table to help
+  with visualizing close neighbors
+- tests: added tests for new epoch and mag/color handling
+- added a CITE.md
+
+
+## Changes
+
+- checkplot: no longer warns if a pickle was written in Python 2 and latin1
+  encoding was needed to read it in Python 3
+- checkplot: a Savitsky-Golay fit is now tried before giving up on finding
+  time-of-minimum of a light curve if the initial spline fit failed
+- checkplotserver: UI fixes to not squish phased LC tiles into too small an
+  area; now they overflow off the page with scroll-bars, but should remain
+  legible
+- `lcmath.sigclip_magseries` can now use either median/MAD or mean/stdev as the
+  central and spread values in determining where to clip (added by
+  @joshuawallace in #40)
+
+
+## Fixes
+
+- checkplotserver: handle more nan-JSON breakage
+- starfeatures: handle missing information correctly
+- fixed link at the top of hatlc.py to the astrobase-notebooks repository (added
+  by @adrn in #37)
+- checkplotlist: fixed to not use non-existent `str.isdecimal()` in Python 2
+- various other Python 3 specific things were fixed to make them work on python
+  2.7 as well
+
+
 # v0.3.8
 
 ## Fixes
