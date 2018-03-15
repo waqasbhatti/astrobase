@@ -2167,7 +2167,7 @@ def get_starfeatures(lcfile,
                      lcflist,
                      neighbor_radius_arcsec,
                      deredden=True,
-                     custom_bandpasses=custom_bandpasses,
+                     custom_bandpasses=None,
                      lcformat='hat-sql'):
     '''This runs the functions from astrobase.varclass.starfeatures on a single
     light curve file.
