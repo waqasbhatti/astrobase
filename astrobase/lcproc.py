@@ -147,12 +147,23 @@ def read_pklc(lcfile):
 
     '''
 
-    try:
-        with open(lcfile,'rb') as infd:
-            lcdict = pickle.load(infd)
-    except UnicodeDecodeError:
-        with open(lcfile,'rb') as infd:
-            lcdict = pickle.load(infd, encoding='latin1')
+    if lcfile.endswith('.gz'):
+
+        try:
+            with gzip.open(lcfile,'rb') as infd:
+                lcdict = pickle.load(infd)
+        except UnicodeDecodeError:
+            with gzip.open(lcfile,'rb') as infd:
+                lcdict = pickle.load(infd, encoding='latin1')
+
+    else:
+
+        try:
+            with open(lcfile,'rb') as infd:
+                lcdict = pickle.load(infd)
+        except UnicodeDecodeError:
+            with open(lcfile,'rb') as infd:
+                lcdict = pickle.load(infd, encoding='latin1')
 
     return lcdict
 
