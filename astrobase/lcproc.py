@@ -2295,7 +2295,7 @@ def serial_starfeatures(lclist,
                         neighbor_radius_arcsec,
                         maxobjects=None,
                         deredden=True,
-                        custom_bandpasses=custom_bandpasses,
+                        custom_bandpasses=None,
                         lcformat='hat-sql',
                         nworkers=None):
     '''This drives the starfeatures function for a collection of LCs.
@@ -2342,7 +2342,7 @@ def parallel_starfeatures(lclist,
                           neighbor_radius_arcsec,
                           maxobjects=None,
                           deredden=True,
-                          custom_bandpasses=custom_bandpasses,
+                          custom_bandpasses=None,
                           lcformat='hat-sql',
                           nworkers=None):
     '''
@@ -2389,7 +2389,7 @@ def parallel_starfeatures_lcdir(lcdir,
                                 neighbor_radius_arcsec,
                                 maxobjects=None,
                                 deredden=True,
-                                custom_bandpasses=custom_bandpasses,
+                                custom_bandpasses=None,
                                 lcformat='hat-sql',
                                 nworkers=None,
                                 recursive=True):
