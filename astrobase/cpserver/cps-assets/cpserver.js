@@ -3593,20 +3593,29 @@ var cptools = {
                                 math.format(lsp.phasedlc0.period, 7) +
                                 '</option>'
                         );
-                        $('#psearch-pgrampeaks').append(
-                            '<option value="1|' + lsp.phasedlc1.period +
-                                '|' + lsp.phasedlc1.epoch +
-                                '">peak 2: ' +
-                                math.format(lsp.phasedlc1.period, 7) +
-                                '</option>'
-                        );
-                        $('#psearch-pgrampeaks').append(
-                            '<option value="2|' + lsp.phasedlc2.period +
-                                '|' + lsp.phasedlc2.epoch +
-                                '">peak 3: ' +
-                                math.format(lsp.phasedlc2.period, 7) +
-                                '</option>'
-                        );
+
+                        if (lsp.hasOwnProperty('phasedlc1')) {
+
+                            $('#psearch-pgrampeaks').append(
+                                '<option value="1|' + lsp.phasedlc1.period +
+                                    '|' + lsp.phasedlc1.epoch +
+                                    '">peak 2: ' +
+                                    math.format(lsp.phasedlc1.period, 7) +
+                                    '</option>'
+                            );
+                        }
+
+                        if (lsp.hasOwnProperty('phasedlc2')) {
+
+                            $('#psearch-pgrampeaks').append(
+                                '<option value="2|' + lsp.phasedlc2.period +
+                                    '|' + lsp.phasedlc2.epoch +
+                                    '">peak 3: ' +
+                                    math.format(lsp.phasedlc2.period, 7) +
+                                    '</option>'
+                            );
+
+                        }
 
                         //
                         // then get any more peaks if remaining

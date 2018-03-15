@@ -1791,6 +1791,8 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                         # generate the phased LCs. we show these in the frontend
                         # along with the periodogram.
+
+
                         phasedlcargs0 = (None,
                                         lspmethod,
                                         -1,
@@ -1799,22 +1801,31 @@ class LCToolHandler(tornado.web.RequestHandler):
                                         lctoolargs[2],
                                         nbestperiods[0],
                                         'min')
-                        phasedlcargs1 = (None,
-                                        lspmethod,
-                                        -1,
-                                        lctoolargs[0],
-                                        lctoolargs[1],
-                                        lctoolargs[2],
-                                        nbestperiods[1],
-                                        'min')
-                        phasedlcargs2 = (None,
-                                        lspmethod,
-                                        -1,
-                                        lctoolargs[0],
-                                        lctoolargs[1],
-                                        lctoolargs[2],
-                                        nbestperiods[2],
-                                        'min')
+
+                        if len(nbestperiods) > 1:
+                            phasedlcargs1 = (None,
+                                             lspmethod,
+                                             -1,
+                                             lctoolargs[0],
+                                             lctoolargs[1],
+                                             lctoolargs[2],
+                                             nbestperiods[1],
+                                             'min')
+                        else:
+                            phasedlcargs1 = None
+
+
+                        if len(nbestperiods) > 2:
+                            phasedlcargs2 = (None,
+                                             lspmethod,
+                                             -1,
+                                             lctoolargs[0],
+                                             lctoolargs[1],
+                                             lctoolargs[2],
+                                             nbestperiods[2],
+                                             'min')
+                        else:
+                            phasedlcargs2 = None
 
                         # here, we set a bestperiodhighlight to distinguish this
                         # plot from the ones existing in the checkplot already
@@ -1831,17 +1842,23 @@ class LCToolHandler(tornado.web.RequestHandler):
                             **phasedlckwargs
                         )
 
-                        phasedlc1 = yield self.executor.submit(
-                            _pkl_phased_magseries_plot,
-                            *phasedlcargs1,
-                            **phasedlckwargs
-                        )
+                        if phasedlcargs1 is not None:
+                            phasedlc1 = yield self.executor.submit(
+                                _pkl_phased_magseries_plot,
+                                *phasedlcargs1,
+                                **phasedlckwargs
+                            )
+                        else:
+                            phasedlc1 = None
 
-                        phasedlc2 = yield self.executor.submit(
-                            _pkl_phased_magseries_plot,
-                            *phasedlcargs2,
-                            **phasedlckwargs
-                        )
+                        if phasedlcargs2 is not None:
+                            phasedlc2 = yield self.executor.submit(
+                                _pkl_phased_magseries_plot,
+                                *phasedlcargs2,
+                                **phasedlckwargs
+                            )
+                        else:
+                            phasedlc2 = None
 
 
                         # save these to the tempcpdict
@@ -1856,9 +1873,13 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 'nbestlspvals':funcresults['nbestlspvals'],
                                 'periodogram':pgramres[lspmethod]['periodogram'],
                                 0:phasedlc0,
-                                1:phasedlc1,
-                                2:phasedlc2,
                             }
+
+                            if phasedlc1 is not None:
+                                tempcpdict[lspmethod][1] = phasedlc1
+
+                            if phasedlc2 is not None:
+                                tempcpdict[lspmethod][2] = phasedlc2
 
 
                             savekwargs = {
@@ -1896,13 +1917,17 @@ class LCToolHandler(tornado.web.RequestHandler):
                         phasedlc0period = float(phasedlc0['period'])
                         phasedlc0epoch = float(phasedlc0['epoch'])
 
-                        phasedlc1plot = phasedlc1['plot']
-                        phasedlc1period = float(phasedlc1['period'])
-                        phasedlc1epoch = float(phasedlc1['epoch'])
+                        if phasedlc1 is not None:
 
-                        phasedlc2plot = phasedlc2['plot']
-                        phasedlc2period = float(phasedlc2['period'])
-                        phasedlc2epoch = float(phasedlc2['epoch'])
+                            phasedlc1plot = phasedlc1['plot']
+                            phasedlc1period = float(phasedlc1['period'])
+                            phasedlc1epoch = float(phasedlc1['epoch'])
+
+                        if phasedlc2 is not None:
+
+                            phasedlc2plot = phasedlc2['plot']
+                            phasedlc2period = float(phasedlc2['period'])
+                            phasedlc2epoch = float(phasedlc2['epoch'])
 
                         resultdict['status'] = 'success'
                         resultdict['message'] = (
@@ -1921,18 +1946,23 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     'period':phasedlc0period,
                                     'epoch':phasedlc0epoch,
                                 },
-                                'phasedlc1':{
-                                    'plot':phasedlc1plot,
-                                    'period':phasedlc1period,
-                                    'epoch':phasedlc1epoch,
-                                },
-                                'phasedlc2':{
-                                    'plot':phasedlc2plot,
-                                    'period':phasedlc2period,
-                                    'epoch':phasedlc2epoch,
-                                }
                             }
                         }
+
+                        if phasedlc1 is not None:
+                            resultdict['result'][lspmethod]['phasedlc1'] = {
+                                'plot':phasedlc1plot,
+                                'period':phasedlc1period,
+                                'epoch':phasedlc1epoch,
+                            }
+
+                        if phasedlc2 is not None:
+                            resultdict['result'][lspmethod]['phasedlc2'] = {
+                                'plot':phasedlc2plot,
+                                'period':phasedlc2period,
+                                'epoch':phasedlc2epoch,
+                            }
+
 
                         # return to frontend
                         self.write(resultdict)
