@@ -61,7 +61,12 @@ for your purposes.
   each object using a browser-based UI (see below). The information entered can
   then be exported as CSV or JSON for the next stage of work. The
   [lightcurves-and-checkplots](https://github.com/waqasbhatti/astrobase-notebooks/blob/master/lightcurves-and-checkplots.ipynb)
-  Jupyter notebook details how to do this and goes through a full example.
+  Jupyter notebook outlines how to do this. A more detailed example using light curves of an arbitrary format is available
+  in the
+  [lc-collection-work](https://nbviewer.jupyter.org/github/waqasbhatti/astrobase-notebooks/blob/master/lc-collection-work.ipynb)
+  notebook, which shows how to add in support for a custom LC format, add
+  neighbor, cross-match, and color-mag diagram info to checkplots, and visualize
+  these with the checkplotserver.
 
   ![Checkplot Server](astrobase/data/checkplotserver.png?raw=true)
 
