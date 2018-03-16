@@ -3078,21 +3078,25 @@ def checkplot_dict(lspinfolist,
             # if there's an snr key for this lspmethod, add the info in it to
             # the checkplotdict as well
             if 'snr' in lspinfo:
-                checkplotdict[lspinfo[override_pfmethod]]['snr'] = (
-                    lspinfo['snr']
-                )
+                if override_pfmethod in checkplotdict:
+                    checkplotdict[override_pfmethod]['snr'] = (
+                        lspinfo['snr']
+                    )
             if 'altsnr' in lspinfo:
-                checkplotdict[lspinfo[override_pfmethod]]['altsnr'] = (
-                    lspinfo['altsnr']
-                )
+                if override_pfmethod in checkplotdict:
+                    checkplotdict[override_pfmethod]['altsnr'] = (
+                        lspinfo['altsnr']
+                    )
             if 'transitdepth' in lspinfo:
-                checkplotdict[lspinfo[override_pfmethod]]['transitdepth'] = (
-                    lspinfo['transitdepth']
-                )
+                if override_pfmethod in checkplotdict:
+                    checkplotdict[override_pfmethod]['transitdepth'] = (
+                        lspinfo['transitdepth']
+                    )
             if 'transitduration' in lspinfo:
-                checkplotdict[lspinfo[override_pfmethod]]['transitduration'] = (
-                    lspinfo['transitduration']
-                )
+                if override_pfmethod in checkplotdict:
+                    checkplotdict[override_pfmethod]['transitduration'] = (
+                        lspinfo['transitduration']
+                    )
 
             checkplot_pfmethods.append(override_pfmethod)
 

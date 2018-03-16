@@ -3333,7 +3333,7 @@ def runpf(lcfile,
 
                         try:
 
-                            bls = resultdict[mcolget[-1]]['bls']
+                            bls = resultdict[mcolget[-1]][pfmk]
 
                             # calculate the SNR for the BLS as well
                             blssnr = bls_snr(bls, times, mags, errs,
@@ -3878,19 +3878,17 @@ def runcp(pfpickle,
         errcols = derrcols
 
     objectid = pfresults['objectid']
+    lcfbasename = pfresults['lcfbasename']
 
+    lcfsearchpath = os.path.join(lcbasedir, lcfbasename)
 
-    # find the light curve in lcbasedir
-    lcfsearchpath = os.path.join(lcbasedir,
-                                 '%s-%s' % (objectid, fileglob))
-
-    matching = glob.glob(lcfsearchpath)
-
-    if matching and len(matching) > 0:
-        lcfpath = matching[0]
+    if os.path.exists(lcfsearchpath):
+        lcfpath = lcfsearchpath
     else:
-        LOGERROR('could not find light curve for pfresult %s, objectid %s' %
-                 (pfpickle, objectid))
+        LOGERROR('could not find light curve for '
+                 'pfresult %s, objectid %s, '
+                 'used search path: %s' %
+                 (pfpickle, objectid, lcfsearchpath))
         return None
 
 
