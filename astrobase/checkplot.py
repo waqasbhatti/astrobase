@@ -3982,7 +3982,7 @@ def checkplot_pickle_to_png(checkplotin,
                 else:
 
                     thisrowind = colorind - 15
-                    thispos = (900+150*thisrowind, 325)
+                    thispos = (900+150*thisrowind, 350)
 
                     objinfodraw.text(
                         thispos,
