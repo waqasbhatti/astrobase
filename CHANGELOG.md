@@ -1,3 +1,13 @@
+# v0.3.10
+
+## Fixes
+
+- lcproc: fixed various errors and typos
+- checkplotserver: fixed not being able to specify < 2 periodogram peaks in
+  period search tab
+- checkplot: fixed handling of SNR keys from newgen checkplots
+
+
 # v0.3.9
 
 ## New stuff
