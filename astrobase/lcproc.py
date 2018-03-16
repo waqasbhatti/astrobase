@@ -454,6 +454,8 @@ def make_lclist(basedir,
                          'objectinfo.ra','objectinfo.decl',
                          'objectinfo.ndet','objectinfo.sdssr'],
                 makecoordindex=['objectinfo.ra','objectinfo.decl'],
+                fieldfits=None,
+                fitswcsfrom=None,
                 maxlcs=None,
                 nworkers=20):
 
@@ -482,6 +484,15 @@ def make_lclist(basedir,
     If makecoordindex is not None, it must be a two-element list of the lcdict
     keys for the right ascension and declination for each object. These will be
     used to make a kdtree for fast look-up by position later by filter_lclist.
+
+    fieldfits if not None, is the path to a FITS image containing the objects
+    these light curves are for. If this is provided, make_lclist will use the
+    WCS information in the FITS itself if fitswcsfrom is None (or from a WCS
+    header file pointed to by fitswcsfrom) to obtain x and y pixel coordinates
+    for all of the objects in the field. This can be later visualized easily.
+
+    TODO: implement fieldfits and fitswcsfrom
+    TODO: implement a make_lclist_finder function to generate a PNG with overlay
 
     This returns a pickle file.
 
