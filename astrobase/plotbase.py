@@ -105,10 +105,14 @@ import re
 import hashlib
 import requests
 import requests.exceptions
+
 try:
     from astropy.io import fits as pyfits
 except:
     import pyfits
+from astropy.wcs import WCS
+from astropy.visualization import MinMaxInterval, ZScaleInterval, \
+    ImageNormalize, LinearStretch
 
 try:
     from urllib.parse import urljoin
@@ -622,9 +626,9 @@ def plot_phased_mag_series(times,
 
 
 
-#####################################
-## INTERNAL SKYVIEW STAMP FUNCTION ##
-#####################################
+##########################
+## PLOTTING FITS IMAGES ##
+##########################
 
 def skyview_stamp(ra, decl,
                   survey='DSS2 Red',
@@ -702,6 +706,142 @@ def skyview_stamp(ra, decl,
                  'coords: (%.3f, %.3f) from survey: %s and scaling: %s'
                  % (ra, decl, survey, scaling))
         return None
+
+
+
+def fits_finder_chart(
+        fitsfile,
+        outfile,
+        wcsfrom=None,
+        scale=ZScaleInterval(),
+        stretch=LinearStretch(),
+        colormap=plt.cm.gray_r,
+        findersize=None,
+        overlay_ra=None,
+        overlay_decl=None,
+        overlay_pltopts={'marker':'o',
+                         'markersize':10.0,
+                         'markerfacecolor':'none',
+                         'markeredgewidth':2.0,
+                         'markeredgecolor':'red'},
+        grid=False,
+        gridcolor='k',
+):
+    '''This makes a finder chart from fitsfile with an optional object position
+    overlay.
+
+    ra, decl are ndarrays with the RA and declination, respectively.
+
+    wcsobject is the astropy.wcs WCS() object used to generate the sky to pixel
+    transformation. It will be used to set the axes projection correctly for the
+    finder plot.
+
+    outfile is the file to write the finder to.
+
+    framesize is the x and y size of the FITS this finder chart is based on
+
+    pngscale sets the normalization for the FITS pixel values. This is an
+    astropy.visualization Interval object:
+
+    http://docs.astropy.org/en/stable/visualization/normalization.html
+
+    colormap sets the matplotlib.pyplot colormap object to use for the colormap
+    of the plot.
+
+    showgrid sets if a coordinate grid is shown in the finder plot. gridcolor
+    sets the matplotlib color of the grid lines.
+
+    '''
+
+    # read in the FITS file
+    if wcsfrom is None:
+
+        hdulist = pyfits.open(fitsfile)
+        img, hdr = hdulist[0].data, hdulist[0].header
+        hdulist.close()
+
+        frameshape = (hdr['NAXIS1'], hdr['NAXIS2'])
+        w = WCS(hdr)
+
+    elif os.path.exists(wcsfrom):
+
+        hdulist = pyfits.open(fitsfile)
+        img, hdr = hdulist[0].data, hdulist[0].header
+        hdulist.close()
+
+        frameshape = (hdr['NAXIS1'], hdr['NAXIS2'])
+        w = WCS(wcsfrom)
+
+    else:
+
+        LOGERROR('could not determine WCS info for input FITS: %s' %
+                 fitsfile)
+        return None
+
+
+    # use the frame shape to set the output PNG's dimensions
+    if findersize is None:
+        fig = plt.figure(figsize=(frameshape[0]/100.0,
+                                  frameshape[1]/100.0))
+    else:
+        fig = plt.figure(figsize=findersize)
+
+
+    fig.add_subplot(111,projection=w)
+
+    if scale is not None and stretch is not None:
+
+        norm = ImageNormalize(img,
+                              interval=scale,
+                              stretch=stretch)
+
+        plt.imshow(img,
+                   origin='lower',
+                   cmap=colormap,
+                   norm=norm)
+
+    else:
+
+        plt.imshow(img,
+                   origin='lower',
+                   cmap=colormap)
+
+
+    # handle additional options
+    if grid:
+        plt.grid(color=gridcolor,ls='solid',lw=1.0)
+
+
+    # handle the object overlay
+    if overlay_ra is not None and overlay_decl is not None:
+
+        our_pltopts = dict(
+            transform=plt.gca().get_transform('fk5'),
+            marker='o',
+            markersize=10.0,
+            markerfacecolor='none',
+            markeredgewidth=2.0,
+            markeredgecolor='red',
+            rasterized=True,
+            linestyle='none'
+        )
+        if overlay_pltopts is not None and isinstance(overlay_pltopts,
+                                                      dict):
+            our_pltopts.update(overlay_pltopts)
+
+
+        plt.gca().set_autoscale_on(False)
+        plt.gca().plot(overlay_ra,
+                       overlay_decl,
+                       **our_pltopts)
+
+    plt.xlabel('Right Ascension [deg]')
+    plt.ylabel('Declination [deg]')
+
+    plt.savefig(outfile, dpi=100.0)
+    plt.close('all')
+
+    return outfile
 
 
 
