@@ -95,6 +95,11 @@ import base64
 import numpy as np
 import scipy.spatial as sps
 
+import astropy.io.fits as pyfits
+from astropy.wcs import WCS
+from astropy.visualization import MinMaxInterval, ZScaleInterval, \
+    ImageNormalize, LinearStretch
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -130,6 +135,7 @@ from astrobase.varclass import varfeatures, starfeatures, periodicfeatures
 from astrobase.lcmath import normalize_magseries, \
     time_bin_magseries_with_errs, sigclip_magseries
 from astrobase.periodbase.kbls import bls_snr
+from astrobase.plotbase import fits_finder_chart
 
 from astrobase.checkplot import _pkl_magseries_plot, \
     _pkl_phased_magseries_plot, xmatch_external_catalogs, \
@@ -454,8 +460,19 @@ def make_lclist(basedir,
                          'objectinfo.ra','objectinfo.decl',
                          'objectinfo.ndet','objectinfo.sdssr'],
                 makecoordindex=['objectinfo.ra','objectinfo.decl'],
-                fieldfits=None,
-                fitswcsfrom=None,
+                field_fitsfile=None,
+                field_wcsfrom=None,
+                field_scale=ZScaleInterval(),
+                field_stretch=LinearStretch(),
+                field_colormap=plt.cm.gray_r,
+                field_findersize=None,
+                field_pltopts={'marker':'o',
+                               'markersize':10.0,
+                               'markerfacecolor':'none',
+                               'markeredgewidth':2.0,
+                               'markeredgecolor':'red'},
+                field_grid=False,
+                field_gridcolor='k',
                 maxlcs=None,
                 nworkers=20):
 
@@ -485,14 +502,20 @@ def make_lclist(basedir,
     keys for the right ascension and declination for each object. These will be
     used to make a kdtree for fast look-up by position later by filter_lclist.
 
-    fieldfits if not None, is the path to a FITS image containing the objects
-    these light curves are for. If this is provided, make_lclist will use the
-    WCS information in the FITS itself if fitswcsfrom is None (or from a WCS
-    header file pointed to by fitswcsfrom) to obtain x and y pixel coordinates
-    for all of the objects in the field. This can be later visualized easily.
+    field_fitsfile if not None, is the path to a FITS image containing the
+    objects these light curves are for. If this is provided, make_lclist will
+    use the WCS information in the FITS itself if field_wcsfrom is None (or from
+    a WCS header file pointed to by field_wcsfrom) to obtain x and y pixel
+    coordinates for all of the objects in the field. A finder chart will also be
+    made using astrobase.plotbase.fits_finder_chart using the corresponding
+    field_scale, _stretch, _colormap, _findersize, _pltopts, _grid, and
+    _gridcolors keyword arguments for that function.
 
-    TODO: implement fieldfits and fitswcsfrom
-    TODO: implement a make_lclist_finder function to generate a PNG with overlay
+    maxlcs sets how many light curves to process in the input LC list generated
+    by searching for LCs in `basedir`.
+
+    nworkers sets the number of parallel workers to launch to collect
+    information from the light curves.
 
     This returns a pickle file.
 
@@ -687,6 +710,71 @@ def make_lclist(basedir,
                              makecoordindex)
                 raise
 
+        # generate the xy pairs if fieldfits is not None
+        if field_fitsfile and os.path.exists(field_fitsfile):
+
+            # read in the FITS file
+            if field_wcsfrom is None:
+
+                hdulist = pyfits.open(field_fitsfile)
+                img, hdr = hdulist[0].data, hdulist[0].header
+                hdulist.close()
+
+                w = WCS(hdr)
+                wcsok = True
+
+            elif os.path.exists(wcsfrom):
+
+                hdulist = pyfits.open(field_fitsfile)
+                img, hdr = hdulist[0].data, hdulist[0].header
+                hdulist.close()
+
+                frameshape = (hdr['NAXIS1'], hdr['NAXIS2'])
+                w = WCS(wcsfrom)
+                wcsok = True
+
+            else:
+
+                LOGERROR('could not determine WCS info for input FITS: %s' %
+                         fitsfile)
+                wcsok = False
+
+            if wcsok:
+
+                # first, transform the ra/decl to x/y and put these in the
+                # lclist output dict
+                radecl = np.column_stack((objra, objdecl))
+                lclistdict['objects']['framexy'] = w.all_world2pix(
+                    radecl,
+                    1
+                )
+
+                # next, we'll make a PNG plot for the finder
+                finder_outfile = os.path.join(
+                    os.path.dirname(outfile),
+                    os.path.splitext(os.path.basename(outfile))[0] + '.png'
+                )
+
+                finder_png = fits_finder_chart(
+                    field_fitsfile,
+                    finder_outfile,
+                    wcsfrom=field_wcsfrom,
+                    scale=field_scale,
+                    stretch=field_stretch,
+                    colormap=field_colormap,
+                    findersize=field_findersize,
+                    overlay_ra=objra,
+                    overlay_decl=objdecl,
+                    overlay_pltopts=field_pltopts,
+                    grid=field_grid,
+                    gridcolor=field_gridcolor
+                )
+
+                if finder_png is not None:
+                    LOGINFO('generated a finder PNG '
+                            'with an object position overlay '
+                            'for this LC list: %s' % finder_png)
+
 
         # write the pickle
         with open(outfile,'wb') as outfd:
@@ -704,6 +792,8 @@ def make_lclist(basedir,
 
 def filter_lclist(listpickle,
                   objectidcol='objectid',
+                  racol='ra',
+                  declcol='decl',
                   xmatchexternal=None,
                   xmatchdistarcsec=3.0,
                   externalcolnums=(0,1,2),
@@ -714,6 +804,19 @@ def filter_lclist(listpickle,
                   conesearch=None,
                   columnfilters=None,
                   conesearchworkers=1,
+                  field_fitsfile=None,
+                  field_wcsfrom=None,
+                  field_scale=ZScaleInterval(),
+                  field_stretch=LinearStretch(),
+                  field_colormap=plt.cm.gray_r,
+                  field_findersize=None,
+                  field_pltopts={'marker':'o',
+                                 'markersize':10.0,
+                                 'markerfacecolor':'none',
+                                 'markeredgewidth':2.0,
+                                 'markeredgecolor':'red'},
+                  field_grid=False,
+                  field_gridcolor='k',
                   copylcsto=None):
 
     '''This is used to collect light curves based on selection criteria.
@@ -764,7 +867,7 @@ def filter_lclist(listpickle,
     [center_ra_deg, center_decl_deg, search_radius_deg]
 
     This is used with the kdtree in the lclist pickle to only return objects
-    that are in the specified region. consearchworkers specifies the number of
+    that are in the specified region. conesearchworkers specifies the number of
     parallel workers that can be launched by scipy to search for objects in the
     kdtree.
 
@@ -785,6 +888,16 @@ def filter_lclist(listpickle,
 
     <operand> is a float, int, or string.
 
+
+    field_fitsfile if not None, is the path to a FITS image containing the
+    objects these light curves are for. If this is provided, filter_lclist will
+    use the WCS information in the FITS itself if field_wcsfrom is None (or from
+    a WCS header file pointed to by field_wcsfrom) to obtain x and y pixel
+    coordinates for all of the objects in the field. A finder chart will also be
+    made for the objects matching all the filters. This will use
+    astrobase.plotbase.fits_finder_chart using the corresponding field_scale,
+    _stretch, _colormap, _findersize, _pltopts, _grid, and _gridcolors keyword
+    arguments for that function.
 
     If copylcsto is not None, it is interpreted as a directory target to copy
     all the light curves that match the specified conditions.
@@ -979,6 +1092,68 @@ def filter_lclist(listpickle,
 
         filteredobjectids = lclist['objects'][objectidcol]
         filteredlcfnames = lclist['objects']['lcfname']
+
+
+    # if we're told to make a finder chart with the selected objects
+    if field_fitsfile is not None and os.path.exists(field_fitsfile):
+
+        # get the RA and DEC of the matching objects
+        matching_ra = lclist['objects'][racol][finalfilterind]
+        matching_decl = lclist['objects'][declcol][finalfilterind]
+
+        matching_postfix = []
+
+        if xmatchexternal is not None:
+            matching_postfix.append(
+                'xmatch_%s' %
+                os.path.splitext(os.path.basename(xmatchexternal))[0]
+            )
+        if conesearch is not None:
+            matching_postfix.append('conesearch_RA%.3f_DEC%.3f_RAD%.5f' %
+                                    tuple(conesearch))
+
+        if columnfilters is not None:
+            for cfi, cf in enumerate(columnfilters):
+                if cfi == 0:
+                    matching_postfix.append('filter_%s_%s_%s' %
+                                            tuple(cf.split('|')))
+                else:
+                    matching_postfix.append('_and_%s_%s_%s' %
+                                            tuple(cf.split('|')))
+
+        if len(matching_postfix) > 0:
+            matching_postfix = '-%s' % '_'.join(matching_postfix)
+        else:
+            matching_postfix = ''
+
+        # next, we'll make a PNG plot for the finder
+        finder_outfile = os.path.join(
+            os.path.dirname(listpickle),
+            '%s%s.png' %
+            (os.path.splitext(os.path.basename(listpickle))[0],
+             matching_postfix)
+        )
+
+        finder_png = fits_finder_chart(
+            field_fitsfile,
+            finder_outfile,
+            wcsfrom=field_wcsfrom,
+            scale=field_scale,
+            stretch=field_stretch,
+            colormap=field_colormap,
+            findersize=field_findersize,
+            overlay_ra=matching_ra,
+            overlay_decl=matching_decl,
+            overlay_pltopts=field_pltopts,
+            grid=field_grid,
+            gridcolor=field_gridcolor
+        )
+
+        if finder_png is not None:
+            LOGINFO('generated a finder PNG '
+                    'with an object position overlay '
+                    'for this filtered LC list: %s' % finder_png)
+
 
 
     # if copylcsto is not None, copy LCs over to it

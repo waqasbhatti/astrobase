@@ -730,26 +730,50 @@ def fits_finder_chart(
     '''This makes a finder chart from fitsfile with an optional object position
     overlay.
 
-    ra, decl are ndarrays with the RA and declination, respectively.
+    Args
+    ----
 
-    wcsobject is the astropy.wcs WCS() object used to generate the sky to pixel
-    transformation. It will be used to set the axes projection correctly for the
-    finder plot.
+    `fitsfile` is the FITS file to use to make the finder chart
 
-    outfile is the file to write the finder to.
+    `outfile` is the name of the output file. This can be a png or pdf or
+    whatever else matplotlib can write given a filename and extension.
 
-    framesize is the x and y size of the FITS this finder chart is based on
+    If `wcsfrom` is None, the WCS to transform the RA/Dec to pixel x/y will be
+    taken from the FITS header of `fitsfile`. If this is not None, it must be a
+    FITS or similar file that contains a WCS header in its first extension.
 
-    pngscale sets the normalization for the FITS pixel values. This is an
-    astropy.visualization Interval object:
+    `scale` sets the normalization for the FITS pixel values. This is an
+    astropy.visualization Interval object.
 
-    http://docs.astropy.org/en/stable/visualization/normalization.html
+    `stretch` sets the stretch function for mapping FITS pixel values to output
+    pixel values. This is an astropy.visualization Stretch object.
 
-    colormap sets the matplotlib.pyplot colormap object to use for the colormap
-    of the plot.
+    See http://docs.astropy.org/en/stable/visualization/normalization.html for
+    details on `scale` and `stretch` objects.
 
-    showgrid sets if a coordinate grid is shown in the finder plot. gridcolor
-    sets the matplotlib color of the grid lines.
+    `colormap` is a matplotlib color map object to use for the output image.
+
+    If `findersize` is None, the output image size will be set by the NAXIS1 and
+    NAXIS2 keywords in the input `fitsfile` FITS header. Otherwise, `findersize`
+    must be a tuple with the intended x and y size of the image in inches (all
+    output images will use a DPI = 100).
+
+    `overlay_ra` and `overlay_decl` are ndarrays containing the RA and Dec
+    values to overplot on the image as an overlay.
+
+    `overlay_pltopts` controls how the overlay points will be plotted. This a
+    dict with standard matplotlib marker, etc. kwargs.
+
+    `grid` sets if a grid will be made on the output image.
+
+    `gridcolor` sets the color of the grid lines. This is a usual matplotib
+    color spec string.
+
+
+    Returns
+    -------
+
+    The filename of the generated output image if successful. None otherwise.
 
     '''
 
