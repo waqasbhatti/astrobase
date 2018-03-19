@@ -56,13 +56,16 @@ for your purposes.
   Python pickles: If you want to interactively browse through large numbers of
   checkplots (e.g., as part of a large variable star classification project),
   you can use the `checkplotserver` webapp that works on checkplot pickle
-  files. This interface (see below for an example) allows you to set and save
-  variability tags, object type tags, best periods and epochs, and comments for
-  each object using a browser-based UI (see below). The information entered can
-  then be exported as CSV or JSON for the next stage of work. The
-  [lightcurves-and-checkplots](https://github.com/waqasbhatti/astrobase-notebooks/blob/master/lightcurves-and-checkplots.ipynb)
-  Jupyter notebook outlines how to do this. A more detailed example using light curves of an arbitrary format is available
-  in the
+  files. This interface allows you to review all phased light curves from all
+  period-finder methods applied, set and save variability tags, object type
+  tags, best periods and epochs, and comments for each object using a
+  browser-based UI (see below). The information entered can then be exported as
+  CSV or JSON for the next stage of a variable star classification pipeline.
+
+  The
+  [lightcurves-and-checkplots](https://nbviewer.jupyter.org/github/waqasbhatti/astrobase-notebooks/blob/master/lightcurves-and-checkplots.ipynb)
+  Jupyter notebook outlines how to do this. A more detailed example using light
+  curves of an arbitrary format is available in the
   [lc-collection-work](https://nbviewer.jupyter.org/github/waqasbhatti/astrobase-notebooks/blob/master/lc-collection-work.ipynb)
   notebook, which shows how to add in support for a custom LC format, add
   neighbor, cross-match, and color-mag diagram info to checkplots, and visualize
@@ -72,11 +75,12 @@ for your purposes.
 
   PNG images: Alternatively, if you want to simply glance through lots of
   checkplots (e.g. for an initial look at a collection of light curves), there's
-  a tiny `checkplot-viewer` webapp available (see below for an example) that
-  operates on checkplot PNG images. The
-  [lightcurve-work](https://github.com/waqasbhatti/astrobase-notebooks/blob/master/lightcurve-work.ipynb) Jupyter notebook goes
-  through an example of generating these checkplot PNGs for light curves. See
-  the [checkplot-viewer.js](astrobase/cpserver/checkplot-viewer.js) file for more
+  a `checkplot-viewer` webapp available that operates on checkplot PNG
+  images. The
+  [lightcurve-work](https://nbviewer.jupyter.org/github/waqasbhatti/astrobase-notebooks/blob/master/lightcurve-work.ipynb)
+  Jupyter notebook goes through an example of generating these checkplot PNGs
+  for light curves. See the
+  [checkplot-viewer.js](astrobase/cpserver/checkplot-viewer.js) file for more
   instructions and [checkplot-viewer.png](astrobase/data/checkplot-viewer.png)
   for a screenshot.
 
@@ -85,16 +89,19 @@ for your purposes.
 
 - **[emailutils](astrobase/emailutils.py)**: contains a simple emailer
   function suitable for use in long-running scripts and the like; this uses the
-  provided credentials and server to send messages
+  provided credentials and server to send messages.
+
+- **[fakelcs](astrobase/fakelcs)**: modules and functions to conduct an
+  end-to-end variable star recovery simulation.
 
 - **[fortney2k7](astrobase/services/fortney2k7.py)**: giant planet models from Fortney
-  et al. 2007, ApJ, 2659, 1661 made importable as Python dicts
+  et al. 2007, ApJ, 2659, 1661 made importable as Python dicts.
 
 - **[hatsurveys](astrobase/hatsurveys)**: modules to read, filter, and normalize
-  light curves from various HAT surveys
+  light curves from various HAT surveys.
 
 - **[lcdb](astrobase/lcdb.py)**: a lightweight wrapper around the
-  `psycopg2` library to talk to PostgreSQL database servers
+  `psycopg2` library to talk to PostgreSQL database servers.
 
 - **[lcmath](astrobase/lcmath.py)**: functions for light curve operations such
   as phasing, normalization, binning (in time and phase), sigma-clipping,
@@ -139,11 +146,16 @@ for your purposes.
 - **[timeutils](astrobase/timeutils.py)**: functions for converting from
   Julian dates to Baryocentric Julian dates, and precessing coordinates between
   equinoxes and due to proper motion; this will automatically download and save
-  the JPL ephemerides **de430.bsp** from JPL upon first import
+  the JPL ephemerides **de430.bsp** from JPL upon first import.
 
 - **[varbase](astrobase/varbase)**: functions for calculating variability
   indices for light curves, fitting and obtaining Fourier coefficients for use
-  in classifications, and other variability features
+  in classifications, and other variability features.
+
+- **[varclass](astrobase/varclass)**: functions for calculating various
+  variability, stellar color and motion, and neighbor proximity features, along
+  with a Random Forest based classifier.
+
 
 # Installation
 
