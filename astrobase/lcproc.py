@@ -391,7 +391,12 @@ def lclist_parallel_worker(task):
 
         # read the light curve in
         lcdict = readerfunc(lcf)
-        if len(lcdict) == 2:
+
+        # this should handle lists/tuples being returned by readerfunc
+        # we assume that the first element is the actual lcdict
+        # FIXME: figure out how to not need this assumption
+        if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+             (isinstance(lcdict[0], dict)) ):
             lcdict = lcdict[0]
 
         # insert all of the columns
@@ -1218,7 +1223,12 @@ def timebinlc(lcfile,
 
     # get the LC into a dict
     lcdict = readerfunc(lcfile)
-    if isinstance(lcdict, tuple) and isinstance(lcdict[0],dict):
+
+    # this should handle lists/tuples being returned by readerfunc
+    # we assume that the first element is the actual lcdict
+    # FIXME: figure out how to not need this assumption
+    if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+         (isinstance(lcdict[0], dict)) ):
         lcdict = lcdict[0]
 
     # skip already binned light curves
@@ -1439,7 +1449,12 @@ def get_varfeatures(lcfile,
 
         # get the LC into a dict
         lcdict = readerfunc(lcfile)
-        if isinstance(lcdict, tuple) and isinstance(lcdict[0],dict):
+
+        # this should handle lists/tuples being returned by readerfunc
+        # we assume that the first element is the actual lcdict
+        # FIXME: figure out how to not need this assumption
+        if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+             (isinstance(lcdict[0], dict)) ):
             lcdict = lcdict[0]
 
         resultdict = {'objectid':lcdict['objectid'],
@@ -1809,14 +1824,25 @@ def get_periodicfeatures(pfpickle,
 
         # get the object LC into a dict
         lcdict = readerfunc(lcfile)
-        if isinstance(lcdict, tuple) and isinstance(lcdict[0],dict):
+
+        # this should handle lists/tuples being returned by readerfunc
+        # we assume that the first element is the actual lcdict
+        # FIXME: figure out how to not need this assumption
+        if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+             (isinstance(lcdict[0], dict)) ):
             lcdict = lcdict[0]
 
         # get the nbr object LC into a dict if there is one
         if nbrlcf is not None:
 
             nbrlcdict = readerfunc(nbrlcf)
-            if isinstance(nbrlcdict, tuple) and isinstance(nbrlcdict[0],dict):
+
+            # this should handle lists/tuples being returned by readerfunc
+            # we assume that the first element is the actual lcdict
+            # FIXME: figure out how to not need this assumption
+            if ( (isinstance(nbrlcdict, list) or
+                  isinstance(nbrlcdict, tuple)) and
+                 (isinstance(nbrlcdict[0], dict)) ):
                 nbrlcdict = nbrlcdict[0]
 
         # this will be the output file
@@ -2391,7 +2417,12 @@ def get_starfeatures(lcfile,
 
         # get the LC into a dict
         lcdict = readerfunc(lcfile)
-        if isinstance(lcdict, tuple) and isinstance(lcdict[0],dict):
+
+        # this should handle lists/tuples being returned by readerfunc
+        # we assume that the first element is the actual lcdict
+        # FIXME: figure out how to not need this assumption
+        if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+             (isinstance(lcdict[0], dict)) ):
             lcdict = lcdict[0]
 
         resultdict = {'objectid':lcdict['objectid'],
@@ -3392,7 +3423,12 @@ def runpf(lcfile,
 
         # get the LC into a dict
         lcdict = readerfunc(lcfile)
-        if isinstance(lcdict, tuple) and isinstance(lcdict[0],dict):
+
+        # this should handle lists/tuples being returned by readerfunc
+        # we assume that the first element is the actual lcdict
+        # FIXME: figure out how to not need this assumption
+        if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+             (isinstance(lcdict[0], dict)) ):
             lcdict = lcdict[0]
 
         outfile = os.path.join(outdir, 'periodfinding-%s.pkl' %
@@ -3847,7 +3883,12 @@ def update_checkplotdict_nbrlcs(
             continue
 
         lcdict = readerfunc(lcfpath)
-        if isinstance(lcdict, tuple) and isinstance(lcdict[0],dict):
+
+        # this should handle lists/tuples being returned by readerfunc
+        # we assume that the first element is the actual lcdict
+        # FIXME: figure out how to not need this assumption
+        if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+             (isinstance(lcdict[0], dict)) ):
             lcdict = lcdict[0]
 
 
@@ -4079,7 +4120,12 @@ def runcp(pfpickle,
 
 
     lcdict = readerfunc(lcfpath)
-    if isinstance(lcdict, tuple) and isinstance(lcdict[0], dict):
+
+    # this should handle lists/tuples being returned by readerfunc
+    # we assume that the first element is the actual lcdict
+    # FIXME: figure out how to not need this assumption
+    if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+         (isinstance(lcdict[0], dict)) ):
         lcdict = lcdict[0]
 
     # normalize using the special function if specified
