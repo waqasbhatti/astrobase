@@ -1366,6 +1366,7 @@ def _pkl_finder_objectinfo(objectinfo,
                            custom_bandpasses=None,
                            lclistpkl=None,
                            nbrradiusarcsec=30.0,
+                           maxnumneighbors=5,
                            plotdpi=100,
                            findercachedir='~/.astrobase/stamp-cache',
                            verbose=True):
@@ -1443,7 +1444,7 @@ def _pkl_finder_objectinfo(objectinfo,
                     )
                     matchdists, matchinds = kdt.query(
                         obj_xyz,
-                        k=6, # get closest 5 neighbors + tgt
+                        k=maxnumneighbors+1, # get maxnumneighbors + tgt
                         distance_upper_bound=match_xyzdist
                     )
 
@@ -2727,6 +2728,7 @@ def checkplot_dict(lspinfolist,
                    getvarfeatures=True,
                    lclistpkl=None,
                    nbrradiusarcsec=60.0,
+                   maxnumneighbors=5,
                    xmatchinfo=None,
                    xmatchradiusarcsec=3.0,
                    lcfitfunc=None,
@@ -2790,6 +2792,10 @@ def checkplot_dict(lspinfolist,
     If getvarfeatures is True, will use the function
     varbase.features.all_nonperiodic_features to calculate several light curve
     features such as the median, MAD, Stetson J index, CDPP, percentiles, etc.
+
+    maxnumneighbors is the maximum number of neighbors within 
+    nbrradiusarcsec to include as neighbors in the checkplot for checking 
+    for blends.
 
     lcfitfunc is a Python function that is used to fit a model to the light
     curve. This is then overplotted for each phased light curve in the
@@ -2924,6 +2930,7 @@ def checkplot_dict(lspinfolist,
                                            custom_bandpasses=custom_bandpasses,
                                            lclistpkl=lclistpkl,
                                            nbrradiusarcsec=nbrradiusarcsec,
+                                           maxnumneighbors=maxnumneighbors,
                                            plotdpi=plotdpi,
                                            verbose=verbose,
                                            findercachedir=findercachedir)
