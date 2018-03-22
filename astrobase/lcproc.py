@@ -3694,7 +3694,7 @@ def parallel_pf(lclist,
 
     # make the output directory if it doesn't exist
     if not os.path.exists(outdir):
-        os.mkdirs(outdir)
+        os.makedirs(outdir)
 
     if (liststartindex is not None) and (listmaxobjects is None):
         lclist = lclist[liststartindex:]
