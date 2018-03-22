@@ -556,6 +556,8 @@ class CheckplotHandler(tornado.web.RequestHandler):
                                 'xpix':nbr['xpix'],
                                 'ypix':nbr['ypix'],
                                 'distarcsec':nbr['dist'],
+                                'magdiffs':nbr['magdiffs'],
+                                'colordiffs':nbr['colordiffs']
                             }
                         }
 

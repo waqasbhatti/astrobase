@@ -1599,6 +1599,50 @@ var cpv = {
                         math.format(nbrdecl, 5) + ')</a>, distance: ' +
                         math.format(nbrdist,3) + '&Prime;</h6>';
 
+                    // add in the magdiffs and colordiffs for this neighbor if
+                    // available
+                    var nbr_magdiffs = cpv.currcp.neighbors[ni].magdiffs;
+                    var nbr_colordiffs = cpv.currcp.neighbors[ni].colordiffs;
+
+
+                    // the magdiffs for this neighbor
+                    if (nbr_magdiffs != undefined) {
+
+                        var nbr_magdiff_dd_start =
+                            '<div class="dropdown">' +
+                            '<a href="#" ' +
+                            'title="Click to see the neighbor-target magnitude ' +
+                            'diffs for this neighbor" ' +
+                            'id="magdiff-' + ni +
+                            '-dropdown" data-toggle="dropdown" ' +
+                            'aria-haspopup="true" aria-expanded="false">' +
+                            '<strong>target-neighbor mag diffs</strong>' +
+                            '</a>' +
+                            '<div class="dropdown-menu text-sm-center cmd-dn" ' +
+                            'aria-labelledby="magdiff-' + ni + '-dropdown">' +
+                            '<table id="magdiff-' + ni +'-table" class="table-sm">' +
+                            '<thead>' +
+                            '<tr><th>band</th><th>mag diff</th></tr>';
+
+                        var nbr_magdiff_keys = Object.getOwnPropertyNames(
+                            nbr_magdiffs
+                        );
+
+
+
+                        var nbr_magdiff_dd_end =
+                            '</table>' +
+                            '</div></div>';
+
+                    }
+
+                    // the colordiffs for this neighbor
+                    if (nbr_colordiffs != undefined) {
+
+
+                    }
+
+
                     if (cpv.currcp.neighbors[ni].magseries != undefined) {
 
                         // add the magseries plot for this neighbor
