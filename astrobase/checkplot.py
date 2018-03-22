@@ -2793,8 +2793,8 @@ def checkplot_dict(lspinfolist,
     varbase.features.all_nonperiodic_features to calculate several light curve
     features such as the median, MAD, Stetson J index, CDPP, percentiles, etc.
 
-    maxnumneighbors is the maximum number of neighbors within 
-    nbrradiusarcsec to include as neighbors in the checkplot for checking 
+    maxnumneighbors is the maximum number of neighbors within
+    nbrradiusarcsec to include as neighbors in the checkplot for checking
     for blends.
 
     lcfitfunc is a Python function that is used to fit a model to the light
@@ -3204,6 +3204,7 @@ def checkplot_pickle(lspinfolist,
                      getvarfeatures=True,
                      lclistpkl=None,
                      nbrradiusarcsec=60.0,
+                     maxnumneighbors=5,
                      xmatchinfo=None,
                      xmatchradiusarcsec=3.0,
                      externalplots=None,
@@ -3396,6 +3397,7 @@ def checkplot_pickle(lspinfolist,
         getvarfeatures=getvarfeatures,
         lclistpkl=lclistpkl,
         nbrradiusarcsec=nbrradiusarcsec,
+        maxnumneighbors=maxnumneighbors,
         xmatchinfo=xmatchinfo,
         xmatchradiusarcsec=xmatchradiusarcsec,
         lcfitfunc=lcfitfunc,
