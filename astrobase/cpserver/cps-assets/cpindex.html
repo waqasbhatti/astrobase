@@ -199,12 +199,21 @@
         <div class="row py-1">
           <div class="col-sm-12 text-sm-center">
 
+            {% if readonly %}
+            <select class="custom-select mousetrap" id="varcheck" name="varcheck" disabled>
+              <option value="0" selected>Is this a variable star?</option>
+              <option value="1">Probably a variable star</option>
+              <option value="2">Probably not a variable star</option>
+              <option value="3">Not sure if variable or not</option>
+            </select>
+            {% else %}
             <select class="custom-select mousetrap" id="varcheck" name="varcheck">
               <option value="0" selected>Is this a variable star?</option>
               <option value="1">Probably a variable star</option>
               <option value="2">Probably not a variable star</option>
               <option value="3">Not sure if variable or not</option>
             </select>
+            {% end %}
 
           </div>
         </div>
@@ -215,17 +224,37 @@
               <strong>Period and epoch</strong>
             </div>
 
+            {% if readonly %}
+
+            <input type="text" class="form-control mousetrap"
+                   name="objectperiod" id="objectperiod"
+                   placeholder="period in days" disabled>
+            <input type="text" class="form-control mousetrap"
+                   name="objectepoch" id="objectepoch"
+                   placeholder="epoch in JD" disabled>
+
+            {% else %}
+
             <input type="text" class="form-control mousetrap"
                    name="objectperiod" id="objectperiod"
                    placeholder="period in days">
             <input type="text" class="form-control mousetrap"
                    name="objectepoch" id="objectepoch"
                    placeholder="epoch in JD">
+
+            {% end %}
+
           </div>
         </div>
 
         <div class="row">
           <div class="col-sm-12">
+
+            {% if readonly %}
+            <div class="text-sm-center">
+              <strong>Variability tags</strong>
+            </div>
+            {% else %}
             <div class="text-sm-center dropdown">
               <a href="#" id="vartag-dropdown" data-toggle="dropdown"
                  aria-haspopup="true" aria-expanded="false">
@@ -273,15 +302,30 @@
               </div>
 
             </div>
+            {% end %}
+
+            {% if readonly %}
+            <input type="text" class="form-control mousetrap"
+                   name="vartags" id="vartags"
+                   placeholder="variability tag 1, variability tag 2,..." disabled>
+            {% else %}
             <input type="text" class="form-control mousetrap"
                    name="vartags" id="vartags"
                    placeholder="variability tag 1, variability tag 2,...">
+            {% end %}
           </div>
         </div>
 
         <div class="row">
           <div class="col-sm-12">
 
+            {% if readonly %}
+
+            <div class="text-sm-center">
+              <strong>Object tags</strong>
+            </div>
+
+            {% else %}
             <div class="text-sm-center dropdown">
               <a href="#" id="objtag-dropdown" data-toggle="dropdown"
                  aria-haspopup="true" aria-expanded="false">
@@ -325,9 +369,17 @@
               </div>
 
             </div>
+            {% end %}
+
+            {% if readonly %}
+            <input type="text" class="form-control mousetrap"
+                   name="objecttags" id="objecttags"
+                   placeholder="object tag 1, object tag 2,..." disabled>
+            {% else %}
             <input type="text" class="form-control mousetrap"
                    name="objecttags" id="objecttags"
                    placeholder="object tag 1, object tag 2,...">
+            {% end %}
           </div>
         </div>
 
@@ -338,8 +390,13 @@
               <strong>Comments</strong>
             </div>
 
+            {% if readonly %}
+            <textarea class="form-control mousetrap" id="objectcomments" rows="5" disabled>
+            </textarea>
+            {% else %}
             <textarea class="form-control mousetrap" id="objectcomments" rows="5">
             </textarea>
+            {% end %}
           </div>
         </div>
 
@@ -404,21 +461,19 @@
                   <!--      href="#lcfit" role="tab">LC Fit</a> -->
                   <!-- </li> -->
 
-                  {% end %}
-
                   <li class="nav-item">
                     <a class="nav-link"
                        data-toggle="tab"
                        href="#cpsave" role="tab">Save/Reset</a>
                   </li>
 
+                  {% end %}
 
                 </ul>
               </div>
             </div>
 
             <div class="tab-content">
-
 
               <!-- this tab panel contains an overview of the object -->
               <div class="tab-pane active" id="overview" role="tabpanel">
@@ -1027,12 +1082,9 @@
               <!--   </div> -->
               <!-- </div> -->
 
-              {% end %}
 
               <!-- this tab contains save and export tools -->
               <div class="tab-pane" id="cpsave" role="tabpanel">
-
-                {% if not readonly %}
 
                 <!-- this is the save tool results link -->
                 <div class="row tool-header-panel">
@@ -1059,8 +1111,6 @@
 
                 </div>
 
-                {% end %}
-
                 <!-- this is the save to PNG link -->
                 <div class="row tool-header-panel">
 
@@ -1081,6 +1131,10 @@
                 </div>
 
               </div>
+
+              <!-- end of tool tab panels -->
+
+              {% end %}
 
             </div>
 

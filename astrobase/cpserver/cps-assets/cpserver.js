@@ -491,7 +491,8 @@ var cpv = {
     cpfpng: null,
 
     // this checks if the server is in readonly mode. disables controls if so.
-    readonlymode: false,
+    // always start in readonly mode for safety
+    readonlymode: true,
 
     // these help in moving quickly through the phased LCs
     currphasedind: null,
@@ -2464,37 +2465,40 @@ var cpv = {
 
             evt.preventDefault();
 
-            var period = $(this).attr('data-period');
-            var epoch = $(this).attr('data-epoch');
+            // if readonlymode is true, we don't do anything
+            if (!cpv.readonlymode) {
 
-            // update the boxes
-            $('#objectperiod').val(period);
-            $('#objectepoch').val(epoch);
+                var period = $(this).attr('data-period');
+                var epoch = $(this).attr('data-epoch');
 
-            // save to currcp
-            cpv.currcp.varinfo.varperiod = parseFloat(period);
-            cpv.currcp.varinfo.varepoch = parseFloat(epoch);
+                // update the boxes
+                $('#objectperiod').val(period);
+                $('#objectepoch').val(epoch);
 
-            // add a selected class
-            var selector = '[data-periodind="' +
-                $(this).attr('data-periodind') +
-                '"]';
-            $('.phasedlc-container-row').removeClass('phasedlc-selected');
-            $(this)
-                .children('.phasedlc-container-row')
-                .filter(selector).addClass('phasedlc-selected');
+                // save to currcp
+                cpv.currcp.varinfo.varperiod = parseFloat(period);
+                cpv.currcp.varinfo.varepoch = parseFloat(epoch);
 
-            // change the variability flag to 'probably variable' automatically.
-            // since we've set a period and epoch, we probably think this is a
-            // variable
-            var currvarflag = $('#varcheck').val();
+                // add a selected class
+                var selector = '[data-periodind="' +
+                    $(this).attr('data-periodind') +
+                    '"]';
+                $('.phasedlc-container-row').removeClass('phasedlc-selected');
+                $(this)
+                    .children('.phasedlc-container-row')
+                    .filter(selector).addClass('phasedlc-selected');
 
-            // we only change if the flag is not set already
-            if (currvarflag == 0) {
-                $('#varcheck').val(1);
+                // change the variability flag to 'probably variable' automatically.
+                // since we've set a period and epoch, we probably think this is a
+                // variable
+                var currvarflag = $('#varcheck').val();
+
+                // we only change if the flag is not set already
+                if (currvarflag == 0) {
+                    $('#varcheck').val(1);
+                }
+
             }
-
-
 
         });
 
@@ -2528,22 +2532,30 @@ var cpv = {
 
         // alt+shift+v: object is variable
         Mousetrap.bind('alt+shift+v', function() {
-            $('#varcheck').val(1);
+            if (!cpv.readonlymode) {
+                $('#varcheck').val(1);
+            }
         });
 
         // alt+shift+u: object is not variable
         Mousetrap.bind('alt+shift+n', function() {
-            $('#varcheck').val(2);
+            if (!cpv.readonlymode) {
+                $('#varcheck').val(2);
+            }
         });
 
         // alt+shift+m: object is maybe a variable
         Mousetrap.bind('alt+shift+m', function() {
-            $('#varcheck').val(3);
+            if (!cpv.readonlymode) {
+                $('#varcheck').val(3);
+            }
         });
 
         // alt+shift+u: unset variability flag
         Mousetrap.bind('alt+shift+u', function() {
-            $('#varcheck').val(0);
+            if (!cpv.readonlymode) {
+                $('#varcheck').val(0);
+            }
         });
 
 
@@ -2556,17 +2568,17 @@ var cpv = {
             $('#overview-tab').click();
         });
 
-        // alt+shift+l: overview tab
+        // alt+shift+l: phased LCs tab
         Mousetrap.bind('alt+shift+l', function() {
             $('#phasedlcs-tab').click();
         });
 
-        // alt+shift+x: overview tab
+        // alt+shift+x: cross-matches tab
         Mousetrap.bind('alt+shift+x', function() {
             $('#xmatches-tab').click();
         });
 
-        // alt+shift+p: overview tab
+        // alt+shift+p: period-search tab
         Mousetrap.bind('alt+shift+p', function() {
             $('#periodsearch-tab').click();
         });
@@ -2599,35 +2611,42 @@ var cpv = {
 
         // ctrl+shift+e: save this as a PNG
         Mousetrap.bind('alt+shift+e', function() {
-            cpv.save_checkplot(undefined, undefined, true);
+            if (!cpv.readonlymode) {
+                cpv.save_checkplot(undefined, undefined, true);
+            }
         });
 
 
         // ctrl+down: move to the next phased LC and set it as the best
         Mousetrap.bind(['ctrl+shift+down'], function() {
 
-            // check the current phased index, if it's null, then set it to 0
-            if (cpv.currphasedind == null) {
-                cpv.currphasedind = 0;
-            }
-            else if (cpv.currphasedind < cpv.maxphasedind) {
-                cpv.currphasedind = cpv.currphasedind + 1;
-            }
+            if (!cpv.readonlymode) {
 
-            var targetelem = $('a[data-phasedind="' +
-                               cpv.currphasedind + '"]');
-
-            if (targetelem.length > 0) {
-
-                // scroll into view if the bottom of this plot is off the screen
-                if ( (targetelem.offset().top + targetelem.height()) >
-                     $(window).height() ) {
-                    targetelem[0].scrollIntoView(true);
+                // check the current phased index, if it's null, then set it to
+                // 0
+                if (cpv.currphasedind == null) {
+                    cpv.currphasedind = 0;
+                }
+                else if (cpv.currphasedind < cpv.maxphasedind) {
+                    cpv.currphasedind = cpv.currphasedind + 1;
                 }
 
-                // click on the target elem to select it
-                targetelem.click();
+                var targetelem = $('a[data-phasedind="' +
+                                   cpv.currphasedind + '"]');
 
+                if (targetelem.length > 0) {
+
+                    // scroll into view if the bottom of this plot is off the
+                    // screen
+                    if ( (targetelem.offset().top + targetelem.height()) >
+                         $(window).height() ) {
+                        targetelem[0].scrollIntoView(true);
+                    }
+
+                    // click on the target elem to select it
+                    targetelem.click();
+
+                }
             }
 
         });
@@ -2635,27 +2654,32 @@ var cpv = {
         // ctrl+up: move to the prev phased LC and set it as the best
         Mousetrap.bind(['ctrl+shift+up'], function() {
 
-            // check the current phased index, if it's null, then set it to 0
-            if (cpv.currphasedind == null) {
-                cpv.currphasedind = 0;
-            }
-            else if (cpv.currphasedind > 0) {
-                cpv.currphasedind = cpv.currphasedind - 1;
-            }
+            if (!cpv.readonlymode) {
 
-            var targetelem = $('a[data-phasedind="' +
-                               cpv.currphasedind + '"]');
-
-            if (targetelem.length > 0) {
-
-                // scroll into view if the top of this plot is off the screen
-                if ( (targetelem.offset().top) > $(window).height() ) {
-                    targetelem[0].scrollIntoView(true);
+                // check the current phased index, if it's null, then set it to
+                // 0
+                if (cpv.currphasedind == null) {
+                    cpv.currphasedind = 0;
+                }
+                else if (cpv.currphasedind > 0) {
+                    cpv.currphasedind = cpv.currphasedind - 1;
                 }
 
-                // click on the target elem to select it
-                targetelem.click();
+                var targetelem = $('a[data-phasedind="' +
+                                   cpv.currphasedind + '"]');
 
+                if (targetelem.length > 0) {
+
+                    // scroll into view if the top of this plot is off the
+                    // screen
+                    if ( (targetelem.offset().top) > $(window).height() ) {
+                        targetelem[0].scrollIntoView(true);
+                    }
+
+                    // click on the target elem to select it
+                    targetelem.click();
+
+                }
             }
 
         });
@@ -2663,37 +2687,46 @@ var cpv = {
         // ctrl+backspace: clear variability tags
         Mousetrap.bind('ctrl+backspace', function() {
 
-            // clean out the variability info and input boxes
-            $('#vartags').val('');
-            $('#objectperiod').val('');
-            $('#objectepoch').val('');
-            $('#varcheck').val(0);
+            if (!cpv.readonlymode) {
 
-            cpv.currcp.varinfo.objectisvar = null;
-            cpv.currcp.varinfo.varepoch = null;
-            cpv.currcp.varinfo.varisperiodic = null;
-            cpv.currcp.varinfo.varperiod = null;
-            cpv.currcp.varinfo.vartags = null;
+                // clean out the variability info and input boxes
+                $('#vartags').val('');
+                $('#objectperiod').val('');
+                $('#objectepoch').val('');
+                $('#varcheck').val(0);
+
+                cpv.currcp.varinfo.objectisvar = null;
+                cpv.currcp.varinfo.varepoch = null;
+                cpv.currcp.varinfo.varisperiodic = null;
+                cpv.currcp.varinfo.varperiod = null;
+                cpv.currcp.varinfo.vartags = null;
+
+            }
+
         });
 
         // ctrl+shift+backspace: clear all info
         Mousetrap.bind('ctrl+shift+backspace', function() {
 
-            // clean out the all info and input boxes
-            $('#vartags').val('');
-            $('#objectperiod').val('');
-            $('#objectepoch').val('');
-            $('#objecttags').val('');
-            $('#objectcomments').val('');
-            $('#varcheck').val(0);
+            if (!cpv.readonlymode) {
 
-            cpv.currcp.varinfo.objectisvar = null;
-            cpv.currcp.varinfo.varepoch = null;
-            cpv.currcp.varinfo.varisperiodic = null;
-            cpv.currcp.varinfo.varperiod = null;
-            cpv.currcp.varinfo.vartags = null;
-            cpv.currcp.objectinfo.objecttags = null;
-            cpv.currcp.comments = null;
+                // clean out the all info and input boxes
+                $('#vartags').val('');
+                $('#objectperiod').val('');
+                $('#objectepoch').val('');
+                $('#objecttags').val('');
+                $('#objectcomments').val('');
+                $('#varcheck').val(0);
+
+                cpv.currcp.varinfo.objectisvar = null;
+                cpv.currcp.varinfo.varepoch = null;
+                cpv.currcp.varinfo.varisperiodic = null;
+                cpv.currcp.varinfo.varperiod = null;
+                cpv.currcp.varinfo.vartags = null;
+                cpv.currcp.objectinfo.objecttags = null;
+                cpv.currcp.comments = null;
+
+            }
         });
 
 
@@ -2704,25 +2737,29 @@ var cpv = {
         // ctrl+shift+1: planet candidate
         Mousetrap.bind('ctrl+shift+1', function () {
 
-            // get the current val for the vartags
-            var vartags = $('#vartags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            vartags = vartags.split(',');
-            vartags.forEach(function (item, index, arr) {
-                vartags[index] = item.trim();
-            });
+                // get the current val for the vartags
+                var vartags = $('#vartags').val();
 
-            // remove any item with zero length
-            vartags = vartags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                vartags = vartags.split(',');
+                vartags.forEach(function (item, index, arr) {
+                    vartags[index] = item.trim();
+                });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
-            if (vartags.indexOf('planet candidate') == -1) {
-                vartags.push('planet candidate');
-                vartags = vartags.join(', ');
-                $('#vartags').val(vartags);
+                // remove any item with zero length
+                vartags = vartags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this vartag in the list and append it if
+                // we don't.
+                if (vartags.indexOf('planet candidate') == -1) {
+                    vartags.push('planet candidate');
+                    vartags = vartags.join(', ');
+                    $('#vartags').val(vartags);
+                }
+
             }
 
         });
@@ -2730,25 +2767,29 @@ var cpv = {
         // ctrl+shift+2: RRab pulsator
         Mousetrap.bind('ctrl+shift+2', function () {
 
-            // get the current val for the vartags
-            var vartags = $('#vartags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            vartags = vartags.split(',');
-            vartags.forEach(function (item, index, arr) {
-                vartags[index] = item.trim();
-            });
+                // get the current val for the vartags
+                var vartags = $('#vartags').val();
 
-            // remove any item with zero length
-            vartags = vartags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                vartags = vartags.split(',');
+                vartags.forEach(function (item, index, arr) {
+                    vartags[index] = item.trim();
+                });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
-            if (vartags.indexOf('RR Lyrae pulsator') == -1) {
-                vartags.push('RR Lyrae pulsator');
-                vartags = vartags.join(', ');
-                $('#vartags').val(vartags);
+                // remove any item with zero length
+                vartags = vartags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this vartag in the list and append it if
+                // we don't.
+                if (vartags.indexOf('RR Lyrae pulsator') == -1) {
+                    vartags.push('RR Lyrae pulsator');
+                    vartags = vartags.join(', ');
+                    $('#vartags').val(vartags);
+                }
+
             }
 
         });
@@ -2756,25 +2797,29 @@ var cpv = {
         // ctrl+shift+3: RRc pulsator
         Mousetrap.bind('ctrl+shift+3', function () {
 
-            // get the current val for the vartags
-            var vartags = $('#vartags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            vartags = vartags.split(',');
-            vartags.forEach(function (item, index, arr) {
-                vartags[index] = item.trim();
-            });
+                // get the current val for the vartags
+                var vartags = $('#vartags').val();
 
-            // remove any item with zero length
-            vartags = vartags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                vartags = vartags.split(',');
+                vartags.forEach(function (item, index, arr) {
+                    vartags[index] = item.trim();
+                });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
-            if (vartags.indexOf('Cepheid pulsator') == -1) {
-                vartags.push('Cepheid pulsator');
-                vartags = vartags.join(', ');
-                $('#vartags').val(vartags);
+                // remove any item with zero length
+                vartags = vartags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this vartag in the list and append it if
+                // we don't.
+                if (vartags.indexOf('Cepheid pulsator') == -1) {
+                    vartags.push('Cepheid pulsator');
+                    vartags = vartags.join(', ');
+                    $('#vartags').val(vartags);
+                }
+
             }
 
         });
@@ -2782,25 +2827,29 @@ var cpv = {
         // ctrl+shift+4: starspot rotation
         Mousetrap.bind('ctrl+shift+4', function () {
 
-            // get the current val for the vartags
-            var vartags = $('#vartags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            vartags = vartags.split(',');
-            vartags.forEach(function (item, index, arr) {
-                vartags[index] = item.trim();
-            });
+                // get the current val for the vartags
+                var vartags = $('#vartags').val();
 
-            // remove any item with zero length
-            vartags = vartags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                vartags = vartags.split(',');
+                vartags.forEach(function (item, index, arr) {
+                    vartags[index] = item.trim();
+                });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
-            if (vartags.indexOf('starspot rotation') == -1) {
-                vartags.push('starspot rotation');
-                vartags = vartags.join(', ');
-                $('#vartags').val(vartags);
+                // remove any item with zero length
+                vartags = vartags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this vartag in the list and append it if
+                // we don't.
+                if (vartags.indexOf('starspot rotation') == -1) {
+                    vartags.push('starspot rotation');
+                    vartags = vartags.join(', ');
+                    $('#vartags').val(vartags);
+                }
+
             }
 
         });
@@ -2808,25 +2857,29 @@ var cpv = {
         // ctrl+shift+5: flare star
         Mousetrap.bind('ctrl+shift+5', function () {
 
-            // get the current val for the vartags
-            var vartags = $('#vartags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            vartags = vartags.split(',');
-            vartags.forEach(function (item, index, arr) {
-                vartags[index] = item.trim();
-            });
+                // get the current val for the vartags
+                var vartags = $('#vartags').val();
 
-            // remove any item with zero length
-            vartags = vartags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                vartags = vartags.split(',');
+                vartags.forEach(function (item, index, arr) {
+                    vartags[index] = item.trim();
+                });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
-            if (vartags.indexOf('flare star') == -1) {
-                vartags.push('flare star');
-                vartags = vartags.join(', ');
-                $('#vartags').val(vartags);
+                // remove any item with zero length
+                vartags = vartags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this vartag in the list and append it if
+                // we don't.
+                if (vartags.indexOf('flare star') == -1) {
+                    vartags.push('flare star');
+                    vartags = vartags.join(', ');
+                    $('#vartags').val(vartags);
+                }
+
             }
 
         });
@@ -2834,25 +2887,29 @@ var cpv = {
         // ctrl+shift+6: contact EB
         Mousetrap.bind('ctrl+shift+6', function () {
 
-            // get the current val for the vartags
-            var vartags = $('#vartags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            vartags = vartags.split(',');
-            vartags.forEach(function (item, index, arr) {
-                vartags[index] = item.trim();
-            });
+                // get the current val for the vartags
+                var vartags = $('#vartags').val();
 
-            // remove any item with zero length
-            vartags = vartags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                vartags = vartags.split(',');
+                vartags.forEach(function (item, index, arr) {
+                    vartags[index] = item.trim();
+                });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
-            if (vartags.indexOf('contact EB') == -1) {
-                vartags.push('contact EB');
-                vartags = vartags.join(', ');
-                $('#vartags').val(vartags);
+                // remove any item with zero length
+                vartags = vartags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this vartag in the list and append it if
+                // we don't.
+                if (vartags.indexOf('contact EB') == -1) {
+                    vartags.push('contact EB');
+                    vartags = vartags.join(', ');
+                    $('#vartags').val(vartags);
+                }
+
             }
 
         });
@@ -2860,25 +2917,29 @@ var cpv = {
         // ctrl+shift+7: semi-detached EB
         Mousetrap.bind('ctrl+shift+7', function () {
 
-            // get the current val for the vartags
-            var vartags = $('#vartags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            vartags = vartags.split(',');
-            vartags.forEach(function (item, index, arr) {
-                vartags[index] = item.trim();
-            });
+                // get the current val for the vartags
+                var vartags = $('#vartags').val();
 
-            // remove any item with zero length
-            vartags = vartags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                vartags = vartags.split(',');
+                vartags.forEach(function (item, index, arr) {
+                    vartags[index] = item.trim();
+                });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
-            if (vartags.indexOf('semi-detached EB') == -1) {
-                vartags.push('semi-detached EB');
-                vartags = vartags.join(', ');
-                $('#vartags').val(vartags);
+                // remove any item with zero length
+                vartags = vartags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this vartag in the list and append it if
+                // we don't.
+                if (vartags.indexOf('semi-detached EB') == -1) {
+                    vartags.push('semi-detached EB');
+                    vartags = vartags.join(', ');
+                    $('#vartags').val(vartags);
+                }
+
             }
 
         });
@@ -2886,25 +2947,29 @@ var cpv = {
         // ctrl+shift+8: detached EB
         Mousetrap.bind('ctrl+shift+8', function () {
 
-            // get the current val for the vartags
-            var vartags = $('#vartags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            vartags = vartags.split(',');
-            vartags.forEach(function (item, index, arr) {
-                vartags[index] = item.trim();
-            });
+                // get the current val for the vartags
+                var vartags = $('#vartags').val();
 
-            // remove any item with zero length
-            vartags = vartags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                vartags = vartags.split(',');
+                vartags.forEach(function (item, index, arr) {
+                    vartags[index] = item.trim();
+                });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
-            if (vartags.indexOf('detached EB') == -1) {
-                vartags.push('detached EB');
-                vartags = vartags.join(', ');
-                $('#vartags').val(vartags);
+                // remove any item with zero length
+                vartags = vartags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this vartag in the list and append it if
+                // we don't.
+                if (vartags.indexOf('detached EB') == -1) {
+                    vartags.push('detached EB');
+                    vartags = vartags.join(', ');
+                    $('#vartags').val(vartags);
+                }
+
             }
 
         });
@@ -2912,25 +2977,29 @@ var cpv = {
         // ctrl+shift+9: weird variability
         Mousetrap.bind('ctrl+shift+9', function () {
 
-            // get the current val for the vartags
-            var vartags = $('#vartags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            vartags = vartags.split(',');
-            vartags.forEach(function (item, index, arr) {
-                vartags[index] = item.trim();
-            });
+                // get the current val for the vartags
+                var vartags = $('#vartags').val();
 
-            // remove any item with zero length
-            vartags = vartags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                vartags = vartags.split(',');
+                vartags.forEach(function (item, index, arr) {
+                    vartags[index] = item.trim();
+                });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
-            if (vartags.indexOf('weird variability') == -1) {
-                vartags.push('weird variability');
-                vartags = vartags.join(', ');
-                $('#vartags').val(vartags);
+                // remove any item with zero length
+                vartags = vartags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this vartag in the list and append it if
+                // we don't.
+                if (vartags.indexOf('weird variability') == -1) {
+                    vartags.push('weird variability');
+                    vartags = vartags.join(', ');
+                    $('#vartags').val(vartags);
+                }
+
             }
 
         });
@@ -2938,25 +3007,29 @@ var cpv = {
         // ctrl+shift+0: period harmonic
         Mousetrap.bind('ctrl+shift+0', function () {
 
-            // get the current val for the vartags
-            var vartags = $('#vartags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            vartags = vartags.split(',');
-            vartags.forEach(function (item, index, arr) {
-                vartags[index] = item.trim();
-            });
+                // get the current val for the vartags
+                var vartags = $('#vartags').val();
 
-            // remove any item with zero length
-            vartags = vartags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                vartags = vartags.split(',');
+                vartags.forEach(function (item, index, arr) {
+                    vartags[index] = item.trim();
+                });
 
-            // check if we already have this vartag in the list and append it if
-            // we don't.
-            if (vartags.indexOf('period harmonic') == -1) {
-                vartags.push('period harmonic');
-                vartags = vartags.join(', ');
-                $('#vartags').val(vartags);
+                // remove any item with zero length
+                vartags = vartags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this vartag in the list and append it if
+                // we don't.
+                if (vartags.indexOf('period harmonic') == -1) {
+                    vartags.push('period harmonic');
+                    vartags = vartags.join(', ');
+                    $('#vartags').val(vartags);
+                }
+
             }
 
         });
@@ -2969,25 +3042,29 @@ var cpv = {
         // alt+shift+1: white dwarf
         Mousetrap.bind(['alt+shift+1','command+shift+1'], function () {
 
-            // get the current val for the objecttags
-            var objecttags = $('#objecttags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            objecttags = objecttags.split(',');
-            objecttags.forEach(function (item, index, arr) {
-                objecttags[index] = item.trim();
-            });
+                // get the current val for the objecttags
+                var objecttags = $('#objecttags').val();
 
-            // remove any item with zero length
-            objecttags = objecttags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                objecttags = objecttags.split(',');
+                objecttags.forEach(function (item, index, arr) {
+                    objecttags[index] = item.trim();
+                });
 
-            // check if we already have this objecttag in the list and append it
-            // if we don't.
-            if (objecttags.indexOf('white dwarf') == -1) {
-                objecttags.push('white dwarf');
-                objecttags = objecttags.join(', ');
-                $('#objecttags').val(objecttags);
+                // remove any item with zero length
+                objecttags = objecttags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this objecttag in the list and append it
+                // if we don't.
+                if (objecttags.indexOf('white dwarf') == -1) {
+                    objecttags.push('white dwarf');
+                    objecttags = objecttags.join(', ');
+                    $('#objecttags').val(objecttags);
+                }
+
             }
 
         });
@@ -2995,25 +3072,29 @@ var cpv = {
         // alt+shift+2: hot star (OB)
         Mousetrap.bind(['alt+shift+2','command+shift+2'], function () {
 
-            // get the current val for the objecttags
-            var objecttags = $('#objecttags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            objecttags = objecttags.split(',');
-            objecttags.forEach(function (item, index, arr) {
-                objecttags[index] = item.trim();
-            });
+                // get the current val for the objecttags
+                var objecttags = $('#objecttags').val();
 
-            // remove any item with zero length
-            objecttags = objecttags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                objecttags = objecttags.split(',');
+                objecttags.forEach(function (item, index, arr) {
+                    objecttags[index] = item.trim();
+                });
 
-            // check if we already have this objecttag in the list and append it
-            // if we don't.
-            if (objecttags.indexOf('hot star (OB)') == -1) {
-                objecttags.push('hot star (OB)');
-                objecttags = objecttags.join(', ');
-                $('#objecttags').val(objecttags);
+                // remove any item with zero length
+                objecttags = objecttags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this objecttag in the list and append it
+                // if we don't.
+                if (objecttags.indexOf('hot star (OB)') == -1) {
+                    objecttags.push('hot star (OB)');
+                    objecttags = objecttags.join(', ');
+                    $('#objecttags').val(objecttags);
+                }
+
             }
 
         });
@@ -3021,25 +3102,29 @@ var cpv = {
         // alt+shift+3: A star
         Mousetrap.bind(['alt+shift+3','command+shift+3'], function () {
 
-            // get the current val for the objecttags
-            var objecttags = $('#objecttags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            objecttags = objecttags.split(',');
-            objecttags.forEach(function (item, index, arr) {
-                objecttags[index] = item.trim();
-            });
+                // get the current val for the objecttags
+                var objecttags = $('#objecttags').val();
 
-            // remove any item with zero length
-            objecttags = objecttags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                objecttags = objecttags.split(',');
+                objecttags.forEach(function (item, index, arr) {
+                    objecttags[index] = item.trim();
+                });
 
-            // check if we already have this objecttag in the list and append it
-            // if we don't.
-            if (objecttags.indexOf('A star') == -1) {
-                objecttags.push('A star');
-                objecttags = objecttags.join(', ');
-                $('#objecttags').val(objecttags);
+                // remove any item with zero length
+                objecttags = objecttags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this objecttag in the list and append it
+                // if we don't.
+                if (objecttags.indexOf('A star') == -1) {
+                    objecttags.push('A star');
+                    objecttags = objecttags.join(', ');
+                    $('#objecttags').val(objecttags);
+                }
+
             }
 
         });
@@ -3047,25 +3132,29 @@ var cpv = {
         // alt+shift+4: F or G dwarf
         Mousetrap.bind(['alt+shift+4','command+shift+4'], function () {
 
-            // get the current val for the objecttags
-            var objecttags = $('#objecttags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            objecttags = objecttags.split(',');
-            objecttags.forEach(function (item, index, arr) {
-                objecttags[index] = item.trim();
-            });
+                // get the current val for the objecttags
+                var objecttags = $('#objecttags').val();
 
-            // remove any item with zero length
-            objecttags = objecttags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                objecttags = objecttags.split(',');
+                objecttags.forEach(function (item, index, arr) {
+                    objecttags[index] = item.trim();
+                });
 
-            // check if we already have this objecttag in the list and append it
-            // if we don't.
-            if (objecttags.indexOf('F or G dwarf') == -1) {
-                objecttags.push('F or G dwarf');
-                objecttags = objecttags.join(', ');
-                $('#objecttags').val(objecttags);
+                // remove any item with zero length
+                objecttags = objecttags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this objecttag in the list and append it
+                // if we don't.
+                if (objecttags.indexOf('F or G dwarf') == -1) {
+                    objecttags.push('F or G dwarf');
+                    objecttags = objecttags.join(', ');
+                    $('#objecttags').val(objecttags);
+                }
+
             }
 
         });
@@ -3073,25 +3162,29 @@ var cpv = {
         // alt+shift+5: red giant
         Mousetrap.bind(['alt+shift+5','command+shift+5'], function () {
 
-            // get the current val for the objecttags
-            var objecttags = $('#objecttags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            objecttags = objecttags.split(',');
-            objecttags.forEach(function (item, index, arr) {
-                objecttags[index] = item.trim();
-            });
+                // get the current val for the objecttags
+                var objecttags = $('#objecttags').val();
 
-            // remove any item with zero length
-            objecttags = objecttags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                objecttags = objecttags.split(',');
+                objecttags.forEach(function (item, index, arr) {
+                    objecttags[index] = item.trim();
+                });
 
-            // check if we already have this objecttag in the list and append it
-            // if we don't.
-            if (objecttags.indexOf('red giant') == -1) {
-                objecttags.push('red giant');
-                objecttags = objecttags.join(', ');
-                $('#objecttags').val(objecttags);
+                // remove any item with zero length
+                objecttags = objecttags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this objecttag in the list and append it
+                // if we don't.
+                if (objecttags.indexOf('red giant') == -1) {
+                    objecttags.push('red giant');
+                    objecttags = objecttags.join(', ');
+                    $('#objecttags').val(objecttags);
+                }
+
             }
 
         });
@@ -3099,25 +3192,29 @@ var cpv = {
         // alt+shift+6: K or M dwarf
         Mousetrap.bind(['alt+shift+6','command+shift+6'], function () {
 
-            // get the current val for the objecttags
-            var objecttags = $('#objecttags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            objecttags = objecttags.split(',');
-            objecttags.forEach(function (item, index, arr) {
-                objecttags[index] = item.trim();
-            });
+                // get the current val for the objecttags
+                var objecttags = $('#objecttags').val();
 
-            // remove any item with zero length
-            objecttags = objecttags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                objecttags = objecttags.split(',');
+                objecttags.forEach(function (item, index, arr) {
+                    objecttags[index] = item.trim();
+                });
 
-            // check if we already have this objecttag in the list and append it
-            // if we don't.
-            if (objecttags.indexOf('K or M dwarf') == -1) {
-                objecttags.push('K or M dwarf');
-                objecttags = objecttags.join(', ');
-                $('#objecttags').val(objecttags);
+                // remove any item with zero length
+                objecttags = objecttags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this objecttag in the list and append it
+                // if we don't.
+                if (objecttags.indexOf('K or M dwarf') == -1) {
+                    objecttags.push('K or M dwarf');
+                    objecttags = objecttags.join(', ');
+                    $('#objecttags').val(objecttags);
+                }
+
             }
 
         });
@@ -3125,25 +3222,29 @@ var cpv = {
         // alt+shift+7: giant star
         Mousetrap.bind(['alt+shift+7','command+shift+7'], function () {
 
-            // get the current val for the objecttags
-            var objecttags = $('#objecttags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            objecttags = objecttags.split(',');
-            objecttags.forEach(function (item, index, arr) {
-                objecttags[index] = item.trim();
-            });
+                // get the current val for the objecttags
+                var objecttags = $('#objecttags').val();
 
-            // remove any item with zero length
-            objecttags = objecttags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                objecttags = objecttags.split(',');
+                objecttags.forEach(function (item, index, arr) {
+                    objecttags[index] = item.trim();
+                });
 
-            // check if we already have this objecttag in the list and append it
-            // if we don't.
-            if (objecttags.indexOf('giant star') == -1) {
-                objecttags.push('giant star');
-                objecttags = objecttags.join(', ');
-                $('#objecttags').val(objecttags);
+                // remove any item with zero length
+                objecttags = objecttags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this objecttag in the list and append it
+                // if we don't.
+                if (objecttags.indexOf('giant star') == -1) {
+                    objecttags.push('giant star');
+                    objecttags = objecttags.join(', ');
+                    $('#objecttags').val(objecttags);
+                }
+
             }
 
         });
@@ -3151,25 +3252,29 @@ var cpv = {
         // alt+shift+8: dwarf star
         Mousetrap.bind(['alt+shift+8','command+shift+8'], function () {
 
-            // get the current val for the objecttags
-            var objecttags = $('#objecttags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            objecttags = objecttags.split(',');
-            objecttags.forEach(function (item, index, arr) {
-                objecttags[index] = item.trim();
-            });
+                // get the current val for the objecttags
+                var objecttags = $('#objecttags').val();
 
-            // remove any item with zero length
-            objecttags = objecttags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                objecttags = objecttags.split(',');
+                objecttags.forEach(function (item, index, arr) {
+                    objecttags[index] = item.trim();
+                });
 
-            // check if we already have this objecttag in the list and append it
-            // if we don't.
-            if (objecttags.indexOf('dwarf star') == -1) {
-                objecttags.push('dwarf star');
-                objecttags = objecttags.join(', ');
-                $('#objecttags').val(objecttags);
+                // remove any item with zero length
+                objecttags = objecttags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this objecttag in the list and append it
+                // if we don't.
+                if (objecttags.indexOf('dwarf star') == -1) {
+                    objecttags.push('dwarf star');
+                    objecttags = objecttags.join(', ');
+                    $('#objecttags').val(objecttags);
+                }
+
             }
 
         });
@@ -3177,25 +3282,29 @@ var cpv = {
         // alt+shift+9: blended with neighbors
         Mousetrap.bind(['alt+shift+9','command+shift+9'], function () {
 
-            // get the current val for the objecttags
-            var objecttags = $('#objecttags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            objecttags = objecttags.split(',');
-            objecttags.forEach(function (item, index, arr) {
-                objecttags[index] = item.trim();
-            });
+                // get the current val for the objecttags
+                var objecttags = $('#objecttags').val();
 
-            // remove any item with zero length
-            objecttags = objecttags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                objecttags = objecttags.split(',');
+                objecttags.forEach(function (item, index, arr) {
+                    objecttags[index] = item.trim();
+                });
 
-            // check if we already have this objecttag in the list and append it
-            // if we don't.
-            if (objecttags.indexOf('blended with neighbors') == -1) {
-                objecttags.push('blended with neighbors');
-                objecttags = objecttags.join(', ');
-                $('#objecttags').val(objecttags);
+                // remove any item with zero length
+                objecttags = objecttags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this objecttag in the list and append it
+                // if we don't.
+                if (objecttags.indexOf('blended with neighbors') == -1) {
+                    objecttags.push('blended with neighbors');
+                    objecttags = objecttags.join(', ');
+                    $('#objecttags').val(objecttags);
+                }
+
             }
 
         });
@@ -3203,25 +3312,29 @@ var cpv = {
         // alt+shift+0: weird object
         Mousetrap.bind(['alt+shift+0','command+shift+0'], function () {
 
-            // get the current val for the objecttags
-            var objecttags = $('#objecttags').val();
+            if (!cpv.readonlymode) {
 
-            // split by comma and strip extra spaces
-            objecttags = objecttags.split(',');
-            objecttags.forEach(function (item, index, arr) {
-                objecttags[index] = item.trim();
-            });
+                // get the current val for the objecttags
+                var objecttags = $('#objecttags').val();
 
-            // remove any item with zero length
-            objecttags = objecttags
-                .filter(function(val) { return val.length > 0 });
+                // split by comma and strip extra spaces
+                objecttags = objecttags.split(',');
+                objecttags.forEach(function (item, index, arr) {
+                    objecttags[index] = item.trim();
+                });
 
-            // check if we already have this objecttag in the list and append it
-            // if we don't.
-            if (objecttags.indexOf('weird object') == -1) {
-                objecttags.push('weird object');
-                objecttags = objecttags.join(', ');
-                $('#objecttags').val(objecttags);
+                // remove any item with zero length
+                objecttags = objecttags
+                    .filter(function(val) { return val.length > 0 });
+
+                // check if we already have this objecttag in the list and append it
+                // if we don't.
+                if (objecttags.indexOf('weird object') == -1) {
+                    objecttags.push('weird object');
+                    objecttags = objecttags.join(', ');
+                    $('#objecttags').val(objecttags);
+                }
+
             }
 
         });
@@ -3276,6 +3389,11 @@ var cptools = {
     },
 
     run_periodsearch: function () {
+
+        // don't do anything if we're in readonly mode
+        if (cpv.readonlymode) {
+            return null;
+        }
 
         // get the current objectid and checkplot filename
         var currobjectid = $('#objectid').text();
@@ -3803,6 +3921,11 @@ var cptools = {
 
     get_varfeatures: function () {
 
+        // don't do anything if we're in readonly mode
+        if (cpv.readonlymode) {
+            return null;
+        }
+
         // get the current objectid and checkplot filename
         var currobjectid = $('#objectid').text();
         var currfname = $('#objectid').attr('data-fname');
@@ -4039,6 +4162,11 @@ var cptools = {
 
 
     new_phasedlc_plot: function () {
+
+        // don't do anything if we're in readonly mode
+        if (cpv.readonlymode) {
+            return null;
+        }
 
         // get the current objectid and checkplot filename
         var currobjectid = $('#objectid').text();
@@ -4441,6 +4569,11 @@ var cptools = {
 
     prewhiten_lightcurve: function () {
 
+        // don't do anything if we're in readonly mode
+        if (cpv.readonlymode) {
+            return null;
+        }
+
         // get the current objectid and checkplot filename
         var currobjectid = $('#objectid').text();
         var currfname = $('#objectid').attr('data-fname');
@@ -4551,6 +4684,11 @@ var cptools = {
 
 
     mask_signal: function () {
+
+        // don't do anything if we're in readonly mode
+        if (cpv.readonlymode) {
+            return null;
+        }
 
         // get the current objectid and checkplot filename
         var currobjectid = $('#objectid').text();
@@ -4663,6 +4801,11 @@ var cptools = {
 
 
     lcfit_magseries: function () {
+
+        // don't do anything if we're in readonly mode
+        if (cpv.readonlymode) {
+            return null;
+        }
 
         // get the current objectid and checkplot filename
         var currobjectid = $('#objectid').text();
