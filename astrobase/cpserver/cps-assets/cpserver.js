@@ -768,10 +768,25 @@ var cpv = {
                     cpv.currcp.objectinfo.propermotion, 5
                 ) + ' mas/yr';
 
+                if ( (cpv.currcp.objectinfo.pmra_source != undefined) &&
+                     (cpv.currcp.objectinfo.pmdecl_source != undefined) ) {
+
+                    var pmra_source = cpv.currcp.objectinfo.pmra_source;
+                    var pmdecl_source = cpv.currcp.objectinfo.pmdecl_source;
+
+                    // note if the propermotion came from GAIA
+                    if ( (pmra_source == pmdecl_source) &&
+                         (pmra_source == 'gaia') ) {
+                        objectpm = objectpm + ' (from GAIA)';
+                    }
+
+                }
+
             }
             else {
                 var objectpm = '';
             }
+
             // reduced proper motion [Jmag]
             if (cpv.currcp.objectinfo.rpmj != undefined) {
                 var objectrpmj = math.format(

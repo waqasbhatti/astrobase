@@ -1044,6 +1044,7 @@ def color_classification(colorfeatures, pmfeatures):
 def neighbor_gaia_features(objectinfo,
                            lclist_kdtree,
                            neighbor_radius_arcsec,
+                           gaia_matchdist_arcsec=3.0,
                            verbose=True):
     '''Gets several neighbor and GAIA features:
 
@@ -1056,6 +1057,7 @@ def neighbor_gaia_features(objectinfo,
     - total number of all neighbors within 2 x neighbor_radius_arcsec
     - gets the parallax for the object and neighbors
     - calculates the absolute GAIA mag and G-K color for use in CMDs
+    - gets the proper motion in RA/Dec if available
 
     objectinfo is the objectinfo dict from an object light curve
 
@@ -1161,8 +1163,8 @@ def neighbor_gaia_features(objectinfo,
                     infd,
                     names=True,
                     delimiter=',',
-                    dtype='U20,f8,f8,f8,f8,f8,f8,f8,f8',
-                    usecols=(0,1,2,3,4,5,6,7,8)
+                    dtype='U20,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8',
+                    usecols=(0,1,2,3,4,5,6,7,8,9,10,11,12)
                 )
 
             gaia_objlist = np.atleast_1d(gaia_objlist)
@@ -1193,7 +1195,7 @@ def neighbor_gaia_features(objectinfo,
 
 
                 # the first object is likely the match to the object itself
-                if gaia_objlist['dist_arcsec'][0] < 3.0:
+                if gaia_objlist['dist_arcsec'][0] < gaia_matchdist_arcsec:
 
                     if gaia_objlist.size > 1:
 
@@ -1209,6 +1211,10 @@ def neighbor_gaia_features(objectinfo,
                         gaia_mags = gaia_objlist['phot_g_mean_mag']
                         gaia_parallaxes = gaia_objlist['parallax']
                         gaia_parallax_errs = gaia_objlist['parallax_error']
+                        gaia_pmra = gaia_objlist['pmra']
+                        gaia_pmra_err = gaia_objlist['pmra_error']
+                        gaia_pmdecl = gaia_objlist['pmdec']
+                        gaia_pmdecl_err = gaia_objlist['pmdec_error']
 
                         gaia_absolute_mags = magnitudes.absolute_gaia_magnitude(
                             gaia_mags, gaia_parallaxes
@@ -1244,6 +1250,11 @@ def neighbor_gaia_features(objectinfo,
                         gaia_mags = gaia_objlist['phot_g_mean_mag']
                         gaia_parallaxes = gaia_objlist['parallax']
                         gaia_parallax_errs = gaia_objlist['parallax_error']
+                        gaia_pmra = gaia_objlist['pmra']
+                        gaia_pmra_err = gaia_objlist['pmra_error']
+                        gaia_pmdecl = gaia_objlist['pmdec']
+                        gaia_pmdecl_err = gaia_objlist['pmdec_error']
+
                         gaia_absolute_mags = magnitudes.absolute_gaia_magnitude(
                             gaia_mags, gaia_parallaxes
                         )
@@ -1262,15 +1273,17 @@ def neighbor_gaia_features(objectinfo,
                 # otherwise, the object wasn't found in GAIA for some reason
                 else:
 
-                    LOGWARNING('failed: no GAIA objects found within '
-                               '%s of object position (%.3f, %.3f), '
+                    LOGWARNING('no GAIA objects found within '
+                               '%.3f arcsec of object position (%.3f, %.3f), '
                                'closest object is at %.3f arcsec away' %
-                               (3.0, objectinfo['ra'], objectinfo['decl'],
+                               (gaia_matchdist_arcsec,
+                                objectinfo['ra'], objectinfo['decl'],
                                 gaia_objlist['dist_arcsec'][0]))
 
-                    gaia_status = ('failed: no object within 3 '
+                    gaia_status = ('failed: no object within %.3f '
                                    'arcsec, closest = %.3f arcsec' %
-                                   gaia_objlist['dist_arcsec'][0])
+                                   (gaia_matchdist_arcsec,
+                                    gaia_objlist['dist_arcsec'][0]))
 
                     gaia_nneighbors = np.nan
 
@@ -1278,6 +1291,11 @@ def neighbor_gaia_features(objectinfo,
                     gaia_mags = gaia_objlist['phot_g_mean_mag']
                     gaia_parallaxes = gaia_objlist['parallax']
                     gaia_parallax_errs = gaia_objlist['parallax_error']
+                    gaia_pmra = gaia_objlist['pmra']
+                    gaia_pmra_err = gaia_objlist['pmra_error']
+                    gaia_pmdecl = gaia_objlist['pmdec']
+                    gaia_pmdecl_err = gaia_objlist['pmdec_error']
+
                     gaia_absolute_mags = magnitudes.absolute_gaia_magnitude(
                         gaia_mags, gaia_parallaxes
                     )
@@ -1306,6 +1324,10 @@ def neighbor_gaia_features(objectinfo,
                 gaia_xypos = None
                 gaia_parallaxes = None
                 gaia_parallax_errs = None
+                gaia_pmra = None
+                gaia_pmra_err = None
+                gaia_pmdecl = None
+                gaia_pmdecl_err = None
                 gaia_absolute_mags = None
                 gaiak_colors = None
 
@@ -1322,6 +1344,10 @@ def neighbor_gaia_features(objectinfo,
                  'gaia_mags':gaia_mags,
                  'gaia_parallaxes':gaia_parallaxes,
                  'gaia_parallax_errs':gaia_parallax_errs,
+                 'gaia_pmra':gaia_pmra,
+                 'gaia_pmra_err':gaia_pmra_err,
+                 'gaia_pmdecl':gaia_pmdecl,
+                 'gaia_pmdecl_err':gaia_pmdecl_err,
                  'gaia_absolute_mags':gaia_absolute_mags,
                  'gaiak_colors':gaiak_colors,
                  'gaia_dists':gaia_dists,
@@ -1343,6 +1369,10 @@ def neighbor_gaia_features(objectinfo,
                  'gaia_mags':None,
                  'gaia_parallaxes':None,
                  'gaia_parallax_errs':None,
+                 'gaia_pmra':None,
+                 'gaia_pmra_err':None,
+                 'gaia_pmdecl':None,
+                 'gaia_pmdecl_err':None,
                  'gaia_absolute_mags':None,
                  'gaiak_colors':None,
                  'gaia_dists':None,
@@ -1365,6 +1395,10 @@ def neighbor_gaia_features(objectinfo,
              'gaia_mags':None,
              'gaia_parallaxes':None,
              'gaia_parallax_errs':None,
+             'gaia_pmra':None,
+             'gaia_pmra_err':None,
+             'gaia_pmdecl':None,
+             'gaia_pmdecl_err':None,
              'gaia_absolute_mags':None,
              'gaiak_colors':None,
              'gaia_dists':None,

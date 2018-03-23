@@ -1587,17 +1587,59 @@ def _pkl_finder_objectinfo(objectinfo,
                                    deredden=deredden_object,
                                    custom_bandpasses=custom_bandpasses)
 
-        # next, get the coord features
-        coordfeat = coord_features(objectinfo)
-
-        # next, get the color classification
-        colorclass = color_classification(colorfeat, coordfeat)
-
-        # get the neighbor features and GAIA info
+        # next, get the neighbor features and GAIA info
         nbrfeat = neighbor_gaia_features(objectinfo,
                                          kdt,
                                          nbrradiusarcsec,
                                          verbose=False)
+
+        # see if the objectinfo dict has pmra/pmdecl entries.  if it doesn't,
+        # then we'll see if the nbrfeat dict has pmra/pmdecl from GAIA. we'll
+        # set the appropriate provenance keys as well so we know where the PM
+        # came from
+        if ( ('pmra' not in objectinfo) or
+             ( ('pmra' in objectinfo) and
+               ( (objectinfo['pmra'] is None) or
+                 (not np.isfinite(objectinfo['pmra'])) ) ) ):
+
+            if 'ok' in nbrfeat['gaia_status']:
+
+                objectinfo['pmra'] = nbrfeat['gaia_pmra'][0]
+                objectinfo['pmra_err'] = nbrfeat['gaia_pmra_err'][0]
+                objectinfo['pmra_source'] = 'gaia'
+
+                if verbose:
+                    LOGWARNING('pmRA not found in provided objectinfo dict, '
+                               'using value from GAIA')
+
+        else:
+            objectinfo['pmra_source'] = 'light curve'
+
+        if ( ('pmdecl' not in objectinfo) or
+             ( ('pmdecl' in objectinfo) and
+               ( (objectinfo['pmdecl'] is None) or
+                 (not np.isfinite(objectinfo['pmdecl'])) ) ) ):
+
+            if 'ok' in nbrfeat['gaia_status']:
+
+                objectinfo['pmdecl'] = nbrfeat['gaia_pmdecl'][0]
+                objectinfo['pmdecl_err'] = nbrfeat['gaia_pmdecl_err'][0]
+                objectinfo['pmdecl_source'] = 'gaia'
+
+                if verbose:
+                    LOGWARNING('pmDEC not found in provided objectinfo dict, '
+                               'using value from GAIA')
+
+        else:
+            objectinfo['pmdecl_source'] = 'light curve'
+
+
+        # try to get the object's coord features next
+        coordfeat = coord_features(objectinfo)
+
+        # finally, get the object's color classification
+        colorclass = color_classification(colorfeat, coordfeat)
+
 
         # update the objectinfo dict with everything
         objectinfo.update(colorfeat)
@@ -1611,11 +1653,20 @@ def _pkl_finder_objectinfo(objectinfo,
             objectinfo['gaia_absmag'] = objectinfo['gaia_absolute_mags'][0]
             objectinfo['gaia_parallax'] = objectinfo['gaia_parallaxes'][0]
             objectinfo['gaia_parallax_err'] = objectinfo['gaia_parallax_errs'][0]
+            objectinfo['gaia_pmra'] = objectinfo['gaia_pmra'][0]
+            objectinfo['gaia_pmra_err'] = objectinfo['gaia_pmra_err'][0]
+            objectinfo['gaia_pmdecl'] = objectinfo['gaia_pmdecl'][0]
+            objectinfo['gaia_pmdecl_err'] = objectinfo['gaia_pmdecl_err'][0]
+
         else:
             objectinfo['gaiamag'] = np.nan
             objectinfo['gaia_absmag'] = np.nan
             objectinfo['gaia_parallax'] = np.nan
             objectinfo['gaia_parallax_err'] = np.nan
+            objectinfo['gaia_pmra'] = np.nan
+            objectinfo['gaia_pmra_err'] = np.nan
+            objectinfo['gaia_pmdecl'] = np.nan
+            objectinfo['gaia_pmdecl_err'] = np.nan
 
         # put together the initial checkplot pickle dictionary
         # this will be updated by the functions below as appropriate
