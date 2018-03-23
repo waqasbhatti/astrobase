@@ -958,14 +958,24 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 if savetopng:
 
                     cpfpng = os.path.abspath(cpfpath.replace('.pkl','.png'))
-
+                    cpfpng = strio()
                     pngdone = yield self.executor.submit(
                         checkplot_pickle_to_png,
                         cpfpath, cpfpng
                     )
 
-                    if os.path.exists(cpfpng):
-                        resultdict['result']['cpfpng'] = cpfpng
+                    if pngdone is not None:
+
+                        # we'll send back the PNG directly as a base64 encoding
+                        # string, which can then be loaded by the frontend and
+                        # reformed into a download
+                        pngdone.seek(0)
+                        pngbin = pngdone.read()
+                        pngb64 = base64.b64encode(pngbin)
+                        pngdone.close()
+                        del pngbin
+                        resultdict['result']['cpfpng'] = pngb64
+
                     else:
                         resultdict['result']['cpfpng'] = 'png making failed'
 

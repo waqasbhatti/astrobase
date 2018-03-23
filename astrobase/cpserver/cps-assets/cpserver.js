@@ -2207,11 +2207,15 @@ var cpv = {
                     if (!(savetopng === undefined) &&
                         (updateinfo.cpfpng != 'png making failed')) {
 
-                        updatemsg = 'saved PNG to:<br>' +
-                            '<textarea rows="3" ' +
-                            'class="form-control" readonly>' +
-                            updateinfo.cpfpng +
-                            '</textarea>';
+                        console.log('getting checkplot PNG from backend')
+
+                        // prepare the download
+                        var pnglink = "data:image/png;base64," +
+                            encodeURIComponent(updateinfo.cpfpng);
+
+                        updatemsg = '<a href="' + pnglink + '" ' +
+                            'download="checkplot-' + cpv.currcp.objectid +
+                            '.png">download checkplot PNG for this object</a>';
                         $('#alert-box').html(updatemsg);
 
                     }
