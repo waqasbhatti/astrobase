@@ -1597,32 +1597,32 @@ var cpv = {
                         'title="SIMBAD search at these coordinates">' +
                         '(' + math.format(nbrra, 5) + ', ' +
                         math.format(nbrdecl, 5) + ')</a>, distance: ' +
-                        math.format(nbrdist,3) + '&Prime;</h6>';
+                        math.format(nbrdist,3) + '&Prime;';
 
                     // add in the magdiffs and colordiffs for this neighbor if
                     // available
-                    var nbr_magdiffs = cpv.currcp.neighbors[ni].magdiffs;
-                    var nbr_colordiffs = cpv.currcp.neighbors[ni].colordiffs;
+                    var nbr_magdiffs = cpv.currcp.neighbors[ni].objectinfo.magdiffs;
+                    var nbr_colordiffs = cpv.currcp.neighbors[ni].objectinfo.colordiffs;
 
                     // the magdiffs for this neighbor
                     if (nbr_magdiffs != undefined) {
 
                         var nbr_magdiff_dd_start =
-                            '<div class="dropdown">' +
+                            ', <span class="dropdown">' +
                             '<a href="#" ' +
                             'title="Click to see the neighbor-target magnitude ' +
                             'diffs for this neighbor" ' +
                             'id="magdiff-' + ni +
                             '-dropdown" data-toggle="dropdown" ' +
                             'aria-haspopup="true" aria-expanded="false">' +
-                            '<strong>target-neighbor mag diffs</strong>' +
+                            'target-neighbor mag diffs' +
                             '</a>' +
-                            '<div class="dropdown-menu text-sm-center cmd-dn" ' +
+                            '<span class="dropdown-menu text-sm-center" ' +
                             'aria-labelledby="magdiff-' + ni + '-dropdown">' +
                             '<table id="magdiff-' + ni +
-                            '-table" class="table-sm">' +
+                            '-table" class="table table-sm table-bordered">' +
                             '<thead>' +
-                            '<tr><th>band</th><th>mag diff</th></tr>';
+                            '<tr><th>band</th><th>mag diff</th></tr></thead>';
 
                         var nbr_magdiff_keys = Object.getOwnPropertyNames(
                             nbr_magdiffs
@@ -1638,20 +1638,21 @@ var cpv = {
                             magdiff_key = nbr_magdiff_keys[magdiffind];
                             magdiff_table.push(
                                 '<tr><td>' +
-                                    '<strong>' + magdiff_key + '</strong>' +
-                                    '<td></td>' + nbr_magdiffs[magdiff_key] +
-                                    '</tr></td>'
+                                    magdiff_key +
+                                    '</td><td>' +
+                                    math.format(nbr_magdiffs[magdiff_key],4) +
+                                    '</td></tr>'
                             );
 
                         }
 
                         var nbr_magdiff_dd_end =
                             '</table>' +
-                            '</div></div>';
+                            '</span></span>';
 
-                        nbr_magdiff_table = nbr_magdiff_table.join(' ');
+                        magdiff_table = magdiff_table.join(' ');
                         var nbr_magdiff_dd = nbr_magdiff_dd_start +
-                            nbr_magdiff_table +
+                            magdiff_table +
                             nbr_magdiff_dd_end;
                     }
 
@@ -1663,21 +1664,21 @@ var cpv = {
                     if (nbr_colordiffs != undefined) {
 
                         var nbr_colordiff_dd_start =
-                            '<div class="dropdown">' +
+                            ', <span class="dropdown">' +
                             '<a href="#" ' +
                             'title="Click to see the neighbor-target color ' +
                             'diffs for this neighbor" ' +
                             'id="colordiff-' + ni +
                             '-dropdown" data-toggle="dropdown" ' +
                             'aria-haspopup="true" aria-expanded="false">' +
-                            '<strong>target-neighbor color diffs</strong>' +
+                            'target-neighbor color diffs' +
                             '</a>' +
-                            '<div class="dropdown-menu text-sm-center cmd-dn" ' +
+                            '<span class="dropdown-menu text-sm-center" ' +
                             'aria-labelledby="colordiff-' + ni + '-dropdown">' +
                             '<table id="colordiff-' + ni +
-                            '-table" class="table-sm">' +
+                            '-table" class="table table-sm table-bordered">' +
                             '<thead>' +
-                            '<tr><th>color</th><th>color diff</th></tr>';
+                            '<tr><th>color</th><th>color diff</th></tr></thead>';
 
                         var nbr_colordiff_keys = Object.getOwnPropertyNames(
                             nbr_colordiffs
@@ -1693,20 +1694,21 @@ var cpv = {
                             colordiff_key = nbr_colordiff_keys[colordiffind];
                             colordiff_table.push(
                                 '<tr><td>' +
-                                    '<strong>' + colordiff_key + '</strong>' +
-                                    '<td></td>' + nbr_colordiffs[colordiff_key] +
-                                    '</tr></td>'
+                                    colordiff_key +
+                                    '</td><td>' +
+                                    math.format(nbr_colordiffs[colordiff_key],4) +
+                                    '</td></tr>'
                             );
 
                         }
 
                         var nbr_colordiff_dd_end =
                             '</table>' +
-                            '</div></div>';
+                            '</span></span>';
 
-                        nbr_colordiff_table = nbr_colordiff_table.join(' ');
+                        colordiff_table = colordiff_table.join(' ');
                         var nbr_colordiff_dd = nbr_colordiff_dd_start +
-                            nbr_colordiff_table +
+                            colordiff_table +
                             nbr_colordiff_dd_end;
                     }
 
@@ -1716,7 +1718,10 @@ var cpv = {
 
                     // finish up the header row for this neighbor by adding mag
                     // and color diff info if they're available
-                    rowheader = rowheader + nbr_magdiff_dd + nbr_colordiff_dd;
+                    rowheader = rowheader +
+                        nbr_magdiff_dd +
+                        nbr_colordiff_dd +
+                        '</h6>';
 
                     // get the magseries plot for this neighbor if available
                     if (cpv.currcp.neighbors[ni].magseries != undefined) {
