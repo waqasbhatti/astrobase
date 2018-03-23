@@ -381,6 +381,16 @@ var cptracker = {
             // list
             for (obj in reviewedobjects) {
 
+                // update the cptracker.cpdata object with reviewed object info
+                // if it's not in there
+                var thiscpx = reviewedobjects[obj]['checkplot'];
+                if (!(thiscpx in cptracker.cpdata)) {
+                    cptracker.cpdata[thiscpx] = reviewedobjects[obj];
+                    cptracker.cpdata[thiscpx]['objectid'] = obj;
+                    cptracker.cpdata[thiscpx]['comments'] =
+                        reviewedobjects[obj]['comments'];
+                }
+
                 var objdict = reviewedobjects[obj];
 
                 var objectid = obj;
