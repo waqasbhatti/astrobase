@@ -895,6 +895,9 @@ def bls_snr(blsdict,
             thistransdepth = blsres['blsresult']['transdepth']
             thistransduration = blsres['blsresult']['transduration']
             thisbestperiod = blsres['bestperiod']
+            thistransingressbin = blsres['blsresult']['transingressbin']
+            thistransegressbin = blsres['blsresult']['transegressbin']
+            thisnphasebins = blsdict['kwargs']['nphasebins']
 
             # get the minimum light epoch using a spline fit
             try:
@@ -945,7 +948,7 @@ def bls_snr(blsdict,
             # model from the phased mag series. we're centered about 0.0 as the
             # phase of the transit minimum so we need to look at stuff from
             # [0.0, transitphase] and [1.0-transitphase, 1.0]
-            transitphase = thistransduration*period/2.0
+            transitphase = thistransduration/2.0
 
             transitindices = ((tphase < transitphase) |
                               (tphase > (1.0 - transitphase)))
@@ -992,11 +995,9 @@ def bls_snr(blsdict,
 
                 LOGINFO('transit depth (delta): %.5f, '
                         'frac transit length (q): %.3f, '
-                        'transit length in phase: %.3f,'
                         ' SNR: %.3f, altSNR: %.3f' %
                         (thistransdepth,
                          thistransduration,
-                         transitphase*2.0,
                          thissnr, altsnr))
 
             # update the lists with results from this peak
@@ -1004,6 +1005,9 @@ def bls_snr(blsdict,
             nbestasnrs.append(altsnr)
             transitdepth.append(thistransdepth)
             transitduration.append(thistransduration)
+            transingressbin.append(thistransingressbin)
+            transegressbin.append(thistransegressbin)
+            nphasebins.append(thisnphasebins)
 
             # update the diagnostics
             allsubtractedmags.append(subtractedmags)
