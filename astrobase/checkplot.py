@@ -4549,21 +4549,29 @@ def checkplot_pickle_to_png(checkplotin,
     ## WRITE FINAL PNG ##
     #####################
 
-    # check if we've stupidly copied over the same filename as the input pickle
-    # to expected output file
-    if outfile.endswith('pkl'):
-        LOGWARNING('expected output PNG filename ends with .pkl, '
-                   'changed to .png')
-        outfile = outfile.replace('.pkl','.png')
+    if not isinstance(outfile, strio):
 
-    outimg.save(outfile)
+        # check if we've stupidly copied over the same filename as the input
+        # pickle to expected output file
+        if outfile.endswith('pkl'):
+            LOGWARNING('expected output PNG filename ends with .pkl, '
+                       'changed to .png')
+            outfile = outfile.replace('.pkl','.png')
 
-    if os.path.exists(outfile):
-        LOGINFO('checkplot pickle -> checkplot PNG: %s OK' % outfile)
-        return outfile
+    outimg.save(outfile, format='PNG', optimize=True)
+
+    if not isinstance(outfile, strio):
+
+        if os.path.exists(outfile):
+            LOGINFO('checkplot pickle -> checkplot PNG: %s OK' % outfile)
+            return outfile
+        else:
+            LOGERROR('failed to write checkplot PNG')
+            return None
+
     else:
-        LOGERROR('failed to write checkplot PNG')
-        return None
+        LOGINFO('checkplot pickle -> StringIO instance OK')
+        return outfile
 
 
 
