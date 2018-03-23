@@ -400,8 +400,19 @@
           </div>
         </div>
 
+        {% if not readonly %}
+        <div class="row pt-1">
+          <div class="col-sm-12 text-sm-center">
+            <button type="submit" id="save-to-png"
+                    class="btn btn-secondary btn-block">
+              Export checkplot info to PNG
+            </button>
+          </div>
+        </div>
+        {% end %}
+
         <!-- this is the alert box -->
-        <div class="row py-1">
+        <div class="row pt-1">
           <div class="col-sm-12 text-sm-center" id="alert-box">
 
           </div>
@@ -1109,25 +1120,6 @@
                     </button>
                   </div>
 
-                </div>
-
-                <!-- this is the save to PNG link -->
-                <div class="row tool-header-panel">
-
-                  <div class="col-sm-6">
-                    <p>All synced object information in the checkplot pickle can be
-                      exported as a PNG file. This will include the object name,
-                      finder chart, period and epoch, variability and object tags,
-                      comments, the light curve, and finally, periodograms and phased
-                      light curves for all period-finding methods used.
-                  </div>
-
-                  <div class="col-sm-6 py-1">
-                    <button type="submit" id="save-to-png"
-                            class="btn btn-secondary btn-block">
-                      Export synced info from checkplot pickle to PNG
-                    </button>
-                  </div>
                 </div>
 
               </div>
