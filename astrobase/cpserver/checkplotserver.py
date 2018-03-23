@@ -269,7 +269,7 @@ def main():
         static_path=ASSETPATH,
         template_path=ASSETPATH,
         static_url_prefix='/static/',
-        # compress_response=True,
+        compress_response=True,
         debug=DEBUG,
     )
 
