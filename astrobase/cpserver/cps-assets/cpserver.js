@@ -1626,8 +1626,10 @@ var cpv = {
 
                     // add in the magdiffs and colordiffs for this neighbor if
                     // available
-                    var nbr_magdiffs = cpv.currcp.neighbors[ni].objectinfo.magdiffs;
-                    var nbr_colordiffs = cpv.currcp.neighbors[ni].objectinfo.colordiffs;
+                    var nbr_magdiffs =
+                        cpv.currcp.neighbors[ni].objectinfo.magdiffs;
+                    var nbr_colordiffs =
+                        cpv.currcp.neighbors[ni].objectinfo.colordiffs;
 
                     // the magdiffs for this neighbor
                     if (nbr_magdiffs != undefined) {
@@ -2257,8 +2259,10 @@ var cpv = {
 
                 // call the next function. we call this here so we can be sure
                 // the save finished before the next action starts
-                if (!(nextfunc_callback === undefined) &&
-                    !(nextfunc_arg === undefined)) {
+                if ( !((nextfunc_callback === undefined) ||
+                       (nextfunc_callback === null)) &&
+                     !((nextfunc_arg === undefined) ||
+                       (nextfunc_arg === null)) ) {
                     nextfunc_callback(nextfunc_arg);
                     // clean out the alert box if there's a next function
                     $('#alert-box').empty();
@@ -2300,6 +2304,7 @@ var cpv = {
             else {
                 // make sure to save current
                 cpv.save_checkplot(null,null);
+                $('#alert-box').html('');
             }
 
         });
@@ -2322,6 +2327,7 @@ var cpv = {
             else {
                 // make sure to save current
                 cpv.save_checkplot(null,null);
+                $('#alert-box').html('');
             }
 
         });
