@@ -274,20 +274,21 @@ def _make_periodogram(axes,
             dss, dssheader = skyview_stamp(objectinfo['ra'],
                                            objectinfo['decl'],
                                            convolvewith=finderconvolve,
+                                           flip=False,
                                            cachedir=findercachedir,
                                            verbose=verbose)
             stamp = dss
 
             # inset plot it on the current axes
             inset = inset_axes(axes, width="40%", height="40%", loc=1)
-            inset.imshow(stamp,cmap=findercmap)
+            inset.imshow(stamp, cmap=findercmap, origin='lower')
             inset.set_xticks([])
             inset.set_yticks([])
             inset.set_frame_on(False)
 
             # grid lines pointing to the center of the frame
-            inset.axvline(x=150,ymin=0.2,ymax=0.4,linewidth=2.0,color='k')
-            inset.axhline(y=150,xmin=0.2,xmax=0.4,linewidth=2.0,color='k')
+            inset.axvline(x=150,ymin=0.375,ymax=0.45,linewidth=2.0,color='b')
+            inset.axhline(y=150,xmin=0.375,xmax=0.45,linewidth=2.0,color='b')
 
         except Exception as e:
             LOGEXCEPTION('could not fetch a DSS stamp for this '
@@ -1397,10 +1398,16 @@ def _pkl_finder_objectinfo(objectinfo,
                                                  objectinfo['decl'],
                                                  convolvewith=finderconvolve,
                                                  verbose=verbose,
+                                                 flip=False,
                                                  cachedir=findercachedir)
-            finderfig = plt.figure(figsize=(3,3),dpi=plotdpi,frameon=False)
+            finderfig = plt.figure(figsize=(3,3),dpi=plotdpi)
 
-            plt.imshow(finder, cmap=findercmap)
+            # initialize the finder WCS
+            finderwcs = WCS(finderheader)
+
+            # use the WCS transform for the plot
+            ax = finderfig.add_subplot(111, frameon=False)
+            ax.imshow(finder, cmap=findercmap, origin='lower')
 
             # skip down to after nbr stuff for the rest of the finderchart...
 
@@ -1457,9 +1464,6 @@ def _pkl_finder_objectinfo(objectinfo,
                     # for the objects (I think)
                     neighbors = []
 
-                    # initialize the finder WCS
-                    finderwcs = WCS(finderheader)
-
                     nbrind = 0
 
                     for md, mi in zip(matchdists, matchinds):
@@ -1510,18 +1514,18 @@ def _pkl_finder_objectinfo(objectinfo,
                                 offy = annotatey + 30.0
                                 yha = 'center'
 
-                            plt.annotate('N%s' % nbrind,
-                                         (annotatex, annotatey),
-                                         xytext=(offx, offy),
-                                         arrowprops={'facecolor':'blue',
-                                                     'edgecolor':'blue',
-                                                     'width':1.0,
-                                                     'headwidth':1.0,
-                                                     'headlength':0.1,
-                                                     'shrink':0.0},
-                                         color='blue',
-                                         horizontalalignment=xha,
-                                         verticalalignment=yha)
+                            axes.annotate('N%s' % nbrind,
+                                          (annotatex, annotatey),
+                                          xytext=(offx, offy),
+                                          arrowprops={'facecolor':'blue',
+                                                      'edgecolor':'blue',
+                                                      'width':1.0,
+                                                      'headwidth':1.0,
+                                                      'headlength':0.1,
+                                                      'shrink':0.0},
+                                          color='blue',
+                                          horizontalalignment=xha,
+                                          verticalalignment=yha)
 
             # if there are no neighbors, set the 'neighbors' key to None
             else:
@@ -1532,12 +1536,12 @@ def _pkl_finder_objectinfo(objectinfo,
             #
             # finish up the finder chart after neighbors are processed
             #
-            plt.xticks([])
-            plt.yticks([])
+            ax.set_xticks([])
+            ax.set_yticks([])
             # grid lines pointing to the center of the frame
-            plt.axvline(x=150,ymin=0.2,ymax=0.4,linewidth=2.0,color='b')
-            plt.axhline(y=149,xmin=0.2,xmax=0.4,linewidth=2.0,color='b')
-            plt.gca().set_frame_on(False)
+            ax.axvline(x=150,ymin=0.375,ymax=0.45,linewidth=2.0,color='b')
+            ax.axhline(y=150,xmin=0.375,xmax=0.45,linewidth=2.0,color='b')
+            ax.set_frame_on(False)
 
             # this is the output instance
             finderpng = strio()
