@@ -47,26 +47,16 @@ img.magseriesplot {
     margin-top: 20px;
 }
 
-.phased-container {
-    overflow-x: auto;
-    overflow-y: auto;
-}
-
 .phased-container-col {
-    overflow-y: auto;
     min-width: 375px;
 }
 
-.phasedlc-container-row:link {
-    background: #bbb;
-}
-
-.phasedlc-container-row:hover {
-    background: #bbb;
-}
-
-.phasedlc-container-row:active {
-    background: #bbb;
+.zoomable-tile {
+    transition: 0.2s ease-out;
+    -webkit-transition: 0.2s ease-out;
+    position: relative;
+    top: 0;
+    left: 0;
 }
 
 .phasedlc-selected {
@@ -176,6 +166,7 @@ to use this:
     min-height: 330px;
     max-height: 400px;
     /* background: #71c7ac; */
+    overflow: hidden;
 }
 
 .col-centered {

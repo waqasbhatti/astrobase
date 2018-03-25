@@ -1305,7 +1305,7 @@ var cpv = {
                                 '<div class="col-sm-12">' +
                                 '<img src="data:image/png;base64,' +
                                 cpv.currcp[lspmethod][periodind].plot + '"' +
-                                'class="img-fluid" id="plot-' +
+                                'class="img-fluid zoomable-tile" id="plot-' +
                                 periodind + '">' + '</div></div></a>';
 
                             phasedlcrows.push(phasedlcrow);
@@ -1547,7 +1547,7 @@ var cpv = {
                 '<div class="col-sm-' + nbrcolw + ' mx-0 px-0">' +
                     '<img src="data:image/png;base64,' +
                     cpv.currcp.magseries +
-                    '" class="img-fluid">' +
+                    '" class="img-fluid zoomable-tile">' +
                     '</div>'
             ];
             var nli = 0;
@@ -1557,7 +1557,7 @@ var cpv = {
                     '<div class="col-sm-' + nbrcolw + ' mx-0 px-0">' +
                     '<img src="data:image/png;base64,' +
                     cpv.currcp[lspmethods[nli]]['phasedlc0']['plot'] +
-                    '" class="img-fluid">' +
+                    '" class="img-fluid zoomable-tile">' +
                     '</div>';
                 rowplots.push(thisnphased);
 
@@ -1758,7 +1758,7 @@ var cpv = {
                             '<div class="col-sm-' + nbrcolw + ' mx-0 px-0">' +
                                 '<img src="data:image/png;base64,' +
                                 cpv.currcp.neighbors[ni].magseries +
-                                '" class="img-fluid">' +
+                                '" class="img-fluid zoomable-tile">' +
                                 '</div>'
                         ];
                     }
@@ -1783,7 +1783,7 @@ var cpv = {
                                 '<div class="col-sm-' + nbrcolw + ' px-0">' +
                                 '<img src="data:image/png;base64,' +
                                 cpv.currcp.neighbors[ni][lspmethods[nli]]['plot'] +
-                                '" class="img-fluid">' +
+                                '" class="img-fluid zoomable-tile">' +
                                 '</div>';
                             rowplots.push(thisnphased);
 
@@ -2661,6 +2661,69 @@ var cpv = {
             }
 
         });
+
+        // fancy zoom and pan effects for a phased LC tile
+        // see https://codepen.io/ccrch/pen/yyaraz
+        $('.phased-container')
+            .on('mouseover', '.zoomable-tile', function (evt) {
+
+                $(this).css({'transform': 'scale(1.7)',
+                             'z-index':1000});
+
+            });
+        $('.phased-container')
+            .on('mouseout', '.zoomable-tile', function (evt) {
+
+                $(this).css({'transform': 'scale(1.0)',
+                             'z-index':0});
+
+            });
+
+        // mouse zoom effects for LCC neighbor LC panels
+        $('#lcc-neighbor-container')
+            .on('mouseover', '.zoomable-tile', function (evt) {
+
+                $(this).css({'transform': 'scale(1.7)',
+                             'z-index':1000});
+
+            });
+        $('#lcc-neighbor-container')
+            .on('mouseout', '.zoomable-tile', function (evt) {
+
+                $(this).css({'transform': 'scale(1.0)',
+                             'z-index':0});
+
+            });
+
+        // mouse zoom/pan effect for phased LC and periodogram panels on the
+        // period-search tab
+        $('.display-panel')
+            .on('mouseover', '.zoomable-tile', function (evt) {
+
+                $(this).css({'transform': 'scale(2.0)',
+                             'z-index':1000});
+
+            });
+        $('.display-panel')
+            .on('mouseout', '.zoomable-tile', function (evt) {
+
+                $(this).css({'transform': 'scale(1.0)',
+                             'z-index':0});
+
+            });
+        $('.display-panel')
+            .on('mousemove', '.zoomable-tile', function (evt) {
+
+                $(this).css({
+                    'transform-origin': ((evt.pageX - $(this).offset().left) /
+                                         $(this).width()) * 100 + '% ' +
+                        ((evt.pageY - $(this).offset().top) / $(this).height())
+                        * 100 +'%'
+                });
+
+            });
+
+
 
         // resizing the window fixes the sidebar again
         $(window).on('resize', function (evt) {
