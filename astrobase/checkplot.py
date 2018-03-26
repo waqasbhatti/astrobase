@@ -135,6 +135,7 @@ import json
 
 try:
     import cPickle as pickle
+    import cStringIO
     from cStringIO import StringIO as strio
 except:
     import pickle
@@ -4553,7 +4554,17 @@ def checkplot_pickle_to_png(checkplotin,
     ## WRITE FINAL PNG ##
     #####################
 
-    if not isinstance(outfile, strio):
+    # check if the output filename is actually an instance of StringIO
+    if sys.version_info[:2] < (3,0):
+
+        is_strio = isinstance(outfile, cStringIO.InputType)
+
+    else:
+
+        is_strio = isinstance(outfile, strio)
+
+
+    if is_strio:
 
         # check if we've stupidly copied over the same filename as the input
         # pickle to expected output file
@@ -4564,8 +4575,8 @@ def checkplot_pickle_to_png(checkplotin,
 
     outimg.save(outfile, format='PNG', optimize=True)
 
-    if not isinstance(outfile, strio):
 
+    if not is_strio:
         if os.path.exists(outfile):
             LOGINFO('checkplot pickle -> checkplot PNG: %s OK' % outfile)
             return outfile
