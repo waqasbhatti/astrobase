@@ -966,9 +966,8 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
                     if pngdone is not None:
 
-                        # we'll send back the PNG directly as a base64 encoding
-                        # string, which can then be loaded by the frontend and
-                        # reformed into a download
+                        # we'll send back the PNG, which can then be loaded by
+                        # the frontend and reformed into a download
                         pngdone.seek(0)
                         pngbin = pngdone.read()
                         pngb64 = base64.b64encode(pngbin)
@@ -977,7 +976,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                         resultdict['result']['cpfpng'] = pngb64
 
                     else:
-                        resultdict['result']['cpfpng'] = 'png making failed'
+                        resultdict['result']['cpfpng'] = ''
 
 
                 self.write(resultdict)

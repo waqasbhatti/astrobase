@@ -22,6 +22,29 @@ var cputils = {
                          }));
     },
 
+    // this decodes a string from base64
+    b64_decode: function (str) {
+        return decodeURIComponent(atob(str).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+    },
+
+    // https://stackoverflow.com/a/26601101
+    b64_decode2: function (s) {
+
+        var e={},i,b=0,c,x,l=0,a,r='',w=String.fromCharCode,L=s.length;
+        var A="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        for(i=0;i<64;i++){e[A.charAt(i)]=i;}
+        for(x=0;x<L;x++){
+            c=e[s.charAt(x)];b=(b<<6)+c;l+=6;
+            while(l>=8){((a=(b>>>(l-=8))&0xff)||(x<(L-2)))&&(r+=w(a));}
+        }
+        return r;
+
+    },
+
+
     // this turns a base64 string into an image by updating its source
     b64_to_image: function (str, targetelem) {
 
@@ -2217,15 +2240,33 @@ var cpv = {
 
                     // if we called a save to PNG, show it if it succeeded
                     if (!(savetopng === undefined) &&
-                        (updateinfo.cpfpng != 'png making failed')) {
+                        (updateinfo.cpfpng.length > 0)) {
 
                         console.log('getting checkplot PNG from backend')
 
                         // prepare the download
-                        var pnglink = "data:image/png;base64," +
-                            encodeURIComponent(updateinfo.cpfpng);
+                        // see https://gist.github.com/fupslot/5015897
 
-                        updatemsg = '<a href="' + pnglink + '" ' +
+                        // base64 decode the sent string
+                        var pngstr = window.atob(updateinfo.cpfpng);
+
+                        // generate an array for the byte string.  we need to do
+                        // this because the string needs to be turned into the
+                        // correct (0,255) values for a PNG
+                        var arraybuf = new ArrayBuffer(pngstr.length);
+                        var pngarr = new Uint8Array(arraybuf);
+
+                        // turn the byte string to into a byte array
+                        for (var pngind = 0; pngind < pngstr.length; pngind++) {
+                            pngarr[pngind] = pngstr.charCodeAt(pngind);
+                        }
+
+                        // generate a blob from the byte array
+                        var pngblob = new Blob([pngarr],
+                                               {type: 'image/png'});
+                        var pngurl = window.URL.createObjectURL(pngblob);
+
+                        updatemsg = '<a href="' + pngurl + '" ' +
                             'download="checkplot-' + cpv.currcp.objectid +
                             '.png">download checkplot PNG for this object</a>';
                         $('#alert-box').html(updatemsg);
