@@ -4564,7 +4564,7 @@ def checkplot_pickle_to_png(checkplotin,
         is_strio = isinstance(outfile, strio)
 
 
-    if is_strio:
+    if not is_strio:
 
         # check if we've stupidly copied over the same filename as the input
         # pickle to expected output file
