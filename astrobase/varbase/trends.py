@@ -541,3 +541,49 @@ def rfepd_magseries(times, mags, errs,
 #####################################
 ## TREND FILTERING ALGORITHM (TFA) ##
 #####################################
+
+def select_tfa_template_objects():
+    '''This selects template objects for TFA.
+
+    Can optionally save info to a pickle.
+
+    Selection criteria:
+
+    - not variable: use a poly fit to the mag-MAD relation and eta-normal
+      variability index to get nonvar objects
+    - not more than 10% of the total number of objects in the field or
+      maxtfatemplates at most
+    - allow shuffling of the templates if the target ends up in them
+    - uniform sampling in the field
+    - nothing with less than the median number of observations in the field
+    - sigma-clip the input time series observations
+
+    This also determines the effective cadence that all TFA LCs will be binned
+    to as the LC with the largest number of non-nan observations will be used.
+
+    '''
+
+
+def prepare_tfa_templates():
+    '''This does the initial work to zero-norm templates.
+
+    Can optionally write to a pickle.
+
+    '''
+
+
+
+def tfa_magseries(times, mags, errs, templateinfo):
+    '''This applies the TFA algorithm to a single object's LC.
+
+    Returns the TFA'd times, mags, errs.
+
+    '''
+
+
+
+def sr_tfa_magseries(times, mags, errs, templateinfo, signalinfo):
+    '''
+    This applies TFA in Signal-Reconstruction mode.
+
+    '''
