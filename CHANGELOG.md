@@ -1,3 +1,43 @@
+# v0.3.11
+
+## New stuff
+
+- `checkplot.checkplot_pickle_to_png`: can now export to StringIO or BytesIO
+  instance in addition to a PNG filename.
+- `checkplot`/`lcproc`: added a `maxnumneighbors` kwarg to control the number of
+  neighbors the function retrieves around the target object (added by
+  @joshuawallace).
+- cpserver UI: added object neighbor color and mag diffs to the UI if available
+- cpserver UI: zoom effects for phased LC tiles to make reviewing easier
+- `lcproc.make_lclist`/`filter_lclist`: can now make overlayed FITS finder
+  charts if a FITS file for the object catalog is provided
+- `plotbase`: added a `fits_finder_chart` function to make an annotated finder
+  chart from a given FITS file with WCS information
+
+## Changes
+
+- cpserver UI: finder chart reticle appearance changed slightly to obscure
+  nearby stars less
+- cpserver UI: moved the 'Save to PNG' button to the overview tab so it's more
+  obvious
+- `checkplot:checkplot_pickle`: can now fall back to GAIA proper motions if
+  'pmra' and 'pmdecl' are not provided in the input `objectinfo` dict kwarg
+- cpserver: now gzips the response (helps if the checkplotserver is running
+  somewhere else other than localhost)
+- cpserver: PNG export for a checkplot is now done in memory
+
+## Fixes
+
+- `checkplot.checkplot_pickle_to_png`: fix py2 StringIO isinstance() issues
+- cpserver: fix broken handling of missing nbr mag and color diffs
+- cpserver UI: fix the CSV/JSON export to correctly include all previous
+  reviewed objects instead of just the ones from the current session
+- cpserver: readonly mode now disables all input correctly
+- cpserver UI: fix checkplot list traverse breaking at ends of list
+- kbls.bls_snr: fixed transit duration calculation, pointed out in #45
+- lcproc: fix readerfunc apply if sequences are returned
+
+
 # v0.3.10
 
 ## Fixes
