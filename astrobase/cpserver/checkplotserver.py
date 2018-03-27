@@ -44,6 +44,14 @@ def recv_sigint(signum, stack):
 ## TORNADO IMPORTS ##
 #####################
 
+# experimental, probably will remove at some point
+try:
+    import asyncio
+    import uvloop
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+except:
+    pass
+
 import tornado.ioloop
 import tornado.httpserver
 import tornado.web
