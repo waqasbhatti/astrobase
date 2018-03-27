@@ -548,6 +548,16 @@ class CheckplotHandler(tornado.web.RequestHandler):
                     # get each neighbor, its info, and its phased LCs
                     for nbr in nbrlist:
 
+                        if 'magdiffs' in nbr:
+                            nbrmagdiffs = nbr['magdiffs']
+                        else:
+                            nbrmagdiffs = None
+
+                        if 'colordiffs' in nbr:
+                            nbrcolordiffs = nbr['colordiffs']
+                        else:
+                            nbrcolordiffs = None
+
                         thisnbrdict = {
                             'objectid':nbr['objectid'],
                             'objectinfo':{
@@ -556,8 +566,8 @@ class CheckplotHandler(tornado.web.RequestHandler):
                                 'xpix':nbr['xpix'],
                                 'ypix':nbr['ypix'],
                                 'distarcsec':nbr['dist'],
-                                'magdiffs':nbr['magdiffs'],
-                                'colordiffs':nbr['colordiffs']
+                                'magdiffs':nbrmagdiffs,
+                                'colordiffs':nbrcolordiffs
                             }
                         }
 
