@@ -143,6 +143,14 @@ from astrobase.checkplot import _pkl_magseries_plot, \
 
 from astrobase.magnitudes import jhk_to_sdssr
 
+
+############
+## CONFIG ##
+############
+
+NCPUS = mp.cpu_count()
+
+
 #############################################
 ## MAPS FOR LCFORMAT TO LCREADER FUNCTIONS ##
 #############################################
@@ -479,7 +487,7 @@ def make_lclist(basedir,
                 field_grid=False,
                 field_gridcolor='k',
                 maxlcs=None,
-                nworkers=20):
+                nworkers=NCPUS):
 
     '''This generates a list file compatible with filter_lclist below.
 
@@ -1342,7 +1350,7 @@ def parallel_timebin(lclist,
                      magcols=None,
                      errcols=None,
                      minbinelems=7,
-                     nworkers=32,
+                     nworkers=NCPUS,
                      maxworkertasks=1000):
     '''
     This bins all the light curves in lclist using binsizesec.
@@ -1382,7 +1390,7 @@ def parallel_timebin_lcdir(lcdir,
                            magcols=None,
                            errcols=None,
                            minbinelems=7,
-                           nworkers=32,
+                           nworkers=NCPUS,
                            maxworkertasks=1000):
     '''
     This bins all the light curves in lcdir using binsizesec.
@@ -1579,7 +1587,7 @@ def serial_varfeatures(lclist,
                        errcols=None,
                        mindet=1000,
                        lcformat='hat-sql',
-                       nworkers=None):
+                       nworkers=NCPUS):
 
     if maxobjects:
         lclist = lclist[:maxobjects]
@@ -1600,7 +1608,7 @@ def parallel_varfeatures(lclist,
                          errcols=None,
                          mindet=1000,
                          lcformat='hat-sql',
-                         nworkers=None):
+                         nworkers=NCPUS):
     '''
     This runs varfeatures in parallel for all light curves in lclist.
 
@@ -1634,7 +1642,7 @@ def parallel_varfeatures_lcdir(lcdir,
                                recursive=True,
                                mindet=1000,
                                lcformat='hat-sql',
-                               nworkers=None):
+                               nworkers=NCPUS):
     '''
     This runs parallel variable feature extraction for a directory of LCs.
 
@@ -2092,7 +2100,7 @@ def serial_periodicfeatures(pfpkl_list,
                             magsarefluxes=False,
                             verbose=False,
                             maxobjects=None,
-                            nworkers=None):
+                            nworkers=NCPUS):
     '''This drives the periodicfeatures collection for a list of periodfinding
     pickles.
 
@@ -2187,7 +2195,7 @@ def parallel_periodicfeatures(pfpkl_list,
                               magsarefluxes=False,
                               verbose=False,
                               maxobjects=None,
-                              nworkers=None):
+                              nworkers=NCPUS):
     '''
     This runs periodicfeatures in parallel for all periodfinding pickles.
 
@@ -2285,7 +2293,7 @@ def parallel_periodicfeatures_lcdir(
         magsarefluxes=False,
         verbose=False,
         maxobjects=None,
-        nworkers=None,
+        nworkers=NCPUS,
         recursive=True,
 ):
     '''This runs parallel periodicfeature extraction for a directory of
@@ -2514,7 +2522,7 @@ def serial_starfeatures(lclist,
                         deredden=True,
                         custom_bandpasses=None,
                         lcformat='hat-sql',
-                        nworkers=None):
+                        nworkers=NCPUS):
     '''This drives the starfeatures function for a collection of LCs.
 
     lclistpickle is a pickle containing at least:
@@ -2561,7 +2569,7 @@ def parallel_starfeatures(lclist,
                           deredden=True,
                           custom_bandpasses=None,
                           lcformat='hat-sql',
-                          nworkers=None):
+                          nworkers=NCPUS):
     '''
     This runs starfeatures in parallel for all light curves in lclist.
 
@@ -2608,7 +2616,7 @@ def parallel_starfeatures_lcdir(lcdir,
                                 deredden=True,
                                 custom_bandpasses=None,
                                 lcformat='hat-sql',
-                                nworkers=None,
+                                nworkers=NCPUS,
                                 recursive=True):
     '''
     This runs parallel star feature extraction for a directory of LCs.
@@ -3378,7 +3386,7 @@ def runpf(lcfile,
           pfkwargs=[{},{},{},{}],
           sigclip=10.0,
           getblssnr=False,
-          nworkers=10,
+          nworkers=NCPUS,
           excludeprocessed=False):
     '''This runs the period-finding for a single LC.
 
@@ -3654,8 +3662,8 @@ def parallel_pf(lclist,
                 pfkwargs=[{},{},{},{}],
                 getblssnr=False,
                 sigclip=10.0,
-                nperiodworkers=10,
-                ncontrolworkers=4,
+                nperiodworkers=NCPUS,
+                ncontrolworkers=1,
                 liststartindex=None,
                 listmaxobjects=None,
                 excludeprocessed=True):
@@ -3729,8 +3737,8 @@ def parallel_pf_lcdir(lcdir,
                       pfkwargs=[{},{},{},{}],
                       getblssnr=False,
                       sigclip=10.0,
-                      nperiodworkers=10,
-                      ncontrolworkers=4,
+                      nperiodworkers=NCPUS,
+                      ncontrolworkers=1,
                       liststartindex=None,
                       listmaxobjects=None,
                       excludeprocessed=True):
@@ -4252,7 +4260,7 @@ def parallel_cp(pfpicklelist,
                 timecols=None,
                 magcols=None,
                 errcols=None,
-                nworkers=32):
+                nworkers=NCPUS):
     '''This drives the parallel execution of runcp for a list of periodfinding
     result pickles.
 
