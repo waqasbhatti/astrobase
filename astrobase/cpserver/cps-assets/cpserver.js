@@ -715,15 +715,26 @@ var cpv = {
                     var plotdata = [{
                         x:cpv.currcp[thispfmethod]['periods'],
                         y:cpv.currcp[thispfmethod]['lspvals'],
-                        type:'scatter',
+                        type:'scatter', // scattergl maybe better?
                         mode:'lines'
                     }];
+
+
+                    var plot_title =
+                        thispfmethod.split('-')[1].toUpperCase() +
+                        ' best period: ' +
+                        math.format(
+                            cpv.currcp[thispfmethod]['bestperiod'],
+                            6
+                        ) + ' days';
+
                     var plotlayout = {
-                        autosize: true,
+                        autosize: false,
                         margin: {l:60,r:40,t:60,b:40},
                         height: 350,
+                        width: plotdiv.offsetWidth,
                         hovermode:'closest',
-                        title:'periodogram plot',
+                        title:plot_title,
                         xaxis: {type:'log',
                                 autorange: true,
                                 title: 'period [days]'},
@@ -764,7 +775,8 @@ var cpv = {
                     // these are the plot frames, nothing by default
                     $('#psearch-pgram-panel').empty();
                     $('#psearch-pgram-panel').css({
-                        'background':'no-repeat url("/static/no-tool-results.png")'
+                        'background':
+                        'no-repeat url("/static/no-tool-results.png")',
                         'background-size':'contain'
                     });
                     break;
