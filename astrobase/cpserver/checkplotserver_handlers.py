@@ -736,8 +736,17 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
                     # get the lspvals and periods for frontend interactive
                     # plotting
+
+                    # make sure to get rid of nans here too
                     periodogram_periods = cpdict[key]['periods']
                     periodogram_lspvals = cpdict[key]['lspvals']
+
+                    pfinind = (
+                        np.isfinite(periodogram_periods) &
+                        np.isfinite(periodogram_lspvals)
+                    )
+                    periodogram_periods = periodogram_periods[pfinind].tolist()
+                    periodogram_lspvals = periodogram_lspvals[pfinind].tolist()
 
                     # get the phased LC with best period
                     phasedlc0plot = cpdict[key][0]['plot']

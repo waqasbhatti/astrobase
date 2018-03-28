@@ -755,14 +755,18 @@
                   <div class="col-sm-3">
                     <div class="form-group">
                       <label for="psearch-plotepoch">
-                        Epoch [JD]
+                        Epoch
                         <strong>
+                          <a href="#" id="psearch-auto-epoch">[auto]</a>
                           <a href="#" id="psearch-addhalfp-epoch">[+1/2 P]</a>
                           <a href="#" id="psearch-subhalfp-epoch">[-1/2 P]</a>
                         </strong>
                       </label>
-                      <input type="text" class="form-control"
-                             id="psearch-plotepoch">
+                      <div class="input-group">
+                        <span class="input-group-addon">JD</span>
+                        <input type="text" class="form-control"
+                               id="psearch-plotepoch">
+                      </div>
                     </div>
                   </div>
 

@@ -715,11 +715,13 @@ var cpv = {
                     var plotdata = [{
                         x:cpv.currcp[thispfmethod]['periods'],
                         y:cpv.currcp[thispfmethod]['lspvals'],
-                        mode:'lines',
+                        type:'scatter',
+                        mode:'lines'
                     }];
                     var plotlayout = {
                         autosize: true,
-                        margin: {l:50,r:50,t:45,b:45},
+                        margin: {l:60,r:40,t:60,b:40},
+                        height: 350,
                         hovermode:'closest',
                         title:'periodogram plot',
                         xaxis: {type:'log',
@@ -730,10 +732,20 @@ var cpv = {
 
                     // make the plot
                     if (plotdiv.empty) {
-                        Plotly.newPlot(plotdiv, plotdata, plotlayout);
+                        Plotly.newPlot(
+                            plotdiv,
+                            plotdata,
+                            plotlayout,
+                            {displayModeBar: false}
+                        );
                     }
                     else {
-                        Plotly.react(plotdiv, plotdata, plotlayout);
+                        Plotly.react(
+                            plotdiv,
+                            plotdata,
+                            plotlayout,
+                            {displayModeBar: false}
+                        );
                     }
 
                     // attach a click event to load the closest period to the
@@ -2839,11 +2851,11 @@ var cpv = {
 
             $('.sidebar').css({'height': docheight + 'px'});
 
-            // resize the plots if there are any
-            var plotdiv = document.getElementById('psearch-pgram-panel');
-            if (!plotdiv.empty) {
-                Plotly.plots.resize(plotdiv);
-            }
+            // // resize the plots if there are any
+            // var plotdiv = document.getElementById('psearch-pgram-panel');
+            // if (!plotdiv.empty) {
+            //     Plotly.plots.resize(plotdiv);
+            // }
 
         });
 
@@ -5410,6 +5422,11 @@ var cptools = {
 
         });
 
+        // periodogram search - set epoch to auto
+        $('#psearch-auto-epoch').on('click', function (evt) {
+            evt.preventDefault();
+            $('#psearch-plotepoch').val('auto-minimumlight');
+        });
 
         // periodogram search - add half period to epoch
         $('#psearch-addhalfp-epoch').on('click', function (evt) {
