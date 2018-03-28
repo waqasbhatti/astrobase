@@ -765,6 +765,7 @@ var cpv = {
                     $('#psearch-pgram-panel').empty();
                     $('#psearch-pgram-panel').css({
                         'background':'no-repeat url("/static/no-tool-results.png")'
+                        'background-size':'contain'
                     });
                     break;
                 }
