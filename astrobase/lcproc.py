@@ -4767,3 +4767,214 @@ def add_cmds_cpdir(cpdir, cmdpkl,
                            cmdpkl,
                            require_cmd_magcolor=require_cmd_magcolor,
                            save_cmd_pngs=save_cmd_pngs)
+
+
+
+############################
+## LIGHT CURVE DETRENDING ##
+############################
+
+
+def collect_tfa_stats(task):
+    '''
+    This is a parallel worker to gather LC stats.
+
+    task[0] = lcfile
+    task[1] = lcformat
+    task[2] = timecols
+    task[3] = magcols
+    task[4] = errcols
+    task[5] = custom_bandpasses
+
+    '''
+
+    try:
+
+        lcfile, lcformat, timecols, magcols, errcols, custom_bandpasses = task
+
+        if lcformat not in LCFORM or lcformat is None:
+            LOGERROR('unknown light curve format specified: %s' % lcformat)
+            return None
+
+        (fileglob, readerfunc, dtimecols, dmagcols,
+         derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+        # override the default timecols, magcols, and errcols
+        # using the ones provided to the function
+        if timecols is None:
+            timecols = dtimecols
+        if magcols is None:
+            magcols = dmagcols
+        if errcols is None:
+            errcols = derrcols
+
+        # get the LC into a dict
+        lcdict = readerfunc(lcfile)
+
+        # this should handle lists/tuples being returned by readerfunc
+        # we assume that the first element is the actual lcdict
+        # FIXME: figure out how to not need this assumption
+        if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+             (isinstance(lcdict[0], dict)) ):
+            lcdict = lcdict[0]
+
+        #
+        # collect the necessary stats for this light curve
+        #
+
+        # 1. number of observations
+        # 2. median mag
+        # 3. eta_normal
+        # 4. MAD
+        # 5. objectid
+        # 6. get mags and colors from objectinfo if there's one in lcdict
+
+        if 'objectid' in lcdict:
+            objectid = lcdict['objectid']
+        elif 'objectinfo' in lcdict and 'objectid' in lcdict['objectinfo']:
+            objectid = lcdict['objectinfo']['objectid']
+        elif 'objectinfo' in lcdict and 'hatid' in lcdict['objectinfo']:
+            objectid = lcdict['objectinfo']['hatid']
+        else:
+            LOGERROR('no objectid present in lcdict for LC %s, '
+                     'using filename prefix as objectid' % lcfile)
+            objectid = os.path.splitext(os.path.basename(lcfile))[0]
+
+        if 'objectinfo' in lcdict:
+
+            colorfeat = starfeatures.color_features(
+                lcdict['objectinfo'],
+                deredden=False,
+                custom_bandpasses=custom_bandpasses
+            )
+
+        else:
+            LOGERROR('no objectinfo dict in lcdict, '
+                     'could not get magnitudes for LC %s, '
+                     'cannot use for TFA template ensemble' %
+                     lcfile)
+            return None
+
+
+        # this is the initial dict
+        resultdict = {'objectid':objectid,
+                      'colorfeat':colorfeat,
+                      'lcfpath':os.path.abspath(lcfile),
+                      'lcformat':lcformat,
+                      'timecols':timecols,
+                      'magcols':magcols,
+                      'errcols':errcols}
+
+        for tcol, mcol, ecol in zip(timecols, magcols, errcols):
+
+            # dereference the columns and get them from the lcdict
+            if '.' in tcol:
+                tcolget = tcol.split('.')
+            else:
+                tcolget = [tcol]
+            times = dict_get(lcdict, tcolget)
+
+            if '.' in mcol:
+                mcolget = mcol.split('.')
+            else:
+                mcolget = [mcol]
+            mags = dict_get(lcdict, mcolget)
+
+            if '.' in ecol:
+                ecolget = ecol.split('.')
+            else:
+                ecolget = [ecol]
+            errs = dict_get(lcdict, ecolget)
+
+            # normalize here if not using special normalization
+            if normfunc is None:
+                ntimes, nmags = normalize_magseries(
+                    times, mags,
+                    magsarefluxes=magsarefluxes
+                )
+
+                times, mags, errs = ntimes, nmags, errs
+
+            # get the variability features for this object
+            varfeat = varfeatures.all_nonperiodic_features(
+                times, mags, errs
+            )
+
+            resultdict[mcolget[-1]] = varfeat
+
+        return resultdict
+
+    except Exception as e:
+
+        LOGEXCEPTION('could not execute get_tfa_stats for task: %s' %
+                     repr(task))
+        return None
+
+
+
+def get_tfa_templates_lclist(
+        lclist,
+        outfile,
+        max_template_frac=0.1,
+        max_template_number=1000,
+        max_sigma_above_madmag=3.0,
+        max_sigma_above_etamag=3.0,
+        variability_selector='eta',
+        mag_bandpass='sdssr',
+        custom_bandpasses=None,
+        mag_bright_limit=9.5,
+        mag_faint_limit=13.0,
+        template_sigclip=5.0,
+        lcformat='hat-sql',
+        timecols=None,
+        magcols=None,
+        errcols=None,
+        nworkers=NCPUS,
+        maxworkertasks=1000,
+):
+    '''This selects template objects for TFA.
+
+    Selection criteria:
+
+    - not variable: use a poly fit to the mag-MAD relation and eta-normal
+      variability index to get nonvar objects
+    - not more than 10% of the total number of objects in the field or
+      maxtfatemplates at most
+    - allow shuffling of the templates if the target ends up in them
+    - uniform sampling in the field
+    - nothing with less than the median number of observations in the field
+    - sigma-clip the input time series observations
+
+    This also determines the effective cadence that all TFA LCs will be binned
+    to as the template LC with the largest number of non-nan observations will
+    be used. All template LCs will be renormed to zero. This will also generate
+    the normal matrix and its inverse as expected by TFA.
+
+    '''
+
+    # first, we'll collect the light curve info
+    tasks = [(x, lcformat, timecols, magcols, errcols, custom_bandpasses) for x
+             in lclist]
+
+    pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
+    results = pool.map(timebinlc_worker, tasks)
+    pool.close()
+    pool.join()
+
+    # now, go through the light curves
+    # 1. get the mag-MAD relation
+    # 2. get the mag-eta relation
+    # 3. get the median ndet
+    # 4. get the max ndet so far to use that LC as the timebase
+
+    # select the template light curves based on the criteria above
+
+    # select the time base light curve
+
+    # reform all template LCs to this time base and normalize to zero
+
+    # calculate the normal matrix for the template LCs and the inverse
+
+    # put everything into a templateinfo dict and save it to a pickle
+
+    # return the templateinfo dict
