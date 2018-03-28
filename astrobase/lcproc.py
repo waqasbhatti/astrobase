@@ -94,6 +94,7 @@ import base64
 
 import numpy as np
 import scipy.spatial as sps
+import scipy.interpolate as spi
 
 import astropy.io.fits as pyfits
 from astropy.wcs import WCS
@@ -4912,10 +4913,11 @@ def collect_tfa_stats(task):
 
 
 
-def get_tfa_templates_lclist(
+def tfa_templates_lclist(
         lclist,
         outfile,
-        max_template_frac=0.1,
+        target_template_frac=0.1,
+        min_template_number=10,
         max_template_number=1000,
         max_sigma_above_madmag=3.0,
         max_sigma_above_etamag=3.0,
@@ -4952,6 +4954,18 @@ def get_tfa_templates_lclist(
 
     '''
 
+    (fileglob, readerfunc, dtimecols, dmagcols,
+     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+    # override the default timecols, magcols, and errcols
+    # using the ones provided to the function
+    if timecols is None:
+        timecols = dtimecols
+    if magcols is None:
+        magcols = dmagcols
+    if errcols is None:
+        errcols = derrcols
+
     # first, we'll collect the light curve info
     tasks = [(x, lcformat, timecols, magcols, errcols, custom_bandpasses) for x
              in lclist]
@@ -4962,19 +4976,86 @@ def get_tfa_templates_lclist(
     pool.join()
 
     # now, go through the light curves
-    # 1. get the mag-MAD relation
-    # 2. get the mag-eta relation
-    # 3. get the median ndet
-    # 4. get the max ndet so far to use that LC as the timebase
 
-    # select the template light curves based on the criteria above
+    outdict = {}
 
-    # select the time base light curve
+    # for each magcol, we'll generate a separate template list
+    for mcol in magcols:
 
-    # reform all template LCs to this time base and normalize to zero
+        if '.' in mcol:
+            mcolget = mcol.split('.')
+        else:
+            mcolget = [mcol]
 
-    # calculate the normal matrix for the template LCs and the inverse
+        lcmag, lcmad, lceta, lcndet, lcobj, lcfpaths = [], [], [], [], [], []
 
-    # put everything into a templateinfo dict and save it to a pickle
+        outdict[mcolget[-1]] = {}
 
-    # return the templateinfo dict
+        # collect the template LCs for this magcol
+        for result in results:
+
+            # we'll only append objects that have all of these elements
+            try:
+
+                thismag = result['colorfeat'][mag_bandpass]
+                thismad = result[mcolget[-1]]['mad']
+                thiseta = result[mcolget[-1]]['eta_normal']
+                thisndet = result[mcolget[-1]]['ndet']
+                thisobj = result['objectid']
+                thislcf = result['lcfpath']
+
+                # make sure the object lies in the mag limits we set before
+                if mag_bright_limit < thismag < mag_faint_limit:
+
+                    lcmag.append(thismag)
+                    lcmad.append(thismad)
+                    lceta.append(thiseta)
+                    lcndet.append(thisndet)
+                    lcobj.append(thisobj)
+                    lcfpaths.append(thislcf)
+
+            except:
+                pass
+
+        # make sure we have enough LCs to work on
+        if len(lcobj) > min_template_number:
+
+            lcmag = np.array(lcmag)
+            lcmad = np.array(lcmad)
+            lceta = np.array(lceta)
+            lcndet = np.array(lcobj)
+            lcobj = np.array(lcobj)
+            lcfpaths = np.array(lcfpaths)
+
+            # 1. get the mag-MAD relation
+            magmadfit = spi.UnivariateSpline(lcmag, lcmad)
+            magmadind = lcmad/magmadfit(lcmag) < max_sigma_above_magmad
+
+            # 2. get the mag-eta relation
+            magetafit = spi.UnivariateSpline(lcmag, lceta)
+            magetaind = lceta/magetafit(lcmag) < max_sigma_above_mageta
+
+            # 3. get the median ndet
+            median_ndet = np.median(lcndet)
+            ndetind = lcndet >= median_ndet
+
+            # form the final template ensemble
+            templateind = magmadind & magetaind & ndetind
+
+            # check again if we have enough LCs in the template
+
+            # get the max ndet so far to use that LC as the timebase
+
+            # reform all template LCs to this time base and normalize to zero
+
+            # calculate the normal matrix for the template LCs and the inverse
+
+            # put everything into a templateinfo dict and save it to a pickle
+
+            # return the templateinfo dict
+
+        else:
+
+            LOGERROR('not enough objects in requested mag range to '
+                     'select templates for magcol: %s' % mcol)
+            continue
