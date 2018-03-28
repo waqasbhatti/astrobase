@@ -692,12 +692,76 @@ var cpv = {
                 $('#psearch-plotepoch').val('');
             }
 
-            // these are the plot frames, nothing by default
-            $('#psearch-periodogram-display')
-                .attr('src','/static/no-tool-results.png');
+            // update the periodogram display with the currently selected
+            // period-finder method's periodogram if available
+
+            // first, get the periodogram methods we have in the cp
+            var lspmethods = cpv.currcp.pfmethods;
+            var lspplotind = 0;
+            // on first-load, we'll check if the object has a GLS periodogram
+            // since this is the default selection. if not found, we'll iterate
+            // through the periodograms actually present
+            for (lspplotind; lspplotind < lspmethods.length; lspplotind++) {
+
+                var thispfmethod = lspmethods[lspplotind];
+
+                // if there's a GLS plot available, show that
+                if (thispfmethod.indexOf('gls') != -1 &&
+                    cpv.currcp[thispfmethod]['periods'] != undefined &&
+                    cpv.currcp[thispfmethod]['lspvals'] != undefined) {
+
+                    var plotdiv =
+                        document.getElementById('psearch-pgram-panel');
+                    var plotdata = [{
+                        x:cpv.currcp[thispfmethod]['periods'],
+                        y:cpv.currcp[thispfmethod]['lspvals'],
+                        mode:'lines',
+                    }];
+                    var plotlayout = {
+                        autosize: true,
+                        margin: {l:50,r:50,t:45,b:45},
+                        hovermode:'closest',
+                        title:'periodogram plot',
+                        xaxis: {type:'log',
+                                autorange: true,
+                                title: 'period [days]'},
+                        yaxis:{title:'normalized power'}
+                    };
+
+                    // make the plot
+                    if (plotdiv.empty) {
+                        Plotly.newPlot(plotdiv, plotdata, plotlayout);
+                    }
+                    else {
+                        Plotly.react(plotdiv, plotdata, plotlayout);
+                    }
+
+                    // attach a click event to load the closest period to the
+                    // clicked point into the text box for making a phased LC
+                    plotdiv.on('plotly_click', function(data) {
+                        $('#psearch-plotperiod').val(data.points[0].x);
+                    });
+
+                    break;
+                }
+
+                // if there isn't a GLS plot available, show nothing (for now)
+                else if (cpv.currcp[thispfmethod]['periods'] != undefined &&
+                         cpv.currcp[thispfmethod]['lspvals'] != undefined) {
+
+                    // these are the plot frames, nothing by default
+                    $('#psearch-pgram-panel').empty();
+                    $('#psearch-pgram-panel').css({
+                        'background':'no-repeat url("/static/no-tool-results.png")'
+                    });
+                    break;
+                }
+
+            }
+
+            // blank out the phased LC display for now
             $('#psearch-phasedlc-display')
                 .attr('src','/static/no-tool-results.png');
-
 
             //
             // update object information now
@@ -1256,8 +1320,7 @@ var cpv = {
 
             // update the phased light curves
 
-            // first, count the number of methods we have in the cp
-            var lspmethods = cpv.currcp.pfmethods;
+            // this is the number of columns to use for the phased LC tile page
             var ncols = lspmethods.length;
 
             // enlarge the width of the phased container so it overflows in x
@@ -2775,6 +2838,12 @@ var cpv = {
             var ctrlheight = $('.sidebar-controls').height()
 
             $('.sidebar').css({'height': docheight + 'px'});
+
+            // resize the plots if there are any
+            var plotdiv = document.getElementById('psearch-pgram-panel');
+            if (!plotdiv.empty) {
+                Plotly.plots.resize(plotdiv);
+            }
 
         });
 

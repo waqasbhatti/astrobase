@@ -734,6 +734,11 @@ class CheckplotHandler(tornado.web.RequestHandler):
                     # get the periodogram for this method
                     periodogram = cpdict[key]['periodogram']
 
+                    # get the lspvals and periods for frontend interactive
+                    # plotting
+                    periodogram_periods = cpdict[key]['periods']
+                    periodogram_lspvals = cpdict[key]['lspvals']
+
                     # get the phased LC with best period
                     phasedlc0plot = cpdict[key][0]['plot']
 
@@ -823,6 +828,8 @@ class CheckplotHandler(tornado.web.RequestHandler):
                     resultdict['result'][key] = {
                         'nbestperiods':cpdict[key]['nbestperiods'],
                         'periodogram':periodogram,
+                        'periods':periodogram_periods,
+                        'lspvals':periodogram_lspvals,
                         'bestperiod':cpdict[key]['bestperiod'],
                         'phasedlc0':{
                             'plot':phasedlc0plot,
