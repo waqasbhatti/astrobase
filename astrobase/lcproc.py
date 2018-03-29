@@ -93,6 +93,9 @@ from concurrent.futures import ProcessPoolExecutor
 import base64
 
 import numpy as np
+import numpy.random as npr
+npr.seed(0xc0ffee)
+
 import scipy.spatial as sps
 import scipy.interpolate as spi
 
@@ -5033,8 +5036,8 @@ def tfa_templates_lclist(
         max_mult_above_mageta=1.5,
         mag_bandpass='sdssr',
         custom_bandpasses=None,
-        mag_bright_limit=9.5,
-        mag_faint_limit=13.0,
+        mag_bright_limit=10.0,
+        mag_faint_limit=12.0,
         template_sigclip=5.0,
         template_interpolate='nearest',
         lcformat='hat-sql',
@@ -5170,14 +5173,19 @@ def tfa_templates_lclist(
             fit_lcmad = lcmad[splfit_ind]
             fit_lceta = lceta[splfit_ind]
 
-            magmadfit = spi.UnivariateSpline(fit_lcmag,
-                                             fit_lcmad,
-                                             w=1.0/fit_lcmag)
+            magmadfit = np.poly1d(np.polyfit(
+                fit_lcmag,
+                fit_lcmad,
+                2
+            ))
             magmadind = lcmad/magmadfit(lcmag) < max_mult_above_magmad
 
             # 2. get the mag-eta relation
-            magetafit = spi.UnivariateSpline(fit_lcmag,
-                                             fit_lceta)
+            magetafit = np.poly1d(np.polyfit(
+                fit_lcmag,
+                fit_lceta,
+                2
+            ))
             magetaind = magetafit(lcmag)/lceta < max_mult_above_mageta
 
             # 3. get the median ndet
@@ -5190,7 +5198,7 @@ def tfa_templates_lclist(
             # check again if we have enough LCs in the template
             if templateind.sum() >= min_template_number:
 
-                LOGINFO('magcol: %s, %s objects selected for TFA templates' %
+                LOGINFO('magcol: %s, %s objects selectable for TFA templates' %
                         (mcol, templateind.sum()))
 
                 templatemag = lcmag[templateind]
@@ -5199,6 +5207,27 @@ def tfa_templates_lclist(
                 templatendet = lcndet[templateind]
                 templateobj = lcobj[templateind]
                 templatelcf = lcfpaths[templateind]
+
+                # now, check if we have no more than the required fraction of
+                # TFA templates
+                target_number_templates = int(target_template_frac*len(lclist))
+
+                if target_number_templates > max_template_number:
+                    target_number_templates = max_template_number
+
+                LOGINFO('selecting %s TFA templates randomly' %
+                        target_number_templates)
+
+                targetind = npr.choice(templateobj.size,
+                                       target_number_templates,
+                                       replace=False)
+
+                templatemag = templatemag[targetind]
+                templatemad = templatemad[targetind]
+                templateeta = templateeta[targetind]
+                templatendet = templatendet[targetind]
+                templateobj = templateobj[targetind]
+                templatelcf = templatelcf[targetind]
 
                 # get the max ndet so far to use that LC as the timebase
                 timebaselcf = templatelcf[templatendet == templatendet.max()]
