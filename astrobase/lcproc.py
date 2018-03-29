@@ -744,7 +744,7 @@ def make_lclist(basedir,
             else:
 
                 LOGERROR('could not determine WCS info for input FITS: %s' %
-                         fitsfile)
+                         field_fitsfile)
                 wcsok = False
 
 
