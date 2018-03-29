@@ -738,11 +738,6 @@ def make_lclist(basedir,
 
             elif os.path.exists(field_wcsfrom):
 
-                hdulist = pyfits.open(field_wcsfrom)
-                img, hdr = hdulist[0].data, hdulist[0].header
-                hdulist.close()
-
-                frameshape = (hdr['NAXIS1'], hdr['NAXIS2'])
                 w = WCS(field_wcsfrom)
                 wcsok = True
 
@@ -751,6 +746,7 @@ def make_lclist(basedir,
                 LOGERROR('could not determine WCS info for input FITS: %s' %
                          fitsfile)
                 wcsok = False
+
 
             if wcsok:
 
@@ -788,6 +784,10 @@ def make_lclist(basedir,
                             'with an object position overlay '
                             'for this LC list: %s' % finder_png)
 
+            else:
+                LOGERROR("WCS for the frame: %s can't be used, "
+                         "could not generate a finder chart or xypos dict key" %
+                         field_fitsfile)
 
         # write the pickle
         with open(outfile,'wb') as outfd:
