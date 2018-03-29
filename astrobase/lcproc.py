@@ -5029,9 +5029,8 @@ def tfa_templates_lclist(
         target_template_frac=0.1,
         min_template_number=10,
         max_template_number=1000,
-        max_sigma_above_madmag=3.0,
-        max_sigma_above_etamag=3.0,
-        variability_selector='eta',
+        max_mult_above_magmad=1.5,
+        max_mult_above_mageta=1.5,
         mag_bandpass='sdssr',
         custom_bandpasses=None,
         mag_bright_limit=9.5,
@@ -5111,7 +5110,7 @@ def tfa_templates_lclist(
         outdict[mcolget[-1]] = {}
 
         LOGINFO('magcol: %s, collecting prospective template LC info...' %
-                magcol)
+                mcol)
 
         # collect the template LCs for this magcol
         for result in results:
@@ -5143,22 +5142,43 @@ def tfa_templates_lclist(
         if len(lcobj) >= min_template_number:
 
             LOGINFO('magcol: %s, %s objects eligible for template selection' %
-                    (magcol, len(lcobj)))
+                    (mcol, len(lcobj)))
 
             lcmag = np.array(lcmag)
             lcmad = np.array(lcmad)
             lceta = np.array(lceta)
-            lcndet = np.array(lcobj)
+            lcndet = np.array(lcndet)
             lcobj = np.array(lcobj)
             lcfpaths = np.array(lcfpaths)
 
+            sortind = np.argsort(lcmag)
+            lcmag = lcmag[sortind]
+            lcmad = lcmad[sortind]
+            lceta = lceta[sortind]
+            lcndet = lcndet[sortind]
+            lcobj = lcobj[sortind]
+            lcfpaths = lcfpaths[sortind]
+
             # 1. get the mag-MAD relation
-            magmadfit = spi.UnivariateSpline(lcmag, lcmad)
-            magmadind = (lcmad - magmadfit(lcmag)) < max_sigma_above_magmad
+
+            # this is needed for spline fitting
+            # should take care of the pesky 'x must be strictly increasing' bit
+            splfit_ind = np.diff(lcmag) > 0.0
+            splfit_ind = np.concatenate((np.array([True]), splfit_ind))
+
+            fit_lcmag = lcmag[splfit_ind]
+            fit_lcmad = lcmad[splfit_ind]
+            fit_lceta = lceta[splfit_ind]
+
+            magmadfit = spi.UnivariateSpline(fit_lcmag,
+                                             fit_lcmad,
+                                             w=1.0/fit_lcmag)
+            magmadind = lcmad/magmadfit(lcmag) < max_mult_above_magmad
 
             # 2. get the mag-eta relation
-            magetafit = spi.UnivariateSpline(lcmag, lceta)
-            magetaind = (lceta - magetafit(lcmag)) < max_sigma_above_mageta
+            magetafit = spi.UnivariateSpline(fit_lcmag,
+                                             fit_lceta)
+            magetaind = magetafit(lcmag)/lceta < max_mult_above_mageta
 
             # 3. get the median ndet
             median_ndet = np.median(lcndet)
@@ -5171,7 +5191,7 @@ def tfa_templates_lclist(
             if templateind.sum() >= min_template_number:
 
                 LOGINFO('magcol: %s, %s objects selected for TFA templates' %
-                        (magcol, templateind.sum()))
+                        (mcol, templateind.sum()))
 
                 templatemag = lcmag[templateind]
                 templatemad = lcmad[templateind]
@@ -5182,22 +5202,23 @@ def tfa_templates_lclist(
 
                 # get the max ndet so far to use that LC as the timebase
                 timebaselcf = templatelcf[templatendet == templatendet.max()]
+                timebaselcf = timebaselcf[0]
 
                 LOGINFO('magcol: %s, selected %s as template time base LC' %
-                        (magcol, timebaselcf))
+                        (mcol, timebaselcf))
 
                 timebaselcdict = readerfunc(timebaselcf)
 
-                if ( (isinstance(templatelcdict, list) or
-                      isinstance(templatelcdict, tuple)) and
-                     (isinstance(templatelcdict[0], dict)) ):
-                    templatelcdict = templatelcdict[0]
+                if ( (isinstance(timebaselcdict, list) or
+                      isinstance(timebaselcdict, tuple)) and
+                     (isinstance(timebaselcdict[0], dict)) ):
+                    timebaselcdict = timebaselcdict[0]
 
                 # this is the timebase to use for all of the templates
-                timebase = dict_get(templatelcdict, tcolget)
+                timebase = dict_get(timebaselcdict, tcolget)
 
                 LOGINFO('magcol: %s, reforming TFA template LCs...' %
-                        magcol)
+                        mcol)
 
                 # reform all template LCs to this time base, normalize to
                 # zero, and sigclip as requested. this is a parallel op
@@ -5205,7 +5226,7 @@ def tfa_templates_lclist(
                 tasks = [(x, lcformat,
                           tcol, mcol, ecol,
                           timebase, template_interpolate,
-                          template_sigclip, magsarefluxes) for x
+                          template_sigclip) for x
                          in templatelcf]
 
                 pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
@@ -5215,11 +5236,19 @@ def tfa_templates_lclist(
 
                 # put everything into a templateinfo dict for this magcol
                 outdict[mcol] = {
+                    'collection':{'mag':lcmag,
+                                  'mad':lcmad,
+                                  'eta':lceta,
+                                  'ndet':lcndet,
+                                  'obj':lcobj,
+                                  'lcf':lcfpaths},
+                    'fits':{'magmad':magmadfit,
+                            'mageta':magetafit},
                     'template_mag':templatemag,
                     'template_mad':templatemad,
-                    'template_eta':templatemad,
-                    'template_ndet':templatemad,
-                    'template_objects':templatemad,
+                    'template_eta':templateeta,
+                    'template_ndet':templatendet,
+                    'template_objects':templateobj,
                     'template_magseries':results
                 }
 
