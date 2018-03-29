@@ -4912,6 +4912,7 @@ def collect_tfa_stats(task):
         return None
 
 
+
 def reform_templatelc_for_tfa(task):
     '''
     This is a parallel worker to gather LC stats.
@@ -4924,14 +4925,13 @@ def reform_templatelc_for_tfa(task):
     task[5] = timebase
     task[6] = interpolate_type
     task[7] = sigclip
-    task[8] = magsarefluxes
 
     '''
 
     try:
 
         (lcfile, lcformat,
-         timecol, magcol, errcol,
+         tcol, mcol, ecol,
          timebase, interpolate_type, sigclip) = task
 
         if lcformat not in LCFORM or lcformat is None:
@@ -4990,27 +4990,26 @@ def reform_templatelc_for_tfa(task):
 
         renormed_mags = mags - magmedian
 
-        # 2. now, we'll renorm to the timebase
-        mags_interpolator = spi.interp1d(times, renormed_mags,
-                                         kind=interpolate_type,
-                                         fill_value='extrapolate')
-        errs_interpolator = spi.interp1d(times, errs,
-                                         kind=interpolate_type,
-                                         fill_value='extrapolate')
-
-        interpolated_mags = interpolator(timebase)
-        interpolated_errs = interpolator(timebase)
-
-        # 3. sigclip as requested
-        stimes, smags, serrs = sigclip_magseries(timebase,
-                                                 interpolated_mags,
-                                                 interpolated_errs,
+        # 2. sigclip as requested
+        stimes, smags, serrs = sigclip_magseries(times,
+                                                 renormed_mags,
+                                                 errs,
                                                  sigclip=sigclip)
 
+        # 3. now, we'll renorm to the timebase
+        mags_interpolator = spi.interp1d(stimes, smags,
+                                         kind=interpolate_type,
+                                         fill_value='extrapolate')
+        errs_interpolator = spi.interp1d(stimes, serrs,
+                                         kind=interpolate_type,
+                                         fill_value='extrapolate')
+
+        interpolated_mags = mags_interpolator(timebase)
+        interpolated_errs = errs_interpolator(timebase)
+
         # update the dict
-        outdict = {'times':stimes,
-                   'mags':smags,
-                   'errs':serrs}
+        outdict = {'mags':interpolated_mags,
+                   'errs':interpolated_errs}
 
         #
         # done with this magcol
