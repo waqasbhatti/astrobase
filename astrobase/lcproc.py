@@ -93,7 +93,11 @@ from concurrent.futures import ProcessPoolExecutor
 import base64
 
 import numpy as np
+import numpy.random as npr
+npr.seed(0xc0ffee)
+
 import scipy.spatial as sps
+import scipy.interpolate as spi
 
 import astropy.io.fits as pyfits
 from astropy.wcs import WCS
@@ -558,7 +562,7 @@ def make_lclist(basedir,
             LOGINFO('searching for %s light curves in %s ...' % (lcformat,
                                                                  bdir))
 
-            if recursive == False:
+            if recursive is False:
                 matching.extend(glob.glob(os.path.join(bdir, fileglob)))
 
             else:
@@ -593,7 +597,7 @@ def make_lclist(basedir,
         # now find the files
         LOGINFO('searching for %s light curves in %s ...' % (lcformat, basedir))
 
-        if recursive == False:
+        if recursive is False:
             matching = glob.glob(os.path.join(basedir, fileglob))
 
         else:
@@ -730,7 +734,7 @@ def make_lclist(basedir,
             if field_wcsfrom is None:
 
                 hdulist = pyfits.open(field_fitsfile)
-                img, hdr = hdulist[0].data, hdulist[0].header
+                hdr = hdulist[0].header
                 hdulist.close()
 
                 w = WCS(hdr)
@@ -746,7 +750,6 @@ def make_lclist(basedir,
                 LOGERROR('could not determine WCS info for input FITS: %s' %
                          field_fitsfile)
                 wcsok = False
-
 
             if wcsok:
 
@@ -982,7 +985,7 @@ def filter_lclist(listpickle,
                 xmatch_matching_index[ext_matches] = True
 
                 LOGINFO('xmatch: objects matched to %s within %.1f arcsec: %s' %
-                        (extfile, extmatchdist, ext_matches.size))
+                        (xmatchexternal, xmatchdistarcsec, ext_matches.size))
 
             else:
 
@@ -1038,7 +1041,7 @@ def filter_lclist(listpickle,
 
                 LOGERROR("cone-search: no objects were found within "
                          "%.4f deg of (%.3f, %.3f): %s, can't continue" %
-                        (searchradius, racenter, declcenter, len(kdtindices)))
+                         (searchradius, racenter, declcenter, len(kdtindices)))
                 return None, None
 
 
@@ -1065,7 +1068,7 @@ def filter_lclist(listpickle,
                 filterstr = (
                     "np.isfinite(lclist['objects']['%s']) & "
                     "(lclist['objects']['%s'] %s %s)"
-                    ) % (fcol, fcol, foperator, foperand)
+                ) % (fcol, fcol, foperator, foperand)
                 filterind = eval(filterstr)
 
                 ngood = lclist['objects'][objectidcol][filterind].size
@@ -1407,17 +1410,17 @@ def parallel_timebin_lcdir(lcdir,
 
     lclist = sorted(glob.glob(os.path.join(lcdir, fileglob)))
 
-    return parallel_timebin_lclist(lclist,
-                                   binsizesec,
-                                   maxobjects=maxobjects,
-                                   outdir=outdir,
-                                   lcformat=lcformat,
-                                   timecols=timecols,
-                                   magcols=magcols,
-                                   errcols=errcols,
-                                   minbinelems=minbinelems,
-                                   nworkers=nworkers,
-                                   maxworkertasks=maxworkertasks)
+    return parallel_timebin(lclist,
+                            binsizesec,
+                            maxobjects=maxobjects,
+                            outdir=outdir,
+                            lcformat=lcformat,
+                            timecols=timecols,
+                            magcols=magcols,
+                            errcols=errcols,
+                            minbinelems=minbinelems,
+                            nworkers=nworkers,
+                            maxworkertasks=maxworkertasks)
 
 
 
@@ -1472,7 +1475,7 @@ def get_varfeatures(lcfile,
 
         # normalize using the special function if specified
         if normfunc is not None:
-           lcdict = normfunc(lcdict)
+            lcdict = normfunc(lcdict)
 
         for tcol, mcol, ecol in zip(timecols, magcols, errcols):
 
@@ -1512,7 +1515,7 @@ def get_varfeatures(lcfile,
             if mags[finind].size < mindet:
 
                 LOGINFO('not enough LC points: %s in normalized %s LC: %s' %
-                      (mags[finind].size, mcol, os.path.basename(lcfile)))
+                        (mags[finind].size, mcol, os.path.basename(lcfile)))
                 resultdict[mcolget[-1]] = None
 
             else:
@@ -1555,7 +1558,7 @@ def get_varfeatures(lcfile,
     except Exception as e:
 
         LOGEXCEPTION('failed to get LC features for %s because: %s' %
-              (os.path.basename(lcfile), e))
+                     (os.path.basename(lcfile), e))
         return None
 
 
@@ -1597,6 +1600,8 @@ def serial_varfeatures(lclist,
 
     for task in tqdm(tasks):
         result = varfeatures_worker(task)
+
+    return result
 
 
 
@@ -1657,7 +1662,7 @@ def parallel_varfeatures_lcdir(lcdir,
     # now find the files
     LOGINFO('searching for %s light curves in %s ...' % (lcformat, lcdir))
 
-    if recursive == False:
+    if recursive is False:
         matching = glob.glob(os.path.join(lcdir, fileglob))
 
     else:
@@ -1858,10 +1863,10 @@ def get_periodicfeatures(pfpickle,
 
         # normalize using the special function if specified
         if normfunc is not None:
-           lcdict = normfunc(lcdict)
+            lcdict = normfunc(lcdict)
 
-           if nbrlcf:
-               nbrlcdict = normfunc(nbrlcdict)
+            if nbrlcf:
+                nbrlcdict = normfunc(nbrlcdict)
 
 
         resultdict = {}
@@ -2310,7 +2315,7 @@ def parallel_periodicfeatures_lcdir(
     # now find the files
     LOGINFO('searching for periodfinding pickles in %s ...' % pfpkl_dir)
 
-    if recursive == False:
+    if recursive is False:
         matching = glob.glob(os.path.join(pfpkl_dir, fileglob))
 
     else:
@@ -2488,7 +2493,7 @@ def get_starfeatures(lcfile,
     except Exception as e:
 
         LOGEXCEPTION('failed to get star features for %s because: %s' %
-              (os.path.basename(lcfile), e))
+                     (os.path.basename(lcfile), e))
         return None
 
 
@@ -2558,6 +2563,8 @@ def serial_starfeatures(lclist,
 
     for task in tqdm(tasks):
         result = starfeatures_worker(task)
+
+    return result
 
 
 
@@ -2632,7 +2639,7 @@ def parallel_starfeatures_lcdir(lcdir,
     # now find the files
     LOGINFO('searching for %s light curves in %s ...' % (lcformat, lcdir))
 
-    if recursive == False:
+    if recursive is False:
         matching = glob.glob(os.path.join(lcdir, fileglob))
 
     else:
@@ -3178,7 +3185,9 @@ def variability_threshold(featuresdir,
             np.concatenate(allobjects[magcol]['binned_objectids_thresh_all'])
         )
         allobjects[magcol]['objectids_stetsonj_thresh_all_magbins'] = np.unique(
-            np.concatenate(allobjects[magcol]['binned_objectids_thresh_stetsonj'])
+            np.concatenate(
+                allobjects[magcol]['binned_objectids_thresh_stetsonj']
+            )
         )
         allobjects[magcol]['objectids_inveta_thresh_all_magbins'] = np.unique(
             np.concatenate(allobjects[magcol]['binned_objectids_thresh_inveta'])
@@ -3483,7 +3492,7 @@ def runpf(lcfile,
 
         # normalize using the special function if specified
         if normfunc is not None:
-           lcdict = normfunc(lcdict)
+            lcdict = normfunc(lcdict)
 
         for tcol, mcol, ecol in zip(timecols, magcols, errcols):
 
@@ -3756,7 +3765,7 @@ def parallel_pf_lcdir(lcdir,
     # now find the files
     LOGINFO('searching for %s light curves in %s ...' % (lcformat, lcdir))
 
-    if recursive == False:
+    if recursive is False:
         matching = glob.glob(os.path.join(lcdir, fileglob))
 
     else:
@@ -3863,8 +3872,8 @@ def update_checkplotdict_nbrlcs(
     if 'available_bands' in checkplotdict['objectinfo']:
         mclist = checkplotdict['objectinfo']['available_bands']
     else:
-        mclist =  ('bmag','vmag','rmag','imag','jmag','hmag','kmag',
-                   'sdssu','sdssg','sdssr','sdssi','sdssz')
+        mclist = ('bmag','vmag','rmag','imag','jmag','hmag','kmag',
+                  'sdssu','sdssg','sdssr','sdssi','sdssz')
 
     for mc in mclist:
         if (mc in checkplotdict['objectinfo'] and
@@ -3877,11 +3886,8 @@ def update_checkplotdict_nbrlcs(
     # if there are actually neighbors, go through them in order
     for nbr in checkplotdict['neighbors']:
 
-        objectid, ra, decl, dist, lcfpath = (nbr['objectid'],
-                                             nbr['ra'],
-                                             nbr['decl'],
-                                             nbr['dist'],
-                                             nbr['lcfpath'])
+        objectid, lcfpath = (nbr['objectid'],
+                             nbr['lcfpath'])
 
         # get the light curve
         if not os.path.exists(lcfpath):
@@ -3955,7 +3961,7 @@ def update_checkplotdict_nbrlcs(
 
         # normalize using the special function if specified
         if normfunc is not None:
-           lcdict = normfunc(lcdict)
+            lcdict = normfunc(lcdict)
 
         # get the times, mags, and errs
         # dereference the columns and get them from the lcdict
@@ -4039,12 +4045,12 @@ def update_checkplotdict_nbrlcs(
                  checkplotdict[lspt][0]['phasebin'],
                  checkplotdict[lspt][0]['minbinelems'],
                  checkplotdict[lspt][0]['plotxlim'],
-             )
+            )
 
             # make the phasedlc plot for this period
             nbr = _pkl_phased_magseries_plot(
                 nbr,
-                lspt.split('-')[1], # this splits '<pfindex>-<pfmethod>'
+                lspt.split('-')[1],  # this splits '<pfindex>-<pfmethod>'
                 0,
                 xtimes, xmags, xerrs,
                 operiod, oepoch,
@@ -4139,7 +4145,7 @@ def runcp(pfpickle,
 
     # normalize using the special function if specified
     if normfunc is not None:
-       lcdict = normfunc(lcdict)
+        lcdict = normfunc(lcdict)
 
     cpfs = []
 
@@ -4198,9 +4204,9 @@ def runcp(pfpickle,
             xmatchradiusarcsec=xmatchradiusarcsec,
             sigclip=sigclip,
             verbose=False,
-            normto=cprenorm # we've done the renormalization already, so this
-                            # should be False by default. just messes up the
-                            # plots otherwise, destroying LPVs in particular
+            normto=cprenorm  # we've done the renormalization already, so this
+                             # should be False by default. just messes up the
+                             # plots otherwise, destroying LPVs in particular
         )
 
         # include any neighbor information as well
@@ -4653,9 +4659,6 @@ def add_cmd_to_checkplot(cpx, cmdpkl,
         # make the CMD for this color-mag combination
         try:
 
-            thiscmd_label = '%s-%s/%s' % (c1,
-                                          c2,
-                                          ym)
             thiscmd_title = r'%s-%s/%s' % (CMD_LABELS[c1],
                                            CMD_LABELS[c2],
                                            CMD_LABELS[ym])
@@ -4685,7 +4688,7 @@ def add_cmd_to_checkplot(cpx, cmdpkl,
             # now save the figure to strio and put it back in the checkplot
             cmdpng = strio()
             plt.savefig(cmdpng, bbox_inches='tight',
-                           pad_inches=0.0, format='png')
+                        pad_inches=0.0, format='png')
             cmdpng.seek(0)
             cmdb64 = base64.b64encode(cmdpng.read())
             cmdpng.close()
@@ -4707,7 +4710,7 @@ def add_cmd_to_checkplot(cpx, cmdpkl,
                     outpng = 'cmd-%s-%s-%s.%s.png' % (cpdict['objectid'],
                                                       c1,c2,ym)
 
-                pngf = checkplot._base64_to_file(cmdb64, outpng)
+                checkplot._base64_to_file(cmdb64, outpng)
 
         except Exception as e:
             LOGEXCEPTION('CMD for %s-%s/%s does not exist in %s, skipping...' %
@@ -4767,3 +4770,4 @@ def add_cmds_cpdir(cpdir, cmdpkl,
                            cmdpkl,
                            require_cmd_magcolor=require_cmd_magcolor,
                            save_cmd_pngs=save_cmd_pngs)
+
