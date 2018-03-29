@@ -736,9 +736,9 @@ def make_lclist(basedir,
                 w = WCS(hdr)
                 wcsok = True
 
-            elif os.path.exists(wcsfrom):
+            elif os.path.exists(field_wcsfrom):
 
-                hdulist = pyfits.open(field_fitsfile)
+                hdulist = pyfits.open(field_wcsfrom)
                 img, hdr = hdulist[0].data, hdulist[0].header
                 hdulist.close()
 
