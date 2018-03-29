@@ -89,6 +89,7 @@ from numpy.linalg import lstsq
 
 from scipy.optimize import leastsq
 from scipy.signal import medfilt, savgol_filter
+import scipy.interpolate as spi
 from astropy.convolution import convolve, Gaussian1DKernel
 
 # for random forest EPD
@@ -542,12 +543,17 @@ def rfepd_magseries(times, mags, errs,
 ## TREND FILTERING ALGORITHM (TFA) ##
 #####################################
 
-def rebin_magseries_for_tfa(times, mags, errs, newtimebase):
+def rebin_magseries_for_tfa(times,
+                            mags,
+                            errs,
+                            newtimebase,
+                            interp='nearest'):
     '''
     This rebins a light curve to match the given time base.
 
     '''
 
+    mags_interpolator = spi.interp1d(times, mags,
 
 
 

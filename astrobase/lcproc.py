@@ -5215,8 +5215,8 @@ def tfa_templates_lclist(
                 if target_number_templates > max_template_number:
                     target_number_templates = max_template_number
 
-                LOGINFO('selecting %s TFA templates randomly' %
-                        target_number_templates)
+                LOGINFO('magcol: %s, selecting %s TFA templates randomly' %
+                        (mcol, target_number_templates))
 
                 targetind = npr.choice(templateobj.size,
                                        target_number_templates,
@@ -5271,8 +5271,9 @@ def tfa_templates_lclist(
                                   'ndet':lcndet,
                                   'obj':lcobj,
                                   'lcf':lcfpaths},
-                    'fits':{'magmad':magmadfit,
-                            'mageta':magetafit},
+                    'timebaselcf':timebaselcf,
+                    'trendfits':{'mag-mad':magmadfit,
+                                 'mag-eta':magetafit},
                     'template_mag':templatemag,
                     'template_mad':templatemad,
                     'template_eta':templateeta,
