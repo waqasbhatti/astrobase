@@ -111,7 +111,8 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
     where as npwhere, linspace as nplinspace, \
     zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
-    correlate as npcorrelate, nonzero as npnonzero, diag as npdiag
+    correlate as npcorrelate, nonzero as npnonzero, diag as npdiag, \
+    diff as npdiff
 
 from scipy.optimize import leastsq as spleastsq, minimize as spminimize
 from scipy.interpolate import LSQUnivariateSpline
@@ -566,8 +567,17 @@ def spline_fit_magseries(times, mags, errs, period,
                              phase[-1] - 0.01,
                              num=nknots)
 
+    # NOTE: newer scipy needs x to be strictly increasing. this means we should
+    # filter out anything that doesn't have np.diff(phase) > 0.0
+    # FIXME: this needs to be tested
+    phase_diffs_ind = npdiff(phase) > 0.0
+    incphase_ind = np.concatenate((np.array([True]), phase_diffs_ind))
+    phase, pmags, perrs = (phase[incphase_ind],
+                           pmags[incphase_ind],
+                           perrs[incphase_ind])
+
     # generate and fit the spline
-    spl = LSQUnivariateSpline(phase,pmags,t=splineknots,w=1.0/perrs)
+    spl = LSQUnivariateSpline(phase, pmags, t=splineknots, w=1.0/perrs)
 
     # calculate the spline fit to the actual phases, the chisq and red-chisq
     fitmags = spl(phase)
