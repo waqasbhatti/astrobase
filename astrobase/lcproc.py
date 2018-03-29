@@ -743,7 +743,7 @@ def make_lclist(basedir,
                 hdulist.close()
 
                 frameshape = (hdr['NAXIS1'], hdr['NAXIS2'])
-                w = WCS(wcsfrom)
+                w = WCS(field_wcsfrom)
                 wcsok = True
 
             else:
