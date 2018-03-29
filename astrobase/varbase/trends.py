@@ -558,6 +558,13 @@ def tfa_magseries(times, mags, errs, templateinfo):
 
     This requires a templateinfo dict to work.
 
+    # calculate the normal matrix for the reformed template LCs and
+    # its inverse. FIXME: actually, don't do this here because we
+    # might need to throw things out of the template set if they are
+    # the TFA target. we'll put the objectids etc in the
+    # templateinfo dict so the tfa_magseries function can make this
+    # decision for us
+
     '''
 
 

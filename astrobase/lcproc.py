@@ -4912,10 +4912,121 @@ def collect_tfa_stats(task):
         return None
 
 
+def reform_templatelc_for_tfa(task):
+    '''
+    This is a parallel worker to gather LC stats.
+
+    task[0] = lcfile
+    task[1] = lcformat
+    task[2] = timecol
+    task[3] = magcol
+    task[4] = errcol
+    task[5] = timebase
+    task[6] = interpolate_type
+    task[7] = sigclip
+    task[8] = magsarefluxes
+
+    '''
+
+    try:
+
+        (lcfile, lcformat,
+         timecol, magcol, errcol,
+         timebase, interpolate_type, sigclip) = task
+
+        if lcformat not in LCFORM or lcformat is None:
+            LOGERROR('unknown light curve format specified: %s' % lcformat)
+            return None
+
+        (fileglob, readerfunc, dtimecols, dmagcols,
+         derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+        # get the LC into a dict
+        lcdict = readerfunc(lcfile)
+
+        # this should handle lists/tuples being returned by readerfunc
+        # we assume that the first element is the actual lcdict
+        # FIXME: figure out how to not need this assumption
+        if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+             (isinstance(lcdict[0], dict)) ):
+            lcdict = lcdict[0]
+
+        outdict = {}
+
+        # dereference the columns and get them from the lcdict
+        if '.' in tcol:
+            tcolget = tcol.split('.')
+        else:
+            tcolget = [tcol]
+        times = dict_get(lcdict, tcolget)
+
+        if '.' in mcol:
+            mcolget = mcol.split('.')
+        else:
+            mcolget = [mcol]
+        mags = dict_get(lcdict, mcolget)
+
+        if '.' in ecol:
+            ecolget = ecol.split('.')
+        else:
+            ecolget = [ecol]
+        errs = dict_get(lcdict, ecolget)
+
+        # normalize here if not using special normalization
+        if normfunc is None:
+            ntimes, nmags = normalize_magseries(
+                times, mags,
+                magsarefluxes=magsarefluxes
+            )
+
+        times, mags, errs = ntimes, nmags, errs
+
+        #
+        # now we'll do: 1. renorm to zero, 2. reform to timebase, 3. sigclip
+        #
+
+        # 1. renorm to zero
+        magmedian = np.median(mags)
+
+        renormed_mags = mags - magmedian
+
+        # 2. now, we'll renorm to the timebase
+        mags_interpolator = spi.interp1d(times, renormed_mags,
+                                         kind=interpolate_type,
+                                         fill_value='extrapolate')
+        errs_interpolator = spi.interp1d(times, errs,
+                                         kind=interpolate_type,
+                                         fill_value='extrapolate')
+
+        interpolated_mags = interpolator(timebase)
+        interpolated_errs = interpolator(timebase)
+
+        # 3. sigclip as requested
+        stimes, smags, serrs = sigclip_magseries(timebase,
+                                                 interpolated_mags,
+                                                 interpolated_errs,
+                                                 sigclip=sigclip)
+
+        # update the dict
+        outdict = {'times':stimes,
+                   'mags':smags,
+                   'errs':serrs}
+
+        #
+        # done with this magcol
+        #
+        return outdict
+
+    except:
+
+        LOGEXCEPTION('reform LC task failed: %s' % repr(task))
+        return None
+
+
 
 def tfa_templates_lclist(
         lclist,
-        outfile,
+        outfile=None,
         target_template_frac=0.1,
         min_template_number=10,
         max_template_number=1000,
@@ -4927,6 +5038,7 @@ def tfa_templates_lclist(
         mag_bright_limit=9.5,
         mag_faint_limit=13.0,
         template_sigclip=5.0,
+        template_interpolate='nearest',
         lcformat='hat-sql',
         timecols=None,
         magcols=None,
@@ -4966,12 +5078,15 @@ def tfa_templates_lclist(
     if errcols is None:
         errcols = derrcols
 
+    LOGINFO('collecting light curve information for %s in list...' %
+            len(lclist))
+
     # first, we'll collect the light curve info
     tasks = [(x, lcformat, timecols, magcols, errcols, custom_bandpasses) for x
              in lclist]
 
     pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
-    results = pool.map(timebinlc_worker, tasks)
+    results = pool.map(collect_tfa_stats, tasks)
     pool.close()
     pool.join()
 
@@ -4980,7 +5095,12 @@ def tfa_templates_lclist(
     outdict = {}
 
     # for each magcol, we'll generate a separate template list
-    for mcol in magcols:
+    for tcol, mcol, ecol in zip(timecols, magcols, errcols):
+
+        if '.' in tcol:
+            tcolget = tcol.split('.')
+        else:
+            tcolget = [tcol]
 
         if '.' in mcol:
             mcolget = mcol.split('.')
@@ -4990,6 +5110,9 @@ def tfa_templates_lclist(
         lcmag, lcmad, lceta, lcndet, lcobj, lcfpaths = [], [], [], [], [], []
 
         outdict[mcolget[-1]] = {}
+
+        LOGINFO('magcol: %s, collecting prospective template LC info...' %
+                magcol)
 
         # collect the template LCs for this magcol
         for result in results:
@@ -5018,7 +5141,10 @@ def tfa_templates_lclist(
                 pass
 
         # make sure we have enough LCs to work on
-        if len(lcobj) > min_template_number:
+        if len(lcobj) >= min_template_number:
+
+            LOGINFO('magcol: %s, %s objects eligible for template selection' %
+                    (magcol, len(lcobj)))
 
             lcmag = np.array(lcmag)
             lcmad = np.array(lcmad)
@@ -5029,11 +5155,11 @@ def tfa_templates_lclist(
 
             # 1. get the mag-MAD relation
             magmadfit = spi.UnivariateSpline(lcmag, lcmad)
-            magmadind = lcmad/magmadfit(lcmag) < max_sigma_above_magmad
+            magmadind = (lcmad - magmadfit(lcmag)) < max_sigma_above_magmad
 
             # 2. get the mag-eta relation
             magetafit = spi.UnivariateSpline(lcmag, lceta)
-            magetaind = lceta/magetafit(lcmag) < max_sigma_above_mageta
+            magetaind = (lceta - magetafit(lcmag)) < max_sigma_above_mageta
 
             # 3. get the median ndet
             median_ndet = np.median(lcndet)
@@ -5043,19 +5169,89 @@ def tfa_templates_lclist(
             templateind = magmadind & magetaind & ndetind
 
             # check again if we have enough LCs in the template
+            if templateind.sum() >= min_template_number:
 
-            # get the max ndet so far to use that LC as the timebase
+                LOGINFO('magcol: %s, %s objects selected for TFA templates' %
+                        (magcol, templateind.sum()))
 
-            # reform all template LCs to this time base and normalize to zero
+                templatemag = lcmag[templateind]
+                templatemad = lcmad[templateind]
+                templateeta = lceta[templateind]
+                templatendet = lcndet[templateind]
+                templateobj = lcobj[templateind]
+                templatelcf = lcfpaths[templateind]
 
-            # calculate the normal matrix for the template LCs and the inverse
+                # get the max ndet so far to use that LC as the timebase
+                timebaselcf = templatelcf[templatendet == templatendet.max()]
 
-            # put everything into a templateinfo dict and save it to a pickle
+                LOGINFO('magcol: %s, selected %s as template time base LC' %
+                        (magcol, timebaselcf))
 
-            # return the templateinfo dict
+                timebaselcdict = readerfunc(timebaselcf)
+
+                if ( (isinstance(templatelcdict, list) or
+                      isinstance(templatelcdict, tuple)) and
+                     (isinstance(templatelcdict[0], dict)) ):
+                    templatelcdict = templatelcdict[0]
+
+                # this is the timebase to use for all of the templates
+                timebase = dict_get(templatelcdict, tcolget)
+
+                LOGINFO('magcol: %s, reforming TFA template LCs...' %
+                        magcol)
+
+                # reform all template LCs to this time base, normalize to
+                # zero, and sigclip as requested. this is a parallel op
+                # first, we'll collect the light curve info
+                tasks = [(x, lcformat,
+                          tcol, mcol, ecol,
+                          timebase, template_interpolate,
+                          template_sigclip, magsarefluxes) for x
+                         in templatelcf]
+
+                pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
+                results = pool.map(reform_templatelc_for_tfa, tasks)
+                pool.close()
+                pool.join()
+
+                # put everything into a templateinfo dict for this magcol
+                outdict[mcol] = {
+                    'template_mag':templatemag,
+                    'template_mad':templatemad,
+                    'template_eta':templatemad,
+                    'template_ndet':templatemad,
+                    'template_objects':templatemad,
+                    'template_magseries':results
+                }
+
+            # if we don't have enough, return nothing for this magcol
+            else:
+                LOGERROR('not enough objects meeting requested '
+                         'MAD, eta, ndet conditions to '
+                         'select templates for magcol: %s' % mcol)
+                continue
 
         else:
 
             LOGERROR('not enough objects in requested mag range to '
                      'select templates for magcol: %s' % mcol)
             continue
+
+
+    #
+    # end of operating on each magcol
+    #
+
+    # save the templateinfo dict to a pickle if requested
+    if outfile:
+
+        if outfile.endswith('.gz'):
+            outfd = gzip.open(outfile,'wb')
+        else:
+            outfd = open(outfile,'wb')
+
+        with outfd:
+            pickle.dump(outdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # return the templateinfo dict
+    return outdict
