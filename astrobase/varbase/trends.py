@@ -69,8 +69,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -552,9 +552,6 @@ def rebin_magseries_for_tfa(times,
     This rebins a light curve to match the given time base.
 
     '''
-
-    mags_interpolator = spi.interp1d(times, mags,
-
 
 
 def tfa_magseries(times, mags, errs, templateinfo):
