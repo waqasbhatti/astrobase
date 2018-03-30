@@ -5281,6 +5281,7 @@ def tfa_templates_lclist(
                 # put everything into a templateinfo dict for this magcol
                 outdict[mcol].update({
                     'timebaselcf':timebaselcf,
+                    'timebase':timebase,
                     'trendfits':{'mag-mad':magmadfit,
                                  'mag-eta':magetafit},
                     'template_objects':templateobj,
@@ -5326,7 +5327,6 @@ def tfa_templates_lclist(
 
 
 def apply_tfa_magseries(lcfile,
-                        objectid,
                         timecol,
                         magcol,
                         errcol,
@@ -5345,8 +5345,21 @@ def apply_tfa_magseries(lcfile,
 
     '''
 
+    readerfunc = LCFORM[lcformat][1]
+
+    lcdict = readerfunc(lcfile)
+
+    if ((isinstance(lcdict, tuple) or isinstance(lcdict, list)) and
+        isinstance(lcdict[0], dict)):
+        lcdict = lcdict[0]
+
+    objectid = lcdict['objectid']
+
     # if the object itself is in the template ensemble, remove it
     if objectid in templateinfo[magcol]['template_objects']:
+
+        LOGWARNING('object %s found in the TFA template ensemble, removing...' %
+                   objectid)
 
         templateind = templateinfo[magcol]['template_objects'] == objectid
 
@@ -5374,13 +5387,13 @@ def apply_tfa_magseries(lcfile,
             # sum over the time axis
             normal_matrix[j,k] = np.sum(
                 tmagseries[j,:] * tmagseries[k,:],
-                axis=1
+                axis=0
             )
 
     normal_matrix_inverse = linalg.inv(normal_matrix)
 
     # get the timebase from the template
-    timebaselcf = templateinfo[magcol]['timebaselcf']
+    timebase = templateinfo[magcol]['timebase']
 
     # use this to reform the target lc in the same manner as that for a TFA
     # template LC
@@ -5390,15 +5403,16 @@ def apply_tfa_magseries(lcfile,
         timecol,
         magcol,
         errcol,
-        timebaselcf,
+        timebase,
         interp,
         sigclip
     ))
 
     # now calculate the scalar products of the target and template magseries
-    scalar_products = np.zeros(tmagseries[0,:].shape)
+    scalar_products = np.zeros(tobjects.size)
 
     for j in np.arange(scalar_products.size):
+
         scalar_products[j] = np.sum(reformed_targetlc['mags']*tmagseries[j,:])
 
 
@@ -5408,19 +5422,19 @@ def apply_tfa_magseries(lcfile,
     for j in np.arange(corrections.size):
 
         corrections[j] = np.sum(normal_matrix_inverse[j,:] * scalar_products,
-                                axis=1)
+                                axis=0)
 
     # finally, get the corrected time series for the target object
-    corrected_magseries = np.zeros(timebaselcf.shape)
+    corrected_magseries = np.zeros(timebase.shape)
 
     for i in np.arange(corrected_magseries.size):
 
         corrected_magseries[i] = (
-            reformed_targetlc[i] -
+            reformed_targetlc['mags'][i] -
             np.sum(corrections * tmagseries[:,i])
         )
 
-    outdict = {'times':timebaselcf,
+    outdict = {'times':timebase,
                'mags':corrected_magseries}
 
     return outdict
