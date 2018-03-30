@@ -94,7 +94,7 @@ import base64
 
 import numpy as np
 import numpy.random as npr
-import numpy.linalg as linalg
+import numpy.linalg as npla
 npr.seed(0xc0ffee)
 
 import scipy.spatial as sps
@@ -5660,7 +5660,14 @@ def apply_tfa_magseries(lcfile,
                 axis=0
             )
 
-        normal_matrix_inverse = spla.pinv(normal_matrix)
+    # get the inverse of the matrix
+    # if this is correct, this should satisfy the condition:
+    # np.allclose(
+    #    normal_matrix,
+    #    np.dot(normal_matrix,
+    #           np.dot(normal_matrix_inverse, normal_matrix))
+    # )
+    normal_matrix_inverse = npla.pinv(normal_matrix)
 
     # get the timebase from the template
     timebase = templateinfo[magcol]['timebase']
