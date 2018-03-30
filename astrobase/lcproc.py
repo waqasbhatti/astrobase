@@ -95,6 +95,7 @@ import base64
 import numpy as np
 import numpy.random as npr
 npr.seed(0xc0ffee)
+from numpy import linalg
 
 import scipy.spatial as sps
 import scipy.interpolate as spi
@@ -5105,7 +5106,13 @@ def tfa_templates_lclist(
 
         lcmag, lcmad, lceta, lcndet, lcobj, lcfpaths = [], [], [], [], [], []
 
-        outdict[mcolget[-1]] = {}
+        # add to the collection of all light curves
+        outdict[mcol] = {'collection':{'mag':[],
+                                       'mad':[],
+                                       'eta':[],
+                                       'ndet':[],
+                                       'obj':[],
+                                       'lcf':[]}}
 
         LOGINFO('magcol: %s, collecting prospective template LC info...' %
                 mcol)
@@ -5123,7 +5130,15 @@ def tfa_templates_lclist(
                 thisobj = result['objectid']
                 thislcf = result['lcfpath']
 
+                outdict[mcol]['collection']['mag'].append(thismag)
+                outdict[mcol]['collection']['mad'].append(thismad)
+                outdict[mcol]['collection']['eta'].append(thiseta)
+                outdict[mcol]['collection']['ndet'].append(thisndet)
+                outdict[mcol]['collection']['obj'].append(thisobj)
+                outdict[mcol]['collection']['lcf'].append(thislcf)
+
                 # make sure the object lies in the mag limits we set before
+                # to try to accept it into the TFA ensemble
                 if mag_bright_limit < thismag < mag_faint_limit:
 
                     lcmag.append(thismag)
@@ -5258,24 +5273,24 @@ def tfa_templates_lclist(
                 pool.close()
                 pool.join()
 
+                # generate a 2D array for the template magseries with dimensions
+                # = (n_objects, n_lcpoints)
+                template_magseries = np.array([x['mags'] for x in results])
+                template_errseries = np.array([x['errs'] for x in results])
+
                 # put everything into a templateinfo dict for this magcol
-                outdict[mcol] = {
-                    'collection':{'mag':lcmag,
-                                  'mad':lcmad,
-                                  'eta':lceta,
-                                  'ndet':lcndet,
-                                  'obj':lcobj,
-                                  'lcf':lcfpaths},
+                outdict[mcol].update({
                     'timebaselcf':timebaselcf,
                     'trendfits':{'mag-mad':magmadfit,
                                  'mag-eta':magetafit},
+                    'template_objects':templateobj,
                     'template_mag':templatemag,
                     'template_mad':templatemad,
                     'template_eta':templateeta,
                     'template_ndet':templatendet,
-                    'template_objects':templateobj,
-                    'template_magseries':results
-                }
+                    'template_magseries':template_magseries,
+                    'template_errseries':template_errseries
+                })
 
             # if we don't have enough, return nothing for this magcol
             else:
@@ -5308,3 +5323,84 @@ def tfa_templates_lclist(
 
     # return the templateinfo dict
     return outdict
+
+
+def apply_tfa_magseries(lcfile,
+                        objectid,
+                        timecol,
+                        magcol,
+                        errcol,
+                        templateinfo,
+                        lcformat='hat-sql',
+                        interp='nearest',
+                        sigclip=5.0):
+    '''This gets the normal matrix for an object wrt TFA ensemble.
+
+    calculate the normal matrix for the reformed template LCs and its inverse.
+    we might need to throw things out of the template set if they are the TFA
+    target.
+
+    also gets the magseries into a concatenated array to calculate the scalar
+    product of the target and template light curves.
+
+    '''
+
+    # if the object itself is in the template ensemble, remove it
+    if objectid in templateinfo[magcol]['template_objects']:
+
+        templateind = templateinfo[magcol]['template_objects'] == objectid
+
+        # we need to copy over this template instance
+        tobjects = templateinfo[magcol]['template_objects'][~templateind][::]
+        tmagseries = templateinfo[magcol][
+            'template_magseries'
+        ][~templateind,:][::]
+
+    # otherwise, get the full ensemble
+    else:
+
+        tobjects = templateinfo[magcol]['template_objects'][::]
+        tmagseries = templateinfo[magcol][
+            'template_magseries'
+        ][::]
+
+    # this is the empty normal matrix
+    normal_matrix = np.zeros((tobjects.size, tobjects.size))
+
+    # calculate the normal matrix
+    for j in np.arange(tobjects.size):
+        for k in np.arange(tobjects.size):
+
+            # sum over the time axis
+            normal_matrix[j,k] = np.sum(
+                tmagseries[j,:] * tmagseries[k,:],
+                axis=1
+            )
+
+    normal_matrix_inverse = linalg.inv(normal_matrix)
+
+    # get the timebase from the template
+    timebaselcf = templateinfo[magcol]['timebaselcf']
+
+    # use this to reform the target lc in the same manner as that for a TFA
+    # template LC
+    reformed_targetlc = reform_templatelc_for_tfa((
+        lcfile,
+        lcformat,
+        timecol,
+        magcol,
+        errcol,
+        timebaselcf,
+        interp,
+        sigclip
+    ))
+
+    # now calculate the scalar products of the target and template magseries
+    scalar_products = np.zeros(tmagseries[0,:].shape)
+
+    for j in np.arange(scalar_products.size):
+        scalar_products[j] = np.sum(reformed_targetlc['mags']*tmagseries[j,:])
+
+
+    # now calculate the corrections
+    corrections = np.zeros(tobjects.shape)
