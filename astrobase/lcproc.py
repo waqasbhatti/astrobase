@@ -5437,4 +5437,12 @@ def apply_tfa_magseries(lcfile,
     outdict = {'times':timebase,
                'mags':corrected_magseries}
 
-    return outdict
+
+    # we'll write back the tfa times and mags to the lcdict
+    lcdict['tfa-%s' % magcol] = outdict
+    outfile = os.path.join(os.path.dirname(lcfile),
+                           '%s-tfa-pklc.pkl' % objectid)
+    with open(outfile,'wb') as outfd:
+        pickle.dump(lcdict, outfd, pickle.HIGHEST_PROTOCOL)
+
+    return outfile
