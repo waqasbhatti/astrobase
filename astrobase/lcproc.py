@@ -5667,7 +5667,7 @@ def apply_tfa_magseries(lcfile,
     #    np.dot(normal_matrix,
     #           np.dot(normal_matrix_inverse, normal_matrix))
     # )
-    normal_matrix_inverse = npla.pinv(normal_matrix)
+    normal_matrix_inverse = spla.pinv(normal_matrix)
 
     # get the timebase from the template
     timebase = templateinfo[magcol]['timebase']
