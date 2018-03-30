@@ -69,8 +69,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -89,6 +89,7 @@ from numpy.linalg import lstsq
 
 from scipy.optimize import leastsq
 from scipy.signal import medfilt, savgol_filter
+import scipy.interpolate as spi
 from astropy.convolution import convolve, Gaussian1DKernel
 
 # for random forest EPD
@@ -535,9 +536,3 @@ def rfepd_magseries(times, mags, errs,
                'regressor':RFR}
 
     return retdict
-
-
-
-#####################################
-## TREND FILTERING ALGORITHM (TFA) ##
-#####################################
