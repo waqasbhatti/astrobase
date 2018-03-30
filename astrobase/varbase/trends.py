@@ -406,7 +406,9 @@ def epd_magseries(times, mags, errs,
                    'errs':ferrs,
                    'fitcoeffs':fitcoeffs,
                    'fitinfo':leastsqfit,
-                   'fitmags':epdfit}
+                   'fitmags':epdfit,
+                   'mags_median':npmedian(epdmags),
+                   'mags_mad':npmedian(npabs(epdmags - npmedian(epdmags)))}
 
         return retdict
 
@@ -533,6 +535,9 @@ def rfepd_magseries(times, mags, errs,
                'mags':corrected_fmags,
                'errs':ferrs,
                'feature_importances':RFR.feature_importances_,
-               'regressor':RFR}
+               'regressor':RFR,
+               'mags_median':npmedian(corrected_fmags),
+               'mags_mad':npmedian(npabs(corrected_fmags -
+                                         npmedian(corrected_fmags)))}
 
     return retdict

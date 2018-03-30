@@ -5326,6 +5326,7 @@ def tfa_templates_lclist(
     return outdict
 
 
+
 def apply_tfa_magseries(lcfile,
                         timecol,
                         magcol,
@@ -5344,6 +5345,11 @@ def apply_tfa_magseries(lcfile,
     product of the target and template light curves.
 
     '''
+
+    # get the templateinfo from a pickle if necessary
+    if isinstance(templateinfo,str) and os.path.exists(templateinfo):
+        with open(templateinfo,'rb') as infd:
+            templateinfo = pickle.load(infd)
 
     readerfunc = LCFORM[lcformat][1]
 
@@ -5434,15 +5440,106 @@ def apply_tfa_magseries(lcfile,
             np.sum(corrections * tmagseries[:,i])
         )
 
-    outdict = {'times':timebase,
-               'mags':corrected_magseries}
+    outdict = {
+        'times':timebase,
+        'mags':corrected_magseries,
+        'mags_median':np.median(corrected_magseries),
+        'mags_mad': np.median(np.abs(corrected_magseries -
+                                     np.median(corrected_magseries)))
+    }
 
 
     # we'll write back the tfa times and mags to the lcdict
-    lcdict['tfa-%s' % magcol] = outdict
+    lcdict['tfa'] = outdict
     outfile = os.path.join(os.path.dirname(lcfile),
-                           '%s-tfa-pklc.pkl' % objectid)
+                           '%s-tfa-%s-pklc.pkl' % (objectid, magcol))
     with open(outfile,'wb') as outfd:
         pickle.dump(lcdict, outfd, pickle.HIGHEST_PROTOCOL)
 
     return outfile
+
+
+def parallel_tfa_worker(task):
+    '''
+    This is a parallel worker for the function below.
+
+    task[0] = lcfile
+    task[1] = timecol
+    task[2] = magcol
+    task[3] = errcol
+    task[4] = templateinfo
+    task[5] = lcformat
+    task[6] = interp
+    task[7] = sigclip
+
+    '''
+
+    (lcfile, timecol, magcol, errcol,
+     templateinfo, lcformat, interp, sigclip) = task
+
+    try:
+
+        res = apply_tfa_magseries(lcfile, timecol, magcol, errcol,
+                                  templateinfo,
+                                  lcformat=lcformat,
+                                  interp=interp,
+                                  sigclip=sigclip)
+        if res:
+            LOGINFO('%s -> %s TFA OK' % (lcfile, res))
+
+    except Exception as e:
+
+        LOGEXCEPTION('TFA failed for %s' % lcfile)
+        return None
+
+
+
+def parallel_tfa_lclist(lclist,
+                        templateinfo,
+                        timecols=None,
+                        magcols=None,
+                        errcols=None,
+                        lcformat='hat-sql',
+                        interp='nearest',
+                        sigclip=5.0,
+                        nworkers=NCPUS,
+                        maxworkertasks=1000):
+    '''
+    This applies TFA in parallel to all LCs in lclist.
+
+    '''
+
+    # open the templateinfo first
+    if isinstance(templateinfo,str) and os.path.exists(templateinfo):
+        with open(templateinfo,'rb') as infd:
+            templateinfo = pickle.load(infd)
+
+    # get the default time, mag, err cols if not provided
+    (fileglob, readerfunc, dtimecols, dmagcols,
+     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+    # override the default timecols, magcols, and errcols
+    # using the ones provided to the function
+    if timecols is None:
+        timecols = dtimecols
+    if magcols is None:
+        magcols = dmagcols
+    if errcols is None:
+        errcols = derrcols
+
+    outdict = {}
+
+    # run by magcol
+    for t, m, e in zip(timecols, magcols, errcols):
+
+        tasks = [(x, t, m, e, templateinfo, lcformat, interp, sigclip) for
+                 x in lclist]
+
+        pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
+        results = pool.map(parallel_tfa_worker, tasks)
+        pool.close()
+        pool.join()
+
+        outdict[m] = results
+
+    return outdict
