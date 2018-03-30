@@ -68,8 +68,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -148,6 +148,7 @@ from astrobase.checkplot import _pkl_magseries_plot, \
 
 from astrobase.magnitudes import jhk_to_sdssr
 
+from astrobase.varbase.trends import epd_magseries, rfepd_magseries, smooth_series_savgol
 
 ############
 ## CONFIG ##
@@ -4770,10 +4771,253 @@ def add_cmds_cpdir(cpdir, cmdpkl,
 
 
 
-############################
-## LIGHT CURVE DETRENDING ##
-############################
+##################################
+## LIGHT CURVE DETRENDING - EPD ##
+##################################
 
+def apply_epd_magseries(lcfile,
+                        timecol,
+                        magcol,
+                        errcol,
+                        externalparams,
+                        lcformat='hat-sql',
+                        magsarefluxes=False,
+                        epdsmooth_sigclip=3.0,
+                        epdsmooth_windowsize=21,
+                        epdsmooth_func=smooth_series_savgol,
+                        epdsmooth_extraparams=None):
+    '''This applies EPD to a light curve.
+
+    lcfile is the name of the file to read for times, mags, errs.
+
+    timecol, magcol, errcol are the columns in the lcdict to use for EPD.
+
+    external params is a dict or pickle file that contains a dict composed of 9
+    elements in the following manner:
+
+    {'fsv': ndarray for S values corresponding to each observation,
+     'fdv': ndarray for D values corresponding to each observation,
+     'fkv': ndarray for K values corresponding to each observation,
+     'xcc': ndarray for x coords for each observation,
+     'ycc': ndarray for y coords for each observation,
+     'bgv': ndarray for sky background values for each observation,
+     'bge': ndarray for sky background err values for each observation,
+     'iha': ndarray for hour angle corresponding to each observation,
+     'izd': ndarray for zenith distance corresponding to each observation}
+
+    '''
+
+    readerfunc = LCFORM[lcformat][1]
+    lcdict = readerfunc(lcfile)
+
+    if ((isinstance(lcdict, tuple) or isinstance(lcdict, list)) and
+        isinstance(lcdict[0], dict)):
+        lcdict = lcdict[0]
+
+    objectid = lcdict['objectid']
+    times, mags, errs = lcdict[timecol], lcdict[magcol], lcdict[errcol]
+
+    fsv = externalparams['fsv']
+    fdv = externalparams['fdv']
+    fkv = externalparams['fkv']
+
+    xcc = externalparams['xcc']
+    ycc = externalparams['ycc']
+
+    bgv = externalparams['bgv']
+    bge = externalparams['bge']
+
+    iha = externalparams['iha']
+    izd = externalparams['izd']
+
+    epd = epd_magseries(
+        times,
+        mags,
+        errs,
+        fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd,
+        magsarefluxes=magsarefluxes,
+        epdsmooth_sigclip=epdsmooth_sigclip,
+        epdsmooth_windowsize=epdsmooth_windowsize,
+        epdsmooth_func=epdsmooth_func,
+        epdsmooth_extraparams=epdsmooth_extraparams
+    )
+
+    # save the EPD magseries to a pickle LC
+    lcdict['epd'] = epd
+    outfile = os.path.join(os.path.dirname(lcfile),
+                           '%s-epd-%s-pklc.pkl' % (objectid,
+                                                   magcol))
+    with open(outfile,'wb') as outfd:
+        pickle.dump(lcdict, outfd,
+                    protocol=pickle.HIGHEST_PROTOCOL)
+
+    return outfile
+
+
+def parallel_epd_worker(task):
+    '''
+    This is a parallel worker for the function below.
+
+    task[0] = lcfile
+    task[1] = timecol
+    task[2] = magcol
+    task[3] = errcol
+    task[4] = externalparams
+    task[5] = lcformat
+    task[6] = magsarefluxes
+    task[7] = epdsmooth_sigclip
+    task[8] = epdsmooth_windowsize
+    task[9] = epdsmooth_func
+    task[10] = epdsmooth_extraparams
+
+    '''
+
+    (lcfile, timecol, magcol, errcol,
+     externalparams, lcformat, magsarefluxes,
+     epdsmooth_sigclip, epdsmooth_windowsize,
+     epdsmooth_func, epdsmooth_extraparams) = task
+
+    try:
+
+        epd = apply_epd_magseries(lcfile,
+                                  timecol,
+                                  magcol,
+                                  errcol,
+                                  externalparams,
+                                  lcformat=lcformat,
+                                  magsarefluxes=magsarefluxes,
+                                  epdsmooth_sigclip=epdsmooth_sigclip,
+                                  epdsmooth_windowsize=epdsmooth_windowsize,
+                                  epdsmooth_func=epdsmooth_func,
+                                  epdsmooth_extraparams=epdsmooth_extraparams)
+        if epd is not None:
+            LOGINFO('%s -> %s EPD OK' % (lcfile, epd))
+            return epd
+        else:
+            LOGERROR('EPD failed for %s' % lcfile)
+            return None
+
+    except Exception as e:
+
+        LOGEXCEPTION('EPD failed for %s' % lcfile)
+        return None
+
+
+
+def parallel_epd_lclist(lclist,
+                        externalparams,
+                        timecols=None,
+                        magcols=None,
+                        errcols=None,
+                        lcformat='hat-sql',
+                        magsarefluxes=False,
+                        epdsmooth_sigclip=3.0,
+                        epdsmooth_windowsize=21,
+                        epdsmooth_func=smooth_series_savgol,
+                        epdsmooth_extraparams=None,
+                        nworkers=NCPUS,
+                        maxworkertasks=1000):
+    '''
+    This applies EPD in parallel to all LCs in lclist.
+
+    '''
+
+    # open the externalparams first
+    if isinstance(externalparams,str) and os.path.exists(externalparams):
+        with open(externalparams,'rb') as infd:
+            externalparams = pickle.load(infd)
+
+    # get the default time, mag, err cols if not provided
+    (fileglob, readerfunc, dtimecols, dmagcols,
+     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+    # override the default timecols, magcols, and errcols
+    # using the ones provided to the function
+    if timecols is None:
+        timecols = dtimecols
+    if magcols is None:
+        magcols = dmagcols
+    if errcols is None:
+        errcols = derrcols
+
+    outdict = {}
+
+    # run by magcol
+    for t, m, e in zip(timecols, magcols, errcols):
+
+        tasks = [(x, t, m, e, externalparams, lcformat,
+                  magsarefluxes, epdsmooth_sigclip, epdsmooth_windowsize,
+                  epdsmooth_func, epdsmooth_extraparams) for
+                 x in lclist]
+
+        pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
+        results = pool.map(parallel_epd_worker, tasks)
+        pool.close()
+        pool.join()
+
+        outdict[m] = results
+
+    return outdict
+
+
+
+def parallel_epd_lcdir(
+        lcdir,
+        lcfileglob,
+        externalparams,
+        timecols=None,
+        magcols=None,
+        errcols=None,
+        lcformat='hat-sql',
+        magsarefluxes=False,
+        epdsmooth_sigclip=3.0,
+        epdsmooth_windowsize=21,
+        epdsmooth_func=smooth_series_savgol,
+        epdsmooth_extraparams=None,
+        nworkers=NCPUS,
+        maxworkertasks=1000
+):
+    '''
+    This applies EPD in parallel to all LCs in lcdir.
+
+    '''
+
+    # open the externalparams first
+    if isinstance(externalparams,str) and os.path.exists(externalparams):
+        with open(externalparams,'rb') as infd:
+            externalparams = pickle.load(infd)
+
+    # get the default time, mag, err cols if not provided
+    (fileglob, readerfunc, dtimecols, dmagcols,
+     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+    # find all the files matching the lcglob in lcdir
+    if lcfileglob is None:
+        lcfileglob = fileglob
+
+    lclist = sorted(glob.glob(os.path.join(lcdir, lcfileglob)))
+
+    return parallel_epd_lclist(
+        lclist,
+        externalparams,
+        timecols=timecols,
+        magcols=magcols,
+        errcols=errcols,
+        lcformat=lcformat,
+        magsarefluxes=magsarefluxes,
+        epdsmooth_sigclip=epdsmooth_sigclip,
+        epdsmooth_windowsize=epdsmooth_windowsize,
+        epdsmooth_func=epdsmooth_func,
+        epdsmooth_extraparams=epdsmooth_extraparams,
+        nworkers=nworkers,
+        maxworkertasks=maxworkertasks
+    )
+
+
+
+##################################
+## LIGHT CURVE DETRENDING - TFA ##
+##################################
 
 def collect_tfa_stats(task):
     '''
@@ -5352,7 +5596,6 @@ def apply_tfa_magseries(lcfile,
             templateinfo = pickle.load(infd)
 
     readerfunc = LCFORM[lcformat][1]
-
     lcdict = readerfunc(lcfile)
 
     if ((isinstance(lcdict, tuple) or isinstance(lcdict, list)) and
@@ -5543,3 +5786,49 @@ def parallel_tfa_lclist(lclist,
         outdict[m] = results
 
     return outdict
+
+
+
+def parallel_tfa_lcdir(lcdir,
+                       templateinfo,
+                       lcfileglob=None,
+                       timecols=None,
+                       magcols=None,
+                       errcols=None,
+                       lcformat='hat-sql',
+                       interp='nearest',
+                       sigclip=5.0,
+                       nworkers=NCPUS,
+                       maxworkertasks=1000):
+    '''
+    This applies TFA in parallel to all LCs in lcdir.
+
+    '''
+
+    # open the templateinfo first
+    if isinstance(templateinfo,str) and os.path.exists(templateinfo):
+        with open(templateinfo,'rb') as infd:
+            templateinfo = pickle.load(infd)
+
+    # get the default time, mag, err cols if not provided
+    (fileglob, readerfunc, dtimecols, dmagcols,
+     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+
+    # find all the files matching the lcglob in lcdir
+    if lcfileglob is None:
+        lcfileglob = fileglob
+
+    lclist = sorted(glob.glob(os.path.join(lcdir, lcfileglob)))
+
+    return parallel_tfa_lclist(
+        lclist,
+        templateinfo,
+        timecols=timecols,
+        magcols=magcols,
+        errcols=errcols,
+        lcformat=lcformat,
+        interp=interp,
+        sigclip=sigclip,
+        nworkers=nworkers,
+        maxworkertasks=maxworkertasks
+    )
