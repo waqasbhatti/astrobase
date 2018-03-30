@@ -94,11 +94,12 @@ import base64
 
 import numpy as np
 import numpy.random as npr
+import numpy.linalg as linalg
 npr.seed(0xc0ffee)
-from numpy import linalg
 
 import scipy.spatial as sps
 import scipy.interpolate as spi
+from scipy import linalg as spla
 
 import astropy.io.fits as pyfits
 from astropy.wcs import WCS
@@ -148,7 +149,7 @@ from astrobase.checkplot import _pkl_magseries_plot, \
 
 from astrobase.magnitudes import jhk_to_sdssr
 
-from astrobase.varbase.trends import epd_magseries, rfepd_magseries, smooth_series_savgol
+from astrobase.varbase.trends import epd_magseries, smooth_magseries_savgol
 
 ############
 ## CONFIG ##
@@ -4784,7 +4785,7 @@ def apply_epd_magseries(lcfile,
                         magsarefluxes=False,
                         epdsmooth_sigclip=3.0,
                         epdsmooth_windowsize=21,
-                        epdsmooth_func=smooth_series_savgol,
+                        epdsmooth_func=smooth_magseries_savgol,
                         epdsmooth_extraparams=None):
     '''This applies EPD to a light curve.
 
@@ -4792,18 +4793,30 @@ def apply_epd_magseries(lcfile,
 
     timecol, magcol, errcol are the columns in the lcdict to use for EPD.
 
-    external params is a dict or pickle file that contains a dict composed of 9
-    elements in the following manner:
+    external params is a dict that indicates which keys in the lcdict obtained
+    from the lcfile correspond to the required external parameters. As with
+    timecol, magcol, and errcol, these can be simple keys (e.g. 'rjd') or
+    compound keys ('magaperture1.mags'). The dict should look something like:
 
-    {'fsv': ndarray for S values corresponding to each observation,
-     'fdv': ndarray for D values corresponding to each observation,
-     'fkv': ndarray for K values corresponding to each observation,
-     'xcc': ndarray for x coords for each observation,
-     'ycc': ndarray for y coords for each observation,
-     'bgv': ndarray for sky background values for each observation,
-     'bge': ndarray for sky background err values for each observation,
-     'iha': ndarray for hour angle corresponding to each observation,
-     'izd': ndarray for zenith distance corresponding to each observation}
+    {'fsv':'<lcdict key>' -> ndarray: S values for each observation,
+     'fdv':'<lcdict key>' -> ndarray: D values for each observation,
+     'fkv':'<lcdict key>' -> ndarray: K values for each observation,
+     'xcc':'<lcdict key>' -> ndarray: x coords for each observation,
+     'ycc':'<lcdict key>' -> ndarray: y coords for each observation,
+     'bgv':'<lcdict key>' -> ndarray: sky background for each observation,
+     'bge':'<lcdict key>' -> ndarray: sky background err for each observation,
+     'iha':'<lcdict key>' -> ndarray: hour angle for each observation,
+     'izd':'<lcdict key>' -> ndarray: zenith distance for each observation}
+
+    Alternatively, if these exact keys are already present in the lcdict,
+    indicate this by setting externalparams to None.
+
+    Note: S -> measure of PSF sharpness (~ 1/sigma^2 -> smaller S -> wider PSF)
+          D -> measure of PSF ellipticity in xy direction
+          K -> measure of PSF ellipticity in cross direction
+
+    S, D, K are related to the PSF's variance and covariance, see eqn 30-33 in
+    A. Pal's thesis: https://arxiv.org/abs/0906.3486
 
     '''
 
@@ -4817,19 +4830,37 @@ def apply_epd_magseries(lcfile,
     objectid = lcdict['objectid']
     times, mags, errs = lcdict[timecol], lcdict[magcol], lcdict[errcol]
 
-    fsv = externalparams['fsv']
-    fdv = externalparams['fdv']
-    fkv = externalparams['fkv']
+    if externalparams is not None:
 
-    xcc = externalparams['xcc']
-    ycc = externalparams['ycc']
+        fsv = lcdict[externalparams['fsv']]
+        fdv = lcdict[externalparams['fdv']]
+        fkv = lcdict[externalparams['fkv']]
 
-    bgv = externalparams['bgv']
-    bge = externalparams['bge']
+        xcc = lcdict[externalparams['xcc']]
+        ycc = lcdict[externalparams['ycc']]
 
-    iha = externalparams['iha']
-    izd = externalparams['izd']
+        bgv = lcdict[externalparams['bgv']]
+        bge = lcdict[externalparams['bge']]
 
+        iha = lcdict[externalparams['iha']]
+        izd = lcdict[externalparams['izd']]
+
+    else:
+
+        fsv = lcdict['fsv']
+        fdv = lcdict['fdv']
+        fkv = lcdict['fkv']
+
+        xcc = lcdict['xcc']
+        ycc = lcdict['ycc']
+
+        bgv = lcdict['bgv']
+        bge = lcdict['bge']
+
+        iha = lcdict['iha']
+        izd = lcdict['izd']
+
+    # apply the corrections for EPD
     epd = epd_magseries(
         times,
         mags,
@@ -4913,7 +4944,7 @@ def parallel_epd_lclist(lclist,
                         magsarefluxes=False,
                         epdsmooth_sigclip=3.0,
                         epdsmooth_windowsize=21,
-                        epdsmooth_func=smooth_series_savgol,
+                        epdsmooth_func=smooth_magseries_savgol,
                         epdsmooth_extraparams=None,
                         nworkers=NCPUS,
                         maxworkertasks=1000):
@@ -4921,11 +4952,6 @@ def parallel_epd_lclist(lclist,
     This applies EPD in parallel to all LCs in lclist.
 
     '''
-
-    # open the externalparams first
-    if isinstance(externalparams,str) and os.path.exists(externalparams):
-        with open(externalparams,'rb') as infd:
-            externalparams = pickle.load(infd)
 
     # get the default time, mag, err cols if not provided
     (fileglob, readerfunc, dtimecols, dmagcols,
@@ -4972,7 +4998,7 @@ def parallel_epd_lcdir(
         magsarefluxes=False,
         epdsmooth_sigclip=3.0,
         epdsmooth_windowsize=21,
-        epdsmooth_func=smooth_series_savgol,
+        epdsmooth_func=smooth_magseries_savgol,
         epdsmooth_extraparams=None,
         nworkers=NCPUS,
         maxworkertasks=1000
@@ -4981,11 +5007,6 @@ def parallel_epd_lcdir(
     This applies EPD in parallel to all LCs in lcdir.
 
     '''
-
-    # open the externalparams first
-    if isinstance(externalparams,str) and os.path.exists(externalparams):
-        with open(externalparams,'rb') as infd:
-            externalparams = pickle.load(infd)
 
     # get the default time, mag, err cols if not provided
     (fileglob, readerfunc, dtimecols, dmagcols,
@@ -5639,7 +5660,7 @@ def apply_tfa_magseries(lcfile,
                 axis=0
             )
 
-    normal_matrix_inverse = linalg.inv(normal_matrix)
+        normal_matrix_inverse = spla.pinv(normal_matrix)
 
     # get the timebase from the template
     timebase = templateinfo[magcol]['timebase']
@@ -5688,7 +5709,13 @@ def apply_tfa_magseries(lcfile,
         'mags':corrected_magseries,
         'mags_median':np.median(corrected_magseries),
         'mags_mad': np.median(np.abs(corrected_magseries -
-                                     np.median(corrected_magseries)))
+                                     np.median(corrected_magseries))),
+        'work':{'tmagseries':tmagseries,
+                'normal_matrix':normal_matrix,
+                'normal_matrix_inverse':normal_matrix_inverse,
+                'scalar_products':scalar_products,
+                'corrections':corrections,
+                'reformed_targetlc':reformed_targetlc},
     }
 
 
