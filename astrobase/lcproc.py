@@ -5404,3 +5404,23 @@ def apply_tfa_magseries(lcfile,
 
     # now calculate the corrections
     corrections = np.zeros(tobjects.shape)
+
+    for j in np.arange(corrections.size):
+
+        corrections[j] = np.sum(normal_matrix_inverse[j,:] * scalar_products,
+                                axis=1)
+
+    # finally, get the corrected time series for the target object
+    corrected_magseries = np.zeros(timebaselcf.shape)
+
+    for i in np.arange(corrected_magseries.size):
+
+        corrected_magseries[i] = (
+            reformed_targetlc[i] -
+            np.sum(corrections * tmagseries[:,i])
+        )
+
+    outdict = {'times':timebaselcf,
+               'mags':corrected_magseries}
+
+    return outdict
