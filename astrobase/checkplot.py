@@ -116,8 +116,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -130,7 +130,6 @@ import gzip
 import base64
 import sys
 import hashlib
-import sys
 import json
 
 try:
@@ -142,9 +141,8 @@ except:
     from io import BytesIO as strio
 
 import numpy as np
-from numpy import nan as npnan, median as npmedian, \
-    isfinite as npisfinite, min as npmin, max as npmax, abs as npabs, \
-    ravel as npravel
+from numpy import nan as npnan, isfinite as npisfinite, \
+    min as npmin, max as npmax, abs as npabs, ravel as npravel
 
 # we're going to plot using Agg only
 import matplotlib
@@ -214,7 +212,7 @@ def _make_periodogram(axes,
     axes.set_xlabel('Period [days]')
     axes.set_ylabel(pgramylabel)
     plottitle = '%s - %.6f d' % (METHODLABELS[lspinfo['method']],
-                                              bestperiod)
+                                 bestperiod)
     axes.set_title(plottitle)
 
     # show the best five peaks on the plot
@@ -235,8 +233,8 @@ def _make_periodogram(axes,
 
     # if objectinfo is present, get things from it
     if (objectinfo and isinstance(objectinfo, dict) and
-        ('objectid' in objectinfo or 'hatid' in objectinfo)
-        and 'ra' in objectinfo and 'decl' in objectinfo and
+        ('objectid' in objectinfo or 'hatid' in objectinfo) and
+        'ra' in objectinfo and 'decl' in objectinfo and
         objectinfo['ra'] and objectinfo['decl']):
 
         if 'objectid' not in objectinfo:
@@ -313,44 +311,44 @@ def _make_periodogram(axes,
 
         if bvcolor:
             axes.text(0.05,0.87,
-                         '$B - V$ = %.3f, $V$ = %.3f' % (bvcolor,
-                                                         objectinfo['vmag']),
-                         ha='left',va='center',transform=axes.transAxes,
-                         fontsize=18.0)
+                      '$B - V$ = %.3f, $V$ = %.3f' % (bvcolor,
+                                                      objectinfo['vmag']),
+                      ha='left',va='center',transform=axes.transAxes,
+                      fontsize=18.0)
         elif 'vmag' in objectinfo and objectinfo['vmag']:
             axes.text(0.05,0.87,
-                         '$V$ = %.3f' % (objectinfo['vmag'],),
-                         ha='left',va='center',transform=axes.transAxes,
-                         fontsize=18.0)
+                      '$V$ = %.3f' % (objectinfo['vmag'],),
+                      ha='left',va='center',transform=axes.transAxes,
+                      fontsize=18.0)
 
         if ijcolor:
             axes.text(0.05,0.83,
-                         '$i - J$ = %.3f, $J$ = %.3f' % (ijcolor,
-                                                         objectinfo['jmag']),
-                         ha='left',va='center',transform=axes.transAxes,
-                         fontsize=18.0)
+                      '$i - J$ = %.3f, $J$ = %.3f' % (ijcolor,
+                                                      objectinfo['jmag']),
+                      ha='left',va='center',transform=axes.transAxes,
+                      fontsize=18.0)
         elif 'jmag' in objectinfo and objectinfo['jmag']:
             axes.text(0.05,0.83,
-                         '$J$ = %.3f' % (objectinfo['jmag'],),
-                         ha='left',va='center',transform=axes.transAxes,
-                         fontsize=18.0)
+                      '$J$ = %.3f' % (objectinfo['jmag'],),
+                      ha='left',va='center',transform=axes.transAxes,
+                      fontsize=18.0)
 
         if jkcolor:
             axes.text(0.05,0.79,
-                         '$J - K$ = %.3f, $K$ = %.3f' % (jkcolor,
-                                                         objectinfo['kmag']),
-                         ha='left',va='center',transform=axes.transAxes,
-                         fontsize=18.0)
+                      '$J - K$ = %.3f, $K$ = %.3f' % (jkcolor,
+                                                      objectinfo['kmag']),
+                      ha='left',va='center',transform=axes.transAxes,
+                      fontsize=18.0)
         elif 'kmag' in objectinfo and objectinfo['kmag']:
             axes.text(0.05,0.79,
-                         '$K$ = %.3f' % (objectinfo['kmag'],),
-                         ha='left',va='center',transform=axes.transAxes,
-                         fontsize=18.0)
+                      '$K$ = %.3f' % (objectinfo['kmag'],),
+                      ha='left',va='center',transform=axes.transAxes,
+                      fontsize=18.0)
 
         if 'sdssr' in objectinfo and objectinfo['sdssr']:
             axes.text(0.05,0.75,'SDSS $r$ = %.3f' % objectinfo['sdssr'],
-                         ha='left',va='center',transform=axes.transAxes,
-                         fontsize=18.0)
+                      ha='left',va='center',transform=axes.transAxes,
+                      fontsize=18.0)
 
         # add in proper motion stuff if available in objectinfo
         if ('pmra' in objectinfo and objectinfo['pmra'] and
@@ -361,15 +359,15 @@ def _make_periodogram(axes,
                                      objectinfo['decl'])
 
             axes.text(0.05,0.67,'$\mu$ = %.2f mas yr$^{-1}$' % pm,
-                         ha='left',va='center',transform=axes.transAxes,
-                         fontsize=18.0)
+                      ha='left',va='center',transform=axes.transAxes,
+                      fontsize=18.0)
 
             if 'jmag' in objectinfo and objectinfo['jmag']:
 
                 rpm = reduced_proper_motion(objectinfo['jmag'],pm)
                 axes.text(0.05,0.63,'$H_J$ = %.2f' % rpm,
-                             ha='left',va='center',transform=axes.transAxes,
-                             fontsize=18.0)
+                          ha='left',va='center',transform=axes.transAxes,
+                          fontsize=18.0)
 
 
 
@@ -397,7 +395,6 @@ def _make_magseries_plot(axes,
         axes.set_ylim((plot_ylim[1], plot_ylim[0]))
 
     # set the x axis limit
-    plot_xlim = axes.get_xlim()
     axes.set_xlim((npmin(scaledplottime)-1.0,
                    npmax(scaledplottime)+1.0))
 
@@ -408,7 +405,7 @@ def _make_magseries_plot(axes,
               linewidth=1.0,
               linestyle=':')
 
-   # make the x and y axis labels
+    # make the x and y axis labels
     plot_xlabel = 'JD - %.3f' % npmin(stimes)
     if magsarefluxes:
         plot_ylabel = 'flux'
@@ -520,7 +517,7 @@ def _make_phased_magseries_plot(axes,
 
     if verbose:
         LOGINFO('plotting phased LC with period %.6f, epoch %.5f' %
-                        (varperiod, plotvarepoch))
+                (varperiod, plotvarepoch))
 
     # phase the magseries
     phasedlc = phase_magseries(stimes,
@@ -567,7 +564,6 @@ def _make_phased_magseries_plot(axes,
 
     # set the x axis limit
     if not plotxlim:
-        plot_xlim = axes.get_xlim()
         axes.set_xlim((npmin(plotphase)-0.1,
                        npmax(plotphase)+0.1))
     else:
@@ -580,7 +576,7 @@ def _make_phased_magseries_plot(axes,
               linewidth=1.0,
               linestyle=':')
 
-   # make the x and y axis labels
+    # make the x and y axis labels
     plot_xlabel = 'phase'
     if magsarefluxes:
         plot_ylabel = 'flux'
@@ -875,11 +871,8 @@ def checkplot_png(lspinfo,
         'lspvals' in lspinfo and
         'bestperiod' in lspinfo):
 
-        periods = lspinfo['periods']
-        lspvals = lspinfo['lspvals']
         bestperiod = lspinfo['bestperiod']
         nbestperiods = lspinfo['nbestperiods']
-        nbestlspvals = lspinfo['nbestlspvals']
         lspmethod = lspinfo['method']
 
     else:
@@ -1042,8 +1035,8 @@ def twolsp_checkplot_png(lspinfo1,
     Adapted from Luke Bouma's implementation of the same. This makes a special
     checkplot that uses two lspinfo dictionaries, from two independent
     period-finding methods. For EBs, it's probably best to use Stellingwerf PDM
-    or Schwarzenberg-Czerny AoV as one of these, and the Box Least-squared Search
-    method as the other one.
+    or Schwarzenberg-Czerny AoV as one of these, and the Box Least-squared
+    Search method as the other one.
 
     The checkplot layout in this case is:
 
@@ -1080,15 +1073,14 @@ def twolsp_checkplot_png(lspinfo1,
     (i.e. for each of the best 3 periods       each period from each
      from the two period-finder results)       period-finder specifically
 
-
     '''
 
     # generate the plot filename
     if not outfile and isinstance(lspinfo1,str):
         plotfpath = os.path.join(
-            os.path.dirname(lspinfo),
+            os.path.dirname(lspinfo1),
             'twolsp-checkplot-%s.png' % (
-                os.path.basename(lspinfo),
+                os.path.basename(lspinfo1),
             )
         )
     elif outfile:
@@ -1127,18 +1119,12 @@ def twolsp_checkplot_png(lspinfo1,
         'lspvals' in lspinfo1 and 'lspvals' in lspinfo2 and
         'bestperiod' in lspinfo1 and 'bestperiod' in lspinfo2):
 
-        periods1 = lspinfo1['periods']
-        lspvals1 = lspinfo1['lspvals']
         bestperiod1 = lspinfo1['bestperiod']
         nbestperiods1 = lspinfo1['nbestperiods']
-        nbestlspvals1 = lspinfo1['nbestlspvals']
         lspmethod1 = lspinfo1['method']
 
-        periods2 = lspinfo2['periods']
-        lspvals2 = lspinfo2['lspvals']
         bestperiod2 = lspinfo2['bestperiod']
         nbestperiods2 = lspinfo2['nbestperiods']
-        nbestlspvals2 = lspinfo2['nbestlspvals']
         lspmethod2 = lspinfo2['method']
 
     else:
@@ -1427,7 +1413,7 @@ def _pkl_finder_objectinfo(objectinfo,
                 lclist = pickle.load(infd)
                 infd.close()
 
-                if not 'kdtree' in lclist:
+                if 'kdtree' not in lclist:
 
                     LOGERROR('neighbors within %.1f arcsec for %s could '
                              'not be found, no kdtree in lclistpkl: %s'
@@ -1452,7 +1438,7 @@ def _pkl_finder_objectinfo(objectinfo,
                     )
                     matchdists, matchinds = kdt.query(
                         obj_xyz,
-                        k=maxnumneighbors+1, # get maxnumneighbors + tgt
+                        k=maxnumneighbors+1,  # get maxnumneighbors + tgt
                         distance_upper_bound=match_xyzdist
                     )
 
@@ -1515,18 +1501,18 @@ def _pkl_finder_objectinfo(objectinfo,
                                 offy = annotatey + 30.0
                                 yha = 'center'
 
-                            axes.annotate('N%s' % nbrind,
-                                          (annotatex, annotatey),
-                                          xytext=(offx, offy),
-                                          arrowprops={'facecolor':'blue',
-                                                      'edgecolor':'blue',
-                                                      'width':1.0,
-                                                      'headwidth':1.0,
-                                                      'headlength':0.1,
-                                                      'shrink':0.0},
-                                          color='blue',
-                                          horizontalalignment=xha,
-                                          verticalalignment=yha)
+                            ax.annotate('N%s' % nbrind,
+                                        (annotatex, annotatey),
+                                        xytext=(offx, offy),
+                                        arrowprops={'facecolor':'blue',
+                                                    'edgecolor':'blue',
+                                                    'width':1.0,
+                                                    'headwidth':1.0,
+                                                    'headlength':0.1,
+                                                    'shrink':0.0},
+                                        color='blue',
+                                        horizontalalignment=xha,
+                                        verticalalignment=yha)
 
             # if there are no neighbors, set the 'neighbors' key to None
             else:
@@ -1657,7 +1643,9 @@ def _pkl_finder_objectinfo(objectinfo,
             objectinfo['gaiamag'] = objectinfo['gaia_mags'][0]
             objectinfo['gaia_absmag'] = objectinfo['gaia_absolute_mags'][0]
             objectinfo['gaia_parallax'] = objectinfo['gaia_parallaxes'][0]
-            objectinfo['gaia_parallax_err'] = objectinfo['gaia_parallax_errs'][0]
+            objectinfo['gaia_parallax_err'] = (
+                objectinfo['gaia_parallax_errs'][0]
+            )
             objectinfo['gaia_pmra'] = objectinfo['gaia_pmra'][0]
             objectinfo['gaia_pmra_err'] = objectinfo['gaia_pmra_err'][0]
             objectinfo['gaia_pmdecl'] = objectinfo['gaia_pmdecl'][0]
@@ -1784,16 +1772,16 @@ def _pkl_periodogram(lspinfo,
     for xbestperiod, xbestpeak in zip(nbestperiods,
                                       nbestlspvals):
         plt.annotate('%.6f' % xbestperiod,
-                      xy=(xbestperiod, xbestpeak), xycoords='data',
-                      xytext=(0.0,25.0), textcoords='offset points',
-                      arrowprops=dict(arrowstyle="->"),fontsize='14.0')
+                     xy=(xbestperiod, xbestpeak), xycoords='data',
+                     xytext=(0.0,25.0), textcoords='offset points',
+                     arrowprops=dict(arrowstyle="->"),fontsize='14.0')
 
     # make a grid
     plt.grid(color='#a9a9a9',
-              alpha=0.9,
-              zorder=0,
-              linewidth=1.0,
-              linestyle=':')
+             alpha=0.9,
+             zorder=0,
+             linewidth=1.0,
+             linestyle=':')
 
     # this is the output instance
     pgrampng = strio()
@@ -1866,7 +1854,6 @@ def _pkl_magseries_plot(stimes, smags, serrs,
         plt.ylim((plot_ylim[1], plot_ylim[0]))
 
     # set the x axis limit
-    plot_xlim = plt.xlim()
     plt.xlim((npmin(scaledplottime)-2.0,
               npmax(scaledplottime)+2.0))
 
@@ -1877,7 +1864,7 @@ def _pkl_magseries_plot(stimes, smags, serrs,
              linewidth=1.0,
              linestyle=':')
 
-   # make the x and y axis labels
+    # make the x and y axis labels
     plot_xlabel = 'JD - %.3f' % npmin(stimes)
     if magsarefluxes:
         plot_ylabel = 'flux'
@@ -2120,7 +2107,6 @@ def _pkl_phased_magseries_plot(checkplotdict,
     if overplotfit and isinstance(overplotfit, dict):
 
         fitmethod = overplotfit['fittype']
-        fitchisq = overplotfit['fitchisq']
         fitredchisq = overplotfit['fitredchisq']
 
         plotfitmags = overplotfit['fitinfo']['fitmags']
@@ -2152,9 +2138,8 @@ def _pkl_phased_magseries_plot(checkplotdict,
 
     # set the x axis limit
     if not plotxlim:
-        plot_xlim = plt.xlim()
         plt.xlim((npmin(plotphase)-0.1,
-                       npmax(plotphase)+0.1))
+                  npmax(plotphase)+0.1))
     else:
         plt.xlim((plotxlim[0],plotxlim[1]))
 
@@ -2164,13 +2149,13 @@ def _pkl_phased_magseries_plot(checkplotdict,
         ax.set_xticks(xgridlines, minor=False)
 
     plt.grid(color='#a9a9a9',
-              alpha=0.9,
-              zorder=0,
-              linewidth=1.0,
-              linestyle=':')
+             alpha=0.9,
+             zorder=0,
+             linewidth=1.0,
+             linestyle=':')
 
 
-   # make the x and y axis labels
+    # make the x and y axis labels
     plot_xlabel = 'phase'
     if magsarefluxes:
         plot_ylabel = 'flux'
@@ -2322,9 +2307,9 @@ def _parse_xmatch_catalog_header(xc, xk):
     # read in the defs
     for line in infd:
         if line.decode().startswith('#'):
-           catdef.append(
-               line.decode().replace('#','').strip().rstrip('\n')
-           )
+            catdef.append(
+                line.decode().replace('#','').strip().rstrip('\n')
+            )
         if not line.decode().startswith('#'):
             break
 
@@ -2474,7 +2459,6 @@ def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
         if sys.platform == 'darwin':
 
             dumpbytes = pickle.dumps(outdict, protocol=pickle.HIGHEST_PROTOCOL)
-            n_bytes = 2**31
             max_bytes = 2**31 - 1
 
             with open(outfile, 'wb') as outfd:
@@ -2967,7 +2951,7 @@ def checkplot_dict(lspinfolist,
 
     elif ((isinstance(objectinfo, dict) and 'objectid' not in objectinfo) or
           (isinstance(objectinfo, dict) and 'objectid' in objectinfo and
-         (objectinfo['objectid'] is None or objectinfo['objectid'] == ''))):
+           (objectinfo['objectid'] is None or objectinfo['objectid'] == ''))):
         if verbose:
             LOGWARNING('adding a randomly generated objectid '
                        'since none was provided in objectinfo dict')
@@ -3097,7 +3081,7 @@ def checkplot_dict(lspinfolist,
             # nbestperiods from this periodogram
             for nbpind, nbperiod in enumerate(
                     lspinfo['nbestperiods'][:nperiodstouse]
-                    ):
+            ):
 
                 # if there's a function to use for fitting, do the fit
                 if lcfitfunc:
@@ -3485,7 +3469,7 @@ def checkplot_pickle(lspinfolist,
         pickleprotocol = 4
 
     elif ((sys.version_info[0:2] >= (3,0) and not pickleprotocol) or
-        (pickleprotocol > 2)):
+          (pickleprotocol > 2)):
         pickleprotocol = 3
 
     # for Python == 2.7; use v2
@@ -3578,8 +3562,8 @@ def checkplot_pickle_update(currentcp, updatedcp,
     else:
 
         # get the current checkplotdict
-        if ((isinstance(currentcp, str) or isinstance(currentcp, unicode))
-            and os.path.exists(currentcp)):
+        if ((isinstance(currentcp, str) or isinstance(currentcp, unicode)) and
+            os.path.exists(currentcp)):
             cp_current = _read_checkplot_picklefile(currentcp)
         elif isinstance(currentcp,dict):
             cp_current = currentcp
@@ -3590,8 +3574,8 @@ def checkplot_pickle_update(currentcp, updatedcp,
             return None
 
         # get the updated checkplotdict
-        if ((isinstance(updatedcp, str) or isinstance(updatedcp, unicode))
-            and os.path.exists(updatedcp)):
+        if ((isinstance(updatedcp, str) or isinstance(updatedcp, unicode)) and
+            os.path.exists(updatedcp)):
             cp_updated = _read_checkplot_picklefile(updatedcp)
         elif isinstance(updatedcp, dict):
             cp_updated = updatedcp
@@ -3623,7 +3607,7 @@ def checkplot_pickle_update(currentcp, updatedcp,
         pickleprotocol = 4
 
     elif ((sys.version_info[0:2] >= (3,0) and not pickleprotocol) or
-        (pickleprotocol > 2)):
+          (pickleprotocol > 2)):
         pickleprotocol = 3
 
     # for Python == 2.7; use v2
@@ -3722,8 +3706,9 @@ def checkplot_pickle_to_png(checkplotin,
     else:
 
         # get the current checkplotdict
-        if ((isinstance(checkplotin, str) or isinstance(checkplotin, unicode))
-            and os.path.exists(checkplotin)):
+        if ((isinstance(checkplotin, str) or
+             isinstance(checkplotin, unicode)) and
+            os.path.exists(checkplotin)):
             cpd = _read_checkplot_picklefile(checkplotin)
         elif isinstance(checkplotin,dict):
             cpd = checkplotin
@@ -3787,7 +3772,7 @@ def checkplot_pickle_to_png(checkplotin,
     if cpd['finderchart']:
         finder = Image.open(
             _base64_to_file(cpd['finderchart'], None, writetostrio=True)
-            )
+        )
         bigfinder = finder.resize((450,450), Image.ANTIALIAS)
         outimg.paste(bigfinder,(150,20))
 
@@ -3984,7 +3969,7 @@ def checkplot_pickle_to_png(checkplotin,
         #
         # colors
         if ('dereddened' in cpd['objectinfo'] and
-            cpd['objectinfo']['dereddened'] == True):
+            cpd['objectinfo']['dereddened'] is True):
             deredlabel = "(dereddened)"
         else:
             deredlabel = ""
@@ -4119,7 +4104,7 @@ def checkplot_pickle_to_png(checkplotin,
 
         # colors
         if ('dereddened' in cpd['objectinfo'] and
-            cpd['objectinfo']['dereddened'] == True):
+            cpd['objectinfo']['dereddened'] is True):
             deredlabel = "(dereddened)"
         else:
             deredlabel = ""
@@ -4338,7 +4323,7 @@ def checkplot_pickle_to_png(checkplotin,
         cpd['magseries']['plot']):
         magseries = Image.open(
             _base64_to_file(cpd['magseries']['plot'], None, writetostrio=True)
-            )
+        )
         outimg.paste(magseries,(750*3,0))
 
     ###############################
@@ -4353,8 +4338,8 @@ def checkplot_pickle_to_png(checkplotin,
         if (cpd[lspmethod] and cpd[lspmethod]['periodogram']):
 
             pgram = Image.open(
-            _base64_to_file(cpd[lspmethod]['periodogram'], None,
-                            writetostrio=True)
+                _base64_to_file(cpd[lspmethod]['periodogram'], None,
+                                writetostrio=True)
             )
             outimg.paste(pgram,(0,480 + 480*lspmethodind))
 
@@ -4365,7 +4350,8 @@ def checkplot_pickle_to_png(checkplotin,
         if (cpd[lspmethod] and 0 in cpd[lspmethod] and cpd[lspmethod][0]):
 
             plc1 = Image.open(
-            _base64_to_file(cpd[lspmethod][0]['plot'], None, writetostrio=True)
+                _base64_to_file(cpd[lspmethod][0]['plot'], None,
+                                writetostrio=True)
             )
             outimg.paste(plc1,(750,480 + 480*lspmethodind))
 
@@ -4377,7 +4363,8 @@ def checkplot_pickle_to_png(checkplotin,
         if (cpd[lspmethod] and 1 in cpd[lspmethod] and cpd[lspmethod][1]):
 
             plc2 = Image.open(
-            _base64_to_file(cpd[lspmethod][1]['plot'], None, writetostrio=True)
+                _base64_to_file(cpd[lspmethod][1]['plot'], None,
+                                writetostrio=True)
             )
             outimg.paste(plc2,(750*2,480 + 480*lspmethodind))
 
@@ -4388,7 +4375,8 @@ def checkplot_pickle_to_png(checkplotin,
         if (cpd[lspmethod] and 2 in cpd[lspmethod] and cpd[lspmethod][2]):
 
             plc3 = Image.open(
-            _base64_to_file(cpd[lspmethod][2]['plot'], None, writetostrio=True)
+                _base64_to_file(cpd[lspmethod][2]['plot'], None,
+                                writetostrio=True)
             )
             outimg.paste(plc3,(750*3,480 + 480*lspmethodind))
 
