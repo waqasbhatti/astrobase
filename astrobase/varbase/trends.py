@@ -298,8 +298,7 @@ def _epd_function(coeffs, fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd):
             coeffs[18]*bgv +
             coeffs[19]*bge +
             coeffs[20]*iha +
-            coeffs[21]*izd
-    )
+            coeffs[21]*izd)
 
 
 

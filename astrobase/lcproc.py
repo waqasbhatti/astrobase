@@ -5298,6 +5298,7 @@ def tfa_templates_lclist(
         target_template_frac=0.1,
         min_template_number=10,
         max_template_number=1000,
+        max_rms=0.15,
         max_mult_above_magmad=1.5,
         max_mult_above_mageta=1.5,
         mag_bandpass='sdssr',
@@ -5392,9 +5393,6 @@ def tfa_templates_lclist(
         LOGINFO('magcol: %s, collecting prospective template LC info...' %
                 mcol)
 
-        # find the ra, decl center of the LC collection
-        center_ra = np.nanmedian(np.array([x['ra'] for x in results]))
-        center_decl = np.nanmedian(np.array([x['decl'] for x in results]))
 
         # collect the template LCs for this magcol
         for result in results:
@@ -5420,9 +5418,10 @@ def tfa_templates_lclist(
                 outdict[mcol]['collection']['ra'].append(thisra)
                 outdict[mcol]['collection']['decl'].append(thisdecl)
 
-                # make sure the object lies in the mag limits we set before
-                # to try to accept it into the TFA ensemble
-                if mag_bright_limit < thismag < mag_faint_limit:
+                # make sure the object lies in the mag limits and RMS limits we
+                # set before to try to accept it into the TFA ensemble
+                if ((mag_bright_limit < thismag < mag_faint_limit) and
+                    (1.4826*thismad < max_rms)):
 
                     lcmag.append(thismag)
                     lcmad.append(thismad)
@@ -5439,8 +5438,11 @@ def tfa_templates_lclist(
         # make sure we have enough LCs to work on
         if len(lcobj) >= min_template_number:
 
-            LOGINFO('magcol: %s, %s objects eligible for template selection' %
-                    (mcol, len(lcobj)))
+            LOGINFO('magcol: %s, %s objects eligible for '
+                    'template selection after filtering on mag '
+                    'limits (%s, %s) and max RMS (%s)' %
+                    (mcol, len(lcobj),
+                     mag_bright_limit, mag_faint_limit, max_rms))
 
             lcmag = np.array(lcmag)
             lcmad = np.array(lcmad)
