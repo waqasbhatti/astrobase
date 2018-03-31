@@ -69,26 +69,21 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
 ## IMPORTS ##
 #############
 
-import multiprocessing as mp
-
 import numpy as np
-from numpy import isfinite as npisfinite, median as npmedian, mean as npmean, abs as npabs, std as npstddev
+from numpy import isfinite as npisfinite, median as npmedian, \
+    mean as npmean, abs as npabs, std as npstddev
 
 from scipy.spatial import cKDTree as kdtree
-from scipy.signal import medfilt
-from scipy.linalg import lstsq
-from scipy.optimize import curve_fit
 
 import scipy.stats
-import numpy.random as nprand
 
 from scipy.signal import savgol_filter
 
@@ -206,9 +201,9 @@ def normalize_magseries(times,
                 mags[tg] = mags[tg] - group_median
 
             if debugmode:
-                LOGDEBUG('%s group %s: elems %s, '
+                LOGDEBUG('group %s: elems %s, '
                          'finite elems %s, median mag %s' %
-                         (col, tgind,
+                         (tgind,
                           len(mags[tg]),
                           len(finite_ind),
                           group_median))
@@ -376,7 +371,7 @@ def sigclip_magseries(times, mags, errs,
                     # update delta and go to the top of the loop
                     delta = this_size - this_mags.size
 
-            else: # If iterating only a certain number of times
+            else:  # If iterating only a certain number of times
 
                 this_times = ftimes
                 this_mags = fmags
@@ -504,7 +499,7 @@ def sigclip_magseries(times, mags, errs,
                     # update delta and go to top of the loop
                     delta = this_size - this_mags.size
 
-            else: # If iterating only a certain number of times
+            else:  # If iterating only a certain number of times
                 this_times = ftimes
                 this_mags = fmags
                 this_errs = ferrs
@@ -744,7 +739,8 @@ def sigclip_magseries_with_extparams(times, mags, errs, extparams,
                         (this_mags - this_median) < (dimmingclip*this_stdev)
                     )
                     nottoobrightind = (
-                        (this_mags - this_median) > (-brighteningclip*this_stdev)
+                        (this_mags - this_median) >
+                        (-brighteningclip*this_stdev)
                     )
 
                 # apply the sigclip
@@ -800,7 +796,7 @@ def phase_magseries(times, mags, period, epoch, wrap=True, sort=True):
     magseries_phase = (
         (finite_times - epoch)/period -
         np.floor(((finite_times - epoch)/period))
-        )
+    )
 
     outdict = {'phase':magseries_phase,
                'mags':finite_mags,
@@ -841,7 +837,7 @@ def phase_magseries_with_errs(times, mags, errs, period, epoch,
     magseries_phase = (
         (finite_times - epoch)/period -
         np.floor(((finite_times - epoch)/period))
-        )
+    )
 
     outdict = {'phase':magseries_phase,
                'mags':finite_mags,
@@ -943,7 +939,7 @@ def time_bin_magseries(times, mags,
     collected_binned_mags['binnedmags'] = (
         np.array([np.median(finite_mags[x])
                   for x in binned_finite_timeseries_indices])
-        )
+    )
 
     return collected_binned_mags
 
@@ -1023,14 +1019,14 @@ def time_bin_magseries_with_errs(times, mags, errs,
     collected_binned_mags['binnedmags'] = (
         np.array([np.median(finite_mags[x])
                   for x in binned_finite_timeseries_indices])
-        )
+    )
 
     # FIXME: calculate the error in the median-binned magnitude correctly
     # for now, just take the median of the errors in this bin
     collected_binned_mags['binnederrs'] = (
         np.array([np.median(finite_errs[x])
                   for x in binned_finite_timeseries_indices])
-        )
+    )
 
 
     return collected_binned_mags
@@ -1079,7 +1075,7 @@ def phase_bin_magseries(phases, mags,
         # find all bin indices close to within binsize of this point using the
         # kdtree query. we use the p-norm = 1 for pairwise Euclidean distance.
         bin_indices = phasetree.query_ball_point(np.array([phase,1.0]),
-                                              binsize/2.0, p=1.0)
+                                                 binsize/2.0, p=1.0)
 
         # if the bin_indices have already been collected, then we're
         # done with this bin, move to the next one. if they haven't,
@@ -1109,7 +1105,7 @@ def phase_bin_magseries(phases, mags,
     collected_binned_mags['binnedmags'] = (
         np.array([np.median(finite_mags[x])
                   for x in binned_finite_phaseseries_indices])
-        )
+    )
 
 
     return collected_binned_mags
@@ -1159,7 +1155,7 @@ def phase_bin_magseries_with_errs(phases, mags, errs,
         # find all bin indices close to within binsize of this point using the
         # kdtree query. we use the p-norm = 1 for pairwise Euclidean distance.
         bin_indices = phasetree.query_ball_point(np.array([phase,1.0]),
-                                              binsize/2.0, p=1.0)
+                                                 binsize/2.0, p=1.0)
 
         # if the bin_indices have already been collected, then we're
         # done with this bin, move to the next one. if they haven't,
@@ -1181,7 +1177,7 @@ def phase_bin_magseries_with_errs(phases, mags, errs,
 
     # collect the finite_phases
     binned_phase = np.array([np.median(finite_phases[x])
-                          for x in binned_finite_phaseseries_indices])
+                             for x in binned_finite_phaseseries_indices])
     collected_binned_mags['binnedphases'] = binned_phase
     collected_binned_mags['binsize'] = binsize
 
@@ -1189,11 +1185,11 @@ def phase_bin_magseries_with_errs(phases, mags, errs,
     collected_binned_mags['binnedmags'] = (
         np.array([np.median(finite_mags[x])
                   for x in binned_finite_phaseseries_indices])
-        )
+    )
     collected_binned_mags['binnederrs'] = (
         np.array([np.median(finite_errs[x])
                   for x in binned_finite_phaseseries_indices])
-        )
+    )
 
 
     return collected_binned_mags
