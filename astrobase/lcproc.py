@@ -5125,8 +5125,8 @@ def collect_tfa_stats(task):
 
         # this is the initial dict
         resultdict = {'objectid':objectid,
-                      'ra':objectinfo['ra'],
-                      'decl':objectinfo['decl'],
+                      'ra':lcdict['objectinfo']['ra'],
+                      'decl':lcdict['objectinfo']['decl'],
                       'colorfeat':colorfeat,
                       'lcfpath':os.path.abspath(lcfile),
                       'lcformat':lcformat,
@@ -5250,21 +5250,16 @@ def reform_templatelc_for_tfa(task):
         times, mags, errs = ntimes, nmags, errs
 
         #
-        # now we'll do: 1. renorm to zero, 2. reform to timebase, 3. sigclip
+        # now we'll do: 1. sigclip, 2. reform to timebase, 3. renorm to zero
         #
 
-        # 1. renorm to zero
-        magmedian = np.median(mags)
-
-        renormed_mags = mags - magmedian
-
-        # 2. sigclip as requested
+        # 1. sigclip as requested
         stimes, smags, serrs = sigclip_magseries(times,
-                                                 renormed_mags,
+                                                 mags,
                                                  errs,
                                                  sigclip=sigclip)
 
-        # 3. now, we'll renorm to the timebase
+        # 2. now, we'll renorm to the timebase
         mags_interpolator = spi.interp1d(stimes, smags,
                                          kind=interpolate_type,
                                          fill_value='extrapolate')
@@ -5275,9 +5270,15 @@ def reform_templatelc_for_tfa(task):
         interpolated_mags = mags_interpolator(timebase)
         interpolated_errs = errs_interpolator(timebase)
 
+        # 3. renorm to zero
+        magmedian = np.median(interpolated_mags)
+
+        renormed_mags = interpolated_mags - magmedian
+
         # update the dict
-        outdict = {'mags':interpolated_mags,
-                   'errs':interpolated_errs}
+        outdict = {'mags':renormed_mags,
+                   'errs':interpolated_errs,
+                   'origmags':interpolated_mags}
 
         #
         # done with this magcol
@@ -5690,7 +5691,7 @@ def apply_tfa_magseries(lcfile,
     #    np.dot(normal_matrix,
     #           np.dot(normal_matrix_inverse, normal_matrix))
     # )
-    normal_matrix_inverse = spla.pinv2(normal_matrix)
+    normal_matrix_inverse = spla.inv(normal_matrix)
 
     # get the timebase from the template
     timebase = templateinfo[magcol]['timebase']
@@ -5708,31 +5709,17 @@ def apply_tfa_magseries(lcfile,
         sigclip
     ))
 
-    # now calculate the scalar products of the target and template magseries
-    scalar_products = np.zeros(tobjects.size)
+    # calculate the scalar products of the target and template magseries
+    scalar_products = np.dot(tmagseries, reformed_targetlc['mags'])
 
-    for j in np.arange(scalar_products.size):
-
-        scalar_products[j] = np.sum(reformed_targetlc['mags']*tmagseries[j,:])
-
-
-    # now calculate the corrections
-    corrections = np.zeros(tobjects.shape)
-
-    for j in np.arange(corrections.size):
-
-        corrections[j] = np.sum(normal_matrix_inverse[j,:] * scalar_products,
-                                axis=0)
+    # calculate the corrections
+    corrections = np.dot(normal_matrix_inverse, scalar_products)
 
     # finally, get the corrected time series for the target object
-    corrected_magseries = np.zeros(timebase.shape)
-
-    for i in np.arange(corrected_magseries.size):
-
-        corrected_magseries[i] = (
-            reformed_targetlc['mags'][i] -
-            np.sum(corrections * tmagseries[:,i])
-        )
+    corrected_magseries = (
+        reformed_targetlc['origmags'] -
+        np.dot(tmagseries.T, corrections)
+    )
 
     outdict = {
         'times':timebase,
