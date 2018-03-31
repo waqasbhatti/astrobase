@@ -151,6 +151,8 @@ from astrobase.magnitudes import jhk_to_sdssr
 
 from astrobase.varbase.trends import epd_magseries, smooth_magseries_savgol
 
+from astrobase.coordutils import xieta_from_radecl
+
 ############
 ## CONFIG ##
 ############
@@ -5123,6 +5125,8 @@ def collect_tfa_stats(task):
 
         # this is the initial dict
         resultdict = {'objectid':objectid,
+                      'ra':objectinfo['ra'],
+                      'decl':objectinfo['decl'],
                       'colorfeat':colorfeat,
                       'lcfpath':os.path.abspath(lcfile),
                       'lcformat':lcformat,
@@ -5317,7 +5321,7 @@ def tfa_templates_lclist(
     - not more than 10% of the total number of objects in the field or
       maxtfatemplates at most
     - allow shuffling of the templates if the target ends up in them
-    - uniform sampling in the field
+    - uniform sampling in tangent plane coordinates (we'll need ra and decl)
     - nothing with less than the median number of observations in the field
     - sigma-clip the input time series observations
 
@@ -5369,7 +5373,10 @@ def tfa_templates_lclist(
         else:
             mcolget = [mcol]
 
-        lcmag, lcmad, lceta, lcndet, lcobj, lcfpaths = [], [], [], [], [], []
+        # these are the containers for possible template collection LC info
+        (lcmag, lcmad, lceta,
+         lcndet, lcobj, lcfpaths,
+         lcra, lcdecl) = [], [], [], [], [], [], [], []
 
         # add to the collection of all light curves
         outdict[mcol] = {'collection':{'mag':[],
@@ -5377,10 +5384,16 @@ def tfa_templates_lclist(
                                        'eta':[],
                                        'ndet':[],
                                        'obj':[],
-                                       'lcf':[]}}
+                                       'lcf':[],
+                                       'ra':[],
+                                       'decl':[]}}
 
         LOGINFO('magcol: %s, collecting prospective template LC info...' %
                 mcol)
+
+        # find the ra, decl center of the LC collection
+        center_ra = np.nanmedian(np.array([x['ra'] for x in results]))
+        center_decl = np.nanmedian(np.array([x['decl'] for x in results]))
 
         # collect the template LCs for this magcol
         for result in results:
@@ -5394,6 +5407,8 @@ def tfa_templates_lclist(
                 thisndet = result[mcolget[-1]]['ndet']
                 thisobj = result['objectid']
                 thislcf = result['lcfpath']
+                thisra = result['ra']
+                thisdecl = result['decl']
 
                 outdict[mcol]['collection']['mag'].append(thismag)
                 outdict[mcol]['collection']['mad'].append(thismad)
@@ -5401,6 +5416,8 @@ def tfa_templates_lclist(
                 outdict[mcol]['collection']['ndet'].append(thisndet)
                 outdict[mcol]['collection']['obj'].append(thisobj)
                 outdict[mcol]['collection']['lcf'].append(thislcf)
+                outdict[mcol]['collection']['ra'].append(thisra)
+                outdict[mcol]['collection']['decl'].append(thisdecl)
 
                 # make sure the object lies in the mag limits we set before
                 # to try to accept it into the TFA ensemble
@@ -5412,6 +5429,8 @@ def tfa_templates_lclist(
                     lcndet.append(thisndet)
                     lcobj.append(thisobj)
                     lcfpaths.append(thislcf)
+                    lcra.append(thisra)
+                    lcdecl.append(thisdecl)
 
             except Exception as e:
                 pass
@@ -5428,6 +5447,8 @@ def tfa_templates_lclist(
             lcndet = np.array(lcndet)
             lcobj = np.array(lcobj)
             lcfpaths = np.array(lcfpaths)
+            lcra = np.array(lcra)
+            lcdecl = np.array(lcdecl)
 
             sortind = np.argsort(lcmag)
             lcmag = lcmag[sortind]
@@ -5436,6 +5457,8 @@ def tfa_templates_lclist(
             lcndet = lcndet[sortind]
             lcobj = lcobj[sortind]
             lcfpaths = lcfpaths[sortind]
+            lcra = lcra[sortind]
+            lcdecl = lcdecl[sortind]
 
             # 1. get the mag-MAD relation
 
@@ -5482,6 +5505,8 @@ def tfa_templates_lclist(
                 templatendet = lcndet[templateind]
                 templateobj = lcobj[templateind]
                 templatelcf = lcfpaths[templateind]
+                templatera = lcra[templateind]
+                templatedecl = lcdecl[templateind]
 
                 # now, check if we have no more than the required fraction of
                 # TFA templates
@@ -5493,6 +5518,9 @@ def tfa_templates_lclist(
                 LOGINFO('magcol: %s, selecting %s TFA templates randomly' %
                         (mcol, target_number_templates))
 
+                # FIXME: how do we select uniformly in xi-eta?
+
+                # select random uniform objects from the template candidates
                 targetind = npr.choice(templateobj.size,
                                        target_number_templates,
                                        replace=False)
@@ -5503,6 +5531,8 @@ def tfa_templates_lclist(
                 templatendet = templatendet[targetind]
                 templateobj = templateobj[targetind]
                 templatelcf = templatelcf[targetind]
+                templatera = templatera[targetind]
+                templatedecl = templatedecl[targetind]
 
                 # get the max ndet so far to use that LC as the timebase
                 timebaselcf = templatelcf[templatendet == templatendet.max()]
@@ -5550,6 +5580,8 @@ def tfa_templates_lclist(
                     'trendfits':{'mag-mad':magmadfit,
                                  'mag-eta':magetafit},
                     'template_objects':templateobj,
+                    'template_ra':templatera,
+                    'template_decl':templatedecl,
                     'template_mag':templatemag,
                     'template_mad':templatemad,
                     'template_eta':templateeta,
@@ -5647,18 +5679,9 @@ def apply_tfa_magseries(lcfile,
             'template_magseries'
         ][::]
 
-    # this is the empty normal matrix
-    normal_matrix = np.zeros((tobjects.size, tobjects.size))
-
-    # calculate the normal matrix
-    for j in np.arange(tobjects.size):
-        for k in np.arange(tobjects.size):
-
-            # sum over the time axis
-            normal_matrix[j,k] = np.sum(
-                tmagseries[j,:] * tmagseries[k,:],
-                axis=0
-            )
+    # this is the normal matrix
+    # NOTE: use the @ here operator when we drop py2
+    normal_matrix = np.dot(tmagseries, tmagseries.T)
 
     # get the inverse of the matrix
     # if this is correct, this should satisfy the condition:
@@ -5667,7 +5690,7 @@ def apply_tfa_magseries(lcfile,
     #    np.dot(normal_matrix,
     #           np.dot(normal_matrix_inverse, normal_matrix))
     # )
-    normal_matrix_inverse = spla.pinv(normal_matrix)
+    normal_matrix_inverse = spla.pinv2(normal_matrix)
 
     # get the timebase from the template
     timebase = templateinfo[magcol]['timebase']
