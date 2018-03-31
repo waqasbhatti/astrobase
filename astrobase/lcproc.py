@@ -5606,6 +5606,9 @@ def tfa_templates_lclist(
                      'select templates for magcol: %s' % mcol)
             continue
 
+        # make the plots for mag-MAD relation
+        # FIXME: finish this
+
 
     #
     # end of operating on each magcol
