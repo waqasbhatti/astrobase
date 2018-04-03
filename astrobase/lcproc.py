@@ -5324,6 +5324,8 @@ def tfa_templates_lclist(
     be used. All template LCs will be renormed to zero. This will also generate
     the normal matrix and its inverse as expected by TFA.
 
+    FIXME: update docstring
+
     '''
 
     (fileglob, readerfunc, dtimecols, dmagcols,
@@ -5712,6 +5714,7 @@ def apply_tfa_magseries(lcfile,
                         magcol,
                         errcol,
                         templateinfo,
+                        mintemplatedist_arcmin=1.0,
                         lcformat='hat-sql',
                         interp='nearest',
                         sigclip=5.0):
@@ -5723,6 +5726,8 @@ def apply_tfa_magseries(lcfile,
 
     also gets the magseries into a concatenated array to calculate the scalar
     product of the target and template light curves.
+
+    FIXME: update docstring
 
     '''
 
@@ -5741,6 +5746,10 @@ def apply_tfa_magseries(lcfile,
     objectid = lcdict['objectid']
 
     # if the object itself is in the template ensemble, remove it
+
+    # FIXME: also remove objects from the template that lie within some radius
+    # of the target object (let's make this 1 arcminute by default)
+
     if objectid in templateinfo[magcol]['template_objects']:
 
         LOGWARNING('object %s found in the TFA template ensemble, removing...' %
