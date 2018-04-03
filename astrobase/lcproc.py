@@ -1505,7 +1505,7 @@ def get_varfeatures(lcfile,
 
                 LOGINFO('not enough LC points: %s in normalized %s LC: %s' %
                         (mags[finind].size, mcol, os.path.basename(lcfile)))
-                resultdict[mcolget[-1]] = None
+                resultdict[mcol] = None
 
             else:
 
@@ -1513,7 +1513,7 @@ def get_varfeatures(lcfile,
                 lcfeatures = varfeatures.all_nonperiodic_features(
                     times, mags, errs
                 )
-                resultdict[mcolget[-1]] = lcfeatures
+                resultdict[mcol] = lcfeatures
 
         # now that we've collected all the magcols, we can choose which is the
         # "best" magcol. this is defined as the magcol that gives us the
@@ -1527,7 +1527,7 @@ def get_varfeatures(lcfile,
                 else:
                     mcolget = [mcol]
 
-                magmads[mind] = resultdict[mcolget[-1]]['mad']
+                magmads[mind] = resultdict[mcol]['mad']
 
             # smallest MAD index
             bestmagcolind = np.where(magmads == np.min(magmads))[0]
@@ -1960,24 +1960,24 @@ def get_periodicfeatures(pfpickle,
                 available_pgrams = []
                 available_bestperiods = []
 
-                for k in pf[mcolget[-1]].keys():
+                for k in pf[mcol].keys():
 
                     if k in PFMETHODS:
 
-                        available_pgrams.append(pf[mcolget[-1]][k])
+                        available_pgrams.append(pf[mcol][k])
 
                         if k != 'win':
                             available_pfmethods.append(
-                                pf[mcolget[-1]][k]['method']
+                                pf[mcol][k]['method']
                             )
                             available_bestperiods.append(
-                                pf[mcolget[-1]][k]['bestperiod']
+                                pf[mcol][k]['bestperiod']
                             )
 
                 #
                 # process periodic features for this magcol
                 #
-                featkey = 'periodicfeatures-%s' % mcolget[-1]
+                featkey = 'periodicfeatures-%s' % mcol
                 resultdict[featkey] = {}
 
                 # first, handle the periodogram features
@@ -2025,7 +2025,7 @@ def get_periodicfeatures(pfpickle,
                 LOGERROR('not enough finite measurements in magcol: %s, for '
                          'pfpickle: %s, skipping this magcol'
                          % (mcol, pfpickle))
-                featkey = 'periodicfeatures-%s' % mcolget[-1]
+                featkey = 'periodicfeatures-%s' % mcol
                 resultdict[featkey] = None
 
         #
@@ -3170,9 +3170,18 @@ def variability_threshold(featuresdir,
         )
 
         # get the common selected objects thru all measures
-        allobjects[magcol]['objectids_all_thresh_all_magbins'] = np.unique(
-            np.concatenate(allobjects[magcol]['binned_objectids_thresh_all'])
-        )
+        try:
+            allobjects[magcol]['objectids_all_thresh_all_magbins'] = np.unique(
+                np.concatenate(
+                    allobjects[magcol]['binned_objectids_thresh_all']
+                )
+            )
+        except ValueError:
+            LOGWARNING('not enough variable objects matching all thresholds')
+            allobjects[magcol]['objectids_all_thresh_all_magbins'] = (
+                np.array([])
+            )
+
         allobjects[magcol]['objectids_stetsonj_thresh_all_magbins'] = np.unique(
             np.concatenate(
                 allobjects[magcol]['binned_objectids_thresh_stetsonj']
@@ -3515,7 +3524,7 @@ def runpf(lcfile,
                 times, mags, errs = ntimes, nmags, errs
 
             # run each of the requested period-finder functions
-            resultdict[mcolget[-1]] = {}
+            resultdict[mcol] = {}
 
             pfmkeys = []
 
@@ -3539,7 +3548,7 @@ def runpf(lcfile,
                 pfmkeys.append(pfmkey)
 
                 # run this period-finder and save its results to the output dict
-                resultdict[mcolget[-1]][pfmkey] = pf_func(
+                resultdict[mcol][pfmkey] = pf_func(
                     times, mags, errs,
                     **pf_kwargs
                 )
@@ -3549,19 +3558,19 @@ def runpf(lcfile,
             # done with running the period finders
             #
             # append the pfmkeys list to the magcol dict
-            resultdict[mcolget[-1]]['pfmethods'] = pfmkeys
+            resultdict[mcol]['pfmethods'] = pfmkeys
 
             # check if we need to get the SNR from any BLS pfresults
             if 'bls' in pfmethods and getblssnr:
 
                 # we need to scan thru the pfmethods to get to any BLS pfresults
-                for pfmk in resultdict[mcolget[-1]]['pfmethods']:
+                for pfmk in resultdict[mcol]['pfmethods']:
 
                     if 'bls' in pfmk:
 
                         try:
 
-                            bls = resultdict[mcolget[-1]][pfmk]
+                            bls = resultdict[mcol][pfmk]
 
                             # calculate the SNR for the BLS as well
                             blssnr = bls_snr(bls, times, mags, errs,
@@ -3569,7 +3578,7 @@ def runpf(lcfile,
                                              verbose=False)
 
                             # add the SNR results to the BLS result dict
-                            resultdict[mcolget[-1]][pfmk].update({
+                            resultdict[mcol][pfmk].update({
                                 'snr':blssnr['snr'],
                                 'altsnr':blssnr['altsnr'],
                                 'transitdepth':blssnr['transitdepth'],
@@ -3581,7 +3590,7 @@ def runpf(lcfile,
                             LOGEXCEPTION('could not calculate BLS SNR for %s' %
                                          lcfile)
                             # add the SNR null results to the BLS result dict
-                            resultdict[mcolget[-1]][pfmk].update({
+                            resultdict[mcol][pfmk].update({
                                 'snr':[np.nan,np.nan,np.nan,np.nan,np.nan],
                                 'altsnr':[np.nan,np.nan,np.nan,np.nan,np.nan],
                                 'transitdepth':[np.nan,np.nan,np.nan,
@@ -3593,12 +3602,12 @@ def runpf(lcfile,
             elif 'bls' in pfmethods:
 
                 # we need to scan thru the pfmethods to get to any BLS pfresults
-                for pfmk in resultdict[mcolget[-1]]['pfmethods']:
+                for pfmk in resultdict[mcol]['pfmethods']:
 
                     if 'bls' in pfmk:
 
                         # add the SNR null results to the BLS result dict
-                        resultdict[mcolget[-1]][pfmk].update({
+                        resultdict[mcol][pfmk].update({
                             'snr':[np.nan,np.nan,np.nan,np.nan,np.nan],
                             'altsnr':[np.nan,np.nan,np.nan,np.nan,np.nan],
                             'transitdepth':[np.nan,np.nan,np.nan,
@@ -4160,8 +4169,8 @@ def runcp(pfpickle,
         errs = dict_get(lcdict, ecolget)
 
         # get all the period-finder results from this magcol
-        pflist = [pfresults[mcolget[-1]][x]
-                  for x in pfresults[mcolget[-1]]['pfmethods']]
+        pflist = [pfresults[mcol][x]
+                  for x in pfresults[mcol]['pfmethods']]
 
         # generate the output filename
         outfile = os.path.join(outdir,
@@ -5157,7 +5166,7 @@ def collect_tfa_stats(task):
                 times, mags, errs
             )
 
-            resultdict[mcolget[-1]] = varfeat
+            resultdict[mcol] = varfeat
 
         return resultdict
 
@@ -5400,9 +5409,9 @@ def tfa_templates_lclist(
             try:
 
                 thismag = result['colorfeat'][mag_bandpass]
-                thismad = result[mcolget[-1]]['mad']
-                thiseta = result[mcolget[-1]]['eta_normal']
-                thisndet = result[mcolget[-1]]['ndet']
+                thismad = result[mcol]['mad']
+                thiseta = result[mcol]['eta_normal']
+                thisndet = result[mcol]['ndet']
                 thisobj = result['objectid']
                 thislcf = result['lcfpath']
                 thisra = result['ra']
