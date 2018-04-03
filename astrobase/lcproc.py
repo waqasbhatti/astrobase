@@ -5360,7 +5360,11 @@ def tfa_templates_lclist(
 
     # now, go through the light curves
 
-    outdict = {}
+    outdict = {
+        'timecols':[],
+        'magcols':[],
+        'errcols':[],
+    }
 
     # for each magcol, we'll generate a separate template list
     for tcol, mcol, ecol in zip(timecols, magcols, errcols):
@@ -5379,6 +5383,10 @@ def tfa_templates_lclist(
         (lcmag, lcmad, lceta,
          lcndet, lcobj, lcfpaths,
          lcra, lcdecl) = [], [], [], [], [], [], [], []
+
+        outdict['timecols'].append(tcol)
+        outdict['magcols'].append(mcol)
+        outdict['errcols'].append(ecol)
 
         # add to the collection of all light curves
         outdict[mcol] = {'collection':{'mag':[],
@@ -5690,7 +5698,6 @@ def apply_tfa_magseries(lcfile,
         templateind = templateinfo[magcol]['template_objects'] == objectid
 
         # we need to copy over this template instance
-        tobjects = templateinfo[magcol]['template_objects'][~templateind][::]
         tmagseries = templateinfo[magcol][
             'template_magseries'
         ][~templateind,:][::]
@@ -5822,12 +5829,13 @@ def parallel_tfa_lclist(lclist,
 
     # override the default timecols, magcols, and errcols
     # using the ones provided to the function
+    # we'll get the defaults from the templateinfo object
     if timecols is None:
-        timecols = dtimecols
+        timecols = templateinfo['timecols']
     if magcols is None:
-        magcols = dmagcols
+        magcols = templateinfo['magcols']
     if errcols is None:
-        errcols = derrcols
+        errcols = templateinfo['errcols']
 
     outdict = {}
 
