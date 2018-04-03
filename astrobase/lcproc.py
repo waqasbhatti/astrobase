@@ -1248,6 +1248,8 @@ def timebinlc(lcfile,
         LOGERROR('this light curve appears to be binned already, skipping...')
         return None
 
+    lcdict['binned'] = {}
+
     for tcol, mcol, ecol in zip(timecols, magcols, errcols):
 
         # dereference the columns and get them from the lcdict
@@ -1286,24 +1288,12 @@ def timebinlc(lcfile,
                                               minbinelems=minbinelems)
 
         # put this into the special binned key of the lcdict
-
-        # we use mcolget[-1] here so we can deal with dereferenced magcols like
-        # sap.sap_flux or pdc.pdc_sapflux
-        if 'binned' not in lcdict:
-            lcdict['binned'] = {mcolget[-1]: {'times':binned['binnedtimes'],
-                                              'mags':binned['binnedmags'],
-                                              'errs':binned['binnederrs'],
-                                              'nbins':binned['nbins'],
-                                              'timebins':binned['jdbins'],
-                                              'binsizesec':binsizesec}}
-
-        else:
-            lcdict['binned'][mcolget[-1]] = {'times':binned['binnedtimes'],
-                                             'mags':binned['binnedmags'],
-                                             'errs':binned['binnederrs'],
-                                             'nbins':binned['nbins'],
-                                             'timebins':binned['jdbins'],
-                                             'binsizesec':binsizesec}
+        lcdict['binned'][mcol] = {'times':binned['binnedtimes'],
+                                  'mags':binned['binnedmags'],
+                                  'errs':binned['binnederrs'],
+                                  'nbins':binned['nbins'],
+                                  'timebins':binned['jdbins'],
+                                  'binsizesec':binsizesec}
 
 
     # done with binning for all magcols, now generate the output file
@@ -1338,6 +1328,7 @@ def timebinlc_worker(task):
         binnedlc = timebinlc(lcfile, binsizesec, **kwargs)
         LOGINFO('%s binned using %s sec -> %s OK' %
                 (lcfile, binsizesec, binnedlc))
+        return binnedlc
     except Exception as e:
         LOGEXCEPTION('failed to bin %s using binsizesec = %s' % (lcfile,
                                                                  binsizesec))
@@ -5806,6 +5797,7 @@ def apply_tfa_magseries(lcfile,
     outdict = {
         'times':timebase,
         'mags':corrected_magseries,
+        'errs':reformed_targetlc['errs'],
         'mags_median':np.median(corrected_magseries),
         'mags_mad': np.median(np.abs(corrected_magseries -
                                      np.median(corrected_magseries))),
