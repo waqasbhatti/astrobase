@@ -94,7 +94,6 @@ import base64
 
 import numpy as np
 import numpy.random as npr
-import numpy.linalg as npla
 npr.seed(0xc0ffee)
 
 import scipy.spatial as sps
@@ -103,8 +102,7 @@ from scipy import linalg as spla
 
 import astropy.io.fits as pyfits
 from astropy.wcs import WCS
-from astropy.visualization import MinMaxInterval, ZScaleInterval, \
-    ImageNormalize, LinearStretch
+from astropy.visualization import ZScaleInterval, LinearStretch
 
 import matplotlib
 matplotlib.use('Agg')
@@ -151,7 +149,6 @@ from astrobase.magnitudes import jhk_to_sdssr
 
 from astrobase.varbase.trends import epd_magseries, smooth_magseries_savgol
 
-from astrobase.coordutils import xieta_from_radecl
 
 ############
 ## CONFIG ##
@@ -5827,6 +5824,7 @@ def apply_tfa_magseries(lcfile,
         pickle.dump(lcdict, outfd, pickle.HIGHEST_PROTOCOL)
 
     return outfile
+
 
 
 def parallel_tfa_worker(task):
