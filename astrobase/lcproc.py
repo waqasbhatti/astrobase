@@ -5686,17 +5686,10 @@ def apply_tfa_magseries(lcfile,
         ][::]
 
     # this is the normal matrix
-    # NOTE: use the @ here operator when we drop py2
     normal_matrix = np.dot(tmagseries, tmagseries.T)
 
     # get the inverse of the matrix
-    # if this is correct, this should satisfy the condition:
-    # np.allclose(
-    #    normal_matrix,
-    #    np.dot(normal_matrix,
-    #           np.dot(normal_matrix_inverse, normal_matrix))
-    # )
-    normal_matrix_inverse = spla.inv(normal_matrix)
+    normal_matrix_inverse = spla.pinv2(normal_matrix)
 
     # get the timebase from the template
     timebase = templateinfo[magcol]['timebase']
