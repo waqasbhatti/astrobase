@@ -5606,8 +5606,26 @@ def tfa_templates_lclist(
                      'select templates for magcol: %s' % mcol)
             continue
 
-        # make the plots for mag-MAD relation
-        # FIXME: finish this
+        # make the plots for mag-MAD/mag-eta relation and fits used
+        plt.plot(lcmag, lcmad, marker='o', linestyle='none', ms=1.0)
+        modelmags = np.linspace(lcmag.min(), lcmag.max(), num=1000)
+        plt.plot(modelmags, outdict[mcol]['trendfits']['mag-mad'](modelmags))
+        plt.yscale('log')
+        plt.xlabel('catalog magnitude')
+        plt.ylabel('light curve MAD')
+        plt.title('catalog mag vs. light curve MAD and fit')
+        plt.savefig('catmag-lcmad-fit.png',bbox_inches='tight')
+        plt.close('all')
+
+        plt.plot(lcmag, lceta, marker='o', linestyle='none', ms=1.0)
+        modelmags = np.linspace(lcmag.min(), lcmag.max(), num=1000)
+        plt.plot(modelmags, outdict[mcol]['trendfits']['mag-eta'](modelmags))
+        plt.yscale('log')
+        plt.xlabel('catalog magnitude')
+        plt.ylabel('light curve eta variable index')
+        plt.title('catalog mag vs. light curve eta and fit')
+        plt.savefig('catmag-lceta-fit.png',bbox_inches='tight')
+        plt.close('all')
 
 
     #
@@ -5680,7 +5698,6 @@ def apply_tfa_magseries(lcfile,
     # otherwise, get the full ensemble
     else:
 
-        tobjects = templateinfo[magcol]['template_objects'][::]
         tmagseries = templateinfo[magcol][
             'template_magseries'
         ][::]
