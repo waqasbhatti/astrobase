@@ -5296,6 +5296,7 @@ def tfa_templates_lclist(
         lclist,
         outfile=None,
         target_template_frac=0.1,
+        max_target_frac_obs=0.25,
         min_template_number=10,
         max_template_number=1000,
         max_rms=0.15,
@@ -5546,11 +5547,12 @@ def tfa_templates_lclist(
                 templatedecl = templatedecl[targetind]
 
                 # get the max ndet so far to use that LC as the timebase
-                timebaselcf = templatelcf[templatendet == templatendet.max()]
-                timebaselcf = timebaselcf[0]
-
-                LOGINFO('magcol: %s, selected %s as template time base LC' %
-                        (mcol, timebaselcf))
+                maxndetind = templatendet == templatendet.max()
+                timebaselcf = templatelcf[maxndetind][0]
+                timebasendet = templatendet[maxndetind][0]
+                LOGINFO('magcol: %s, selected %s as template time '
+                        'base LC with %s observations' %
+                        (mcol, timebaselcf, timebasendet))
 
                 timebaselcdict = readerfunc(timebaselcf)
 
@@ -5562,8 +5564,66 @@ def tfa_templates_lclist(
                 # this is the timebase to use for all of the templates
                 timebase = dict_get(timebaselcdict, tcolget)
 
-                LOGINFO('magcol: %s, reforming TFA template LCs...' %
-                        mcol)
+                # also check if the number of templates is longer than the
+                # actual timebase of the observations. this will cause issues
+                # with overcorrections and will probably break TFA
+                if target_number_templates > timebasendet:
+
+                    LOGWARNING('the number of TFA templates (%s) is '
+                               'larger than the number of observations '
+                               'of the time base (%s). This will likely '
+                               'overcorrect all light curves to a '
+                               'constant level. '
+                               'Will use up to %s x timebase ndet '
+                               'templates instead' %
+                               (target_number_templates,
+                                timebasendet,
+                                max_target_frac_obs))
+
+                    # regen the templates based on the new number
+                    newmaxtemplates = int(max_target_frac_obs*timebasendet)
+
+                    # choose this number out of the already chosen templates
+                    # randomly
+
+                    LOGWARNING('magcol: %s, re-selecting %s TFA '
+                               'templates randomly' %
+                               (mcol, newmaxtemplates))
+
+                    # select random uniform objects from the template candidates
+                    targetind = npr.choice(templateobj.size,
+                                           newmaxtemplates,
+                                           replace=False)
+
+                    templatemag = templatemag[targetind]
+                    templatemad = templatemad[targetind]
+                    templateeta = templateeta[targetind]
+                    templatendet = templatendet[targetind]
+                    templateobj = templateobj[targetind]
+                    templatelcf = templatelcf[targetind]
+                    templatera = templatera[targetind]
+                    templatedecl = templatedecl[targetind]
+
+                    # get the max ndet so far to use that LC as the timebase
+                    maxndetind = templatendet == templatendet.max()
+                    timebaselcf = templatelcf[maxndetind][0]
+                    timebasendet = templatendet[maxndetind][0]
+                    LOGWARNING('magcol: %s, re-selected %s as template time '
+                               'base LC with %s observations' %
+                               (mcol, timebaselcf, timebasendet))
+
+                    timebaselcdict = readerfunc(timebaselcf)
+
+                    if ( (isinstance(timebaselcdict, list) or
+                          isinstance(timebaselcdict, tuple)) and
+                         (isinstance(timebaselcdict[0], dict)) ):
+                        timebaselcdict = timebaselcdict[0]
+
+                    # this is the timebase to use for all of the templates
+                    timebase = dict_get(timebaselcdict, tcolget)
+
+                LOGINFO('magcol: %s, reforming TFA template LCs to '
+                        ' chosen timebase...' % mcol)
 
                 # reform all template LCs to this time base, normalize to
                 # zero, and sigclip as requested. this is a parallel op
