@@ -1,3 +1,28 @@
+# v0.3.12
+
+## New stuff
+
+- lcproc: added TFA (Kovacs et al. 2005;
+http://adsabs.harvard.edu/abs/2005MNRAS.356..557K) implementation and parallel drivers
+- lcproc: added EPD drivers for LC collections
+
+
+## Changes
+
+- lcproc, checkplotlist: make nworkers depend on actual number of CPUs
+- lcproc: add minobservations kwarg for `runcp`, `parallel_cp`, `parallel_cpdir`
+
+
+## Fixes
+
+- lcproc: fix addressing of magcols so stuff like epd.mags, tfa.mags works
+- lcproc.lcbin: write results to correct outdict keys based on magcols
+- lcfit: fix missing imports
+- `lcfit.spline_fit_magseries`: fix annoying 'x must be strictly increasing'
+  thing
+- checkplot: fix axes -> ax typo
+
+
 # v0.3.11
 
 ## New stuff
