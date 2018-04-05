@@ -182,6 +182,7 @@ from operator import getitem
 
 import numpy as np
 import multiprocessing as mp
+CPU_COUNT = mp.cpu_count()
 
 from astrobase.checkplot import _read_checkplot_picklefile
 
@@ -335,7 +336,7 @@ def main():
         '--maxkeyworkers',
         action='store',
         type=int,
-        default=8,
+        default=int(CPU_COUNT/4.0),
         help=("the number of parallel workers that will be launched "
               "to retrieve checkplot key values used for "
               "sorting and filtering (default: %(default)s)")
