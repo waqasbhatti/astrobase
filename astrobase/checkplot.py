@@ -1486,7 +1486,7 @@ def _pkl_finder_objectinfo(objectinfo,
                             # put in a nice marker for this neighbor into the
                             # overall finder chart
                             annotatex = pixcoords[0,0]
-                            annotatey = 300.0 - pixcoords[0,1]
+                            annotatey = pixcoords[0,1]
 
                             if ((300.0 - annotatex) > 50.0):
                                 offx = annotatex + 30.0

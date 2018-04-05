@@ -3961,26 +3961,36 @@ def update_checkplotdict_nbrlcs(
         if normfunc is not None:
             lcdict = normfunc(lcdict)
 
-        # get the times, mags, and errs
-        # dereference the columns and get them from the lcdict
-        if '.' in timecol:
-            timecolget = timecol.split('.')
-        else:
-            timecolget = [timecol]
-        times = dict_get(lcdict, timecolget)
+        try:
 
-        if '.' in magcol:
-            magcolget = magcol.split('.')
-        else:
-            magcolget = [magcol]
-        mags = dict_get(lcdict, magcolget)
+            # get the times, mags, and errs
+            # dereference the columns and get them from the lcdict
+            if '.' in timecol:
+                timecolget = timecol.split('.')
+            else:
+                timecolget = [timecol]
+            times = dict_get(lcdict, timecolget)
 
-        if '.' in errcol:
-            errcolget = errcol.split('.')
-        else:
-            errcolget = [errcol]
-        errs = dict_get(lcdict, errcolget)
+            if '.' in magcol:
+                magcolget = magcol.split('.')
+            else:
+                magcolget = [magcol]
+            mags = dict_get(lcdict, magcolget)
 
+            if '.' in errcol:
+                errcolget = errcol.split('.')
+            else:
+                errcolget = [errcol]
+            errs = dict_get(lcdict, errcolget)
+
+        except KeyError:
+
+            LOGERROR('LC for neighbor: %s (target object: %s) does not '
+                     'have one or more of the required columns: %s, '
+                     'skipping...' %
+                     (objectid, checkplotdict['objectid'],
+                      ', '.join([timecol, magcol, errcol])))
+            continue
 
         # filter the input times, mags, errs; do sigclipping and normalization
         stimes, smags, serrs = sigclip_magseries(times,
@@ -4028,7 +4038,18 @@ def update_checkplotdict_nbrlcs(
 
         # for each lspmethod in the checkplot, make a corresponding plot for
         # this neighbor
-        for lspt in checkplotdict['pfmethods']:
+
+        # figure out the period finder methods present
+        if 'pfmethods' in checkplotdict:
+            pfmethods = checkplotdict['pfmethods']
+        else:
+            pfmethods = []
+            for cpkey in checkplotdict:
+                for pfkey in PFMETHODS:
+                    if pfkey in cpkey:
+                        pfmethods.append(pfkey)
+
+        for lspt in pfmethods:
 
             # initialize this lspmethod entry
             nbr[lspt] = {}
@@ -4082,6 +4103,7 @@ def runcp(pfpickle,
           maxnumneighbors=5,
           xmatchinfo=None,
           xmatchradiusarcsec=3.0,
+          minobservations=1000,
           sigclip=10.0,
           lcformat='hat-sql',
           timecols=None,
@@ -4201,6 +4223,7 @@ def runcp(pfpickle,
             xmatchinfo=xmatchinfo,
             xmatchradiusarcsec=xmatchradiusarcsec,
             sigclip=sigclip,
+            mindet=minobservations,
             verbose=False,
             normto=cprenorm  # we've done the renormalization already, so this
                              # should be False by default. just messes up the
@@ -4259,6 +4282,7 @@ def parallel_cp(pfpicklelist,
                 xmatchinfo=None,
                 xmatchradiusarcsec=3.0,
                 sigclip=10.0,
+                minobservations=1000,
                 maxobjects=None,
                 lcformat='hat-sql',
                 timecols=None,
@@ -4288,6 +4312,7 @@ def parallel_cp(pfpicklelist,
                   'xmatchinfo':xmatchinfo,
                   'xmatchradiusarcsec':xmatchradiusarcsec,
                   'sigclip':sigclip,
+                  'minobservations':minobservations,
                   'cprenorm':cprenorm}) for
                 x in pfpicklelist]
 
@@ -4314,6 +4339,7 @@ def parallel_cp_pfdir(pfpickledir,
                       xmatchinfo=None,
                       xmatchradiusarcsec=3.0,
                       sigclip=10.0,
+                      minobservations=1000,
                       maxobjects=None,
                       pfpickleglob='periodfinding-*.pkl*',
                       lcformat='hat-sql',
@@ -4341,6 +4367,7 @@ def parallel_cp_pfdir(pfpickledir,
                        xmatchinfo=xmatchinfo,
                        xmatchradiusarcsec=xmatchradiusarcsec,
                        sigclip=sigclip,
+                       minobservations=minobservations,
                        cprenorm=cprenorm,
                        maxobjects=maxobjects,
                        lcformat=lcformat,
