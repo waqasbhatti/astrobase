@@ -4819,7 +4819,7 @@ def apply_epd_magseries(lcfile,
 
     timecol, magcol, errcol are the columns in the lcdict to use for EPD.
 
-    external params is a dict that indicates which keys in the lcdict obtained
+    externalparams is a dict that indicates which keys in the lcdict obtained
     from the lcfile correspond to the required external parameters. As with
     timecol, magcol, and errcol, these can be simple keys (e.g. 'rjd') or
     compound keys ('magaperture1.mags'). The dict should look something like:
@@ -4909,6 +4909,7 @@ def apply_epd_magseries(lcfile,
                     protocol=pickle.HIGHEST_PROTOCOL)
 
     return outfile
+
 
 
 def parallel_epd_worker(task):
@@ -5207,7 +5208,7 @@ def collect_tfa_stats(task):
 
 def reform_templatelc_for_tfa(task):
     '''
-    This is a parallel worker to gather LC stats.
+    This is a parallel worker that reforms light curves for TFA.
 
     task[0] = lcfile
     task[1] = lcformat
@@ -5341,23 +5342,86 @@ def tfa_templates_lclist(
 ):
     '''This selects template objects for TFA.
 
-    Selection criteria:
+    lclist is a list of light curves to use as input to generate the template
+    set.
+
+    outfile is a pickle filename to which the TFA template list will be written
+    to.
+
+    target_template_frac is the fraction of total objects in lclist to use for
+    the number of templates.
+
+    max_target_frac_obs sets the number of templates to generate if the number
+    of observations for the light curves is smaller than the number of objects
+    in the collection. The number of templates will be set to this fraction of
+    the number of observations if this is the case.
+
+    min_template_number is the minimum number of templates to generate.
+
+    max_template_number is the maximum number of templates to generate. If
+    target_template_frac times the number of objects is greater than
+    max_template_number, only max_template_number templates will be used.
+
+    max_rms is the maximum light curve RMS for an object to consider it as a
+    possible template ensemble member.
+
+    max_mult_above_magmad is the maximum multiplier above the mag-RMS fit to
+    consider an object as variable and thus not part of the template ensemble.
+
+    max_mult_above_mageta is the maximum multiplier above the mag-eta (variable
+    index) fit to consider an object as variable and thus not part of the
+    template ensemble.
+
+    mag_bandpass sets the key in the light curve dict's objectinfo dict to use
+    as the canonical magnitude for the object and apply any magnitude limits to.
+
+    custom_bandpasses can be used to provide any custom band name keys to the
+    star feature collection function.
+
+    mag_bright_limit sets the brightest mag for a potential member of the TFA
+    template ensemble.
+
+    mag_faint_limit sets the faintest mag for a potential member of the TFA
+    template ensemble.
+
+    template_sigclip sets the sigma-clip to be applied to the template light
+    curves.
+
+    template_interpolate sets the kwarg to pass to scipy.interpolate.interp1d to
+    set the kind of interpolation to use when reforming light curves to the TFA
+    template timebase.
+
+    lcformat sets the key in LCFORM to use to read the light curves. Use the
+    lcproc.register_custom_lcformat function to register a custom light curve
+    format in the lcproc.LCFORM dict.
+
+    timecols, magcols, errcols are lists of lcdict keys to use to generate the
+    TFA template ensemble. These will be the light curve magnitude columns that
+    TFA will be ultimately applied to by apply_tfa_magseries below.
+
+    nworkers and maxworkertasks control the number of parallel workers and tasks
+    per worker used by this function to collect light curve information and to
+    reform light curves to the TFA template's timebase.
+
+    Selection criteria for TFA template ensemble objects:
 
     - not variable: use a poly fit to the mag-MAD relation and eta-normal
       variability index to get nonvar objects
     - not more than 10% of the total number of objects in the field or
       maxtfatemplates at most
     - allow shuffling of the templates if the target ends up in them
-    - uniform sampling in tangent plane coordinates (we'll need ra and decl)
     - nothing with less than the median number of observations in the field
     - sigma-clip the input time series observations
+    - TODO: uniform sampling in tangent plane coordinates (we'll need ra and
+      decl)
 
     This also determines the effective cadence that all TFA LCs will be binned
     to as the template LC with the largest number of non-nan observations will
-    be used. All template LCs will be renormed to zero. This will also generate
-    the normal matrix and its inverse as expected by TFA.
+    be used. All template LCs will be renormed to zero.
 
-    FIXME: update docstring
+    This function returns a dict that can be passed directly to
+    apply_tfa_magseries below. It can optionally produce a pickle with the same
+    dict, which can also be passed to that function.
 
     '''
 
@@ -5751,16 +5815,32 @@ def apply_tfa_magseries(lcfile,
                         lcformat='hat-sql',
                         interp='nearest',
                         sigclip=5.0):
-    '''This gets the normal matrix for an object wrt TFA ensemble.
+    '''This applies the TFA correction to an LC given TFA template information.
 
-    calculate the normal matrix for the reformed template LCs and its inverse.
-    we might need to throw things out of the template set if they are the TFA
-    target.
+    lcfile is the light curve file to apply the TFA correction to.
 
-    also gets the magseries into a concatenated array to calculate the scalar
-    product of the target and template light curves.
+    timecol, magcol, errcol are the column keys in the lcdict for the LC file to
+    apply the TFA correction to.
 
-    FIXME: update docstring
+    templateinfo is either the dict produced by tfa_templates_lclist or the
+    pickle produced by the same function.
+
+    TODO: mintemplatedist_arcmin sets the minimum distance required from the
+    target object for objects in the TFA template ensemble. Objects closer than
+    this distance will be removed from the ensemble.
+
+    lcformat is the LCFORM dict key for the light curve format of lcfile.
+
+    interp is passed to scipy.interpolate.interp1d as the kind of interpolation
+    to use when reforming this light curve to the timebase of the TFA templates.
+
+    sigclip is the sigma clip to apply to this light curve before running TFA on
+    it.
+
+    This returns the filename of the light curve file generated after TFA
+    applications. This is a pickle (that can be read by lcproc.read_pklc) in the
+    same directory as lcfile. The magcol will be encoded in the filename, so
+    each magcol in lcfile gets its own output file.
 
     '''
 
@@ -5780,8 +5860,8 @@ def apply_tfa_magseries(lcfile,
 
     # if the object itself is in the template ensemble, remove it
 
-    # FIXME: also remove objects from the template that lie within some radius
-    # of the target object (let's make this 1 arcminute by default)
+    # TODO: also remove objects from the template that lie within some radius of
+    # the target object (let's make this 1 arcminute by default)
 
     if objectid in templateinfo[magcol]['template_objects']:
 
@@ -5908,8 +5988,28 @@ def parallel_tfa_lclist(lclist,
                         sigclip=5.0,
                         nworkers=NCPUS,
                         maxworkertasks=1000):
-    '''
-    This applies TFA in parallel to all LCs in lclist.
+    '''This applies TFA in parallel to all LCs in lclist.
+
+    lclist is a list of light curve files to apply the TFA correction to.
+
+    templateinfo is either the dict produced by tfa_templates_lclist or the
+    pickle produced by the same function.
+
+    timecols, magcols, errcols are lists of column keys in the lcdict for each
+    LC file to apply the TFA correction to. each magcol will get their own
+    output TFA light curve file. If these are None, then magcols used for the
+    TFA template will be re-used for TFA application.
+
+    lcformat is the LCFORM dict key for the light curve format of lcfile.
+
+    interp is passed to scipy.interpolate.interp1d as the kind of interpolation
+    to use when reforming this light curve to the timebase of the TFA templates.
+
+    sigclip is the sigma clip to apply to this light curve before running TFA on
+    it.
+
+    nworkers and maxworkertasks set the number of parallel workers and max tasks
+    per worker used to run TFA in parallel.
 
     '''
 
@@ -5962,8 +6062,11 @@ def parallel_tfa_lcdir(lcdir,
                        sigclip=5.0,
                        nworkers=NCPUS,
                        maxworkertasks=1000):
-    '''
-    This applies TFA in parallel to all LCs in lcdir.
+    '''This applies TFA in parallel to all LCs in lcdir.
+
+    lcfileglob is the glob to use to find the target light curves in lcdir. If
+    this is None, the default fileglob provided in the LC format registration in
+    lcproc.LCFORM will be used instead.
 
     '''
 
