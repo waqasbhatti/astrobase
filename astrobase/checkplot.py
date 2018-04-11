@@ -2949,6 +2949,11 @@ def checkplot_dict(lspinfolist,
                        'adding a randomly generated objectid')
         objectinfo = {'objectid':objuuid}
 
+    # special for HAT stuff, eventually we should add objectid to
+    # lcd['objectinfo'] there as well
+    elif (isinstance(objectinfo, dict) and 'hatid' in objectinfo):
+        objectinfo['objectid'] = objectinfo['hatid']
+
     elif ((isinstance(objectinfo, dict) and 'objectid' not in objectinfo) or
           (isinstance(objectinfo, dict) and 'objectid' in objectinfo and
            (objectinfo['objectid'] is None or objectinfo['objectid'] == ''))):
@@ -2956,6 +2961,7 @@ def checkplot_dict(lspinfolist,
             LOGWARNING('adding a randomly generated objectid '
                        'since none was provided in objectinfo dict')
         objectinfo['objectid'] = objuuid
+
 
 
     # 0. get the objectinfo and finder chart and initialize the checkplotdict
