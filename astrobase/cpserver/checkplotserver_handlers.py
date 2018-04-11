@@ -13,19 +13,14 @@ These are Tornado handlers for serving checkplots and operating on them.
 ####################
 
 import os
-import sys
 import os.path
-import gzip
 try:
     import cPickle as pickle
 except:
     import pickle
 import base64
-import hashlib
 import logging
 from datetime import time
-import time
-from functools import reduce, partial
 
 try:
     from cStringIO import StringIO as strio
@@ -735,88 +730,115 @@ class CheckplotHandler(tornado.web.RequestHandler):
                     periodogram = cpdict[key]['periodogram']
 
                     # get the phased LC with best period
-                    phasedlc0plot = cpdict[key][0]['plot']
+                    if 0 in cpdict[key] and isinstance(cpdict[key][0], dict):
+                        phasedlc0plot = cpdict[key][0]['plot']
+                        phasedlc0period = float(cpdict[key][0]['period'])
+                        phasedlc0epoch = float(cpdict[key][0]['epoch'])
+                    else:
+                        phasedlc0plot = None
+                        phasedlc0period = None
+                        phasedlc0epoch = None
 
                     # get the associated fitinfo for this period if it
                     # exists
-                    if ('lcfit' in cpdict[key][0] and
+                    if (0 in cpdict[key] and
+                        isinstance(cpdict[key][0], dict) and
+                        'lcfit' in cpdict[key][0] and
                         isinstance(cpdict[key][0]['lcfit'], dict)):
                         phasedlc0fit = {
                             'method':(
                                 cpdict[key][0]['lcfit']['fittype']
-                                ),
+                            ),
                             'redchisq':(
                                 cpdict[key][0]['lcfit']['fitredchisq']
-                                ),
+                            ),
                             'chisq':(
                                 cpdict[key][0]['lcfit']['fitchisq']
-                                ),
+                            ),
                             'params':(
                                 cpdict[key][0][
                                     'lcfit'
                                 ]['fitinfo']['finalparams'] if
                                 'finalparams' in
                                 cpdict[key][0]['lcfit']['fitinfo'] else None
-                                )
-                            }
+                            )
+                        }
                     else:
                         phasedlc0fit = None
 
 
                     # get the phased LC with 2nd best period
-                    phasedlc1plot = cpdict[key][1]['plot']
+                    if 1 in cpdict[key] and isinstance(cpdict[key][1], dict):
+                        phasedlc1plot = cpdict[key][1]['plot']
+                        phasedlc1period = float(cpdict[key][1]['period'])
+                        phasedlc1epoch = float(cpdict[key][1]['epoch'])
+                    else:
+                        phasedlc1plot = None
+                        phasedlc1period = None
+                        phasedlc1epoch = None
 
                     # get the associated fitinfo for this period if it
                     # exists
-                    if ('lcfit' in cpdict[key][1] and
+                    if (1 in cpdict[key] and
+                        isinstance(cpdict[key][1], dict) and
+                        'lcfit' in cpdict[key][1] and
                         isinstance(cpdict[key][1]['lcfit'], dict)):
                         phasedlc1fit = {
                             'method':(
                                 cpdict[key][1]['lcfit']['fittype']
-                                ),
+                            ),
                             'redchisq':(
                                 cpdict[key][1]['lcfit']['fitredchisq']
-                                ),
+                            ),
                             'chisq':(
                                 cpdict[key][1]['lcfit']['fitchisq']
-                                ),
+                            ),
                             'params':(
                                 cpdict[key][1][
                                     'lcfit'
                                 ]['fitinfo']['finalparams'] if
                                 'finalparams' in
                                 cpdict[key][1]['lcfit']['fitinfo'] else None
-                                )
-                            }
+                            )
+                        }
                     else:
                         phasedlc1fit = None
 
 
                     # get the phased LC with 3rd best period
-                    phasedlc2plot = cpdict[key][2]['plot']
+                    if 2 in cpdict[key] and isinstance(cpdict[key][2], dict):
+                        phasedlc2plot = cpdict[key][2]['plot']
+                        phasedlc2period = float(cpdict[key][2]['period'])
+                        phasedlc2epoch = float(cpdict[key][2]['epoch'])
+                    else:
+                        phasedlc2plot = None
+                        phasedlc2period = None
+                        phasedlc2epoch = None
 
                     # get the associated fitinfo for this period if it
                     # exists
-                    if ('lcfit' in cpdict[key][2] and
+                    if (2 in cpdict[key] and
+                        isinstance(cpdict[key][2], dict) and
+                        'lcfit' in cpdict[key][2] and
                         isinstance(cpdict[key][2]['lcfit'], dict)):
                         phasedlc2fit = {
                             'method':(
                                 cpdict[key][2]['lcfit']['fittype']
-                                ),
+                            ),
                             'redchisq':(
                                 cpdict[key][2]['lcfit']['fitredchisq']
-                                ),
+                            ),
                             'chisq':(
                                 cpdict[key][2]['lcfit']['fitchisq']
-                                ),
+                            ),
                             'params':(
                                 cpdict[key][2][
                                     'lcfit'
                                 ]['fitinfo']['finalparams'] if
                                 'finalparams' in
                                 cpdict[key][2]['lcfit']['fitinfo'] else None
-                                )
-                            }
+                            )
+                        }
                     else:
                         phasedlc2fit = None
 
@@ -826,20 +848,20 @@ class CheckplotHandler(tornado.web.RequestHandler):
                         'bestperiod':cpdict[key]['bestperiod'],
                         'phasedlc0':{
                             'plot':phasedlc0plot,
-                            'period':float(cpdict[key][0]['period']),
-                            'epoch':float(cpdict[key][0]['epoch']),
+                            'period':phasedlc0period,
+                            'epoch':phasedlc0epoch,
                             'lcfit':phasedlc0fit,
                         },
                         'phasedlc1':{
                             'plot':phasedlc1plot,
-                            'period':float(cpdict[key][1]['period']),
-                            'epoch':float(cpdict[key][1]['epoch']),
+                            'period':phasedlc1period,
+                            'epoch':phasedlc1epoch,
                             'lcfit':phasedlc1fit,
                         },
                         'phasedlc2':{
                             'plot':phasedlc2plot,
-                            'period':float(cpdict[key][2]['period']),
-                            'epoch':float(cpdict[key][2]['epoch']),
+                            'period':phasedlc2period,
+                            'epoch':phasedlc2epoch,
                             'lcfit':phasedlc2fit,
                         },
                     }

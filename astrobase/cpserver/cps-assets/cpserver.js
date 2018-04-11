@@ -1310,7 +1310,8 @@ var cpv = {
 
                     for (let periodind of periodindexes) {
 
-                        if (periodind in cpv.currcp[lspmethod]) {
+                        if (periodind in cpv.currcp[lspmethod] &&
+                            cpv.currcp[lspmethod][periodind].period != null) {
 
                             var phasedlcrow =
                                 '<a href="#" class="phasedlc-select" ' +
@@ -1576,13 +1577,17 @@ var cpv = {
             var nli = 0;
             for (nli; nli < lspmethods.length; nli++) {
 
-                var thisnphased =
-                    '<div class="col-sm-' + nbrcolw + ' mx-0 px-0">' +
-                    '<img src="data:image/png;base64,' +
-                    cpv.currcp[lspmethods[nli]]['phasedlc0']['plot'] +
-                    '" class="img-fluid zoomable-tile">' +
-                    '</div>';
-                rowplots.push(thisnphased);
+                if (cpv.currcp[lspmethods[nli]]['phasedlc0']['plot'] != null) {
+
+                    var thisnphased =
+                        '<div class="col-sm-' + nbrcolw + ' mx-0 px-0">' +
+                        '<img src="data:image/png;base64,' +
+                        cpv.currcp[lspmethods[nli]]['phasedlc0']['plot'] +
+                        '" class="img-fluid zoomable-tile">' +
+                        '</div>';
+                    rowplots.push(thisnphased);
+
+                }
 
             }
 
