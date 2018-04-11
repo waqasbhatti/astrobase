@@ -140,6 +140,7 @@ RETURN_FORMATS = {
 
 
 def tap_query(querystr,
+              tapurl=TAP_URL,
               returnformat='csv',
               forcefetch=False,
               cachedir='~/.astrobase/gaia-cache',
@@ -399,6 +400,7 @@ def tap_query(querystr,
 def objectlist_conesearch(racenter,
                           declcenter,
                           searchradiusarcsec,
+                          tapurl=TAP_URL,
                           table='gaiadr1.gaia_source',
                           columns=['source_id',
                                    'ra','dec',
@@ -455,6 +457,7 @@ def objectlist_conesearch(racenter,
                                    columns=', '.join(columns))
 
     return tap_query(formatted_query,
+                     tapurl=tapurl,
                      returnformat=returnformat,
                      forcefetch=forcefetch,
                      cachedir=cachedir,
@@ -466,6 +469,7 @@ def objectlist_conesearch(racenter,
 
 
 def objectlist_radeclbox(radeclbox,
+                         tapurl=TAP_URL,
                          table='gaiadr1.gaia_source',
                          columns=['source_id',
                                   'ra','dec',
@@ -524,6 +528,7 @@ def objectlist_radeclbox(radeclbox,
                                    decl_height=decl_height)
 
     return tap_query(formatted_query,
+                     tapurl=tapurl,
                      returnformat=returnformat,
                      forcefetch=forcefetch,
                      cachedir=cachedir,
