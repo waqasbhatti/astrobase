@@ -190,7 +190,7 @@ def tap_query(querystr,
         os.makedirs(cachedir)
 
     # generate the cachefname and look for it
-    cachekey = [repr(inputparams(x)) for x in sorted(inputparams.keys)]
+    cachekey = [repr(inputparams(x)) for x in sorted(inputparams.keys())]
     cachekey = hashlib.sha256(cachekey.encode()).hexdigest()
     cachefname = os.path.join(
         cachedir,
