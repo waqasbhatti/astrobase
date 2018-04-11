@@ -442,11 +442,13 @@ def objectlist_conesearch(racenter,
         "select {columns}, "
         "(DISTANCE(POINT('ICRS', "
         "{table}.ra, {table}.dec), "
-        "POINT('ICRS', {ra_center}, {decl_center})))*3600.0 AS dist_arcsec "
+        "POINT('ICRS', {ra_center:.5f}, {decl_center:.5f})))*3600.0 "
+        "AS dist_arcsec "
         "from {table} where "
         "CONTAINS(POINT('ICRS',{table}.ra,"
         "{table}.dec),"
-        "CIRCLE('ICRS',{ra_center},{decl_center},{search_radius}))=1 "
+        "CIRCLE('ICRS',{ra_center:.5f},{decl_center:.5f},"
+        "{search_radius:.6f}))=1 "
         "ORDER by dist_arcsec asc "
     )
 
@@ -511,7 +513,8 @@ def objectlist_radeclbox(radeclbox,
     query = (
         "select {columns} from {table} where "
         "CONTAINS(POINT('ICRS',{table}.ra, {table}.dec),"
-        "BOX('ICRS',{ra_center},{decl_center},{ra_width},{decl_height}))=1"
+        "BOX('ICRS',{ra_center:.5f},{decl_center:.5f},"
+        "{ra_width:.5f},{decl_height:.5f}))=1"
     )
 
     ra_min, ra_max, decl_min, decl_max = radeclbox
