@@ -358,7 +358,7 @@ def tap_query(querystr,
 
         except requests.exceptions.HTTPError as e:
             LOGEXCEPTION('GAIA TAP query failed, request status was: '
-                         '%s' % resp_status)
+                         '%s, query was: %s' % (resp_status, repr(inputparams)))
             return None
 
 
