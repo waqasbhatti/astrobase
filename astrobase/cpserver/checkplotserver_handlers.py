@@ -20,8 +20,6 @@ except:
     import pickle
 import base64
 import logging
-from datetime import time
-
 import time as utime
 
 try:
