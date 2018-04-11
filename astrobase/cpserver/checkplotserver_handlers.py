@@ -22,6 +22,8 @@ import base64
 import logging
 from datetime import time
 
+import time as utime
+
 try:
     from cStringIO import StringIO as strio
 except:
@@ -982,7 +984,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                               'message':'checkplot update successful',
                               'readonly':self.readonly,
                               'result':{'checkplot':updated,
-                                        'unixtime':time.time(),
+                                        'unixtime':utime.time(),
                                         'changes':cpcontents,
                                         'cpfpng': None}}
 
