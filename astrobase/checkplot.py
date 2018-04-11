@@ -3393,41 +3393,6 @@ def checkplot_pickle(lspinfolist,
 
     '''
 
-    if outgzip:
-
-        # generate the outfile filename
-        if not outfile and isinstance(lspinfolist[0],str):
-            plotfpath = os.path.join(
-                os.path.dirname(lspinfolist[0]),
-                'checkplot-%s.pkl.gz' % (
-                    os.path.basename(
-                        lspinfolist[0].replace('.pkl','').replace('.gz','')
-                    )
-                )
-            )
-        elif outfile:
-            plotfpath = outfile
-        else:
-            plotfpath = 'checkplot.pkl.gz'
-
-    else:
-
-        # generate the outfile filename
-        if not outfile and isinstance(lspinfolist[0],str):
-            plotfpath = os.path.join(
-                os.path.dirname(lspinfolist[0]),
-                'checkplot-%s.pkl' % (
-                    os.path.basename(
-                        lspinfolist[0].replace('.pkl','').replace('.gz','')
-                    )
-                )
-            )
-        elif outfile:
-            plotfpath = outfile
-        else:
-            plotfpath = 'checkplot.pkl'
-
-
     # call checkplot_dict for most of the work
     checkplotdict = checkplot_dict(
         lspinfolist,
@@ -3486,6 +3451,37 @@ def checkplot_pickle(lspinfolist,
     # protocol. this will be readable by all (most?) Pythons
     elif not pickleprotocol:
         pickleprotocol = 0
+
+
+    # generate the output file path
+    if outgzip:
+
+        # generate the outfile filename
+        if (not outfile and
+            len(lspinfolist) > 0 and
+            isinstance(lspinfolist[0], str)):
+            plotfpath = os.path.join(os.path.dirname(lspinfolist[0]),
+                                     'checkplot-%s.pkl.gz' %
+                                     checkplotdict['objectid'])
+        elif outfile:
+            plotfpath = outfile
+        else:
+            plotfpath = 'checkplot.pkl.gz'
+
+    else:
+
+        # generate the outfile filename
+        if (not outfile and
+            len(lspinfolist) > 0 and
+            isinstance(lspinfolist[0], str)):
+            plotfpath = os.path.join(os.path.dirname(lspinfolist[0]),
+                                     'checkplot-%s.pkl' %
+                                     checkplotdict['objectid'])
+        elif outfile:
+            plotfpath = outfile
+        else:
+            plotfpath = 'checkplot.pkl'
+
 
     # write the completed checkplotdict to a gzipped pickle
     picklefname = _write_checkplot_picklefile(checkplotdict,
