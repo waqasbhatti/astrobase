@@ -84,8 +84,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -97,10 +97,6 @@ import os.path
 import gzip
 import hashlib
 import time
-import re
-import json
-
-import numpy as np
 
 # to do the queries
 import requests
@@ -114,13 +110,17 @@ from xml.dom.minidom import parseString
 ## FORM SETTINGS ##
 ###################
 
+# use phasekeyword = 'uws:phase' and resultkeyword = 'uws:result'
 TAP_URL = "http://gea.esac.esa.int/tap-server/tap/async"
 
+# use phasekeyword = 'phase' and resultkeyword = 'result'
 ARI_URL = 'http://gaia.ari.uni-heidelberg.de/tap/async'
 
+# FIXME: get this working
 CDS_TAPURL = "http://tapvizier.u-strasbg.fr/TAPVizieR/tap/"
 CDS_TABLE = '"I/337/gaia"'
 
+# default TAP query params, will be copied and overridden
 TAP_PARAMS = {
     'REQUEST':'doQuery',
     'LANG':'ADQL',
@@ -131,6 +131,7 @@ TAP_PARAMS = {
     'QUERY':''
 }
 
+# valid return formats
 RETURN_FORMATS = {
     'json':'json.gz',
     'csv':'csv.gz',
