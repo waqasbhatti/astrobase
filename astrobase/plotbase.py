@@ -827,10 +827,10 @@ def fits_finder_chart(
         overlay_ra is not None and
         overlay_decl is not None):
 
-        finder_coordlimits = (overlay_ra.min()-30.0/3600.0,
+        finder_coordlimits = [overlay_ra.min()-30.0/3600.0,
                               overlay_ra.max()+30.0/3600.0,
                               overlay_decl.min()-30.0/3600.0,
-                              overlay_decl.max()+30.0/3600.0)
+                              overlay_decl.max()+30.0/3600.0]
 
 
     # set the coordinate limits if provided
