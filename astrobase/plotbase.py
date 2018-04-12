@@ -898,7 +898,7 @@ def fits_finder_chart(
 
         our_pltopts = dict(
             transform=plt.gca().get_transform('fk5'),
-            Marker='o',
+            marker='o',
             markersize=10.0,
             markerfacecolor='none',
             markeredgewidth=2.0,

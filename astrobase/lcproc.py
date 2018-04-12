@@ -492,6 +492,7 @@ def make_lclist(basedir,
                                'markeredgecolor':'red'},
                 field_grid=False,
                 field_gridcolor='k',
+                field_zoomcontain=True,
                 maxlcs=None,
                 nworkers=NCPUS):
 
@@ -780,6 +781,7 @@ def make_lclist(basedir,
                     overlay_ra=objra,
                     overlay_decl=objdecl,
                     overlay_pltopts=field_pltopts,
+                    overlay_zoomcontain=field_zoomcontain,
                     grid=field_grid,
                     gridcolor=field_gridcolor
                 )
@@ -831,6 +833,7 @@ def filter_lclist(listpickle,
                                  'markeredgecolor':'red'},
                   field_grid=False,
                   field_gridcolor='k',
+                  field_zoomcontain=True,
                   copylcsto=None):
 
     '''This is used to collect light curves based on selection criteria.
@@ -1159,6 +1162,7 @@ def filter_lclist(listpickle,
             overlay_ra=matching_ra,
             overlay_decl=matching_decl,
             overlay_pltopts=field_pltopts,
+            field_zoomcontain=field_zoomcontain,
             grid=field_grid,
             gridcolor=field_gridcolor
         )
