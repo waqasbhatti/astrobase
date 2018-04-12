@@ -116,6 +116,8 @@ from xml.dom.minidom import parseString
 
 TAP_URL = "http://gea.esac.esa.int/tap-server/tap/async"
 
+ARI_URL = 'http://gaia.ari.uni-heidelberg.de/tap/async'
+
 CDS_TAPURL = "http://tapvizier.u-strasbg.fr/TAPVizieR/tap/"
 CDS_TABLE = '"I/337/gaia"'
 
@@ -143,6 +145,8 @@ RETURN_FORMATS = {
 
 def tap_query(querystr,
               tapurl=TAP_URL,
+              phasekeyword='uws:phase',
+              resultkeyword='uws:result',
               returnformat='csv',
               forcefetch=False,
               cachedir='~/.astrobase/gaia-cache',
@@ -233,7 +237,22 @@ def tap_query(querystr,
 
             # parse the response XML and get the job status
             resxml = parseString(req.text)
-            jobstatuselem = resxml.getElementsByTagName('uws:phase')[0]
+
+
+            jobstatuselem = resxml.getElementsByTagName(phasekeyword)
+
+            if jobstatuselem:
+
+                jobstatuselem = jobstatuselem[0]
+
+            else:
+                LOGERROR('could not parse job phase using '
+                         'keyword %s in result XML' % phasekeyword)
+                LOGERROR('%s' % req.txt)
+
+                req.close()
+                return None
+
             jobstatus = jobstatuselem.firstChild.toxml()
 
             # if the job completed already, jump down to retrieving results
@@ -290,7 +309,7 @@ def tap_query(querystr,
                         resxml = parseString(resreq.text)
 
                         jobstatuselem = (
-                            resxml.getElementsByTagName('uws:phase')[0]
+                            resxml.getElementsByTagName(phasekeyword)[0]
                         )
                         jobstatus = jobstatuselem.firstChild.toxml()
 
@@ -323,7 +342,7 @@ def tap_query(querystr,
             #
             # at this point, we should be ready to get the query results
             #
-            result_url_elem = resxml.getElementsByTagName('uws:result')[0]
+            result_url_elem = resxml.getElementsByTagName(resultkeyword)[0]
             result_url = result_url_elem.getAttribute('xlink:href')
             result_nrows = result_url_elem.getAttribute('rows')
 
@@ -374,6 +393,10 @@ def tap_query(querystr,
         except Exception as e:
             LOGEXCEPTION('GAIA TAP query request failed for '
                          '%s' % repr(inputparams))
+
+            if 'resxml' in locals():
+                LOGERROR('HTTP response from service:\n%s' % req.text)
+
             return None
 
     else:
@@ -404,6 +427,8 @@ def objectlist_conesearch(racenter,
                           declcenter,
                           searchradiusarcsec,
                           tapurl=TAP_URL,
+                          phasekeyword='uws:phase',
+                          resultkeyword='uws:result',
                           table='gaiadr1.gaia_source',
                           columns=['source_id',
                                    'ra','dec',
@@ -463,6 +488,8 @@ def objectlist_conesearch(racenter,
 
     return tap_query(formatted_query,
                      tapurl=tapurl,
+                     phasekeyword=phasekeyword,
+                     resultkeyword=resultkeyword,
                      returnformat=returnformat,
                      forcefetch=forcefetch,
                      cachedir=cachedir,
@@ -475,6 +502,8 @@ def objectlist_conesearch(racenter,
 
 def objectlist_radeclbox(radeclbox,
                          tapurl=TAP_URL,
+                         phasekeyword='uws:phase',
+                         resultkeyword='uws:result',
                          table='gaiadr1.gaia_source',
                          columns=['source_id',
                                   'ra','dec',
@@ -535,6 +564,8 @@ def objectlist_radeclbox(radeclbox,
 
     return tap_query(formatted_query,
                      tapurl=tapurl,
+                     resultkeyword=resultkeyword,
+                     phasekeyword=phasekeyword,
                      returnformat=returnformat,
                      forcefetch=forcefetch,
                      cachedir=cachedir,
