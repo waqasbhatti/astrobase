@@ -116,6 +116,8 @@ from xml.dom.minidom import parseString
 
 TAP_URL = "http://gea.esac.esa.int/tap-server/tap/async"
 
+CDS_TAPURL = "http://tapvizier.u-strasbg.fr/TAPVizieR/tap/"
+CDS_TABLE = '"I/337/gaia"'
 
 TAP_PARAMS = {
     'REQUEST':'doQuery',
@@ -219,7 +221,7 @@ def tap_query(querystr,
             timeelapsed = 0.0
 
             # send the query and get status
-            req = requests.post(TAP_URL, data=inputparams, timeout=timeout)
+            req = requests.post(tapurl, data=inputparams, timeout=timeout)
             resp_status = req.status_code
             req.raise_for_status()
 
