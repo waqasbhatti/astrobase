@@ -717,6 +717,7 @@ def fits_finder_chart(
         stretch=LinearStretch(),
         colormap=plt.cm.gray_r,
         findersize=None,
+        finder_coordlimits=None,
         overlay_ra=None,
         overlay_decl=None,
         overlay_pltopts={'marker':'o',
@@ -724,6 +725,7 @@ def fits_finder_chart(
                          'markerfacecolor':'none',
                          'markeredgewidth':2.0,
                          'markeredgecolor':'red'},
+        overlay_zoomcontain=False,
         grid=False,
         gridcolor='k',
 ):
@@ -802,7 +804,6 @@ def fits_finder_chart(
                  fitsfile)
         return None
 
-
     # use the frame shape to set the output PNG's dimensions
     if findersize is None:
         fig = plt.figure(figsize=(frameshape[0]/100.0,
@@ -811,6 +812,42 @@ def fits_finder_chart(
         fig = plt.figure(figsize=findersize)
 
 
+    # set the coordinate limits if provided
+    if finder_coordlimits and isinstance(finder_coordlimits, list):
+
+        minra, maxra, mindecl, maxdecl = finder_coordlimits
+        cntra, cntdecl = (minra + maxra)/2.0, (mindecl + maxdecl)/2.0
+
+        pixelcoords = w.all_world2pix([[minra, mindecl],
+                                       [maxra, maxdecl],
+                                       [cntra, cntdecl]],1)
+        x1, y1, x2, y2 = (int(pixelcoords[0,0]),
+                          int(pixelcoords[0,1]),
+                          int(pixelcoords[1,0]),
+                          int(pixelcoords[1,1]))
+
+        xmin = x1 if x1 < x2 else x2
+        xmax = x2 if x2 > x1 else x1
+
+        ymin = y1 if y1 < y2 else y2
+        ymax = y2 if y2 > y1 else y1
+
+        # create a new WCS with the same transform but new center coordinates
+        whdr = w.to_header()
+        whdr['CRPIX1'] = (xmax - xmin)/2
+        whdr['CRPIX2'] = (ymax - ymin)/2
+        whdr['CRVAL1'] = cntra
+        whdr['CRVAL2'] = cntdecl
+        whdr['NAXIS1'] = xmax - xmin
+        whdr['NAXIS2'] = ymax - ymin
+        w = WCS(whdr)
+
+    else:
+        xmin, xmax, ymin, ymax = 0, hdr['NAXIS2'], 0, hdr['NAXIS1']
+
+    # add the axes with the WCS projection
+    # this should automatically handle subimages because we fix the WCS
+    # appropriately above for these
     fig.add_subplot(111,projection=w)
 
     if scale is not None and stretch is not None:
@@ -819,14 +856,14 @@ def fits_finder_chart(
                               interval=scale,
                               stretch=stretch)
 
-        plt.imshow(img,
+        plt.imshow(img[ymin:ymax,xmin:xmax],
                    origin='lower',
                    cmap=colormap,
                    norm=norm)
 
     else:
 
-        plt.imshow(img,
+        plt.imshow(img[ymin:ymax,xmin:xmax],
                    origin='lower',
                    cmap=colormap)
 
@@ -835,13 +872,12 @@ def fits_finder_chart(
     if grid:
         plt.grid(color=gridcolor,ls='solid',lw=1.0)
 
-
     # handle the object overlay
     if overlay_ra is not None and overlay_decl is not None:
 
         our_pltopts = dict(
             transform=plt.gca().get_transform('fk5'),
-            marker='o',
+            Marker='o',
             markersize=10.0,
             markerfacecolor='none',
             markeredgewidth=2.0,
@@ -855,13 +891,25 @@ def fits_finder_chart(
 
 
         plt.gca().set_autoscale_on(False)
-        plt.gca().plot(overlay_ra,
-                       overlay_decl,
+        plt.gca().plot(overlay_ra, overlay_decl,
                        **our_pltopts)
 
     plt.xlabel('Right Ascension [deg]')
     plt.ylabel('Declination [deg]')
 
+    # get the x and y axes objects to fix the ticks
+    xax = plt.gca().coords[0]
+    yax = plt.gca().coords[1]
+
+    yax.set_major_formatter('d.ddd')
+    xax.set_major_formatter('d.ddd')
+    # xax.set_separator(('h',"'",'"'))
+
+
+
+
+
+    # save the figure
     plt.savefig(outfile, dpi=100.0)
     plt.close('all')
 
