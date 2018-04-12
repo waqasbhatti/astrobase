@@ -760,11 +760,20 @@ def fits_finder_chart(
     must be a tuple with the intended x and y size of the image in inches (all
     output images will use a DPI = 100).
 
+    `finder_coordlimits` sets x and y limits for the plot, effectively zooming
+    it in if these are smaller than the dimensions of the FITS image. This
+    should be a list of the form: [minra, maxra, mindecl, maxdecl] all in
+    decimal degrees.
+
     `overlay_ra` and `overlay_decl` are ndarrays containing the RA and Dec
     values to overplot on the image as an overlay.
 
     `overlay_pltopts` controls how the overlay points will be plotted. This a
     dict with standard matplotlib marker, etc. kwargs.
+
+    `overlay_zoomcontain` controls if the finder chart will be zoomed to just
+    contain the overlayed points. Everything outside the footprint of these
+    points will be discarded.
 
     `grid` sets if a grid will be made on the output image.
 
@@ -810,6 +819,18 @@ def fits_finder_chart(
                                   frameshape[1]/100.0))
     else:
         fig = plt.figure(figsize=findersize)
+
+
+    # set the coord limits if zoomcontain is True
+    # we'll leave 30 arcseconds of padding on each side
+    if (overlay_zoomcontain and
+        overlay_ra is not None and
+        overlay_decl is not None):
+
+        finder_coordlimits = (overlay_ra.min()-30.0/3600.0,
+                              overlay_ra.max()+30.0/3600.0,
+                              overlay_decl.min()-30.0/3600.0,
+                              overlay_decl.max()+30.0/3600.0)
 
 
     # set the coordinate limits if provided
@@ -903,11 +924,6 @@ def fits_finder_chart(
 
     yax.set_major_formatter('d.ddd')
     xax.set_major_formatter('d.ddd')
-    # xax.set_separator(('h',"'",'"'))
-
-
-
-
 
     # save the figure
     plt.savefig(outfile, dpi=100.0)
