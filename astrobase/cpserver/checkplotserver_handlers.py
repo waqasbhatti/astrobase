@@ -1073,7 +1073,7 @@ class CheckplotListHandler(tornado.web.RequestHandler):
 
         # add the reviewed key to the current dict if it doesn't exist
         # this will hold all the reviewed objects for the frontend
-        if not 'reviewed' in self.currentproject:
+        if 'reviewed' not in self.currentproject:
             self.currentproject['reviewed'] = {}
 
         # just returns the current project as JSON

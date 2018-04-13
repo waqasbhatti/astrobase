@@ -346,10 +346,10 @@ var cptracker = {
         var saveinfo = {checkplot: cpv.currfile,
                         varinfo: cpv.currcp.varinfo,
                         objectinfo: cpv.currcp.objectinfo,
-                        comments: cpv.currcp.comments}
+                        comments: cpv.currcp.objectcomments};
 
         var postmsg = {objectid: cpv.currcp.objectid,
-                       changes: JSON.stringify(saveinfo)}
+                       changes: JSON.stringify(saveinfo)};
 
 
         if (cpv.readonlymode) {
