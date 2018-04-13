@@ -98,6 +98,8 @@ import gzip
 import hashlib
 import time
 
+import random
+
 # to do the queries
 import requests
 import requests.exceptions
@@ -109,6 +111,21 @@ from xml.dom.minidom import parseString
 ###################
 ## FORM SETTINGS ##
 ###################
+
+GAIA_URLS = {
+    'gaia':{'url':"http://gea.esac.esa.int/tap-server/tap/async",
+            'table':'gaia.gaiadr1',
+            'phasekeyword':'uws:phase',
+            'resultkeyword':'uws:result'},
+    'heidelberg':{'url':"http://gaia.ari.uni-heidelberg.de/tap/async",
+                  'table':'gaia.gaiadr1',
+                  'phasekeyword':'phase',
+                  'resultkeyword':'result'},
+    # 'vizier':{'url':"http://tapvizier.u-strasbg.fr/TAPVizieR/tap/",
+    #           'table':'"I/337/gaia"',
+    #           'phasekeyword':'phase',
+    #           'resultkeyword':'result'},
+}
 
 # use phasekeyword = 'uws:phase' and resultkeyword = 'uws:result'
 TAP_URL = "http://gea.esac.esa.int/tap-server/tap/async"
@@ -145,9 +162,7 @@ RETURN_FORMATS = {
 
 
 def tap_query(querystr,
-              tapurl=TAP_URL,
-              phasekeyword='uws:phase',
-              resultkeyword='uws:result',
+              gaia_mirror=None,
               returnformat='csv',
               forcefetch=False,
               cachedir='~/.astrobase/gaia-cache',
@@ -160,6 +175,9 @@ def tap_query(querystr,
     querystr is an ADQL query. See: http://www.ivoa.net/documents/ADQL/2.0 for
     the specification and http://gea.esac.esa.int/archive-help/adql/index.html
     for GAIA-specific additions.
+
+    gaia_mirror is a string key from the GAIA_URLS dict above. If set, the
+    specified mirror will be used. If unset, a random mirror will be used.
 
     returnformat is one of 'csv', 'votable', or 'json'.
 
@@ -225,10 +243,48 @@ def tap_query(querystr,
             waitdone = False
             timeelapsed = 0.0
 
+            # set the gaia mirror to use
+            if gaia_mirror is not None:
+                tapurl = GAIA_URLS[gaia_mirror]['url']
+                resultkeyword = GAIA_URLS[gaia_mirror]['resultkeyword']
+                phasekeyword = GAIA_URLS[gaia_mirror]['phasekeyword']
+            else:
+                randkey = random.choice(list(GAIA_URLS.keys()))
+                tapurl = GAIA_URLS[randkey]['url']
+                resultkeyword = GAIA_URLS[randkey]['resultkeyword']
+                phasekeyword = GAIA_URLS[randkey]['phasekeyword']
+                if verbose:
+                    LOGINFO('using GAIA mirror TAP URL: %s' % tapurl)
+
             # send the query and get status
-            req = requests.post(tapurl, data=inputparams, timeout=timeout)
-            resp_status = req.status_code
-            req.raise_for_status()
+
+            # here, we'll make sure the GAIA mirror works before doing anything
+            # else
+            mirrorok = False
+
+            while not mirrorok:
+
+                try:
+
+                    req = requests.post(tapurl,
+                                        data=inputparams,
+                                        timeout=timeout)
+                    resp_status = req.status_code
+                    req.raise_for_status()
+
+                    mirrorok = True
+
+                except requests.exceptions.HTTPError as e:
+
+                    LOGWARNING(
+                        'GAIA TAP server: %s not responding, trying another...'
+                        % tapurl
+                    )
+                    mirrorok = False
+                    randkey = random.choice(list(GAIA_URLS.keys()))
+                    tapurl = GAIA_URLS[randkey]['url']
+                    resultkeyword = GAIA_URLS[randkey]['resultkeyword']
+                    phasekeyword = GAIA_URLS[randkey]['phasekeyword']
 
             # NOTE: python-requests follows the "303 See Other" redirect
             # automatically, so we get the XML status doc immediately. We don't
@@ -427,9 +483,7 @@ def tap_query(querystr,
 def objectlist_conesearch(racenter,
                           declcenter,
                           searchradiusarcsec,
-                          tapurl=TAP_URL,
-                          phasekeyword='uws:phase',
-                          resultkeyword='uws:result',
+                          gaia_mirror=None,
                           table='gaiadr1.gaia_source',
                           columns=['source_id',
                                    'ra','dec',
@@ -488,9 +542,7 @@ def objectlist_conesearch(racenter,
                                    columns=', '.join(columns))
 
     return tap_query(formatted_query,
-                     tapurl=tapurl,
-                     phasekeyword=phasekeyword,
-                     resultkeyword=resultkeyword,
+                     gaia_mirror=gaia_mirror,
                      returnformat=returnformat,
                      forcefetch=forcefetch,
                      cachedir=cachedir,
@@ -502,9 +554,7 @@ def objectlist_conesearch(racenter,
 
 
 def objectlist_radeclbox(radeclbox,
-                         tapurl=TAP_URL,
-                         phasekeyword='uws:phase',
-                         resultkeyword='uws:result',
+                         gaia_mirror=None,
                          table='gaiadr1.gaia_source',
                          columns=['source_id',
                                   'ra','dec',
@@ -564,9 +614,7 @@ def objectlist_radeclbox(radeclbox,
                                    decl_height=decl_height)
 
     return tap_query(formatted_query,
-                     tapurl=tapurl,
-                     resultkeyword=resultkeyword,
-                     phasekeyword=phasekeyword,
+                     gaia_mirror=gaia_mirror,
                      returnformat=returnformat,
                      forcefetch=forcefetch,
                      cachedir=cachedir,
