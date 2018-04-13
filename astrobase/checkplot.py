@@ -1525,9 +1525,15 @@ def _pkl_finder_objectinfo(objectinfo,
             #
             ax.set_xticks([])
             ax.set_yticks([])
-            # grid lines pointing to the center of the frame
-            ax.axvline(x=150,ymin=0.375,ymax=0.45,linewidth=2.0,color='b')
-            ax.axhline(y=150,xmin=0.375,xmax=0.45,linewidth=2.0,color='b')
+
+            # add a reticle pointing to the object's coordinates
+            object_pixcoords = finderwcs.all_world2pix([[objectinfo['ra'],
+                                                         objectinfo['decl']]],1)
+
+            ax.axvline(x=object_pixcoords[0,0],
+                       ymin=0.375,ymax=0.45,linewidth=2.0,color='b')
+            ax.axhline(y=object_pixcoords[0,1],
+                       xmin=0.375,xmax=0.45,linewidth=2.0,color='b')
             ax.set_frame_on(False)
 
             # this is the output instance
