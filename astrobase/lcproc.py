@@ -149,6 +149,7 @@ from astrobase.magnitudes import jhk_to_sdssr
 
 from astrobase.varbase.trends import epd_magseries, smooth_magseries_savgol
 
+from astrobase.cpserver.checkplotlist import checkplot_infokey_worker
 
 ############
 ## CONFIG ##
@@ -460,10 +461,10 @@ def lclist_parallel_worker(task):
 
             ndetcol = dict_get(lcdict, getdk)
             actualndets = ndetcol[np.isfinite(ndetcol)].size
-            lcobjdict['ndet_%s' % getdk[-1]] = actualndets
+            lcobjdict['%s.ndet' % getdk[-1]] = actualndets
 
         except:
-            lcobjdict['ndet_%s' % getdk[-1]] = np.nan
+            lcobjdict['%s.ndet' % getdk[-1]] = np.nan
 
 
     return lcobjdict
@@ -654,7 +655,7 @@ def make_lclist(basedir,
 
         # columns that will always be present in the output lclistdict
         derefcols = ['lcfname']
-        derefcols.extend(['ndet_%s' % x.split('.')[-1] for x in lcndetkey])
+        derefcols.extend(['%s.ndet' % x.split('.')[-1] for x in lcndetkey])
 
         for dc in derefcols:
             lclistdict['objects'][dc] = []
@@ -4488,7 +4489,6 @@ def xmatch_cpdir_external_catalogs(cpdir,
 
 
 
-
 CMD_LABELS = {
     'umag':'U',
     'bmag':'B',
@@ -4802,6 +4802,125 @@ def add_cmds_cpdir(cpdir, cmdpkl,
 
 
 
+############################################################
+## ADDING CHECKPLOT INFO BACK TO THE LIGHT CURVE CATALOGS ##
+############################################################
+
+def add_checkplot_info_to_lclist(
+        checkplots,  # list or a directory path
+        lclistpkl,
+        magcol,  # to indicate checkplot magcol
+        outfile,
+        checkplotglob='checkplot*.pkl',
+        infokeys=['comments',
+                  'objecttags',
+                  'varinfo.vartags',
+                  'varinfo.varperiod',
+                  'varinfo.varepoch',
+                  'varinfo.varisperiodic'],
+        nworkers=NCPUS
+):
+    '''This adds checkplot info to the light curve catalogs from make_lclist.
+
+    lclistpkl is the pickle made by make_lclist.
+
+    magcol is the LC magnitude column being used in the checkplots' feature
+    keys. This will be added as a prefix to the infokeys.
+
+    checkplots is either a list of checkplot pickles to process or a string
+    indicating a checkplot directory path to process.
+
+    outfile is the pickle filename to write the augmented lclist pickle to.
+
+    infokeys is a list of keys to extract from each checkplot.
+
+    '''
+
+    # get the checkplots from the directory if one is provided
+    if not isinstance(checkplots, list) and os.path.exists(checkplots):
+        checkplots = sorted(glob.glob(os.path.join(checkplots, checkplotglob)))
+
+    # dereference the keys
+    keystoget = infokeys[::]
+
+    for i, k in enumerate(keystoget):
+
+        thisk = k.split('.')
+        if sys.version_info[:2] < (3,4):
+            thisk = [(int(x) if x.isdigit() else x) for x in thisk]
+        else:
+            thisk = [(int(x) if x.isdecimal() else x) for x in thisk]
+
+        keystoget[i] = thisk
+
+    # set up the key retrieval
+    keystoget.insert(0,['objectid'])
+
+    tasklist = [(cpf, keystoget) for cpf in checkplots]
+
+    with ProcessPoolExecutor(max_workers=nworkers) as executor:
+        resultfutures = executor.map(checkplot_infokey_worker, tasklist)
+
+    results = [x for x in resultfutures]
+    executor.shutdown()
+
+    # now that we have all the checkplot info, we need to match to the
+    # objectlist in the lclist
+
+    # open the lclist
+    with open(lclistpkl,'rb') as infd:
+        objectcatalog = pickle.load(infd)
+
+    catalog_objectids = np.array(objectcatalog['objects']['objectid'])
+    checkplot_objectids = np.array([x[0] for x in results])
+
+    # add the extra key arrays in the lclist dict
+    extrainfokeys = ['%s.%s' % (magcol, x) for x in infokeys]
+    for e in extrainfokeys:
+        objectcatalog['objects'][e] = []
+        objectcatalog['columns'].append(e)
+
+    # now go through each objectid in the catalog and add the extra keys to
+    # their respective arrays
+    for catobj in catalog_objectids:
+
+        cp_objind = np.where(checkplot_objectids == catobj)
+
+        if len(cp_objind[0]) > 0:
+
+            # get the info line for this checkplot
+            thiscpinfo = results[cp_objind[0][0]]
+
+            # the first element is the objectid which we remove
+            thiscpinfo = thiscpinfo[1:]
+
+            # update the object catalog entries for this object
+            for ekind, ek in enumerate(extrainfokeys):
+                objectcatalog['objects'][ek].append(
+                    thiscpinfo[ekind]
+                )
+
+        else:
+
+            # update the object catalog entries for this object
+            for ekind, ek in enumerate(extrainfokeys):
+                objectcatalog['objects'][ek].append(
+                    None
+                )
+
+    # now we should have all the new keys in the object catalog
+    # turn them into arrays
+    for ek in extrainfokeys:
+        objectcatalog['objects'][ek] = np.array(objectcatalog['objects'][ek])
+
+    # write back the new object catalog
+    with open(outfile, 'wb') as outfd:
+        pickle.dump(objectcatalog, outfd, protocol=pickle.HIGHEST_PROTOCOL)
+
+    return outfile
+
+
+
 ##################################
 ## LIGHT CURVE DETRENDING - EPD ##
 ##################################
@@ -4817,6 +4936,7 @@ def apply_epd_magseries(lcfile,
                         epdsmooth_windowsize=21,
                         epdsmooth_func=smooth_magseries_savgol,
                         epdsmooth_extraparams=None):
+
     '''This applies EPD to a light curve.
 
     lcfile is the name of the file to read for times, mags, errs.

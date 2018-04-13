@@ -199,7 +199,7 @@ def dict_get(datadict, keylist):
 
 
 
-def key_worker(task):
+def checkplot_infokey_worker(task):
     '''
     This gets the required keys from the requested file.
 
@@ -476,7 +476,7 @@ def main():
             # launch the key retrieval
             pool = mp.Pool(args.maxkeyworkers)
             tasks = [(x, keystoget) for x in searchresults]
-            keytargets = pool.map(key_worker, tasks)
+            keytargets = pool.map(checkplot_infokey_worker, tasks)
 
             pool.close()
             pool.join()
