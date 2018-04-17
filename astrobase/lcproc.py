@@ -4806,18 +4806,69 @@ def add_cmds_cpdir(cpdir, cmdpkl,
 ## ADDING CHECKPLOT INFO BACK TO THE LIGHT CURVE CATALOGS ##
 ############################################################
 
-def add_checkplot_info_to_lclist(
+def add_cpinfo_to_lclist(
         checkplots,  # list or a directory path
         lclistpkl,
         magcol,  # to indicate checkplot magcol
         outfile,
-        checkplotglob='checkplot*.pkl',
+        checkplotglob='checkplot*.pkl*',
         infokeys=['comments',
-                  'objecttags',
+                  'objectinfo.objecttags',
+                  'objectinfo.twomassid',
+                  'objectinfo.bmag',
+                  'objectinfo.vmag',
+                  'objectinfo.rmag',
+                  'objectinfo.imag',
+                  'objectinfo.jmag',
+                  'objectinfo.hmag',
+                  'objectinfo.kmag',
+                  'objectinfo.sdssu',
+                  'objectinfo.sdssg',
+                  'objectinfo.sdssr',
+                  'objectinfo.sdssi',
+                  'objectinfo.sdssz',
+                  'objectinfo.extinction_bmag',
+                  'objectinfo.extinction_vmag',
+                  'objectinfo.extinction_rmag',
+                  'objectinfo.extinction_imag',
+                  'objectinfo.extinction_jmag',
+                  'objectinfo.extinction_hmag',
+                  'objectinfo.extinction_kmag',
+                  'objectinfo.extinction_sdssu',
+                  'objectinfo.extinction_sdssg',
+                  'objectinfo.extinction_sdssr',
+                  'objectinfo.extinction_sdssi',
+                  'objectinfo.extinction_sdssz',
+                  'objectinfo.color_classes',
+                  'objectinfo.pmra',
+                  'objectinfo.pmdecl',
+                  'objectinfo.propermotion',
+                  'objectinfo.rpmj',
+                  'objectinfo.gl',
+                  'objectinfo.gb',
+                  'objectinfo.gaia_status',
+                  'objectinfo.gaia_ids.0',
+                  'objectinfo.gaiamag',
+                  'objectinfo.gaia_parallax',
+                  'objectinfo.gaia_parallax_err',
+                  'objectinfo.abs_gaiamag',
                   'varinfo.vartags',
                   'varinfo.varperiod',
                   'varinfo.varepoch',
-                  'varinfo.varisperiodic'],
+                  'varinfo.varisperiodic',
+                  'varinfo.objectisvar',
+                  'varinfo.median',
+                  'varinfo.mad',
+                  'varinfo.stdev',
+                  'varinfo.mag_iqr',
+                  'varinfo.skew',
+                  'varinfo.kurtosis',
+                  'varinfo.stetsonj',
+                  'varinfo.stetsonk',
+                  'varinfo.eta_normal',
+                  'varinfo.linear_fit_slope',
+                  'varinfo.magnitude_ratio',
+                  'varinfo.beyond1std'],
         nworkers=NCPUS
 ):
     '''This adds checkplot info to the light curve catalogs from make_lclist.
@@ -4876,9 +4927,27 @@ def add_checkplot_info_to_lclist(
 
     # add the extra key arrays in the lclist dict
     extrainfokeys = ['%s.%s' % (magcol, x) for x in infokeys]
+
     for e in extrainfokeys:
-        objectcatalog['objects'][e] = []
-        objectcatalog['columns'].append(e)
+
+        eactual = e.split('.')
+        # this handles dereferenced list indices
+        if not eactual[-1].isdigit():
+            eactual = '.'.join([eactual[0], eactual[-1]])
+        else:
+            elastkey = eactual[-2]
+
+            # for list columns, this converts stuff like errs -> err,
+            # and parallaxes -> parallax
+            if elastkey.endswith('es'):
+                elastkey = elastkey[:-2]
+            elif elastkey.endswith('s'):
+                elastkey = elastkey[:-1]
+
+            eactual = '.'.join([eactual[0], elastkey])
+
+        objectcatalog['objects'][eactual] = []
+        objectcatalog['columns'].append(eactual)
 
     # now go through each objectid in the catalog and add the extra keys to
     # their respective arrays
@@ -4896,7 +4965,28 @@ def add_checkplot_info_to_lclist(
 
             # update the object catalog entries for this object
             for ekind, ek in enumerate(extrainfokeys):
-                objectcatalog['objects'][ek].append(
+
+                eactual = ek.split('.')
+
+                # this handles dereferenced list indices
+                if not eactual[-1].isdigit():
+
+                    eactual = '.'.join([eactual[0], eactual[-1]])
+
+                else:
+
+                    elastkey = eactual[-2]
+
+                    # for list columns, this converts stuff like errs -> err,
+                    # and parallaxes -> parallax
+                    if elastkey.endswith('es'):
+                        elastkey = elastkey[:-2]
+                    elif elastkey.endswith('s'):
+                        elastkey = elastkey[:-1]
+
+                    eactual = '.'.join([eactual[0], elastkey])
+
+                objectcatalog['objects'][eactual].append(
                     thiscpinfo[ekind]
                 )
 
@@ -4904,14 +4994,50 @@ def add_checkplot_info_to_lclist(
 
             # update the object catalog entries for this object
             for ekind, ek in enumerate(extrainfokeys):
-                objectcatalog['objects'][ek].append(
+
+                eactual = ek.split('.')
+                # this handles dereferenced list indices
+                if not eactual[-1].isdigit():
+                    eactual = '.'.join([eactual[0], eactual[-1]])
+                else:
+                    elastkey = eactual[-2]
+
+                    # for list columns, this converts stuff like errs -> err,
+                    # and parallaxes -> parallax
+                    if elastkey.endswith('es'):
+                        elastkey = elastkey[:-2]
+                    elif elastkey.endswith('s'):
+                        elastkey = elastkey[:-1]
+
+                    eactual = '.'.join([eactual[0], elastkey])
+
+                objectcatalog['objects'][eactual].append(
                     None
                 )
 
     # now we should have all the new keys in the object catalog
     # turn them into arrays
     for ek in extrainfokeys:
-        objectcatalog['objects'][ek] = np.array(objectcatalog['objects'][ek])
+
+        eactual = ek.split('.')
+        # this handles dereferenced list indices
+        if not eactual[-1].isdigit():
+            eactual = '.'.join([eactual[0], eactual[-1]])
+        else:
+            elastkey = eactual[-2]
+
+            # for list columns, this converts stuff like errs -> err,
+            # and parallaxes -> parallax
+            if elastkey.endswith('es'):
+                elastkey = elastkey[:-2]
+            elif elastkey.endswith('s'):
+                elastkey = elastkey[:-1]
+
+            eactual = '.'.join([eactual[0], elastkey])
+
+        objectcatalog['objects'][eactual] = np.array(
+            objectcatalog['objects'][eactual]
+        )
 
     # write back the new object catalog
     with open(outfile, 'wb') as outfd:
