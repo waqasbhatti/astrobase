@@ -1376,6 +1376,9 @@ var cpv = {
             $('#lcc-neighbor-container').width(
                 300 + lspmethods.length*300
             );
+            if (lspmethods.length == 0) {
+                $('#lcc-neighbor-container').width('100%');
+            }
 
             if (cpv.currcp.neighbors != undefined &&
                 cpv.currcp.neighbors.length > 0) {
@@ -1558,6 +1561,11 @@ var cpv = {
 
             // set the column width
             var nbrcolw = math.floor(12/(1 + lspmethods.length));
+
+            // if there aren't any PFs, reset the col width to 3
+            if (lspmethods.length == 0) {
+                nbrcolw = 3;
+            }
             console.log(colwidth + ' ' + nbrcolw);
 
             // make the plots for the target object
