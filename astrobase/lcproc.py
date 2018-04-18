@@ -4393,6 +4393,7 @@ def runcp_worker(task):
 def parallel_cp(pfpicklelist,
                 outdir,
                 lcbasedir,
+                lcfnamelist=None,
                 cprenorm=False,
                 lclistpkl=None,
                 nbrradiusarcsec=60.0,
@@ -4418,10 +4419,15 @@ def parallel_cp(pfpicklelist,
 
     if maxobjects:
         pfpicklelist = pfpicklelist[:maxobjects]
+        if lcfnamelist:
+            lcfnamelist = lcfnamelist[:maxobjects]
 
+    if lcfnamelist is None:
+        lcfnamelist = [None]*len(pfpicklelist)
 
     tasklist = [(x, outdir, lcbasedir,
                  {'lcformat':lcformat,
+                  'lcfname':y,
                   'timecols':timecols,
                   'magcols':magcols,
                   'errcols':errcols,
@@ -4434,7 +4440,7 @@ def parallel_cp(pfpicklelist,
                   'minobservations':minobservations,
                   'skipdone':skipdone,
                   'cprenorm':cprenorm}) for
-                x in pfpicklelist]
+                x,y in zip(pfpicklelist, lcfnamelist)]
 
     resultfutures = []
     results = []
