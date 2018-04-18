@@ -4292,8 +4292,15 @@ def runcp(pfpickle,
 
         # get all the period-finder results from this magcol
         if pfpickle is not None:
-            pflist = [pfresults[mcol][x]
-                      for x in pfresults[mcol]['pfmethods']]
+
+            if 'pfmethods' in pfresults[mcol]:
+                pflist = [pfresults[mcol][x]
+                          for x in pfresults[mcol]['pfmethods']]
+            else:
+                pflist = []
+                for pfm in PFMETHODS:
+                    if pfm in pfresults[mcol]:
+                        pflist.append(pfresults[mcol][pfm])
 
         # special case of generating a checkplot with no phased LCs
         else:
