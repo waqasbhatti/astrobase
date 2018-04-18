@@ -4849,6 +4849,8 @@ def cpinfo_key_worker(task):
             outval = nonesub
         elif isinstance(val, float) and not np.isfinite(val):
             outval = nansub
+        elif isinstance(val, list):
+            outval = ', '.join(val)
         else:
             outval = val
 
