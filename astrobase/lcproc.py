@@ -91,6 +91,7 @@ import shutil
 import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
 import base64
+import uuid
 
 import numpy as np
 import numpy.random as npr
@@ -4102,6 +4103,7 @@ def update_checkplotdict_nbrlcs(
 def runcp(pfpickle,
           outdir,
           lcbasedir,
+          lcfname=None,
           cprenorm=False,
           lclistpkl=None,
           nbrradiusarcsec=60.0,
@@ -4113,9 +4115,72 @@ def runcp(pfpickle,
           lcformat='hat-sql',
           timecols=None,
           magcols=None,
-          errcols=None):
+          errcols=None,
+          skipdone=False):
     '''This runs a checkplot for the given period-finding result pickle
     produced by runpf.
+
+    Args
+    ----
+
+    `pfpickle` is the filename of the pickle created by lcproc.runpf. If this is
+    None, the checkplot will be made anyway, but no phased LC information will
+    be collected into the output checkplot pickle. This can be useful for just
+    collecting GAIA and other external information for an object.
+
+    `outdir` is the directory to which the output checkplot pickle will be
+    written.
+
+    `lcbasedir` is the base directory where the light curves are located.
+
+    `lcfname` is usually None because we get the LC filename from the
+    pfpickle. If pfpickle is None, however, lcfname is used instead. It will
+    also be used as an override if it's provided instead of whatever the lcfname
+    in pfpickle is.
+
+    `cprenorm` is True if the light curves should be renormalized by
+    checkplot.checkplot_pickle. This is set to False by default because we do
+    our own normalization in this function and pass the normalized times, mags,
+    errs to the checkplot.checkplot_pickle function.
+
+    `lclistpkl` is the name of a pickle or the actual dict produced by
+    lcproc.make_lclist. This is used to gather neighbor information.
+
+    `nbrradiusarcsec` is the maximum radius in arcsec around the object which
+    will be searched for any neighbors in lclistpkl.
+
+    `maxnumneighbors` is the maximum number of neighbors that will be processed.
+
+    `xmatchinfo` is the pickle or the actual dict containing external catalog
+    information for cross-matching.
+
+    `xmatchradiusarcsec` is the maximum match distance in arcseconds for
+    cross-matching.
+
+    `minobservations` is the minimum number of observations required to process
+    the light curve.
+
+    `sigclip` is the sigma-clip to apply to the light curve.
+
+    `lcformat` is a key from the LCFORM dict to use when reading the light
+    curves.
+
+    `timecols` is a list of time columns from the light curve to process.
+
+    `magcols` is a list of mag columns from the light curve to process.
+
+    `errcols` is a list of err columns from the light curve to process.
+
+    `skipdone` indicates if this function will skip creating checkplots that
+    already exist corresponding to the current objectid and magcol. If
+    `skipdone` is set to True, this will be done.
+
+    Returns
+    -------
+
+    a list of checkplot pickle filenames with one element for each (timecol,
+    magcol, errcol) combination provided in the default lcformat config or in
+    the timecols, magcols, errcols kwargs.
 
     '''
 
@@ -4123,14 +4188,16 @@ def runcp(pfpickle,
         LOGERROR('unknown light curve format specified: %s' % lcformat)
         return None
 
-    if pfpickle.endswith('.gz'):
-        infd = gzip.open(pfpickle,'rb')
-    else:
-        infd = open(pfpickle,'rb')
+    if pfpickle is not None:
 
-    pfresults = pickle.load(infd)
+        if pfpickle.endswith('.gz'):
+            infd = gzip.open(pfpickle,'rb')
+        else:
+            infd = open(pfpickle,'rb')
 
-    infd.close()
+        pfresults = pickle.load(infd)
+
+        infd.close()
 
     (fileglob, readerfunc, dtimecols, dmagcols,
      derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
@@ -4144,20 +4211,33 @@ def runcp(pfpickle,
     if errcols is None:
         errcols = derrcols
 
-    objectid = pfresults['objectid']
-    lcfbasename = pfresults['lcfbasename']
+    if ((lcfname is not None or pfpickle is None) and os.path.exists(lcfname)):
 
-    lcfsearchpath = os.path.join(lcbasedir, lcfbasename)
+        lcfpath = lcfname
+        objectid = None
 
-    if os.path.exists(lcfsearchpath):
-        lcfpath = lcfsearchpath
     else:
-        LOGERROR('could not find light curve for '
-                 'pfresult %s, objectid %s, '
-                 'used search path: %s' %
-                 (pfpickle, objectid, lcfsearchpath))
-        return None
 
+        if pfpickle is not None:
+
+            objectid = pfresults['objectid']
+            lcfbasename = pfresults['lcfbasename']
+            lcfsearchpath = os.path.join(lcbasedir, lcfbasename)
+
+            if os.path.exists(lcfsearchpath):
+                lcfpath = lcfsearchpath
+            else:
+                LOGERROR('could not find light curve for '
+                         'pfresult %s, objectid %s, '
+                         'used search path: %s' %
+                         (pfpickle, objectid, lcfsearchpath))
+                return None
+
+        else:
+
+            LOGERROR("no light curve provided and pfpickle is None, "
+                     "can't continue")
+            return None
 
     lcdict = readerfunc(lcfpath)
 
@@ -4167,6 +4247,21 @@ def runcp(pfpickle,
     if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
          (isinstance(lcdict[0], dict)) ):
         lcdict = lcdict[0]
+
+    # get the object ID from the light curve if pfpickle is None or we used
+    # lcfname directly
+    if objectid is None:
+        if 'objectid' in lcdict:
+            objectid = lcdict['objectid']
+        elif ('objectid' in lcdict['objectinfo'] and
+              lcdict['objectinfo']['objectid']):
+            objectid = lcdict['objectinfo']['objectid']
+        elif 'hatid' in lcdict['objectinfo'] and lcdict['objectinfo']['hatid']:
+            objectid = lcdict['objectinfo']['hatid']
+        else:
+            objectid = uuid.uuid4().hex[:5]
+            LOGWARNING('no objectid found for this object, '
+                       'generated a random one: %s' % objectid)
 
     # normalize using the special function if specified
     if normfunc is not None:
@@ -4196,12 +4291,23 @@ def runcp(pfpickle,
         errs = dict_get(lcdict, ecolget)
 
         # get all the period-finder results from this magcol
-        pflist = [pfresults[mcol][x]
-                  for x in pfresults[mcol]['pfmethods']]
+        if pfpickle is not None:
+            pflist = [pfresults[mcol][x]
+                      for x in pfresults[mcol]['pfmethods']]
+
+        # special case of generating a checkplot with no phased LCs
+        else:
+            pflist = []
 
         # generate the output filename
         outfile = os.path.join(outdir,
                                'checkplot-%s-%s.pkl' % (objectid, mcol))
+
+        if skipdone and os.path.exists(outfile):
+            LOGWARNING('skipdone = True and '
+                       'checkplot for this objectid/magcol combination '
+                       'exists already: %s, skipping...' % outfile)
+            return outfile
 
         # make sure the checkplot has a valid objectid
         if 'objectid' not in lcdict['objectinfo']:
@@ -4293,6 +4399,7 @@ def parallel_cp(pfpicklelist,
                 timecols=None,
                 magcols=None,
                 errcols=None,
+                skipdone=False,
                 nworkers=NCPUS):
     '''This drives the parallel execution of runcp for a list of periodfinding
     result pickles.
@@ -4318,6 +4425,7 @@ def parallel_cp(pfpicklelist,
                   'xmatchradiusarcsec':xmatchradiusarcsec,
                   'sigclip':sigclip,
                   'minobservations':minobservations,
+                  'skipdone':skipdone,
                   'cprenorm':cprenorm}) for
                 x in pfpicklelist]
 
@@ -4351,6 +4459,7 @@ def parallel_cp_pfdir(pfpickledir,
                       timecols=None,
                       magcols=None,
                       errcols=None,
+                      skipdone=False,
                       nworkers=32):
 
     '''This drives the parallel execution of runcp for a directory of
@@ -4379,6 +4488,7 @@ def parallel_cp_pfdir(pfpickledir,
                        timecols=timecols,
                        magcols=magcols,
                        errcols=errcols,
+                       skipdone=skipdone,
                        nworkers=nworkers)
 
 
