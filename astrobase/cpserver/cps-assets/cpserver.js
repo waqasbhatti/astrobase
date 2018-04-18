@@ -1564,7 +1564,7 @@ var cpv = {
 
             // if there aren't any PFs, reset the col width to 3
             if (lspmethods.length == 0) {
-                nbrcolw = 3;
+                nbrcolw = 4;
             }
             console.log(colwidth + ' ' + nbrcolw);
 
