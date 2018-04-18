@@ -4806,69 +4806,181 @@ def add_cmds_cpdir(cpdir, cmdpkl,
 ## ADDING CHECKPLOT INFO BACK TO THE LIGHT CURVE CATALOGS ##
 ############################################################
 
+def cpinfo_key_worker(task):
+    '''This wraps checkplotlist.checkplot_infokey_worker.
+
+    This is used to get the correct dtype for each element in retrieved results.
+
+    task[0] = cpfile
+    task[1] = keyspeclist (infokeys kwarg from add_cpinfo_to_lclist)
+
+    '''
+
+    cpfile, keyspeclist = task
+
+    keystoget = [x[0] for x in keyspeclist]
+    nonesubs = [x[-2] for x in keyspeclist]
+    nansubs = [x[-1] for x in keyspeclist]
+
+    # reform the keystoget into a list of lists
+    for i, k in enumerate(keystoget):
+
+        thisk = k.split('.')
+        if sys.version_info[:2] < (3,4):
+            thisk = [(int(x) if x.isdigit() else x) for x in thisk]
+        else:
+            thisk = [(int(x) if x.isdecimal() else x) for x in thisk]
+
+        keystoget[i] = thisk
+
+    # add in the objectid as well to match to the object catalog later
+    keystoget.insert(0,['objectid'])
+    nonesubs.insert(0, '')
+    nansubs.insert(0,'')
+
+    # get all the keys we need
+    vals = checkplot_infokey_worker((cpfile, keystoget))
+
+    # if they have some Nones, nans, etc., reform them as expected
+    for val, nonesub, nansub, valind in zip(vals, nonesubs,
+                                            nansubs, range(len(vals))):
+
+        if val is None:
+            outval = nonesub
+        elif isinstance(val, float) and not np.isfinite(val):
+            outval = nansub
+        else:
+            outval = val
+
+        vals[valind] = outval
+
+    return vals
+
+
+
 def add_cpinfo_to_lclist(
         checkplots,  # list or a directory path
         lclistpkl,
         magcol,  # to indicate checkplot magcol
         outfile,
         checkplotglob='checkplot*.pkl*',
-        infokeys=['comments',
-                  'objectinfo.objecttags',
-                  'objectinfo.twomassid',
-                  'objectinfo.bmag',
-                  'objectinfo.vmag',
-                  'objectinfo.rmag',
-                  'objectinfo.imag',
-                  'objectinfo.jmag',
-                  'objectinfo.hmag',
-                  'objectinfo.kmag',
-                  'objectinfo.sdssu',
-                  'objectinfo.sdssg',
-                  'objectinfo.sdssr',
-                  'objectinfo.sdssi',
-                  'objectinfo.sdssz',
-                  'objectinfo.extinction_bmag',
-                  'objectinfo.extinction_vmag',
-                  'objectinfo.extinction_rmag',
-                  'objectinfo.extinction_imag',
-                  'objectinfo.extinction_jmag',
-                  'objectinfo.extinction_hmag',
-                  'objectinfo.extinction_kmag',
-                  'objectinfo.extinction_sdssu',
-                  'objectinfo.extinction_sdssg',
-                  'objectinfo.extinction_sdssr',
-                  'objectinfo.extinction_sdssi',
-                  'objectinfo.extinction_sdssz',
-                  'objectinfo.color_classes',
-                  'objectinfo.pmra',
-                  'objectinfo.pmdecl',
-                  'objectinfo.propermotion',
-                  'objectinfo.rpmj',
-                  'objectinfo.gl',
-                  'objectinfo.gb',
-                  'objectinfo.gaia_status',
-                  'objectinfo.gaia_ids.0',
-                  'objectinfo.gaiamag',
-                  'objectinfo.gaia_parallax',
-                  'objectinfo.gaia_parallax_err',
-                  'objectinfo.abs_gaiamag',
-                  'varinfo.vartags',
-                  'varinfo.varperiod',
-                  'varinfo.varepoch',
-                  'varinfo.varisperiodic',
-                  'varinfo.objectisvar',
-                  'varinfo.median',
-                  'varinfo.mad',
-                  'varinfo.stdev',
-                  'varinfo.mag_iqr',
-                  'varinfo.skew',
-                  'varinfo.kurtosis',
-                  'varinfo.stetsonj',
-                  'varinfo.stetsonk',
-                  'varinfo.eta_normal',
-                  'varinfo.linear_fit_slope',
-                  'varinfo.magnitude_ratio',
-                  'varinfo.beyond1std'],
+        infokeys=[
+            # key,dtype,first level,overwrite(T)/append(F),None sub,nan sub
+            ('comments',
+             np.unicode_, False, True, '', ''),
+            ('objectinfo.objecttags',
+             np.unicode_, True, True, '', ''),
+            ('objectinfo.twomassid',
+             np.unicode_, True, True, '', ''),
+            ('objectinfo.bmag',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.vmag',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.rmag',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.imag',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.jmag',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.hmag',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.kmag',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.sdssu',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.sdssg',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.sdssr',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.sdssi',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.sdssz',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.extinction_bmag',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.extinction_vmag',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.extinction_rmag',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.extinction_imag',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.extinction_jmag',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.extinction_hmag',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.extinction_kmag',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.extinction_sdssu',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.extinction_sdssg',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.extinction_sdssr',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.extinction_sdssi',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.extinction_sdssz',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.color_classes',
+             np.unicode_, True, True, '', ''),
+            ('objectinfo.pmra',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.pmdecl',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.propermotion',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.rpmj',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.gl',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.gb',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.gaia_status',
+             np.unicode_, True, True, '', ''),
+            ('objectinfo.gaia_ids.0',
+             np.unicode_, True, True, '', ''),
+            ('objectinfo.gaiamag',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.gaia_parallax',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.gaia_parallax_err',
+             np.float_, True, True, np.nan, np.nan),
+            ('objectinfo.abs_gaiamag',
+             np.float_, True, True, np.nan, np.nan),
+            ('varinfo.vartags',
+             np.unicode_, False, True, np.nan, np.nan),
+            ('varinfo.varperiod',
+             np.float_, False, True, np.nan, np.nan),
+            ('varinfo.varepoch',
+             np.float_, False, True, np.nan, np.nan),
+            ('varinfo.varisperiodic',
+             np.int_, False, True, 0, 0),
+            ('varinfo.objectisvar',
+             np.int_, False, True, 0, 0),
+            ('varinfo.median',
+             np.float_, False, True, np.nan, np.nan),
+            ('varinfo.mad',
+             np.float_, False, True, np.nan, np.nan),
+            ('varinfo.stdev',
+             np.float_, False, True, np.nan, np.nan),
+            ('varinfo.mag_iqr',
+             np.float_, False, True, np.nan, np.nan),
+            ('varinfo.skew',
+             np.float_, False, True, np.nan, np.nan),
+            ('varinfo.kurtosis',
+             np.float_, False, True, np.nan, np.nan),
+            ('varinfo.stetsonj',
+             np.float_, False, True, np.nan, np.nan),
+            ('varinfo.stetsonk',
+             np.float_, False, True, np.nan, np.nan),
+            ('varinfo.eta_normal',
+             np.float_, False, True, np.nan, np.nan),
+            ('varinfo.linear_fit_slope',
+             np.float_, False, True, np.nan, np.nan),
+            ('varinfo.magnitude_ratio',
+             np.float_, False, True, np.nan, np.nan),
+            ('varinfo.beyond1std',
+             np.float_, False, True, np.nan, np.nan)
+        ],
         nworkers=NCPUS
 ):
     '''This adds checkplot info to the light curve catalogs from make_lclist.
@@ -4891,26 +5003,10 @@ def add_cpinfo_to_lclist(
     if not isinstance(checkplots, list) and os.path.exists(checkplots):
         checkplots = sorted(glob.glob(os.path.join(checkplots, checkplotglob)))
 
-    # dereference the keys
-    keystoget = infokeys[::]
-
-    for i, k in enumerate(keystoget):
-
-        thisk = k.split('.')
-        if sys.version_info[:2] < (3,4):
-            thisk = [(int(x) if x.isdigit() else x) for x in thisk]
-        else:
-            thisk = [(int(x) if x.isdecimal() else x) for x in thisk]
-
-        keystoget[i] = thisk
-
-    # set up the key retrieval
-    keystoget.insert(0,['objectid'])
-
-    tasklist = [(cpf, keystoget) for cpf in checkplots]
+    tasklist = [(cpf, infokeys) for cpf in checkplots]
 
     with ProcessPoolExecutor(max_workers=nworkers) as executor:
-        resultfutures = executor.map(checkplot_infokey_worker, tasklist)
+        resultfutures = executor.map(cpinfo_key_worker, tasklist)
 
     results = [x for x in resultfutures]
     executor.shutdown()
@@ -4926,14 +5022,32 @@ def add_cpinfo_to_lclist(
     checkplot_objectids = np.array([x[0] for x in results])
 
     # add the extra key arrays in the lclist dict
-    extrainfokeys = ['%s.%s' % (magcol, x) for x in infokeys]
+    extrainfokeys = []
+    actualkeys = []
 
-    for e in extrainfokeys:
+    # set up the extrainfokeys list
+    for keyspec in infokeys:
 
-        eactual = e.split('.')
+        key, dtype, firstlevel, overwrite_append, nonesub, nansub = keyspec
+
+        if firstlevel:
+            eik = key
+        else:
+            eik = '%s.%s' % (magcol, key)
+
+        extrainfokeys.append(eik)
+
+        # now handle the output dicts and column list
+        eactual = eik.split('.')
+
         # this handles dereferenced list indices
         if not eactual[-1].isdigit():
-            eactual = '.'.join([eactual[0], eactual[-1]])
+
+            if not firstlevel:
+                eactual = '.'.join([eactual[0], eactual[-1]])
+            else:
+                eactual = eactual[-1]
+
         else:
             elastkey = eactual[-2]
 
@@ -4944,10 +5058,20 @@ def add_cpinfo_to_lclist(
             elif elastkey.endswith('s'):
                 elastkey = elastkey[:-1]
 
-            eactual = '.'.join([eactual[0], elastkey])
+            if not firstlevel:
+                eactual = '.'.join([eactual[0], elastkey])
+            else:
+                eactual = elastkey
 
+        actualkeys.append(eactual)
+
+        # add a new column only if required
+        if eactual not in objectcatalog['columns']:
+            objectcatalog['columns'].append(eactual)
+
+        # we'll overwrite earlier existing columns in any case
         objectcatalog['objects'][eactual] = []
-        objectcatalog['columns'].append(eactual)
+
 
     # now go through each objectid in the catalog and add the extra keys to
     # their respective arrays
@@ -4964,79 +5088,31 @@ def add_cpinfo_to_lclist(
             thiscpinfo = thiscpinfo[1:]
 
             # update the object catalog entries for this object
-            for ekind, ek in enumerate(extrainfokeys):
+            for ekind, ek in enumerate(actualkeys):
 
-                eactual = ek.split('.')
-
-                # this handles dereferenced list indices
-                if not eactual[-1].isdigit():
-
-                    eactual = '.'.join([eactual[0], eactual[-1]])
-
-                else:
-
-                    elastkey = eactual[-2]
-
-                    # for list columns, this converts stuff like errs -> err,
-                    # and parallaxes -> parallax
-                    if elastkey.endswith('es'):
-                        elastkey = elastkey[:-2]
-                    elif elastkey.endswith('s'):
-                        elastkey = elastkey[:-1]
-
-                    eactual = '.'.join([eactual[0], elastkey])
-
-                objectcatalog['objects'][eactual].append(
+                # add the actual thing to the output list
+                objectcatalog['objects'][ek].append(
                     thiscpinfo[ekind]
                 )
 
         else:
 
             # update the object catalog entries for this object
-            for ekind, ek in enumerate(extrainfokeys):
+            for ekind, ek in enumerate(actualkeys):
 
-                eactual = ek.split('.')
-                # this handles dereferenced list indices
-                if not eactual[-1].isdigit():
-                    eactual = '.'.join([eactual[0], eactual[-1]])
-                else:
-                    elastkey = eactual[-2]
+                thiskeyspec = infokeys[ekind]
+                nonesub = thiskeyspec[-2]
 
-                    # for list columns, this converts stuff like errs -> err,
-                    # and parallaxes -> parallax
-                    if elastkey.endswith('es'):
-                        elastkey = elastkey[:-2]
-                    elif elastkey.endswith('s'):
-                        elastkey = elastkey[:-1]
-
-                    eactual = '.'.join([eactual[0], elastkey])
-
-                objectcatalog['objects'][eactual].append(
-                    None
+                objectcatalog['objects'][ek].append(
+                    nonesub
                 )
 
     # now we should have all the new keys in the object catalog
     # turn them into arrays
-    for ek in extrainfokeys:
+    for ek in actualkeys:
 
-        eactual = ek.split('.')
-        # this handles dereferenced list indices
-        if not eactual[-1].isdigit():
-            eactual = '.'.join([eactual[0], eactual[-1]])
-        else:
-            elastkey = eactual[-2]
-
-            # for list columns, this converts stuff like errs -> err,
-            # and parallaxes -> parallax
-            if elastkey.endswith('es'):
-                elastkey = elastkey[:-2]
-            elif elastkey.endswith('s'):
-                elastkey = elastkey[:-1]
-
-            eactual = '.'.join([eactual[0], elastkey])
-
-        objectcatalog['objects'][eactual] = np.array(
-            objectcatalog['objects'][eactual]
+        objectcatalog['objects'][ek] = np.array(
+            objectcatalog['objects'][ek]
         )
 
     # write back the new object catalog
