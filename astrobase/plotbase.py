@@ -278,8 +278,8 @@ def plot_mag_series(times,
             )
 
             ax.errorbar(tgtimes, tgmags, fmt='go', yerr=tgerrs,
-                         markersize=2.0, markeredgewidth=0.0, ecolor='grey',
-                         capsize=0)
+                        markersize=2.0, markeredgewidth=0.0, ecolor='grey',
+                        capsize=0)
 
             # don't use offsets on any xaxis
             ax.get_xaxis().get_major_formatter().set_useOffset(False)
@@ -339,8 +339,8 @@ def plot_mag_series(times,
         plt.subplots_adjust(wspace=0.07)
 
         # make the overall x and y labels
-        fig.text(0.5, 0.00, 'JD - %.3f (not showing gaps)' % btimeorigin,
-                 ha='center')
+        fig.text(0.5, 0.00, 'JD - %.3f (not showing gaps > %.2f d)' %
+                 (btimeorigin, segmentmingap), ha='center')
         if not magsarefluxes:
             fig.text(0.02, 0.5, 'magnitude', va='center', rotation='vertical')
         else:
