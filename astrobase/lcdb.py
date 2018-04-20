@@ -70,14 +70,22 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
 ## IMPORTS ##
 #############
 
+import os.path
+import os
+import stat
+import hashlib
+try:
+    import ConfigParser as configparser
+except:
+    import configparser
 
 
 #############################
@@ -113,7 +121,7 @@ try:
 
     HAVECONF = False
 
-    CONF = ConfigParser.ConfigParser()
+    CONF = configparser.ConfigParser()
     CONF.read(CONF_FILE)
 
     LOGINFO('using database config in %s' % os.path.abspath(CONF_FILE))
@@ -156,9 +164,9 @@ try:
 except:
 
     LOGEXCEPTION("no configuration file "
-               "found for this module in %s, "
-               "the LCDB object's open_default() function won't work" %
-               modpath)
+                 "found for this module in %s, "
+                 "the LCDB object's open_default() function won't work" %
+                 modpath)
     HAVECONF = False
 
 
@@ -288,7 +296,7 @@ class LCDB(object):
             if dictcursor:
                 self.cursors[handle] = self.connection.cursor(
                     cursor_factory=psycopg2.extras.DictCursor
-                    )
+                )
             else:
                 self.cursors[handle] = self.connection.cursor()
 
@@ -310,7 +318,7 @@ class LCDB(object):
         if dictcursor:
             self.cursors[handle] = self.connection.cursor(
                 cursor_factory=psycopg2.extras.DictCursor
-                )
+            )
         else:
             self.cursors[handle] = self.connection.cursor()
 
