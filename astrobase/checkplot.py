@@ -1401,18 +1401,35 @@ def _pkl_finder_objectinfo(objectinfo,
             # search around the target's location and get its neighbors if
             # lclistpkl is provided and it exists
             if (lclistpkl is not None and
-                os.path.exists(lclistpkl) and
                 nbrradiusarcsec is not None and
                 nbrradiusarcsec > 0.0):
 
-                if lclistpkl.endswith('.gz'):
-                    infd = gzip.open(lclistpkl,'rb')
+                # if lclistpkl is a string, open it as a pickle
+                if isinstance(lclistpkl, str) and os.path.exists(lclistpkl):
+
+                    if lclistpkl.endswith('.gz'):
+                        infd = gzip.open(lclistpkl,'rb')
+                    else:
+                        infd = open(lclistpkl,'rb')
+
+                    lclist = pickle.load(infd)
+                    infd.close()
+
+                # otherwise, if it's a dict, we get it directly
+                elif isinstance(lclistpkl, dict):
+
+                    lclist = lclistpkl
+
+                # finally, if it's nothing we recognize, ignore it
                 else:
-                    infd = open(lclistpkl,'rb')
 
-                lclist = pickle.load(infd)
-                infd.close()
+                    LOGERROR('could not understand lclistpkl kwarg, '
+                             'not getting neighbor info')
 
+                    lclist = dict()
+
+                # check if we have a KDTree to use
+                # if we don't, skip neighbor stuff
                 if 'kdtree' not in lclist:
 
                     LOGERROR('neighbors within %.1f arcsec for %s could '
@@ -1421,6 +1438,7 @@ def _pkl_finder_objectinfo(objectinfo,
                     neighbors = None
                     kdt = None
 
+                # otherwise, do neighbor processing
                 else:
 
                     kdt = lclist['kdtree']
