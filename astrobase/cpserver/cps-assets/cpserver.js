@@ -2094,6 +2094,12 @@ var cpv = {
     // appropriately
     save_checkplot: function (nextfunc_callback, nextfunc_arg, savetopng) {
 
+        // make sure the current checkplot exists
+        if (cpv.currcp === null) {
+            console.log('checkplot not loaded successfully, nothing to save')
+            return null;
+        }
+
         // make sure we're not in readonly mode
         // if we are, then just bail out immediately
         if (cpv.readonlymode) {
