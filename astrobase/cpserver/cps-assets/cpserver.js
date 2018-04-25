@@ -531,6 +531,9 @@ var cpv = {
     currphasedind: null,
     maxphasedind: null,
 
+    // this holds the current status of the checkplot load
+    loadsuccess: false,
+
     // this function generates a spinner
     make_spinner: function (spinnermsg) {
 
@@ -610,8 +613,14 @@ var cpv = {
                 console.log(data.message);
                 $('#alert-box').html(data.message);
 
+                cpv.loadsuccess = false;
+
                 return null;
 
+            }
+
+            else {
+                cpv.loadsuccess = true;
             }
 
             // update the objectid header
@@ -2054,7 +2063,11 @@ var cpv = {
             $('.sidebar').css({'height': docheight + 'px'});
 
             // get rid of the spinny thing
-            $('#alert-box').empty();
+            if (cpv.loadsuccess) {
+
+                $('#alert-box').empty();
+
+            }
 
             if (cpv.readonlymode) {
                 // if we're in readonly mode, inform the user
@@ -2567,7 +2580,9 @@ var cpv = {
 
             // save the currentcp if one exists, use the load_checkplot as a
             // callback to load the next one
-            if (('objectid' in cpv.currcp) && (cpv.currfile.length > 0))  {
+            if ((cpv.currcp != null) &&
+                ('objectid' in cpv.currcp) &&
+                (cpv.currfile.length > 0))  {
                 cpv.save_checkplot(cpv.load_checkplot,filetoload);
             }
 
@@ -2588,7 +2603,9 @@ var cpv = {
 
             // save the currentcp if one exists, use the load_checkplot as a
             // callback to load the next one
-            if (('objectid' in cpv.currcp) && (cpv.currfile.length > 0))  {
+            if ((cpv.currcp != null) &&
+                ('objectid' in cpv.currcp) &&
+                (cpv.currfile.length > 0))  {
                 cpv.save_checkplot(cpv.load_checkplot,filetoload);
             }
 
@@ -2670,7 +2687,9 @@ var cpv = {
 
             // save the currentcp if one exists, use the load_checkplot as a
             // callback to load the next one
-            if (('objectid' in cpv.currcp) && (cpv.currfile.length > 0))  {
+            if ((cpv.currcp != null) &&
+                ('objectid' in cpv.currcp) &&
+                (cpv.currfile.length > 0))  {
                 cpv.save_checkplot(cpv.load_checkplot,filetoload);
             }
 
