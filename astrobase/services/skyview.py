@@ -95,6 +95,7 @@ try:
 except:
     from urlparse import urljoin
 
+import astropy.io.fits as pyfits
 
 ###################
 ## FORM SETTINGS ##
@@ -251,6 +252,21 @@ def get_stamp(ra, decl,
     #
     # DONE WITH FETCHING STUFF
     #
+
+    # make sure the returned file is OK
+    try:
+        stampfits = pyfits.open(cachefname)
+        stampfits.close()
+    except Exception as e:
+        LOGERROR('could not open cached FITS, retrying this request')
+        return get_stamp(ra, decl,
+                         survey=survey,
+                         scaling=scaling,
+                         sizepix=sizepix,
+                         forcefetch=True,
+                         cachedir=cachedir,
+                         timeout=timeout,
+                         verbose=verbose):
 
     retdict = {
         'params':{'ra':ra,

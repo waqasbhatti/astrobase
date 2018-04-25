@@ -465,6 +465,42 @@ def tap_query(querystr,
 
         tablefname = cachefname
 
+        # try to open the cached file to make sure it's OK
+        try:
+            infd = gzip.open(cachefname,'rb')
+            gaia_objlist = np.genfromtxt(
+                    infd,
+                    names=True,
+                    delimiter=',',
+                    dtype='U20,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8',
+                    usecols=(0,1,2,3,4,5,6,7,8,9,10,11,12)
+            )
+            if gaia_objlist.size == 0:
+
+                retry = True
+
+            else:
+
+                retry = False
+
+        except Exception as e:
+
+            retry = True
+
+        if retry:
+
+            LOGERROR('could not read cached GAIA result file: %s, '
+                     'fetching from server again' % cachefname)
+
+            return tap_query(querystr,
+                             gaia_mirror=gaia_mirror,
+                             returnformat=returnformat,
+                             forcefetch=True,
+                             cachedir=cachedir,
+                             verbose=verbose,
+                             timeout=timeout,
+                             refresh=refresh,
+                             maxtimeout=maxtimeout)
 
     #
     # all done with retrieval, now return the result dict
