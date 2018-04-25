@@ -266,7 +266,7 @@ def get_stamp(ra, decl,
                          forcefetch=True,
                          cachedir=cachedir,
                          timeout=timeout,
-                         verbose=verbose):
+                         verbose=verbose)
 
     retdict = {
         'params':{'ra':ra,
