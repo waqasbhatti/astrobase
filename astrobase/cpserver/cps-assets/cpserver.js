@@ -2096,8 +2096,26 @@ var cpv = {
 
         // make sure the current checkplot exists
         if (cpv.currcp === null) {
-            console.log('checkplot not loaded successfully, nothing to save')
+
+            console.log('checkplot not loaded successfully, nothing to save');
+
+            // update the filter select box
+            $('#reviewedfilter').change();
+
+            // call the next function. we call this here so we can be sure
+            // the save finished before the next action starts
+            if ( !((nextfunc_callback === undefined) ||
+                   (nextfunc_callback === null)) &&
+                 !((nextfunc_arg === undefined) ||
+                   (nextfunc_arg === null)) ) {
+                nextfunc_callback(nextfunc_arg);
+                // clean out the alert box if there's a next function
+                $('#alert-box').empty();
+
+            }
+
             return null;
+
         }
 
         // make sure we're not in readonly mode
