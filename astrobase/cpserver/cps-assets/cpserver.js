@@ -602,6 +602,9 @@ var cpv = {
             // update the UI with elems for this checkplot //
             /////////////////////////////////////////////////
 
+            // update the readonly status
+            cpv.readonlymode = data.readonly;
+
             if (cpv.currcp === null || data.status == 'error') {
 
                 console.log(data.message);
@@ -610,9 +613,6 @@ var cpv = {
                 return null;
 
             }
-
-            // update the readonly status
-            cpv.readonlymode = data.readonly;
 
             // update the objectid header
             objectidelem.html(cpv.currcp.objectid);
