@@ -602,6 +602,15 @@ var cpv = {
             // update the UI with elems for this checkplot //
             /////////////////////////////////////////////////
 
+            if (cpv.currcp === null || data.status == 'error') {
+
+                console.log(data.message);
+                $('#alert-box').html(data.message);
+
+                return null;
+
+            }
+
             // update the readonly status
             cpv.readonlymode = data.readonly;
 
