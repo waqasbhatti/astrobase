@@ -475,22 +475,11 @@ def tap_query(querystr,
                     dtype='U20,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8',
                     usecols=(0,1,2,3,4,5,6,7,8,9,10,11,12)
             )
-            if gaia_objlist.size == 0:
-
-                retry = True
-
-            else:
-
-                retry = False
 
         except Exception as e:
 
-            retry = True
-
-        if retry and not forcefetch:
-
-            LOGERROR('could not read cached GAIA result file: %s, '
-                     'fetching from server again' % cachefname)
+            LOGEXCEPTION('could not read cached GAIA result file: %s, '
+                         'fetching from server again' % cachefname)
 
             return tap_query(querystr,
                              gaia_mirror=gaia_mirror,
@@ -520,7 +509,7 @@ def objectlist_conesearch(racenter,
                           declcenter,
                           searchradiusarcsec,
                           gaia_mirror=None,
-                          table='gaiadr1.gaia_source',
+                          table='gaiadr2.gaia_source',
                           columns=['source_id',
                                    'ra','dec',
                                    'phot_g_mean_mag',
@@ -591,7 +580,7 @@ def objectlist_conesearch(racenter,
 
 def objectlist_radeclbox(radeclbox,
                          gaia_mirror=None,
-                         table='gaiadr1.gaia_source',
+                         table='gaiadr2.gaia_source',
                          columns=['source_id',
                                   'ra','dec',
                                   'phot_g_mean_mag',
