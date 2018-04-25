@@ -487,7 +487,7 @@ def tap_query(querystr,
 
             retry = True
 
-        if retry:
+        if retry and not forcefetch:
 
             LOGERROR('could not read cached GAIA result file: %s, '
                      'fetching from server again' % cachefname)

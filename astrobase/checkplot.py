@@ -289,6 +289,30 @@ def _make_periodogram(axes,
             inset.axvline(x=150,ymin=0.375,ymax=0.45,linewidth=2.0,color='b')
             inset.axhline(y=150,xmin=0.375,xmax=0.45,linewidth=2.0,color='b')
 
+        except OSError as e:
+
+            LOGERROR('downloaded FITS appears to be corrupt, retrying...')
+
+            dss, dssheader = skyview_stamp(objectinfo['ra'],
+                                           objectinfo['decl'],
+                                           convolvewith=finderconvolve,
+                                           flip=False,
+                                           cachedir=findercachedir,
+                                           verbose=verbose)
+            stamp = dss
+
+            # inset plot it on the current axes
+            inset = inset_axes(axes, width="40%", height="40%", loc=1)
+            inset.imshow(stamp, cmap=findercmap, origin='lower')
+            inset.set_xticks([])
+            inset.set_yticks([])
+            inset.set_frame_on(False)
+
+            # grid lines pointing to the center of the frame
+            inset.axvline(x=150,ymin=0.375,ymax=0.45,linewidth=2.0,color='b')
+            inset.axhline(y=150,xmin=0.375,xmax=0.45,linewidth=2.0,color='b')
+
+
         except Exception as e:
             LOGEXCEPTION('could not fetch a DSS stamp for this '
                          'object %s using coords (%.3f,%.3f)' %
