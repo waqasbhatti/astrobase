@@ -272,7 +272,7 @@ def tap_query(querystr,
                 if '{table}' in querystr:
                     inputparams['QUERY'] = (
                         querystr.format(
-                            table=GAIA_URLS[gaia_mirror]['table']
+                            table=GAIA_URLS[randkey]['table']
                         )
                     )
 
@@ -322,7 +322,7 @@ def tap_query(querystr,
                     if '{table}' in querystr:
                         inputparams['QUERY'] = (
                             querystr.format(
-                                table=GAIA_URLS[gaia_mirror]['table']
+                                table=GAIA_URLS[randkey]['table']
                             )
                         )
 
@@ -346,7 +346,7 @@ def tap_query(querystr,
                     if '{table}' in querystr:
                         inputparams['QUERY'] = (
                             querystr.format(
-                                table=GAIA_URLS[gaia_mirror]['table']
+                                table=GAIA_URLS[randkey]['table']
                             )
                         )
 
