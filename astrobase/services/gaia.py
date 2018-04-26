@@ -246,10 +246,11 @@ def tap_query(querystr,
             timeelapsed = 0.0
 
             # set the gaia mirror to use
-            if gaia_mirror is not None:
+            if gaia_mirror is not None and gaia_mirror in GAIA_URLS:
                 tapurl = GAIA_URLS[gaia_mirror]['url']
                 resultkeyword = GAIA_URLS[gaia_mirror]['resultkeyword']
                 phasekeyword = GAIA_URLS[gaia_mirror]['phasekeyword']
+                randkey = gaia_mirror
             else:
                 randkey = random.choice(list(GAIA_URLS.keys()))
                 tapurl = GAIA_URLS[randkey]['url']
@@ -276,17 +277,43 @@ def tap_query(querystr,
 
                     mirrorok = True
 
+                # this handles immediate 503s
                 except requests.exceptions.HTTPError as e:
 
                     LOGWARNING(
-                        'GAIA TAP server: %s not responding, trying another...'
+                        'GAIA TAP server: %s not responding, '
+                        'trying another...'
                         % tapurl
                     )
                     mirrorok = False
-                    randkey = random.choice(list(GAIA_URLS.keys()))
+
+                    # make sure not to hit current mirror again if it's down
+                    remainingmirrors = list(GAIA_URLS.keys())
+                    remainingmirrors.remove(randkey)
+
+                    randkey = random.choice(remainingmirrors)
                     tapurl = GAIA_URLS[randkey]['url']
                     resultkeyword = GAIA_URLS[randkey]['resultkeyword']
                     phasekeyword = GAIA_URLS[randkey]['phasekeyword']
+
+                # this handles initial query submission timeouts
+                except requests.exceptions.Timeout as e:
+
+                    LOGWARNING(
+                        'GAIA TAP query submission timed out, '
+                        'mirror is probably down. Trying another mirror...'
+                    )
+                    mirrorok = False
+
+                    # make sure not to hit current mirror again if it's down
+                    remainingmirrors = list(GAIA_URLS.keys())
+                    remainingmirrors.remove(randkey)
+
+                    randkey = random.choice(remainingmirrors)
+                    tapurl = GAIA_URLS[randkey]['url']
+                    resultkeyword = GAIA_URLS[randkey]['resultkeyword']
+                    phasekeyword = GAIA_URLS[randkey]['phasekeyword']
+
 
             # NOTE: python-requests follows the "303 See Other" redirect
             # automatically, so we get the XML status doc immediately. We don't

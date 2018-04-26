@@ -173,8 +173,12 @@ from .lcmath import phase_magseries, phase_bin_magseries, \
     normalize_magseries, sigclip_magseries
 from .varbase.lcfit import spline_fit_magseries, savgol_fit_magseries
 from .varclass.varfeatures import all_nonperiodic_features
+
+from .varclass import starfeatures
+starfeatures.set_logger_parent(__name__)
 from .varclass.starfeatures import coord_features, color_features, \
     color_classification, neighbor_gaia_features
+
 from .plotbase import skyview_stamp, \
     PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
 from .coordutils import total_proper_motion, reduced_proper_motion
