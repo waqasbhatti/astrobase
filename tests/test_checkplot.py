@@ -994,7 +994,8 @@ def test_checkplot_pickle_missing_objectinfo():
                        'sdssi-jmag',
                        'sdssi-sdssz',
                        'sdssg-sdssz']
-    expected_gaia_id = '5891733847714174336'
+
+    expected_gaia_id = '5891733852050596480'
     expected_gaia_dist = 0.12319158
     expected_gaia_closest_nbrdist = 7.3144285163756155
     expected_gaia_mag = 15.6820624

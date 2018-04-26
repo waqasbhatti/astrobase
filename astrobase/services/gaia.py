@@ -98,6 +98,8 @@ import gzip
 import hashlib
 import time
 
+import numpy as np
+
 import random
 
 # to do the queries
