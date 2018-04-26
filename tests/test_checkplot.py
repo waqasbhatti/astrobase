@@ -997,8 +997,8 @@ def test_checkplot_pickle_missing_objectinfo():
 
     expected_gaia_id = '5891733852050596480'
     expected_gaia_dist = 0.12319158
-    expected_gaia_closest_nbrdist = 7.3144285163756155
-    expected_gaia_mag = 15.6820624
+    expected_gaia_closest_nbrdist = 6.4526230016634329
+    expected_gaia_mag = 15.840071
     expected_gb, expected_gl = 3.0933098295258104, 317.13437783525336
     expected_color_classes = ['WD/sdO/sdB']
 
