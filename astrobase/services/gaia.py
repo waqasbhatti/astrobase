@@ -116,11 +116,11 @@ from xml.dom.minidom import parseString
 
 GAIA_URLS = {
     'gaia':{'url':"http://gea.esac.esa.int/tap-server/tap/async",
-            'table':'gaia.gaiadr1',
+            'table':'gaiadr2.gaia_source',
             'phasekeyword':'uws:phase',
             'resultkeyword':'uws:result'},
     'heidelberg':{'url':"http://gaia.ari.uni-heidelberg.de/tap/async",
-                  'table':'gaia.gaiadr1',
+                  'table':'gaiadr2.gaia_source',
                   'phasekeyword':'phase',
                   'resultkeyword':'result'},
     'vizier':{'url':"http://tapvizier.u-strasbg.fr/TAPVizieR/tap/async",
@@ -202,7 +202,9 @@ def tap_query(querystr,
     inputparams = TAP_PARAMS.copy()
 
     # update them with our input params
-    inputparams['QUERY'] = querystr
+
+    inputparams['QUERY'] = querystr[::]
+
     if returnformat in RETURN_FORMATS:
         inputparams['FORMAT'] = returnformat
     else:
@@ -238,28 +240,50 @@ def tap_query(querystr,
 
         try:
 
-            if verbose:
-                LOGINFO('submitting GAIA TAP query request for input params: %s'
-                        % repr(inputparams))
-
             waitdone = False
             timeelapsed = 0.0
 
             # set the gaia mirror to use
             if gaia_mirror is not None and gaia_mirror in GAIA_URLS:
+
                 tapurl = GAIA_URLS[gaia_mirror]['url']
                 resultkeyword = GAIA_URLS[gaia_mirror]['resultkeyword']
                 phasekeyword = GAIA_URLS[gaia_mirror]['phasekeyword']
                 randkey = gaia_mirror
+
+                # sub in a table name if this is left unresolved in the input
+                # query
+                if '{table}' in querystr:
+                    inputparams['QUERY'] = (
+                        querystr.format(
+                            table=GAIA_URLS[gaia_mirror]['table']
+                        )
+                    )
+
             else:
+
                 randkey = random.choice(list(GAIA_URLS.keys()))
                 tapurl = GAIA_URLS[randkey]['url']
                 resultkeyword = GAIA_URLS[randkey]['resultkeyword']
                 phasekeyword = GAIA_URLS[randkey]['phasekeyword']
+
+                # sub in a table name if this is left unresolved in the input
+                # query
+                if '{table}' in querystr:
+                    inputparams['QUERY'] = (
+                        querystr.format(
+                            table=GAIA_URLS[gaia_mirror]['table']
+                        )
+                    )
+
                 if verbose:
                     LOGINFO('using GAIA mirror TAP URL: %s' % tapurl)
 
             # send the query and get status
+            if verbose:
+                LOGINFO('submitting GAIA TAP query request for input params: %s'
+                        % repr(inputparams))
+
 
             # here, we'll make sure the GAIA mirror works before doing anything
             # else
@@ -295,6 +319,12 @@ def tap_query(querystr,
                     tapurl = GAIA_URLS[randkey]['url']
                     resultkeyword = GAIA_URLS[randkey]['resultkeyword']
                     phasekeyword = GAIA_URLS[randkey]['phasekeyword']
+                    if '{table}' in querystr:
+                        inputparams['QUERY'] = (
+                            querystr.format(
+                                table=GAIA_URLS[gaia_mirror]['table']
+                            )
+                        )
 
                 # this handles initial query submission timeouts
                 except requests.exceptions.Timeout as e:
@@ -313,6 +343,12 @@ def tap_query(querystr,
                     tapurl = GAIA_URLS[randkey]['url']
                     resultkeyword = GAIA_URLS[randkey]['resultkeyword']
                     phasekeyword = GAIA_URLS[randkey]['phasekeyword']
+                    if '{table}' in querystr:
+                        inputparams['QUERY'] = (
+                            querystr.format(
+                                table=GAIA_URLS[gaia_mirror]['table']
+                            )
+                        )
 
 
             # NOTE: python-requests follows the "303 See Other" redirect
@@ -538,7 +574,6 @@ def objectlist_conesearch(racenter,
                           declcenter,
                           searchradiusarcsec,
                           gaia_mirror=None,
-                          table='gaiadr2.gaia_source',
                           columns=['source_id',
                                    'ra','dec',
                                    'phot_g_mean_mag',
@@ -575,22 +610,25 @@ def objectlist_conesearch(racenter,
 
     # this was generated using the awesome query generator at:
     # https://gea.esac.esa.int/archive/
+
+    # NOTE: here we don't resolve the table name right away. this is because
+    # some of the GAIA mirrors use different table names, so we leave the table
+    # name to be resolved by the lower level tap_query function. this is done by
+    # the {{table}} construct.
     query = (
         "select {columns}, "
         "(DISTANCE(POINT('ICRS', "
-        "{table}.ra, {table}.dec), "
+        "{{table}}.ra, {{table}}.dec), "
         "POINT('ICRS', {ra_center:.5f}, {decl_center:.5f})))*3600.0 "
         "AS dist_arcsec "
-        "from {table} where "
-        "CONTAINS(POINT('ICRS',{table}.ra,"
-        "{table}.dec),"
+        "from {{table}} where "
+        "CONTAINS(POINT('ICRS',{{table}}.ra, {{table}}.dec),"
         "CIRCLE('ICRS',{ra_center:.5f},{decl_center:.5f},"
         "{search_radius:.6f}))=1 "
         "ORDER by dist_arcsec asc "
     )
 
-    formatted_query = query.format(table=table,
-                                   ra_center=racenter,
+    formatted_query = query.format(ra_center=racenter,
                                    decl_center=declcenter,
                                    search_radius=searchradiusarcsec/3600.0,
                                    columns=', '.join(columns))
@@ -609,7 +647,6 @@ def objectlist_conesearch(racenter,
 
 def objectlist_radeclbox(radeclbox,
                          gaia_mirror=None,
-                         table='gaiadr2.gaia_source',
                          columns=['source_id',
                                   'ra','dec',
                                   'phot_g_mean_mag',
@@ -647,9 +684,14 @@ def objectlist_radeclbox(radeclbox,
 
     # this was generated using the awesome query generator at:
     # https://gea.esac.esa.int/archive/
+
+    # NOTE: here we don't resolve the table name right away. this is because
+    # some of the GAIA mirrors use different table names, so we leave the table
+    # name to be resolved by the lower level tap_query function. this is done by
+    # the {{table}} construct.
     query = (
-        "select {columns} from {table} where "
-        "CONTAINS(POINT('ICRS',{table}.ra, {table}.dec),"
+        "select {columns} from {{table}} where "
+        "CONTAINS(POINT('ICRS',{{table}}.ra, {{table}}.dec),"
         "BOX('ICRS',{ra_center:.5f},{decl_center:.5f},"
         "{ra_width:.5f},{decl_height:.5f}))=1"
     )
@@ -660,8 +702,7 @@ def objectlist_radeclbox(radeclbox,
     ra_width = ra_max - ra_min
     decl_height = decl_max - decl_min
 
-    formatted_query = query.format(table=table,
-                                   columns=', '.join(columns),
+    formatted_query = query.format(columns=', '.join(columns),
                                    ra_center=ra_center,
                                    decl_center=decl_center,
                                    ra_width=ra_width,
