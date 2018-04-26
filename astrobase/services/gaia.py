@@ -123,10 +123,10 @@ GAIA_URLS = {
                   'table':'gaia.gaiadr1',
                   'phasekeyword':'phase',
                   'resultkeyword':'result'},
-    # 'vizier':{'url':"http://tapvizier.u-strasbg.fr/TAPVizieR/tap/",
-    #           'table':'"I/337/gaia"',
-    #           'phasekeyword':'phase',
-    #           'resultkeyword':'result'},
+    'vizier':{'url':"http://tapvizier.u-strasbg.fr/TAPVizieR/tap/async",
+              'table':'"I/345/gaia2"',
+              'phasekeyword':'phase',
+              'resultkeyword':'result'},
 }
 
 # use phasekeyword = 'uws:phase' and resultkeyword = 'uws:result'
@@ -136,7 +136,7 @@ TAP_URL = "http://gea.esac.esa.int/tap-server/tap/async"
 ARI_URL = 'http://gaia.ari.uni-heidelberg.de/tap/async'
 
 # FIXME: get this working
-CDS_TAPURL = "http://tapvizier.u-strasbg.fr/TAPVizieR/tap/"
+CDS_TAPURL = "http://tapvizier.u-strasbg.fr/TAPVizieR/tap/async"
 CDS_TABLE = '"I/337/gaia"'
 
 # default TAP query params, will be copied and overridden
