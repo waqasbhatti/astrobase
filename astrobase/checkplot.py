@@ -297,6 +297,7 @@ def _make_periodogram(axes,
                                            objectinfo['decl'],
                                            convolvewith=finderconvolve,
                                            flip=False,
+                                           forcefetch=True,
                                            cachedir=findercachedir,
                                            verbose=verbose)
             stamp = dss
