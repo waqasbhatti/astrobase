@@ -1405,13 +1405,30 @@ def _pkl_finder_objectinfo(objectinfo,
         # get the finder chart
         try:
 
-            # generate the finder chart
-            finder, finderheader = skyview_stamp(objectinfo['ra'],
-                                                 objectinfo['decl'],
-                                                 convolvewith=finderconvolve,
-                                                 verbose=verbose,
-                                                 flip=False,
-                                                 cachedir=findercachedir)
+            try:
+
+                # generate the finder chart
+                finder, finderheader = skyview_stamp(objectinfo['ra'],
+                                                     objectinfo['decl'],
+                                                     convolvewith=finderconvolve,
+                                                     verbose=verbose,
+                                                     flip=False,
+                                                     cachedir=findercachedir)
+
+            except OSError as e:
+
+                LOGERROR('finder image appears to be corrupt, retrying...')
+
+                # generate the finder chart
+                finder, finderheader = skyview_stamp(objectinfo['ra'],
+                                                     objectinfo['decl'],
+                                                     convolvewith=finderconvolve,
+                                                     verbose=verbose,
+                                                     flip=False,
+                                                     cachedir=findercachedir,
+                                                     forcefetch=True)
+
+
             finderfig = plt.figure(figsize=(3,3),dpi=plotdpi)
 
             # initialize the finder WCS
