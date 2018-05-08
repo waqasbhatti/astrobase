@@ -77,7 +77,7 @@ def LOGEXCEPTION(message):
 
 from multiprocessing import Pool, cpu_count
 
-from math import modf
+from math import modf, fmod
 
 import numpy as np
 
@@ -606,16 +606,29 @@ def bls_parallel_pfind(
         # break up the tasks into chunks
         frequencies = minfreq + nparange(nfreq)*stepsize
 
-        csrem, csint = modf(float(len(frequencies))/nworkers)
+        csrem = fmod(frequencies, nworkers)
+        csint = int(float(frequencies/nworkers))
 
-        if csrem > 0.5:
-            chunksize = int(csint) + 1
-        else:
-            chunksize = int(csint)
+        chunk_minfreqs, chunk_nfreqs = [], []
 
-        chunk_minfreqs = [frequencies[x*chunksize] for x in range(nworkers)]
-        chunk_nfreqs = [frequencies[x*chunksize:x*chunksize+chunksize].size
-                        for x in range(nworkers)]
+        for x in range(nworkers):
+
+            this_minfreqs = frequencies[x*csint]
+
+            # handle usual nfreqs
+            if x < (nworkers - 1):
+                this_nfreqs = frequencies[x*csint:x*csint+csint].size
+            else:
+                this_nfreqs = frequencies[x*csint:x*csint+csint+csrem].size
+
+            chunk_minfreqs.append(this_minfreqs)
+            chunk_nfreqs.append(this_nfreqs)
+
+        import ipdb; ipdb.set_trace()
+
+        # chunk_minfreqs = [frequencies[x*chunksize] for x in range(nworkers)]
+        # chunk_nfreqs = [frequencies[x*chunksize:x*chunksize+chunksize].size
+        #                 for x in range(nworkers)]
 
 
         # populate the tasks list
