@@ -607,7 +607,7 @@ def bls_parallel_pfind(
         frequencies = minfreq + nparange(nfreq)*stepsize
 
         csrem = fmod(nfreq, nworkers)
-        csint = int(float(frequencies/nworkers))
+        csint = int(float(nfreq/nworkers))
 
         chunk_minfreqs, chunk_nfreqs = [], []
 
