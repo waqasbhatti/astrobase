@@ -109,7 +109,6 @@ import requests.exceptions
 
 # to read the XML returned by the TAP service
 from xml.dom.minidom import parseString
-from xml.dom.minidom import parse as xmlparse
 
 
 
@@ -257,6 +256,7 @@ def tap_query(querystr,
         waitdone = False
         timeelapsed = 0.0
 
+        gaia_mirror = incomplete_qinfo['gaia_mirror']
         status_url = incomplete_qinfo['status_url']
         phasekeyword = incomplete_qinfo['phase_keyword']
         resultkeyword = incomplete_qinfo['result_keyword']

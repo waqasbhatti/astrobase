@@ -1387,7 +1387,8 @@ def _pkl_finder_objectinfo(objectinfo,
                            plotdpi=100,
                            findercachedir='~/.astrobase/stamp-cache',
                            verbose=True,
-                           gaiamaxtimeout=60.0):
+                           gaia_max_timeout=60.0,
+                           gaia_mirror='cds'):
     '''This returns the finder chart and object information as a dict.
 
     '''
@@ -1413,25 +1414,29 @@ def _pkl_finder_objectinfo(objectinfo,
             try:
 
                 # generate the finder chart
-                finder, finderheader = skyview_stamp(objectinfo['ra'],
-                                                     objectinfo['decl'],
-                                                     convolvewith=finderconvolve,
-                                                     verbose=verbose,
-                                                     flip=False,
-                                                     cachedir=findercachedir)
+                finder, finderheader = skyview_stamp(
+                    objectinfo['ra'],
+                    objectinfo['decl'],
+                    convolvewith=finderconvolve,
+                    verbose=verbose,
+                    flip=False,
+                    cachedir=findercachedir
+                )
 
             except OSError as e:
 
                 LOGERROR('finder image appears to be corrupt, retrying...')
 
                 # generate the finder chart
-                finder, finderheader = skyview_stamp(objectinfo['ra'],
-                                                     objectinfo['decl'],
-                                                     convolvewith=finderconvolve,
-                                                     verbose=verbose,
-                                                     flip=False,
-                                                     cachedir=findercachedir,
-                                                     forcefetch=True)
+                finder, finderheader = skyview_stamp(
+                    objectinfo['ra'],
+                    objectinfo['decl'],
+                    convolvewith=finderconvolve,
+                    verbose=verbose,
+                    flip=False,
+                    cachedir=findercachedir,
+                    forcefetch=True
+                )
 
 
             finderfig = plt.figure(figsize=(3,3),dpi=plotdpi)
@@ -1654,7 +1659,17 @@ def _pkl_finder_objectinfo(objectinfo,
     # should degrade gracefully if these aren't provided
     if isinstance(objectinfo, dict):
 
-        objectid = objectinfo['objectid']
+        if 'objectid' not in objectinfo and 'hatid' in objectinfo:
+            objectid = objectinfo['hatid']
+            objectinfo['objectid'] = objectid
+        elif 'objectid' in objectinfo:
+            objectid = objectinfo['objectid']
+        else:
+            objectid = os.urandom(12).hex()[:7]
+            objectinfo['objectid'] = objectid
+            LOGWARNING('no objectid found in objectinfo dict, '
+                       'making up a random one: %s')
+
 
         # first, the color features
         colorfeat = color_features(objectinfo,
@@ -1666,7 +1681,8 @@ def _pkl_finder_objectinfo(objectinfo,
                                          kdt,
                                          nbrradiusarcsec,
                                          verbose=False,
-                                         gaiamaxtimeout=gaiamaxtimeout)
+                                         gaia_max_timeout=gaia_max_timeout,
+                                         gaia_mirror=gaia_mirror)
 
         # see if the objectinfo dict has pmra/pmdecl entries.  if it doesn't,
         # then we'll see if the nbrfeat dict has pmra/pmdecl from GAIA. we'll
@@ -2867,7 +2883,8 @@ def checkplot_dict(lspinfolist,
                    objectinfo=None,
                    deredden_object=True,
                    custom_bandpasses=None,
-                   gaiamaxtimeout=60.0,
+                   gaia_max_timeout=60.0,
+                   gaia_mirror='cds',
                    varinfo=None,
                    getvarfeatures=True,
                    lclistpkl=None,
@@ -3084,7 +3101,8 @@ def checkplot_dict(lspinfolist,
                                            plotdpi=plotdpi,
                                            verbose=verbose,
                                            findercachedir=findercachedir,
-                                           gaiamaxtimeout=gaiamaxtimeout)
+                                           gaia_max_timeout=gaia_max_timeout,
+                                           gaia_mirror=gaia_mirror)
 
     # try again to get the right objectid
     if (objectinfo and isinstance(objectinfo, dict) and
@@ -3349,7 +3367,8 @@ def checkplot_pickle(lspinfolist,
                      objectinfo=None,
                      deredden_object=True,
                      custom_bandpasses=None,
-                     gaiamaxtimeout=60.0,
+                     gaia_max_timeout=60.0,
+                     gaia_mirror='cds',
                      lcfitfunc=None,
                      lcfitparams={},
                      varinfo=None,
@@ -3510,7 +3529,8 @@ def checkplot_pickle(lspinfolist,
         objectinfo=objectinfo,
         deredden_object=deredden_object,
         custom_bandpasses=custom_bandpasses,
-        gaiamaxtimeout=gaiamaxtimeout,
+        gaia_max_timeout=gaia_max_timeout,
+        gaia_mirror=gaia_mirror,
         varinfo=varinfo,
         getvarfeatures=getvarfeatures,
         lclistpkl=lclistpkl,
@@ -4694,7 +4714,8 @@ def update_checkplot_objectinfo(cpf,
                                 finderconvolve=None,
                                 deredden_object=True,
                                 custom_bandpasses=None,
-                                gaiamaxtimeout=60.0,
+                                gaia_max_timeout=60.0,
+                                gaia_mirror='cds',
                                 lclistpkl=None,
                                 nbrradiusarcsec=30.0,
                                 maxnumneighbors=5,
@@ -4736,7 +4757,8 @@ def update_checkplot_objectinfo(cpf,
                                     cpd['normmingap'],
                                     deredden_object=deredden_object,
                                     custom_bandpasses=custom_bandpasses,
-                                    gaiamaxtimeout=gaiamaxtimeout,
+                                    gaia_max_timeout=gaia_max_timeout,
+                                    gaia_mirror=gaia_mirror,
                                     lclistpkl=lclistpkl,
                                     nbrradiusarcsec=nbrradiusarcsec,
                                     maxnumneighbors=maxnumneighbors,

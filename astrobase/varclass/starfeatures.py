@@ -91,8 +91,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -1046,7 +1046,8 @@ def neighbor_gaia_features(objectinfo,
                            neighbor_radius_arcsec,
                            gaia_matchdist_arcsec=3.0,
                            verbose=True,
-                           gaiamaxtimeout=60.0):
+                           gaia_max_timeout=60.0,
+                           gaia_mirror='cds'):
     '''Gets several neighbor and GAIA features:
 
     from the given light curve catalog:
@@ -1153,8 +1154,9 @@ def neighbor_gaia_features(objectinfo,
         gaia_result = gaia.objectlist_conesearch(objectinfo['ra'],
                                                  objectinfo['decl'],
                                                  neighbor_radius_arcsec,
-                                                 verbose=False,
-                                                 maxtimeout=gaiamaxtimeout)
+                                                 verbose=verbose,
+                                                 maxtimeout=gaia_max_timeout,
+                                                 gaia_mirror=gaia_mirror)
         if gaia_result:
 
             gaia_objlistf = gaia_result['result']
