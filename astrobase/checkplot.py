@@ -1386,7 +1386,8 @@ def _pkl_finder_objectinfo(objectinfo,
                            maxnumneighbors=5,
                            plotdpi=100,
                            findercachedir='~/.astrobase/stamp-cache',
-                           verbose=True):
+                           verbose=True,
+                           gaiamaxtimeout=60.0):
     '''This returns the finder chart and object information as a dict.
 
     '''
@@ -1664,7 +1665,8 @@ def _pkl_finder_objectinfo(objectinfo,
         nbrfeat = neighbor_gaia_features(objectinfo,
                                          kdt,
                                          nbrradiusarcsec,
-                                         verbose=False)
+                                         verbose=False,
+                                         gaiamaxtimeout=gaiamaxtimeout)
 
         # see if the objectinfo dict has pmra/pmdecl entries.  if it doesn't,
         # then we'll see if the nbrfeat dict has pmra/pmdecl from GAIA. we'll
@@ -2865,6 +2867,7 @@ def checkplot_dict(lspinfolist,
                    objectinfo=None,
                    deredden_object=True,
                    custom_bandpasses=None,
+                   gaiamaxtimeout=60.0,
                    varinfo=None,
                    getvarfeatures=True,
                    lclistpkl=None,
@@ -3080,7 +3083,8 @@ def checkplot_dict(lspinfolist,
                                            maxnumneighbors=maxnumneighbors,
                                            plotdpi=plotdpi,
                                            verbose=verbose,
-                                           findercachedir=findercachedir)
+                                           findercachedir=findercachedir,
+                                           gaiamaxtimeout=gaiamaxtimeout)
 
     # try again to get the right objectid
     if (objectinfo and isinstance(objectinfo, dict) and
@@ -3345,6 +3349,7 @@ def checkplot_pickle(lspinfolist,
                      objectinfo=None,
                      deredden_object=True,
                      custom_bandpasses=None,
+                     gaiamaxtimeout=60.0,
                      lcfitfunc=None,
                      lcfitparams={},
                      varinfo=None,
@@ -3505,6 +3510,7 @@ def checkplot_pickle(lspinfolist,
         objectinfo=objectinfo,
         deredden_object=deredden_object,
         custom_bandpasses=custom_bandpasses,
+        gaiamaxtimeout=gaiamaxtimeout,
         varinfo=varinfo,
         getvarfeatures=getvarfeatures,
         lclistpkl=lclistpkl,
@@ -4688,6 +4694,7 @@ def update_checkplot_objectinfo(cpf,
                                 finderconvolve=None,
                                 deredden_object=True,
                                 custom_bandpasses=None,
+                                gaiamaxtimeout=60.0,
                                 lclistpkl=None,
                                 nbrradiusarcsec=30.0,
                                 maxnumneighbors=5,
@@ -4729,6 +4736,7 @@ def update_checkplot_objectinfo(cpf,
                                     cpd['normmingap'],
                                     deredden_object=deredden_object,
                                     custom_bandpasses=custom_bandpasses,
+                                    gaiamaxtimeout=gaiamaxtimeout,
                                     lclistpkl=lclistpkl,
                                     nbrradiusarcsec=nbrradiusarcsec,
                                     maxnumneighbors=maxnumneighbors,

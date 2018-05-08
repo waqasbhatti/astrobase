@@ -1045,7 +1045,8 @@ def neighbor_gaia_features(objectinfo,
                            lclist_kdtree,
                            neighbor_radius_arcsec,
                            gaia_matchdist_arcsec=3.0,
-                           verbose=True):
+                           verbose=True,
+                           gaiamaxtimeout=60.0):
     '''Gets several neighbor and GAIA features:
 
     from the given light curve catalog:
@@ -1152,7 +1153,8 @@ def neighbor_gaia_features(objectinfo,
         gaia_result = gaia.objectlist_conesearch(objectinfo['ra'],
                                                  objectinfo['decl'],
                                                  neighbor_radius_arcsec,
-                                                 verbose=False)
+                                                 verbose=False,
+                                                 maxtimeout=gaiamaxtimeout)
         if gaia_result:
 
             gaia_objlistf = gaia_result['result']
