@@ -624,8 +624,6 @@ def bls_parallel_pfind(
             chunk_minfreqs.append(this_minfreqs)
             chunk_nfreqs.append(this_nfreqs)
 
-        import ipdb; ipdb.set_trace()
-
         # chunk_minfreqs = [frequencies[x*chunksize] for x in range(nworkers)]
         # chunk_nfreqs = [frequencies[x*chunksize:x*chunksize+chunksize].size
         #                 for x in range(nworkers)]
