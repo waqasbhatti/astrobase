@@ -77,6 +77,8 @@ def LOGEXCEPTION(message):
 
 from multiprocessing import Pool, cpu_count
 
+from math import modf
+
 import numpy as np
 
 # import these to avoid lookup overhead
@@ -186,29 +188,35 @@ def parallel_bls_worker(task):
     '''
 
     try:
+
         return _bls_runner(*task)
+
     except Exception as e:
+
         LOGEXCEPTION('BLS failed for task %s' % repr(task[2:]))
-    return {'power':np.array([npnan for x in range(nfreq)]),
+
+        return {
+            'power':np.array([npnan for x in range(task[2])]),
             'bestperiod':npnan,
             'bestpower':npnan,
             'transdepth':npnan,
             'transduration':npnan,
             'transingressbin':npnan,
-            'transegressbin':npnan}
+            'transegressbin':npnan
+        }
 
 
 
 
 def bls_serial_pfind(times, mags, errs,
                      magsarefluxes=False,
-                     startp=0.1, # search from 0.1 d to...
-                     endp=100.0, # ... 100.0 d -- don't search full timebase
+                     startp=0.1,  # search from 0.1 d to...
+                     endp=100.0,  # ... 100.0 d -- don't search full timebase
                      stepsize=5.0e-4,
-                     mintransitduration=0.01, # minimum transit length in phase
-                     maxtransitduration=0.8,  # maximum transit length in phase
+                     mintransitduration=0.01,  # minimum transit length in phase
+                     maxtransitduration=0.8,   # maximum transit length in phase
                      nphasebins=200,
-                     autofreq=True, # figure out f0, nf, and df automatically
+                     autofreq=True,  # figure out f0, nf, and df automatically
                      periodepsilon=0.1,
                      nbestpeaks=5,
                      sigclip=10.0,
@@ -390,7 +398,8 @@ def bls_serial_pfind(times, mags, errs,
                 # periodepsilon to make sure we jump to an entire different
                 # peak in the periodogram
                 if (perioddiff > (periodepsilon*prevperiod) and
-                    all(x > (periodepsilon*prevperiod) for x in bestperiodsdiff)):
+                    all(x > (periodepsilon*prevperiod)
+                        for x in bestperiodsdiff)):
                     nbestperiods.append(period)
                     nbestlspvals.append(lspval)
                     peakcount = peakcount + 1
@@ -489,15 +498,15 @@ def bls_serial_pfind(times, mags, errs,
 def bls_parallel_pfind(
         times, mags, errs,
         magsarefluxes=False,
-        startp=0.1, # by default, search from 0.1 d to...
-        endp=100.0, # ... 100.0 d -- don't search full timebase
+        startp=0.1,  # by default, search from 0.1 d to...
+        endp=100.0,  # ... 100.0 d -- don't search full timebase
         stepsize=1.0e-4,
-        mintransitduration=0.01, # minimum transit length in phase
-        maxtransitduration=0.8,  # maximum transit length in phase
+        mintransitduration=0.01,  # minimum transit length in phase
+        maxtransitduration=0.8,   # maximum transit length in phase
         nphasebins=200,
-        autofreq=True, # figure out f0, nf, and df automatically
+        autofreq=True,  # figure out f0, nf, and df automatically
         nbestpeaks=5,
-        periodepsilon=0.1, # 0.1
+        periodepsilon=0.1,  # 0.1
         nworkers=None,
         sigclip=10.0,
         verbose=True
@@ -596,7 +605,14 @@ def bls_parallel_pfind(
 
         # break up the tasks into chunks
         frequencies = minfreq + nparange(nfreq)*stepsize
-        chunksize = int(float(len(frequencies))/nworkers) + 1
+
+        csrem, csint = modf(float(len(frequencies))/nworkers)
+
+        if csrem > 0.5:
+            chunksize = int(csint) + 1
+        else:
+            chunksize = int(csint)
+
         chunk_minfreqs = [frequencies[x*chunksize] for x in range(nworkers)]
         chunk_nfreqs = [frequencies[x*chunksize:x*chunksize+chunksize].size
                         for x in range(nworkers)]
