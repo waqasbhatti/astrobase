@@ -97,6 +97,7 @@ import os.path
 import gzip
 import hashlib
 import time
+import pickle
 
 import numpy as np
 
@@ -108,6 +109,8 @@ import requests.exceptions
 
 # to read the XML returned by the TAP service
 from xml.dom.minidom import parseString
+from xml.dom.minidom import parse as xmlparse
+
 
 
 ###################
@@ -171,7 +174,8 @@ def tap_query(querystr,
               verbose=True,
               timeout=60.0,
               refresh=2.0,
-              maxtimeout=700.0):
+              maxtimeout=300.0,
+              complete_query_later=False):
     '''This queries the GAIA TAP service using the ADQL querystr.
 
     querystr is an ADQL query. See: http://www.ivoa.net/documents/ADQL/2.0 for
@@ -228,15 +232,218 @@ def tap_query(querystr,
     )
     provenance = 'cache'
 
-    # generate a jobid here and update the input params
-    jobid = 'ab-gaia-%i' % time.time()
-    inputparams['JOBNAME'] = jobid
-    inputparams['JOBDESCRIPTION'] = 'astrobase-gaia-tap-ADQL-query'
+    incomplete_qpklf = os.path.join(
+        cachedir,
+        'incomplete-query-%s' % cachekey
+    )
 
-    # run the query if results not found in the cache
+    ##########################################
+    ## COMPLETE A QUERY THAT MAY BE RUNNING ##
+    ##########################################
+
+    # first, check if this query can be resurrected
+    if (not forcefetch and
+        complete_query_later and
+        os.path.exists(incomplete_qpklf)):
+
+        with open(incomplete_qpklf, 'rb') as infd:
+            incomplete_qinfo = pickle.load(infd)
+
+        LOGWARNING('complete_query_later = True, and '
+                   'this query was not completed on a '
+                   'previous run, will check if it is done now...')
+
+        # get the status URL and go into a loop to see if the query completed
+        waitdone = False
+        timeelapsed = 0.0
+
+        status_url = incomplete_qinfo['status_url']
+        phasekeyword = incomplete_qinfo['phase_keyword']
+        resultkeyword = incomplete_qinfo['result_keyword']
+
+        while not waitdone:
+
+            if timeelapsed > maxtimeout:
+
+                LOGERROR('GAIA TAP query still not done '
+                         'after waiting %s seconds for results.\n'
+                         'status URL is: %s' %
+                         (maxtimeout,
+                          repr(inputparams),
+                          status_url))
+
+                return None
+
+            try:
+
+                resreq = requests.get(status_url,
+                                      timeout=timeout)
+
+                resreq.raise_for_status()
+
+                # parse the response XML and get the job status
+                resxml = parseString(resreq.text)
+
+                jobstatuselem = (
+                    resxml.getElementsByTagName(phasekeyword)[0]
+                )
+                jobstatus = jobstatuselem.firstChild.toxml()
+
+                if jobstatus == 'COMPLETED':
+
+                    if verbose:
+
+                        LOGINFO('GAIA query completed, '
+                                'retrieving results...')
+                    waitdone = True
+
+                # if we're not done yet, then wait some more
+                elif jobstatus != 'ERROR':
+
+                    if verbose:
+                        LOGINFO('elapsed time: %.1f, '
+                                'current status: %s, '
+                                'status URL: %s, waiting...'
+                                % (timeelapsed, jobstatus, status_url))
+
+                    time.sleep(refresh)
+                    timeelapsed = timeelapsed + refresh
+
+                # if the JOB failed, then bail out immediately
+                else:
+
+                    LOGERROR('GAIA TAP query failed due to a server error.\n'
+                             'status URL: %s\n'
+                             'status contents: %s' %
+                             (status_url,
+                              resreq.text))
+
+                    # since this job failed, remove the incomplete query pickle
+                    # so we can try this from scratch
+                    os.remove(incomplete_qpklf)
+
+                    return None
+
+            except requests.exceptions.Timeout as e:
+
+                LOGEXCEPTION(
+                    'GAIA query timed out while waiting for status '
+                    'download results.\n'
+                    'query: %s\n'
+                    'status URL: %s' %
+                    (repr(inputparams), status_url)
+                )
+
+                return None
+
+
+            except Exception as e:
+
+                LOGEXCEPTION(
+                    'GAIA query failed while waiting for status\n'
+                    'query: %s\n'
+                    'status URL: %s\n'
+                    'status contents: %s' %
+                    (repr(inputparams),
+                     status_url,
+                     resreq.text)
+                )
+
+                # if the query fails completely, then either the status URL
+                # doesn't exist any more or something else went wrong. we'll
+                # remove the incomplete query pickle so we can try this from
+                # scratch
+                os.remove(incomplete_qpklf)
+
+                return None
+
+        #
+        # at this point, we should be ready to get the query results
+        #
+        LOGINFO('query completed, retrieving results...')
+        result_url_elem = resxml.getElementsByTagName(resultkeyword)[0]
+        result_url = result_url_elem.getAttribute('xlink:href')
+        result_nrows = result_url_elem.getAttribute('rows')
+
+        try:
+
+            resreq = requests.get(result_url, timeout=timeout)
+            resreq.raise_for_status()
+
+            if cachefname.endswith('.gz'):
+
+                with gzip.open(cachefname,'wb') as outfd:
+                    for chunk in resreq.iter_content(chunk_size=65536):
+                        outfd.write(chunk)
+
+            else:
+
+                with open(cachefname,'wb') as outfd:
+                    for chunk in resreq.iter_content(chunk_size=65536):
+                        outfd.write(chunk)
+
+            if verbose:
+                LOGINFO('done. rows in result: %s' % result_nrows)
+            tablefname = cachefname
+
+            provenance = 'cache'
+
+            # return a dict pointing to the result file
+            # we'll parse this later
+            resdict = {'params':inputparams,
+                       'provenance':provenance,
+                       'result':tablefname}
+
+            # all went well, so we'll remove the incomplete query pickle
+            os.remove(incomplete_qpklf)
+
+            return resdict
+
+        except requests.exceptions.Timeout as e:
+
+            LOGEXCEPTION(
+                'GAIA query timed out while trying to '
+                'download results.\n'
+                'query: %s\n'
+                'result URL: %s' %
+                (repr(inputparams), result_url)
+            )
+            return None
+
+        except Exception as e:
+
+            LOGEXCEPTION(
+                'GAIA query failed because of an error '
+                'while trying to download results.\n'
+                'query: %s\n'
+                'result URL: %s\n'
+                'response status code: %s' %
+                (repr(inputparams),
+                 result_url,
+                 resreq.status_code)
+            )
+
+            # if the result download fails, then either the result URL doesn't
+            # exist any more or something else went wrong. we'll remove the
+            # incomplete query pickle so we can try this from scratch
+            os.remove(incomplete_qpklf)
+
+            return None
+
+
+    #####################
+    ## RUN A NEW QUERY ##
+    #####################
+
+    # otherwise, we check the cache if it's done already, or run it again if not
     if forcefetch or (not os.path.exists(cachefname)):
 
         provenance = 'new download'
+
+        # generate a jobid here and update the input params
+        jobid = 'ab-gaia-%i' % time.time()
+        inputparams['JOBNAME'] = jobid
+        inputparams['JOBDESCRIPTION'] = 'astrobase-gaia-tap-ADQL-query'
 
         try:
 
@@ -414,9 +621,49 @@ def tap_query(querystr,
                 while not waitdone:
 
                     if timeelapsed > maxtimeout:
-                        LOGERROR('GAIA TAP timed out after waiting for results,'
-                                 ' request was: '
-                                 '%s' % repr(inputparams))
+
+                        LOGERROR('GAIA TAP query timed out '
+                                 'after waiting %s seconds for results.\n'
+                                 'request was: %s\n'
+                                 'status URL is: %s\n'
+                                 'last status was: %s' %
+                                 (maxtimeout,
+                                  repr(inputparams),
+                                  status_url,
+                                  jobstatus))
+
+                        # here, we'll check if we're allowed to sleep on a query
+                        # for a bit and return to it later if the last status
+                        # was QUEUED or EXECUTING
+                        if complete_query_later and jobstatus in ('EXECUTING',
+                                                                  'QUEUED'):
+
+                            # write a pickle with the query params that we can
+                            # pick up later to finish this query
+                            incomplete_qpklf = os.path.join(
+                                cachedir,
+                                'incomplete-query-%s' % cachekey
+                            )
+                            with open(incomplete_qpklf, 'wb') as outfd:
+
+                                savedict = inputparams.copy()
+
+                                savedict['status_url'] = status_url
+                                savedict['last_status'] = jobstatus
+                                savedict['gaia_mirror'] = gaia_mirror
+                                savedict['phase_keyword'] = phasekeyword
+                                savedict['result_keyword'] = resultkeyword
+
+                                pickle.dump(savedict,
+                                            outfd,
+                                            pickle.HIGHEST_PROTOCOL)
+
+                            LOGINFO('complete_query_later = True, '
+                                    'last state of query was: %s, '
+                                    'will resume later if this function '
+                                    'is called again with the same query' %
+                                    jobstatus)
+
                         return None
 
                     time.sleep(refresh)
@@ -424,7 +671,7 @@ def tap_query(querystr,
 
                     try:
 
-                        resreq = requests.get(status_url)
+                        resreq = requests.get(status_url, timeout=timeout)
                         resreq.raise_for_status()
 
                         # parse the response XML and get the job status
@@ -445,16 +692,31 @@ def tap_query(querystr,
 
                         else:
                             if verbose:
-                                LOGINFO('elapsed time: %.1f, status URL: %s '
-                                        'not ready yet...'
-                                        % (timeelapsed, status_url))
+                                LOGINFO('elapsed time: %.1f, '
+                                        'current status: %s, '
+                                        'status URL: %s, waiting...'
+                                        % (timeelapsed, jobstatus, status_url))
                             continue
+
+                    except requests.exceptions.Timeout as e:
+
+                        LOGEXCEPTION(
+                            'GAIA query timed out while waiting for results '
+                            'download results.\n'
+                            'query: %s\n'
+                            'status URL: %s' %
+                            (repr(inputparams), status_url)
+                        )
+                        return None
+
 
                     except Exception as e:
 
                         LOGEXCEPTION(
-                            'GAIA query failed while waiting for results: %s, '
-                            'status URL: %s, status contents: %s' %
+                            'GAIA query failed while waiting for results\n'
+                            'query: %s\n'
+                            'status URL: %s\n'
+                            'status contents: %s' %
                             (repr(inputparams),
                              status_url,
                              resreq.text)
@@ -470,7 +732,7 @@ def tap_query(querystr,
 
             try:
 
-                resreq = requests.get(result_url)
+                resreq = requests.get(result_url, timeout=timeout)
                 resreq.raise_for_status()
 
                 if cachefname.endswith('.gz'):
@@ -489,11 +751,25 @@ def tap_query(querystr,
                     LOGINFO('done. rows in result: %s' % result_nrows)
                 tablefname = cachefname
 
+            except requests.exceptions.Timeout as e:
+
+                LOGEXCEPTION(
+                    'GAIA query timed out while trying to '
+                    'download results.\n'
+                    'query: %s\n'
+                    'result URL: %s' %
+                    (repr(inputparams), result_url)
+                )
+                return None
+
             except Exception as e:
 
                 LOGEXCEPTION(
-                    'GAIA query failed while trying to download results: %s, '
-                    'result URL: %s, response status: %s' %
+                    'GAIA query failed because of an error '
+                    'while trying to download results.\n'
+                    'query: %s\n'
+                    'result URL: %s\n'
+                    'response status code: %s' %
                     (repr(inputparams),
                      result_url,
                      resreq.status_code)
@@ -501,8 +777,9 @@ def tap_query(querystr,
                 return None
 
         except requests.exceptions.HTTPError as e:
-            LOGEXCEPTION('GAIA TAP query failed, request status was: '
-                         '%s, query was: %s' % (resp_status, repr(inputparams)))
+            LOGEXCEPTION('GAIA TAP query failed.\nrequest status was: '
+                         '%s.\nquery was: %s' % (resp_status,
+                                                 repr(inputparams)))
             return None
 
 
@@ -521,6 +798,10 @@ def tap_query(querystr,
 
             return None
 
+    ############################
+    ## GET RESULTS FROM CACHE ##
+    ############################
+
     else:
 
         if verbose:
@@ -534,11 +815,11 @@ def tap_query(querystr,
         try:
             infd = gzip.open(cachefname,'rb')
             gaia_objlist = np.genfromtxt(
-                    infd,
-                    names=True,
-                    delimiter=',',
-                    dtype='U20,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8',
-                    usecols=(0,1,2,3,4,5,6,7,8,9,10,11,12)
+                infd,
+                names=True,
+                delimiter=',',
+                dtype='U20,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8',
+                usecols=(0,1,2,3,4,5,6,7,8,9,10,11,12)
             )
 
         except Exception as e:
