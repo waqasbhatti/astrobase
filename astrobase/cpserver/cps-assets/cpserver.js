@@ -220,6 +220,10 @@ var cptracker = {
         'objectinfo.gaia_neighbors',
         'objectinfo.gaia_closest_distarcsec',
         'objectinfo.gaia_closest_gmagdiff',
+        'objectinfo.simbad_best_mainid',
+        'objectinfo.simbad_best_objtype',
+        'objectinfo.simbad_best_allids',
+        'objectinfo.simbad_best_distarcsec',
         'objectinfo.d_ug',
         'objectinfo.d_gr',
         'objectinfo.s_color',
@@ -769,6 +773,23 @@ var cpv = {
                 console.log('no GAIA info');
             }
 
+            // get the SIMBAD status (useful for G mags, colors, etc.)
+            if (cpv.currcp.objectinfo.simbad_status != undefined) {
+                var simbad_ok =
+                    cpv.currcp.objectinfo.simbad_status.indexOf('ok') != -1;
+                var simbad_message =
+                    cpv.currcp.objectinfo.simbad_status.split(':')[1];
+            }
+
+            else {
+                var simbad_ok = false;
+                var simbad_message = (
+                    'no RA/DEC provided, so no SIMBAD cross-match possible'
+                );
+                console.log('no SIMBAD info');
+            }
+
+
             //
             // get the coordinates
             //
@@ -926,6 +947,8 @@ var cpv = {
             // set up the cmdplots property for currcp
             cpv.currcp.cmdplots = [];
 
+
+            // set up GAIA info
             if (gaia_ok) {
                 var gaiamag = cpv.currcp.objectinfo.gaia_mags[0];
                 if (cpv.currcp.objectinfo.gaiak_colors != null) {
@@ -1234,6 +1257,47 @@ var cpv = {
                     cputils.b64_to_image(thiscmdplot, cmdimgs[cmdi]);
 
                 }
+
+            }
+
+            // get SIMBAD info if possible
+            if (cpv.currcp.objectinfo.simbad_status != undefined) {
+
+                if (simbad_ok) {
+
+                    var simbad_best_allids =
+                        cpv.currcp.objectinfo.simbad_best_allids
+                        .split('|').join(', ');
+
+                    var formatted_simbad =
+                        '<strong><em>matching objects</em>:</strong> ' +
+                        (cpv.currcp.objectinfo.simbad_nmatches) + '<br>' +
+                        '<em>closest distance</em>: ' +
+                        math.format(
+                            cpv.currcp.objectinfo.simbad_best_distarcsec, 4
+                        ) + '&Prime;<br>' +
+                        '<em>closest object ID</em>: ' +
+                        cpv.currcp.objectinfo.simbad_best_mainid + '<br>' +
+                        '<em>closest object type</em>: ' +
+                        cpv.currcp.objectinfo.simbad_best_objtype + '<br>' +
+                        '<em>closest object other IDs</em>: ' +
+                        simbad_best_allids;
+
+                }
+                else {
+                    var formatted_simbad =
+                        '<strong><em>SIMBAD query failed</em>:</strong> ' +
+                        simbad_message;
+                }
+
+                $('#objectinfo-extra')
+                    .append(
+                        "<tr>" +
+                            "<th>SIMBAD information</th>" +
+                            "<td>" + formatted_simbad +
+                            "</td>" +
+                            "</tr>"
+                    );
 
             }
 

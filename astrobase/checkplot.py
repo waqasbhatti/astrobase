@@ -4725,7 +4725,7 @@ def update_checkplot_objectinfo(cpf,
     '''This just updates the checkplot objectinfo dict.
 
     Useful in cases where a previous round of GAIA/finderchart acquisition
-    failed. This will not update the following keys in the checkplot if they
+    failed. This will preserve the following keys in the checkplot if they
     exist:
 
     comments

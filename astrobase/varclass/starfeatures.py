@@ -1434,8 +1434,9 @@ def neighbor_gaia_features(objectinfo,
                 infd,
                 names=True,
                 delimiter=',',
-                dtype='U20,f8,f8,U20,U20,U20,i8,U50,f8',
-                usecols=(0,1,2,3,4,5,6,7,8)
+                dtype='U20,f8,f8,U20,U20,U20,i8,U600,f8',
+                usecols=(0,1,2,3,4,5,6,7,8),
+                comments='?',
             )
 
             simbad_objectnames = np.atleast_1d(simbad_objectnames)
@@ -1450,7 +1451,7 @@ def neighbor_gaia_features(objectinfo,
 
                 simbad_mainid = [x.replace('"','') for x in simbad_mainid]
                 simbad_allids = [x.replace('"','') for x in simbad_allids]
-                simbad_objtype = [x.replace('"','') for x in simbad_allids]
+                simbad_objtype = [x.replace('"','') for x in simbad_objtype]
 
 
                 resultdict.update({
@@ -1503,10 +1504,10 @@ def neighbor_gaia_features(objectinfo,
 
 
                     resultdict.update({
-                        'simbad_best_mainid':simbad_mainid[0],
-                        'simbad_best_objtype':simbad_objtype[0],
-                        'simbad_best_allids':simbad_allids[0],
-                        'simbad_best_distarcsec':simbad_distarcsec[0],
+                        'simbad_best_mainid':None,
+                        'simbad_best_objtype':None,
+                        'simbad_best_allids':None,
+                        'simbad_best_distarcsec':None,
                         'simbad_status':simbad_status
                     })
 
