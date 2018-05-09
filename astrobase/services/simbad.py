@@ -494,11 +494,13 @@ def tap_query(querystr,
                     )
                     mirrorok = False
 
-                    # make sure not to hit current mirror again if it's down
+                    # for now, we have only one SIMBAD mirror to hit, so we'll
+                    # wait a random time between 1 and 5 seconds to hit it again
                     remainingmirrors = list(SIMBAD_URLS.keys())
-                    remainingmirrors.remove(randkey)
+                    waittime = random.choice(range(1,6))
+                    time.sleep(waittime)
 
-                    randkey = random.choice(remainingmirrors)
+                    randkey = remainingmirrors[0]
                     tapurl = SIMBAD_URLS[randkey]['url']
                     resultkeyword = SIMBAD_URLS[randkey]['resultkeyword']
                     phasekeyword = SIMBAD_URLS[randkey]['phasekeyword']
@@ -518,11 +520,13 @@ def tap_query(querystr,
                     )
                     mirrorok = False
 
-                    # make sure not to hit current mirror again if it's down
+                    # for now, we have only one SIMBAD mirror to hit, so we'll
+                    # wait a random time between 1 and 5 seconds to hit it again
                     remainingmirrors = list(SIMBAD_URLS.keys())
-                    remainingmirrors.remove(randkey)
+                    waittime = random.choice(range(1,6))
+                    time.sleep(waittime)
 
-                    randkey = random.choice(remainingmirrors)
+                    randkey = remainingmirrors[0]
                     tapurl = SIMBAD_URLS[randkey]['url']
                     resultkeyword = SIMBAD_URLS[randkey]['resultkeyword']
                     phasekeyword = SIMBAD_URLS[randkey]['phasekeyword']

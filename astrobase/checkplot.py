@@ -4770,8 +4770,7 @@ def update_checkplot_objectinfo(cpf,
     cpd['objectinfo']['objecttags'] = objecttags
     cpd['comments'] = comments
 
-    newcpf = _write_checkplot_picklefile(cpd,
-                                         outfile=cpf)
+    newcpf = _write_checkplot_picklefile(cpd, outfile=cpf)
 
     return newcpf
 
