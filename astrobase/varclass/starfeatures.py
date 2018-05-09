@@ -114,11 +114,12 @@ from astropy.wcs import WCS
 ###################
 
 from .. import magnitudes, coordutils
-from ..services import dust, gaia, skyview
+from ..services import dust, gaia, skyview, simbad
 
 dust.set_logger_parent(__name__)
 gaia.set_logger_parent(__name__)
 skyview.set_logger_parent(__name__)
+simbad.set_logger_parent(__name__)
 
 #########################
 ## COORDINATE FEATURES ##
@@ -293,7 +294,7 @@ BANDPASSES_COLORS = {
              'colors':[['irac3-irac4','I3 - I4']]},
     'wise1':{'dustkey':'WISE-1',
              'label':'W1',
-            'colors':[['sdssi-wise1','i - W1'],
+             'colors':[['sdssi-wise1','i - W1'],
                       ['wise1-wise2','W1 - W2']]},
     'wise2':{'dustkey':'WISE-2',
              'label':'W2',
@@ -1409,5 +1410,137 @@ def neighbor_gaia_features(objectinfo,
              'gaia_closest_distarcsec':np.nan,
              'gaia_closest_gmagdiff':np.nan}
         )
+
+
+    # finally, search for this object in SIMBAD
+    if ('ra' in objectinfo and 'decl' in objectinfo and
+        objectinfo['ra'] is not None and objectinfo['decl'] is not None):
+
+        simbad_result = simbad.objectnames_conesearch(
+            objectinfo['ra'],
+            objectinfo['decl'],
+            neighbor_radius_arcsec,
+            verbose=verbose,
+            maxtimeout=gaia_max_timeout
+        )
+
+    if (simbad_result and
+        simbad_result['result'] and
+        os.path.exists(simbad_result['result'])):
+
+        with gzip.open(simbad_result['result'],'rb') as infd:
+
+            simbad_objectnames = np.genfromtxt(
+                infd,
+                names=True,
+                delimiter=',',
+                dtype='U20,f8,f8,U20,U20,U20,i8,U50,f8',
+                usecols=(0,1,2,3,4,5,6,7,8)
+            )
+
+            simbad_objectnames = np.atleast_1d(simbad_objectnames)
+
+            if simbad_objectnames.size > 0:
+
+                simbad_mainid = simbad_objectnames['main_id'].tolist()
+                simbad_allids = simbad_objectnames['all_ids'].tolist()
+                simbad_objtype = simbad_objectnames['otype_txt'].tolist()
+                simbad_distarcsec = simbad_objectnames['dist_arcsec'].tolist()
+                simbad_nmatches = len(simbad_mainid)
+
+                simbad_mainid = [x.replace('"','') for x in simbad_mainid]
+                simbad_allids = [x.replace('"','') for x in simbad_allids]
+                simbad_objtype = [x.replace('"','') for x in simbad_allids]
+
+
+                resultdict.update({
+                    'simbad_nmatches':simbad_nmatches,
+                    'simbad_mainid':simbad_mainid,
+                    'simbad_objtype':simbad_objtype,
+                    'simbad_allids':simbad_allids,
+                    'simbad_distarcsec':simbad_distarcsec
+                })
+
+
+                if simbad_nmatches > 1:
+
+                    resultdict['simbad_status'] = (
+                        'ok: multiple SIMBAD matches found'
+                    )
+
+                else:
+
+                    resultdict['simbad_status'] = 'ok: single SIMBAD match'
+
+
+
+                # get the closest match
+                if simbad_distarcsec[0] < gaia_matchdist_arcsec:
+
+                    resultdict.update({
+                        'simbad_best_mainid':simbad_mainid[0],
+                        'simbad_best_objtype':simbad_objtype[0],
+                        'simbad_best_allids':simbad_allids[0],
+                        'simbad_best_distarcsec':simbad_distarcsec[0],
+                        'simbad_status':'ok: object found within match radius'
+                    })
+
+                else:
+
+                    LOGWARNING('no SIMBAD objects found within '
+                               '%.3f arcsec of object position (%.3f, %.3f), '
+                               'closest object: %s at %.3f arcsec away' %
+                               (gaia_matchdist_arcsec,
+                                objectinfo['ra'],
+                                objectinfo['decl'],
+                                simbad_mainid[0],
+                                simbad_distarcsec[0]))
+
+                    simbad_status = ('failed: no object within %.3f '
+                                     'arcsec, closest = %.3f arcsec' %
+                                     (gaia_matchdist_arcsec,
+                                      simbad_distarcsec[0]))
+
+
+                    resultdict.update({
+                        'simbad_best_mainid':simbad_mainid[0],
+                        'simbad_best_objtype':simbad_objtype[0],
+                        'simbad_best_allids':simbad_allids[0],
+                        'simbad_best_distarcsec':simbad_distarcsec[0],
+                        'simbad_status':simbad_status
+                    })
+
+
+            else:
+
+                resultdict.update({
+                    'simbad_status':'failed: no SIMBAD matches found',
+                    'simbad_nmatches':None,
+                    'simbad_mainid':None,
+                    'simbad_objtype':None,
+                    'simbad_allids':None,
+                    'simbad_distarcsec':None,
+                    'simbad_best_mainid':None,
+                    'simbad_best_objtype':None,
+                    'simbad_best_allids':None,
+                    'simbad_best_distarcsec':None,
+                })
+
+    else:
+
+        resultdict.update({
+            'simbad_status':'failed: SIMBAD query failed ',
+            'simbad_nmatches':None,
+            'simbad_mainid':None,
+            'simbad_objtype':None,
+            'simbad_allids':None,
+            'simbad_distarcsec':None,
+            'simbad_best_mainid':None,
+            'simbad_best_objtype':None,
+            'simbad_best_allids':None,
+            'simbad_best_distarcsec':None,
+        })
+
+
 
     return resultdict

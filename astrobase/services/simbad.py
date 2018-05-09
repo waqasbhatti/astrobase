@@ -790,13 +790,14 @@ def tap_query(querystr,
         # try to open the cached file to make sure it's OK
         try:
             infd = gzip.open(cachefname,'rb')
-            simbad_objlist = np.genfromtxt(
+            simbad_objectnames = np.genfromtxt(
                 infd,
                 names=True,
                 delimiter=',',
-                dtype='U20,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8',
-                usecols=(0,1,2,3,4,5,6,7,8,9,10,11,12)
+                dtype='U20,f8,f8,U20,U20,U20,i8,U50,f8',
+                usecols=(0,1,2,3,4,5,6,7,8)
             )
+            infd.close()
 
         except Exception as e:
 
