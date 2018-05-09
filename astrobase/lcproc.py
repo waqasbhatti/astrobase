@@ -5220,7 +5220,7 @@ def add_cpinfo_to_lclist(
 
     # now go through each objectid in the catalog and add the extra keys to
     # their respective arrays
-    for catobj in catalog_objectids:
+    for catobj in tqdm(catalog_objectids):
 
         cp_objind = np.where(checkplot_objectids == catobj)
 
