@@ -1424,6 +1424,10 @@ def neighbor_gaia_features(objectinfo,
             maxtimeout=gaia_max_timeout
         )
 
+    else:
+
+        simbad_result = None
+
     if (simbad_result and
         simbad_result['result'] and
         os.path.exists(simbad_result['result'])):
