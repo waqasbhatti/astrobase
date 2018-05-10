@@ -5260,6 +5260,13 @@ def add_cpinfo_to_lclist(
             objectcatalog['objects'][ek]
         )
 
+    # add the magcol to the objectcatalog
+    if 'magcols' in objectcatalog:
+        if magcol not in objectcatalog['magcols']:
+            objectcatalog['magcols'].append(magcol)
+    else:
+        objectcatalog['magcols'] = [magcol]
+
     # write back the new object catalog
     with open(outfile, 'wb') as outfd:
         pickle.dump(objectcatalog, outfd, protocol=pickle.HIGHEST_PROTOCOL)
