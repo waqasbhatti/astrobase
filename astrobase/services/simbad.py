@@ -843,7 +843,8 @@ def objectnames_conesearch(racenter,
                            verbose=True,
                            timeout=60.0,
                            refresh=2.0,
-                           maxtimeout=90.0):
+                           maxtimeout=90.0,
+                           complete_query_later=True):
     '''This queries the SIMBAD TAP service for a list of object names near the
     coords. This is effectively a "reverse" name resolver (i.e. this does the
     opposite of SESAME).
@@ -894,4 +895,5 @@ def objectnames_conesearch(racenter,
                      verbose=verbose,
                      timeout=timeout,
                      refresh=refresh,
-                     maxtimeout=maxtimeout)
+                     maxtimeout=maxtimeout,
+                     complete_query_later=complete_query_later)

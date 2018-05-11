@@ -1387,8 +1387,9 @@ def _pkl_finder_objectinfo(objectinfo,
                            plotdpi=100,
                            findercachedir='~/.astrobase/stamp-cache',
                            verbose=True,
-                           gaia_max_timeout=60.0,
-                           gaia_mirror='cds'):
+                           gaia_max_timeout=180.0,
+                           gaia_mirror='cds',
+                           complete_query_later=True):
     '''This returns the finder chart and object information as a dict.
 
     '''
@@ -1677,12 +1678,15 @@ def _pkl_finder_objectinfo(objectinfo,
                                    custom_bandpasses=custom_bandpasses)
 
         # next, get the neighbor features and GAIA info
-        nbrfeat = neighbor_gaia_features(objectinfo,
-                                         kdt,
-                                         nbrradiusarcsec,
-                                         verbose=False,
-                                         gaia_max_timeout=gaia_max_timeout,
-                                         gaia_mirror=gaia_mirror)
+        nbrfeat = neighbor_gaia_features(
+            objectinfo,
+            kdt,
+            nbrradiusarcsec,
+            verbose=False,
+            gaia_max_timeout=gaia_max_timeout,
+            gaia_mirror=gaia_mirror,
+            complete_query_later=complete_query_later
+        )
 
         # see if the objectinfo dict has pmra/pmdecl entries.  if it doesn't,
         # then we'll see if the nbrfeat dict has pmra/pmdecl from GAIA. we'll
@@ -1730,7 +1734,6 @@ def _pkl_finder_objectinfo(objectinfo,
 
         # finally, get the object's color classification
         colorclass = color_classification(colorfeat, coordfeat)
-
 
         # update the objectinfo dict with everything
         objectinfo.update(colorfeat)
@@ -2883,8 +2886,9 @@ def checkplot_dict(lspinfolist,
                    objectinfo=None,
                    deredden_object=True,
                    custom_bandpasses=None,
-                   gaia_max_timeout=60.0,
+                   gaia_max_timeout=180.0,
                    gaia_mirror='cds',
+                   complete_query_later=True,
                    varinfo=None,
                    getvarfeatures=True,
                    lclistpkl=None,
@@ -3086,23 +3090,26 @@ def checkplot_dict(lspinfolist,
 
 
     # 0. get the objectinfo and finder chart and initialize the checkplotdict
-    checkplotdict = _pkl_finder_objectinfo(objectinfo,
-                                           varinfo,
-                                           findercmap,
-                                           finderconvolve,
-                                           sigclip,
-                                           normto,
-                                           normmingap,
-                                           deredden_object=deredden_object,
-                                           custom_bandpasses=custom_bandpasses,
-                                           lclistpkl=lclistpkl,
-                                           nbrradiusarcsec=nbrradiusarcsec,
-                                           maxnumneighbors=maxnumneighbors,
-                                           plotdpi=plotdpi,
-                                           verbose=verbose,
-                                           findercachedir=findercachedir,
-                                           gaia_max_timeout=gaia_max_timeout,
-                                           gaia_mirror=gaia_mirror)
+    checkplotdict = _pkl_finder_objectinfo(
+        objectinfo,
+        varinfo,
+        findercmap,
+        finderconvolve,
+        sigclip,
+        normto,
+        normmingap,
+        deredden_object=deredden_object,
+        custom_bandpasses=custom_bandpasses,
+        lclistpkl=lclistpkl,
+        nbrradiusarcsec=nbrradiusarcsec,
+        maxnumneighbors=maxnumneighbors,
+        plotdpi=plotdpi,
+        verbose=verbose,
+        findercachedir=findercachedir,
+        gaia_max_timeout=gaia_max_timeout,
+        gaia_mirror=gaia_mirror,
+        complete_query_later=complete_query_later
+    )
 
     # try again to get the right objectid
     if (objectinfo and isinstance(objectinfo, dict) and
@@ -3367,8 +3374,9 @@ def checkplot_pickle(lspinfolist,
                      objectinfo=None,
                      deredden_object=True,
                      custom_bandpasses=None,
-                     gaia_max_timeout=60.0,
+                     gaia_max_timeout=180.0,
                      gaia_mirror='cds',
+                     complete_query_later=True,
                      lcfitfunc=None,
                      lcfitparams={},
                      varinfo=None,
@@ -3531,6 +3539,7 @@ def checkplot_pickle(lspinfolist,
         custom_bandpasses=custom_bandpasses,
         gaia_max_timeout=gaia_max_timeout,
         gaia_mirror=gaia_mirror,
+        complete_query_later=complete_query_later,
         varinfo=varinfo,
         getvarfeatures=getvarfeatures,
         lclistpkl=lclistpkl,
@@ -4714,10 +4723,11 @@ def update_checkplot_objectinfo(cpf,
                                 finderconvolve=None,
                                 deredden_object=True,
                                 custom_bandpasses=None,
-                                gaia_max_timeout=60.0,
+                                gaia_max_timeout=180.0,
                                 gaia_mirror='cds',
+                                complete_query_later=True,
                                 lclistpkl=None,
-                                nbrradiusarcsec=30.0,
+                                nbrradiusarcsec=60.0,
                                 maxnumneighbors=5,
                                 plotdpi=100,
                                 findercachedir='~/.astrobase/stamp-cache',
@@ -4759,6 +4769,7 @@ def update_checkplot_objectinfo(cpf,
                                     custom_bandpasses=custom_bandpasses,
                                     gaia_max_timeout=gaia_max_timeout,
                                     gaia_mirror=gaia_mirror,
+                                    complete_query_later=complete_query_later,
                                     lclistpkl=lclistpkl,
                                     nbrradiusarcsec=nbrradiusarcsec,
                                     maxnumneighbors=maxnumneighbors,

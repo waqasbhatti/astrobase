@@ -868,7 +868,8 @@ def objectlist_conesearch(racenter,
                           verbose=True,
                           timeout=60.0,
                           refresh=2.0,
-                          maxtimeout=700.0):
+                          maxtimeout=700.0,
+                          complete_query_later=True):
     '''This queries the GAIA TAP service for a list of objects near the coords.
 
     Uses a conesearch around racenter, declcenter with radius in arcsec of
@@ -922,7 +923,8 @@ def objectlist_conesearch(racenter,
                      verbose=verbose,
                      timeout=timeout,
                      refresh=refresh,
-                     maxtimeout=maxtimeout)
+                     maxtimeout=maxtimeout,
+                     complete_query_later=complete_query_later)
 
 
 
@@ -941,7 +943,8 @@ def objectlist_radeclbox(radeclbox,
                          verbose=True,
                          timeout=60.0,
                          refresh=2.0,
-                         maxtimeout=700.0):
+                         maxtimeout=700.0,
+                         complete_query_later=True):
 
     '''
     This queries the GAIA TAP service for a list of objects in radeclbox.
@@ -997,4 +1000,5 @@ def objectlist_radeclbox(radeclbox,
                      verbose=verbose,
                      timeout=timeout,
                      refresh=refresh,
-                     maxtimeout=maxtimeout)
+                     maxtimeout=maxtimeout,
+                     complete_query_later=complete_query_later)

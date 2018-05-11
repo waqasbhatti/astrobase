@@ -1047,8 +1047,9 @@ def neighbor_gaia_features(objectinfo,
                            neighbor_radius_arcsec,
                            gaia_matchdist_arcsec=3.0,
                            verbose=True,
-                           gaia_max_timeout=60.0,
-                           gaia_mirror='cds'):
+                           gaia_max_timeout=180.0,
+                           gaia_mirror='cds',
+                           complete_query_later=True):
     '''Gets several neighbor and GAIA features:
 
     from the given light curve catalog:
@@ -1152,12 +1153,16 @@ def neighbor_gaia_features(objectinfo,
     if ('ra' in objectinfo and 'decl' in objectinfo and
         objectinfo['ra'] is not None and objectinfo['decl'] is not None):
 
-        gaia_result = gaia.objectlist_conesearch(objectinfo['ra'],
-                                                 objectinfo['decl'],
-                                                 neighbor_radius_arcsec,
-                                                 verbose=verbose,
-                                                 maxtimeout=gaia_max_timeout,
-                                                 gaia_mirror=gaia_mirror)
+        gaia_result = gaia.objectlist_conesearch(
+            objectinfo['ra'],
+            objectinfo['decl'],
+            neighbor_radius_arcsec,
+            verbose=verbose,
+            maxtimeout=gaia_max_timeout,
+            gaia_mirror=gaia_mirror,
+            complete_query_later=complete_query_later
+        )
+
         if gaia_result:
 
             gaia_objlistf = gaia_result['result']
@@ -1421,7 +1426,8 @@ def neighbor_gaia_features(objectinfo,
             objectinfo['decl'],
             neighbor_radius_arcsec,
             verbose=verbose,
-            maxtimeout=gaia_max_timeout
+            maxtimeout=gaia_max_timeout,
+            complete_query_later=complete_query_later
         )
 
     else:
