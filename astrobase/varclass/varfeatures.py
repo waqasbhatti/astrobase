@@ -479,7 +479,6 @@ def nonperiodic_lightcurve_features(times, mags, errs, magsarefluxes=False):
             'timelength':timelength,
             'amplitude':series_amplitude,
             'ndetobslength_ratio':ndet/timelength,
-            'ndet':ndet,
             'linear_fit_slope':series_linear_slope,
             'magnitude_ratio':series_magratio,
         }
