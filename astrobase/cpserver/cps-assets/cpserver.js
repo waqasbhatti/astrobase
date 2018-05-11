@@ -768,7 +768,7 @@ var cpv = {
             else {
                 var gaia_ok = false;
                 var gaia_message = (
-                    'no RA/DEC provided, so no GAIA cross-match possible'
+                    'no GAIA cross-match information available'
                 );
                 console.log('no GAIA info');
             }
@@ -784,7 +784,7 @@ var cpv = {
             else {
                 var simbad_ok = false;
                 var simbad_message = (
-                    'no RA/DEC provided, so no SIMBAD cross-match possible'
+                    'no SIMBAD cross-match information available'
                 );
                 console.log('no SIMBAD info');
             }
