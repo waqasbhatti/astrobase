@@ -1,3 +1,47 @@
+# v0.3.14
+
+## New stuff
+
+- checkplot: add `update_checkplot_objectinfo` function to retroactively update
+  checkplots with new information after they've been created
+- services: added a SIMBAD TAP query client
+- services.gaia: added `complete_query_later` kwarg to save still-running query
+  info if a timeout is reached. the next invocation of the same query will check
+  if it completed and will retrieve the results
+- varclass.starfeatures: get all possible external object IDs from SIMBAD
+- checkplot, lcproc, starfeatures: add `gaia_max_timeout`, `gaia_mirror`, and
+  `complete_query_later` kwargs to query and checkplot related functions
+
+
+## Changes
+
+- services.gaia: now uses DR2
+- services.gaia: now figures out which GAIA mirrors to use automatically, uses
+  CDS by default
+- services.gaia: can now skip to another GAIA mirror if the current one doesn't
+  work. mirrors enabled are the GAIA main site, the Heidelberg mirror, and the
+  CDS mirror
+- `lcproc.add_cpinfo_to_lclist`: add magcols to the output dict and run SIMBAD
+  query again if necessary
+- `checkplot._pkl_finder_objectinfo`: allow direct use of dict as lclistpkl kwarg
+
+
+## Fixes
+
+- checkplot: actually retry finder chart with forcefetch=True
+- cpserver.js: handle errors correctly on checkplot load
+- cpserver.js: more failure handling
+- kbls: new chunk-size determination scheme, should fix Github #50
+- services.gaia: automatically figure out table names for mirrors
+- services.gaia: fix missing import, tests: use new expected GAIA ID for DR2
+- services.gaia: handle timeouts and 503s a bit better
+- services.gaia, skyview: add handling for corrupt cached results
+- services.simbad: enforce random wait time between retries
+- starfeatures: fix missing simbad_result var
+- tests: more fixes for GAIA DR2
+- `varfeatures.nonperiodic_lightcurve_features`: fix ndet inconsistency
+
+
 # v0.3.13
 
 ## New stuff
