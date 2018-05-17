@@ -69,8 +69,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -79,7 +79,7 @@ def LOGEXCEPTION(message):
 
 import os
 import os.path
-import gzip
+import sys
 
 try:
     import cPickle as pickle
@@ -95,16 +95,12 @@ from numpy import nan as npnan, median as npmedian, \
 import matplotlib
 matplotlib.use('Agg')
 dispok = False
+
+import matplotlib.axes
 import matplotlib.pyplot as plt
 
 # for convolving DSS stamps to simulate seeing effects
 import astropy.convolution as aconv
-
-# for internal skyview stamp download fn
-import re
-import hashlib
-import requests
-import requests.exceptions
 
 try:
     from astropy.io import fits as pyfits
@@ -119,6 +115,12 @@ try:
 except:
     from urlparse import urljoin
 
+try:
+    import cStringIO
+    from cStringIO import StringIO as strio
+except:
+    from io import BytesIO as strio
+
 
 ###################
 ## LOCAL IMPORTS ##
@@ -131,8 +133,6 @@ from .lcmath import phase_magseries, phase_magseries_with_errs, \
 
 from .varbase.lcfit import spline_fit_magseries
 
-from .coordutils import total_proper_motion, reduced_proper_motion
-
 from .services.skyview import get_stamp
 
 #########################
@@ -143,7 +143,7 @@ def plot_mag_series(times,
                     mags,
                     magsarefluxes=False,
                     errs=None,
-                    outfile=None,
+                    out=None,
                     sigclip=30.0,
                     normto='globalmedian',
                     normmingap=4.0,
@@ -181,6 +181,11 @@ def plot_mag_series(times,
     magseries plot will be cut in this way.
 
     plotdpi sets the DPI for PNG plots (default = 100).
+
+    out is one of:
+
+    - string name of a file to where the plot will be written
+    - StringIO/BytesIO object to where the plot will be written
 
     '''
 
@@ -378,17 +383,32 @@ def plot_mag_series(times,
             plt.ylim(ymin, ymax)
             plt.ylabel('flux')
 
+    # check if the output filename is actually an instance of StringIO
+    if sys.version_info[:2] < (3,0):
+
+        is_strio = isinstance(out, cStringIO.InputType)
+
+    else:
+
+        is_strio = isinstance(out, strio)
+
+
     # write the plot out to a file if requested
-    if outfile and isinstance(outfile, str):
+    if out and not is_strio:
 
-        if outfile.endswith('.png'):
-            plt.savefig(outfile,bbox_inches='tight',dpi=plotdpi)
+        if out.endswith('.png'):
+            plt.savefig(out,bbox_inches='tight',dpi=plotdpi)
         else:
-            plt.savefig(outfile,bbox_inches='tight')
+            plt.savefig(out,bbox_inches='tight')
         plt.close()
-        return os.path.abspath(outfile)
+        return os.path.abspath(out)
 
-    elif dispok:
+    elif out and is_strio:
+
+        plt.savefig(out, bbox_inches='tight', dpi=plotdpi, format='png')
+        return out
+
+    elif not out and dispok:
 
         plt.show()
         plt.close()
@@ -441,6 +461,12 @@ def plot_phased_mag_series(times,
     is a string denoting a filename, uses that to write a png/eps/pdf figure.
 
     plotdpi sets the DPI for PNG plots.
+
+    outfile is one of:
+
+    - a string filename for the file where the plot will be written
+    - a StringIO/BytesIO object to where the plot will be written
+    - a matplotlib.axes.Axes object to where the plot will be written
 
     '''
 
@@ -531,85 +557,113 @@ def plot_phased_mag_series(times,
 
     # finally, make the plots
 
-    # initialize the plot
-    fig = plt.figure()
-    fig.set_size_inches(7.5,4.8)
+    # check if the outfile is actually an Axes object
+    if isinstance(outfile, matplotlib.axes.Axes):
+
+        ax = outfile
+
+    # otherwise, it's just a normal file or StringIO/BytesIO
+    else:
+
+        # initialize the plot
+        fig = plt.figure()
+        fig.set_size_inches(7.5,4.8)
+        ax = plt.gca()
 
     if phasebin:
-        plt.errorbar(plotphase, plotmags, fmt='o',
-                     color='#B2BEB5',
-                     yerr=ploterrs,
-                     markersize=3.0,
-                     markeredgewidth=0.0,
-                     ecolor='#B2BEB5',
-                     capsize=0)
-        plt.errorbar(binplotphase, binplotmags, fmt='bo', yerr=binploterrs,
-                     markersize=5.0, markeredgewidth=0.0, ecolor='#B2BEB5',
-                     capsize=0)
+        ax.errorbar(plotphase, plotmags, fmt='o',
+                    color='#B2BEB5',
+                    yerr=ploterrs,
+                    markersize=3.0,
+                    markeredgewidth=0.0,
+                    ecolor='#B2BEB5',
+                    capsize=0)
+        ax.errorbar(binplotphase, binplotmags, fmt='bo', yerr=binploterrs,
+                    markersize=5.0, markeredgewidth=0.0, ecolor='#B2BEB5',
+                    capsize=0)
 
     else:
-        plt.errorbar(plotphase, plotmags, fmt='ko', yerr=ploterrs,
-                     markersize=3.0, markeredgewidth=0.0, ecolor='#B2BEB5',
-                     capsize=0)
+        ax.errorbar(plotphase, plotmags, fmt='ko', yerr=ploterrs,
+                    markersize=3.0, markeredgewidth=0.0, ecolor='#B2BEB5',
+                    capsize=0)
 
 
 
     # make a grid
-    plt.grid(color='#a9a9a9',
-             alpha=0.9,
-             zorder=0,
-             linewidth=1.0,
-             linestyle=':')
+    ax.grid(color='#a9a9a9',
+            alpha=0.9,
+            zorder=0,
+            linewidth=1.0,
+            linestyle=':')
 
     # make lines for phase 0.0, 0.5, and -0.5
-    plt.axvline(0.0,alpha=0.9,linestyle='dashed',color='g')
-    plt.axvline(-0.5,alpha=0.9,linestyle='dashed',color='g')
-    plt.axvline(0.5,alpha=0.9,linestyle='dashed',color='g')
+    ax.axvline(0.0,alpha=0.9,linestyle='dashed',color='g')
+    ax.axvline(-0.5,alpha=0.9,linestyle='dashed',color='g')
+    ax.axvline(0.5,alpha=0.9,linestyle='dashed',color='g')
 
     # fix the ticks to use no offsets
-    plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)
-    plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)
+    ax.get_yaxis().get_major_formatter().set_useOffset(False)
+    ax.get_xaxis().get_major_formatter().set_useOffset(False)
 
     # get the yrange
     if yrange and isinstance(yrange,list) and len(yrange) == 2:
         ymin, ymax = yrange
     else:
-        ymin, ymax = plt.ylim()
+        ymin, ymax = ax.get_ylim()
 
     # set the y axis labels and range
     if not magsarefluxes:
-        plt.ylim(ymax, ymin)
+        ax.set_ylim(ymax, ymin)
         yaxlabel = 'magnitude'
     else:
-        plt.ylim(ymin, ymax)
+        ax.set_ylim(ymin, ymax)
         yaxlabel = 'flux'
 
     # set the x axis limit
     if not plotphaselim:
-        plot_xlim = plt.xlim()
-        plt.xlim((npmin(plotphase)-0.1,
-                  npmax(plotphase)+0.1))
+        ax.set_xlim((npmin(plotphase)-0.1,
+                     npmax(plotphase)+0.1))
     else:
-        plt.xlim((plotphaselim[0],plotphaselim[1]))
+        ax.set_xlim((plotphaselim[0],plotphaselim[1]))
 
     # set up the axis labels and plot title
-    plt.xlabel('phase')
-    plt.ylabel(yaxlabel)
-    plt.title('period: %.6f d - epoch: %.6f' % (period, epoch))
+    ax.set_xlabel('phase')
+    ax.set_ylabel(yaxlabel)
+    ax.set_title('period: %.6f d - epoch: %.6f' % (period, epoch))
 
     LOGINFO('using period: %.6f d and epoch: %.6f' % (period, epoch))
 
+    # check if the output filename is actually an instance of StringIO
+    if sys.version_info[:2] < (3,0):
+
+        is_strio = isinstance(outfile, cStringIO.InputType)
+
+    else:
+
+        is_strio = isinstance(outfile, strio)
+
     # make the figure
-    if outfile and isinstance(outfile, str):
+    if (outfile and
+        not is_strio and
+        not isinstance(outfile, matplotlib.axes.Axes)):
 
         if outfile.endswith('.png'):
-            plt.savefig(outfile, bbox_inches='tight', dpi=plotdpi)
+            fig.savefig(outfile, bbox_inches='tight', dpi=plotdpi)
         else:
-            plt.savefig(outfile, bbox_inches='tight')
+            fig.savefig(outfile, bbox_inches='tight')
         plt.close()
         return period, epoch, os.path.abspath(outfile)
 
-    elif dispok:
+    elif outfile and is_strio:
+
+        fig.savefig(outfile, bbox_inches='tight', dpi=plotdpi, format='png')
+        return outfile
+
+    elif outfile and isinstance(outfile, matplotlib.axes.Axes):
+
+        return outfile
+
+    elif not outfile and dispok:
 
         plt.show()
         plt.close()
