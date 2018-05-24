@@ -549,21 +549,21 @@ def xieta_from_radecl(inra, indecl, incenterra, incenterdecl, deg=True):
     uun = uu*cdecc*crac + vv*cdecc*srac + ww*sdecc
     vvn = -uu*srac + vv*crac
     wwn = -uu*sdecc*crac - vv*sdecc*srac + ww*cdecc
-    denom = vvn*vnn + wwn*wwn
+    denom = vvn*vvn + wwn*wwn
 
     aunn = np.zeros_like(uun)
-    auun[uun >= 1.0] = 0.0
-    auun[uun < 1.0] = np.acos(uun)
+    aunn[uun >= 1.0] = 0.0
+    aunn[uun < 1.0] = np.acos(uun)
 
-    xi, eta = np.zeros_like(auun), np.zeros_like(auun)
+    xi, eta = np.zeros_like(aunn), np.zeros_like(aunn)
 
-    xi[(auun <= 0.0) | (denom <= 0.0)] = 0.0
-    eta[(auun <= 0.0) | (denom <= 0.0)] = 0.0
+    xi[(aunn <= 0.0) | (denom <= 0.0)] = 0.0
+    eta[(aunn <= 0.0) | (denom <= 0.0)] = 0.0
 
     sdenom = np.sqrt(denom)
 
-    xi[(auun > 0.0) | (denom > 0.0)] = auun*vvn/sdenom
-    eta[(auun > 0.0) | (denom > 0.0)] = auun*wwn/sdenom
+    xi[(aunn > 0.0) | (denom > 0.0)] = aunn*vvn/sdenom
+    eta[(aunn > 0.0) | (denom > 0.0)] = aunn*wwn/sdenom
 
     if deg:
         return np.degrees(xi), np.degrees(eta)
