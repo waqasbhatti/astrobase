@@ -9,8 +9,7 @@ Contains various useful tools for coordinate conversion, etc.
 
 '''
 
-import time
-from math import trunc, radians, degrees, sin, cos, asin, atan2, fabs, pi as PI
+from math import trunc, fabs, pi as PI
 
 import numpy as np
 
@@ -249,10 +248,10 @@ def great_circle_dist(ra1, dec1, ra2, dec2):
     ra2_rad, dec2_rad = np.deg2rad(in_ra2), np.deg2rad(dec2)
 
     del_dec2 = (dec2_rad - dec1_rad)/2.0
-    del_ra2 =  (ra2_rad - ra1_rad)/2.0
-    sin_dist = np.sqrt(np.sin(del_dec2) * np.sin(del_dec2) + \
-                           np.cos(dec1_rad) * np.cos(dec2_rad) * \
-                           np.sin(del_ra2) * np.sin(del_ra2))
+    del_ra2 = (ra2_rad - ra1_rad)/2.0
+    sin_dist = np.sqrt(np.sin(del_dec2) * np.sin(del_dec2) +
+                       np.cos(dec1_rad) * np.cos(dec2_rad) *
+                       np.sin(del_ra2) * np.sin(del_ra2))
 
     dist_rad = 2.0 * np.arcsin(sin_dist)
 
@@ -368,7 +367,8 @@ def make_kdtree(ra, decl):
 
 
 def conesearch_kdtree(kdtree,
-                      racenter, declcenter,
+                      racenter,
+                      declcenter,
                       searchradiusdeg,
                       conesearchworkers=1):
     '''
@@ -384,7 +384,7 @@ def conesearch_kdtree(kdtree,
     sinra = np.sin(np.radians(racenter))
 
     # this is the search distance in xyz unit vectors
-    xyzdist = 2.0 * np.sin(np.radians(searchradius)/2.0)
+    xyzdist = 2.0 * np.sin(np.radians(searchradiusdeg)/2.0)
 
     # look up the coordinates
     kdtindices = kdtree.query_ball_point([cosra*cosdecl,
