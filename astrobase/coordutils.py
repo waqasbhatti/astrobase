@@ -430,7 +430,7 @@ def xmatch_kdtree(kdtree,
     ext_kdt = sps.cKDTree(ext_xyz)
 
     # do a query_ball_tree
-    extkd_matchinds = ext_kdt.query_ball_tree(our_kdt, ext_xyzdist)
+    extkd_matchinds = our_kdt.query_ball_tree(ext_kdt, ext_xyzdist)
 
     ext_matchinds = []
     kdt_matchinds = []
