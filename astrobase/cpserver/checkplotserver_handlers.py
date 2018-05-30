@@ -482,7 +482,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
             # do the usual safing
             self.checkplotfname = xhtml_escape(
-                base64.b64decode(checkplotfname)
+                base64.b64decode(url_unescape(checkplotfname))
             )
 
             # see if this plot is in the current project
@@ -707,7 +707,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 for key in resultdict['result']['objectinfo']:
 
                     if (isinstance(resultdict['result']['objectinfo'][key],
-                                   float) and
+                                   (float, np.float64, np.float_)) and
                         (not np.isfinite(resultdict['result'][
                             'objectinfo'
                         ][key]))):
@@ -719,30 +719,78 @@ class CheckplotHandler(tornado.web.RequestHandler):
                         thisval = resultdict['result']['objectinfo'][key]
                         thisval = thisval.tolist()
                         for i, v in enumerate(thisval):
-                            if isinstance(v,float) and (not(np.isfinite(v))):
+                            if (isinstance(v,(float, np.float64, np.float_)) and
+                                (not(np.isfinite(v)))):
                                 thisval[i] = None
                         resultdict['result']['objectinfo'][key] = thisval
 
-                # remove nans from varinfo as well
+                # remove nans from varinfo itself
                 for key in resultdict['result']['varinfo']:
 
-                    if (isinstance(resultdict['result']['varinfo'][key],
-                                   float) and
-                        (not np.isfinite(resultdict['result'][
-                            'varinfo'
-                        ][key]))):
+                    if (isinstance(
+                            resultdict['result']['varinfo'][key],
+                            (float, np.float64, np.float_)) and
+                        (not np.isfinite(
+                            resultdict['result']['varinfo'][key]
+                        ))):
                         resultdict['result']['varinfo'][key] = None
 
-                    elif (isinstance(resultdict['result']['varinfo'][key],
-                                     ndarray)):
+                    elif (isinstance(
+                            resultdict['result']['varinfo'][key],
+                            ndarray)):
 
-                        thisval = resultdict['result']['varinfo'][key]
+                        thisval = (
+                            resultdict['result']['varinfo'][key]
+                        )
                         thisval = thisval.tolist()
                         for i, v in enumerate(thisval):
-                            if isinstance(v,float) and (not(np.isfinite(v))):
+                            if (isinstance(v,(float, np.float64, np.float_)) and
+                                (not(np.isfinite(v)))):
                                 thisval[i] = None
-                        resultdict['result']['varinfo'][key] = thisval
+                        resultdict['result']['varinfo'][key] = (
+                            thisval
+                        )
 
+
+                # remove nans from varinfo['features']
+                if ('features' in resultdict['result']['varinfo'] and
+                    isinstance(resultdict['result']['varinfo']['features'],
+                               dict)):
+
+                    for key in resultdict['result']['varinfo']['features']:
+
+                        if (isinstance(
+                                resultdict[
+                                    'result'
+                                ]['varinfo']['features'][key],
+                                (float, np.float64, np.float_)) and
+                            (not np.isfinite(
+                                resultdict[
+                                    'result'
+                                ]['varinfo']['features'][key]))):
+                            resultdict[
+                                'result'
+                            ]['varinfo']['features'][key] = None
+
+                        elif (isinstance(
+                                resultdict[
+                                    'result'
+                                ]['varinfo']['features'][key],
+                                ndarray)):
+
+                            thisval = (
+                                resultdict['result']['varinfo']['features'][key]
+                            )
+                            thisval = thisval.tolist()
+                            for i, v in enumerate(thisval):
+                                if (isinstance(v,(float,
+                                                  np.float64,
+                                                  np.float_)) and
+                                    (not(np.isfinite(v)))):
+                                    thisval[i] = None
+                            resultdict['result']['varinfo']['features'][key] = (
+                                thisval
+                            )
 
 
                 # now get the periodograms and phased LCs
@@ -947,7 +995,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
         # now try to update the contents
         try:
 
-            self.cpfile = base64.b64decode(cpfile).decode()
+            self.cpfile = base64.b64decode(url_unescape(cpfile)).decode()
             cpcontents = self.get_argument('cpcontents', default=None)
             savetopng = self.get_argument('savetopng', default=None)
 
@@ -1274,7 +1322,9 @@ class LCToolHandler(tornado.web.RequestHandler):
 
         if cpfile:
 
-            self.cpfile = xhtml_escape(base64.b64decode(cpfile))
+            self.cpfile = (
+                xhtml_escape(base64.b64decode(url_unescape(cpfile)))
+            )
 
             # see if this plot is in the current project
             if self.cpfile in self.currentproject['checkplots']:
