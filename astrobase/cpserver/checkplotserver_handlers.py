@@ -633,9 +633,31 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
                 # these are base64 which can be provided directly to JS to
                 # generate images (neat!)
-                finderchart = cpdict['finderchart']
-                magseries = cpdict['magseries']['plot']
-                cpstatus = cpdict['status']
+
+                if 'finderchart' in cpdict:
+                    finderchart = cpdict['finderchart']
+                else:
+                    finderchart = None
+
+                if ('magseries' in cpdict and
+                    isinstance(cpdict['magseries'], dict) and
+                    'plot' in cpdict['magseries']):
+                    magseries = cpdict['magseries']['plot']
+                    time0 = cpdict['magseries']['times'].min()
+                    magseries_ndet = cpdict['magseries']['times'].size
+                else:
+                    magseries = None
+                    time0 = 0.0
+                    magseries_ndet = 0
+                    LOGGER.warning(
+                        "no 'magseries' key present in this "
+                        "checkplot, some plots may be broken..."
+                    )
+
+                if 'status' in cpdict:
+                    cpstatus = cpdict['status']
+                else:
+                    cpstatus = 'unknown, possibly incomplete checkplot'
 
                 # load the uifilters if present
                 if 'uifilters' in cpdict:
@@ -660,7 +682,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                     'message':'found checkplot %s' % self.checkplotfname,
                     'readonly':self.readonly,
                     'result':{
-                        'time0':'%.3f' % cpdict['magseries']['times'].min(),
+                        'time0':'%.3f' % time0,
                         'objectid':objectid,
                         'objectinfo':objectinfo,
                         'colormagdiagram':colormagdiagram,
@@ -672,7 +694,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                         'finderchart':finderchart,
                         'magseries':magseries,
                         # fallback in case objectinfo doesn't have ndet
-                        'magseries_ndet':cpdict['magseries']['times'].size,
+                        'magseries_ndet':magseries_ndet,
                         'cpstatus':cpstatus,
                         'pfmethods':pfmethods
                     }
