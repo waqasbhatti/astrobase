@@ -5678,7 +5678,8 @@ def collect_tfa_stats(task):
 
             except Exception as e:
 
-                LOGEXCEPTION('magcol: %s, probably ran into all-nans' % mcol)
+                LOGEXCEPTION('%s, magcol: %s, probably ran into all-nans' %
+                             (lcfile, mcol))
                 resultdict[mcol] = {'ndet':0,
                                     'mad':np.nan,
                                     'eta_normal':np.nan}
