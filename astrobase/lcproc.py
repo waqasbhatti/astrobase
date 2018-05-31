@@ -5639,40 +5639,50 @@ def collect_tfa_stats(task):
 
         for tcol, mcol, ecol in zip(timecols, magcols, errcols):
 
-            # dereference the columns and get them from the lcdict
-            if '.' in tcol:
-                tcolget = tcol.split('.')
-            else:
-                tcolget = [tcol]
-            times = dict_get(lcdict, tcolget)
+            try:
 
-            if '.' in mcol:
-                mcolget = mcol.split('.')
-            else:
-                mcolget = [mcol]
-            mags = dict_get(lcdict, mcolget)
+                # dereference the columns and get them from the lcdict
+                if '.' in tcol:
+                    tcolget = tcol.split('.')
+                else:
+                    tcolget = [tcol]
+                times = dict_get(lcdict, tcolget)
 
-            if '.' in ecol:
-                ecolget = ecol.split('.')
-            else:
-                ecolget = [ecol]
-            errs = dict_get(lcdict, ecolget)
+                if '.' in mcol:
+                    mcolget = mcol.split('.')
+                else:
+                    mcolget = [mcol]
+                mags = dict_get(lcdict, mcolget)
 
-            # normalize here if not using special normalization
-            if normfunc is None:
-                ntimes, nmags = normalize_magseries(
-                    times, mags,
-                    magsarefluxes=magsarefluxes
+                if '.' in ecol:
+                    ecolget = ecol.split('.')
+                else:
+                    ecolget = [ecol]
+                errs = dict_get(lcdict, ecolget)
+
+                # normalize here if not using special normalization
+                if normfunc is None:
+                    ntimes, nmags = normalize_magseries(
+                        times, mags,
+                        magsarefluxes=magsarefluxes
+                    )
+
+                    times, mags, errs = ntimes, nmags, errs
+
+                # get the variability features for this object
+                varfeat = varfeatures.all_nonperiodic_features(
+                    times, mags, errs
                 )
 
-                times, mags, errs = ntimes, nmags, errs
+                resultdict[mcol] = varfeat
 
-            # get the variability features for this object
-            varfeat = varfeatures.all_nonperiodic_features(
-                times, mags, errs
-            )
+            except Exception as e:
 
-            resultdict[mcol] = varfeat
+                LOGEXCEPTION('magcol: %s, probably ran into all-nans' % mcol)
+                resultdict[mcol] = {'ndet':0,
+                                    'mad':np.nan,
+                                    'eta_normal':np.nan}
+
 
         return resultdict
 
