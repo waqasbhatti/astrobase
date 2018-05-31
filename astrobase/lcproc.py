@@ -6238,8 +6238,8 @@ def tfa_templates_lclist(
 
         else:
 
-            LOGERROR('not enough objects in requested mag range to '
-                     'select templates for magcol: %s' % mcol)
+            LOGERROR('nobjects: %s, not enough in requested mag range to '
+                     'select templates for magcol: %s' % (len(lcobj),mcol))
             continue
 
         # make the plots for mag-MAD/mag-eta relation and fits used
