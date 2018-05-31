@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 
 '''hatds.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Apr 2017
 License: MIT - see LICENSE for the full text.
@@ -75,7 +76,6 @@ __version__ = '0.3.14'
 ## LOGGING ##
 #############
 
-from __future__ import print_function
 import logging
 from datetime import datetime
 from traceback import format_exc
@@ -232,9 +232,10 @@ def check_apikey_settings():
 
             return HAVEAPIKEY, None, None
     else:
-        LOGWARNING('No HAT Data Server API credentials found in: %s\n'
-                   'Only anonymous access is available.\n\n
-                   {apikeyhelp}'.format(apikeyhelp=APIKEYHELP))
+        LOGWARNING('No HAT Data Server API credentials found in: {apikeyfile}\n'
+                   'Only anonymous access is available.\n\n'
+                   '{apikeyhelp}'.format(apikeyfile=APIKEYFILE,
+                                         apikeyhelp=APIKEYHELP))
         HAVEAPIKEY = False
 
         return HAVEAPIKEY, None, None
