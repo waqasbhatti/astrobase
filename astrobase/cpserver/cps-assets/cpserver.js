@@ -367,7 +367,7 @@ var cptracker = {
         // if we're not in readonly mode, post the results
         else {
 
-            var target_url = cpv.CPSERVER_BASEURL + '/list';
+            var target_url = cpv.CPSERVER_BASEURL + 'list';
 
             // send this back to the checkplotserver
             $.post(target_url, postmsg, function (data) {
@@ -724,9 +724,11 @@ var cpv = {
 
             // these are the plot frames, nothing by default
             $('#psearch-periodogram-display')
-                .attr('src','/static/no-tool-results.png');
+                .attr('src',
+                      cpv.CPSERVER_BASEURL + 'static/no-tool-results.png');
             $('#psearch-phasedlc-display')
-                .attr('src','/static/no-tool-results.png');
+                .attr('src',
+                      cpv.CPSERVER_BASEURL + 'static/no-tool-results.png');
 
 
             //
