@@ -100,23 +100,25 @@ define('debugmode',
        type=int)
 define('maxprocs',
        default=2,
-       help=('number of background processes to use '
+       help=('Number of background processes to use '
              'for saving/loading checkplot files and '
              'running light curves tools'),
        type=int)
 define('readonly',
        default=False,
-       help=("run the server in readonly mode. This is useful for a "
+       help=("Run the server in readonly mode. This is useful for a "
              "public-facing instance of checkplotserver where you just "
              "want to allow collaborators to "
              "review objects but not edit them."),
        type=bool)
 define('baseurl',
        default='/',
-       help=("set the base URL of the checkplotserver. "
+       help=("Set the base URL of the checkplotserver. "
              "This is useful when you're running checkplotserver "
-             "on a remote machine and are reverse-proxying one or more "
-             "instances of it so you can access them using HTTP from outside. "
+             "on a remote machine and are reverse-proxying more than one "
+             "instances of it so you can access them "
+             "using HTTP from outside on different base URLs "
+             "like /cpserver1/, /cpserver2/, etc. "
              "If this is set, all URLs will take the form [baseurl]/..., "
              "instead of /..."),
        type=str)
