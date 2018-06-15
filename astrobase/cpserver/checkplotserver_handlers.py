@@ -391,7 +391,7 @@ class IndexHandler(tornado.web.RequestHandler):
     '''
 
     def initialize(self, currentdir, assetpath, cplist,
-                   cplistfile, executor, readonly):
+                   cplistfile, executor, readonly, baseurl):
         '''
         handles initial setup.
 
@@ -403,7 +403,7 @@ class IndexHandler(tornado.web.RequestHandler):
         self.cplistfile = cplistfile
         self.executor = executor
         self.readonly = readonly
-
+        self.baseurl = baseurl
 
 
     def get(self):
@@ -442,7 +442,8 @@ class IndexHandler(tornado.web.RequestHandler):
                     project_checkplotbasenames=project_checkplotbasenames,
                     project_checkplotindices=project_checkplotindices,
                     project_checkplotfile=self.cplistfile,
-                    readonly=self.readonly)
+                    readonly=self.readonly,
+                    baseurl=self.baseurl)
 
 
 

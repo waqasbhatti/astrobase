@@ -150,6 +150,9 @@ def main():
     ASSETPATH = options.assetpath
     BASEURL = options.baseurl
 
+    if not BASEURL.endswith('/'):
+        BASEURL = BASEURL + '/'
+
     READONLY = options.readonly
     if READONLY:
         LOGGER.warning('checkplotserver running in readonly mode.')
@@ -250,7 +253,8 @@ def main():
           'cplist':CHECKPLOTLIST,
           'cplistfile':cplistfile,
           'executor':EXECUTOR,
-          'readonly':READONLY}),
+          'readonly':READONLY,
+          'baseurl':BASEURL}),
         (r'{baseurl}cp/?(.*)'.format(baseurl=BASEURL),
          cphandlers.CheckplotHandler,
          {'currentdir':CURRENTDIR,

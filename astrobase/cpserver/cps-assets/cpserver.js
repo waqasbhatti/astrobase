@@ -367,8 +367,10 @@ var cptracker = {
         // if we're not in readonly mode, post the results
         else {
 
+            var target_url = cpv.CPSERVER_BASEURL + '/list';
+
             // send this back to the checkplotserver
-            $.post('/list', postmsg, function (data) {
+            $.post(target_url, postmsg, function (data) {
 
                 var success = data.status;
                 var message = data.message;
@@ -400,7 +402,9 @@ var cptracker = {
     // checkplot file list, and updates the reviewed objects list
     all_reviewed_from_cplist: function () {
 
-        $.getJSON('/list', function (data) {
+        var target_url = cpv.CPSERVER_BASEURL + 'list';
+
+        $.getJSON(target_url, function (data) {
 
             var reviewedobjects = data.reviewed;
 
@@ -598,7 +602,7 @@ var cpv = {
         // do the AJAX call to get this checkplot
         // make sure to make a new call every time
         console.log('loading checkplot ' + filename);
-        var ajaxurl = '/cp/' +
+        var ajaxurl = cpv.CPSERVER_BASEURL + 'cp/' +
             encodeURIComponent(cputils.b64_encode(filename)) +
             '?t=' + Date.now();
 
@@ -2209,7 +2213,7 @@ var cpv = {
         else {
 
             // do the AJAX call to get this checkplot
-            var ajaxurl = '/cp/' +
+            var ajaxurl = cpv.CPSERVER_BASEURL + 'cp/' +
                 encodeURIComponent(cputils.b64_encode(cpv.currfile));
 
             // get the current value of the objectisvar select box
@@ -3988,7 +3992,7 @@ var cptools = {
             $('.tool-queue').append(tqbox);
 
             // the call to the backend
-            var ajaxurl = '/tools/' +
+            var ajaxurl = cpv.CPSERVER_BASEURL + 'tools/' +
                 encodeURIComponent(cputils.b64_encode(cpv.currfile));
 
             if (autofreq) {
@@ -4356,7 +4360,7 @@ var cptools = {
         $('.tool-queue').append(tqbox);
 
         // the call to the backend
-        var ajaxurl = '/tools/' +
+        var ajaxurl = cpv.CPSERVER_BASEURL + 'tools/' +
             encodeURIComponent(cputils.b64_encode(cpv.currfile));
 
         // this is the data object to send to the backend
@@ -4742,7 +4746,7 @@ var cptools = {
             $('.tool-queue').append(tqbox);
 
             // the call to the backend
-            var ajaxurl = '/tools/' +
+            var ajaxurl = cpv.CPSERVER_BASEURL + 'tools/' +
                 encodeURIComponent(cputils.b64_encode(cpv.currfile));
 
             // this is the data object to send to the backend
@@ -5006,7 +5010,7 @@ var cptools = {
         $('.tool-queue').append(tqbox);
 
         // the call to the backend
-        var ajaxurl = '/tools/' +
+        var ajaxurl = cpv.CPSERVER_BASEURL + 'tools/' +
             encodeURIComponent(cputils.b64_encode(cpv.currfile));
 
         // this is the data object to send to the backend
@@ -5123,7 +5127,7 @@ var cptools = {
         $('.tool-queue').append(tqbox);
 
         // the call to the backend
-        var ajaxurl = '/tools/' +
+        var ajaxurl = cpv.CPSERVER_BASEURL + 'tools/' +
             encodeURIComponent(cputils.b64_encode(cpv.currfile));
 
         // this is the data object to send to the backend
@@ -5247,7 +5251,7 @@ var cptools = {
         $('.tool-queue').append(tqbox);
 
         // the call to the backend
-        var ajaxurl = '/tools/' +
+        var ajaxurl = cpv.CPSERVER_BASEURL + 'tools/' +
             encodeURIComponent(cputils.b64_encode(cpv.currfile));
 
         // this is the data object to send to the backend
