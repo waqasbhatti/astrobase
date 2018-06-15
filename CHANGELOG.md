@@ -1,3 +1,28 @@
+# v0.3.15
+
+## New stuff
+
+- cpserver: added a `baseurl` kwarg to `checkplotserver` so one can launch
+  multiple instances of it and have them go to separate base URLs if
+  reverse-proxying to external users.
+- `plotbase.plot_phased_mag_series`: allow output to an existing
+  `matplotlib.axes.Axes` object
+
+
+## Changes
+
+- cpserver: checkplot filenames are now URI encoded in requests to
+  `checkplotserver`
+
+
+## Fixes
+
+- cpserver: better handling of nans that may break JSON provided to the
+  frontend's javascript handlers from the python backend.
+- `coordutils.xmatch_kdtree`: use correct order of `query_ball_tree` args
+- `lcproc.collect_tfa_stats`: better handling of all-nan magcol arrays
+
+
 # v0.3.14
 
 ## New stuff
