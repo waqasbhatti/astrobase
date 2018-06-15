@@ -111,6 +111,16 @@ define('readonly',
              "want to allow collaborators to "
              "review objects but not edit them."),
        type=bool)
+define('baseurl',
+       default='/',
+       help=("set the base URL of the checkplotserver. "
+             "This is useful when you're running checkplotserver "
+             "on a remote machine and are reverse-proxying one or more "
+             "instances of it so you can access them using HTTP from outside. "
+             "If this is set, all URLs will take the form [baseurl]/..., "
+             "instead of /..."),
+       type=str)
+
 
 ############
 ### MAIN ###
@@ -138,6 +148,7 @@ def main():
 
     MAXPROCS = options.maxprocs
     ASSETPATH = options.assetpath
+    BASEURL = options.baseurl
 
     READONLY = options.readonly
     if READONLY:
@@ -232,7 +243,7 @@ def main():
 
     HANDLERS = [
         # index page
-        (r'/',
+        (r'{baseurl}'.format(baseurl=BASEURL),
          cphandlers.IndexHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
@@ -240,7 +251,7 @@ def main():
           'cplistfile':cplistfile,
           'executor':EXECUTOR,
           'readonly':READONLY}),
-        (r'/cp/?(.*)',
+        (r'{baseurl}cp/?(.*)'.format(baseurl=BASEURL),
          cphandlers.CheckplotHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
@@ -248,7 +259,7 @@ def main():
           'cplistfile':cplistfile,
           'executor':EXECUTOR,
           'readonly':READONLY}),
-        (r'/list',
+        (r'{baseurl}list'.format(baseurl=BASEURL),
          cphandlers.CheckplotListHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
@@ -256,7 +267,7 @@ def main():
           'cplistfile':cplistfile,
           'executor':EXECUTOR,
           'readonly':READONLY}),
-        (r'/tools/?(.*)',
+        (r'{baseurl}tools/?(.*)'.format(baseurl=BASEURL),
          cphandlers.LCToolHandler,
          {'currentdir':CURRENTDIR,
           'assetpath':ASSETPATH,
@@ -264,7 +275,7 @@ def main():
           'cplistfile':cplistfile,
           'executor':EXECUTOR,
           'readonly':READONLY}),
-        (r'/cpfile/(.*)',
+        (r'{baseurl}cpfile/(.*)'.format(baseurl=BASEURL),
          tornado.web.StaticFileHandler, {'path': CURRENTDIR})
     ]
 
@@ -276,7 +287,7 @@ def main():
         handlers=HANDLERS,
         static_path=ASSETPATH,
         template_path=ASSETPATH,
-        static_url_prefix='/static/',
+        static_url_prefix='{baseurl}static/'.format(baseurl=BASEURL),
         compress_response=True,
         debug=DEBUG,
     )
@@ -308,8 +319,8 @@ def main():
         LOGGER.error('could not find a free port after 5 tries, giving up')
         sys.exit(1)
 
-    LOGGER.info('started checkplotserver. listening on http://%s:%s' %
-                (options.serve, serverport))
+    LOGGER.info('started checkplotserver. listening on http://%s:%s%s' %
+                (options.serve, serverport, BASEURL))
 
     # register the signal callbacks
     signal.signal(signal.SIGINT,recv_sigint)
