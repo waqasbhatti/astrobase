@@ -1511,6 +1511,21 @@ var cpv = {
 
                 for (gi; gi < cpv.currcp.objectinfo.gaia_ids.length; gi++) {
 
+                    if (cpv.currcp.objectinfo.gaia_xypos != null) {
+                        var gaia_x = cpv.currcp.objectinfo.gaia_xypos[gi][0];
+                    }
+                    else {
+                        var gaia_x = 0.0;
+                    }
+
+                    if (cpv.currcp.objectinfo.gaia_xypos != null) {
+                        var gaia_y = cpv.currcp.objectinfo.gaia_xypos[gi][1];
+                    }
+                    else {
+                        var gaia_y = 0.0;
+                    }
+
+
                     // special formatting for the object itself
                     if (gi == 0) {
                         var rowhtml = '<tr class="gaia-objectlist-row ' +
@@ -1519,9 +1534,9 @@ var cpv = {
                             'data-gaiaid="' +
                             cpv.currcp.objectinfo.gaia_ids[gi] +
                             '" data-xpos="' +
-                            cpv.currcp.objectinfo.gaia_xypos[gi][0] +
+                            gaia_x +
                             '" data-ypos="' +
-                            cpv.currcp.objectinfo.gaia_xypos[gi][1] +
+                            gaia_y +
                             '" >' +
                             '<td>obj: ' + cpv.currcp.objectinfo.gaia_ids[gi] +
                             '</td>' +
@@ -1556,9 +1571,9 @@ var cpv = {
                             'data-gaiaid="' +
                             cpv.currcp.objectinfo.gaia_ids[gi] +
                             '" data-xpos="' +
-                            cpv.currcp.objectinfo.gaia_xypos[gi][0] +
+                            gaia_x +
                             '" data-ypos="' +
-                            cpv.currcp.objectinfo.gaia_xypos[gi][1] +
+                            gaia_y +
                             '" >' +
                             '<td>' + cpv.currcp.objectinfo.gaia_ids[gi] +
                             '</td>' +
@@ -1604,39 +1619,53 @@ var cpv = {
                 // put in any rows of neighbors if there are any
                 for (gi; gi < cpv.currcp.objectinfo.gaia_ids.length; gi++) {
 
-                        var rowhtml = '<tr class="gaia-objectlist-row" ' +
-                            'data-gaiaid="' +
-                            cpv.currcp.objectinfo.gaia_ids[gi] +
-                            '" data-xpos="' +
-                            cpv.currcp.objectinfo.gaia_xypos[gi][0] +
-                            '" data-ypos="' +
-                            cpv.currcp.objectinfo.gaia_xypos[gi][1] +
-                            '" >' +
-                            '<td>' + cpv.currcp.objectinfo.gaia_ids[gi] +
-                            '</td>' +
-                            '<td>' + math.format(
-                                cpv.currcp.objectinfo.gaia_dists[gi], 3
-                            ) +
-                            '</td>' +
-                            '<td>' +
-                            math.format(
-                                cpv.currcp.objectinfo.gaia_parallaxes[gi], 3
-                            ) + ' &plusmn; ' +
-                            math.format(
-                                cpv.currcp.objectinfo.gaia_parallax_errs[gi], 3
-                            ) +
-                            '</td>' +
-                            '<td>' +
-                            math.format(
-                                cpv.currcp.objectinfo.gaia_mags[gi], 3
-                            ) +
-                            '</td>' +
-                            '<td>' +
-                            math.format(
-                                cpv.currcp.objectinfo.gaia_absolute_mags[gi], 3
-                            ) +
-                            '</td>' +
-                            '</tr>';
+                    if (cpv.currcp.objectinfo.gaia_xypos != null) {
+                        var gaia_x = cpv.currcp.objectinfo.gaia_xypos[gi][0];
+                    }
+                    else {
+                        var gaia_x = 0.0;
+                    }
+
+                    if (cpv.currcp.objectinfo.gaia_xypos != null) {
+                        var gaia_y = cpv.currcp.objectinfo.gaia_xypos[gi][1];
+                    }
+                    else {
+                        var gaia_y = 0.0;
+                    }
+
+                    var rowhtml = '<tr class="gaia-objectlist-row" ' +
+                        'data-gaiaid="' +
+                        cpv.currcp.objectinfo.gaia_ids[gi] +
+                        '" data-xpos="' +
+                        gaia_x +
+                        '" data-ypos="' +
+                        gaia_y +
+                        '" >' +
+                        '<td>' + cpv.currcp.objectinfo.gaia_ids[gi] +
+                        '</td>' +
+                        '<td>' + math.format(
+                            cpv.currcp.objectinfo.gaia_dists[gi], 3
+                        ) +
+                        '</td>' +
+                        '<td>' +
+                        math.format(
+                            cpv.currcp.objectinfo.gaia_parallaxes[gi], 3
+                        ) + ' &plusmn; ' +
+                        math.format(
+                            cpv.currcp.objectinfo.gaia_parallax_errs[gi], 3
+                        ) +
+                        '</td>' +
+                        '<td>' +
+                        math.format(
+                            cpv.currcp.objectinfo.gaia_mags[gi], 3
+                        ) +
+                        '</td>' +
+                        '<td>' +
+                        math.format(
+                            cpv.currcp.objectinfo.gaia_absolute_mags[gi], 3
+                        ) +
+                        '</td>' +
+                        '</tr>';
                     $('#gaia-neighbor-tbody').append(rowhtml);
 
                 }
