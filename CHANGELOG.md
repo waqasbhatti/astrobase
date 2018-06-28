@@ -1,3 +1,11 @@
+# v0.3.16
+
+## Fixes
+
+- fixed infinite mirror-hop loop when submitting queries for SIMBAD/GAIA, these
+  should now bail out after `maxtries` number of submission tries are reached.
+
+
 # v0.3.15
 
 ## New stuff
