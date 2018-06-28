@@ -1047,6 +1047,8 @@ def neighbor_gaia_features(objectinfo,
                            neighbor_radius_arcsec,
                            gaia_matchdist_arcsec=3.0,
                            verbose=True,
+                           gaia_submit_timeout=10.0,
+                           gaia_submit_tries=3,
                            gaia_max_timeout=180.0,
                            gaia_mirror='cds',
                            complete_query_later=True):
@@ -1158,7 +1160,9 @@ def neighbor_gaia_features(objectinfo,
             objectinfo['decl'],
             neighbor_radius_arcsec,
             verbose=verbose,
+            timeout=gaia_submit_timeout,
             maxtimeout=gaia_max_timeout,
+            maxtries=gaia_submit_tries,
             gaia_mirror=gaia_mirror,
             complete_query_later=complete_query_later
         )
@@ -1426,7 +1430,9 @@ def neighbor_gaia_features(objectinfo,
             objectinfo['decl'],
             neighbor_radius_arcsec,
             verbose=verbose,
+            timeout=gaia_submit_timeout,
             maxtimeout=gaia_max_timeout,
+            maxtries=gaia_submit_tries,
             complete_query_later=complete_query_later
         )
 
