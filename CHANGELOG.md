@@ -2,8 +2,11 @@
 
 ## Fixes
 
-- fixed infinite mirror-hop loop when submitting queries for SIMBAD/GAIA, these
-  should now bail out after `maxtries` number of submission tries are reached.
+- services: fixed infinite mirror-hop loop when submitting queries for
+  SIMBAD/GAIA, these should now bail out after `maxtries` number of submission
+  tries are reached.
+- cpserver: fixed some issues with frontend JS breaking if GAIA xy positions are
+  not available for some reason
 
 
 # v0.3.15
