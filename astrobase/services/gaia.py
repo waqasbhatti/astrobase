@@ -171,9 +171,10 @@ def tap_query(querystr,
               forcefetch=False,
               cachedir='~/.astrobase/gaia-cache',
               verbose=True,
-              timeout=60.0,
+              timeout=15.0,
               refresh=2.0,
               maxtimeout=300.0,
+              maxtries=3,
               complete_query_later=False):
     '''This queries the GAIA TAP service using the ADQL querystr.
 
@@ -495,8 +496,16 @@ def tap_query(querystr,
             # here, we'll make sure the GAIA mirror works before doing anything
             # else
             mirrorok = False
+            ntries = 1
 
             while not mirrorok:
+
+                if ntries > maxtries:
+
+                    LOGERROR('maximum number of allowed SIMBAD query '
+                             'submission tries (%s) reached, bailing out...' %
+                             maxtries)
+                    return None
 
                 try:
 
@@ -513,7 +522,7 @@ def tap_query(querystr,
 
                     LOGWARNING(
                         'GAIA TAP server: %s not responding, '
-                        'trying another...'
+                        'trying another mirror...'
                         % tapurl
                     )
                     mirrorok = False
@@ -556,6 +565,9 @@ def tap_query(querystr,
                                 table=GAIA_URLS[randkey]['table']
                             )
                         )
+
+                # update the number of submission tries
+                ntries = ntries + 1
 
 
             # NOTE: python-requests follows the "303 See Other" redirect
@@ -866,9 +878,10 @@ def objectlist_conesearch(racenter,
                           forcefetch=False,
                           cachedir='~/.astrobase/gaia-cache',
                           verbose=True,
-                          timeout=60.0,
+                          timeout=15.0,
                           refresh=2.0,
-                          maxtimeout=700.0,
+                          maxtimeout=300.0,
+                          maxtries=3,
                           complete_query_later=True):
     '''This queries the GAIA TAP service for a list of objects near the coords.
 
@@ -924,6 +937,7 @@ def objectlist_conesearch(racenter,
                      timeout=timeout,
                      refresh=refresh,
                      maxtimeout=maxtimeout,
+                     maxtries=maxtries,
                      complete_query_later=complete_query_later)
 
 
@@ -941,9 +955,10 @@ def objectlist_radeclbox(radeclbox,
                          forcefetch=False,
                          cachedir='~/.astrobase/gaia-cache',
                          verbose=True,
-                         timeout=60.0,
+                         timeout=15.0,
                          refresh=2.0,
-                         maxtimeout=700.0,
+                         maxtimeout=300.0,
+                         maxtries=3,
                          complete_query_later=True):
 
     '''
@@ -1001,4 +1016,5 @@ def objectlist_radeclbox(radeclbox,
                      timeout=timeout,
                      refresh=refresh,
                      maxtimeout=maxtimeout,
+                     maxtries=maxtries,
                      complete_query_later=complete_query_later)

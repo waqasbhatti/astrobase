@@ -145,9 +145,10 @@ def tap_query(querystr,
               forcefetch=False,
               cachedir='~/.astrobase/simbad-cache',
               verbose=True,
-              timeout=60.0,
+              timeout=10.0,
               refresh=2.0,
               maxtimeout=90.0,
+              maxtries=3,
               complete_query_later=False):
     '''This queries the SIMBAD TAP service using the ADQL querystr.
 
@@ -471,8 +472,16 @@ def tap_query(querystr,
             # here, we'll make sure the SIMBAD mirror works before doing
             # anything else
             mirrorok = False
+            ntries = 1
 
-            while not mirrorok:
+            while (not mirrorok):
+
+                if ntries > maxtries:
+
+                    LOGERROR('maximum number of allowed SIMBAD query '
+                             'submission tries (%s) reached, bailing out...' %
+                             maxtries)
+                    return None
 
                 try:
 
@@ -489,7 +498,7 @@ def tap_query(querystr,
 
                     LOGWARNING(
                         'SIMBAD TAP server: %s not responding, '
-                        'trying another...'
+                        'trying another mirror...'
                         % tapurl
                     )
                     mirrorok = False
@@ -536,6 +545,10 @@ def tap_query(querystr,
                                 table=SIMBAD_URLS[randkey]['table']
                             )
                         )
+
+                # update the number of submission tries
+                ntries = ntries + 1
+
 
 
             # NOTE: python-requests follows the "303 See Other" redirect
@@ -841,9 +854,10 @@ def objectnames_conesearch(racenter,
                            forcefetch=False,
                            cachedir='~/.astrobase/simbad-cache',
                            verbose=True,
-                           timeout=60.0,
+                           timeout=10.0,
                            refresh=2.0,
                            maxtimeout=90.0,
+                           maxtries=1,
                            complete_query_later=True):
     '''This queries the SIMBAD TAP service for a list of object names near the
     coords. This is effectively a "reverse" name resolver (i.e. this does the
@@ -896,4 +910,5 @@ def objectnames_conesearch(racenter,
                      timeout=timeout,
                      refresh=refresh,
                      maxtimeout=maxtimeout,
+                     maxtries=maxtries,
                      complete_query_later=complete_query_later)

@@ -172,7 +172,7 @@ TRILEGAL_DEFAULT_PARAMS = {
     'extinction_rho_sun': '0.00015',
     'extinction_sigma': '${sigmaav_av}',
     'field': '${area}',
-    'gal_coord': '1', # 1 -> set to gl_deg, gb_deg, 2 -> set to ra_hr, decl_deg
+    'gal_coord': '1',  # 1 -> set to gl_deg, gb_deg, 2 -> set to ra_hr, decl_deg
     'gc_b': '${gal_b}',
     'gc_l': '${gal_l}',
     'halo_a': '1',
