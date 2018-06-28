@@ -502,7 +502,7 @@ def tap_query(querystr,
 
                 if ntries > maxtries:
 
-                    LOGERROR('maximum number of allowed SIMBAD query '
+                    LOGERROR('maximum number of allowed GAIA query '
                              'submission tries (%s) reached, bailing out...' %
                              maxtries)
                     return None
