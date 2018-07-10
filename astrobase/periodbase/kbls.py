@@ -1116,11 +1116,11 @@ def bls_snr(blsdict,
 
 
 def bls_stats_singleperiod(times, mags, errs, period,
-                         magsarefluxes=False,
-                         sigclip=10.0,
-                         perioddeltapercent=10,
-                         nphasebins=200,
-                         verbose=True):
+                           magsarefluxes=False,
+                           sigclip=10.0,
+                           perioddeltapercent=10,
+                           nphasebins=200,
+                           verbose=True):
     '''This calculates the SNR, refit period, and time of center-transit for a
     single period.
 
