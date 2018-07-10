@@ -1097,7 +1097,8 @@ def bls_snr(blsdict,
         allsubtractedmags, allphases, allphasedmags = None, None, None
 
     return {'npeaks':npeaks,
-            'period':nbestperiods,
+            'period':refitperiods,
+            'epoch':refitepochs,
             'snr':nbestsnrs,
             'altsnr':nbestasnrs,
             'whitenoise':whitenoise,
