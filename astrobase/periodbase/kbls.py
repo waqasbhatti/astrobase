@@ -67,8 +67,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -896,6 +896,10 @@ def bls_snr(blsdict,
         allphases = []
         allblsmodels = []
 
+        # these are refit periods and epochs
+        refitperiods = []
+        refitepochs = []
+
         for ind, period in enumerate(nbestperiods):
 
             # get the period interval
@@ -926,19 +930,49 @@ def bls_snr(blsdict,
             thistransegressbin = blsres['blsresult']['transegressbin']
             thisnphasebins = blsdict['kwargs']['nphasebins']
 
-            # get the minimum light epoch using a spline fit
             try:
 
-                spfit = spline_fit_magseries(times, mags, errs,
-                                             thisbestperiod,
-                                             magsarefluxes=magsarefluxes,
-                                             verbose=verbose)
-                thisminepoch = spfit['fitinfo']['fitepoch']
+                # try getting the minimum light epoch using the phase bin method
+                me_epochbin = int((thistransegressbin +
+                                   thistransingressbin)/2.0)
 
-            except ValueError:
+                me_phases = (
+                    (times - times.min())/thisbestperiod -
+                    npfloor((times - times.min())/thisbestperiod)
+                )
+                me_phases_sortind = np.argsort(me_phases)
+                me_sorted_phases = me_phases[me_phases_sortind]
+                me_sorted_times = times[me_phases_sortind]
 
-                LOGEXCEPTION('could not fit a spline to find a minimum of '
-                             'the phased LC, trying SavGol fit instead...')
+                me_bins = nplinspace(0.0, 1.0, thisnphasebins)
+                me_bininds = npdigitize(me_sorted_phases, me_bins)
+
+                me_centertransit_ind = me_bininds == me_epochbin
+                me_centertransit_phase = (
+                    np.median(me_sorted_phases[me_centertransit_ind])
+                )
+                me_centertransit_timeloc = npwhere(
+                    npabs(me_sorted_phases - me_centertransit_phase) ==
+                    npmin(npabs(me_sorted_phases - me_centertransit_phase))
+                )
+                me_centertransit_time = me_sorted_times[
+                    me_centertransit_timeloc
+                ]
+
+                if me_centertransit_time.size > 1:
+                    LOGWARNING('multiple possible times-of-center transits '
+                               'found for period %.7f, picking the first '
+                               'one from: %s' %
+                               (thisbestperiod, repr(me_centertransit_time)))
+
+                thisminepoch = me_centertransit_time[0]
+
+            except Exception as e:
+
+                LOGEXCEPTION(
+                    'could not determine the center time of transit for '
+                    'the phased LC, trying SavGol fit instead...'
+                )
                 # fit a Savitsky-Golay instead and get its minimum
                 savfit = savgol_fit_magseries(times, mags, errs,
                                               thisbestperiod,
@@ -988,7 +1022,7 @@ def bls_snr(blsdict,
             if magsarefluxes:
                 blsmodel[transitindices] = (
                     blsmodel[transitindices] + thistransdepth
-                    )
+                )
             else:
                 blsmodel[transitindices] = (
                     blsmodel[transitindices] - thistransdepth
@@ -1035,6 +1069,10 @@ def bls_snr(blsdict,
             transingressbin.append(thistransingressbin)
             transegressbin.append(thistransegressbin)
             nphasebins.append(thisnphasebins)
+
+            # update the refit periods and epochs
+            refitperiods.append(thisbestperiod)
+            refitepochs.append(thisminepoch)
 
             # update the diagnostics
             allsubtractedmags.append(subtractedmags)
