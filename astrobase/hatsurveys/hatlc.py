@@ -166,6 +166,7 @@ import subprocess
 import re
 import sqlite3 as sql
 import json
+from pprint import pformat
 
 import numpy as np
 from numpy import nan
@@ -866,11 +867,33 @@ LIGHT CURVE COLUMNS
 '''
 
 
+LCC_CSVLC_DESCTEMPLATE = '''\
+OBJECT ID: {objectid}
+
+OBJECT AND LIGHT CURVE METADATA
+-------------------------------
+
+{metadata_desc}
+
+{metadata}
+
+LIGHT CURVE COLUMNS
+-------------------
+
+{columndefs}
+'''
+
+
 def describe(lcdict, returndesc=False):
     '''
     This describes the light curve object and columns present.
 
     '''
+
+    # transparently read LCC CSV format description
+    if 'lcformat' in lcdict and 'lcc-csv' in lcdict['lcformat'].lower():
+        return describe_lcc_csv(lcdict, returndesc=returndesc)
+
 
     # figure out the columndefs part of the header string
     columndefs = []
@@ -1152,6 +1175,7 @@ def read_lcc_csvlc(lcfile):
 
     lctextlines = lctext.split('\n')
 
+    lcformat = lctextlines[0]
     commentchar = lctextlines[1]
 
     lcstart = lctextlines.index('%s LIGHTCURVE' % commentchar)
@@ -1191,11 +1215,68 @@ def read_lcc_csvlc(lcfile):
     )
 
     lcdict = {x:recarr[x] for x in colnames}
+    lcdict['lcformat'] = lcformat
     lcdict['objectid'] = objectid
     lcdict['objectinfo'] = objectinfo
     lcdict['columns'] = colnames
 
+    lcdict['coldefs'] = columns
+    lcdict['metadata'] = metadata
+
     return lcdict
+
+
+
+def describe_lcc_csv(lcdict, returndesc=False):
+    '''
+    This describes the LCC CSV format light curve.
+
+    '''
+
+    metadata_lines = []
+    coldef_lines = []
+
+    if 'lcformat' in lcdict and 'lcc-csv' in lcdict['lcformat'].lower():
+
+        metadata = lcdict['metadata']
+        metakeys = lcdict['objectinfo'].keys()
+        coldefs = lcdict['coldefs']
+
+        for mk in metakeys:
+
+            metadata_lines.append(
+                '%20s | %s' % (
+                    mk,
+                    metadata[mk]['desc']
+                )
+            )
+
+        for ck in lcdict['columns']:
+
+            coldef_lines.append('column %02d | %8s | numpy dtype: %3s | %s'
+                                % (coldefs[ck]['colnum'],
+                                   ck,
+                                   coldefs[ck]['dtype'],
+                                   coldefs[ck]['desc']))
+
+
+
+
+        desc = LCC_CSVLC_DESCTEMPLATE.format(
+            objectid=lcdict['objectid'],
+            metadata_desc='\n'.join(metadata_lines),
+            metadata=pformat(lcdict['objectinfo']),
+            columndefs='\n'.join(coldef_lines)
+        )
+
+        print(desc)
+
+        if returndesc:
+            return desc
+
+    else:
+        LOGERROR("this lcdict is not from an LCC CSV, can't figure it out...")
+        return None
 
 
 
