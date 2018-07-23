@@ -440,12 +440,9 @@ def pycompress_sqlitecurve(sqlitecurve, force=False):
             if os.path.exists(outfile):
                 os.remove(sqlitecurve)
                 return outfile
-            else:
-                LOGERROR('could not compress %s' % sqlitecurve)
 
     except Exception as e:
-        LOGEXCEPTION('could not compress %s' % sqlitecurve)
-
+        return None
 
 
 def pyuncompress_sqlitecurve(sqlitecurve, force=False):
@@ -469,12 +466,9 @@ def pyuncompress_sqlitecurve(sqlitecurve, force=False):
             # do not remove the intput file yet
             if os.path.exists(outfile):
                 return outfile
-            else:
-                LOGERROR('could not uncompress %s' % sqlitecurve)
 
     except Exception as e:
-        LOGEXCEPTION('could not uncompress %s' % sqlitecurve)
-
+        return None
 
 
 def gzip_sqlitecurve(sqlitecurve, force=False):
@@ -506,11 +500,9 @@ def gzip_sqlitecurve(sqlitecurve, force=False):
             if os.path.exists(outfile):
                 return outfile
             else:
-                LOGERROR('could not compress %s' % sqlitecurve)
                 return None
 
     except subprocess.CalledProcessError:
-        LOGEXCEPTION('could not compress %s' % sqlitecurve)
         return None
 
 
@@ -529,7 +521,6 @@ def gunzip_sqlitecurve(sqlitecurve):
         procout = subprocess.check_output(cmd, shell=True)
         return sqlitecurve.replace('.gz','')
     except subprocess.CalledProcessError:
-        LOGERROR('could not uncompress %s' % sqlitecurve)
         return None
 
 
@@ -538,25 +529,24 @@ def gunzip_sqlitecurve(sqlitecurve):
 ## DECIDE WHICH COMPRESSION FUNCTIONS TO USE ##
 ###############################################
 
-try:
-    GZIPTEST = subprocess.check_output(
-        'gzip --version',
-        shell=True
-    ).decode().split('\n')[0].split()[-1]
-    GZIPTEST = float(GZIPTEST)
-    if GZIPTEST and GZIPTEST > 1.5:
-        compress_sqlitecurve = gzip_sqlitecurve
-        uncompress_sqlitecurve = gunzip_sqlitecurve
-    else:
-        LOGWARNING('gzip > 1.5 not available, using Python (gun)zip support')
-        compress_sqlitecurve = pycompress_sqlitecurve
-        uncompress_sqlitecurve = pyuncompress_sqlitecurve
-except:
-    compress_sqlitecurve = pycompress_sqlitecurve
-    uncompress_sqlitecurve = pyuncompress_sqlitecurve
-    GZIPTEST = None
-    LOGWARNING('gzip > 1.5 not available, using Python (gun)zip support')
+# disable these because they're super loud and annoying
+# try:
+#     GZIPTEST = subprocess.check_output(
+#         'gzip --version',
+#         shell=True
+#     ).decode().split('\n')[0].split()[-1]
+#     GZIPTEST = float(GZIPTEST)
+#     if GZIPTEST and GZIPTEST > 1.5:
+#         compress_sqlitecurve = gzip_sqlitecurve
+#         uncompress_sqlitecurve = gunzip_sqlitecurve
+#     else:
+#         compress_sqlitecurve = pycompress_sqlitecurve
+#         uncompress_sqlitecurve = pyuncompress_sqlitecurve
+# except:
 
+compress_sqlitecurve = pycompress_sqlitecurve
+uncompress_sqlitecurve = pyuncompress_sqlitecurve
+GZIPTEST = None
 
 
 ###################################
@@ -628,7 +618,8 @@ def read_and_filter_sqlitecurve(lcfile,
                                 sqlfilters=None,
                                 raiseonfail=False,
                                 returnarrays=True,
-                                forcerecompress=False):
+                                forcerecompress=False,
+                                quiet=True):
     '''This reads the sqlitecurve and optionally filters it.
 
     Returns columns requested in columns. If None, then returns all columns
@@ -807,7 +798,9 @@ def read_and_filter_sqlitecurve(lcfile,
 
     except Exception as e:
 
-        LOGEXCEPTION('could not open sqlitecurve %s' % lcfile)
+        if not quiet:
+            LOGEXCEPTION('could not open sqlitecurve %s' % lcfile)
+
         returnval = (None, 'error while reading lightcurve file')
 
         # recompress the lightcurve at the end
