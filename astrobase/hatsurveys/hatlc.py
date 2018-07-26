@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 
 '''hatlc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2016
 License: MIT - see LICENSE for the full text.
@@ -39,6 +40,40 @@ describe(lcdict):
 
     This describes the metadata of the light curve.
 
+
+COMMAND LINE USAGE
+------------------
+
+You can call this module directly from the command line:
+
+If you just have this file alone:
+
+$ chmod +x hatlc.py
+$ ./hatlc.py --help
+
+If astrobase is installed with pip, etc., this will be on your path already:
+
+$ hatlc --help
+
+These should give you the following:
+
+usage: hatlc.py [-h] [--describe] hatlcfile
+
+read a HAT LC of any format and output to stdout
+
+positional arguments:
+  hatlcfile   path to the light curve you want to read and pipe to stdout
+
+optional arguments:
+  -h, --help  show this help message and exit
+  --describe  don't dump the columns, show only object info and LC metadata
+
+Either one will dump any HAT LC recognized to stdout (or just dump the
+description if requested).
+
+
+OTHER USEFUL FUNCTIONS
+----------------------
 
 Two other functions that might be useful:
 
@@ -167,6 +202,8 @@ import re
 import sqlite3 as sql
 import json
 from pprint import pformat
+import sys
+import textwrap
 
 import numpy as np
 from numpy import nan
@@ -856,8 +893,7 @@ PHOTAPERTURES
 LIGHT CURVE COLUMNS
 -------------------
 
-{columndefs}
-'''
+{columndefs}'''
 
 
 LCC_CSVLC_DESCTEMPLATE = '''\
@@ -873,11 +909,10 @@ OBJECT AND LIGHT CURVE METADATA
 LIGHT CURVE COLUMNS
 -------------------
 
-{columndefs}
-'''
+{columndefs}'''
 
 
-def describe(lcdict, returndesc=False):
+def describe(lcdict, returndesc=False, offsetwith=None):
     '''
     This describes the light curve object and columns present.
 
@@ -964,7 +999,15 @@ def describe(lcdict, returndesc=False):
         aperturedefs=aperturedefs
     )
 
-    print(description)
+    if offsetwith is not None:
+        description = textwrap.indent(
+            description,
+            '%s ' % offsetwith,
+            lambda line: True
+        )
+        print(description)
+    else:
+        print(description)
 
     if returndesc:
         return description
@@ -1719,3 +1762,103 @@ def normalize_lcdict_byinst(
     lcdict['lcinstnormcols'] = lcinstnormcols
 
     return lcdict
+
+
+
+def main():
+    '''
+    This is called when we're executed from the commandline.
+
+    '''
+
+    # handle SIGPIPE sent by less, head, et al.
+    import signal
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    import argparse
+
+    aparser = argparse.ArgumentParser(
+        description='read a HAT LC of any format and output to stdout'
+    )
+
+    aparser.add_argument(
+        'hatlcfile',
+        action='store',
+        type=str,
+        help=("path to the light curve you want to read and pipe to stdout")
+    )
+
+    aparser.add_argument(
+        '--describe',
+        action='store_true',
+        default=False,
+        help=("don't dump the columns, show only object info and LC metadata")
+    )
+
+    args = aparser.parse_args()
+    filetoread = args.hatlcfile
+
+    if not os.path.exists(filetoread):
+        LOGERROR("file provided: %s doesn't seem to exist" % filetoread)
+        sys.exit(1)
+
+    # figure out the type of LC this is
+    filename = os.path.basename(filetoread)
+
+    # switch based on filetype
+    if filename.endswith('-hatlc.csv.gz') or filename.endswith('-csvlc.gz'):
+
+        if args.describe:
+
+            describe(read_csvlc(filename))
+            sys.exit(0)
+
+        else:
+
+            with gzip.open(filename,'rb') as infd:
+                for line in infd:
+                    print(line.decode(),end='')
+
+    elif filename.endswith('-hatlc.sqlite.gz'):
+
+        lcdict, msg = read_and_filter_sqlitecurve(filetoread)
+
+        # dump the description
+        describe(lcdict, offsetwith='#')
+
+        # stop here if describe is True
+        if args.describe:
+            sys.exit(0)
+
+        # otherwise, continue to parse the cols, etc.
+
+        # get the aperture names
+        apertures = sorted(lcdict['lcapertures'].keys())
+
+        # update column defs per aperture
+        for aper in apertures:
+            COLUMNDEFS.update({'%s_%s' % (x, aper): COLUMNDEFS[x] for x in
+                               LC_MAG_COLUMNS})
+            COLUMNDEFS.update({'%s_%s' % (x, aper): COLUMNDEFS[x] for x in
+                               LC_ERR_COLUMNS})
+            COLUMNDEFS.update({'%s_%s' % (x, aper): COLUMNDEFS[x] for x in
+                               LC_FLAG_COLUMNS})
+
+        formstr = ','.join([COLUMNDEFS[x][1] for x in lcdict['columns']])
+        ndet = lcdict['objectinfo']['ndet']
+
+        for ind in range(ndet):
+            line = [lcdict[x][ind] for x in lcdict['columns']]
+            formline = formstr % tuple(line)
+            print(formline)
+
+    else:
+
+        LOGERROR('unrecognized HATLC file: %s' % filetoread)
+        sys.exit(1)
+
+
+
+
+# we use this to enable command-line cat-like dumping of a HAT light curve
+if __name__ == '__main__':
+    main()
