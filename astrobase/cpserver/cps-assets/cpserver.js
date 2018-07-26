@@ -1,3 +1,5 @@
+/*global $, jQuery, math */
+
 // cpserver.js - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 // License: MIT. See LICENSE for the full text.
 //
@@ -14,7 +16,7 @@ var cputils = {
     // this encodes a string to base64
     // https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding
     b64_encode: function (str) {
-        return btoa(
+        return window.btoa(
             encodeURIComponent(str)
                 .replace(/%([0-9A-F]{2})/g,
                          function(match, p1) {
@@ -24,7 +26,7 @@ var cputils = {
 
     // this decodes a string from base64
     b64_decode: function (str) {
-        return decodeURIComponent(atob(str).split('').map(function(c) {
+        return decodeURIComponent(window.atob(str).split('').map(function(c) {
             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
         }).join(''));
 
@@ -295,7 +297,7 @@ var cptracker = {
 
         // join the output row
         var csvrow = rowarr.join(separator);
-        return csvrow
+        return csvrow;
 
     },
 
@@ -303,6 +305,7 @@ var cptracker = {
     cpdata_to_csv: function () {
 
         var csvarr = [cptracker.infocolumns.join('|')];
+        var obj = null;
 
         for (obj in cptracker.cpdata) {
             csvarr.push(cptracker.cpdata_get_csvrow(obj,'|'));
@@ -324,6 +327,7 @@ var cptracker = {
         // we need to reverse the keys of the cpdata, so they're objectid first,
         // add the object's checkplot file into its own dict
         var jsonobj = {};
+        var obj = null;
 
         for (obj in cptracker.cpdata) {
 
@@ -407,7 +411,7 @@ var cptracker = {
         $.getJSON(target_url, function (data) {
 
             var reviewedobjects = data.reviewed;
-
+            var obj = null;
             // generate the object info rows and append to the reviewed object
             // list
             for (obj in reviewedobjects) {
@@ -743,13 +747,10 @@ var cpv = {
 
             // get the HAT stations
             var hatstations = cpv.currcp.objectinfo.stations;
-            if (hatstations != undefined && hatstations) {
+            var splitstations = '';
 
-                var splitstations =
-                    (String(hatstations).split(',')).join(', ');
-            }
-            else {
-                var splitstations = '';
+            if (hatstations != undefined && hatstations) {
+                splitstations = (String(hatstations).split(',')).join(', ');
             }
 
             // get the number of detections
@@ -2027,7 +2028,7 @@ var cpv = {
                         xmcrow.push(
                             '<table class="table-sm objectinfo-table">' +
                                 '<thead><tr>'
-                        )
+                        );
 
 
                         // first, the header row
@@ -2157,12 +2158,12 @@ var cpv = {
             // highlight the file in the sidebar list
             $("a.checkplot-load")
                 .filter("[data-fname='" + filename + "']")
-                .wrap('<strong></strong>')
+                .wrap('<strong></strong>');
 
             // fix the height of the sidebar as required
             var winheight = $(window).height();
             var docheight = $(document).height();
-            var ctrlheight = $('.sidebar-controls').height()
+            var ctrlheight = $('.sidebar-controls').height();
             $('.sidebar').css({'height': docheight + 'px'});
 
             // get rid of the spinny thing
