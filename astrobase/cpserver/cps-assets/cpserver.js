@@ -590,13 +590,12 @@ var cpv = {
 
         // build the title for this current file
         var plot_title_elem = $('#checkplot-current');
-        var filelink = '<a title="download this checkplot pickle file" href="' +
-            cpv.CPSERVER_BASEURL +
-            'download/' +
-            filename + '">' + filename + '</a>';
+        var basename = filename.split('/');
+        filelink = '<strong>' + filename + '</strong>';
+
+        // put in the object's names,file names, and links
         var objectidelem = $('#objectid');
         var twomassidelem = $('#twomassid');
-
         plot_title_elem.html(filelink);
 
         if (cpv.currfile.length > 0) {
@@ -2410,7 +2409,7 @@ var cpv = {
                     if (!(savetopng === undefined) &&
                         (updateinfo.cpfpng.length > 0)) {
 
-                        console.log('getting checkplot PNG from backend')
+                        console.log('getting checkplot PNG from backend');
 
                         // prepare the download
                         // see https://gist.github.com/fupslot/5015897

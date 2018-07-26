@@ -5002,7 +5002,7 @@ def add_cpinfo_to_lclist(
         outfile,
         checkplotglob='checkplot*.pkl*',
         infokeys=[
-            # key,dtype,first level,overwrite(T)/append(F),None sub,nan sub
+            # key,dtype,first level,overwrite=T|append=T,None sub,nan sub
             ('comments',
              np.unicode_, False, True, '', ''),
             ('objectinfo.objecttags',
