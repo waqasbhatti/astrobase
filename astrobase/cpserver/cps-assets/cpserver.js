@@ -591,7 +591,7 @@ var cpv = {
         // build the title for this current file
         var plot_title_elem = $('#checkplot-current');
         var basename = filename.split('/');
-        filelink = '<strong>' + filename + '</strong>';
+        var filelink = '<strong>' + filename + '</strong>';
 
         // put in the object's names,file names, and links
         var objectidelem = $('#objectid');
