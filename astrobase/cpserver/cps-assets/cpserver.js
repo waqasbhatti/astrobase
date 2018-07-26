@@ -589,12 +589,15 @@ var cpv = {
         cpv.make_spinner('loading...');
 
         // build the title for this current file
-        var plottitle = $('#checkplot-current');
-        var filelink = filename;
+        var plot_title_elem = $('#checkplot-current');
+        var filelink = '<a title="download this checkplot pickle file" href="' +
+            cpv.CPSERVER_BASEURL +
+            'download/' +
+            filename + '">' + filename + '</a>';
         var objectidelem = $('#objectid');
         var twomassidelem = $('#twomassid');
 
-        plottitle.html(filelink);
+        plot_title_elem.html(filelink);
 
         if (cpv.currfile.length > 0) {
             // un-highlight the previous file in side bar

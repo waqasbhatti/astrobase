@@ -257,6 +257,7 @@ def main():
           'executor':EXECUTOR,
           'readonly':READONLY,
           'baseurl':BASEURL}),
+        # loads and interacts with checkplot pickles
         (r'{baseurl}cp/?(.*)'.format(baseurl=BASEURL),
          cphandlers.CheckplotHandler,
          {'currentdir':CURRENTDIR,
@@ -265,6 +266,7 @@ def main():
           'cplistfile':cplistfile,
           'executor':EXECUTOR,
           'readonly':READONLY}),
+        # loads and interacts with the current checkplot list JSON file
         (r'{baseurl}list'.format(baseurl=BASEURL),
          cphandlers.CheckplotListHandler,
          {'currentdir':CURRENTDIR,
@@ -273,6 +275,7 @@ def main():
           'cplistfile':cplistfile,
           'executor':EXECUTOR,
           'readonly':READONLY}),
+        # light curve variability and period-finding tool endpoints
         (r'{baseurl}tools/?(.*)'.format(baseurl=BASEURL),
          cphandlers.LCToolHandler,
          {'currentdir':CURRENTDIR,
@@ -281,7 +284,9 @@ def main():
           'cplistfile':cplistfile,
           'executor':EXECUTOR,
           'readonly':READONLY}),
-        (r'{baseurl}cpfile/(.*)'.format(baseurl=BASEURL),
+        # download any file in the current base directory, mostly used for
+        # downloading checkplot pickles and updated checkplot list JSONs
+        (r'{baseurl}download/(.*)'.format(baseurl=BASEURL),
          tornado.web.StaticFileHandler, {'path': CURRENTDIR})
     ]
 
