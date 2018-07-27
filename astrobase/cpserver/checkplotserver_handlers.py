@@ -3280,7 +3280,7 @@ class StandaloneHandler(tornado.web.RequestHandler):
             # this is the initial dict
             resultdict = {
                 'status':'ok',
-                'message':'found checkplot %s' % cpfpath,
+                'message':'found checkplot %s' % os.path.basename(cpfpath),
                 'readonly':True,
                 'result':{
                     'time0':'%.3f' % time0,
