@@ -19,6 +19,7 @@ import json
 import time
 import sys
 import socket
+import stat
 
 # this handles async updates of the checkplot pickles so the UI remains
 # responsive
@@ -116,6 +117,31 @@ define('baseurl',
              "instead of /..."),
        type=str)
 
+#
+# special stand-alone mode
+#
+# this is used for checkplotserver is serving checkplots to another service via
+# HTTP. two options are required below:
+#
+# --standalone=1
+# --sharedsecret=/path/to/shared/secret/file
+#
+# the shared secret file contains a key that is required for any access via the
+# standalone method. we do this because the standalone mode can open any file
+# anywhere (being used for opening a checkplot pickle, serializing it to JSON,
+# and sending it back to another process)
+define('standalone',
+       default=0,
+       help=("This starts the server in standalone mode."),
+       type=int)
+define('sharedsecret',
+       default='',
+       help=("a file containing a cryptographically "
+             "secure string that is used to authenticate "
+             "requests that come into the special standalone mode."),
+       type=str)
+
+
 
 ############
 ### MAIN ###
@@ -135,8 +161,6 @@ def main():
         LOGGER.setLevel(logging.INFO)
 
 
-
-
     ###################
     ## SET UP CONFIG ##
     ###################
@@ -145,81 +169,6 @@ def main():
     ASSETPATH = options.assetpath
     BASEURL = options.baseurl
 
-    if not BASEURL.endswith('/'):
-        BASEURL = BASEURL + '/'
-
-    READONLY = options.readonly
-    if READONLY:
-        LOGGER.warning('checkplotserver running in readonly mode.')
-
-    # this is the directory checkplotserver.py was executed from. used to figure
-    # out checkplot locations
-    CURRENTDIR = os.getcwd()
-
-    # if a checkplotlist is provided, then load it.
-    # NOTE: all paths in this file are relative to the path of the checkplotlist
-    # file itself.
-    cplistfile = options.checkplotlist
-
-    # if the provided cplistfile is OK
-    if cplistfile and os.path.exists(cplistfile):
-
-        with open(cplistfile,'r') as infd:
-            CHECKPLOTLIST = json.load(infd)
-        LOGGER.info('using provided checkplot list file: %s' % cplistfile)
-
-    # if a cplist is provided, but doesn't exist
-    elif cplistfile and not os.path.exists(cplistfile):
-        helpmsg = (
-            "Couldn't find the file %s\n"
-            "NOTE: To make a checkplot list file, "
-            "try running the following command:\n"
-            "python %s pkl "
-            "/path/to/folder/where/the/checkplot.pkl.gz/files/are" %
-            (cplistfile, os.path.join(modpath,'checkplotlist.py'))
-        )
-        LOGGER.error(helpmsg)
-        sys.exit(1)
-
-    # finally, if no cplistfile is provided at all, search for a
-    # checkplot-filelist.json in the current directory
-    else:
-        LOGGER.warning('No checkplot list file provided!\n'
-                       '(use --checkplotlist=... for this, '
-                       'or use --help to see all options)\n'
-                       'looking for checkplot-filelist.json in the '
-                       'current directory %s ...' % CURRENTDIR)
-
-        # this is for single checkplot lists
-        if os.path.exists(os.path.join(CURRENTDIR,'checkplot-filelist.json')):
-
-            cplistfile = os.path.join(CURRENTDIR,'checkplot-filelist.json')
-            with open(cplistfile,'r') as infd:
-                CHECKPLOTLIST = json.load(infd)
-            LOGGER.info('using checkplot list file: %s' % cplistfile)
-
-        # this is for chunked checkplot lists
-        elif os.path.exists(os.path.join(CURRENTDIR,
-                                         'checkplot-filelist-00.json')):
-
-            cplistfile = os.path.join(CURRENTDIR,'checkplot-filelist-00.json')
-            with open(cplistfile,'r') as infd:
-                CHECKPLOTLIST = json.load(infd)
-            LOGGER.info('using checkplot list file: %s' % cplistfile)
-
-        # if we can't find a checkplot list, bail out
-        else:
-
-            helpmsg = (
-                "No checkplot file list JSON found, "
-                "can't continue without one.\n"
-                "Did you make a checkplot list file? "
-                "To make one, try running the following command:\n"
-                "checkplotlist pkl "
-                "/path/to/folder/where/the/checkplot.pkl.gz/files/are"
-            )
-            LOGGER.error(helpmsg)
-            sys.exit(1)
 
     ###################################
     ## PERSISTENT CHECKPLOT EXECUTOR ##
@@ -227,53 +176,188 @@ def main():
 
     EXECUTOR = ProcessPoolExecutor(MAXPROCS)
 
-    ##################
-    ## URL HANDLERS ##
-    ##################
 
-    HANDLERS = [
-        # index page
-        (r'{baseurl}'.format(baseurl=BASEURL),
-         cphandlers.IndexHandler,
-         {'currentdir':CURRENTDIR,
-          'assetpath':ASSETPATH,
-          'cplist':CHECKPLOTLIST,
-          'cplistfile':cplistfile,
-          'executor':EXECUTOR,
-          'readonly':READONLY,
-          'baseurl':BASEURL}),
-        # loads and interacts with checkplot pickles
-        (r'{baseurl}cp/?(.*)'.format(baseurl=BASEURL),
-         cphandlers.CheckplotHandler,
-         {'currentdir':CURRENTDIR,
-          'assetpath':ASSETPATH,
-          'cplist':CHECKPLOTLIST,
-          'cplistfile':cplistfile,
-          'executor':EXECUTOR,
-          'readonly':READONLY}),
-        # loads and interacts with the current checkplot list JSON file
-        (r'{baseurl}list'.format(baseurl=BASEURL),
-         cphandlers.CheckplotListHandler,
-         {'currentdir':CURRENTDIR,
-          'assetpath':ASSETPATH,
-          'cplist':CHECKPLOTLIST,
-          'cplistfile':cplistfile,
-          'executor':EXECUTOR,
-          'readonly':READONLY}),
-        # light curve variability and period-finding tool endpoints
-        (r'{baseurl}tools/?(.*)'.format(baseurl=BASEURL),
-         cphandlers.LCToolHandler,
-         {'currentdir':CURRENTDIR,
-          'assetpath':ASSETPATH,
-          'cplist':CHECKPLOTLIST,
-          'cplistfile':cplistfile,
-          'executor':EXECUTOR,
-          'readonly':READONLY}),
-        # download any file in the current base directory, mostly used for
-        # downloading checkplot pickles and updated checkplot list JSONs
-        (r'{baseurl}download/(.*)'.format(baseurl=BASEURL),
-         tornado.web.StaticFileHandler, {'path': CURRENTDIR})
-    ]
+    #######################################
+    ## CHECK IF WE'RE IN STANDALONE MODE ##
+    #######################################
+
+    if options.standalone:
+
+        if ( (not options.sharedsecret) or
+             (options.sharedsecret and
+              not os.path.exists(options.sharedsecret)) ):
+
+            LOGGER.error('Could not find a shared secret file to use in \n'
+                         'standalone mode. Generate one using: \n\n'
+                         'python3 -c "import secrets; '
+                         'print(secrets.token_urlsafe(32))" '
+                         '> secret-key-file.txt\n\nSet user-only rw '
+                         'permissions on the generated file (chmod 600)')
+            sys.exit(1)
+
+        elif options.sharedsecret and os.path.exists(options.sharedsecret):
+
+            # check if this file is readable/writeable by user only
+            fileperm = oct(os.stat(options.sharedsecret)[stat.ST_MODE])
+
+            if fileperm == '0100600' or fileperm == '0o100600':
+
+                with open(options.sharedsecret,'r') as infd:
+
+                    SHAREDSECRET = infd.read().strip('\n')
+
+                    # this is the URLSpec for the standalone Handler
+                    standalonespec = (
+                        r'/standalone',
+                        cphandlers.StandaloneHandler,
+                        {'executor':EXECUTOR,
+                         'secret':SHAREDSECRET}
+                    )
+            else:
+                LOGGER.error('permissions on the shared secret file '
+                             'should be 0100600')
+                sys.exit(1)
+
+        else:
+                LOGGER.error('could not find the specified '
+                             'shared secret file: %s' %
+                             options.sharedsecret)
+                sys.exit(1)
+
+
+        # only one handler in standalone mode
+        HANDLERS = [standalonespec]
+
+
+    # if we're not in standalone mode, proceed normally
+    else:
+
+        if not BASEURL.endswith('/'):
+            BASEURL = BASEURL + '/'
+
+        READONLY = options.readonly
+        if READONLY:
+            LOGGER.warning('checkplotserver running in readonly mode.')
+
+        # this is the directory checkplotserver.py was executed from. used to
+        # figure out checkplot locations
+        CURRENTDIR = os.getcwd()
+
+        # if a checkplotlist is provided, then load it.  NOTE: all paths in this
+        # file are relative to the path of the checkplotlist file itself.
+        cplistfile = options.checkplotlist
+
+        # if the provided cplistfile is OK
+        if cplistfile and os.path.exists(cplistfile):
+
+            with open(cplistfile,'r') as infd:
+                CHECKPLOTLIST = json.load(infd)
+            LOGGER.info('using provided checkplot list file: %s' % cplistfile)
+
+        # if a cplist is provided, but doesn't exist
+        elif cplistfile and not os.path.exists(cplistfile):
+            helpmsg = (
+                "Couldn't find the file %s\n"
+                "NOTE: To make a checkplot list file, "
+                "try running the following command:\n"
+                "python %s pkl "
+                "/path/to/folder/where/the/checkplot.pkl.gz/files/are" %
+                (cplistfile, os.path.join(modpath,'checkplotlist.py'))
+            )
+            LOGGER.error(helpmsg)
+            sys.exit(1)
+
+        # finally, if no cplistfile is provided at all, search for a
+        # checkplot-filelist.json in the current directory
+        else:
+            LOGGER.warning('No checkplot list file provided!\n'
+                           '(use --checkplotlist=... for this, '
+                           'or use --help to see all options)\n'
+                           'looking for checkplot-filelist.json in the '
+                           'current directory %s ...' % CURRENTDIR)
+
+            # this is for single checkplot lists
+            if os.path.exists(
+                    os.path.join(CURRENTDIR,'checkplot-filelist.json')
+            ):
+
+                cplistfile = os.path.join(CURRENTDIR,'checkplot-filelist.json')
+                with open(cplistfile,'r') as infd:
+                    CHECKPLOTLIST = json.load(infd)
+                LOGGER.info('using checkplot list file: %s' % cplistfile)
+
+            # this is for chunked checkplot lists
+            elif os.path.exists(os.path.join(CURRENTDIR,
+                                             'checkplot-filelist-00.json')):
+
+                cplistfile = os.path.join(CURRENTDIR,
+                                          'checkplot-filelist-00.json')
+                with open(cplistfile,'r') as infd:
+                    CHECKPLOTLIST = json.load(infd)
+                LOGGER.info('using checkplot list file: %s' % cplistfile)
+
+            # if we can't find a checkplot list, bail out
+            else:
+
+                helpmsg = (
+                    "No checkplot file list JSON found, "
+                    "can't continue without one.\n"
+                    "Did you make a checkplot list file? "
+                    "To make one, try running the following command:\n"
+                    "checkplotlist pkl "
+                    "/path/to/folder/where/the/checkplot.pkl.gz/files/are"
+                )
+                LOGGER.error(helpmsg)
+                sys.exit(1)
+
+        ##################################
+        ## URL HANDLERS FOR NORMAL MODE ##
+        ##################################
+
+        HANDLERS = [
+            # index page
+            (r'{baseurl}'.format(baseurl=BASEURL),
+             cphandlers.IndexHandler,
+             {'currentdir':CURRENTDIR,
+              'assetpath':ASSETPATH,
+              'cplist':CHECKPLOTLIST,
+              'cplistfile':cplistfile,
+              'executor':EXECUTOR,
+              'readonly':READONLY,
+              'baseurl':BASEURL}),
+            # loads and interacts with checkplot pickles
+            (r'{baseurl}cp/?(.*)'.format(baseurl=BASEURL),
+             cphandlers.CheckplotHandler,
+             {'currentdir':CURRENTDIR,
+              'assetpath':ASSETPATH,
+              'cplist':CHECKPLOTLIST,
+              'cplistfile':cplistfile,
+              'executor':EXECUTOR,
+              'readonly':READONLY}),
+            # loads and interacts with the current checkplot list JSON file
+            (r'{baseurl}list'.format(baseurl=BASEURL),
+             cphandlers.CheckplotListHandler,
+             {'currentdir':CURRENTDIR,
+              'assetpath':ASSETPATH,
+              'cplist':CHECKPLOTLIST,
+              'cplistfile':cplistfile,
+              'executor':EXECUTOR,
+              'readonly':READONLY}),
+            # light curve variability and period-finding tool endpoints
+            (r'{baseurl}tools/?(.*)'.format(baseurl=BASEURL),
+             cphandlers.LCToolHandler,
+             {'currentdir':CURRENTDIR,
+              'assetpath':ASSETPATH,
+              'cplist':CHECKPLOTLIST,
+              'cplistfile':cplistfile,
+              'executor':EXECUTOR,
+              'readonly':READONLY}),
+            # download any file in the current base directory, mostly used for
+            # downloading checkplot pickles and updated checkplot list JSONs
+            (r'{baseurl}download/(.*)'.format(baseurl=BASEURL),
+             tornado.web.StaticFileHandler, {'path': CURRENTDIR})
+        ]
+
 
     #######################
     ## APPLICATION SETUP ##
