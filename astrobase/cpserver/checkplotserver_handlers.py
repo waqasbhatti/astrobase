@@ -76,7 +76,7 @@ LOGGER = logging.getLogger(__name__)
 import tornado.ioloop
 import tornado.httpserver
 import tornado.web
-from tornado.escape import xhtml_escape, xhtml_unescape, url_unescape
+from tornado.escape import xhtml_escape, url_unescape
 from tornado import gen
 
 ###################
@@ -2752,7 +2752,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                         cptimes,
                                         cpmags,
                                         cperrs,
-                                        lctoolargs[3], # this is the fit period
+                                        lctoolargs[3],  # this is the fit period
                                         'min')
 
                         # here, we set a bestperiodhighlight to distinguish this
@@ -2877,16 +2877,16 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                     if os.path.exists(tempfpath):
                         os.remove(tempfpath)
-                        LOGWARNING('reset all LC tool results '
-                                   'for %s by removing %s' %
-                                   (tempfpath, cpfpath))
+                        LOGGER.warning('reset all LC tool results '
+                                       'for %s by removing %s' %
+                                       (tempfpath, cpfpath))
                         resultdict['status'] = 'success'
                     else:
                         resultdict['status'] = 'error'
-                        LOGWARNING('tried to reset LC tool results for %s, '
-                                   'but temp checkplot result pickle %s '
-                                   'does not exist' %
-                                   (tempfpath, cpfpath))
+                        LOGGER.warning('tried to reset LC tool results for %s, '
+                                       'but temp checkplot result pickle %s '
+                                       'does not exist' %
+                                       (tempfpath, cpfpath))
 
                     resultdict['message'] = (
                         'all unsynced results for this object have been purged'
@@ -2907,7 +2907,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                         target = xhtml_escape(target)
 
                         # get rid of invalid targets
-                        if (target not in CPTOOL or
+                        if (target not in CPTOOLMAP or
                             target == 'lctool-reset' or
                             target == 'lctool-results' or
                             target == 'phasedlc-newplot' or
@@ -2924,7 +2924,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                             raise tornado.web.Finish()
 
                         # if we're good to go, get the target location
-                        targetloc = CPTOOLS[target]['resloc']
+                        targetloc = CPTOOLMAP[target]['resloc']
 
                         # first, search the cptempdict for this target
                         # if found, return it
