@@ -3447,13 +3447,6 @@ class StandaloneHandler(tornado.web.RequestHandler):
             #
             # end of processing per pfmethod
             #
-
-            # return the checkplot via JSON
-            resultjson = json.dumps(resultdict)
-
-            # take care of the NaNs anyway cause we're feeling generous
-            resultjson = resultjson.replace('NaN','null')
-
             self.set_header('Content-Type','application/json; charset=UTF-8')
             self.write(resultdict)
             self.finish()
