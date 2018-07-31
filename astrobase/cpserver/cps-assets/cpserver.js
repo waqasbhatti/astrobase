@@ -747,13 +747,7 @@ var cpv = {
             cputils.b64_to_canvas(cpv.currcp.finderchart,
                                   '#finderchart');
 
-            // get the HAT stations
-            var hatstations = cpv.currcp.objectinfo.stations;
-            var splitstations = '';
 
-            if (hatstations != undefined && hatstations) {
-                splitstations = (String(hatstations).split(',')).join(', ');
-            }
 
             // get the number of detections
             var objndet = cpv.currcp.objectinfo.ndet;
@@ -762,13 +756,45 @@ var cpv = {
                 objndet = cpv.currcp.magseries_ndet;
             }
 
-            // update the objectinfo
-            var hatinfo = '<strong>' +
-                splitstations +
-                '</strong><br>' +
-                '<strong>LC points:</strong> ' + objndet;
-            $('#hatinfo').html(hatinfo);
 
+            // get the observatory information
+            if ('stations' in cpv.currcp.objectinfo) {
+
+                // get the HAT stations
+                var hatstations = cpv.currcp.objectinfo.stations;
+                var splitstations = '';
+
+                if (hatstations != undefined && hatstations) {
+                    splitstations = (String(hatstations).split(',')).join(', ');
+                }
+
+                // update the objectinfo
+                var hatinfo = '<strong>' +
+                    splitstations +
+                    '</strong><br>' +
+                    '<strong>LC points:</strong> ' + objndet;
+                $('#hatinfo').html(hatinfo);
+
+            }
+            else if ('observatory' in cpv.currcp.objectinfo) {
+
+                var obsinfo = '<strong'> +
+                    cpv.currcp.objectinfo.observatory + '</strong><br>' +
+                    '<strong>LC points:</strong> ' + objndet;
+                $('#hatinfo').html(obsinfo);
+
+            }
+            else if ('telescope' in cpv.currcp.objectinfo) {
+
+                var telinfo = '<strong'> +
+                    cpv.currcp.objectinfo.telescope + '</strong><br>' +
+                    '<strong>LC points:</strong> ' + objndet;
+                $('#hatinfo').html(telinfo);
+
+            }
+            else {
+                $('#hatinfo').html('<strong>LC points:</strong> ' + objndet);
+            }
 
             // get the GAIA status (useful for G mags, colors, etc.)
             if (cpv.currcp.objectinfo.gaia_status != undefined) {
