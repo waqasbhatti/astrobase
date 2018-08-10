@@ -2,69 +2,18 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 
-'''hatds.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Apr 2017
+'''lccs.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Aug 2018
 License: MIT - see LICENSE for the full text.
 
-This contains functions to search for objects and get HAT sqlite
-("sqlitecurves") or CSV gzipped text light curves from the new HAT data
-server. These can be read by the hatlc module.
+This contains functions to search for objects and get light curves from an LCC
+server (https://github.com/waqasbhatti/lcc-server).
 
-To get a single light curve for an object with objectid, belonging to hatproject
-and in datarelease:
+This currently supports the following LCC server services:
 
-hatds.hatlc_for_object(objectid,
-                       hatproject,
-                       datarelease=None,
-                       apikey=None,
-                       outdir=None,
-                       lcformat='sqlite')
-
-To get multiple light curves for objects in parallel:
-
-hatds.hatlcs_for_objectlist(objectidlist,
-                            hatproject,
-                            datarelease=None,
-                            apikey=None,
-                            outdir=None,
-                            lcformat='sqlite',
-                            nworkers=None)
-
-To get all light curves for a specified location and search radius:
-
-hatds.hatlcs_at_radec(coordstring,
-                      hatproject,
-                      datarelease=None,
-                      apikey=None,
-                      outdir=None,
-                      lcformat='sqlite')
-
-For all of these functions:
-
-    hatproject is one of:
-
-    'hatnet'   -> The HATNet Exoplanet Survey
-    'hatsouth' -> The HATSouth Exoplanet Survey
-    'hatpi'    -> The HATPI Survey
-
-    datarelease is a string starting with 'DR' and ending with a number,
-    indicating the data release to use for the light curve. By default, this is
-    None, meaning that the latest data release light curve will be fetched.
-
-    apikey is your HAT Data Server apikey. If not provided, this will search for
-    a ~/.hatdsrc file and get it from there. If that file is not available,
-    will use anonymous mode.
-
-    lcformat is one of the following:
-
-    'sqlite' -> HAT sqlitecurve format: sqlite database file (readable by
-                astrobase.hatlc)
-    'csv'    -> HAT CSV light curve format: text CSV (astrobase.hatlc can read
-                this too)
-    'check'    -> this just returns a JSON string indicating if you have access
-                  to the light curve based on your access privilege level.
-
-See the docstrings for each function and the APIKEYHELP string below for
-details.
+- conesearch   -> use function cone_search
+- ftsquery     -> use function fulltext_search
+- columnsearch -> use function column_search
+- xmatch       -> use function xmatch_search
 
 '''
 
@@ -136,42 +85,6 @@ def LOGEXCEPTION(message):
             )
 
 
-#####################
-## THE DATA SERVER ##
-#####################
-
-# the light curve API
-LCAPI = 'https://data.hatsurveys.org/api/lc'
-
-APIKEYHELP = '''\
-The HAT Data Server requires an API key to access data that is not open for
-anonymous public access. This module will search for a key credentials file in
-your home directory. If not found, only anonymous access to the Data Server will
-be available.
-
-If you don't have a HAT Data Server account
--------------------------------------------
-
-Please email wbhatti@astro.princeton.edu for an API key. We'll automate this
-procedure once the HAT Data Server is out of testing. Follow the instructions
-below to create a API key credentials file.
-
-If you have a HAT Data Server account
--------------------------------------
-
-Create a file called .hatdsrc in your home directory and put your email address
-and API key into it using the format below:
-
-<your email address>:<API key string>
-
-Make sure that this file is only readable/writeable by your user:
-
-$ chmod 600 ~/.hatdsrc
-
-Then import this module as usual; it should pick up the file automatically.
-'''
-
-
 ####################
 ## SYSTEM IMPORTS ##
 ####################
@@ -182,6 +95,7 @@ import stat
 import multiprocessing as mp
 import json
 import argparse
+from datetime import datetime, timezone
 
 # import url methods here.  we use built-ins because we want this module to be
 # usable as a single file. otherwise, we'd use something sane like Requests.
@@ -200,14 +114,31 @@ except:
 ## API KEY CONFIG ##
 ####################
 
-def check_apikey_settings():
-    '''
-    This checks if an API key is available.
+def check_existing_apikey(lcc_server):
+    '''This validates if an API key for lcc_server is available in
+    ~/.astrobase/lccs.
+
+    API keys are stored using the following file scheme:
+
+    ~/.astrobase/lccs/apikey-domain.of.lccserver.org
+
+    e.g. for the HAT LCC server at https://data.hatsurveys.org:
+
+    ~/.astrobase/lccs/apikey-https-data.hatsurveys.org
 
     '''
 
     USERHOME = os.path.expanduser('~')
-    APIKEYFILE = os.path.join(USERHOME, '.hatdsrc')
+    APIKEYFILE = os.path.join(USERHOME,
+                              '.astrobase',
+                              'lccs-apikeys',
+                              lcc_server.replace(
+                                  'https://',
+                                  'https-'
+                              ).replace(
+                                  'http://',
+                                  'http-'
+                              ))
 
     if os.path.exists(APIKEYFILE):
 
@@ -217,28 +148,87 @@ def check_apikey_settings():
         if fileperm == '0100600' or fileperm == '0o100600':
 
             with open(APIKEYFILE) as infd:
-                creds = infd.read().strip('\n')
-            APIUSER, APIKEY = creds.split(':')
-            HAVEAPIKEY = True
+                apikey, expires = infd.read().strip('\n').split()
 
-            return HAVEAPIKEY, APIUSER, APIKEY
+            # get today's datetime
+            now = datetime.now(timezone.utc)
+            expdt = datetime.fromisoformat(expires.replace('Z','+00:00'))
+            if now > expdt:
+                LOGERROR('API key has expired. expiry was on: %s' % expires)
+                return False, apikey, expires
+            else:
+                return True, apikey, expires
 
         else:
-            LOGWARNING('The API key credentials file %s has bad permissions '
+            LOGWARNING('The API key file %s has bad permissions '
                        'and is insecure, not reading it.\n'
                        '(you need to chmod 600 this file)'
                        % APIKEYFILE)
-            HAVEAPIKEY = False
 
-            return HAVEAPIKEY, None, None
+            return False, None, None
     else:
-        LOGWARNING('No HAT Data Server API credentials found in: {apikeyfile}\n'
-                   'Only anonymous access is available.\n\n'
-                   '{apikeyhelp}'.format(apikeyfile=APIKEYFILE,
-                                         apikeyhelp=APIKEYHELP))
-        HAVEAPIKEY = False
+        LOGWARNING('No LCC server API key '
+                   'found in: {apikeyfile}'.format(apikeyfile=APIKEYFILE))
 
-        return HAVEAPIKEY, None, None
+        return False, None, None
+
+
+
+def get_new_apikey(lcc_server):
+    '''
+    This gets a new API key from the LCC server at lcc_server.
+
+    '''
+
+    USERHOME = os.path.expanduser('~')
+    APIKEYFILE = os.path.join(USERHOME,
+                              '.astrobase',
+                              'lccs-apikeys',
+                              lcc_server.replace(
+                                  'https://',
+                                  'https-'
+                              ).replace(
+                                  'http://',
+                                  'http-'
+                              ))
+
+    # url for getting an API key
+    url = '%s/api/key' % lcc_server
+
+    # get the API key
+    resp = urlopen(url)
+
+    if resp.status == 200:
+
+        respdict = json.loads(resp.read())
+
+    else:
+
+        LOGERROR('could not fetch the API key from LCC server at: %s' %
+                 lcc_server)
+        LOGERROR('the HTTP status code was: %s' % resp.status_code)
+        return None
+
+    #
+    # now that we have an API key dict, get the API key out of it and write it
+    # to the APIKEYFILE
+    #
+    apikey = respdict['result']['key']
+    expires = respdict['result']['expires']
+
+    # write this to the apikey file
+
+    if not os.path.exists(os.path.dirname(APIKEYFILE)):
+        os.makedirs(os.path.dirname(APIKEYFILE))
+
+    with open(APIKEYFILE,'w'):
+        outfd.write('%s %sZ\n' % (apikey, expires))
+
+    LOGINFO('key fetched successfully from: %s. expires on: %s' % (lcc_server,
+                                                                   expires))
+    LOGINFO('written to: %s' % APIKEYFILE)
+
+    return apikey, expires
 
 
 
@@ -250,6 +240,20 @@ def check_apikey_settings():
 def on_download_chunk(transferred, blocksize, totalsize):
     progress = transferred*blocksize/float(totalsize)*100.0
     print('Downloading: {progress:.1f}%'.format(progress=progress),end='\r')
+
+
+
+######################
+## SEARCH FUNCTIONS ##
+######################
+
+
+
+
+
+
+
+
 
 
 #######################################
