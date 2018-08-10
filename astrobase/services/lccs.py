@@ -243,140 +243,108 @@ def on_download_chunk(transferred, blocksize, totalsize):
 
 
 
+##############################
+## QUERY HANDLING FUNCTIONS ##
+##############################
+
+
+def submit_get_query(url, params, apikey=None):
+    '''This submits a GET query to an LCC server API endpoint.
+
+    Handles streaming of the results, and returns the final JSON stream. Also
+    handles results that time out.
+
+    apikey is not currently required for GET requests, but may be in the future,
+    so it's handled here anyway.
+
+    '''
+
+
+
+def submit_post_query(url, data, apikey):
+    '''This submits a POST query to an LCC server API endpoint.
+
+    Handles streaming of the results, and returns the final JSON stream. Also
+    handles results that time out.
+
+    apikey is currently required for any POST requests.
+
+    '''
+
+
+
+def retrieve_dataset_files(searchresult, outdir=None):
+    '''This retrieves the dataset's CSV, pickle, and any LC zip files.
+
+    Takes the resultdict from submit_*_query functions above or a pickle file
+    generated from these if the query timed out.
+
+    Puts the files in outdir. If it's None, they will be placed in the current
+    directory.
+
+    '''
+
+
+
 ######################
 ## SEARCH FUNCTIONS ##
 ######################
 
+def cone_search(lcc_server,
+                center_ra,
+                center_decl,
+                radiusarcmin=5.0,
+                collections=None,
+                columns=None,
+                filters=None,
+                download_data=True,
+                outdir=None,
+                result_ispublic=True):
+    '''This runs a cone-search query.
 
+    lcc_server is the base URL of the LCC server to talk to.
+    (e.g. for HAT, use: https://data.hatsurveys.org)
 
+    center_ra, center_decl are the central coordinates of the search to
+    conduct. These can be either decimal degrees of type float, or sexagesimal
+    coordinates of type str:
 
+    OK: 290.0, 45.0
+    OK: 15:00:00 +45:00:00
+    OK: 15 00 00.0 -45 00 00.0
+    NOT OK: 290.0 +45:00:00
+    NOT OK: 15:00:00 45.0
 
+    radiusarcmin is the search radius. This is in arcminutes. The maximum radius
+    you can use is 60 arcminutes.
 
+    collections is a list of LC collections to search in. If this is None, all
+    collections will be searched.
 
+    columns is a list of columns to return in the results. Matching objects'
+    object IDs, RAs, DECs, and links to light curve files will always be
+    returned so there is no need to specify these columns.
 
+    filters is a filter string to use to filtering the objects that match the
+    initial search parameters.
 
+    download_data sets if the accompanying data from the search results will be
+    downloaded automatically. This includes the data table CSV, the dataset
+    pickle file, and a light curve ZIP file. Note that if the search service
+    indicates that your query is still in progress, this function will block
+    until the light curve ZIP file becomes available. To avoid this, set
+    download_data to False and the function will write a pickle file to
+    ~/.astrobase/lccs/query-[setid].pkl containing all the information necessary
+    to retrieve these data files later when the query is done. To do so, call
+    the retrieve_dataset_files with the path to this pickle file (it will be
+    returned).
 
-#######################################
-## DATA SERVER LIGHT CURVE RETRIEVAL ##
-#######################################
+    outdir if not None, sets the output directory of the downloaded dataset
+    files. If None, they will be downloaded to the current directory.
 
-def hatlc_for_object(objectid,
-                     hatproject,
-                     datarelease=None,
-                     anonmode=True,
-                     outdir=None,
-                     lcformat='sqlite'):
-    '''This gets the light curve for the specified objectid.
-
-    outdir is where to put the downloaded file. If not provided, will download
-    to the current directory.
-
-    hatproject is one of:
-
-    'hatnet'   -> The HATNet Exoplanet Survey
-    'hatsouth' -> The HATSouth Exoplanet Survey
-    'hatpi'    -> The HATPI Survey
-
-    datarelease is a string starting with 'DR' and ending with a number,
-    indicating the data release to use for the light curve. By default, this is
-    None, meaning that the latest data release light curve will be fetched.
-
-    if anonmode is True, will not use apikey.
-
-    lcformat is one of the following:
-
-    'sqlite' -> HAT sqlitecurve format: sqlite database file (readable by
-                astrobase.hatlc)
-    'csv'    -> HAT CSV light curve format: text CSV (astrobase.hatlc can read
-                this too)
-    'check'    -> this just returns a JSON string indicating if you have access
-                  to the light curve based on your access privilege level.
-
-    '''
-
-    if not anonmode:
-        apikey_avail, apikey_user, apikey_key = check_apikey_settings()
-        if not apikey_avail:
-            LOGERROR("no API key available, can't continue")
-            return None
-
-
-
-
-def hatlcs_for_objectlist(objectidlist,
-                          hatproject,
-                          datarelease=None,
-                          anonmode=True,
-                          outdir=None,
-                          lcformat='sqlite',
-                          nworkers=None):
-    '''This gets light curves for all objectids in objectidlist.
-
-    All args and kwargs are the same as for get_hatlc, except for:
-
-    nworkers: the total number of parallel workers to use when getting the light
-    curves. By default, this is equal to the number of visible CPUs on your
-    machine. There will be a random delay enforced for each worker's download
-    job.
+    result_ispublic sets if you want your dataset to be publicly visible on the
+    Recent Datasets and /datasets page of the LCC server you're talking to. If
+    False, only people who know the unique dataset URL can view and fetch data
+    files from it later.
 
     '''
-
-    if not anonmode:
-        apikey_avail, apikey_user, apikey_key = check_apikey_settings()
-        if not apikey_avail:
-            LOGERROR("no API key available, can't continue")
-            return None
-
-
-
-def hatlcs_at_radec(coordstring,
-                    hatproject,
-                    datarelease=None,
-                    anonmode=False,
-                    outdir=None,
-                    lcformat='sqlite',
-                    nworkers=None):
-    '''This gets light curves for all objectids at coordstring.
-
-    All args and kwargs are the same as for get_hatlc, except for:
-
-    coordstring: this is a string of the following form:
-
-    '<ra> <decl> <search radius in arcmin>'
-
-    <ra> is the right ascension of the center coordinate in decimal degrees or
-    HH:MM:SS.ssss... format.
-
-    <decl> is the declination of the center coordinate in decimal degrees or
-    [+|-]DD:MM:SS.sss... format. Make sure to include the + sign if the
-    declination is positive (for both decimal degrees or sexagesimal format).
-
-    <search radius in arcmin> is the search radius used for the cone
-    search. This will be restricted by your access privileges. Anonymous users
-    can search up to a 1.0 arcminute radius. If you have an API key with
-    sufficient privileges, you may be able to search a wider radius.
-
-    This function will return a path to a ZIP archive containing all the
-    accessible light curves for objects found using the coordstring
-    specification.
-
-    '''
-
-    if not anonmode:
-        apikey_avail, apikey_user, apikey_key = check_apikey_settings()
-        if not apikey_avail:
-            LOGERROR("no API key available, can't continue")
-            return None
-
-
-
-
-def main():
-    '''
-    This enables execution as a commandline script.
-
-    '''
-
-
-if __name__ == '__main__':
-    main()
