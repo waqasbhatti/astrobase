@@ -19,6 +19,9 @@ This currently supports the following LCC server services:
 - datasets        -> use function get_recent_datasets
 - collections     -> use function get_collections
 
+
+TODO: make this actually happen...
+
 You can use this module as a command line tool. If you installed astrobase from
 pip or setup.py, you will have the `lccs` script available on your $PATH. If you
 just downloaded this file as a standalone module, make it executable (using
@@ -35,8 +38,32 @@ __version__ = '0.3.16'
 ## LOGGING ##
 #############
 
+try:
+    from datetime import datetime, timezone
+    utc = timezone.utc
+except:
+    from datetime import datetime, timedelta, tzinfo
+
+    # we'll need to instantiate a tzinfo object because py2.7's datetime
+    # doesn't have the super convenient timezone object (seriously)
+    # https://docs.python.org/2/library/datetime.html#datetime.tzinfo.fromutc
+    ZERO = timedelta(0)
+
+    class UTC(tzinfo):
+        """UTC"""
+
+        def utcoffset(self, dt):
+            return ZERO
+
+        def tzname(self, dt):
+            return "UTC"
+
+        def dst(self, dt):
+            return ZERO
+
+    utc = UTC()
+
 import logging
-from datetime import datetime
 from traceback import format_exc
 
 # setup a logger
@@ -91,8 +118,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 ####################
@@ -102,38 +129,15 @@ def LOGEXCEPTION(message):
 import os
 import os.path
 import stat
-import multiprocessing as mp
 import json
-import argparse
 import sys
 
 try:
-
-    from datetime import datetime, timezone
-    utc = timezone.utc
+    import cPickle as pickle
+except:
     import pickle
 
-except:
 
-    from datetime import datetime, timedelta, tzinfo
-    import cPickle as pickle
-
-    # we'll need to instantiate a tzinfo object because py2.7's datetime
-    # doesn't have the super convenient timezone object (seriously)
-    # https://docs.python.org/2/library/datetime.html#datetime.tzinfo.fromutc
-    ZERO = timedelta(0)
-    class UTC(tzinfo):
-        """UTC"""
-
-        def utcoffset(self, dt):
-            return ZERO
-
-        def tzname(self, dt):
-            return "UTC"
-
-        def dst(self, dt):
-            return ZERO
-    utc = UTC()
 
 # import url methods here.  we use built-ins because we want this module to be
 # usable as a single file. otherwise, we'd use something sane like Requests.
@@ -141,12 +145,13 @@ except:
 # Python 2
 try:
     from urllib import urlretrieve, urlencode
+    from urlparse import urlparse
     from urllib2 import urlopen, Request, HTTPError
 # Python 3
 except:
     from urllib.request import urlretrieve, urlopen, Request
     from urllib.error import HTTPError
-    from urllib.parse import urlencode
+    from urllib.parse import urlencode, urlparse
 
 
 ####################
@@ -192,12 +197,14 @@ def check_existing_apikey(lcc_server):
             # get today's datetime
             now = datetime.now(utc)
 
-            if sys.version_info[:2] > (3,5):
-                expdt = datetime.fromisoformat(expires.replace('Z','+00:00'))
+            if sys.version_info[:2] < (3,7):
+                # this hideous incantation is required for lesser Pythons
+                expdt = datetime.strptime(
+                    expires.replace('Z',''),
+                    '%Y-%m-%dT%H:%M:%S.%f'
+                ).replace(tzinfo=utc)
             else:
-                # this hideous incantation is required for py2.7
-                expdt = datetime.strptime(expires.replace('Z',''),
-                                          '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=utc)
+                expdt = datetime.fromisoformat(expires.replace('Z','+00:00'))
 
             if now > expdt:
                 LOGERROR('API key has expired. expiry was on: %s' % expires)
@@ -330,7 +337,8 @@ def submit_get_searchquery(url, params, apikey=None):
     urlqs = urlencode(urlparams, doseq=True)
     qurl = "%s?%s" % (url, urlqs)
 
-    # if apikey is not None, add it in as an Authorization: Bearer [apikey] header
+    # if apikey is not None, add it in as an Authorization: Bearer [apikey]
+    # header
     if apikey:
         headers = {'Authorization':'Bearer: %s' % apikey}
     else:
@@ -421,16 +429,115 @@ def submit_post_searchquery(url, data, apikey):
 
 
 
-def retrieve_dataset_files(searchresult, outdir=None):
-    '''This retrieves the dataset's CSV, pickle, and any LC zip files.
+def retrieve_dataset_files(searchresult,
+                           getpickle=False,
+                           outdir=None):
+    '''This retrieves the dataset's CSV and any LC zip files.
 
-    Takes the resultdict from submit_*_query functions above or a pickle file
+    Takes the output from submit_*_query functions above or a pickle file
     generated from these if the query timed out.
+
+    If getpickle is True, will also download the dataset's pickle. Note that LCC
+    server is a Python 3.6+ package and it saves its pickles in
+    pickle.HIGHEST_PROTOCOL, so these pickles may be unreadable in lower
+    Pythons.
 
     Puts the files in outdir. If it's None, they will be placed in the current
     directory.
 
     '''
+
+    # this handles the direct result case from submit_*_query functions
+    if isinstance(searchresult, tuple):
+
+        info, setid = searchresult[1:]
+
+    # handles the case where we give the function a existing query pickle
+    elif isinstance(searchresult, str) and os.path.exists(searchresult):
+
+        with open(searchresult,'rb') as infd:
+            info = pickle.load(infd)
+        setid = info['result']['setid']
+
+    else:
+
+        LOGERROR('could not understand input, '
+                 'we need a searchresult from a '
+                 'lccs.submit_*_query function or '
+                 'the path to an existing query pickle')
+        return None, None, None
+
+    # now that we have everything, let's download some files!
+
+    dataset_pickle = 'dataset-%s.pkl.gz' % setid
+    dataset_csv = 'dataset-%s.csv' % setid
+    dataset_lczip = 'lightcurves-%s.zip' % setid
+
+    if outdir is None:
+        localdir = os.getcwd()
+    else:
+        localdir = outdir
+
+    server_scheme, server_netloc = urlparse(info['result']['seturl'])[:2]
+    dataset_pickle_link = '%s://%s/d/%s' % (server_scheme,
+                                            server_netloc,
+                                            dataset_pickle)
+    dataset_csv_link = '%s://%s/d/%s' % (server_scheme,
+                                         server_netloc,
+                                         dataset_csv)
+    dataset_lczip_link = '%s://%s/p/%s' % (server_scheme,
+                                           server_netloc,
+                                           dataset_lczip)
+
+    if getpickle:
+
+        # get the dataset pickle
+        LOGINFO('getting %s...' % dataset_pickle_link)
+        try:
+            localf, header = urlretrieve(dataset_pickle_link,
+                                         os.path.join(localdir, dataset_pickle),
+                                         reporthook=on_download_chunk)
+            LOGINFO('OK -> %s' % localf)
+            local_dataset_pickle = localf
+        except HTTPError as e:
+            LOGERROR('could not download %s, '
+                     'HTTP status code was: %s, reason: %s' %
+                     (dataset_pickle_link, e.code, e.reason))
+            local_dataset_pickle = None
+
+    else:
+        local_dataset_pickle = None
+
+
+    # get the dataset CSV
+    LOGINFO('getting %s...' % dataset_csv_link)
+    try:
+        localf, header = urlretrieve(dataset_csv_link,
+                                     os.path.join(localdir, dataset_csv),
+                                     reporthook=on_download_chunk)
+        LOGINFO('OK -> %s' % localf)
+        local_dataset_csv = localf
+    except HTTPError as e:
+        LOGERROR('could not download %s, HTTP status code was: %s, reason: %s' %
+                 (dataset_csv_link, e.code, e.reason))
+        local_dataset_csv = None
+
+
+    # get the dataset LC zip
+    LOGINFO('getting %s...' % dataset_lczip_link)
+    try:
+        localf, header = urlretrieve(dataset_lczip_link,
+                                     os.path.join(localdir, dataset_lczip),
+                                     reporthook=on_download_chunk)
+        LOGINFO('OK -> %s' % localf)
+        local_dataset_lczip = localf
+    except HTTPError as e:
+        LOGERROR('could not download %s, HTTP status code was: %s, reason: %s' %
+                 (dataset_lczip_link, e.code, e.reason))
+        local_dataset_lczip = None
+
+
+    return local_dataset_csv, local_dataset_lczip, local_dataset_pickle
 
 
 
@@ -496,3 +603,51 @@ def cone_search(lcc_server,
     files from it later.
 
     '''
+
+
+
+#######################################
+## DATASET AND OBJECT INFO FUNCTIONS ##
+#######################################
+
+
+
+###################################
+## SUPPORT FOR EXECUTION AS MAIN ##
+###################################
+
+def main():
+    '''
+    This supports execution of the module as a script.
+
+    TODO: finish this.
+
+    '''
+
+    # handle SIGPIPE sent by less, head, et al.
+    import signal
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    import argparse
+
+    aparser = argparse.ArgumentParser(
+        description='interact with an LCC server on the command-line'
+    )
+
+    aparser.add_argument('server',
+                         action='store',
+                         type='str',
+                         help=("the base URL of the LCC server "
+                               "you want to talk to"))
+
+    aparser.add_argument('action',
+                         choices=['conesearch',
+                                  'columnsearch',
+                                  'ftsearch',
+                                  'xmatch',
+                                  'datasets',
+                                  'collections',
+                                  'objectinfo',
+                                  'getdata'],
+                         action='store',
+                         type='str',
+                         help=("the action you want to perform"))
