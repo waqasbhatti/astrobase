@@ -5,19 +5,29 @@ from __future__ import print_function
 '''lccs.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Aug 2018
 License: MIT - see LICENSE for the full text.
 
-This contains functions to search for objects and get light curves from an LCC
-server (https://github.com/waqasbhatti/lcc-server).
+This contains functions to search for objects and get light curves from a Light
+Curve Collection (LCC) server (https://github.com/waqasbhatti/lcc-server) using
+its HTTP API.
 
 This currently supports the following LCC server services:
 
-- conesearch   -> use function cone_search
-- ftsquery     -> use function fulltext_search
-- columnsearch -> use function column_search
-- xmatch       -> use function xmatch_search
+- conesearch      -> use function cone_search
+- ftsquery        -> use function fulltext_search
+- columnsearch    -> use function column_search
+- xmatch          -> use function xmatch_search
+- objectinfo      -> use function get_object_info
+- datasets        -> use function get_recent_datasets
+- collections     -> use function get_collections
+
+You can use this module as a command line tool. If you installed astrobase from
+pip or setup.py, you will have the `lccs` script available on your $PATH. If you
+just downloaded this file as a standalone module, make it executable (using
+chmod u+x or similar), then run `./lccs.py`. Use the --help flag to see all
+available commands and options.
 
 '''
 
-# put this in here because hatds can be used as a standalone module
+# put this in here because lccs can be used as a standalone module
 __version__ = '0.3.16'
 
 
@@ -95,7 +105,35 @@ import stat
 import multiprocessing as mp
 import json
 import argparse
-from datetime import datetime, timezone
+import sys
+
+try:
+
+    from datetime import datetime, timezone
+    utc = timezone.utc
+    import pickle
+
+except:
+
+    from datetime import datetime, timedelta, tzinfo
+    import cPickle as pickle
+
+    # we'll need to instantiate a tzinfo object because py2.7's datetime
+    # doesn't have the super convenient timezone object (seriously)
+    # https://docs.python.org/2/library/datetime.html#datetime.tzinfo.fromutc
+    ZERO = timedelta(0)
+    class UTC(tzinfo):
+        """UTC"""
+
+        def utcoffset(self, dt):
+            return ZERO
+
+        def tzname(self, dt):
+            return "UTC"
+
+        def dst(self, dt):
+            return ZERO
+    utc = UTC()
 
 # import url methods here.  we use built-ins because we want this module to be
 # usable as a single file. otherwise, we'd use something sane like Requests.
@@ -103,10 +141,11 @@ from datetime import datetime, timezone
 # Python 2
 try:
     from urllib import urlretrieve, urlencode
-    from urllib2 import urlopen
+    from urllib2 import urlopen, Request, HTTPError
 # Python 3
 except:
-    from urllib.request import urlretrieve, urlopen
+    from urllib.request import urlretrieve, urlopen, Request
+    from urllib.error import HTTPError
     from urllib.parse import urlencode
 
 
@@ -131,8 +170,8 @@ def check_existing_apikey(lcc_server):
     USERHOME = os.path.expanduser('~')
     APIKEYFILE = os.path.join(USERHOME,
                               '.astrobase',
-                              'lccs-apikeys',
-                              lcc_server.replace(
+                              'lccs',
+                              'apikey-%s' % lcc_server.replace(
                                   'https://',
                                   'https-'
                               ).replace(
@@ -151,8 +190,15 @@ def check_existing_apikey(lcc_server):
                 apikey, expires = infd.read().strip('\n').split()
 
             # get today's datetime
-            now = datetime.now(timezone.utc)
-            expdt = datetime.fromisoformat(expires.replace('Z','+00:00'))
+            now = datetime.now(utc)
+
+            if sys.version_info[:2] > (3,5):
+                expdt = datetime.fromisoformat(expires.replace('Z','+00:00'))
+            else:
+                # this hideous incantation is required for py2.7
+                expdt = datetime.strptime(expires.replace('Z',''),
+                                          '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=utc)
+
             if now > expdt:
                 LOGERROR('API key has expired. expiry was on: %s' % expires)
                 return False, apikey, expires
@@ -183,8 +229,8 @@ def get_new_apikey(lcc_server):
     USERHOME = os.path.expanduser('~')
     APIKEYFILE = os.path.join(USERHOME,
                               '.astrobase',
-                              'lccs-apikeys',
-                              lcc_server.replace(
+                              'lccs',
+                              'apikey-%s' % lcc_server.replace(
                                   'https://',
                                   'https-'
                               ).replace(
@@ -198,7 +244,7 @@ def get_new_apikey(lcc_server):
     # get the API key
     resp = urlopen(url)
 
-    if resp.status == 200:
+    if resp.code == 200:
 
         respdict = json.loads(resp.read())
 
@@ -221,8 +267,11 @@ def get_new_apikey(lcc_server):
     if not os.path.exists(os.path.dirname(APIKEYFILE)):
         os.makedirs(os.path.dirname(APIKEYFILE))
 
-    with open(APIKEYFILE,'w'):
-        outfd.write('%s %sZ\n' % (apikey, expires))
+    with open(APIKEYFILE,'w') as outfd:
+        outfd.write('%s %s\n' % (apikey, expires))
+
+    # chmod it to the correct value
+    os.chmod(APIKEYFILE, 0o100600)
 
     LOGINFO('key fetched successfully from: %s. expires on: %s' % (lcc_server,
                                                                    expires))
@@ -247,21 +296,120 @@ def on_download_chunk(transferred, blocksize, totalsize):
 ## QUERY HANDLING FUNCTIONS ##
 ##############################
 
-
-def submit_get_query(url, params, apikey=None):
+def submit_get_searchquery(url, params, apikey=None):
     '''This submits a GET query to an LCC server API endpoint.
 
     Handles streaming of the results, and returns the final JSON stream. Also
     handles results that time out.
 
+    url is the URL to hit for getting the results. This will probably be
+    something like https://lcc.server.org/api/xyz.
+
+    params is a dict of args to generate a query string for the API.
+
     apikey is not currently required for GET requests, but may be in the future,
-    so it's handled here anyway.
+    so it's handled here anyway. This is passed in the header of the HTTP
+    request.
 
     '''
 
+    # first, we need to convert any columns and collections items to broken out
+    # params
+    urlparams = {}
+
+    for key in params:
+
+        if key == 'columns':
+            urlparams['columns[]'] = params[key]
+        elif key == 'collections':
+            urlparams['collections[]'] = params[key]
+        else:
+            urlparams[key] = params[key]
+
+    # do the urlencode with doseq=True
+    urlqs = urlencode(urlparams, doseq=True)
+    qurl = "%s?%s" % (url, urlqs)
+
+    # if apikey is not None, add it in as an Authorization: Bearer [apikey] header
+    if apikey:
+        headers = {'Authorization':'Bearer: %s' % apikey}
+    else:
+        headers = {}
+
+    LOGINFO('submitting search query to LCC server API URL: %s' % url)
+
+    try:
+
+        # hit the server
+        req = Request(qurl, data=None, headers=headers)
+        resp = urlopen(req)
+
+        if resp.code == 200:
+
+            # we'll iterate over the lines in the response
+            # this works super-well for ND-JSON!
+            for line in resp:
+
+                data = json.loads(line)
+                msg = data['message']
+                status = data['status']
+
+                if status != 'failed':
+                    LOGINFO('status: %s, %s' % (status, msg))
+                else:
+                    LOGERROR('status: %s, %s' % (status, msg))
+
+                # here, we'll decide what to do about the query
+
+                # completed query or query sent to background...
+                if status in ('ok','background'):
+
+                    setid = data['result']['setid']
+                    # save the data pickle to astrobase lccs directory
+                    outpickle = os.path.join(os.path.expanduser('~'),
+                                             '.astrobase',
+                                             'lccs',
+                                             'query-%s.pkl' % setid)
+                    if not os.path.exists(os.path.dirname(outpickle)):
+                        os.makedirs(os.path.dirname(outpickle))
+
+                    with open(outpickle,'wb') as outfd:
+                        pickle.dump(data, outfd, pickle.HIGHEST_PROTOCOL)
+
+                    # we're done at this point, return
+                    return status, data, data['result']['setid']
+
+                # the query probably failed...
+                elif status == 'failed':
+
+                    # we're done at this point, return
+                    return status, data, None
 
 
-def submit_post_query(url, data, apikey):
+        # if the response was not OK, then we probably failed
+        else:
+
+            try:
+                data = json.load(resp)
+                msg = data['message']
+
+                LOGERROR(msg)
+                return 'failed', None, None
+
+            except:
+
+                LOGEXCEPTION('failed to submit query to %s' % url)
+                return 'failed', None, None
+
+    except HTTPError as e:
+
+        LOGERROR('could not submit query to LCC API at: %s' % url)
+        LOGERROR('HTTP status code was %s, reason: %s' % (e.code, e.reason))
+        return 'failed', None, None
+
+
+
+def submit_post_searchquery(url, data, apikey):
     '''This submits a POST query to an LCC server API endpoint.
 
     Handles streaming of the results, and returns the final JSON stream. Also
