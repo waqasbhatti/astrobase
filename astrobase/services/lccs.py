@@ -767,7 +767,7 @@ def cone_search(lcc_server,
     Example filter strings:
 
     "(propermotion gt 200.0) and (sdssr lt 11.0)"
-    "(dered_jmag_kmag gt 2.0) and (aep_000.stetsonj gt 10.0)"
+    "(dered_jmag_kmag gt 2.0) and (aep_000_stetsonj gt 10.0)"
     "(gaia_status ct 'ok') and (propermotion gt 300.0)"
     "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg lt 0.5)"
 
@@ -930,7 +930,7 @@ def fulltext_search(lcc_server,
     Example filter strings:
 
     "(propermotion gt 200.0) and (sdssr lt 11.0)"
-    "(dered_jmag_kmag gt 2.0) and (aep_000.stetsonj gt 10.0)"
+    "(dered_jmag_kmag gt 2.0) and (aep_000_stetsonj gt 10.0)"
     "(gaia_status ct 'ok') and (propermotion gt 300.0)"
     "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg lt 0.5)"
 
@@ -1268,7 +1268,7 @@ def xmatch_search(lcc_server,
     Example filter strings:
 
     "(propermotion gt 200.0) and (sdssr lt 11.0)"
-    "(dered_jmag_kmag gt 2.0) and (aep_000.stetsonj gt 10.0)"
+    "(dered_jmag_kmag gt 2.0) and (aep_000_stetsonj gt 10.0)"
     "(gaia_status ct 'ok') and (propermotion gt 300.0)"
     "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg lt 0.5)"
 
