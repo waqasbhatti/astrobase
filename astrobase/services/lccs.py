@@ -427,6 +427,101 @@ def submit_post_searchquery(url, data, apikey):
 
     '''
 
+    # first, we need to convert any columns and collections items to broken out
+    # params
+    postdata = {}
+
+    for key in data:
+
+        if key == 'columns':
+            postdata['columns[]'] = data[key]
+        elif key == 'collections':
+            postdata['collections[]'] = data[key]
+        else:
+            postdata[key] = data[key]
+
+    # do the urlencode with doseq=True
+    # we also need to encode to bytes
+    encoded_postdata = urlencode(postdata, doseq=True).encode()
+
+    # if apikey is not None, add it in as an Authorization: Bearer [apikey]
+    # header
+    if apikey:
+        headers = {'Authorization':'Bearer: %s' % apikey}
+    else:
+        headers = {}
+
+    LOGINFO('submitting search query to LCC server API URL: %s' % url)
+
+    try:
+
+        # hit the server with a POST request
+        req = Request(url, data=encoded_postdata, headers=headers)
+        resp = urlopen(req)
+
+        if resp.code == 200:
+
+            # we'll iterate over the lines in the response
+            # this works super-well for ND-JSON!
+            for line in resp:
+
+                data = json.loads(line)
+                msg = data['message']
+                status = data['status']
+
+                if status != 'failed':
+                    LOGINFO('status: %s, %s' % (status, msg))
+                else:
+                    LOGERROR('status: %s, %s' % (status, msg))
+
+                # here, we'll decide what to do about the query
+
+                # completed query or query sent to background...
+                if status in ('ok','background'):
+
+                    setid = data['result']['setid']
+                    # save the data pickle to astrobase lccs directory
+                    outpickle = os.path.join(os.path.expanduser('~'),
+                                             '.astrobase',
+                                             'lccs',
+                                             'query-%s.pkl' % setid)
+                    if not os.path.exists(os.path.dirname(outpickle)):
+                        os.makedirs(os.path.dirname(outpickle))
+
+                    with open(outpickle,'wb') as outfd:
+                        pickle.dump(data, outfd, pickle.HIGHEST_PROTOCOL)
+
+                    # we're done at this point, return
+                    return status, data, data['result']['setid']
+
+                # the query probably failed...
+                elif status == 'failed':
+
+                    # we're done at this point, return
+                    return status, data, None
+
+
+        # if the response was not OK, then we probably failed
+        else:
+
+            try:
+                data = json.load(resp)
+                msg = data['message']
+
+                LOGERROR(msg)
+                return 'failed', None, None
+
+            except:
+
+                LOGEXCEPTION('failed to submit query to %s' % url)
+                return 'failed', None, None
+
+    except HTTPError as e:
+
+        LOGERROR('could not submit query to LCC API at: %s' % url)
+        LOGERROR('HTTP status code was %s, reason: %s' % (e.code, e.reason))
+        return 'failed', None, None
+
 
 
 def retrieve_dataset_files(searchresult,
@@ -440,7 +535,10 @@ def retrieve_dataset_files(searchresult,
     If getpickle is True, will also download the dataset's pickle. Note that LCC
     server is a Python 3.6+ package and it saves its pickles in
     pickle.HIGHEST_PROTOCOL, so these pickles may be unreadable in lower
-    Pythons.
+    Pythons. The dataset CSV contains the full data table and all the
+    information about the dataset in its header, which is JSON parseable. You
+    can also use the function retrieve_dataset_json to get the dataset pickle
+    information in JSON form.
 
     Puts the files in outdir. If it's None, they will be placed in the current
     directory.
@@ -541,6 +639,42 @@ def retrieve_dataset_files(searchresult,
 
 
 
+def retrieve_dataset_json(lcc_server, dataset_id):
+    '''This downloads a JSON form of the dataset from the specified lcc_server.
+
+    The JSON contains metadata about the query that produced the dataset,
+    information about the data table's columns, and links to download the
+    dataset's products including the light curve ZIP and the dataset CSV.
+
+    This returns a dict from the parsed JSON. The interesting keys in the dict
+    to look at are: 'coldesc' for the column descriptions and 'rows' for the
+    actual data rows. Note that if there are more than 3000 objects in the
+    dataset, the JSON will only contain the top 3000 objects. In this case, it's
+    better to use retrieve_dataset_files to get the dataset CSV, which contains
+    the full data table.
+
+    '''
+
+    dataset_url = '%s/set/%s?json=1' % (lcc_server, dataset_id)
+
+    LOGINFO('retrieving dataset %s from %s, using URL: %s ...' % (lcc_server,
+                                                                  dataset_id,
+                                                                  dataset_url))
+
+    try:
+
+        resp = urlopen(dataset_url)
+        dataset = json.loads(resp.read())
+
+        return dataset
+
+    except Exception as e:
+
+        LOGEXCEPTION('could not retrieve the dataset JSON!')
+        return None
+
+
+
 ######################
 ## SEARCH FUNCTIONS ##
 ######################
@@ -555,6 +689,7 @@ def cone_search(lcc_server,
                 download_data=True,
                 outdir=None,
                 result_ispublic=True):
+
     '''This runs a cone-search query.
 
     lcc_server is the base URL of the LCC server to talk to.
