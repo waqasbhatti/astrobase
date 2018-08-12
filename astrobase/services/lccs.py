@@ -9,16 +9,39 @@ This contains functions to search for objects and get light curves from a Light
 Curve Collection (LCC) server (https://github.com/waqasbhatti/lcc-server) using
 its HTTP API.
 
-This currently supports the following LCC server services:
 
-- conesearch      -> use function cone_search
-- ftsquery        -> use function fulltext_search
-- columnsearch    -> use function column_search
-- xmatch          -> use function xmatch_search
-- objectinfo      -> use function get_object_info
-- datasets        -> use function get_recent_datasets
-- collections     -> use function get_collections
+SERVICES SUPPORTED
+------------------
 
+This currently supports the following LCC server functions:
+
+- conesearch   -> use cone_search(lcc_server, center_ra, center_decl, ...)
+
+- ftsquery     -> use fulltext_search(lcc_server, searchterm, ...)
+
+- columnsearch -> use column_search(lcc_server, filters, ...)
+
+- xmatch       -> use xmatch_search(lcc_server, file_to_upload, ...)
+
+The functions above will download the data products (data table CSVs, light
+curve ZIP files) of the search results automatically, or in case the query takes
+too long, will return within a configurable timeout. The query information is
+cached to ~/.astrobase/lccs, and can be used to download data products for
+long-running queries later.
+
+The functions below support various auxiliary LCC services:
+
+- get-dataset  -> use retrieve_dataset_json(lcc_server, dataset_id)
+
+- objectinfo   -> use object_info(lcc_server, objectid, collection, ...)
+
+- dataset-list -> use list_recent_datasets(lcc_server, nrecent=25, ...)
+
+- collections  -> use list_lc_collections(lcc_server)
+
+
+COMMAND-LINE USAGE
+------------------
 
 TODO: make this actually happen...
 
@@ -131,6 +154,7 @@ import os.path
 import stat
 import json
 import sys
+import time
 
 try:
     import cPickle as pickle
@@ -383,6 +407,9 @@ def submit_get_searchquery(url, params, apikey=None):
 
                     with open(outpickle,'wb') as outfd:
                         pickle.dump(data, outfd, pickle.HIGHEST_PROTOCOL)
+                        LOGINFO('saved query info to %s, use this to '
+                                'download results later with '
+                                'retrieve_dataset_files' % outpickle)
 
                     # we're done at this point, return
                     return status, data, data['result']['setid']
@@ -490,6 +517,9 @@ def submit_post_searchquery(url, data, apikey):
 
                     with open(outpickle,'wb') as outfd:
                         pickle.dump(data, outfd, pickle.HIGHEST_PROTOCOL)
+                        LOGINFO('saved query info to %s, use this to '
+                                'download results later with '
+                                'retrieve_dataset_files' % outpickle)
 
                     # we're done at this point, return
                     return status, data, data['result']['setid']
@@ -592,11 +622,23 @@ def retrieve_dataset_files(searchresult,
         # get the dataset pickle
         LOGINFO('getting %s...' % dataset_pickle_link)
         try:
-            localf, header = urlretrieve(dataset_pickle_link,
-                                         os.path.join(localdir, dataset_pickle),
-                                         reporthook=on_download_chunk)
-            LOGINFO('OK -> %s' % localf)
-            local_dataset_pickle = localf
+
+            if os.path.exists(os.path.join(localdir, dataset_pickle)):
+
+                LOGWARNING('dataset pickle already exists, '
+                           'not downloading again..')
+                local_dataset_pickle = os.path.join(localdir,
+                                                    dataset_pickle)
+
+            else:
+
+                localf, header = urlretrieve(dataset_pickle_link,
+                                             os.path.join(localdir,
+                                                          dataset_pickle),
+                                             reporthook=on_download_chunk)
+                LOGINFO('OK -> %s' % localf)
+                local_dataset_pickle = localf
+
         except HTTPError as e:
             LOGERROR('could not download %s, '
                      'HTTP status code was: %s, reason: %s' %
@@ -610,11 +652,20 @@ def retrieve_dataset_files(searchresult,
     # get the dataset CSV
     LOGINFO('getting %s...' % dataset_csv_link)
     try:
-        localf, header = urlretrieve(dataset_csv_link,
-                                     os.path.join(localdir, dataset_csv),
-                                     reporthook=on_download_chunk)
-        LOGINFO('OK -> %s' % localf)
-        local_dataset_csv = localf
+
+        if os.path.exists(os.path.join(localdir, dataset_csv)):
+
+            LOGWARNING('dataset CSV already exists, not downloading again...')
+            local_dataset_csv = os.path.join(localdir, dataset_csv)
+
+        else:
+
+            localf, header = urlretrieve(dataset_csv_link,
+                                         os.path.join(localdir, dataset_csv),
+                                         reporthook=on_download_chunk)
+            LOGINFO('OK -> %s' % localf)
+            local_dataset_csv = localf
+
     except HTTPError as e:
         LOGERROR('could not download %s, HTTP status code was: %s, reason: %s' %
                  (dataset_csv_link, e.code, e.reason))
@@ -624,11 +675,21 @@ def retrieve_dataset_files(searchresult,
     # get the dataset LC zip
     LOGINFO('getting %s...' % dataset_lczip_link)
     try:
-        localf, header = urlretrieve(dataset_lczip_link,
-                                     os.path.join(localdir, dataset_lczip),
-                                     reporthook=on_download_chunk)
-        LOGINFO('OK -> %s' % localf)
-        local_dataset_lczip = localf
+
+        if os.path.exists(os.path.join(localdir, dataset_lczip)):
+
+            LOGWARNING('dataset LC ZIP already exists, '
+                       'not downloading again...')
+            local_dataset_lczip = os.path.join(localdir, dataset_lczip)
+
+        else:
+
+            localf, header = urlretrieve(dataset_lczip_link,
+                                         os.path.join(localdir, dataset_lczip),
+                                         reporthook=on_download_chunk)
+            LOGINFO('OK -> %s' % localf)
+            local_dataset_lczip = localf
+
     except HTTPError as e:
         LOGERROR('could not download %s, HTTP status code was: %s, reason: %s' %
                  (dataset_lczip_link, e.code, e.reason))
@@ -675,9 +736,9 @@ def retrieve_dataset_json(lcc_server, dataset_id):
 
 
 
-######################
-## SEARCH FUNCTIONS ##
-######################
+###########################
+## MAIN SEARCH FUNCTIONS ##
+###########################
 
 def cone_search(lcc_server,
                 center_ra,
@@ -688,9 +749,17 @@ def cone_search(lcc_server,
                 filters=None,
                 download_data=True,
                 outdir=None,
+                maxtimeout=300.0,
+                refresh=15.0,
                 result_ispublic=True):
 
     '''This runs a cone-search query.
+
+    Returns a tuple with the following elements:
+
+    (search result status dict,
+     search result CSV file path,
+     search result LC ZIP path)
 
     lcc_server is the base URL of the LCC server to talk to.
     (e.g. for HAT, use: https://data.hatsurveys.org)
@@ -715,6 +784,351 @@ def cone_search(lcc_server,
     object IDs, RAs, DECs, and links to light curve files will always be
     returned so there is no need to specify these columns.
 
+    filters is an SQL-like string to use to filter on database columns in the
+    LCC server's collections. To see the columns available for a search, visit
+    the Collections tab in the LCC server's browser UI. The filter operators
+    allowed are:
+
+    lt -> less than
+    gt -> greater than
+    ge -> greater than or equal to
+    le -> less than or equal to
+    eq -> equal to
+    ne -> not equal to
+    ct -> contains text
+
+    You may use the 'and' and 'or' operators between filter specifications to
+    chain them together logically.
+
+    Example filter strings:
+
+    "(propermotion gt 200.0) and (sdssr lt 11.0)"
+    "(dered_jmag_kmag gt 2.0) and (aep_000.stetsonj > 10.0)"
+    "(gaia_status ct 'ok') and (propermotion > 300.0)"
+    "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg < 0.5)"
+
+    download_data sets if the accompanying data from the search results will be
+    downloaded automatically. This includes the data table CSV, the dataset
+    pickle file, and a light curve ZIP file. Note that if the search service
+    indicates that your query is still in progress, this function will block
+    until the light curve ZIP file becomes available. The maximum wait time in
+    seconds is set by maxtimeout and the refresh interval is set by refresh.
+
+    To avoid the wait block, set download_data to False and the function will
+    write a pickle file to ~/.astrobase/lccs/query-[setid].pkl containing all
+    the information necessary to retrieve these data files later when the query
+    is done. To do so, call the retrieve_dataset_files with the path to this
+    pickle file (it will be returned).
+
+    outdir if not None, sets the output directory of the downloaded dataset
+    files. If None, they will be downloaded to the current directory.
+
+    result_ispublic sets if you want your dataset to be publicly visible on the
+    Recent Datasets tab and /datasets page of the LCC server you're talking
+    to. If False, only people who know the unique dataset URL can view and fetch
+    data files from it later.
+
+    '''
+
+    # turn the input into a param dict
+
+    coords = '%s %s %s' % (center_ra, center_decl, radiusarcmin)
+    params = {'coords':coords}
+
+    if collections:
+        params['collections'] = collections
+    if columns:
+        params['columns'] = columns
+    if filters:
+        params['filters'] = filters
+
+    params['result_ispublic'] = 1 if result_ispublic else 0
+
+    # hit the server
+    api_url = '%s/api/conesearch' % lcc_server
+
+    # no API key is required for now, but we'll load one automatically if we
+    # require it in the future
+    searchresult = submit_get_searchquery(api_url, params, apikey=None)
+
+    # check the status of the search
+    status = searchresult[0]
+
+    # now we'll check if we want to download the data
+    if download_data:
+
+        if status == 'ok':
+
+            LOGINFO('query complete, downloading associated data...')
+            csv, lczip, pkl = retrieve_dataset_files(searchresult,
+                                                     outdir=outdir)
+
+            if pkl:
+                return searchresult[1], csv, lczip, pkl
+            else:
+                return searchresult[1], csv, lczip
+
+        elif status == 'background':
+
+            LOGINFO('query is not yet complete, '
+                    'waiting up to %.1f minutes, '
+                    'updates every %s seconds (hit Ctrl+C to cancel)...' %
+                    (maxtimeout/60.0, refresh))
+
+            timewaited = 0.0
+
+            while timewaited < maxtimeout:
+
+                try:
+
+                    time.sleep(refresh)
+                    csv, lczip, pkl = retrieve_dataset_files(searchresult,
+                                                             outdir=outdir)
+
+                    if (csv and os.path.exists(csv) and
+                        lczip and os.path.exists(lczip)):
+
+                        LOGINFO('all dataset products collected')
+                        return searchresult[1], csv, lczip
+
+                    timewaited = timewaited + refresh
+
+                except KeyboardInterrupt:
+
+                    LOGWARNING('abandoned wait for downloading data')
+                    return searchresult[1], None, None
+
+            LOGERROR('wait timed out.')
+            return searchresult[1], None, None
+
+        else:
+
+            LOGERROR('could not download the data for this query result')
+            return searchresult[1], None, None
+
+    else:
+
+        return searchresult[1], None, None
+
+
+
+def fulltext_search(lcc_server,
+                    searchterm,
+                    collections=None,
+                    columns=None,
+                    filters=None,
+                    download_data=True,
+                    outdir=None,
+                    maxtimeout=300.0,
+                    refresh=15.0,
+                    result_ispublic=True):
+
+    '''This runs a full-text search query.
+
+    Returns a tuple with the following elements:
+
+    (search result status dict,
+     search result CSV file path,
+     search result LC ZIP path)
+
+    lcc_server is the base URL of the LCC server to talk to.
+    (e.g. for HAT, use: https://data.hatsurveys.org)
+
+    searchterm is the term to look for in a full-text search of the LCC server's
+    collections. This can be an object name, tag, description, etc., as noted in
+    the LCC server's full-text search tab in its browser UI. To search for an
+    exact match to a string (like an object name), you can add double quotes
+    around the string, e.g. searchitem = '"exact match to me needed"'.
+
+    collections is a list of LC collections to search in. If this is None, all
+    collections will be searched.
+
+    columns is a list of columns to return in the results. Matching objects'
+    object IDs, RAs, DECs, and links to light curve files will always be
+    returned so there is no need to specify these columns.
+
+    filters is an SQL-like string to use to filter on database columns in the
+    LCC server's collections. To see the columns available for a search, visit
+    the Collections tab in the LCC server's browser UI. The filter operators
+    allowed are:
+
+    lt -> less than
+    gt -> greater than
+    ge -> greater than or equal to
+    le -> less than or equal to
+    eq -> equal to
+    ne -> not equal to
+    ct -> contains text
+
+    You may use the 'and' and 'or' operators between filter specifications to
+    chain them together logically.
+
+    Example filter strings:
+
+    "(propermotion gt 200.0) and (sdssr lt 11.0)"
+    "(dered_jmag_kmag gt 2.0) and (aep_000.stetsonj > 10.0)"
+    "(gaia_status ct 'ok') and (propermotion > 300.0)"
+    "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg < 0.5)"
+
+    download_data sets if the accompanying data from the search results will be
+    downloaded automatically. This includes the data table CSV, the dataset
+    pickle file, and a light curve ZIP file. Note that if the search service
+    indicates that your query is still in progress, this function will block
+    until the light curve ZIP file becomes available. The maximum wait time in
+    seconds is set by maxtimeout and the refresh interval is set by refresh.
+
+    To avoid the wait block, set download_data to False and the function will
+    write a pickle file to ~/.astrobase/lccs/query-[setid].pkl containing all
+    the information necessary to retrieve these data files later when the query
+    is done. To do so, call the retrieve_dataset_files with the path to this
+    pickle file (it will be returned).
+
+    outdir if not None, sets the output directory of the downloaded dataset
+    files. If None, they will be downloaded to the current directory.
+
+    result_ispublic sets if you want your dataset to be publicly visible on the
+    Recent Datasets tab and /datasets page of the LCC server you're talking
+    to. If False, only people who know the unique dataset URL can view and fetch
+    data files from it later.
+
+    '''
+
+    # turn the input into a param dict
+    params = {'ftstext':searchterm}
+
+    if collections:
+        params['collections'] = collections
+    if columns:
+        params['columns'] = columns
+    if filters:
+        params['filters'] = filters
+
+    params['result_ispublic'] = 1 if result_ispublic else 0
+
+    # hit the server
+    api_url = '%s/api/ftsquery' % lcc_server
+
+    # no API key is required for now, but we'll load one automatically if we
+    # require it in the future
+    searchresult = submit_get_searchquery(api_url, params, apikey=None)
+
+    # check the status of the search
+    status = searchresult[0]
+
+    # now we'll check if we want to download the data
+    if download_data:
+
+        if status == 'ok':
+
+            LOGINFO('query complete, downloading associated data...')
+            csv, lczip, pkl = retrieve_dataset_files(searchresult,
+                                                     outdir=outdir)
+
+            if pkl:
+                return searchresult[1], csv, lczip, pkl
+            else:
+                return searchresult[1], csv, lczip
+
+        elif status == 'background':
+
+            LOGINFO('query is not yet complete, '
+                    'waiting up to %.1f minutes, '
+                    'updates every %s seconds (hit Ctrl+C to cancel)...' %
+                    (maxtimeout/60.0, refresh))
+
+            timewaited = 0.0
+
+            while timewaited < maxtimeout:
+
+                try:
+
+                    time.sleep(refresh)
+                    csv, lczip, pkl = retrieve_dataset_files(searchresult,
+                                                             outdir=outdir)
+
+                    if (csv and os.path.exists(csv) and
+                        lczip and os.path.exists(lczip)):
+
+                        LOGINFO('all dataset products collected')
+                        return searchresult[1], csv, lczip
+
+                    timewaited = timewaited + refresh
+
+                except KeyboardInterrupt:
+
+                    LOGWARNING('abandoned wait for downloading data')
+                    return searchresult[1], None, None
+
+            LOGERROR('wait timed out.')
+            return searchresult[1], None, None
+
+        else:
+
+            LOGERROR('could not download the data for this query result')
+            return searchresult[1], None, None
+
+    else:
+
+        return searchresult[1], None, None
+
+
+
+def column_search(lcc_server,
+                  filters,
+                  sortcolumn='sdssr',
+                  sortorder='asc',
+                  collections=None,
+                  columns=None,
+                  download_data=True,
+                  outdir=None,
+                  maxtimeout=300.0,
+                  refresh=15.0,
+                  result_ispublic=True):
+
+    '''This runs a column search query.
+
+    Returns a tuple with the following elements:
+
+    (search result status dict,
+     search result CSV file path,
+     search result LC ZIP path)
+
+    lcc_server is the base URL of the LCC server to talk to.
+    (e.g. for HAT, use: https://data.hatsurveys.org)
+
+    filters is an SQL-like string to use to filter on database columns in the
+    LCC server's collections. To see the columns available for a search, visit
+    the Collections tab in the LCC server's browser UI. The filter operators
+    allowed are:
+
+    lt -> less than
+    gt -> greater than
+    ge -> greater than or equal to
+    le -> less than or equal to
+    eq -> equal to
+    ne -> not equal to
+    ct -> contains text
+
+    You may use the 'and' and 'or' operators between filter specifications to
+    chain them together logically.
+
+    Example filter strings:
+
+    "(propermotion gt 200.0) and (sdssr lt 11.0)"
+    "(dered_jmag_kmag gt 2.0) and (aep_000_stetsonj gt 2.0)"
+    "(gaia_status ct 'ok') and (propermotion gt 300.0)"
+    "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg lt 0.5)"
+
+    sortcolumn is the database column to sort the results by. sortorder is the
+    order to sort in: 'asc' -> ascending, 'desc' -> descending.
+
+    collections is a list of LC collections to search in. If this is None, all
+    collections will be searched.
+
+    columns is a list of columns to return in the results. Matching objects'
+    object IDs, RAs, DECs, and links to light curve files will always be
+    returned so there is no need to specify these columns.
+
     filters is a filter string to use to filtering the objects that match the
     initial search parameters.
 
@@ -722,22 +1136,303 @@ def cone_search(lcc_server,
     downloaded automatically. This includes the data table CSV, the dataset
     pickle file, and a light curve ZIP file. Note that if the search service
     indicates that your query is still in progress, this function will block
-    until the light curve ZIP file becomes available. To avoid this, set
-    download_data to False and the function will write a pickle file to
-    ~/.astrobase/lccs/query-[setid].pkl containing all the information necessary
-    to retrieve these data files later when the query is done. To do so, call
-    the retrieve_dataset_files with the path to this pickle file (it will be
-    returned).
+    until the light curve ZIP file becomes available. The maximum wait time in
+    seconds is set by maxtimeout and the refresh interval is set by refresh.
+
+    To avoid the wait block, set download_data to False and the function will
+    write a pickle file to ~/.astrobase/lccs/query-[setid].pkl containing all
+    the information necessary to retrieve these data files later when the query
+    is done. To do so, call the retrieve_dataset_files with the path to this
+    pickle file (it will be returned).
 
     outdir if not None, sets the output directory of the downloaded dataset
     files. If None, they will be downloaded to the current directory.
 
     result_ispublic sets if you want your dataset to be publicly visible on the
-    Recent Datasets and /datasets page of the LCC server you're talking to. If
-    False, only people who know the unique dataset URL can view and fetch data
-    files from it later.
+    Recent Datasets tab and /datasets page of the LCC server you're talking
+    to. If False, only people who know the unique dataset URL can view and fetch
+    data files from it later.
 
     '''
+
+    # turn the input into a param dict
+    params = {'filters':filters,
+              'sortcol':sortcolumn,
+              'sortorder':sortorder}
+
+    if collections:
+        params['collections'] = collections
+    if columns:
+        params['columns'] = columns
+
+    params['result_ispublic'] = 1 if result_ispublic else 0
+
+    # hit the server
+    api_url = '%s/api/columnsearch' % lcc_server
+
+    # no API key is required for now, but we'll load one automatically if we
+    # require it in the future
+    searchresult = submit_get_searchquery(api_url, params, apikey=None)
+
+    # check the status of the search
+    status = searchresult[0]
+
+    # now we'll check if we want to download the data
+    if download_data:
+
+        if status == 'ok':
+
+            LOGINFO('query complete, downloading associated data...')
+            csv, lczip, pkl = retrieve_dataset_files(searchresult,
+                                                     outdir=outdir)
+
+            if pkl:
+                return searchresult[1], csv, lczip, pkl
+            else:
+                return searchresult[1], csv, lczip
+
+        elif status == 'background':
+
+            LOGINFO('query is not yet complete, '
+                    'waiting up to %.1f minutes, '
+                    'updates every %s seconds (hit Ctrl+C to cancel)...' %
+                    (maxtimeout/60.0, refresh))
+
+            timewaited = 0.0
+
+            while timewaited < maxtimeout:
+
+                try:
+
+                    time.sleep(refresh)
+                    csv, lczip, pkl = retrieve_dataset_files(searchresult,
+                                                             outdir=outdir)
+
+                    if (csv and os.path.exists(csv) and
+                        lczip and os.path.exists(lczip)):
+
+                        LOGINFO('all dataset products collected')
+                        return searchresult[1], csv, lczip
+
+                    timewaited = timewaited + refresh
+
+                except KeyboardInterrupt:
+
+                    LOGWARNING('abandoned wait for downloading data')
+                    return searchresult[1], None, None
+
+            LOGERROR('wait timed out.')
+            return searchresult[1], None, None
+
+        else:
+
+            LOGERROR('could not download the data for this query result')
+            return searchresult[1], None, None
+
+    else:
+
+        return searchresult[1], None, None
+
+
+
+def xmatch_search(lcc_server,
+                  file_to_upload,
+                  xmatch_dist_arcsec=3.0,
+                  collections=None,
+                  columns=None,
+                  filters=None,
+                  download_data=True,
+                  outdir=None,
+                  maxtimeout=300.0,
+                  refresh=15.0,
+                  result_ispublic=True):
+
+    '''This runs a column search query.
+
+    Returns a tuple with the following elements:
+
+    (search result status dict,
+     search result CSV file path,
+     search result LC ZIP path)
+
+    lcc_server is the base URL of the LCC server to talk to.
+    (e.g. for HAT, use: https://data.hatsurveys.org)
+
+    file_to_upload is a text file containing objectid, RA, declination rows for
+    the objects to cross-match against the LCC server collections. This should
+    follow the format of the following example:
+
+    # example object and coordinate list
+    # objectid ra dec
+    aaa 289.99698 44.99839
+    bbb 293.358 -23.206
+    ccc 294.197 +23.181
+    ddd 19 25 27.9129 +42 47 03.693
+    eee 19:25:27 -42:47:03.21
+    # .
+    # .
+    # .
+    # etc. lines starting with '#' will be ignored
+    # (max 5000 objects)
+
+    xmatch_dist_arcsec is the maximum distance in arcseconds to consider when
+    cross-matching objects in the uploaded file to the LCC server's
+    collections. The maximum allowed distance is 30 arcseconds. Multiple matches
+    to an uploaded object are possible and will be returned in order of
+    increasing distance.
+
+    collections is a list of LC collections to search in. If this is None, all
+    collections will be searched.
+
+    columns is a list of columns to return in the results. Matching objects'
+    object IDs, RAs, DECs, and links to light curve files will always be
+    returned so there is no need to specify these columns.
+
+    filters is an SQL-like string to use to filter on database columns in the
+    LCC server's collections. To see the columns available for a search, visit
+    the Collections tab in the LCC server's browser UI. The filter operators
+    allowed are:
+
+    lt -> less than
+    gt -> greater than
+    ge -> greater than or equal to
+    le -> less than or equal to
+    eq -> equal to
+    ne -> not equal to
+    ct -> contains text
+
+    You may use the 'and' and 'or' operators between filter specifications to
+    chain them together logically.
+
+    Example filter strings:
+
+    "(propermotion gt 200.0) and (sdssr lt 11.0)"
+    "(dered_jmag_kmag gt 2.0) and (aep_000.stetsonj > 10.0)"
+    "(gaia_status ct 'ok') and (propermotion > 300.0)"
+    "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg < 0.5)"
+
+    download_data sets if the accompanying data from the search results will be
+    downloaded automatically. This includes the data table CSV, the dataset
+    pickle file, and a light curve ZIP file. Note that if the search service
+    indicates that your query is still in progress, this function will block
+    until the light curve ZIP file becomes available. The maximum wait time in
+    seconds is set by maxtimeout and the refresh interval is set by refresh.
+
+    To avoid the wait block, set download_data to False and the function will
+    write a pickle file to ~/.astrobase/lccs/query-[setid].pkl containing all
+    the information necessary to retrieve these data files later when the query
+    is done. To do so, call the retrieve_dataset_files with the path to this
+    pickle file (it will be returned).
+
+    outdir if not None, sets the output directory of the downloaded dataset
+    files. If None, they will be downloaded to the current directory.
+
+    result_ispublic sets if you want your dataset to be publicly visible on the
+    Recent Datasets tab and /datasets page of the LCC server you're talking
+    to. If False, only people who know the unique dataset URL can view and fetch
+    data files from it later.
+
+    '''
+
+    with open(file_to_upload) as infd:
+        xmq = infd.read()
+
+    # check the number of lines in the input
+    xmqlines = len(xmq.split('\n')[:-1])
+
+    if xmqlines > 5000:
+
+        LOGERROR('you have more than 5000 lines in the file to upload: %s' %
+                 file_to_upload)
+        return None, None, None
+
+    # turn the input into a param dict
+    params = {'xmq':xmq,
+              'xmd':xmatch_dist_arcsec}
+
+    if collections:
+        params['collections'] = collections
+    if columns:
+        params['columns'] = columns
+    if filters:
+        params['filters'] = filters
+
+    params['result_ispublic'] = 1 if result_ispublic else 0
+
+    # hit the server
+    api_url = '%s/api/xmatch' % lcc_server
+
+    # we need an API key for xmatch
+
+    # check if we have one already
+    have_apikey, apikey, expires = check_existing_apikey(lcc_server)
+
+    # if not, get a new one
+    if not have_apikey:
+        apikey, expires = get_new_apikey(lcc_server)
+
+    # no API key is required for now, but we'll load one automatically if we
+    # require it in the future
+    searchresult = submit_post_searchquery(api_url, params, apikey)
+
+    # check the status of the search
+    status = searchresult[0]
+
+    # now we'll check if we want to download the data
+    if download_data:
+
+        if status == 'ok':
+
+            LOGINFO('query complete, downloading associated data...')
+            csv, lczip, pkl = retrieve_dataset_files(searchresult,
+                                                     outdir=outdir)
+
+            if pkl:
+                return searchresult[1], csv, lczip, pkl
+            else:
+                return searchresult[1], csv, lczip
+
+        elif status == 'background':
+
+            LOGINFO('query is not yet complete, '
+                    'waiting up to %.1f minutes, '
+                    'updates every %s seconds (hit Ctrl+C to cancel)...' %
+                    (maxtimeout/60.0, refresh))
+
+            timewaited = 0.0
+
+            while timewaited < maxtimeout:
+
+                try:
+
+                    time.sleep(refresh)
+                    csv, lczip, pkl = retrieve_dataset_files(searchresult,
+                                                             outdir=outdir)
+
+                    if (csv and os.path.exists(csv) and
+                        lczip and os.path.exists(lczip)):
+
+                        LOGINFO('all dataset products collected')
+                        return searchresult[1], csv, lczip
+
+                    timewaited = timewaited + refresh
+
+                except KeyboardInterrupt:
+
+                    LOGWARNING('abandoned wait for downloading data')
+                    return searchresult[1], None, None
+
+            LOGERROR('wait timed out.')
+            return searchresult[1], None, None
+
+        else:
+
+            LOGERROR('could not download the data for this query result')
+            return searchresult[1], None, None
+
+    else:
+
+        return searchresult[1], None, None
 
 
 
