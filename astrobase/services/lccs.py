@@ -567,8 +567,8 @@ def retrieve_dataset_files(searchresult,
     pickle.HIGHEST_PROTOCOL, so these pickles may be unreadable in lower
     Pythons. The dataset CSV contains the full data table and all the
     information about the dataset in its header, which is JSON parseable. You
-    can also use the function retrieve_dataset_json to get the dataset pickle
-    information in JSON form.
+    can also use the function get_dataset to get the dataset pickle information
+    in JSON form.
 
     Puts the files in outdir. If it's None, they will be placed in the current
     directory.
@@ -767,9 +767,9 @@ def cone_search(lcc_server,
     Example filter strings:
 
     "(propermotion gt 200.0) and (sdssr lt 11.0)"
-    "(dered_jmag_kmag gt 2.0) and (aep_000.stetsonj > 10.0)"
-    "(gaia_status ct 'ok') and (propermotion > 300.0)"
-    "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg < 0.5)"
+    "(dered_jmag_kmag gt 2.0) and (aep_000.stetsonj gt 10.0)"
+    "(gaia_status ct 'ok') and (propermotion gt 300.0)"
+    "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg lt 0.5)"
 
     download_data sets if the accompanying data from the search results will be
     downloaded automatically. This includes the data table CSV, the dataset
@@ -930,9 +930,9 @@ def fulltext_search(lcc_server,
     Example filter strings:
 
     "(propermotion gt 200.0) and (sdssr lt 11.0)"
-    "(dered_jmag_kmag gt 2.0) and (aep_000.stetsonj > 10.0)"
-    "(gaia_status ct 'ok') and (propermotion > 300.0)"
-    "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg < 0.5)"
+    "(dered_jmag_kmag gt 2.0) and (aep_000.stetsonj gt 10.0)"
+    "(gaia_status ct 'ok') and (propermotion gt 300.0)"
+    "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg lt 0.5)"
 
     download_data sets if the accompanying data from the search results will be
     downloaded automatically. This includes the data table CSV, the dataset
@@ -1092,9 +1092,6 @@ def column_search(lcc_server,
     columns is a list of columns to return in the results. Matching objects'
     object IDs, RAs, DECs, and links to light curve files will always be
     returned so there is no need to specify these columns.
-
-    filters is a filter string to use to filtering the objects that match the
-    initial search parameters.
 
     download_data sets if the accompanying data from the search results will be
     downloaded automatically. This includes the data table CSV, the dataset
@@ -1271,9 +1268,9 @@ def xmatch_search(lcc_server,
     Example filter strings:
 
     "(propermotion gt 200.0) and (sdssr lt 11.0)"
-    "(dered_jmag_kmag gt 2.0) and (aep_000.stetsonj > 10.0)"
-    "(gaia_status ct 'ok') and (propermotion > 300.0)"
-    "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg < 0.5)"
+    "(dered_jmag_kmag gt 2.0) and (aep_000.stetsonj gt 10.0)"
+    "(gaia_status ct 'ok') and (propermotion gt 300.0)"
+    "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg lt 0.5)"
 
     download_data sets if the accompanying data from the search results will be
     downloaded automatically. This includes the data table CSV, the dataset
