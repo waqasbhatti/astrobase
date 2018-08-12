@@ -31,7 +31,7 @@ long-running queries later.
 
 The functions below support various auxiliary LCC services:
 
-- get-dataset  -> use retrieve_dataset_json(lcc_server, dataset_id)
+- get-dataset  -> use get_dataset(lcc_server, dataset_id)
 
 - objectinfo   -> use object_info(lcc_server, objectid, collection, ...)
 
@@ -697,42 +697,6 @@ def retrieve_dataset_files(searchresult,
 
 
     return local_dataset_csv, local_dataset_lczip, local_dataset_pickle
-
-
-
-def retrieve_dataset_json(lcc_server, dataset_id):
-    '''This downloads a JSON form of the dataset from the specified lcc_server.
-
-    The JSON contains metadata about the query that produced the dataset,
-    information about the data table's columns, and links to download the
-    dataset's products including the light curve ZIP and the dataset CSV.
-
-    This returns a dict from the parsed JSON. The interesting keys in the dict
-    to look at are: 'coldesc' for the column descriptions and 'rows' for the
-    actual data rows. Note that if there are more than 3000 objects in the
-    dataset, the JSON will only contain the top 3000 objects. In this case, it's
-    better to use retrieve_dataset_files to get the dataset CSV, which contains
-    the full data table.
-
-    '''
-
-    dataset_url = '%s/set/%s?json=1' % (lcc_server, dataset_id)
-
-    LOGINFO('retrieving dataset %s from %s, using URL: %s ...' % (lcc_server,
-                                                                  dataset_id,
-                                                                  dataset_url))
-
-    try:
-
-        resp = urlopen(dataset_url)
-        dataset = json.loads(resp.read())
-
-        return dataset
-
-    except Exception as e:
-
-        LOGEXCEPTION('could not retrieve the dataset JSON!')
-        return None
 
 
 
@@ -1440,6 +1404,220 @@ def xmatch_search(lcc_server,
 ## DATASET AND OBJECT INFO FUNCTIONS ##
 #######################################
 
+def get_dataset(lcc_server, dataset_id, strformat=False):
+    '''This downloads a JSON form of the dataset from the specified lcc_server.
+
+    This returns a dict from the parsed JSON. The interesting keys in the dict
+    to look at are: 'coldesc' for the column descriptions and 'rows' for the
+    actual data rows. Note that if there are more than 3000 objects in the
+    dataset, the JSON will only contain the top 3000 objects. In this case, it's
+    better to use retrieve_dataset_files to get the dataset CSV, which contains
+    the full data table.
+
+    lcc_server is the base URL of the LCC server to talk to.
+
+    dataset_id is the unique setid of the dataset you want to get. In the
+    results from the *_search functions above, this is the value of the
+    infodict['result']['setid'] key in the first item (the infodict) in the
+    returned tuple.
+
+    strformat sets if you want the returned data rows to be formatted in their
+    string representations already. This can be useful if you're piping the
+    returned JSON straight into some sort of UI and you don't want to deal with
+    formatting floats, etc. To do this manually when strformat is set to False,
+    look at the 'coldesc' item in the returned dict, which gives the Python and
+    Numpy string format specifiers for each column in the data table.
+
+    The JSON contains metadata about the query that produced the dataset,
+    information about the data table's columns, and links to download the
+    dataset's products including the light curve ZIP and the dataset CSV.
+
+    '''
+
+    dataset_url = '%s/set/%s?json=1' % (lcc_server, dataset_id)
+
+    if strformat:
+        dataset_url = '%s?strformat=1' % dataset_url
+
+    LOGINFO('retrieving dataset %s from %s, using URL: %s ...' % (lcc_server,
+                                                                  dataset_id,
+                                                                  dataset_url))
+
+    try:
+
+        resp = urlopen(dataset_url)
+        dataset = json.loads(resp.read())
+
+        return dataset
+
+    except Exception as e:
+
+        LOGEXCEPTION('could not retrieve the dataset JSON!')
+        return None
+
+
+
+def object_info(lcc_server, objectid, db_collection_id):
+    '''This gets information on a single object from the LCC server.
+
+    Returns a dict with all of the available information on an object, including
+    finding charts, comments, object type and variability tags, and
+    period-search results (if available).
+
+    lcc_server is the base URL of the LCC server to talk to.
+
+    objectid is the unique database ID of the object to retrieve info for. This
+    is always returned as the `db_oid` column in LCC server search results.
+
+    db_collection_id is the collection ID which will be searched for the
+    object. This is always returned as the `collection` column in LCC server
+    search results.
+
+    NOTE: you can pass the result dict returned by this function directly into
+    the astrobase.checkplot function:
+
+    astrobase.checkplot.checkplot_pickle_to_png(result_dict, 'object-info.png')
+
+    to generate a quick PNG overview of the object information.
+
+
+    Some important items in the result dict returned from this function:
+
+    `objectinfo`: all object magnitude, color, GAIA cross-match, and object type
+                  information available for this object
+
+    `objectcomments`: comments on the object's variability if available
+
+    `varinfo`: variability comments, variability features, type tags, period and
+               epoch information if available
+
+    `neighbors`: information on the neighboring objects of this object in its
+                 parent light curve collection
+
+    `xmatch`: information on any cross-matches to external catalogs (e.g. KIC,
+              EPIC, TIC, APOGEE, etc.)
+
+    `finderchart`: a base-64 encoded PNG image of the object's DSS2 RED finder
+                   chart. To convert this to an actual PNG, try the function
+                   astrobase.checkplot._b64_to_file.
+
+    `magseries`: a base-64 encoded PNG image of the object's light curve. To
+                 convert this to an actual PNG, try the function
+                 astrobase.checkplot._b64_to_file.
+
+    `pfmethods`: a list of period-finding methods applied to the object if
+                 any. If this list is present, use the keys in it to get to the
+                 actual period-finding results for each method. These will
+                 contain base-64 encoded PNGs of the periodogram and phased
+                 light curves using the best three peaks in the periodogram, as
+                 well as period and epoch information.
+
+    '''
+
+    url = '%s/api/object?objectid=%s&collection=%s' % (lcc_server,
+                                                       objectid,
+                                                       db_collection_id)
+
+    try:
+
+        LOGINFO(
+            'getting info for %s in collection %s from %s' % (
+                objectid,
+                db_collection_id,
+                lcc_server
+            )
+        )
+        resp = urlopen(url)
+        objectinfo = json.loads(resp.read())['result']
+        return objectinfo
+
+    except HTTPError as e:
+
+        if e.code == 404:
+
+            LOGERROR(
+                'additional info for object %s not '
+                'found in collection: %s' % (objectid,
+                                             db_collection_id)
+            )
+
+        else:
+
+            LOGERROR('could not retrieve object info, '
+                     'URL used: %s, error code: %s, reason: %s' %
+                     (url, e.code, e.reason))
+
+
+        return None
+
+
+
+def list_recent_datasets(lcc_server, nrecent=25):
+    '''This lists recent publicly visible datasets available on the LCC server.
+
+    Returns a list of dicts, with each dict containing info on each dataset.
+
+    lcc_server is the base URL of the LCC server to talk to.
+
+    nrecent indicates how many recent public datasets you want to list. This is
+    always capped at 1000.
+
+    '''
+
+    url = '%s/api/datasets?nsets=%s' % (lcc_server, nrecent)
+
+    try:
+
+        LOGINFO(
+            'getting list of recent publicly visible datasets from %s' % (
+                lcc_server,
+            )
+        )
+        resp = urlopen(url)
+        objectinfo = json.loads(resp.read())['result']
+        return objectinfo
+
+    except HTTPError as e:
+
+        LOGERROR('could not retrieve recent datasets list, '
+                 'URL used: %s, error code: %s, reason: %s' %
+                 (url, e.code, e.reason))
+
+        return None
+
+
+
+def list_lc_collections(lcc_server):
+    '''This lists all light curve collections made available on the LCC server.
+
+    Returns a dict containing lists of info items per collection. This includes
+    collection_ids, lists of columns, lists of indexed columns, lists of
+    full-text indexed columns, detailed column descriptions, number of objects
+    in each collection, collection sky coverage, etc.
+
+    '''
+
+    url = '%s/api/collections' % lcc_server
+
+    try:
+
+        LOGINFO(
+            'getting list of recent publicly visible datasets from %s' % (
+                lcc_server,
+            )
+        )
+        resp = urlopen(url)
+        objectinfo = json.loads(resp.read())['result']['collections']
+        return objectinfo
+
+    except HTTPError as e:
+
+        LOGERROR('could not retrieve list of collections, '
+                 'URL used: %s, error code: %s, reason: %s' %
+                 (url, e.code, e.reason))
+
+        return None
+
 
 
 ###################################
@@ -1447,6 +1625,7 @@ def xmatch_search(lcc_server,
 ###################################
 
 def main():
+
     '''
     This supports execution of the module as a script.
 
