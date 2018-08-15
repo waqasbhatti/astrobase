@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 
 '''hatlc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2016
 License: MIT - see LICENSE for the full text.
@@ -39,6 +40,40 @@ describe(lcdict):
 
     This describes the metadata of the light curve.
 
+
+COMMAND LINE USAGE
+------------------
+
+You can call this module directly from the command line:
+
+If you just have this file alone:
+
+$ chmod +x hatlc.py
+$ ./hatlc.py --help
+
+If astrobase is installed with pip, etc., this will be on your path already:
+
+$ hatlc --help
+
+These should give you the following:
+
+usage: hatlc.py [-h] [--describe] hatlcfile
+
+read a HAT LC of any format and output to stdout
+
+positional arguments:
+  hatlcfile   path to the light curve you want to read and pipe to stdout
+
+optional arguments:
+  -h, --help  show this help message and exit
+  --describe  don't dump the columns, show only object info and LC metadata
+
+Either one will dump any HAT LC recognized to stdout (or just dump the
+description if requested).
+
+
+OTHER USEFUL FUNCTIONS
+----------------------
 
 Two other functions that might be useful:
 
@@ -166,6 +201,9 @@ import subprocess
 import re
 import sqlite3 as sql
 import json
+from pprint import pformat
+import sys
+import textwrap
 
 import numpy as np
 from numpy import nan
@@ -439,12 +477,9 @@ def pycompress_sqlitecurve(sqlitecurve, force=False):
             if os.path.exists(outfile):
                 os.remove(sqlitecurve)
                 return outfile
-            else:
-                LOGERROR('could not compress %s' % sqlitecurve)
 
     except Exception as e:
-        LOGEXCEPTION('could not compress %s' % sqlitecurve)
-
+        return None
 
 
 def pyuncompress_sqlitecurve(sqlitecurve, force=False):
@@ -468,12 +503,9 @@ def pyuncompress_sqlitecurve(sqlitecurve, force=False):
             # do not remove the intput file yet
             if os.path.exists(outfile):
                 return outfile
-            else:
-                LOGERROR('could not uncompress %s' % sqlitecurve)
 
     except Exception as e:
-        LOGEXCEPTION('could not uncompress %s' % sqlitecurve)
-
+        return None
 
 
 def gzip_sqlitecurve(sqlitecurve, force=False):
@@ -505,11 +537,9 @@ def gzip_sqlitecurve(sqlitecurve, force=False):
             if os.path.exists(outfile):
                 return outfile
             else:
-                LOGERROR('could not compress %s' % sqlitecurve)
                 return None
 
     except subprocess.CalledProcessError:
-        LOGEXCEPTION('could not compress %s' % sqlitecurve)
         return None
 
 
@@ -528,7 +558,6 @@ def gunzip_sqlitecurve(sqlitecurve):
         procout = subprocess.check_output(cmd, shell=True)
         return sqlitecurve.replace('.gz','')
     except subprocess.CalledProcessError:
-        LOGERROR('could not uncompress %s' % sqlitecurve)
         return None
 
 
@@ -537,25 +566,24 @@ def gunzip_sqlitecurve(sqlitecurve):
 ## DECIDE WHICH COMPRESSION FUNCTIONS TO USE ##
 ###############################################
 
-try:
-    GZIPTEST = subprocess.check_output(
-        'gzip --version',
-        shell=True
-    ).decode().split('\n')[0].split()[-1]
-    GZIPTEST = float(GZIPTEST)
-    if GZIPTEST and GZIPTEST > 1.5:
-        compress_sqlitecurve = gzip_sqlitecurve
-        uncompress_sqlitecurve = gunzip_sqlitecurve
-    else:
-        LOGWARNING('gzip > 1.5 not available, using Python (gun)zip support')
-        compress_sqlitecurve = pycompress_sqlitecurve
-        uncompress_sqlitecurve = pyuncompress_sqlitecurve
-except:
-    compress_sqlitecurve = pycompress_sqlitecurve
-    uncompress_sqlitecurve = pyuncompress_sqlitecurve
-    GZIPTEST = None
-    LOGWARNING('gzip > 1.5 not available, using Python (gun)zip support')
+# disable these because they're super loud and annoying
+# try:
+#     GZIPTEST = subprocess.check_output(
+#         'gzip --version',
+#         shell=True
+#     ).decode().split('\n')[0].split()[-1]
+#     GZIPTEST = float(GZIPTEST)
+#     if GZIPTEST and GZIPTEST > 1.5:
+#         compress_sqlitecurve = gzip_sqlitecurve
+#         uncompress_sqlitecurve = gunzip_sqlitecurve
+#     else:
+#         compress_sqlitecurve = pycompress_sqlitecurve
+#         uncompress_sqlitecurve = pyuncompress_sqlitecurve
+# except:
 
+compress_sqlitecurve = pycompress_sqlitecurve
+uncompress_sqlitecurve = pyuncompress_sqlitecurve
+GZIPTEST = None
 
 
 ###################################
@@ -627,7 +655,8 @@ def read_and_filter_sqlitecurve(lcfile,
                                 sqlfilters=None,
                                 raiseonfail=False,
                                 returnarrays=True,
-                                forcerecompress=False):
+                                forcerecompress=False,
+                                quiet=True):
     '''This reads the sqlitecurve and optionally filters it.
 
     Returns columns requested in columns. If None, then returns all columns
@@ -806,7 +835,9 @@ def read_and_filter_sqlitecurve(lcfile,
 
     except Exception as e:
 
-        LOGEXCEPTION('could not open sqlitecurve %s' % lcfile)
+        if not quiet:
+            LOGEXCEPTION('could not open sqlitecurve %s' % lcfile)
+
         returnval = (None, 'error while reading lightcurve file')
 
         # recompress the lightcurve at the end
@@ -862,15 +893,35 @@ PHOTAPERTURES
 LIGHT CURVE COLUMNS
 -------------------
 
-{columndefs}
-'''
+{columndefs}'''
 
 
-def describe(lcdict, returndesc=False):
+LCC_CSVLC_DESCTEMPLATE = '''\
+OBJECT ID: {objectid}
+
+OBJECT AND LIGHT CURVE METADATA
+-------------------------------
+
+{metadata_desc}
+
+{metadata}
+
+LIGHT CURVE COLUMNS
+-------------------
+
+{columndefs}'''
+
+
+def describe(lcdict, returndesc=False, offsetwith=None):
     '''
     This describes the light curve object and columns present.
 
     '''
+
+    # transparently read LCC CSV format description
+    if 'lcformat' in lcdict and 'lcc-csv' in lcdict['lcformat'].lower():
+        return describe_lcc_csv(lcdict, returndesc=returndesc)
+
 
     # figure out the columndefs part of the header string
     columndefs = []
@@ -948,16 +999,24 @@ def describe(lcdict, returndesc=False):
         aperturedefs=aperturedefs
     )
 
-    print(description)
+    if offsetwith is not None:
+        description = textwrap.indent(
+            description,
+            '%s ' % offsetwith,
+            lambda line: True
+        )
+        print(description)
+    else:
+        print(description)
 
     if returndesc:
         return description
 
 
 
-#############################
-## READING CSV LIGHTCURVES ##
-#############################
+######################################
+## READING CSV LIGHTCURVES HATLC V2 ##
+######################################
 
 def smartcast(castee, caster, subval=None):
     '''
@@ -1105,6 +1164,162 @@ def parse_csv_header(header):
 
 
 
+##################################
+## READING LC CSV FORMAT LCC V1 ##
+##################################
+
+def parse_csv_header_lcc_csv_v1(headerlines):
+    '''
+    This parses the header of the LCC CSV V1 LC format.
+
+    '''
+
+    # the first three lines indicate the format name, comment char, separator
+    commentchar = headerlines[1]
+    separator = headerlines[2]
+
+    headerlines = [x.lstrip('%s ' % commentchar) for x in headerlines[3:]]
+
+    # next, find the indices of the various LC sections
+    metadatastart = headerlines.index('OBJECT METADATA')
+    columnstart = headerlines.index('COLUMN DEFINITIONS')
+    lcstart = headerlines.index('LIGHTCURVE')
+
+    metadata = ' ' .join(headerlines[metadatastart+1:columnstart-1])
+    columns = ' ' .join(headerlines[columnstart+1:lcstart-1])
+    metadata = json.loads(metadata)
+    columns = json.loads(columns)
+
+    return metadata, columns, separator
+
+
+
+def read_lcc_csvlc(lcfile):
+    '''
+    This reads a LCC CSVLC.
+
+    '''
+
+    # read in the file and split by lines
+    if '.gz' in os.path.basename(lcfile):
+        infd = gzip.open(lcfile,'rb')
+    else:
+        infd = open(lcfile,'rb')
+
+    lctext = infd.read().decode()
+    infd.close()
+
+    lctextlines = lctext.split('\n')
+
+    lcformat = lctextlines[0]
+    commentchar = lctextlines[1]
+
+    lcstart = lctextlines.index('%s LIGHTCURVE' % commentchar)
+    headerlines = lctextlines[:lcstart+1]
+    lclines = lctextlines[lcstart+1:]
+
+    metadata, columns, separator = parse_csv_header_lcc_csv_v1(headerlines)
+
+    # break out the objectid and objectinfo
+    objectid = metadata['objectid']['val']
+    objectinfo = {key:metadata[key]['val'] for key in metadata}
+
+    # figure out the column dtypes
+    colnames = []
+    colnum = []
+    coldtypes = []
+
+    # generate the args for np.genfromtxt
+    for k in columns:
+
+        coldef = columns[k]
+        colnames.append(k)
+        colnum.append(coldef['colnum'])
+        coldtypes.append(coldef['dtype'])
+
+    coldtypes = ','.join(coldtypes)
+
+    # read in the LC
+    recarr = np.genfromtxt(
+        lclines,
+        comments=commentchar,
+        delimiter=separator,
+        usecols=colnum,
+        autostrip=True,
+        names=colnames,
+        dtype=coldtypes
+    )
+
+    lcdict = {x:recarr[x] for x in colnames}
+    lcdict['lcformat'] = lcformat
+    lcdict['objectid'] = objectid
+    lcdict['objectinfo'] = objectinfo
+    lcdict['columns'] = colnames
+
+    lcdict['coldefs'] = columns
+    lcdict['metadata'] = metadata
+
+    return lcdict
+
+
+
+def describe_lcc_csv(lcdict, returndesc=False):
+    '''
+    This describes the LCC CSV format light curve.
+
+    '''
+
+    metadata_lines = []
+    coldef_lines = []
+
+    if 'lcformat' in lcdict and 'lcc-csv' in lcdict['lcformat'].lower():
+
+        metadata = lcdict['metadata']
+        metakeys = lcdict['objectinfo'].keys()
+        coldefs = lcdict['coldefs']
+
+        for mk in metakeys:
+
+            metadata_lines.append(
+                '%20s | %s' % (
+                    mk,
+                    metadata[mk]['desc']
+                )
+            )
+
+        for ck in lcdict['columns']:
+
+            coldef_lines.append('column %02d | %8s | numpy dtype: %3s | %s'
+                                % (coldefs[ck]['colnum'],
+                                   ck,
+                                   coldefs[ck]['dtype'],
+                                   coldefs[ck]['desc']))
+
+
+
+
+        desc = LCC_CSVLC_DESCTEMPLATE.format(
+            objectid=lcdict['objectid'],
+            metadata_desc='\n'.join(metadata_lines),
+            metadata=pformat(lcdict['objectinfo']),
+            columndefs='\n'.join(coldef_lines)
+        )
+
+        print(desc)
+
+        if returndesc:
+            return desc
+
+    else:
+        LOGERROR("this lcdict is not from an LCC CSV, can't figure it out...")
+        return None
+
+
+
+#####################################
+## MULTIFORMAT CSV READER FUNCTION ##
+#####################################
+
 def read_csvlc(lcfile):
     '''
     This reads the HAT data server producd CSV light curve into a lcdict.
@@ -1120,6 +1335,17 @@ def read_csvlc(lcfile):
     else:
         LOGINFO('reading HATLC: %s' % lcfile)
         infd = open(lcfile,'rb')
+
+
+    # this transparently reads LCC CSVLCs
+    lcformat_check = infd.read(12).decode()
+    if 'LCC-CSVLC' in lcformat_check:
+        infd.close()
+        return read_lcc_csvlc(lcfile)
+    else:
+        infd.seek(0)
+
+    # below is reading the HATLC v2 CSV LCs
 
     lctext = infd.read().decode()  # argh Python 3
     infd.close()
@@ -1536,3 +1762,103 @@ def normalize_lcdict_byinst(
     lcdict['lcinstnormcols'] = lcinstnormcols
 
     return lcdict
+
+
+
+def main():
+    '''
+    This is called when we're executed from the commandline.
+
+    '''
+
+    # handle SIGPIPE sent by less, head, et al.
+    import signal
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    import argparse
+
+    aparser = argparse.ArgumentParser(
+        description='read a HAT LC of any format and output to stdout'
+    )
+
+    aparser.add_argument(
+        'hatlcfile',
+        action='store',
+        type=str,
+        help=("path to the light curve you want to read and pipe to stdout")
+    )
+
+    aparser.add_argument(
+        '--describe',
+        action='store_true',
+        default=False,
+        help=("don't dump the columns, show only object info and LC metadata")
+    )
+
+    args = aparser.parse_args()
+    filetoread = args.hatlcfile
+
+    if not os.path.exists(filetoread):
+        LOGERROR("file provided: %s doesn't seem to exist" % filetoread)
+        sys.exit(1)
+
+    # figure out the type of LC this is
+    filename = os.path.basename(filetoread)
+
+    # switch based on filetype
+    if filename.endswith('-hatlc.csv.gz') or filename.endswith('-csvlc.gz'):
+
+        if args.describe:
+
+            describe(read_csvlc(filename))
+            sys.exit(0)
+
+        else:
+
+            with gzip.open(filename,'rb') as infd:
+                for line in infd:
+                    print(line.decode(),end='')
+
+    elif filename.endswith('-hatlc.sqlite.gz'):
+
+        lcdict, msg = read_and_filter_sqlitecurve(filetoread)
+
+        # dump the description
+        describe(lcdict, offsetwith='#')
+
+        # stop here if describe is True
+        if args.describe:
+            sys.exit(0)
+
+        # otherwise, continue to parse the cols, etc.
+
+        # get the aperture names
+        apertures = sorted(lcdict['lcapertures'].keys())
+
+        # update column defs per aperture
+        for aper in apertures:
+            COLUMNDEFS.update({'%s_%s' % (x, aper): COLUMNDEFS[x] for x in
+                               LC_MAG_COLUMNS})
+            COLUMNDEFS.update({'%s_%s' % (x, aper): COLUMNDEFS[x] for x in
+                               LC_ERR_COLUMNS})
+            COLUMNDEFS.update({'%s_%s' % (x, aper): COLUMNDEFS[x] for x in
+                               LC_FLAG_COLUMNS})
+
+        formstr = ','.join([COLUMNDEFS[x][1] for x in lcdict['columns']])
+        ndet = lcdict['objectinfo']['ndet']
+
+        for ind in range(ndet):
+            line = [lcdict[x][ind] for x in lcdict['columns']]
+            formline = formstr % tuple(line)
+            print(formline)
+
+    else:
+
+        LOGERROR('unrecognized HATLC file: %s' % filetoread)
+        sys.exit(1)
+
+
+
+
+# we use this to enable command-line cat-like dumping of a HAT light curve
+if __name__ == '__main__':
+    main()

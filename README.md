@@ -27,7 +27,8 @@ The package should work with Python >= 3.4 and Python 2.7. Using the newest
 Python 3 version available is recommended. See the [installation
 instructions](#installation) below for details.
 
-Python 2.7: [![Python 2.7](https://ci.wbhatti.org/buildStatus/icon?job=astrobase)](https://ci.wbhatti.org/job/astrobase) Python 3.6: [![Python 3.6](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py3)](https://ci.wbhatti.org/job/astrobase-py3)
+Python 2.7: [![Python 2.7](https://ci.wbhatti.org/buildStatus/icon?job=astrobase)](https://ci.wbhatti.org/job/astrobase) Python 3.6: [![Python
+3.6](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py3)](https://ci.wbhatti.org/job/astrobase-py3) Python 3.7: [![Python 3.7](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py37)](https://ci.wbhatti.org/job/astrobase-py37)
 
 # Contents
 
@@ -140,8 +141,8 @@ for your purposes.
   NASA SkyView service.
 
 - **[services](astrobase/services)**: modules and functions to query various
-  astronomical catalogs and data services, including GAIA, TRILEGAL, NASA
-  SkyView, and 2MASS DUST.
+  astronomical catalogs and data services, including GAIA, SIMBAD, TRILEGAL,
+  NASA SkyView, and 2MASS DUST.
 
 - **[timeutils](astrobase/timeutils.py)**: functions for converting from
   Julian dates to Baryocentric Julian dates, and precessing coordinates between

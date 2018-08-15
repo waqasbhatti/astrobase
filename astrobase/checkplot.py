@@ -3670,23 +3670,22 @@ def checkplot_pickle_update(currentcp, updatedcp,
 
     '''
 
-    # generate the outfile filename
-    if not outfile and isinstance(currentcp,str):
-        plotfpath = currentcp
-    elif outfile:
-        plotfpath = outfile
-    elif isinstance(currentcp, dict) and currentcp['objectid']:
-        if outgzip:
-            plotfpath = 'checkplot-%s.pkl.gz' % currentcp['objectid']
-        else:
-            plotfpath = 'checkplot-%s.pkl' % currentcp['objectid']
-    else:
-        # we'll get this later below
-        plotfpath = None
-
-
     # break out python 2.7 and > 3 nonsense
     if sys.version_info[:2] > (3,2):
+
+        # generate the outfile filename
+        if not outfile and isinstance(currentcp,str):
+            plotfpath = currentcp
+        elif outfile:
+            plotfpath = outfile
+        elif isinstance(currentcp, dict) and currentcp['objectid']:
+            if outgzip:
+                plotfpath = 'checkplot-%s.pkl.gz' % currentcp['objectid']
+            else:
+                plotfpath = 'checkplot-%s.pkl' % currentcp['objectid']
+        else:
+            # we'll get this later below
+            plotfpath = None
 
         if (isinstance(currentcp, str) and os.path.exists(currentcp)):
             cp_current = _read_checkplot_picklefile(currentcp)
@@ -3710,6 +3709,21 @@ def checkplot_pickle_update(currentcp, updatedcp,
 
     # check for unicode in python 2.7
     else:
+
+        # generate the outfile filename
+        if (not outfile and
+            (isinstance(currentcp, str) or isinstance(currentcp, unicode))):
+            plotfpath = currentcp
+        elif outfile:
+            plotfpath = outfile
+        elif isinstance(currentcp, dict) and currentcp['objectid']:
+            if outgzip:
+                plotfpath = 'checkplot-%s.pkl.gz' % currentcp['objectid']
+            else:
+                plotfpath = 'checkplot-%s.pkl' % currentcp['objectid']
+        else:
+            # we'll get this later below
+            plotfpath = None
 
         # get the current checkplotdict
         if ((isinstance(currentcp, str) or isinstance(currentcp, unicode)) and
@@ -4426,7 +4440,7 @@ def checkplot_pickle_to_png(checkplotin,
             )
 
     # object comments
-    if cpd['comments']:
+    if 'comments' in cpd and cpd['comments']:
 
         commentsplit = cpd['comments'].split(' ')
 
@@ -4444,6 +4458,24 @@ def checkplot_pickle_to_png(checkplotin,
                 fill=(0,0,0,255)
             )
 
+    # this handles JSON-ified checkplots returned by LCC server
+    elif 'objectcomments' in cpd and cpd['objectcomments']:
+
+        commentsplit = cpd['objectcomments'].split(' ')
+
+        # write 10 words per line
+        ncommentlines = int(np.ceil(len(commentsplit)/10.0))
+
+        for commentline in range(ncommentlines):
+            commentslice = ' '.join(
+                commentsplit[commentline*10:commentline*10+10]
+            )
+            objinfodraw.text(
+                (1650, 325+commentline*25),
+                commentslice,
+                font=cpfontnormal,
+                fill=(0,0,0,255)
+            )
 
     #######################################
     # row 1, cell 4: unphased light curve #
@@ -4456,6 +4488,15 @@ def checkplot_pickle_to_png(checkplotin,
             _base64_to_file(cpd['magseries']['plot'], None, writetostrio=True)
         )
         outimg.paste(magseries,(750*3,0))
+
+    # this handles JSON-ified checkplots from LCC server
+    elif ('magseries' in cpd and isinstance(cpd['magseries'],str)):
+
+        magseries = Image.open(
+            _base64_to_file(cpd['magseries'], None, writetostrio=True)
+        )
+        outimg.paste(magseries,(750*3,0))
+
 
     ###############################
     # the rest of the rows in cpd #
@@ -4486,6 +4527,15 @@ def checkplot_pickle_to_png(checkplotin,
             )
             outimg.paste(plc1,(750,480 + 480*lspmethodind))
 
+        # this handles JSON-ified checkplots from LCC server
+        elif (cpd[lspmethod] and 'phasedlc0' in cpd[lspmethod] and
+              isinstance(cpd[lspmethod]['phasedlc0']['plot'], str)):
+
+            plc1 = Image.open(
+                _base64_to_file(cpd[lspmethod]['phasedlc0']['plot'], None,
+                                writetostrio=True)
+            )
+            outimg.paste(plc1,(750,480 + 480*lspmethodind))
 
         #################################
         # 2nd best phased LC comes next #
@@ -4499,6 +4549,16 @@ def checkplot_pickle_to_png(checkplotin,
             )
             outimg.paste(plc2,(750*2,480 + 480*lspmethodind))
 
+        # this handles JSON-ified checkplots from LCC server
+        elif (cpd[lspmethod] and 'phasedlc1' in cpd[lspmethod] and
+              isinstance(cpd[lspmethod]['phasedlc1']['plot'], str)):
+
+            plc2 = Image.open(
+                _base64_to_file(cpd[lspmethod]['phasedlc1']['plot'], None,
+                                writetostrio=True)
+            )
+            outimg.paste(plc2,(750*2,480 + 480*lspmethodind))
+
         #################################
         # 3rd best phased LC comes next #
         #################################
@@ -4507,6 +4567,16 @@ def checkplot_pickle_to_png(checkplotin,
 
             plc3 = Image.open(
                 _base64_to_file(cpd[lspmethod][2]['plot'], None,
+                                writetostrio=True)
+            )
+            outimg.paste(plc3,(750*3,480 + 480*lspmethodind))
+
+        # this handles JSON-ified checkplots from LCC server
+        elif (cpd[lspmethod] and 'phasedlc2' in cpd[lspmethod] and
+              isinstance(cpd[lspmethod]['phasedlc2']['plot'], str)):
+
+            plc3 = Image.open(
+                _base64_to_file(cpd[lspmethod]['phasedlc2']['plot'], None,
                                 writetostrio=True)
             )
             outimg.paste(plc3,(750*3,480 + 480*lspmethodind))
@@ -4653,21 +4723,40 @@ def checkplot_pickle_to_png(checkplotin,
                     (98,
                      (cprows+1)*480 + (erows*480) + (cpderows*480) +
                      480*nbrind + 15),
-                    ('N%s: %s, no light curve!' %
+                    ('N%s: %s' %
                      (nbrind + 1, nbr['objectid'])),
                     font=cpfontlarge,
                     fill=(0,0,255,255)
                 )
-                # overlay the objectinfo
-                objinfodraw.text(
-                    (98,
-                     (cprows+1)*480 + (erows*480) + (cpderows*480) +
-                     480*nbrind + 50),
-                    ('(RA, DEC) = (%.3f, %.3f), distance: %.1f arcsec' %
-                     (nbr['ra'], nbr['decl'], nbr['dist'])),
-                    font=cpfontnormal,
-                    fill=(0,0,255,255)
-                )
+
+                if 'ra' in nbr and 'decl' in nbr and 'dist' in nbr:
+
+                    # overlay the objectinfo
+                    objinfodraw.text(
+                        (98,
+                         (cprows+1)*480 + (erows*480) + (cpderows*480) +
+                         480*nbrind + 50),
+                        ('(RA, DEC) = (%.3f, %.3f), distance: %.1f arcsec' %
+                         (nbr['ra'], nbr['decl'], nbr['dist'])),
+                        font=cpfontnormal,
+                        fill=(0,0,255,255)
+                    )
+
+                elif 'objectinfo' in nbr:
+
+                    # overlay the objectinfo
+                    objinfodraw.text(
+                        (98,
+                         (cprows+1)*480 + (erows*480) + (cpderows*480) +
+                         480*nbrind + 50),
+                        ('(RA, DEC) = (%.3f, %.3f), distance: %.1f arcsec' %
+                         (nbr['objectinfo']['ra'],
+                          nbr['objectinfo']['decl'],
+                          nbr['objectinfo']['distarcsec'])),
+                        font=cpfontnormal,
+                        fill=(0,0,255,255)
+                    )
+
 
     #####################
     ## WRITE FINAL PNG ##

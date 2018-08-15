@@ -10,7 +10,8 @@ modified by me.
 '''
 __version__ = '0.3.16'
 
-import sys, os.path
+import sys
+import os.path
 
 from setuptools import setup
 
@@ -26,7 +27,6 @@ class PyTest(TestCommand):
 
     def run_tests(self):
         import shlex
-        #import here, cause outside the eggs aren't loaded
         import pytest
 
         if not self.pytest_args:
@@ -106,6 +106,7 @@ setup(
     cmdclass={'test':PyTest},
     entry_points={
         'console_scripts':[
+            'hatlc=astrobase.hatsurveys.hatlc:main',
             'checkplotserver=astrobase.cpserver.checkplotserver:main',
             'checkplotlist=astrobase.cpserver.checkplotlist:main',
         ],

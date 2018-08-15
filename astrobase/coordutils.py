@@ -138,7 +138,10 @@ def dms_str_to_tuple(dms_string):
         separator = ' '
 
     sign_dd, mm, ss = dms_string.split(separator)
-    sign, dd = sign_dd[0], sign_dd[1:]
+    if sign_dd.startswith('+') or sign_dd.startswith('-'):
+        sign, dd = sign_dd[0], sign_dd[1:]
+    else:
+        sign, dd = '+', sign_dd
 
     return sign, int(dd), int(mm), float(ss)
 
