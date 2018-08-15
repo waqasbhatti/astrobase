@@ -3670,23 +3670,22 @@ def checkplot_pickle_update(currentcp, updatedcp,
 
     '''
 
-    # generate the outfile filename
-    if not outfile and isinstance(currentcp,str):
-        plotfpath = currentcp
-    elif outfile:
-        plotfpath = outfile
-    elif isinstance(currentcp, dict) and currentcp['objectid']:
-        if outgzip:
-            plotfpath = 'checkplot-%s.pkl.gz' % currentcp['objectid']
-        else:
-            plotfpath = 'checkplot-%s.pkl' % currentcp['objectid']
-    else:
-        # we'll get this later below
-        plotfpath = None
-
-
     # break out python 2.7 and > 3 nonsense
     if sys.version_info[:2] > (3,2):
+
+        # generate the outfile filename
+        if not outfile and isinstance(currentcp,str):
+            plotfpath = currentcp
+        elif outfile:
+            plotfpath = outfile
+        elif isinstance(currentcp, dict) and currentcp['objectid']:
+            if outgzip:
+                plotfpath = 'checkplot-%s.pkl.gz' % currentcp['objectid']
+            else:
+                plotfpath = 'checkplot-%s.pkl' % currentcp['objectid']
+        else:
+            # we'll get this later below
+            plotfpath = None
 
         if (isinstance(currentcp, str) and os.path.exists(currentcp)):
             cp_current = _read_checkplot_picklefile(currentcp)
@@ -3710,6 +3709,21 @@ def checkplot_pickle_update(currentcp, updatedcp,
 
     # check for unicode in python 2.7
     else:
+
+        # generate the outfile filename
+        if (not outfile and
+            (isinstance(currentcp, str) or isinstance(currentcp, unicode))):
+            plotfpath = currentcp
+        elif outfile:
+            plotfpath = outfile
+        elif isinstance(currentcp, dict) and currentcp['objectid']:
+            if outgzip:
+                plotfpath = 'checkplot-%s.pkl.gz' % currentcp['objectid']
+            else:
+                plotfpath = 'checkplot-%s.pkl' % currentcp['objectid']
+        else:
+            # we'll get this later below
+            plotfpath = None
 
         # get the current checkplotdict
         if ((isinstance(currentcp, str) or isinstance(currentcp, unicode)) and
