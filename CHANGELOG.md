@@ -1,3 +1,34 @@
+# v0.3.17
+
+## New stuff
+
+- kbls: added a dedicated `bls_stats_singleperiod` function to get time of
+  center-transit, refit period, and transit duration
+- hatlc: added console script to directly read/dump HAT LCs and metadata from the
+  command-line
+- hatlc: added support for LCC server produced CSV light curves
+- services: removed hatds.py, added new lccs.py for common LCC server API
+- checkplotserver: added a standalone mode for serving checkplot pickles
+- `checkplot.checkplot_pickle_to_png`: add support for LCC server produced JSON
+
+
+## Changes
+
+- k2hat: fixes to column names in lcdict to bring into line with other LC
+  readers in the `hatsurveys` subpackage
+- `hatlc.read_and_filter_sqlitecurve`: make less verbose in case of errors
+- `kbls.bls_snr`: get time of center-transit using a better method
+- `kbls.bls_snr`: return refit periods and epochs
+- cpserver.js: added parsing of `observatory` and `telescope` keys in
+  checkplots if present
+
+## Fixes
+
+- `cp.checkplot_pickle_update`: fix unicode filename handling for py2 (#52)
+- coordutils: fix sign parsing bug in `dms_str_to_tuple`
+- `lcproc.add_cpinfo_to_lclist`: fix incorrect cpdict keys for varfeatures
+
+
 # v0.3.16
 
 ## Fixes
