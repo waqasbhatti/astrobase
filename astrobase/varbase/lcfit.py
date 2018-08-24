@@ -415,6 +415,8 @@ def fourier_fit_magseries(times, mags, errs, period,
                 fitmagminind = npwhere(fitmags == npmax(fitmags))
             else:
                 fitmagminind = npwhere(fitmags == npmin(fitmags))
+            if len(fitmagminind[0]) > 1:
+                fitmagminind = (fitmagminind[0][0],)
             magseriesepoch = ptimes[fitmagminind]
 
             # assemble the returndict
@@ -602,6 +604,8 @@ def spline_fit_magseries(times, mags, errs, period,
         fitmagminind = npwhere(fitmags == npmax(fitmags))
     else:
         fitmagminind = npwhere(fitmags == npmin(fitmags))
+    if len(fitmagminind[0]) > 1:
+        fitmagminind = (fitmagminind[0][0],)
     magseriesepoch = ptimes[fitmagminind]
 
     # assemble the returndict
@@ -750,6 +754,8 @@ def savgol_fit_magseries(times, mags, errs, period,
         fitmagminind = npwhere(fitmags == npmax(fitmags))
     else:
         fitmagminind = npwhere(fitmags == npmin(fitmags))
+    if len(fitmagminind[0]) > 1:
+        fitmagminind = (fitmagminind[0][0],)
     magseriesepoch = ptimes[fitmagminind]
 
     # assemble the returndict
@@ -901,6 +907,8 @@ def legendre_fit_magseries(times, mags, errs, period,
         fitmagminind = npwhere(fitmags == npmax(fitmags))
     else:
         fitmagminind = npwhere(fitmags == npmin(fitmags))
+    if len(fitmagminind[0]) > 1:
+        fitmagminind = (fitmagminind[0][0],)
     magseriesepoch = ptimes[fitmagminind]
 
     # assemble the returndict
