@@ -8,7 +8,7 @@ Stolen from http://python-packaging.readthedocs.io/en/latest/everything.html and
 modified by me.
 
 '''
-__version__ = '0.3.17'
+__version__ = '0.3.18'
 
 import sys
 import os.path
