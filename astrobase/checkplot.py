@@ -1391,10 +1391,24 @@ def _pkl_finder_objectinfo(objectinfo,
                            gaia_submit_tries=3,
                            gaia_max_timeout=180.0,
                            gaia_mirror='cds',
+                           fast_mode=False,
                            complete_query_later=True):
     '''This returns the finder chart and object information as a dict.
 
     '''
+
+    # optional mode to hit external services and fail fast if they timeout
+    if fast_mode:
+        skyview_timeout = 10.0
+        dust_timeout = 10.0
+        gaia_submit_timeout = 5.0
+        gaia_max_timeout = 10.0
+        gaia_submit_tries = 1
+        complete_query_later = False
+    else:
+        skyview_timeout = 10.0
+        dust_timeout = 10.0
+
 
     if (isinstance(objectinfo, dict) and
         ('objectid' in objectinfo or 'hatid' in objectinfo) and
@@ -1423,23 +1437,27 @@ def _pkl_finder_objectinfo(objectinfo,
                     convolvewith=finderconvolve,
                     verbose=verbose,
                     flip=False,
-                    cachedir=findercachedir
+                    cachedir=findercachedir,
+                    timeout=skyview_timeout
                 )
 
             except OSError as e:
 
-                LOGERROR('finder image appears to be corrupt, retrying...')
+                if not fast_mode:
 
-                # generate the finder chart
-                finder, finderheader = skyview_stamp(
-                    objectinfo['ra'],
-                    objectinfo['decl'],
-                    convolvewith=finderconvolve,
-                    verbose=verbose,
-                    flip=False,
-                    cachedir=findercachedir,
-                    forcefetch=True
-                )
+                    LOGERROR('finder image appears to be corrupt, retrying...')
+
+                    # generate the finder chart
+                    finder, finderheader = skyview_stamp(
+                        objectinfo['ra'],
+                        objectinfo['decl'],
+                        convolvewith=finderconvolve,
+                        verbose=verbose,
+                        flip=False,
+                        cachedir=findercachedir,
+                        forcefetch=True,
+                        timeout=skyview_timeout
+                    )
 
 
             finderfig = plt.figure(figsize=(3,3),dpi=plotdpi)
@@ -1677,7 +1695,8 @@ def _pkl_finder_objectinfo(objectinfo,
         # first, the color features
         colorfeat = color_features(objectinfo,
                                    deredden=deredden_object,
-                                   custom_bandpasses=custom_bandpasses)
+                                   custom_bandpasses=custom_bandpasses,
+                                   dust_timeout=dust_timeout)
 
         # next, get the neighbor features and GAIA info
         nbrfeat = neighbor_gaia_features(
@@ -2885,6 +2904,7 @@ def checkplot_dict(lspinfolist,
                    times,
                    mags,
                    errs,
+                   fast_mode=False,
                    magsarefluxes=False,
                    nperiodstouse=3,
                    objectinfo=None,
@@ -2942,6 +2962,16 @@ def checkplot_dict(lspinfolist,
     - a PNG with checkplot.checkplot_dict_png below
 
     All kwargs are the same as for checkplot_png, except for the following:
+
+    If fast_mode is True, the following kwargs will be set to try to speed up
+    hits to external services:
+
+    skyview_timeout = 5.0
+    dust_timeout = 5.0
+    gaia_submit_timeout = 2.5
+    gaia_max_timeout = 5.0
+    gaia_submit_tries = 1
+    complete_query_later = False
 
     nperiodstouse controls how many 'best' periods to make phased LC plots
     for. By default, this is the 3 best. If this is set to None, all 'best'
@@ -3116,7 +3146,8 @@ def checkplot_dict(lspinfolist,
         gaia_submit_tries=gaia_submit_tries,
         gaia_max_timeout=gaia_max_timeout,
         gaia_mirror=gaia_mirror,
-        complete_query_later=complete_query_later
+        complete_query_later=complete_query_later,
+        fast_mode=fast_mode
     )
 
     # try again to get the right objectid
@@ -3377,6 +3408,7 @@ def checkplot_pickle(lspinfolist,
                      times,
                      mags,
                      errs,
+                     fast_mode=False,
                      magsarefluxes=False,
                      nperiodstouse=3,
                      objectinfo=None,
@@ -3437,6 +3469,16 @@ def checkplot_pickle(lspinfolist,
     checkplot_pickle_to_png function below.
 
     All kwargs are the same as for checkplot_png, except for the following:
+
+    If fast_mode is True, the following kwargs will be set to try to speed up
+    hits to external services:
+
+    skyview_timeout = 5.0
+    dust_timeout = 5.0
+    gaia_submit_timeout = 2.5
+    gaia_max_timeout = 5.0
+    gaia_submit_tries = 1
+    complete_query_later = False
 
     nperiodstouse controls how many 'best' periods to make phased LC plots
     for. By default, this is the 3 best. If this is set to None, all 'best'
@@ -3579,7 +3621,8 @@ def checkplot_pickle(lspinfolist,
         bestperiodhighlight=bestperiodhighlight,
         xgridlines=xgridlines,
         mindet=mindet,
-        verbose=verbose
+        verbose=verbose,
+        fast_mode=fast_mode
     )
 
     # for Python >= 3.4, use v4
@@ -4820,6 +4863,7 @@ def cp2png(checkplotin, extrarows=None):
 ################################
 
 def update_checkplot_objectinfo(cpf,
+                                fast_mode=False,
                                 findercmap='gray_r',
                                 finderconvolve=None,
                                 deredden_object=True,
@@ -4868,6 +4912,7 @@ def update_checkplot_objectinfo(cpf,
                                     cpd['sigclip'],
                                     cpd['normto'],
                                     cpd['normmingap'],
+                                    fast_mode=fast_mode,
                                     deredden_object=deredden_object,
                                     custom_bandpasses=custom_bandpasses,
                                     gaia_submit_timeout=gaia_submit_timeout,

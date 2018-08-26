@@ -319,7 +319,8 @@ BANDPASS_LIST = ['umag','bmag','vmag','rmag','imag',
 
 def color_features(in_objectinfo,
                    deredden=True,
-                   custom_bandpasses=None):
+                   custom_bandpasses=None,
+                   dust_timeout=10.0):
     '''Stellar colors and dereddened stellar colors using 2MASS DUST API:
 
     http://irsa.ipac.caltech.edu/applications/DUST/docs/dustProgramInterface.html
@@ -532,7 +533,8 @@ def color_features(in_objectinfo,
             # first, get the extinction table for this object
             extinction = dust.extinction_query(objectinfo['ra'],
                                                objectinfo['decl'],
-                                               verbose=False)
+                                               verbose=False,
+                                               timeout=dust_timeout)
 
         except Exception as e:
 
@@ -544,6 +546,10 @@ def color_features(in_objectinfo,
     else:
 
         extinction = None
+        outdict['dereddened'] = False
+
+    # handle timeout from DUST service
+    if not extinction:
         outdict['dereddened'] = False
 
     # go through the objectdict and pick out the mags we have available from the
@@ -769,11 +775,9 @@ def color_classification(colorfeatures, pmfeatures):
     possible_classes = []
 
     if not colorfeatures:
-        LOGERROR("no color features provided, can't continue")
         return possible_classes
 
     if not pmfeatures:
-        LOGERROR("no proper motion features provided, can't continue")
         return possible_classes
 
     # dered mags

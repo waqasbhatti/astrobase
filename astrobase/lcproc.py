@@ -4104,6 +4104,7 @@ def update_checkplotdict_nbrlcs(
 def runcp(pfpickle,
           outdir,
           lcbasedir,
+          fast_mode=False,
           lcfname=None,
           cprenorm=False,
           lclistpkl=None,
@@ -4135,6 +4136,16 @@ def runcp(pfpickle,
     written.
 
     `lcbasedir` is the base directory where the light curves are located.
+
+    `fast_mode` tries to speed up hits to external services. If this is True,
+    the following kwargs will be set for calls to checkplot.checkplot_pickle:
+
+    skyview_timeout = 5.0
+    dust_timeout = 5.0
+    gaia_submit_timeout = 2.5
+    gaia_max_timeout = 5.0
+    gaia_submit_tries = 1
+    complete_query_later = False
 
     `lcfname` is usually None because we get the LC filename from the
     pfpickle. If pfpickle is None, however, lcfname is used instead. It will
@@ -4348,6 +4359,7 @@ def runcp(pfpickle,
             sigclip=sigclip,
             mindet=minobservations,
             verbose=False,
+            fast_mode=fast_mode,
             normto=cprenorm  # we've done the renormalization already, so this
                              # should be False by default. just messes up the
                              # plots otherwise, destroying LPVs in particular
@@ -4398,6 +4410,7 @@ def runcp_worker(task):
 def parallel_cp(pfpicklelist,
                 outdir,
                 lcbasedir,
+                fast_mode=False,
                 lcfnamelist=None,
                 cprenorm=False,
                 lclistpkl=None,
@@ -4448,7 +4461,8 @@ def parallel_cp(pfpicklelist,
                   'sigclip':sigclip,
                   'minobservations':minobservations,
                   'skipdone':skipdone,
-                  'cprenorm':cprenorm}) for
+                  'cprenorm':cprenorm,
+                  'fast_mode':fast_mode}) for
                 x,y in zip(pfpicklelist, lcfnamelist)]
 
     resultfutures = []
@@ -4467,6 +4481,7 @@ def parallel_cp(pfpicklelist,
 def parallel_cp_pfdir(pfpickledir,
                       outdir,
                       lcbasedir,
+                      fast_mode=False,
                       cprenorm=False,
                       lclistpkl=None,
                       gaia_max_timeout=60.0,
@@ -4499,6 +4514,7 @@ def parallel_cp_pfdir(pfpickledir,
     return parallel_cp(pfpicklelist,
                        outdir,
                        lcbasedir,
+                       fast_mode=fast_mode,
                        lclistpkl=lclistpkl,
                        nbrradiusarcsec=nbrradiusarcsec,
                        gaia_max_timeout=gaia_max_timeout,

@@ -187,6 +187,8 @@ def extinction_query(lon, lat,
                         (lon, lat, coordtype, sizedeg))
 
             req = requests.get(DUST_URL, dustparams, timeout=timeout)
+            req.raise_for_status()
+
             resp = req.text
 
             # see if we got an extinction table URL in the response
