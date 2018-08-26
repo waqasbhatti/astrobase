@@ -1398,11 +1398,18 @@ def _pkl_finder_objectinfo(objectinfo,
     '''
 
     # optional mode to hit external services and fail fast if they timeout
-    if fast_mode:
+    if fast_mode is True:
         skyview_timeout = 10.0
         dust_timeout = 10.0
         gaia_submit_timeout = 5.0
         gaia_max_timeout = 10.0
+        gaia_submit_tries = 1
+        complete_query_later = False
+    elif isinstance(fast_mode, (int, float)) and fast_mode > 0.0:
+        skyview_timeout = fast_mode
+        dust_timeout = fast_mode
+        gaia_submit_timeout = 0.66*fast_mode
+        gaia_max_timeout = fast_mode
         gaia_submit_tries = 1
         complete_query_later = False
     else:
@@ -2973,6 +2980,11 @@ def checkplot_dict(lspinfolist,
     gaia_submit_tries = 1
     complete_query_later = False
 
+    If fast_mode is a positive integer or float, timeouts will be set to
+    fast_mode and the gaia_submit_timeout will be set to
+    0.66*fast_mode. gaia_submit_timeout and gaia_max_timeout are re-used for
+    SIMBAD as well.
+
     nperiodstouse controls how many 'best' periods to make phased LC plots
     for. By default, this is the 3 best. If this is set to None, all 'best'
     periods present in each lspinfo dict's 'nbestperiods' key will be plotted
@@ -3479,6 +3491,11 @@ def checkplot_pickle(lspinfolist,
     gaia_max_timeout = 10.0
     gaia_submit_tries = 1
     complete_query_later = False
+
+    If fast_mode is a positive integer or float, timeouts will be set to
+    fast_mode and the gaia_submit_timeout will be set to
+    0.66*fast_mode. gaia_submit_timeout and gaia_max_timeout are re-used for
+    SIMBAD as well.
 
     nperiodstouse controls how many 'best' periods to make phased LC plots
     for. By default, this is the 3 best. If this is set to None, all 'best'

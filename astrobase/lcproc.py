@@ -4140,9 +4140,9 @@ def runcp(pfpickle,
     `fast_mode` tries to speed up hits to external services. If this is True,
     the following kwargs will be set for calls to checkplot.checkplot_pickle:
 
-    skyview_timeout = 5.0
-    dust_timeout = 5.0
-    gaia_submit_timeout = 2.5
+    skyview_timeout = 10.0
+    dust_timeout = 10.0
+    gaia_submit_timeout = 5.0
     gaia_max_timeout = 5.0
     gaia_submit_tries = 1
     complete_query_later = False
