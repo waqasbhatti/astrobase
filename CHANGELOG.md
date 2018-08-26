@@ -1,3 +1,22 @@
+# v0.3.18
+
+## New stuff
+
+- checkplot: added a `fast_mode` kwarg for `checkplot_pickle` so external
+  service queries time out faster when the services are not responsive.
+
+## Changes
+
+- `lcmath.sigclip_magseries`: `sigclip` can now be either int or float.
+
+## Fixes
+
+- lcfit: in the `*_fit_magseries` functions, `fitmagminind` can be a
+  multiple-item array instead of a single item for flat light curves. This will
+  break the time-of-minimum finding routine for an LC fit. Now uses the first
+  item in the array for `magseriesepoch` if this is the case. Added by
+  @joshuawallace.
+
 # v0.3.17
 
 ## New stuff
