@@ -1443,7 +1443,8 @@ def normalize_lcdict(lcdict,
                      magcols='all',
                      mingap=4.0,
                      normto='sdssr',
-                     debugmode=False):
+                     debugmode=False,
+                     quiet=False):
     '''This normalizes magcols in lcdict using timecol to find timegroups.
 
     Returns the lcdict with an added lcnormcols key indicating which columns
@@ -1469,7 +1470,8 @@ def normalize_lcdict(lcdict,
 
     # check if this lc has been normalized already. return as-is if so
     if 'lcnormcols' in lcdict and len(lcdict['lcnormcols']) > 0:
-        LOGWARNING('this lightcurve is already normalized, returning...')
+        if not quiet:
+            LOGWARNING('this lightcurve is already normalized, returning...')
         return lcdict
 
     # first, get the LC timegroups
@@ -1578,16 +1580,17 @@ def normalize_lcdict(lcdict,
                     mags = mags + lcdict['objectinfo'][normto]
 
                 else:
-                    LOGWARNING('no %s available in lcdict, '
-                               'normalizing to global mag median' % normto)
+                    if not quiet:
+                        LOGWARNING('no %s available in lcdict, '
+                                   'normalizing to global mag median' % normto)
                     normto = 'globalmedian'
                     mags = mags + global_mag_median
 
             lcdict[col] = mags
 
         else:
-
-            LOGWARNING('column %s is not present, skipping...' % col)
+            if not quiet:
+                LOGWARNING('column %s is not present, skipping...' % col)
             continue
 
     # add the lcnormcols key to the lcdict
@@ -1609,7 +1612,8 @@ def normalize_lcdict_byinst(
         magcols='all',
         normto='sdssr',
         normkeylist=['stf','flt','fld','prj','exp'],
-        debugmode=False
+        debugmode=False,
+        quiet=False
 ):
     '''This is a function to normalize light curves across all instrument
     combinations present.
@@ -1630,8 +1634,9 @@ def normalize_lcdict_byinst(
 
     # check if this lc has been normalized already. return as-is if so
     if 'lcinstnormcols' in lcdict and len(lcdict['lcinstnormcols']) > 0:
-        LOGWARNING('this lightcurve is already normalized by instrument keys'
-                   ', returning...')
+        if not quiet:
+            LOGWARNING('this lightcurve is already normalized by instrument keys'
+                       ', returning...')
         return lcdict
 
     # generate the normalization key
@@ -1718,9 +1723,9 @@ def normalize_lcdict_byinst(
                     lcdict[col][thisind] = lcdict[col][thisind] - medmag
 
                     if debugmode:
-                        LOGINFO('magcol: %s, currkey: "%s", nelem: %s, '
-                                'medmag: %s' %
-                                (col, nkey, len(thismags[thisind]), medmag))
+                        LOGDEBUG('magcol: %s, currkey: "%s", nelem: %s, '
+                                 'medmag: %s' %
+                                 (col, nkey, len(thismags[thisind]), medmag))
 
                 # we remove mags that correspond to keys with less than 3
                 # (finite) elements because we can't get the median mag
@@ -1741,16 +1746,17 @@ def normalize_lcdict_byinst(
                     lcdict[col] = lcdict[col] + lcdict['objectinfo'][normto]
 
                 else:
-                    LOGWARNING('no %s available in lcdict, '
-                               'normalizing to 0.0' % normto)
+                    if not quiet:
+                        LOGWARNING('no %s available in lcdict, '
+                                   'normalizing to 0.0' % normto)
                     normto = 'zero'
 
             # update the colsnormalized list
             colsnormalized.append(col)
 
         else:
-
-            LOGWARNING('column %s is not present, skipping...' % col)
+            if not quiet:
+                LOGWARNING('column %s is not present, skipping...' % col)
             continue
 
     # add the lcnormcols key to the lcdict
