@@ -5019,7 +5019,7 @@ def add_cpinfo_to_lclist(
         outfile,
         checkplotglob='checkplot*.pkl*',
         infokeys=[
-            # key,dtype,first level,overwrite=T|append=F,None sub,nan sub
+            # key, dtype, first level, overwrite=T|append=F, None sub, nan sub
             ('comments',
              np.unicode_, False, True, '', ''),
             ('objectinfo.objecttags',
@@ -5122,7 +5122,7 @@ def add_cpinfo_to_lclist(
              np.float_, True, True, np.nan, np.nan),
             ('objectinfo.gaia_parallax_err',
              np.float_, True, True, np.nan, np.nan),
-            ('objectinfo.abs_gaiamag',
+            ('objectinfo.gaia_absmag',
              np.float_, True, True, np.nan, np.nan),
             ('objectinfo.simbad_best_mainid',
              np.unicode_, True, True, '', ''),
