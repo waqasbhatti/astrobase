@@ -366,7 +366,8 @@ def bls_serial_pfind(times, mags, errs,
                                   'autofreq':autofreq,
                                   'periodepsilon':periodepsilon,
                                   'nbestpeaks':nbestpeaks,
-                                  'sigclip':sigclip}}
+                                  'sigclip':sigclip,
+                                  'magsarefluxes':magsarefluxes}}
 
             sortedlspind = np.argsort(finlsp)[::-1]
             sortedlspperiods = finperiods[sortedlspind]
@@ -433,8 +434,8 @@ def bls_serial_pfind(times, mags, errs,
                           'autofreq':autofreq,
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
-                          'sigclip':sigclip}
-            }
+                          'sigclip':sigclip,
+                          'magsarefluxes':magsarefluxes}}
 
             return resultdict
 
@@ -463,7 +464,8 @@ def bls_serial_pfind(times, mags, errs,
                               'autofreq':autofreq,
                               'periodepsilon':periodepsilon,
                               'nbestpeaks':nbestpeaks,
-                              'sigclip':sigclip}}
+                              'sigclip':sigclip,
+                              'magsarefluxes':magsarefluxes}}
 
 
     else:
@@ -491,7 +493,8 @@ def bls_serial_pfind(times, mags, errs,
                           'autofreq':autofreq,
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
-                          'sigclip':sigclip}}
+                          'sigclip':sigclip
+                          'magsarefluxes':magsarefluxes}}
 
 
 
@@ -510,7 +513,7 @@ def bls_parallel_pfind(
         nworkers=None,
         sigclip=10.0,
         verbose=True
-):
+    ):
     '''Runs the Box Least Squares Fitting Search for transit-shaped signals.
 
     Based on eebls.f from Kovacs et al. 2002 and python-bls from Foreman-Mackey
@@ -1166,7 +1169,8 @@ def bls_stats_singleperiod(times, mags, errs, period,
                                   verbose=verbose,
                                   startp=startp,
                                   endp=endp,
-                                  nphasebins=nphasebins)
+                                  nphasebins=nphasebins,
+                                  magsarefluxes=magsarefluxes)
 
         thistransdepth = blsres['blsresult']['transdepth']
         thistransduration = blsres['blsresult']['transduration']
@@ -1265,11 +1269,11 @@ def bls_stats_singleperiod(times, mags, errs, period,
 
         if magsarefluxes:
             blsmodel[transitindices] = (
-                blsmodel[transitindices] + thistransdepth
+                blsmodel[transitindices] - thistransdepth
             )
         else:
             blsmodel[transitindices] = (
-                blsmodel[transitindices] - thistransdepth
+                blsmodel[transitindices] + thistransdepth
             )
 
         # this is the residual of mags - model
