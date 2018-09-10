@@ -697,7 +697,8 @@ def bls_parallel_pfind(
                               'autofreq':autofreq,
                               'periodepsilon':periodepsilon,
                               'nbestpeaks':nbestpeaks,
-                              'sigclip':sigclip}}
+                              'sigclip':sigclip,
+                              'magsarefluxes':magsarefluxes}}
 
         sortedlspind = np.argsort(finlsp)[::-1]
         sortedlspperiods = finperiods[sortedlspind]
@@ -764,7 +765,8 @@ def bls_parallel_pfind(
                       'autofreq':autofreq,
                       'periodepsilon':periodepsilon,
                       'nbestpeaks':nbestpeaks,
-                      'sigclip':sigclip}
+                      'sigclip':sigclip,
+                      'magsarefluxes':magsarefluxes}
         }
 
         return resultdict
@@ -795,7 +797,8 @@ def bls_parallel_pfind(
                           'autofreq':autofreq,
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
-                          'sigclip':sigclip}}
+                          'sigclip':sigclip,
+                          'magsarefluxes':magsarefluxes}}
 
 
 
@@ -1023,10 +1026,14 @@ def bls_snr(blsdict,
             blsmodel = npfull_like(tmags, npmedian(tmags))
 
             if magsarefluxes:
+                # eebls.f returns +ve depths for fluxes
+                # so we need to subtract here to get fainter fluxes in transit
                 blsmodel[transitindices] = (
-                    blsmodel[transitindices] + thistransdepth
+                    blsmodel[transitindices] - thistransdepth
                 )
             else:
+                # eebls.f returns -ve depths for mags
+                # so we need to subtract here to get fainter mags in transit
                 blsmodel[transitindices] = (
                     blsmodel[transitindices] - thistransdepth
                 )
@@ -1268,12 +1275,18 @@ def bls_stats_singleperiod(times, mags, errs, period,
         blsmodel = npfull_like(tmags, npmedian(tmags))
 
         if magsarefluxes:
+
+            # eebls.f returns +ve transit depth for fluxes
+            # so we need to subtract here to get fainter fluxes in transit
             blsmodel[transitindices] = (
                 blsmodel[transitindices] - thistransdepth
             )
         else:
+
+            # eebls.f returns -ve transit depth for magnitudes
+            # so we need to subtract here to get fainter mags in transits
             blsmodel[transitindices] = (
-                blsmodel[transitindices] + thistransdepth
+                blsmodel[transitindices] - thistransdepth
             )
 
         # this is the residual of mags - model
