@@ -957,21 +957,49 @@ def traptransit_fit_magseries(times, mags, errs,
                               verbose=True):
     '''This fits a trapezoid transit model to a magnitude time series.
 
-    transitparams = [transitperiod (time),
-                     transitepoch (time),
-                     transitdepth (flux or mags),
-                     transitduration (phase),
-                     ingressduration (phase)]
+    args:
+        transitparams are initial guesses.
 
-    for magnitudes -> transitdepth should be < 0
-    for fluxes     -> transitdepth should be > 0
+        transitparams = [transitperiod (time),
+                         transitepoch (time),
+                         transitdepth (flux or mags),
+                         transitduration (phase),
+                         ingressduration (phase)]
 
-    if transitepoch is None, this function will do an initial spline fit to find
-    an approximate minimum of the phased light curve using the given period.
+        for magnitudes -> transitdepth should be < 0
+        for fluxes     -> transitdepth should be > 0
 
-    the transitdepth provided is checked against the value of magsarefluxes. if
-    magsarefluxes = True, the transitdepth is forced to be > 0; if magsarefluxes
-    = False, the transitdepth is forced to be < 0.
+        if transitepoch is None, this function will do an initial spline fit to
+        find an approximate minimum of the phased light curve using the given
+        period.
+
+        the transitdepth provided is checked against the value of
+        magsarefluxes. if magsarefluxes = True, the transitdepth is forced to
+        be > 0; if magsarefluxes = False, the transitdepth is forced to be < 0.
+
+    returns:
+
+        returndict =  {
+            'fittype':'traptransit',
+            'fitinfo':{
+                'initialparams':transitparams,
+                'finalparams':None,
+                'finalparamerrs':None,
+                'leastsqfit':leastsqfit,
+                'fitmags':None,
+                'fitepoch':None,
+            },
+            'fitchisq':npnan,
+            'fitredchisq':npnan,
+            'fitplotfile':None,
+            'magseries':{
+                'phase':None,
+                'times':None,
+                'mags':None,
+                'errs':None,
+                'magsarefluxes':magsarefluxes,
+            },
+        }
 
     '''
 
@@ -982,7 +1010,6 @@ def traptransit_fit_magseries(times, mags, errs,
     # get rid of zero errs
     nzind = npnonzero(serrs)
     stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
-
 
     # check the transitparams
     transitperiod, transitepoch, transitdepth = transitparams[0:3]
