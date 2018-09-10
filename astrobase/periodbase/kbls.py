@@ -493,7 +493,7 @@ def bls_serial_pfind(times, mags, errs,
                           'autofreq':autofreq,
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
-                          'sigclip':sigclip
+                          'sigclip':sigclip,
                           'magsarefluxes':magsarefluxes}}
 
 
