@@ -4439,7 +4439,7 @@ def parallel_cp(pfpicklelist,
 
     if maxobjects:
         pfpicklelist = pfpicklelist[:maxobjects]
-        if lcfnamelist:
+        if lcfnamelist is not None:
             lcfnamelist = lcfnamelist[:maxobjects]
 
     if lcfnamelist is None:
