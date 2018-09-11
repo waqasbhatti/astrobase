@@ -135,6 +135,7 @@ def get_stamp(ra, decl,
               forcefetch=False,
               cachedir='~/.astrobase/stamp-cache',
               timeout=10.0,
+              retry_failed=True,
               verbose=True):
     '''This gets a FITS cutout from the NASA GSFC SkyView service.
 
@@ -255,27 +256,42 @@ def get_stamp(ra, decl,
 
     # make sure the returned file is OK
     try:
+
         stampfits = pyfits.open(cachefname)
         stampfits.close()
-    except Exception as e:
-        LOGERROR('could not open cached FITS, retrying this request')
-        return get_stamp(ra, decl,
-                         survey=survey,
-                         scaling=scaling,
-                         sizepix=sizepix,
-                         forcefetch=True,
-                         cachedir=cachedir,
-                         timeout=timeout,
-                         verbose=verbose)
 
-    retdict = {
-        'params':{'ra':ra,
+        retdict = {
+            'params':{'ra':ra,
+                      'decl':decl,
+                      'survey':survey,
+                      'scaling':scaling,
+                      'sizepix':sizepix},
+            'provenance':provenance,
+            'fitsfile':cachefname
+        }
+
+        return retdict
+
+    except Exception as e:
+
+        LOGERROR('could not open cached FITS from Skyview download: %r' %
+                 {'ra':ra,
                   'decl':decl,
                   'survey':survey,
-                  'scaling':scaling,
-                  'sizepix':sizepix},
-        'provenance':provenance,
-        'fitsfile':cachefname
-    }
+                  'scaling': scaling,
+                  'sizepix': sizepix})
 
-    return retdict
+        if retry_failed:
+
+            return get_stamp(ra, decl,
+                             survey=survey,
+                             scaling=scaling,
+                             sizepix=sizepix,
+                             forcefetch=True,
+                             cachedir=cachedir,
+                             timeout=timeout,
+                             verbose=verbose)
+
+        else:
+
+            return None

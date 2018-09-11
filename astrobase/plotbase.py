@@ -692,6 +692,7 @@ def skyview_stamp(ra, decl,
                   forcefetch=False,
                   cachedir='~/.astrobase/stamp-cache',
                   timeout=10.0,
+                  retry_failed=False,
                   savewcsheader=True,
                   verbose=False):
     '''This is the internal version of the astroquery_skyview_stamp function.
@@ -722,6 +723,7 @@ def skyview_stamp(ra, decl,
                           forcefetch=forcefetch,
                           cachedir=cachedir,
                           timeout=timeout,
+                          retry_failed=retry_failed,
                           verbose=verbose)
     #
     # DONE WITH FETCHING STUFF

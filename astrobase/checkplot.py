@@ -1400,22 +1400,27 @@ def _pkl_finder_objectinfo(objectinfo,
     # optional mode to hit external services and fail fast if they timeout
     if fast_mode is True:
         skyview_timeout = 10.0
+        skyview_retry_failed = False
         dust_timeout = 10.0
         gaia_submit_timeout = 5.0
         gaia_max_timeout = 10.0
         gaia_submit_tries = 1
         complete_query_later = False
         search_simbad = False
+
     elif isinstance(fast_mode, (int, float)) and fast_mode > 0.0:
         skyview_timeout = fast_mode
+        skyview_retry_failed = False
         dust_timeout = fast_mode
         gaia_submit_timeout = 0.66*fast_mode
         gaia_max_timeout = fast_mode
         gaia_submit_tries = 1
         complete_query_later = False
         search_simbad = False
+
     else:
         skyview_timeout = 10.0
+        skyview_retry_failed = True
         dust_timeout = 10.0
         search_simbad = True
 
@@ -1448,7 +1453,8 @@ def _pkl_finder_objectinfo(objectinfo,
                     verbose=verbose,
                     flip=False,
                     cachedir=findercachedir,
-                    timeout=skyview_timeout
+                    timeout=skyview_timeout,
+                    retry_failed=skyview_retry_failed,
                 )
 
             except OSError as e:
@@ -1466,7 +1472,8 @@ def _pkl_finder_objectinfo(objectinfo,
                         flip=False,
                         cachedir=findercachedir,
                         forcefetch=True,
-                        timeout=skyview_timeout
+                        timeout=skyview_timeout,
+                        retry_failed=False  # do not start an infinite loop
                     )
 
 
