@@ -1055,7 +1055,8 @@ def neighbor_gaia_features(objectinfo,
                            gaia_submit_tries=3,
                            gaia_max_timeout=180.0,
                            gaia_mirror='cds',
-                           complete_query_later=True):
+                           complete_query_later=True,
+                           search_simbad=False):
     '''Gets several neighbor and GAIA features:
 
     from the given light curve catalog:
@@ -1427,7 +1428,8 @@ def neighbor_gaia_features(objectinfo,
 
     # finally, search for this object in SIMBAD
     if ('ra' in objectinfo and 'decl' in objectinfo and
-        objectinfo['ra'] is not None and objectinfo['decl'] is not None):
+        objectinfo['ra'] is not None and objectinfo['decl'] is not None and
+        search_simbad):
 
         simbad_result = simbad.objectnames_conesearch(
             objectinfo['ra'],
@@ -1549,8 +1551,13 @@ def neighbor_gaia_features(objectinfo,
 
     else:
 
+        if search_simbad:
+            simbad_status = 'failed: SIMBAD query failed'
+        else:
+            simbad_status = 'failed: SIMBAD query not tried'
+
         resultdict.update({
-            'simbad_status':'failed: SIMBAD query failed ',
+            'simbad_status':simbad_status,
             'simbad_nmatches':None,
             'simbad_mainid':None,
             'simbad_objtype':None,

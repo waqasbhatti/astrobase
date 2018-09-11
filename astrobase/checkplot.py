@@ -1405,6 +1405,7 @@ def _pkl_finder_objectinfo(objectinfo,
         gaia_max_timeout = 10.0
         gaia_submit_tries = 1
         complete_query_later = False
+        search_simbad = False
     elif isinstance(fast_mode, (int, float)) and fast_mode > 0.0:
         skyview_timeout = fast_mode
         dust_timeout = fast_mode
@@ -1412,9 +1413,11 @@ def _pkl_finder_objectinfo(objectinfo,
         gaia_max_timeout = fast_mode
         gaia_submit_tries = 1
         complete_query_later = False
+        search_simbad = False
     else:
         skyview_timeout = 10.0
         dust_timeout = 10.0
+        search_simbad = True
 
 
     if (isinstance(objectinfo, dict) and
@@ -1715,7 +1718,8 @@ def _pkl_finder_objectinfo(objectinfo,
             gaia_submit_tries=gaia_submit_tries,
             gaia_max_timeout=gaia_max_timeout,
             gaia_mirror=gaia_mirror,
-            complete_query_later=complete_query_later
+            complete_query_later=complete_query_later,
+            search_simbad=search_simbad
         )
 
         # see if the objectinfo dict has pmra/pmdecl entries.  if it doesn't,
