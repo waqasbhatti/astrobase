@@ -127,7 +127,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 try:
-    import batman, emcee, corner
+    import batman, emcee, corner, h5py
     assert int(emcee.__version__[0]) >= 3
     mandel_agol_dependencies = True
 except:
@@ -1563,14 +1563,13 @@ def mandelagol_fit_magseries(times, mags, errs,
                              n_walkers=50,
                              n_mcmc_steps=400,
                              eps=1e-4,
-                             useavailablesamples=False):
+                             skipsampling=False,
+                             overwriteexistingsamples=False):
     '''
     This fits a Mandel & Agol (2002) transit model to a magnitude time series.
-    It uses the model as implemented by Kreidberg (2015) in BATMAN. emcee is
-    used to sample the posterior (Foreman-Mackey et al 2013), and corner is
-    used to plot it.
-
-    By default, the model fixes e=0, and omega=90 deg.
+    It relies on Kreidberg (2015)'s BATMAN implementation for the transit
+    model, emcee to sample the posterior (Foreman-Mackey et al 2013), corner to
+    plot it, and h5py to save the samples.
 
     TODO:
     as implemented, we only fit for u, t0, and rp.
@@ -1606,24 +1605,29 @@ def mandelagol_fit_magseries(times, mags, errs,
 
     kwargs:
         trueparams (list): true parameter values you're fitting for, if they're
-        known (e.g., a known planet, or fake data). Only for plotting on
-        cornerplot.
+        known (e.g., a known planet, or fake data). Only for plotting purposes.
 
         burninpercent (float): percent of samples to discard as burn-in.
 
-        useavailablesamples (bool): True if you've already run this, and just
-        want to make the plots. False if you want to run the model fitting.
+        skipsampling (bool): if you've already collected samples, and you do
+        not want any more sampling (e.g., just make the plots), set this to be
+        True.
 
-        plotcorner (bool/str): path to a saved corner plot of the parameters
-        you fit.
-
-        samplesavpath (str): path to save MCMC samples
-
-        magsarefluxes (bool): currently only implemented if True
+        overwriteexistingsamples (bool): if you've collected samples, but you
+        want to overwrite them, set this to True.  Usually, it should be False,
+        which appends samples to samplesavpath h5py file.
 
         n_walkers (int): number of walkers
 
         n_mcmc_steps (int): number of MCMC steps
+
+        plotcorner (bool/str): path to a saved corner plot of the parameters
+        you fit.
+
+        samplesavpath (str): MANDATORY path to hdf5 file with MCMC samples,
+        e.g., '/foo/samples.h5'
+
+        magsarefluxes (bool): currently only implemented if True
 
         eps (float): for initializing for MCMC step
 
@@ -1634,28 +1638,28 @@ def mandelagol_fit_magseries(times, mags, errs,
             'fitinfo':{
                 'initialparams':modelparams,
                 'fixedparams':fixedparams,
-                'finalparams':None,
-                'finalparamerrs':None,
-                'leastsqfit':leastsqfit,
-                'fitmags':None,
-                'fitepoch':None,
+                'finalparams':finalparams,
+                'finalparamerrs':stderrs,
+                'fitmags':fitmags,
+                'fitepoch':fepoch,
             },
-            'fitchisq':npnan,
-            'fitredchisq':npnan,
             'fitplotfile':None,
             'magseries':{
-                'phase':None,
-                'times':None,
-                'mags':None,
-                'errs':None,
+                'times':stimes,
+                'mags':smags,
+                'errs':serrs,
                 'magsarefluxes':magsarefluxes,
             },
         }
-
     '''
 
+    from multiprocessing import Pool
     if not magsarefluxes:
         raise NotImplementedError
+    if not samplesavpath:
+        raise AssertionError(
+            'This function requires that you save the samples somewhere'
+        )
     if not mandel_agol_dependencies:
         raise AssertionError(
             'This function depends on BATMAN, emcee>3.0, and corner.'
@@ -1690,36 +1694,45 @@ def mandelagol_fit_magseries(times, mags, errs,
     initial_position_vec = [theta + eps*np.random.randn(n_dim)
                             for i in range(n_walkers)]
 
-    if useavailablesamples:
+    # run the MCMC, unless you just want to load the available samples
+    if not skipsampling:
 
-        samples = np.genfromtxt(samplesavpath, delimiter=';')
+        backend = emcee.backends.HDFBackend(samplesavpath)
+        if overwriteexistingsamples:
+            LOGINFO('erased samples previously at {:s}'.format(samplesavpath))
+            backend.reset(n_walkers, n_dim)
 
-    else:
+        # if this is the first run, then start from a gaussian ball.
+        # otherwise, resume from the previous samples.
+        if backend.iteration > 1:
+            starting_positions = None
+            isfirstrun = False
+        else:
+            starting_positions = initial_position_vec
+            isfirstrun = True
 
-        if verbose:
+        if verbose and isfirstrun:
             LOGINFO(
                 'beginning MCMC run with {:d} steps, {:d} walkers, '.format(
                     n_mcmc_steps, n_walkers) +
                 '{:d} threads'.format(nworkers)
             )
-
-        from multiprocessing import Pool
+        elif verbose and not isfirstrun:
+            LOGINFO(
+                'continuing with {:d} steps, {:d} walkers, '.format(
+                    n_mcmc_steps, n_walkers) +
+                '{:d} threads'.format(nworkers)
+            )
 
         with Pool(nworkers) as pool:
             sampler = emcee.EnsembleSampler(
                 n_walkers, n_dim, log_posterior,
                 args=(init_params, init_m, stimes, smags, serrs, priorbounds),
-                pool=pool
+                pool=pool,
+                backend=backend
             )
 
-            sampler.run_mcmc(initial_position_vec, n_mcmc_steps, progress=True)
-
-        n_to_discard = int(burninpercent*n_mcmc_steps)
-        samples = sampler.chain[:, n_to_discard:, :].reshape((-1, n_dim))
-
-        if samplesavpath:
-            np.savetxt(samplesavpath, samples, fmt='%.9e',
-                       delimiter=';',header='rp,u,t0')
+            sampler.run_mcmc(starting_positions, n_mcmc_steps, progress=True)
 
         if verbose:
             LOGINFO(
@@ -1728,23 +1741,13 @@ def mandelagol_fit_magseries(times, mags, errs,
                 '{:d} threads'.format(nworkers)
             )
 
+    reader = emcee.backends.HDFBackend(samplesavpath)
 
-    if type(plotcorner)==str:
+    n_to_discard = int(burninpercent*n_mcmc_steps)
 
-        if type(trueparams)==list:
-            Rp_true, u_true, t0_true, P_true = trueparams
-            fig = corner.corner(samples,
-                                labels=['$R_p/R_\star$', '$u$', '$t_0$'],
-                                truths=[Rp_true, t0_true, u_true],
-                                quantiles=[0.16, 0.5, 0.84],
-                                show_titles=True)
-        else:
-            fig = corner.corner(samples,
-                                labels = ['$R_p/R_\star$', '$u$', '$t_0$'],
-                                quantiles=[0.16, 0.5, 0.84],
-                                show_titles=True)
-
-        plt.savefig(plotcorner, dpi=300)
+    samples = reader.get_chain(discard=n_to_discard, flat=True)
+    log_prob_samples = reader.get_log_prob(discard=n_to_discard, flat=True)
+    log_prior_samples = reader.get_blobs(discard=n_to_discard, flat=True)
 
     #Get best-fit parameters and their 1-sigma error bars
     rp_fit, u_fit, t0_fit = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
@@ -1784,22 +1787,34 @@ def mandelagol_fit_magseries(times, mags, errs,
         },
     }
 
-    # make the fit plot if required
+    # make the output corner plot, and lightcurve plot if desired
+    if plotcorner:
+        if type(trueparams)==list:
+            Rp_true, u_true, t0_true, P_true = trueparams
+            fig = corner.corner(samples,
+                                labels=['$R_p/R_\star$', '$u$', '$t_0$'],
+                                truths=[Rp_true, t0_true, u_true],
+                                quantiles=[0.16, 0.5, 0.84],
+                                show_titles=True)
+        else:
+            fig = corner.corner(samples,
+                                labels = ['$R_p/R_\star$', '$u$', '$t_0$'],
+                                quantiles=[0.16, 0.5, 0.84],
+                                show_titles=True)
+
+        plt.savefig(plotcorner, dpi=300)
+
     if plotfit and isinstance(plotfit, str):
 
         f, ax = plt.subplots(figsize=(8,6))
-
         ax.scatter(stimes, smags, c='k', alpha=0.5, label='PDCSAP/medianfilt',
                    zorder=1, s=1.5, rasterized=True, linewidths=0)
-
         ax.scatter(stimes, init_flux, c='r', alpha=1,
                    s=3.5, zorder=2, rasterized=True, linewidths=0,
                    label='initial guess')
-
         ax.scatter(stimes, fitmags, c='b', alpha=1,
                    s=1.5, zorder=3, rasterized=True, linewidths=0,
                    label='fit rp,t0,u')
-
         ax.legend(loc='best')
         ax.set(xlabel='time [days]', ylabel='relative flux')
         f.savefig(plotfit, dpi=300, bbox_inches='tight')
