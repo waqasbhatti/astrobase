@@ -4130,7 +4130,8 @@ def runcp(pfpickle,
     `pfpickle` is the filename of the pickle created by lcproc.runpf. If this is
     None, the checkplot will be made anyway, but no phased LC information will
     be collected into the output checkplot pickle. This can be useful for just
-    collecting GAIA and other external information for an object.
+    collecting GAIA and other external information and making LC plots for an
+    object.
 
     `outdir` is the directory to which the output checkplot pickle will be
     written.
@@ -4141,6 +4142,8 @@ def runcp(pfpickle,
     the following kwargs will be set for calls to checkplot.checkplot_pickle:
 
     skyview_timeout = 10.0
+    skyview_retry_failed = False
+    simbad_search = False
     dust_timeout = 10.0
     gaia_submit_timeout = 5.0
     gaia_max_timeout = 5.0
@@ -4154,8 +4157,9 @@ def runcp(pfpickle,
 
     `cprenorm` is True if the light curves should be renormalized by
     checkplot.checkplot_pickle. This is set to False by default because we do
-    our own normalization in this function and pass the normalized times, mags,
-    errs to the checkplot.checkplot_pickle function.
+    our own normalization in this function using the light curve's registered
+    normalization function and pass the normalized times, mags, errs to the
+    checkplot.checkplot_pickle function.
 
     `lclistpkl` is the name of a pickle or the actual dict produced by
     lcproc.make_lclist. This is used to gather neighbor information.
@@ -4422,6 +4426,7 @@ def parallel_cp(pfpicklelist,
                 xmatchradiusarcsec=3.0,
                 sigclip=10.0,
                 minobservations=1000,
+                liststartindex=None,
                 maxobjects=None,
                 lcformat='hat-sql',
                 timecols=None,
@@ -4437,11 +4442,25 @@ def parallel_cp(pfpicklelist,
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
-    if maxobjects:
+    # handle the start and end indices
+    if (liststartindex is not None) and (maxobjects is None):
+        pfpicklelist = pfpicklelist[liststartindex:]
+        if lcfnamelist is not None:
+            lcfnamelist = lcfnamelist[liststartindex:]
+
+    elif (liststartindex is None) and (maxobjects is not None):
         pfpicklelist = pfpicklelist[:maxobjects]
         if lcfnamelist is not None:
             lcfnamelist = lcfnamelist[:maxobjects]
 
+    elif (liststartindex is not None) and (maxobjects is not None):
+        pfpicklelist = (
+            pfpicklelist[liststartindex:liststartindex+maxobjects]
+        )
+        if lcfnamelist is not None:
+            lcfnamelist = lcfnamelist[liststartindex:liststartindex+maxobjects]
+
+    # if the lcfnamelist is not provided, create a dummy
     if lcfnamelist is None:
         lcfnamelist = [None]*len(pfpicklelist)
 
