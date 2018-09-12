@@ -26,6 +26,8 @@ Fitting routines for light curves. Includes:
 - gaussianeb_fit_magseries: fit a double inverted gaussian eclipsing binary
                             model to the magnitude/flux time series
 
+- mandelagol_fit_magseries: fit a Mandel & Agol 2002 model to the flux time
+                            series.
 
 TODO:
 - Find correct dof for reduced chi squared in savgol_fit_magseries
@@ -102,6 +104,7 @@ def LOGEXCEPTION(message):
 
 from time import time as unixtime
 
+import numpy as np
 from numpy import nan as npnan, sum as npsum, abs as npabs, \
     roll as nproll, isfinite as npisfinite, std as npstd, \
     sign as npsign, sqrt as npsqrt, median as npmedian, \
@@ -122,6 +125,14 @@ from numpy.polynomial.legendre import Legendre, legval
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
+try:
+    import batman, emcee, corner
+    assert int(emcee.__version__[0]) >= 3
+    mandel_agol_dependencies = True
+except:
+    mandel_agol_dependencies = False
+    pass
 
 from ..lcmath import sigclip_magseries
 
@@ -1456,3 +1467,343 @@ def gaussianeb_fit_magseries(times, mags, errs,
         }
 
         return returndict
+
+
+###########################################################
+# helper functions for interfacing between emcee & BATMAN #
+###########################################################
+
+def _transit_model(times, t0, per, rp, a, inc, ecc, w, u, limb_dark):
+    '''
+    Given parameters, return tuple of batman TransitParams and batman
+    TransitModel objects. Lightcurves can be quickly computed from these.
+    '''
+    params = batman.TransitParams()  # object to store transit parameters
+    params.t0 = t0                   # time of periastron
+    params.per = per                 # orbital period
+    params.rp = rp                   # planet radius (in units of stellar radii)
+    params.a = a                     # semi-major axis (in units of stellar radii)
+    params.inc = inc                 # orbital inclination (in degrees)
+    params.ecc = ecc                 # longitude of periastron (in degrees)
+    params.w = w                     # linear limb darkening model.
+    params.u = u                     # limb darkening coefficients
+    params.limb_dark = limb_dark
+
+    t = times
+    m = batman.TransitModel(params, t, exp_time=2./60./24.,
+                            supersample_factor=7)
+
+    return params, m
+
+
+def _log_prior(theta, priorbounds):
+    '''
+    Assume priors on all parameters have uniform probability
+    '''
+    rp, u, t0 = theta
+    rp_lower, rp_upper, u_lower, u_upper, t0_lower, t0_upper = priorbounds
+
+    if ( (rp_lower < rp < rp_upper)
+         and (u_lower < u < u_upper)
+         and (t0_lower < t0 < t0_upper)
+       ) :
+
+        return 0.
+
+    return -np.inf
+
+
+def _log_likelihood(theta, params, model, t, flux, err_flux):
+    '''
+    Given a batman TransitModel and its proposed parameters (theta), update the
+    batman params object with the proposed parameters and evaluate the gaussian
+    likelihood.
+    '''
+    params.rp, params.u, params.t0 = theta[0], [theta[1]], theta[2]
+    lc = model.light_curve(params)
+
+    residuals = flux - lc
+
+    log_likelihood = -0.5*(
+        np.sum((residuals/err_flux)**2 + np.log(2*np.pi*(err_flux)**2))
+    )
+
+    return log_likelihood
+
+def log_posterior(theta, params, model, t, flux, err_flux, priorbounds):
+    '''
+    Evaluate posterior probability given proposed model parameters and
+    the observed flux timeseries.
+    '''
+
+    lp = _log_prior(theta, priorbounds)
+    if not np.isfinite(lp):
+        return -np.inf
+    else:
+        return lp + _log_likelihood(theta, params, model, t, flux, err_flux)
+
+
+###################################################
+## MANDEL & AGOL TRANSIT MODEL FIT TO MAG SERIES ##
+###################################################
+
+def mandelagol_fit_magseries(times, mags, errs,
+                             modelparams,
+                             priorbounds,
+                             fixedparams=[0.,90.,'linear'],
+                             trueparams=None,
+                             sigclip=10.0,
+                             burninpercent=0.3,
+                             plotfit=False,
+                             plotcorner=False,
+                             samplesavpath=False,
+                             magsarefluxes=True,
+                             verbose=True,
+                             nworkers=4,
+                             n_walkers=50,
+                             n_mcmc_steps=400,
+                             eps=1e-4,
+                             useavailablesamples=False):
+    '''
+    This fits a Mandel & Agol (2002) transit model to a magnitude time series.
+    It uses the model as implemented by Kreidberg (2015) in BATMAN. emcee is
+    used to sample the posterior (Foreman-Mackey et al 2013), and corner is
+    used to plot it.
+
+    By default, the model fixes e=0, and omega=90 deg.
+
+    TODO:
+    as implemented, we only fit for u, t0, and rp.
+
+        * enable sampling over more parameters. Perhaps a variable number?
+        E.g., it would be good to at least sample over semimajor axis.
+            modelparams = [init_period, init_epoch, init_depth, init_sma,
+                           init_incl, init_u],
+
+        * add quadratic limb darkening(?)
+
+    args:
+        modelparams (list): initial parameter guesses, found e.g., by BLS.
+
+            modelparams = [init_period, init_epoch, init_depth, init_sma,
+                           init_incl, init_u],
+
+            where init_u is a list of the limb darkening parameters, e.g.,:
+
+                modelparams = [1.4304, 1326.0089, (0.14)**2, 6.17, 89.4, [0.3]]
+
+        priorbounds (list): of
+
+            rp_lower, rp_upper, u_lower, u_upper, t0_lower, t0_upper = priorbounds
+
+        fixedparams (list): fixed parameters.
+
+            fixedparams = [fixed_ecc, fixed_omega, limb_dark]
+
+            `limb_dark` is a BATMAN-readable string ("linear" or "quadratic").
+            It's "fixed", because once you choose your limb-darkening model,
+            it's fixed.
+
+    kwargs:
+        trueparams (list): true parameter values you're fitting for, if they're
+        known (e.g., a known planet, or fake data). Only for plotting on
+        cornerplot.
+
+        burninpercent (float): percent of samples to discard as burn-in.
+
+        useavailablesamples (bool): True if you've already run this, and just
+        want to make the plots. False if you want to run the model fitting.
+
+        plotcorner (bool/str): path to a saved corner plot of the parameters
+        you fit.
+
+        samplesavpath (str): path to save MCMC samples
+
+        magsarefluxes (bool): currently only implemented if True
+
+        n_walkers (int): number of walkers
+
+        n_mcmc_steps (int): number of MCMC steps
+
+        eps (float): for initializing for MCMC step
+
+    returns:
+
+        returndict =  {
+            'fittype':'mandelagoltransit',
+            'fitinfo':{
+                'initialparams':modelparams,
+                'fixedparams':fixedparams,
+                'finalparams':None,
+                'finalparamerrs':None,
+                'leastsqfit':leastsqfit,
+                'fitmags':None,
+                'fitepoch':None,
+            },
+            'fitchisq':npnan,
+            'fitredchisq':npnan,
+            'fitplotfile':None,
+            'magseries':{
+                'phase':None,
+                'times':None,
+                'mags':None,
+                'errs':None,
+                'magsarefluxes':magsarefluxes,
+            },
+        }
+
+    '''
+
+    if not magsarefluxes:
+        raise NotImplementedError
+    if not mandel_agol_dependencies:
+        raise AssertionError(
+            'This function depends on BATMAN, emcee>3.0, and corner.'
+        )
+
+    # sigma clip and get rid of zero errs
+    stimes, smags, serrs = sigclip_magseries(times, mags, errs,
+                                             sigclip=sigclip,
+                                             magsarefluxes=magsarefluxes)
+    nzind = npnonzero(serrs)
+    stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
+
+    # parse the input modelparams
+    init_period, init_epoch, init_depth = modelparams[0:3]
+    init_sma, init_incl = modelparams[3:5]
+    fix_ecc, fix_omega = fixedparams[0:2]
+    limb_dark = fixedparams[2]
+    init_u = modelparams[5]
+    init_rp = npsqrt(init_depth)
+
+    # initialize the model and calculate the initial model light-curve
+    init_params, init_m = _transit_model(stimes, init_epoch, init_period,
+                                         init_rp, init_sma, init_incl, fix_ecc,
+                                         fix_omega, init_u, limb_dark)
+    init_flux = init_m.light_curve(init_params)
+
+    # guessed initial params. give nice guesses, or else emcee struggles.
+    theta = [init_rp, init_u[0], init_epoch]
+
+    # initialize sampler
+    n_dim = len(theta)
+    initial_position_vec = [theta + eps*np.random.randn(n_dim)
+                            for i in range(n_walkers)]
+
+    if useavailablesamples:
+
+        samples = np.genfromtxt(samplesavpath, delimiter=';')
+
+    else:
+
+        if verbose:
+            LOGINFO(
+                'beginning MCMC run with {:d} steps, {:d} walkers, '.format(
+                    n_mcmc_steps, n_walkers) +
+                '{:d} threads'.format(nworkers)
+            )
+
+        from multiprocessing import Pool
+
+        with Pool(nworkers) as pool:
+            sampler = emcee.EnsembleSampler(
+                n_walkers, n_dim, log_posterior,
+                args=(init_params, init_m, stimes, smags, serrs, priorbounds),
+                pool=pool
+            )
+
+            sampler.run_mcmc(initial_position_vec, n_mcmc_steps, progress=True)
+
+        n_to_discard = int(burninpercent*n_mcmc_steps)
+        samples = sampler.chain[:, n_to_discard:, :].reshape((-1, n_dim))
+
+        if samplesavpath:
+            np.savetxt(samplesavpath, samples, fmt='%.9e',
+                       delimiter=';',header='rp,u,t0')
+
+        if verbose:
+            LOGINFO(
+                'ended MCMC run with {:d} steps, {:d} walkers, '.format(
+                    n_mcmc_steps, n_walkers) +
+                '{:d} threads'.format(nworkers)
+            )
+
+
+    if type(plotcorner)==str:
+
+        if type(trueparams)==list:
+            Rp_true, u_true, t0_true, P_true = trueparams
+            fig = corner.corner(samples,
+                                labels=['$R_p/R_\star$', '$u$', '$t_0$'],
+                                truths=[Rp_true, t0_true, u_true],
+                                quantiles=[0.16, 0.5, 0.84],
+                                show_titles=True)
+        else:
+            fig = corner.corner(samples,
+                                labels = ['$R_p/R_\star$', '$u$', '$t_0$'],
+                                quantiles=[0.16, 0.5, 0.84],
+                                show_titles=True)
+
+        plt.savefig(plotcorner, dpi=300)
+
+    #Get best-fit parameters and their 1-sigma error bars
+    rp_fit, u_fit, t0_fit = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
+                                list(zip(
+                                *np.percentile(samples, [16, 50, 84], axis=0))
+                                ))
+
+    # medians, 84th-50th percentile, 50th-16th perctile.
+    finalparams = [rp_fit[0], u_fit[0], t0_fit[0]]
+    std_perrs = [rp_fit[1], u_fit[1], t0_fit[1]]
+    std_merrs = [rp_fit[2], u_fit[2], t0_fit[2]]
+    stderrs = {'std_perrs':std_perrs, 'std_merrs':std_merrs}
+
+    fit_params, fit_m = _transit_model(stimes, t0_fit[0], init_period,
+                                       rp_fit[0], init_sma, init_incl, fix_ecc,
+                                       fix_omega, [u_fit[0]], limb_dark)
+    fitmags = fit_m.light_curve(fit_params)
+    fepoch = t0_fit[0]
+
+    # assemble the return dictionary
+    returndict =  {
+        'fittype':'mandelagoltransit',
+        'fitinfo':{
+            'initialparams':modelparams,
+            'fixedparams':fixedparams,
+            'finalparams':finalparams,
+            'finalparamerrs':stderrs,
+            'fitmags':fitmags,
+            'fitepoch':fepoch,
+        },
+        'fitplotfile':None,
+        'magseries':{
+            'times':stimes,
+            'mags':smags,
+            'errs':serrs,
+            'magsarefluxes':magsarefluxes,
+        },
+    }
+
+    # make the fit plot if required
+    if plotfit and isinstance(plotfit, str):
+
+        f, ax = plt.subplots(figsize=(8,6))
+
+        ax.scatter(stimes, smags, c='k', alpha=0.5, label='PDCSAP/medianfilt',
+                   zorder=1, s=1.5, rasterized=True, linewidths=0)
+
+        ax.scatter(stimes, init_flux, c='r', alpha=1,
+                   s=3.5, zorder=2, rasterized=True, linewidths=0,
+                   label='initial guess')
+
+        ax.scatter(stimes, fitmags, c='b', alpha=1,
+                   s=1.5, zorder=3, rasterized=True, linewidths=0,
+                   label='fit rp,t0,u')
+
+        ax.legend(loc='best')
+        ax.set(xlabel='time [days]', ylabel='relative flux')
+        f.savefig(plotfit, dpi=300, bbox_inches='tight')
+
+        returndict['fitplotfile'] = plotfit
+
+    return returndict
