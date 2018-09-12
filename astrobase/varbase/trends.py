@@ -185,7 +185,7 @@ def old_epd_magseries(times, mags, errs,
                       fsv, fdv, fkv, xcc, ycc, bgv, bge,
                       epdsmooth_windowsize=21,
                       epdsmooth_sigclip=3.0,
-                      epdsmooth_func=smooth_magseries_medfilt,
+                      epdsmooth_func=smooth_magseries_signal_medfilt,
                       epdsmooth_extraparams=None):
     '''
     Detrends a magnitude series given in mag using accompanying values of S in
