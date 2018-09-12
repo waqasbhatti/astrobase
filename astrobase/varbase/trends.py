@@ -89,6 +89,7 @@ from numpy.linalg import lstsq
 
 from scipy.optimize import leastsq
 from scipy.signal import medfilt, savgol_filter
+from scipy.ndimage.filters import median_filter
 import scipy.interpolate as spi
 from astropy.convolution import convolve, Gaussian1DKernel
 
@@ -101,14 +102,25 @@ from ..lcmath import sigclip_magseries_with_extparams
 ## SMOOTHING FUNCTIONS ##
 #########################
 
+def smooth_magseries_median_filter(mags, windowsize):
+    '''
+    This smooths the magseries with a median filter that reflects the array at
+    the boundary.
+    See https://docs.scipy.org/doc/scipy/reference/tutorial/ndimage.html for
+    details.
+    '''
+    return median_filter(mags, size=windowsize, mode='reflect')
+
+
 def smooth_magseries_medfilt(mags, windowsize):
     '''
-    This smooths the magseries with a median filter.
-
+    This smooths the magseries with a simple median filter.
+    This function pads with zeros near the boundary, see:
+        https://stackoverflow.com/questions/24585706/scipy-medfilt-wrong-result
+    Typically this is bad.
     '''
 
     return medfilt(mags, windowsize)
-
 
 
 def smooth_magseries_gaussfilt(mags, windowsize, windowfwhm=7):
@@ -120,7 +132,6 @@ def smooth_magseries_gaussfilt(mags, windowsize, windowfwhm=7):
     convkernel = Gaussian1DKernel(windowfwhm, x_size=windowsize)
     smoothed = convolve(mags, convkernel, boundary='extend')
     return smoothed
-
 
 
 def smooth_magseries_savgol(mags, windowsize, polyorder=2):
