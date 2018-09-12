@@ -1473,10 +1473,14 @@ def gaussianeb_fit_magseries(times, mags, errs,
 # helper functions for interfacing between emcee & BATMAN #
 ###########################################################
 
-def _transit_model(times, t0, per, rp, a, inc, ecc, w, u, limb_dark):
+def _transit_model(times, t0, per, rp, a, inc, ecc, w, u, limb_dark,
+                   exp_time_minutes=2, supersample_factor=7):
     '''
     Given parameters, return tuple of batman TransitParams and batman
     TransitModel objects. Lightcurves can be quickly computed from these.
+
+    supersample_factor: the number of supersampled time data pints to average
+    the lightcurve model over.
     '''
     params = batman.TransitParams()  # object to store transit parameters
     params.t0 = t0                   # time of periastron
@@ -1490,8 +1494,8 @@ def _transit_model(times, t0, per, rp, a, inc, ecc, w, u, limb_dark):
     params.limb_dark = limb_dark
 
     t = times
-    m = batman.TransitModel(params, t, exp_time=2./60./24.,
-                            supersample_factor=7)
+    m = batman.TransitModel(params, t, exp_time=exp_time_minutes/60./24.,
+                            supersample_factor=supersample_factor)
 
     return params, m
 
@@ -1789,7 +1793,7 @@ def mandelagol_fit_magseries(times, mags, errs,
 
     # make the output corner plot, and lightcurve plot if desired
     if plotcorner:
-        if type(trueparams)==list:
+        if isinstance(trueparams,list):
             Rp_true, u_true, t0_true, P_true = trueparams
             fig = corner.corner(samples,
                                 labels=['$R_p/R_\star$', '$u$', '$t_0$'],
