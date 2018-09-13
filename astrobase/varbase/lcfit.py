@@ -103,6 +103,7 @@ def LOGEXCEPTION(message):
 #############
 
 from time import time as unixtime
+import os
 
 import numpy as np
 from numpy import nan as npnan, sum as npsum, abs as npabs, \
@@ -1490,7 +1491,7 @@ def _transit_model(times, t0, per, rp, a, inc, ecc, w, u, limb_dark,
     params.inc = inc                 # orbital inclination (in degrees)
     params.ecc = ecc                 # longitude of periastron (in degrees)
     params.w = w                     # linear limb darkening model.
-    params.u = u                     # limb darkening coefficients
+    params.u = u                     # limb darkening coefficient list
     params.limb_dark = limb_dark
 
     t = times
@@ -1504,11 +1505,15 @@ def _log_prior(theta, priorbounds):
     '''
     Assume priors on all parameters have uniform probability
     '''
-    rp, u, t0 = theta
-    rp_lower, rp_upper, u_lower, u_upper, t0_lower, t0_upper = priorbounds
+    rp, u_lin, u_quad, t0 = theta
+
+    #TODO use smarter parsing method plz
+    rp_lower, rp_upper, u_lin_lower, u_lin_upper, u_quad_lower, \
+            u_quad_upper, t0_lower, t0_upper = priorbounds
 
     if ( (rp_lower < rp < rp_upper)
-         and (u_lower < u < u_upper)
+         and (u_lin_lower < u_lin < u_lin_upper)
+         and (u_quad_lower < u_quad < u_quad_upper)
          and (t0_lower < t0 < t0_upper)
        ) :
 
@@ -1523,7 +1528,7 @@ def _log_likelihood(theta, params, model, t, flux, err_flux):
     batman params object with the proposed parameters and evaluate the gaussian
     likelihood.
     '''
-    params.rp, params.u, params.t0 = theta[0], [theta[1]], theta[2]
+    params.rp, params.u, params.t0 = theta[0], [theta[1],theta[2]], theta[3]
     lc = model.light_curve(params)
 
     residuals = flux - lc
@@ -1539,7 +1544,6 @@ def log_posterior(theta, params, model, t, flux, err_flux, priorbounds):
     Evaluate posterior probability given proposed model parameters and
     the observed flux timeseries.
     '''
-
     lp = _log_prior(theta, priorbounds)
     if not np.isfinite(lp):
         return -np.inf
@@ -1576,14 +1580,12 @@ def mandelagol_fit_magseries(times, mags, errs,
     plot it, and h5py to save the samples.
 
     TODO:
-    as implemented, we only fit for u, t0, and rp.
+    as implemented, we fit for u_lin, u_quad, t0, and rp.
 
         * enable sampling over more parameters. Perhaps a variable number?
         E.g., it would be good to at least sample over semimajor axis.
             modelparams = [init_period, init_epoch, init_depth, init_sma,
                            init_incl, init_u],
-
-        * add quadratic limb darkening(?)
 
     args:
         modelparams (list): initial parameter guesses, found e.g., by BLS.
@@ -1591,13 +1593,14 @@ def mandelagol_fit_magseries(times, mags, errs,
             modelparams = [init_period, init_epoch, init_depth, init_sma,
                            init_incl, init_u],
 
-            where init_u is a list of the limb darkening parameters, e.g.,:
+        where init_u is a list of the limb darkening parameters, e.g.,:
 
-                modelparams = [1.4304, 1326.0089, (0.14)**2, 6.17, 89.4, [0.3]]
+            modelparams = [1.4304, 1326.0089, (0.14)**2, 6.17, 89.4, [0.3, 0.1]]
 
         priorbounds (list): of
 
-            rp_lower, rp_upper, u_lower, u_upper, t0_lower, t0_upper = priorbounds
+            rp_lower, rp_upper, u_lin_lower, u_lin_upper, u_quad_lower,
+            u_quad_upper, t0_lower, t0_upper = priorbounds
 
         fixedparams (list): fixed parameters.
 
@@ -1691,7 +1694,7 @@ def mandelagol_fit_magseries(times, mags, errs,
     init_flux = init_m.light_curve(init_params)
 
     # guessed initial params. give nice guesses, or else emcee struggles.
-    theta = [init_rp, init_u[0], init_epoch]
+    theta = [init_rp, init_u[0], init_u[1], init_epoch]
 
     # initialize sampler
     n_dim = len(theta)
@@ -1708,12 +1711,12 @@ def mandelagol_fit_magseries(times, mags, errs,
 
         # if this is the first run, then start from a gaussian ball.
         # otherwise, resume from the previous samples.
-        if backend.iteration > 1:
-            starting_positions = None
-            isfirstrun = False
-        else:
-            starting_positions = initial_position_vec
-            isfirstrun = True
+        starting_positions = initial_position_vec
+        isfirstrun = True
+        if os.path.exists(backend.filename):
+            if backend.iteration > 1:
+                starting_positions = None
+                isfirstrun = False
 
         if verbose and isfirstrun:
             LOGINFO(
@@ -1735,7 +1738,6 @@ def mandelagol_fit_magseries(times, mags, errs,
                 pool=pool,
                 backend=backend
             )
-
             sampler.run_mcmc(starting_positions, n_mcmc_steps, progress=True)
 
         if verbose:
@@ -1754,20 +1756,20 @@ def mandelagol_fit_magseries(times, mags, errs,
     log_prior_samples = reader.get_blobs(discard=n_to_discard, flat=True)
 
     #Get best-fit parameters and their 1-sigma error bars
-    rp_fit, u_fit, t0_fit = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
-                                list(zip(
-                                *np.percentile(samples, [16, 50, 84], axis=0))
-                                ))
+    rp_fit, u_lin_fit, u_quad_fit, t0_fit = map(
+            lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
+            list(zip( *np.percentile(samples, [16, 50, 84], axis=0)))
+    )
 
     # medians, 84th-50th percentile, 50th-16th perctile.
-    finalparams = [rp_fit[0], u_fit[0], t0_fit[0]]
-    std_perrs = [rp_fit[1], u_fit[1], t0_fit[1]]
-    std_merrs = [rp_fit[2], u_fit[2], t0_fit[2]]
+    finalparams = [rp_fit[0], u_lin_fit[0], u_quad_fit[0], t0_fit[0]]
+    std_perrs = [rp_fit[1], u_lin_fit[1], u_quad_fit[1], t0_fit[1]]
+    std_merrs = [rp_fit[2], u_lin_fit[2], u_quad_fit[1], t0_fit[2]]
     stderrs = {'std_perrs':std_perrs, 'std_merrs':std_merrs}
 
     fit_params, fit_m = _transit_model(stimes, t0_fit[0], init_period,
                                        rp_fit[0], init_sma, init_incl, fix_ecc,
-                                       fix_omega, [u_fit[0]], limb_dark)
+                                       fix_omega, [u_lin_fit[0], u_quad_fit[0]], limb_dark)
     fitmags = fit_m.light_curve(fit_params)
     fepoch = t0_fit[0]
 
@@ -1794,12 +1796,13 @@ def mandelagol_fit_magseries(times, mags, errs,
     # make the output corner plot, and lightcurve plot if desired
     if plotcorner:
         if isinstance(trueparams,list):
-            Rp_true, u_true, t0_true, P_true = trueparams
-            fig = corner.corner(samples,
-                                labels=['$R_p/R_\star$', '$u$', '$t_0$'],
-                                truths=[Rp_true, t0_true, u_true],
-                                quantiles=[0.16, 0.5, 0.84],
-                                show_titles=True)
+            Rp_true, u_lin_true, u_quad_true, t0_true, P_true = trueparams
+            fig = corner.corner(
+                samples,
+                labels=['$R_p/R_\star$', '$u_{\mathrm{lin}}$',
+                        '$u_{\mathrm{quad}}$', '$t_0$'],
+                truths=[Rp_true, t0_true, u_lin_true, u_quad_true],
+                quantiles=[0.16, 0.5, 0.84], show_titles=True)
         else:
             fig = corner.corner(samples,
                                 labels = ['$R_p/R_\star$', '$u$', '$t_0$'],
