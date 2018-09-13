@@ -1503,32 +1503,58 @@ def _transit_model(times, t0, per, rp, a, inc, ecc, w, u, limb_dark,
 
 def _log_prior(theta, priorbounds):
     '''
-    Assume priors on all parameters have uniform probability
+    Assume priors on all parameters have uniform probability.
     '''
-    rp, u_lin, u_quad, t0 = theta
+    # priorbounds contains the input priors, and because of how we previously
+    # sorted theta, its sorted keys tell us which parts of theta correspond to
+    # which physical quantities.
 
-    #TODO use smarter parsing method plz
-    rp_lower, rp_upper, u_lin_lower, u_lin_upper, u_quad_lower, \
-            u_quad_upper, t0_lower, t0_upper = priorbounds
+    allowed = True
+    for ix, key in enumerate(np.sort(list(priorbounds.keys()))):
+        if priorbounds[key][0] < theta[ix] < priorbounds[key][1]:
+            allowed = True and allowed
+        else:
+            allowed = False
 
-    if ( (rp_lower < rp < rp_upper)
-         and (u_lin_lower < u_lin < u_lin_upper)
-         and (u_quad_lower < u_quad < u_quad_upper)
-         and (t0_lower < t0 < t0_upper)
-       ) :
-
+    if allowed:
         return 0.
 
     return -np.inf
 
 
-def _log_likelihood(theta, params, model, t, flux, err_flux):
+def _log_likelihood(theta, params, model, t, flux, err_flux, priorbounds):
     '''
     Given a batman TransitModel and its proposed parameters (theta), update the
     batman params object with the proposed parameters and evaluate the gaussian
     likelihood.
+
+    Note: the priorbounds are only needed to parse theta.
     '''
-    params.rp, params.u, params.t0 = theta[0], [theta[1],theta[2]], theta[3]
+
+    u = []
+    for ix, key in enumerate(np.sort(list(priorbounds.keys()))):
+        if key=='rp':
+            params.rp = theta[ix]
+        if key=='t0':
+            params.t0 = theta[ix]
+        if key=='sma':
+            params.a = theta[ix]
+        if key=='incl':
+            params.inc = theta[ix]
+        if key=='per':
+            params.per = theta[ix]
+        if key=='ecc':
+            params.per = theta[ix]
+        if key=='omega':
+            params.w = theta[ix]
+        if key=='u_linear':
+            u.append(theta[ix])
+        if key=='u_quadratic':
+            u.append(theta[ix])
+            params.u = u
+
+    # params.rp, params.u, params.t0 = theta[0], [theta[1],theta[2]], theta[3]
+
     lc = model.light_curve(params)
 
     residuals = flux - lc
@@ -1539,6 +1565,7 @@ def _log_likelihood(theta, params, model, t, flux, err_flux):
 
     return log_likelihood
 
+
 def log_posterior(theta, params, model, t, flux, err_flux, priorbounds):
     '''
     Evaluate posterior probability given proposed model parameters and
@@ -1548,7 +1575,8 @@ def log_posterior(theta, params, model, t, flux, err_flux, priorbounds):
     if not np.isfinite(lp):
         return -np.inf
     else:
-        return lp + _log_likelihood(theta, params, model, t, flux, err_flux)
+        return lp + _log_likelihood(theta, params, model, t, flux, err_flux,
+                                    priorbounds)
 
 
 ###################################################
@@ -1556,9 +1584,9 @@ def log_posterior(theta, params, model, t, flux, err_flux, priorbounds):
 ###################################################
 
 def mandelagol_fit_magseries(times, mags, errs,
-                             modelparams,
+                             fitparams,
                              priorbounds,
-                             fixedparams=[0.,90.,'linear'],
+                             fixedparams,
                              trueparams=None,
                              sigclip=10.0,
                              burninpercent=0.3,
@@ -1575,40 +1603,44 @@ def mandelagol_fit_magseries(times, mags, errs,
                              overwriteexistingsamples=False):
     '''
     This fits a Mandel & Agol (2002) transit model to a magnitude time series.
+    You can fit and fix whatever parameters you want.
+
     It relies on Kreidberg (2015)'s BATMAN implementation for the transit
     model, emcee to sample the posterior (Foreman-Mackey et al 2013), corner to
-    plot it, and h5py to save the samples.
-
-    TODO:
-    as implemented, we fit for u_lin, u_quad, t0, and rp.
-
-        * enable sampling over more parameters. Perhaps a variable number?
-        E.g., it would be good to at least sample over semimajor axis.
-            modelparams = [init_period, init_epoch, init_depth, init_sma,
-                           init_incl, init_u],
+    plot it, and h5py to save the samples. See e.g., Claret's work for good
+    guesses of star-appropriate limb-darkening parameters.
 
     args:
-        modelparams (list): initial parameter guesses, found e.g., by BLS.
+        fitparams (dict): initial parameter guesses for MCMC, found e.g., by
+        BLS. The key string format must not be changed, but any parameter can be
+        either "fit" or "fixed". If it is "fit", it must have a corresponding
+        prior. For example:
 
-            modelparams = [init_period, init_epoch, init_depth, init_sma,
-                           init_incl, init_u],
+            fitparams = {'t0':1325.9, 'rp':np.sqrt(fitd['transitdepth']),
+                         'sma':6.17, 'incl':85, 'u':[0.3, 0.2] }
 
-        where init_u is a list of the limb darkening parameters, e.g.,:
+        where u is a list of the limb darkening parameters, Linear first, then
+        quadratic. Quadratic limb darkening is the only form implemented.
 
-            modelparams = [1.4304, 1326.0089, (0.14)**2, 6.17, 89.4, [0.3, 0.1]]
+        priorbounds (dict): lower & upper bounds on uniform prior, e.g.,
 
-        priorbounds (list): of
+            priorbounds = {'rp':(0.135, 0.145), 'u_linear':(0.3-1, 0.3+1),
+                    'u_quad':(0.2-1, 0.2+1), 't0':(np.min(time),
+                    np.max(time)), 'sma':(6,6.4), 'incl':(80,90) }
 
-            rp_lower, rp_upper, u_lin_lower, u_lin_upper, u_quad_lower,
-            u_quad_upper, t0_lower, t0_upper = priorbounds
+        fixedparams (dict): fixed parameters, e.g.,
 
-        fixedparams (list): fixed parameters.
+            fixedparams = {'ecc':0.,
+                           'omega':90.,
+                           'limb_dark':'quadratic',
+                           'period':fitd['period'] }
 
-            fixedparams = [fixed_ecc, fixed_omega, limb_dark]
+        `limb_dark` must be "quadratic".  It's "fixed", because once you
+        choose your limb-darkening model, it's fixed.
 
-            `limb_dark` is a BATMAN-readable string ("linear" or "quadratic").
-            It's "fixed", because once you choose your limb-darkening model,
-            it's fixed.
+        Between these dicts, you must specify
+        ['t0','rp','sma','incl','u','rp','ecc', 'omega','period'], or the
+        BATMAN model will fail to initialize.
 
     kwargs:
         trueparams (list): true parameter values you're fitting for, if they're
@@ -1636,14 +1668,15 @@ def mandelagol_fit_magseries(times, mags, errs,
 
         magsarefluxes (bool): currently only implemented if True
 
-        eps (float): for initializing for MCMC step
+        eps (float): radius of n_walkers-dimensional Gaussian ball used to
+        initialize the MCMC.
 
     returns:
 
         returndict =  {
             'fittype':'mandelagoltransit',
             'fitinfo':{
-                'initialparams':modelparams,
+                'initialparams':fitparams,
                 'fixedparams':fixedparams,
                 'finalparams':finalparams,
                 'finalparamerrs':stderrs,
@@ -1679,22 +1712,48 @@ def mandelagol_fit_magseries(times, mags, errs,
     nzind = npnonzero(serrs)
     stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
 
-    # parse the input modelparams
-    init_period, init_epoch, init_depth = modelparams[0:3]
-    init_sma, init_incl = modelparams[3:5]
-    fix_ecc, fix_omega = fixedparams[0:2]
-    limb_dark = fixedparams[2]
-    init_u = modelparams[5]
-    init_rp = npsqrt(init_depth)
+    def _get_value(quantitystr, fitparams, fixedparams):
+        # for Mandel-Agol fitting, sometimes we want to fix some parameters,
+        # and fit others. this function allows that flexibility.
+        fitparamskeys, fixedparamskeys = fitparams.keys(), fixedparams.keys()
+        if quantitystr in fitparamskeys:
+            quantity = fitparams[quantitystr]
+        elif quantitystr in fixedparamskeys:
+            quantity = fixedparams[quantitystr]
+        return quantity
+
+    init_period = _get_value('period', fitparams, fixedparams)
+    init_epoch = _get_value('t0', fitparams, fixedparams)
+    init_rp = _get_value('rp', fitparams, fixedparams)
+    init_sma = _get_value('sma', fitparams, fixedparams)
+    init_incl = _get_value('incl', fitparams, fixedparams)
+    init_ecc = _get_value('ecc', fitparams, fixedparams)
+    init_omega = _get_value('omega', fitparams, fixedparams)
+    limb_dark = _get_value('limb_dark', fitparams, fixedparams)
+    init_u = _get_value('u', fitparams, fixedparams)
+
+    if not limb_dark == 'quadratic':
+        raise AssertionError
 
     # initialize the model and calculate the initial model light-curve
     init_params, init_m = _transit_model(stimes, init_epoch, init_period,
-                                         init_rp, init_sma, init_incl, fix_ecc,
-                                         fix_omega, init_u, limb_dark)
+                                         init_rp, init_sma, init_incl, init_ecc,
+                                         init_omega, init_u, limb_dark)
     init_flux = init_m.light_curve(init_params)
 
     # guessed initial params. give nice guesses, or else emcee struggles.
-    theta = [init_rp, init_u[0], init_u[1], init_epoch]
+    theta, fitparamnames = [], []
+    for k in np.sort(list(fitparams.keys())):
+        if isinstance(fitparams[k], float) or isinstance(fitparams[k], int):
+            theta.append(fitparams[k])
+            fitparamnames.append(fitparams[k])
+        elif isinstance(fitparams[k], list):
+            if not len(fitparams[k])==2:
+                raise AssertionError('should only be quadratic LD coeffs')
+            theta.append(fitparams[k][0])
+            theta.append(fitparams[k][1])
+            fitparamnames.append(fitparams[k][0])
+            fitparamnames.append(fitparams[k][1])
 
     # initialize sampler
     n_dim = len(theta)
@@ -1720,14 +1779,14 @@ def mandelagol_fit_magseries(times, mags, errs,
 
         if verbose and isfirstrun:
             LOGINFO(
-                'beginning MCMC run with {:d} steps, {:d} walkers, '.format(
-                    n_mcmc_steps, n_walkers) +
-                '{:d} threads'.format(nworkers)
+            'start MCMC with {:d} dims, {:d} steps, {:d} walkers,'.format(
+                n_dim, n_mcmc_steps, n_walkers) +
+            ' {:d} threads'.format(nworkers)
             )
         elif verbose and not isfirstrun:
             LOGINFO(
-                'continuing with {:d} steps, {:d} walkers, '.format(
-                    n_mcmc_steps, n_walkers) +
+                'continue with {:d} dims, {:d} steps, {:d} walkers, '.format(
+                    n_dim, n_mcmc_steps, n_walkers) +
                 '{:d} threads'.format(nworkers)
             )
 
@@ -1756,30 +1815,46 @@ def mandelagol_fit_magseries(times, mags, errs,
     log_prior_samples = reader.get_blobs(discard=n_to_discard, flat=True)
 
     #Get best-fit parameters and their 1-sigma error bars
-    rp_fit, u_lin_fit, u_quad_fit, t0_fit = map(
+    fit_statistics = list(map(
             lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
             list(zip( *np.percentile(samples, [16, 50, 84], axis=0)))
-    )
+    ))
 
-    # medians, 84th-50th percentile, 50th-16th perctile.
-    finalparams = [rp_fit[0], u_lin_fit[0], u_quad_fit[0], t0_fit[0]]
-    std_perrs = [rp_fit[1], u_lin_fit[1], u_quad_fit[1], t0_fit[1]]
-    std_merrs = [rp_fit[2], u_lin_fit[2], u_quad_fit[1], t0_fit[2]]
+    medianparams, std_perrs, std_merrs = {}, {}, {}
+    for ix, k in enumerate(np.sort(list(priorbounds.keys()))):
+        medianparams[k] = fit_statistics[ix][0]
+        std_perrs[k] = fit_statistics[ix][1]
+        std_merrs[k] = fit_statistics[ix][2]
+
     stderrs = {'std_perrs':std_perrs, 'std_merrs':std_merrs}
 
-    fit_params, fit_m = _transit_model(stimes, t0_fit[0], init_period,
-                                       rp_fit[0], init_sma, init_incl, fix_ecc,
-                                       fix_omega, [u_lin_fit[0], u_quad_fit[0]], limb_dark)
+    per = _get_value('period', medianparams, fixedparams)
+    t0 = _get_value('t0', medianparams, fixedparams)
+    rp = _get_value('rp', medianparams, fixedparams)
+    sma = _get_value('sma', medianparams, fixedparams)
+    incl = _get_value('incl', medianparams, fixedparams)
+    ecc = _get_value('ecc', medianparams, fixedparams)
+    omega = _get_value('omega', medianparams, fixedparams)
+    limb_dark = _get_value('limb_dark', medianparams, fixedparams)
+    u = []
+    for u_type in ['u_linear','u_quad']:
+        for paramtype in [fixedparams,medianparams]:
+            if u_type in list(paramtype.keys()):
+                u.append(paramtype[u_type])
+                continue
+
+    fit_params, fit_m = _transit_model(stimes, t0, per, rp, sma, incl, ecc,
+                                       omega, u, limb_dark)
     fitmags = fit_m.light_curve(fit_params)
-    fepoch = t0_fit[0]
+    fepoch = t0
 
     # assemble the return dictionary
     returndict =  {
         'fittype':'mandelagoltransit',
         'fitinfo':{
-            'initialparams':modelparams,
+            'initialparams':fitparams,
             'fixedparams':fixedparams,
-            'finalparams':finalparams,
+            'finalparams':medianparams,
             'finalparamerrs':stderrs,
             'fitmags':fitmags,
             'fitepoch':fepoch,
@@ -1795,17 +1870,17 @@ def mandelagol_fit_magseries(times, mags, errs,
 
     # make the output corner plot, and lightcurve plot if desired
     if plotcorner:
-        if isinstance(trueparams,list):
-            Rp_true, u_lin_true, u_quad_true, t0_true, P_true = trueparams
+        if isinstance(trueparams,dict):
+            trueparamkeys = np.sort(list(trueparams.keys()))
+            trueparams = [trueparams[k] for k in trueparamkeys]
             fig = corner.corner(
                 samples,
-                labels=['$R_p/R_\star$', '$u_{\mathrm{lin}}$',
-                        '$u_{\mathrm{quad}}$', '$t_0$'],
-                truths=[Rp_true, t0_true, u_lin_true, u_quad_true],
+                labels=trueparamkeys,
+                truths=trueparams,
                 quantiles=[0.16, 0.5, 0.84], show_titles=True)
         else:
             fig = corner.corner(samples,
-                                labels = ['$R_p/R_\star$', '$u$', '$t_0$'],
+                                labels=fitparamnames,
                                 quantiles=[0.16, 0.5, 0.84],
                                 show_titles=True)
 
@@ -1821,7 +1896,9 @@ def mandelagol_fit_magseries(times, mags, errs,
                    label='initial guess')
         ax.scatter(stimes, fitmags, c='b', alpha=1,
                    s=1.5, zorder=3, rasterized=True, linewidths=0,
-                   label='fit rp,t0,u')
+                   label='fit {:d} dims'.format(
+                       len(fitparamnames))
+                  )
         ax.legend(loc='best')
         ax.set(xlabel='time [days]', ylabel='relative flux')
         f.savefig(plotfit, dpi=300, bbox_inches='tight')
