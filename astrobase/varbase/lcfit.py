@@ -1600,7 +1600,8 @@ def mandelagol_fit_magseries(times, mags, errs,
                              n_mcmc_steps=400,
                              eps=1e-4,
                              skipsampling=False,
-                             overwriteexistingsamples=False):
+                             overwriteexistingsamples=False,
+                             mcmcprogressbar=False):
     '''
     This fits a Mandel & Agol (2002) transit model to a magnitude time series.
     You can fit and fix whatever parameters you want.
@@ -1670,6 +1671,8 @@ def mandelagol_fit_magseries(times, mags, errs,
 
         eps (float): radius of n_walkers-dimensional Gaussian ball used to
         initialize the MCMC.
+
+        mcmcprogressbar (bool): whether to show the emcee progreess bar.
 
     returns:
 
@@ -1797,7 +1800,8 @@ def mandelagol_fit_magseries(times, mags, errs,
                 pool=pool,
                 backend=backend
             )
-            sampler.run_mcmc(starting_positions, n_mcmc_steps, progress=True)
+            sampler.run_mcmc(starting_positions, n_mcmc_steps,
+                             progress=mcmcprogressbar)
 
         if verbose:
             LOGINFO(
@@ -1885,6 +1889,8 @@ def mandelagol_fit_magseries(times, mags, errs,
                                 show_titles=True)
 
         plt.savefig(plotcorner, dpi=300)
+        if verbose:
+            LOGINFO('saved {:s}'.format(plotcorner))
 
     if plotfit and isinstance(plotfit, str):
 
@@ -1902,6 +1908,8 @@ def mandelagol_fit_magseries(times, mags, errs,
         ax.legend(loc='best')
         ax.set(xlabel='time [days]', ylabel='relative flux')
         f.savefig(plotfit, dpi=300, bbox_inches='tight')
+        if verbose:
+            LOGINFO('saved {:s}'.format(plotfit))
 
         returndict['fitplotfile'] = plotfit
 
