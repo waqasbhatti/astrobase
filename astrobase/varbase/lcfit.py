@@ -1102,11 +1102,11 @@ def traptransit_fit_magseries(times, mags, errs,
     # next, check the transitdepth and fix it to the form required
     if magsarefluxes:
         if transitdepth < 0.0:
-            transitparams[2] = -transitdepth[2]
+            transitparams[2] = -transitdepth
 
     else:
         if transitdepth > 0.0:
-            transitparams[2] = -transitdepth[2]
+            transitparams[2] = -transitdepth
 
     # finally, do the fit
     try:
