@@ -7,10 +7,85 @@ astrotess.py - Luke Bouma (luke@astro.princeton.edu) - 09/2018
 Contains various tools for analyzing TESS light curves.
 '''
 
+#############
+## LOGGING ##
+#############
+
+import logging
+from datetime import datetime
+from traceback import format_exc
+
+# setup a logger
+LOGGER = None
+LOGMOD = __name__
+DEBUG = False
+
+def set_logger_parent(parent_name):
+    globals()['LOGGER'] = logging.getLogger('%s.%s' % (parent_name, LOGMOD))
+
+def LOGDEBUG(message):
+    if LOGGER:
+        LOGGER.debug(message)
+    elif DEBUG:
+        print('[%s - DBUG] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGINFO(message):
+    if LOGGER:
+        LOGGER.info(message)
+    else:
+        print('[%s - INFO] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGERROR(message):
+    if LOGGER:
+        LOGGER.error(message)
+    else:
+        print('[%s - ERR!] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGWARNING(message):
+    if LOGGER:
+        LOGGER.warning(message)
+    else:
+        print('[%s - WRN!] %s' % (
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            message)
+        )
+
+def LOGEXCEPTION(message):
+    if LOGGER:
+        LOGGER.exception(message)
+    else:
+        print(
+            '[%s - EXC!] %s\nexception was: %s' % (
+                datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                message, format_exc()
+            )
+        )
+
+
+##################
+## MAIN IMPORTS ##
+##################
+
 import numpy as np
 from astropy.io import fits
 
-def get_time_flux_errs_from_Ames_lightcurve(infile, lctype, cadence_min=2):
+
+########################################
+## READING AMES LLC FITS LCS FOR TESS ##
+########################################
+
+def get_time_flux_errs_from_Ames_lightcurve(infile,
+                                            lctype,
+                                            cadence_min=2):
     '''
     MIT TOI alerts include Ames lightcurve files. This function gets the
     finite, nonzero times, fluxes, and errors with QUALITY == 0.
@@ -24,12 +99,14 @@ def get_time_flux_errs_from_Ames_lightcurve(infile, lctype, cadence_min=2):
 
     kwargs:
         cadence_min (float): expected frame cadence in units of minutes. Raises
-        AssertionError is you use wrong cadence.
+        ValueError if you use the wrong cadence.
 
     returns:
-        (tuple): times, fluxes (in electrons/sec), flux errors.
+        (tuple): times, normalized (to median) fluxes, flux errors.
     '''
-    assert lctype == 'PDCSAP' or lctype == 'SAP'
+
+    if lctype not in ('PDCSAP','SAP'):
+        raise ValueError('unknown light curve type requested: %s' % lctype)
 
     hdulist = fits.open(infile)
 
@@ -37,8 +114,12 @@ def get_time_flux_errs_from_Ames_lightcurve(infile, lctype, cadence_min=2):
     lc_hdr = hdulist[1].header
     lc = hdulist[1].data
 
-    assert 'Ames' in main_hdr['ORIGIN']
-    assert 'LIGHTCURVE' in lc_hdr['EXTNAME']
+    if (('Ames' not in main_hdr['ORIGIN']) or
+        ('LIGHTCURVE' not in lc_hdr['EXTNAME'])):
+        raise ValueError(
+            'could not understand input LC format. '
+            'Is it a TESS TOI LC file?'
+        )
 
     time = lc['TIME']
     flux = lc['{:s}_FLUX'.format(lctype)]
@@ -48,7 +129,7 @@ def get_time_flux_errs_from_Ames_lightcurve(infile, lctype, cadence_min=2):
     # attitude tweaks, safe mode, coarse/earth pointing, argabrithening events,
     # reaction wheel desaturation events, cosmic rays in optimal aperture
     # pixels, manual excludes, discontinuities, stray light from Earth or Moon
-    # in camera FoV. 
+    # in camera FoV.
     # (Note: it's not clear to me what a lot of these mean. Also most of these
     # columns are probably not correctly propagated right now.)
     sel = (lc['QUALITY'] == 0)
@@ -66,8 +147,14 @@ def get_time_flux_errs_from_Ames_lightcurve(infile, lctype, cadence_min=2):
     flux = flux[sel]
     err_flux = err_flux[sel]
 
-    # ensure desired minute cadence
-    assert np.abs(np.nanmedian(np.diff(time))*24*60 - cadence_min) < 1e-2
+    # ensure desired cadence
+    lc_cadence_diff = np.abs(np.nanmedian(np.diff(time))*24*60 - cadence_min)
+
+    if lc_cadence_diff > 1.0e-2:
+        raise ValueError(
+            'the light curve is not at the required cadence specified: %.2f' %
+            cadence_min
+        )
 
     fluxmedian = np.nanmedian(flux)
     flux /= fluxmedian
