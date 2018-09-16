@@ -94,15 +94,14 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
 ## IMPORTS ##
 #############
 
-from time import time as unixtime
 import os
 
 import numpy as np
@@ -128,12 +127,17 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 try:
-    import batman, emcee, corner, h5py
-    assert int(emcee.__version__[0]) >= 3
-    mandel_agol_dependencies = True
-except:
+    import batman
+    import emcee
+    import corner
+
+    if int(emcee.__version__[0]) >= 3:
+        mandel_agol_dependences = True
+    else:
+        mandel_agol_dependencies = False
+
+except Exception as e:
     mandel_agol_dependencies = False
-    pass
 
 from ..lcmath import sigclip_magseries
 
@@ -1445,7 +1449,7 @@ def gaussianeb_fit_magseries(times, mags, errs,
         LOGERROR('eb-fit: least-squared fit to the light curve failed!')
 
         # assemble the returndict
-        returndict =  {
+        returndict = {
             'fittype':'gaussianeb',
             'fitinfo':{
                 'initialparams':ebparams,
@@ -1486,8 +1490,8 @@ def _transit_model(times, t0, per, rp, a, inc, ecc, w, u, limb_dark,
     params = batman.TransitParams()  # object to store transit parameters
     params.t0 = t0                   # time of periastron
     params.per = per                 # orbital period
-    params.rp = rp                   # planet radius (in units of stellar radii)
-    params.a = a                     # semi-major axis (in units of stellar radii)
+    params.rp = rp                   # planet radius (in stellar radii)
+    params.a = a                     # semi-major axis (in stellar radii)
     params.inc = inc                 # orbital inclination (in degrees)
     params.ecc = ecc                 # longitude of periastron (in degrees)
     params.w = w                     # linear limb darkening model.
@@ -1532,33 +1536,34 @@ def _log_likelihood(theta, params, model, t, flux, err_flux, priorbounds):
     '''
 
     u = []
-    for ix, key in enumerate(np.sort(list(priorbounds.keys()))):
-        if key=='rp':
+
+    for ix, key in enumerate(sorted(priorbounds.keys())):
+
+        # FIXME: should the rest of the if's be elif's?
+        if key == 'rp':
             params.rp = theta[ix]
-        if key=='t0':
+        if key == 't0':
             params.t0 = theta[ix]
-        if key=='sma':
+        if key == 'sma':
             params.a = theta[ix]
-        if key=='incl':
+        if key == 'incl':
             params.inc = theta[ix]
-        if key=='per':
+        if key == 'per':
             params.per = theta[ix]
-        if key=='ecc':
+        if key == 'ecc':
             params.per = theta[ix]
-        if key=='omega':
+        if key == 'omega':
             params.w = theta[ix]
-        if key=='u_linear':
+        if key == 'u_linear':
             u.append(theta[ix])
-        if key=='u_quadratic':
+        if key == 'u_quadratic':
             u.append(theta[ix])
             params.u = u
 
     # params.rp, params.u, params.t0 = theta[0], [theta[1],theta[2]], theta[3]
 
     lc = model.light_curve(params)
-
     residuals = flux - lc
-
     log_likelihood = -0.5*(
         np.sum((residuals/err_flux)**2 + np.log(2*np.pi*(err_flux)**2))
     )
@@ -1697,14 +1702,15 @@ def mandelagol_fit_magseries(times, mags, errs,
     '''
 
     from multiprocessing import Pool
+
     if not magsarefluxes:
-        raise NotImplementedError
+        raise NotImplementedError('magsarefluxes is not implemented yet.')
     if not samplesavpath:
-        raise AssertionError(
+        raise ValueError(
             'This function requires that you save the samples somewhere'
         )
     if not mandel_agol_dependencies:
-        raise AssertionError(
+        raise ImportError(
             'This function depends on BATMAN, emcee>3.0, and corner.'
         )
 
@@ -1736,7 +1742,9 @@ def mandelagol_fit_magseries(times, mags, errs,
     init_u = _get_value('u', fitparams, fixedparams)
 
     if not limb_dark == 'quadratic':
-        raise AssertionError
+        raise ValueError(
+            'only quadratic limb-darkening is supported at the moment'
+        )
 
     # initialize the model and calculate the initial model light-curve
     init_params, init_m = _transit_model(stimes, init_epoch, init_period,
@@ -1751,8 +1759,8 @@ def mandelagol_fit_magseries(times, mags, errs,
             theta.append(fitparams[k])
             fitparamnames.append(fitparams[k])
         elif isinstance(fitparams[k], list):
-            if not len(fitparams[k])==2:
-                raise AssertionError('should only be quadratic LD coeffs')
+            if not len(fitparams[k]) == 2:
+                raise ValueError('should only be quadratic LD coeffs')
             theta.append(fitparams[k][0])
             theta.append(fitparams[k][1])
             fitparamnames.append(fitparams[k][0])
@@ -1768,7 +1776,9 @@ def mandelagol_fit_magseries(times, mags, errs,
 
         backend = emcee.backends.HDFBackend(samplesavpath)
         if overwriteexistingsamples:
-            LOGINFO('erased samples previously at {:s}'.format(samplesavpath))
+            LOGWARNING(
+                'erased samples previously at {:s}'.format(samplesavpath)
+            )
             backend.reset(n_walkers, n_dim)
 
         # if this is the first run, then start from a gaussian ball.
@@ -1782,15 +1792,15 @@ def mandelagol_fit_magseries(times, mags, errs,
 
         if verbose and isfirstrun:
             LOGINFO(
-            'start MCMC with {:d} dims, {:d} steps, {:d} walkers,'.format(
-                n_dim, n_mcmc_steps, n_walkers) +
-            ' {:d} threads'.format(nworkers)
+                'start MCMC with {:d} dims, {:d} steps, {:d} walkers,'.format(
+                    n_dim, n_mcmc_steps, n_walkers
+                ) + ' {:d} threads'.format(nworkers)
             )
         elif verbose and not isfirstrun:
             LOGINFO(
                 'continue with {:d} dims, {:d} steps, {:d} walkers, '.format(
-                    n_dim, n_mcmc_steps, n_walkers) +
-                '{:d} threads'.format(nworkers)
+                    n_dim, n_mcmc_steps, n_walkers
+                ) + '{:d} threads'.format(nworkers)
             )
 
         with Pool(nworkers) as pool:
@@ -1806,8 +1816,8 @@ def mandelagol_fit_magseries(times, mags, errs,
         if verbose:
             LOGINFO(
                 'ended MCMC run with {:d} steps, {:d} walkers, '.format(
-                    n_mcmc_steps, n_walkers) +
-                '{:d} threads'.format(nworkers)
+                    n_mcmc_steps, n_walkers
+                ) + '{:d} threads'.format(nworkers)
             )
 
     reader = emcee.backends.HDFBackend(samplesavpath)
@@ -1818,11 +1828,15 @@ def mandelagol_fit_magseries(times, mags, errs,
     log_prob_samples = reader.get_log_prob(discard=n_to_discard, flat=True)
     log_prior_samples = reader.get_blobs(discard=n_to_discard, flat=True)
 
-    #Get best-fit parameters and their 1-sigma error bars
-    fit_statistics = list(map(
-            lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
-            list(zip( *np.percentile(samples, [16, 50, 84], axis=0)))
-    ))
+    # Get best-fit parameters and their 1-sigma error bars
+    # FIXME: rewrite this as a simpler list comprehension?
+    # FIXME: why is the zip transpose required?
+    # fit_statistics = [(v[1], v[2] - v[1], v[1] - v[0]) for v in
+    #                   (np.percentile(samples, (16, 50, 84), axis=0)).T]
+    fit_statistics = list(
+        map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
+            list(zip( *np.percentile(samples, [16, 50, 84], axis=0))))
+    )
 
     medianparams, std_perrs, std_merrs = {}, {}, {}
     for ix, k in enumerate(np.sort(list(priorbounds.keys()))):
@@ -1853,7 +1867,7 @@ def mandelagol_fit_magseries(times, mags, errs,
     fepoch = t0
 
     # assemble the return dictionary
-    returndict =  {
+    returndict = {
         'fittype':'mandelagoltransit',
         'fitinfo':{
             'initialparams':fitparams,
@@ -1881,7 +1895,8 @@ def mandelagol_fit_magseries(times, mags, errs,
                 samples,
                 labels=trueparamkeys,
                 truths=trueparams,
-                quantiles=[0.16, 0.5, 0.84], show_titles=True)
+                quantiles=[0.16, 0.5, 0.84], show_titles=True
+            )
         else:
             fig = corner.corner(samples,
                                 labels=fitparamnames,
@@ -1900,11 +1915,12 @@ def mandelagol_fit_magseries(times, mags, errs,
         ax.scatter(stimes, init_flux, c='r', alpha=1,
                    s=3.5, zorder=2, rasterized=True, linewidths=0,
                    label='initial guess')
-        ax.scatter(stimes, fitmags, c='b', alpha=1,
-                   s=1.5, zorder=3, rasterized=True, linewidths=0,
-                   label='fit {:d} dims'.format(
-                       len(fitparamnames))
-                  )
+        ax.scatter(
+            stimes, fitmags, c='b', alpha=1,
+            s=1.5, zorder=3, rasterized=True, linewidths=0,
+            label='fit {:d} dims'.format(
+                len(fitparamnames))
+        )
         ax.legend(loc='best')
         ax.set(xlabel='time [days]', ylabel='relative flux')
         f.savefig(plotfit, dpi=300, bbox_inches='tight')
