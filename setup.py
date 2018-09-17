@@ -59,13 +59,13 @@ INSTALL_REQUIRES = [
 
 EXTRAS_REQUIRE = {
     'all':[
-         # for lcdb
+        # for lcdb
         'psycopg2-binary',
         # for lcfit.mandelagol_fit_magseries
-        'emcee>=3.0',
+        'emcee==3.0rc1',
         'h5py',
-        'batman',
-        'corner'
+        'batman-package',
+        'corner',
     ]
 }
 
