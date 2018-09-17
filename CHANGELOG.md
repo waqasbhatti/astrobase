@@ -1,3 +1,36 @@
+# v0.3.19
+
+## New stuff
+
+- `varbase.lcfit`: now includes a `mandelagol_fit_magseries` function to fit a
+  Mandel-Agol transit model. Implemented by @lgbouma. Requires `emcee`, `h5py`,
+  `corner` and `BATMAN`.
+- Added `astrotess.py` by @lgbouma containing basic TESS TOI light curve reader
+  functions.
+- Added `services/tic.py` by @lgbouma containing a basic TESS Input Catalog at
+  MAST API client.
+- `lcproc.parallel_cp`: can now slice task lists using start and end indices.
+
+
+## Changes
+
+- `services/skyview`: added configurable retry behavior if the downloaded FITS
+  file is corrupted.
+- `checkplot`: the `fast_mode` kwarg now disables SIMBAD lookup because the
+  service is unreliable.
+- `hatsurveys/hatlc`: added a quiet kwarg for the normalization functions.
+
+
+## Fixes
+
+- `lcproc.add_cpinfo_to_lclist`: fix typo `abs_gaiamag` -> `gaia_absmag`; these
+  values will now be extracted correctly from checkplots.
+- `periodbase.kbls.bls_serial/parallel_pfind`: also returns the `magsarefluxes`
+  kwarg from the input.
+- `periodbase.kbls.bls_stats_singleperiod` and `bls_snr`: fix transit depth sign
+  if `magsarefluxes = True`.
+
+
 # v0.3.18
 
 ## New stuff

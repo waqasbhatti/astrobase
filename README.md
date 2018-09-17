@@ -178,9 +178,9 @@ This package requires the following other packages:
 
 For some extra functionality:
 
-- for `astrobase.lcdb` to work, you'll also need `psycopg2-binary`
-- for `varbase.lcfit.mandelagol_fit_magseries`, you'll need `batman`, `emcee`,
-  `corner`, and `h5py`.
+- for `astrobase.lcdb` to work, you'll also need `psycopg2-binary`.
+- for `varbase.lcfit.mandelagol_fit_magseries`, you'll need `batman-package`,
+  `emcee`, `corner`, and `h5py`.
 
 ## Installing with pip
 
