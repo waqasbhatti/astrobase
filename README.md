@@ -178,7 +178,9 @@ This package requires the following other packages:
 
 For some extra functionality:
 
-- for `astrobase.lcdb` to work, you'll also need psycopg2
+- for `astrobase.lcdb` to work, you'll also need `psycopg2-binary`
+- for `varbase.lcfit.mandelagol_fit_magseries`, you'll need `batman`, `emcee`,
+  `corner`, and `h5py`.
 
 ## Installing with pip
 
@@ -218,7 +220,7 @@ Once that's done, install astrobase.
 
 ### Other installation methods
 
-Or if you want to install optional dependencies as well:
+Or if you want to install the optional dependencies as well:
 
 ```bash
 (venv)$ pip install astrobase[all]
