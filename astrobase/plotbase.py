@@ -445,9 +445,7 @@ def plot_phased_mag_series(times,
                            plotphaselim=[-0.8,0.8],
                            fitknotfrac=0.01,
                            yrange=None,
-                           plotdpi=100,
-                           linewidth=1.0,
-                           elinewidth=1.0):
+                           plotdpi=100):
     '''This plots a phased magnitude time series using the period provided.
 
     If epoch is None, uses the min(times) as the epoch.
@@ -470,11 +468,7 @@ def plot_phased_mag_series(times,
     - a StringIO/BytesIO object to where the plot will be written
     - a matplotlib.axes.Axes object to where the plot will be written
 
-    elinewidth is the width of the error bar lines. (0 if you do not want them
-    overplotted).
-
-    linewidth is the width of the lines. (0 if you do not want them
-    overplotted).
+    If errs are None, does not show error bars (otherwise, it does).
     '''
 
     # sigclip the magnitude timeseries
@@ -584,17 +578,15 @@ def plot_phased_mag_series(times,
                     markersize=3.0,
                     markeredgewidth=0.0,
                     ecolor='#B2BEB5',
-                    capsize=0,
-                    linewidth=linewidth,
-                    elinewidth=elinewidth)
+                    capsize=0)
         ax.errorbar(binplotphase, binplotmags, fmt='bo', yerr=binploterrs,
                     markersize=5.0, markeredgewidth=0.0, ecolor='#B2BEB5',
-                    capsize=0, linewidth=linewidth, elinewidth=elinewidth)
+                    capsize=0)
 
     else:
         ax.errorbar(plotphase, plotmags, fmt='ko', yerr=ploterrs,
                     markersize=3.0, markeredgewidth=0.0, ecolor='#B2BEB5',
-                    capsize=0, linewidth=linewidth, elinewidth=elinewidth)
+                    capsize=0)
 
 
 
