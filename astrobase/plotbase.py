@@ -468,6 +468,7 @@ def plot_phased_mag_series(times,
     - a StringIO/BytesIO object to where the plot will be written
     - a matplotlib.axes.Axes object to where the plot will be written
 
+    If errs are None, does not show error bars (otherwise, it does).
     '''
 
     # sigclip the magnitude timeseries
