@@ -428,6 +428,37 @@ def plot_mag_series(times,
 #########################
 ## PHASED LIGHT CURVES ##
 #########################
+def plot_phased_magseries(times,
+                          mags,
+                          period,
+                          magsarefluxes=False,
+                          errs=None,
+                          normto='globalmedian',
+                          normmingap=4.0,
+                          epoch='min',
+                          outfile=None,
+                          sigclip=30.0,
+                          phasewrap=True,
+                          phasesort=True,
+                          phasebin=None,
+                          plotphaselim=[-0.8,0.8],
+                          fitknotfrac=0.01,
+                          yrange=None,
+                          plotdpi=100,
+                          modelmags=None,
+                          modeltimes=None,
+                          modelerrs=None):
+    '''
+    wraps plot_phased_mag_series for consistent API with lcfit functions
+    '''
+    plot_phased_mag_series(times, mags, period, magsarefluxes=magsarefluxes,
+                           errs=errs, normto=normto, normmingap=normmingap,
+                           epoch=epoch, outfile=outfile, sigclip=sigclip,
+                           phasewrap=phasewrap, phasesort=phasesort,
+                           phasebin=phasebin, plotphaselim=plotphaselim,
+                           fitknotfrac=fitknotfrac, yrange=yrange,
+                           plotdpi=plotdpi, modelmags=modelmags,
+                           modeltimes=modeltimes, modelerrs=modelerrs)
 
 def plot_phased_mag_series(times,
                            mags,
@@ -619,7 +650,7 @@ def plot_phased_mag_series(times,
     if (isinstance(modelplotphase, np.ndarray) and
     isinstance(modelplotmags, np.ndarray)):
 
-        ax.plot(modelplotphase, modelplotmags, zorder=5, linewidth=1,
+        ax.plot(modelplotphase, modelplotmags, zorder=5, linewidth=2,
                 alpha=0.9, color='#181c19')
 
     # make a grid
