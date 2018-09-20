@@ -132,7 +132,7 @@ try:
     import corner
 
     if int(emcee.__version__[0]) >= 3:
-        mandel_agol_dependences = True
+        mandel_agol_dependencies = True
     else:
         mandel_agol_dependencies = False
 
