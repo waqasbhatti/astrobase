@@ -1871,6 +1871,7 @@ def mandelagol_fit_magseries(times, mags, errs,
         'fittype':'mandelagoltransit',
         'fitinfo':{
             'initialparams':fitparams,
+            'initialmags':init_flux,
             'fixedparams':fixedparams,
             'finalparams':medianparams,
             'finalparamerrs':stderrs,
