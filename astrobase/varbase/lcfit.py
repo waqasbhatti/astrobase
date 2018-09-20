@@ -132,7 +132,7 @@ try:
     import corner
 
     if int(emcee.__version__[0]) >= 3:
-        mandel_agol_dependences = True
+        mandel_agol_dependencies = True
     else:
         mandel_agol_dependencies = False
 
@@ -1711,7 +1711,7 @@ def mandelagol_fit_magseries(times, mags, errs,
         )
     if not mandel_agol_dependencies:
         raise ImportError(
-            'This function depends on BATMAN, emcee>3.0, and corner.'
+            'This function depends on BATMAN, emcee>3.0, corner, and h5py.'
         )
 
     # sigma clip and get rid of zero errs
@@ -1911,7 +1911,7 @@ def mandelagol_fit_magseries(times, mags, errs,
     if plotfit and isinstance(plotfit, str):
 
         f, ax = plt.subplots(figsize=(8,6))
-        ax.scatter(stimes, smags, c='k', alpha=0.5, label='PDCSAP/medianfilt',
+        ax.scatter(stimes, smags, c='k', alpha=0.5, label='observed',
                    zorder=1, s=1.5, rasterized=True, linewidths=0)
         ax.scatter(stimes, init_flux, c='r', alpha=1,
                    s=3.5, zorder=2, rasterized=True, linewidths=0,
