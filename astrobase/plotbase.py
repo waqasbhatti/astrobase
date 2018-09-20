@@ -428,6 +428,37 @@ def plot_mag_series(times,
 #########################
 ## PHASED LIGHT CURVES ##
 #########################
+def plot_phased_magseries(times,
+                          mags,
+                          period,
+                          magsarefluxes=False,
+                          errs=None,
+                          normto='globalmedian',
+                          normmingap=4.0,
+                          epoch='min',
+                          outfile=None,
+                          sigclip=30.0,
+                          phasewrap=True,
+                          phasesort=True,
+                          phasebin=None,
+                          plotphaselim=[-0.8,0.8],
+                          fitknotfrac=0.01,
+                          yrange=None,
+                          plotdpi=100,
+                          modelmags=None,
+                          modeltimes=None,
+                          modelerrs=None):
+    '''
+    wraps plot_phased_mag_series for consistent API with lcfit functions
+    '''
+    plot_phased_mag_series(times, mags, period, magsarefluxes=magsarefluxes,
+                           errs=errs, normto=normto, normmingap=normmingap,
+                           epoch=epoch, outfile=outfile, sigclip=sigclip,
+                           phasewrap=phasewrap, phasesort=phasesort,
+                           phasebin=phasebin, plotphaselim=plotphaselim,
+                           fitknotfrac=fitknotfrac, yrange=yrange,
+                           plotdpi=plotdpi, modelmags=modelmags,
+                           modeltimes=modeltimes, modelerrs=modelerrs)
 
 def plot_phased_mag_series(times,
                            mags,
@@ -445,30 +476,40 @@ def plot_phased_mag_series(times,
                            plotphaselim=[-0.8,0.8],
                            fitknotfrac=0.01,
                            yrange=None,
-                           plotdpi=100):
+                           plotdpi=100,
+                           modelmags=None,
+                           modeltimes=None,
+                           modelerrs=None):
     '''This plots a phased magnitude time series using the period provided.
 
-    If epoch is None, uses the min(times) as the epoch.
+    Kwargs:
 
-    If epoch is a string 'min', then fits a cubic spline to the phased light
-    curve using min(times), finds the magnitude minimum from the fitted light
-    curve, then uses the corresponding time value as the epoch.
+        errs (np.ndarray):
+            if None, does not show error bars (otherwise, it does).
 
-    If epoch is a float, then uses that directly to phase the light curve and as
-    the epoch of the phased mag series plot.
+        epoch (float/None/str):
+            - if None, uses the min(times) as the epoch.
+            - if epoch is the string 'min', then fits a cubic spline to the
+            phased light curve using min(times), finds the magnitude minimum
+            from the fitted light curve, then uses the corresponding time value
+            as the epoch.
+            - if epoch is a float, then uses that directly to phase the light
+            curve and as the epoch of the phased mag series plot.
 
-    If outfile is none, then plots to matplotlib interactive window. If outfile
-    is a string denoting a filename, uses that to write a png/eps/pdf figure.
+        modelmags/modeltimes/modelerrs (np.ndarray/None):
+            - if None, nothing happens.
+            - if np.ndarray, also overplots a model transit to the phased
+            lightcurve (e.g., fit using lcfit.mandelagol_fit_magseries).
 
-    plotdpi sets the DPI for PNG plots.
+        outfile (float/None/str):
 
-    outfile is one of:
+            - a string filename for the file where the plot will be written
+            - a StringIO/BytesIO object to where the plot will be written
+            - a matplotlib.axes.Axes object to where the plot will be written
+            - if none, plots to matplotlib interactive window.
 
-    - a string filename for the file where the plot will be written
-    - a StringIO/BytesIO object to where the plot will be written
-    - a matplotlib.axes.Axes object to where the plot will be written
+        plotdpi (int): sets the DPI for PNG plots.
 
-    If errs are None, does not show error bars (otherwise, it does).
     '''
 
     # sigclip the magnitude timeseries
@@ -485,6 +526,14 @@ def plot_phased_mag_series(times,
                                             normto=normto,
                                             magsarefluxes=magsarefluxes,
                                             mingap=normmingap)
+
+        if ( isinstance(modelmags,np.ndarray) and
+        isinstance(modeltimes,np.ndarray) ):
+
+            stimes, smags = normalize_magseries(modeltimes, modelmags,
+                                                normto=normto,
+                                                magsarefluxes=magsarefluxes,
+                                                mingap=normmingap)
 
     # figure out the epoch, if it's None, use the min of the time
     if epoch is None:
@@ -506,16 +555,11 @@ def plot_phased_mag_series(times,
             epoch = npmin(stimes)
 
 
-    # now phase (and optionally, phase bin the light curve)
+    # now phase the data light curve (and optionally, phase bin the light curve)
     if errs is not None:
 
-        # phase the magseries
-        phasedlc = phase_magseries_with_errs(stimes,
-                                             smags,
-                                             serrs,
-                                             period,
-                                             epoch,
-                                             wrap=phasewrap,
+        phasedlc = phase_magseries_with_errs(stimes, smags, serrs, period,
+                                             epoch, wrap=phasewrap,
                                              sort=phasesort)
         plotphase = phasedlc['phase']
         plotmags = phasedlc['mags']
@@ -524,8 +568,7 @@ def plot_phased_mag_series(times,
         # if we're supposed to bin the phases, do so
         if phasebin:
 
-            binphasedlc = phase_bin_magseries_with_errs(plotphase,
-                                                        plotmags,
+            binphasedlc = phase_bin_magseries_with_errs(plotphase, plotmags,
                                                         ploterrs,
                                                         binsize=phasebin)
             binplotphase = binphasedlc['binnedphases']
@@ -534,13 +577,8 @@ def plot_phased_mag_series(times,
 
     else:
 
-        # phase the magseries
-        phasedlc = phase_magseries(stimes,
-                                   smags,
-                                   period,
-                                   epoch,
-                                   wrap=phasewrap,
-                                   sort=phasesort)
+        phasedlc = phase_magseries(stimes, smags, period, epoch,
+                                   wrap=phasewrap, sort=phasesort)
         plotphase = phasedlc['phase']
         plotmags = phasedlc['mags']
         ploterrs = None
@@ -555,18 +593,39 @@ def plot_phased_mag_series(times,
             binplotmags = binphasedlc['binnedmags']
             binploterrs = None
 
+    # phase the model light curve
+    modelplotphase, modelplotmags = None, None
+    if ( isinstance(modelerrs,np.ndarray) and isinstance(modeltimes,np.ndarray)
+    and isinstance(modelmags,np.ndarray) ):
+
+        modelphasedlc = phase_magseries_with_errs(modeltimes, modelmags,
+                                                  modelerrs, period, epoch,
+                                                  wrap=phasewrap,
+                                                  sort=phasesort)
+        modelplotphase = modelphasedlc['phase']
+        modelplotmags = modelphasedlc['mags']
+        modelploterrs = modelphasedlc['errs']
+
+        # note that we never will phase-bin the model (no point).
+
+    elif ( not isinstance(modelerrs,np.ndarray) and
+    isinstance(modeltimes,np.ndarray) and
+    isinstance(modelmags,np.ndarray) ):
+
+        modelphasedlc = phase_magseries(modeltimes, modelmags, period, epoch,
+                                        wrap=phasewrap, sort=phasesort)
+        modelplotphase = modelphasedlc['phase']
+        modelplotmags = modelphasedlc['mags']
+        modelploterrs = None
 
     # finally, make the plots
 
     # check if the outfile is actually an Axes object
     if isinstance(outfile, matplotlib.axes.Axes):
-
         ax = outfile
 
     # otherwise, it's just a normal file or StringIO/BytesIO
     else:
-
-        # initialize the plot
         fig = plt.figure()
         fig.set_size_inches(7.5,4.8)
         ax = plt.gca()
@@ -588,7 +647,11 @@ def plot_phased_mag_series(times,
                     markersize=3.0, markeredgewidth=0.0, ecolor='#B2BEB5',
                     capsize=0)
 
+    if (isinstance(modelplotphase, np.ndarray) and
+    isinstance(modelplotmags, np.ndarray)):
 
+        ax.plot(modelplotphase, modelplotmags, zorder=5, linewidth=2,
+                alpha=0.9, color='#181c19')
 
     # make a grid
     ax.grid(color='#a9a9a9',
@@ -784,8 +847,7 @@ def fits_finder_chart(
                          'markeredgecolor':'red'},
         overlay_zoomcontain=False,
         grid=False,
-        gridcolor='k',
-):
+        gridcolor='k'):
     '''This makes a finder chart from fitsfile with an optional object position
     overlay.
 
