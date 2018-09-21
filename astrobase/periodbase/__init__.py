@@ -366,6 +366,10 @@ def get_snr_of_dip(times, mags, modeltimes, modelmags, magsarefluxes=False,
     Kwargs:
 
         magsarefluxes (bool): currently forced to be true.
+
+    Returns:
+
+        snr, transit depth, and noise of residual lightcurve (tuple)
     '''
 
     if magsarefluxes:
@@ -413,7 +417,7 @@ def get_snr_of_dip(times, mags, modeltimes, modelmags, magsarefluxes=False,
                 '\n\t SNR: {:.2e}'.format(snr)
         )
 
-    return snr
+    return snr, transitdepth, subtractedrms
 
 
 
