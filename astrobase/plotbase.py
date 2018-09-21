@@ -83,7 +83,7 @@ import sys
 
 try:
     import cPickle as pickle
-except:
+except Exception as e:
     import pickle
 
 import numpy as np
@@ -102,23 +102,15 @@ import matplotlib.pyplot as plt
 # for convolving DSS stamps to simulate seeing effects
 import astropy.convolution as aconv
 
-try:
-    from astropy.io import fits as pyfits
-except:
-    import pyfits
+from astropy.io import fits as pyfits
 from astropy.wcs import WCS
 from astropy.visualization import MinMaxInterval, ZScaleInterval, \
     ImageNormalize, LinearStretch
 
 try:
-    from urllib.parse import urljoin
-except:
-    from urlparse import urljoin
-
-try:
     import cStringIO
     from cStringIO import StringIO as strio
-except:
+except Exception as e:
     from io import BytesIO as strio
 
 
@@ -424,10 +416,41 @@ def plot_mag_series(times,
         return os.path.abspath(outfile)
 
 
+def plot_magseries(times,
+                   mags,
+                   magsarefluxes=False,
+                   errs=None,
+                   out=None,
+                   sigclip=30.0,
+                   normto='globalmedian',
+                   normmingap=4.0,
+                   timebin=None,
+                   yrange=None,
+                   segmentmingap=100.0,
+                   plotdpi=100):
+    '''This wraps plot_mag_series.
+
+    '''
+
+    return plot_mag_series(times,
+                           mags,
+                           magsarefluxes=magsarefluxes,
+                           errs=errs,
+                           out=out,
+                           sigclip=sigclip,
+                           normto=normto,
+                           normmingap=normmingap,
+                           timebin=timebin,
+                           yrange=yrange,
+                           segmentmingap=100.0,
+                           plotdpi=plotdpi)
+
+
 
 #########################
 ## PHASED LIGHT CURVES ##
 #########################
+
 def plot_phased_magseries(times,
                           mags,
                           period,
@@ -441,24 +464,41 @@ def plot_phased_magseries(times,
                           phasewrap=True,
                           phasesort=True,
                           phasebin=None,
-                          plotphaselim=[-0.8,0.8],
+                          plotphaselim=(-0.8,0.8),
                           fitknotfrac=0.01,
                           yrange=None,
                           plotdpi=100,
                           modelmags=None,
                           modeltimes=None,
                           modelerrs=None):
+    '''This wraps plot_phased_mag_series for consistent API with lcfit functions.
+
     '''
-    wraps plot_phased_mag_series for consistent API with lcfit functions
-    '''
-    plot_phased_mag_series(times, mags, period, magsarefluxes=magsarefluxes,
-                           errs=errs, normto=normto, normmingap=normmingap,
-                           epoch=epoch, outfile=outfile, sigclip=sigclip,
-                           phasewrap=phasewrap, phasesort=phasesort,
-                           phasebin=phasebin, plotphaselim=plotphaselim,
-                           fitknotfrac=fitknotfrac, yrange=yrange,
-                           plotdpi=plotdpi, modelmags=modelmags,
-                           modeltimes=modeltimes, modelerrs=modelerrs)
+
+    return plot_phased_mag_series(
+        times,
+        mags,
+        period,
+        magsarefluxes=magsarefluxes,
+        errs=errs,
+        normto=normto,
+        normmingap=normmingap,
+        epoch=epoch,
+        outfile=outfile,
+        sigclip=sigclip,
+        phasewrap=phasewrap,
+        phasesort=phasesort,
+        phasebin=phasebin,
+        plotphaselim=plotphaselim,
+        fitknotfrac=fitknotfrac,
+        yrange=yrange,
+        plotdpi=plotdpi,
+        modelmags=modelmags,
+        modeltimes=modeltimes,
+        modelerrs=modelerrs
+    )
+
+
 
 def plot_phased_mag_series(times,
                            mags,
@@ -473,7 +513,7 @@ def plot_phased_mag_series(times,
                            phasewrap=True,
                            phasesort=True,
                            phasebin=None,
-                           plotphaselim=[-0.8,0.8],
+                           plotphaselim=(-0.8,0.8),
                            fitknotfrac=0.01,
                            yrange=None,
                            plotdpi=100,
@@ -482,33 +522,46 @@ def plot_phased_mag_series(times,
                            modelerrs=None):
     '''This plots a phased magnitude time series using the period provided.
 
-    Kwargs:
+    Args
+    ----
 
-        errs (np.ndarray):
-            if None, does not show error bars (otherwise, it does).
+    times, mags:
+            ndarrays of time and magnitude time series values (flux
+            values if magsarefluxes = True)
 
-        epoch (float/None/str):
-            - if None, uses the min(times) as the epoch.
-            - if epoch is the string 'min', then fits a cubic spline to the
-            phased light curve using min(times), finds the magnitude minimum
-            from the fitted light curve, then uses the corresponding time value
-            as the epoch.
-            - if epoch is a float, then uses that directly to phase the light
-            curve and as the epoch of the phased mag series plot.
+    period:
+        the period to use to phase fold the time series.
 
-        modelmags/modeltimes/modelerrs (np.ndarray/None):
-            - if None, nothing happens.
-            - if np.ndarray, also overplots a model transit to the phased
-            lightcurve (e.g., fit using lcfit.mandelagol_fit_magseries).
+    errs (np.ndarray):
+        if None, does not show error bars (otherwise, it does).
 
-        outfile (float/None/str):
+    epoch (float/None/str):
+        - if None, uses the min(times) as the epoch.
+        - if epoch is the string 'min', then fits a cubic spline to the
+          phased light curve using min(times), finds the magnitude minimum
+          from the fitted light curve, then uses the corresponding time value
+          as the epoch.
+        - if epoch is a float, then uses that directly to phase the light
+          curve and as the epoch of the phased mag series plot.
 
-            - a string filename for the file where the plot will be written
-            - a StringIO/BytesIO object to where the plot will be written
-            - a matplotlib.axes.Axes object to where the plot will be written
-            - if none, plots to matplotlib interactive window.
+    modelmags, modeltimes, modelerrs (np.ndarray/None):
+        - if None, nothing happens.
+        - if np.ndarray, also overplots a model transit to the phased
+          lightcurve (e.g., fit using lcfit.mandelagol_fit_magseries).
 
-        plotdpi (int): sets the DPI for PNG plots.
+    outfile (float/None/str):
+        - a string filename for the file where the plot will be written
+        - a StringIO/BytesIO object to where the plot will be written
+        - a matplotlib.axes.Axes object to where the plot will be written
+        - if None, plots to magseries-phased-plot.png in current dir
+
+    plotdpi (int): sets the DPI for PNG plots.
+
+
+    Returns
+    -------
+
+    as specified in the outfile kwarg.
 
     '''
 
@@ -527,8 +580,8 @@ def plot_phased_mag_series(times,
                                             magsarefluxes=magsarefluxes,
                                             mingap=normmingap)
 
-        if ( isinstance(modelmags,np.ndarray) and
-        isinstance(modeltimes,np.ndarray) ):
+        if ( isinstance(modelmags, np.ndarray) and
+             isinstance(modeltimes, np.ndarray) ):
 
             stimes, smags = normalize_magseries(modeltimes, modelmags,
                                                 normto=normto,
@@ -542,7 +595,7 @@ def plot_phased_mag_series(times,
     # if the epoch is 'min', then fit a spline to the light curve phased
     # using the min of the time, find the fit mag minimum and use the time for
     # that as the epoch
-    elif isinstance(epoch,str) and epoch == 'min':
+    elif isinstance(epoch, str) and epoch == 'min':
 
         try:
             spfit = spline_fit_magseries(stimes, smags, serrs, period,
@@ -594,9 +647,11 @@ def plot_phased_mag_series(times,
             binploterrs = None
 
     # phase the model light curve
-    modelplotphase, modelplotmags = None, None
-    if ( isinstance(modelerrs,np.ndarray) and isinstance(modeltimes,np.ndarray)
-    and isinstance(modelmags,np.ndarray) ):
+    modelplotphase, modelplotmags, modelploterrs = None, None, None
+
+    if ( isinstance(modelerrs,np.ndarray) and
+         isinstance(modeltimes,np.ndarray) and
+         isinstance(modelmags,np.ndarray) ):
 
         modelphasedlc = phase_magseries_with_errs(modeltimes, modelmags,
                                                   modelerrs, period, epoch,
@@ -606,17 +661,15 @@ def plot_phased_mag_series(times,
         modelplotmags = modelphasedlc['mags']
         modelploterrs = modelphasedlc['errs']
 
-        # note that we never will phase-bin the model (no point).
-
+    # note that we never will phase-bin the model (no point).
     elif ( not isinstance(modelerrs,np.ndarray) and
-    isinstance(modeltimes,np.ndarray) and
-    isinstance(modelmags,np.ndarray) ):
+           isinstance(modeltimes,np.ndarray) and
+           isinstance(modelmags,np.ndarray) ):
 
         modelphasedlc = phase_magseries(modeltimes, modelmags, period, epoch,
                                         wrap=phasewrap, sort=phasesort)
         modelplotphase = modelphasedlc['phase']
         modelplotmags = modelphasedlc['mags']
-        modelploterrs = None
 
     # finally, make the plots
 
@@ -648,7 +701,7 @@ def plot_phased_mag_series(times,
                     capsize=0)
 
     if (isinstance(modelplotphase, np.ndarray) and
-    isinstance(modelplotmags, np.ndarray)):
+        isinstance(modelplotmags, np.ndarray)):
 
         ax.plot(modelplotphase, modelplotmags, zorder=5, linewidth=2,
                 alpha=0.9, color='#181c19')
@@ -808,14 +861,17 @@ def skyview_stamp(ra, decl,
             LOGINFO('fetched stamp successfully for (%.3f, %.3f)'
                     % (ra, decl))
 
+
         if convolvewith:
+
             convolved = aconv.convolve(frame, convolvewith)
             if savewcsheader:
-                return frame, header
+                return convolved, header
             else:
-                return frame
+                return convolved
 
         else:
+
             if savewcsheader:
                 return frame, header
             else:
@@ -847,7 +903,8 @@ def fits_finder_chart(
                          'markeredgecolor':'red'},
         overlay_zoomcontain=False,
         grid=False,
-        gridcolor='k'):
+        gridcolor='k'
+):
     '''This makes a finder chart from fitsfile with an optional object position
     overlay.
 
