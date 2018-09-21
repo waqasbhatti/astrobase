@@ -330,6 +330,93 @@ def bootstrap_falsealarmprob(lspdict,
         return None
 
 
+def get_snr_of_dip(times, mags, modeltimes, modelmags, magsarefluxes=False,
+                   verbose=True):
+    '''
+    Calculate the total SNR of a transit assuming gaussian uncertainties.
+    `modelmags` gets interpolated onto the cadence of `mags`. The noise is
+    calculated as the 1-sigma std deviation of the residual (see below).
+
+    Following Carter et al. 2009,
+
+        Q = sqrt( Γ T ) * δ / σ
+
+    for Q the total SNR of the transit in the r->0 limit, where
+    r = Rp/Rstar,
+    T = transit duration,
+    δ = transit depth,
+    σ = RMS of the lightcurve in transit. For simplicity, we assume this is the
+        same as the RMS of the residual=mags-modelmags.
+    Γ = sampling rate
+
+    Thus Γ * T is roughly the number of points obtained during transit.
+    (This doesn't correctly account for the SNR during ingress/egress, but this
+    is a second-order correction).
+
+    Note this is the same total SNR as described by e.g., Kovacs et al. 2002,
+    their Equation 11.
+
+    Args:
+
+        mags (np.ndarray): data fluxes (magnitudes not yet implemented).
+
+        modelmags (np.ndarray): model fluxes. Assumed to be a BLS model, or a
+        trapezoidal model, or a Mandel-Agol model.
+
+    Kwargs:
+
+        magsarefluxes (bool): currently forced to be true.
+    '''
+
+    if magsarefluxes:
+        if not np.nanmedian(modelmags) == 1:
+            raise AssertionError('snr calculation assumes modelmags are '
+                                 'median-normalized')
+    else:
+        raise NotImplementedError(
+            'need to implement a method for identifying in-transit points when'
+            'mags are mags, and not fluxes'
+        )
+
+    # calculate transit depth from whatever model magnitudes are passed.
+    transitdepth = np.abs(np.max(modelmags) - np.min(modelmags))
+
+    # generally, mags (data) and modelmags are at different cadence.
+    # interpolate modelmags onto the cadence of mags.
+    if not len(mags) == len(modelmags):
+        from scipy.interpolate import interp1d
+
+        fn = interp1d(modeltimes, modelmags, kind='cubic', bounds_error=True,
+                      fill_value=np.nan)
+
+        modelmags = fn(times)
+
+        if verbose:
+            LOGINFO('interpolated model timeseries onto the data timeseries')
+
+    subtractedmags = mags - modelmags
+
+    subtractedrms = npstd(subtractedmags)
+
+    def _get_npoints_in_transit(modelmags):
+        # assumes median-normalized fluxes are input
+        return len(modelmags[(modelmags != 1)])
+
+    npoints_in_transit = _get_npoints_in_transit(modelmags)
+
+    snr = npsqrt(npoints_in_transit) * transitdepth/subtractedrms
+
+    if verbose:
+        LOGINFO('\npoints in transit: {:d}'.format(npoints_in_transit)+
+                '\ndepth: {:.2e}'.format(transitdepth)+
+                '\nrms in residual: {:.2e}'.format(subtractedrms)+
+                '\n\t SNR: {:.2e}'.format(snr)
+        )
+
+    return snr
+
+
+
 ############################################
 ## FUNCTIONS FOR COMPARING PERIOD-FINDERS ##
 ############################################

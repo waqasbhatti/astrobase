@@ -815,10 +815,8 @@ def bls_snr(blsdict,
     '''Calculates the signal to noise ratio for each best peak in the BLS
     periodogram.
 
-    This calculates two values of SNR:
-
     SNR = transit model depth / RMS of light curve with transit model subtracted
-    altSNR = transit model depth / RMS of light curve inside transit
+          * sqrt(number of points in transit)
 
     blsdict is the output of either bls_parallel_pfind or bls_serial_pfind.
 
@@ -1038,17 +1036,14 @@ def bls_snr(blsdict,
                     blsmodel[transitindices] - thistransdepth
                 )
 
-            # this is the residual of mags - model
+            # see __init__/get_snr_of_dip docstring for description of transit SNR
+            # equation, which is what we use for `thissnr`.
             subtractedmags = tmags - blsmodel
-
-            # calculate the rms of this residual
             subtractedrms = npstd(subtractedmags)
-
-            # the SNR is the transit depth divided by the rms of the residual
-            thissnr = npabs(thistransdepth/subtractedrms)
-
-            # alt SNR = expected transit depth / rms of timeseries in transit
-            altsnr = npabs(thistransdepth/npstd(tmags[transitindices]))
+            npts_in_transit = len(tmags[transitindices])
+            thissnr = (
+                npsqrt(npts_in_transit) * npabs(thistransdepth/subtractedrms)
+            )
 
             # tell user about stuff if verbose = True
             if verbose:
@@ -1066,14 +1061,13 @@ def bls_snr(blsdict,
 
                 LOGINFO('transit depth (delta): %.5f, '
                         'frac transit length (q): %.3f, '
-                        ' SNR: %.3f, altSNR: %.3f' %
+                        ' SNR: %.3f' %
                         (thistransdepth,
                          thistransduration,
-                         thissnr, altsnr))
+                         thissnr))
 
             # update the lists with results from this peak
             nbestsnrs.append(thissnr)
-            nbestasnrs.append(altsnr)
             transitdepth.append(thistransdepth)
             transitduration.append(thistransduration)
             transingressbin.append(thistransingressbin)
@@ -1110,7 +1104,6 @@ def bls_snr(blsdict,
             'period':refitperiods,
             'epoch':refitepochs,
             'snr':nbestsnrs,
-            'altsnr':nbestasnrs,
             'whitenoise':whitenoise,
             'rednoise':rednoise,
             'transitdepth':transitdepth,
@@ -1289,17 +1282,14 @@ def bls_stats_singleperiod(times, mags, errs, period,
                 blsmodel[transitindices] - thistransdepth
             )
 
-        # this is the residual of mags - model
+        # see __init__/get_snr_of_dip docstring for description of transit SNR
+        # equation, which is what we use for `thissnr`.
         subtractedmags = tmags - blsmodel
-
-        # calculate the rms of this residual
         subtractedrms = npstd(subtractedmags)
-
-        # the SNR is the transit depth divided by the rms of the residual
-        thissnr = npabs(thistransdepth/subtractedrms)
-
-        # alt SNR = expected transit depth / rms of timeseries in transit
-        altsnr = npabs(thistransdepth/npstd(tmags[transitindices]))
+        npts_in_transit = len(tmags[transitindices])
+        thissnr = (
+            npsqrt(npts_in_transit) * npabs(thistransdepth/subtractedrms)
+        )
 
         # tell user about stuff if verbose = True
         if verbose:
@@ -1317,15 +1307,14 @@ def bls_stats_singleperiod(times, mags, errs, period,
 
             LOGINFO('transit depth (delta): %.5f, '
                     'frac transit length (q): %.3f, '
-                    ' SNR: %.3f, altSNR: %.3f' %
+                    ' SNR: %.3f' %
                     (thistransdepth,
                      thistransduration,
-                     thissnr, altsnr))
+                     thissnr))
 
         return {'period':thisbestperiod,
                 'epoch':thisminepoch,
                 'snr':thissnr,
-                'altsnr':altsnr,
                 'whitenoise':npnan,
                 'rednoise':npnan,
                 'transitdepth':thistransdepth,
