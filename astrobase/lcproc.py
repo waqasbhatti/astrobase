@@ -411,7 +411,7 @@ def lclist_parallel_worker(task):
         # this should handle lists/tuples being returned by readerfunc
         # we assume that the first element is the actual lcdict
         # FIXME: figure out how to not need this assumption
-        if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+        if ( (isinstance(lcdict, (list, tuple))) and
              (isinstance(lcdict[0], dict)) ):
             lcdict = lcdict[0]
 
@@ -696,7 +696,7 @@ def make_lclist(basedir,
 
         # if we're supposed to make a spatial index, do so
         if (makecoordindex and
-            isinstance(makecoordindex, list) and
+            isinstance(makecoordindex, (list, tuple)) and
             len(makecoordindex) == 2):
 
             try:
@@ -725,12 +725,12 @@ def make_lclist(basedir,
                 # put the tree into the dict
                 lclistdict['kdtree'] = kdt
 
-                LOGINFO('kdtree generated for (ra, decl): %s' %
-                        makecoordindex)
+                LOGINFO('kdtree generated for (ra, decl): (%s, %s)' %
+                        (makecoordindex[0], makecoordindex[1]))
 
             except Exception as e:
-                LOGEXCEPTION('could not make kdtree for (ra, decl): %s' %
-                             makecoordindex)
+                LOGEXCEPTION('could not make kdtree for (ra, decl): (%s, %s)' %
+                             (makecoordindex[0], makecoordindex[1]))
                 raise
 
         # generate the xy pairs if fieldfits is not None
@@ -1006,7 +1006,9 @@ def filter_lclist(listpickle,
 
 
     # do the cone search next
-    if (conesearch and isinstance(conesearch, list) and len(conesearch) == 3):
+    if (conesearch and
+        isinstance(conesearch, (list, tuple)) and
+        len(conesearch) == 3):
 
         try:
 
@@ -1243,7 +1245,7 @@ def timebinlc(lcfile,
     # this should handle lists/tuples being returned by readerfunc
     # we assume that the first element is the actual lcdict
     # FIXME: figure out how to not need this assumption
-    if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+    if ( (isinstance(lcdict, (list, tuple))) and
          (isinstance(lcdict[0], dict)) ):
         lcdict = lcdict[0]
 
@@ -1460,7 +1462,7 @@ def get_varfeatures(lcfile,
         # this should handle lists/tuples being returned by readerfunc
         # we assume that the first element is the actual lcdict
         # FIXME: figure out how to not need this assumption
-        if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+        if ( (isinstance(lcdict, (list, tuple))) and
              (isinstance(lcdict[0], dict)) ):
             lcdict = lcdict[0]
 
@@ -1837,7 +1839,7 @@ def get_periodicfeatures(pfpickle,
         # this should handle lists/tuples being returned by readerfunc
         # we assume that the first element is the actual lcdict
         # FIXME: figure out how to not need this assumption
-        if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+        if ( (isinstance(lcdict, (list, tuple))) and
              (isinstance(lcdict[0], dict)) ):
             lcdict = lcdict[0]
 
@@ -1849,8 +1851,7 @@ def get_periodicfeatures(pfpickle,
             # this should handle lists/tuples being returned by readerfunc
             # we assume that the first element is the actual lcdict
             # FIXME: figure out how to not need this assumption
-            if ( (isinstance(nbrlcdict, list) or
-                  isinstance(nbrlcdict, tuple)) and
+            if ( (isinstance(nbrlcdict, (list, tuple))) and
                  (isinstance(nbrlcdict[0], dict)) ):
                 nbrlcdict = nbrlcdict[0]
 
@@ -2430,7 +2431,7 @@ def get_starfeatures(lcfile,
         # this should handle lists/tuples being returned by readerfunc
         # we assume that the first element is the actual lcdict
         # FIXME: figure out how to not need this assumption
-        if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+        if ( (isinstance(lcdict, (list, tuple))) and
              (isinstance(lcdict[0], dict)) ):
             lcdict = lcdict[0]
 
@@ -3449,7 +3450,7 @@ def runpf(lcfile,
         # this should handle lists/tuples being returned by readerfunc
         # we assume that the first element is the actual lcdict
         # FIXME: figure out how to not need this assumption
-        if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+        if ( (isinstance(lcdict, (list, tuple))) and
              (isinstance(lcdict[0], dict)) ):
             lcdict = lcdict[0]
 
@@ -3906,7 +3907,7 @@ def update_checkplotdict_nbrlcs(
         # this should handle lists/tuples being returned by readerfunc
         # we assume that the first element is the actual lcdict
         # FIXME: figure out how to not need this assumption
-        if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+        if ( (isinstance(lcdict, (list, tuple))) and
              (isinstance(lcdict[0], dict)) ):
             lcdict = lcdict[0]
 
@@ -4262,7 +4263,7 @@ def runcp(pfpickle,
     # this should handle lists/tuples being returned by readerfunc
     # we assume that the first element is the actual lcdict
     # FIXME: figure out how to not need this assumption
-    if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+    if ( (isinstance(lcdict, (list, tuple))) and
          (isinstance(lcdict[0], dict)) ):
         lcdict = lcdict[0]
 
@@ -5020,7 +5021,7 @@ def cpinfo_key_worker(task):
             outval = nonesub
         elif isinstance(val, float) and not np.isfinite(val):
             outval = nansub
-        elif isinstance(val, list):
+        elif isinstance(val, (list, tuple)):
             outval = ', '.join(val)
         else:
             outval = val
@@ -5387,7 +5388,7 @@ def apply_epd_magseries(lcfile,
     readerfunc = LCFORM[lcformat][1]
     lcdict = readerfunc(lcfile)
 
-    if ((isinstance(lcdict, tuple) or isinstance(lcdict, list)) and
+    if ((isinstance(lcdict, (tuple, list))) and
         isinstance(lcdict[0], dict)):
         lcdict = lcdict[0]
 
@@ -5644,7 +5645,7 @@ def collect_tfa_stats(task):
         # this should handle lists/tuples being returned by readerfunc
         # we assume that the first element is the actual lcdict
         # FIXME: figure out how to not need this assumption
-        if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+        if ( (isinstance(lcdict, (list, tuple))) and
              (isinstance(lcdict[0], dict)) ):
             lcdict = lcdict[0]
 
@@ -5789,7 +5790,7 @@ def reform_templatelc_for_tfa(task):
         # this should handle lists/tuples being returned by readerfunc
         # we assume that the first element is the actual lcdict
         # FIXME: figure out how to not need this assumption
-        if ( (isinstance(lcdict, list) or isinstance(lcdict, tuple)) and
+        if ( (isinstance(lcdict, (list, tuple))) and
              (isinstance(lcdict[0], dict)) ):
             lcdict = lcdict[0]
 
@@ -6195,8 +6196,7 @@ def tfa_templates_lclist(
 
                 timebaselcdict = readerfunc(timebaselcf)
 
-                if ( (isinstance(timebaselcdict, list) or
-                      isinstance(timebaselcdict, tuple)) and
+                if ( (isinstance(timebaselcdict, (list, tuple))) and
                      (isinstance(timebaselcdict[0], dict)) ):
                     timebaselcdict = timebaselcdict[0]
 
@@ -6253,8 +6253,7 @@ def tfa_templates_lclist(
 
                     timebaselcdict = readerfunc(timebaselcf)
 
-                    if ( (isinstance(timebaselcdict, list) or
-                          isinstance(timebaselcdict, tuple)) and
+                    if ( (isinstance(timebaselcdict, (list, tuple))) and
                          (isinstance(timebaselcdict[0], dict)) ):
                         timebaselcdict = timebaselcdict[0]
 
@@ -6401,7 +6400,7 @@ def apply_tfa_magseries(lcfile,
     readerfunc = LCFORM[lcformat][1]
     lcdict = readerfunc(lcfile)
 
-    if ((isinstance(lcdict, tuple) or isinstance(lcdict, list)) and
+    if ((isinstance(lcdict, (tuple, list))) and
         isinstance(lcdict[0], dict)):
         lcdict = lcdict[0]
 

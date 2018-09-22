@@ -414,7 +414,7 @@ def sigclip_magseries(times, mags, errs,
 
 
     # this handles sigclipping for asymmetric +ve and -ve clip values
-    elif sigclip and isinstance(sigclip, list) and len(sigclip) == 2:
+    elif sigclip and isinstance(sigclip, (list,tuple)) and len(sigclip) == 2:
 
         # sigclip is passed as [dimmingclip, brighteningclip]
         dimmingclip = sigclip[0]
@@ -677,7 +677,7 @@ def sigclip_magseries_with_extparams(times, mags, errs, extparams,
 
 
     # this handles sigclipping for asymmetric +ve and -ve clip values
-    elif sigclip and isinstance(sigclip, list) and len(sigclip) == 2:
+    elif sigclip and isinstance(sigclip, (list, tuple)) and len(sigclip) == 2:
 
         # sigclip is passed as [dimmingclip, brighteningclip]
         dimmingclip = sigclip[0]

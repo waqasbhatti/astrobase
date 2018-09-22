@@ -657,7 +657,7 @@ def _make_phased_magseries_plot(axes,
     axes.set_title(plottitle)
 
     # if we're making an inset plot showing the full range
-    if (plotxlim and isinstance(plotxlim, list) and
+    if (plotxlim and isinstance(plotxlim, (list,tuple)) and
         len(plotxlim) == 2 and xliminsetmode is True):
 
         # bump the ylim of the plot so that the inset can fit in this axes plot
@@ -2289,7 +2289,7 @@ def _pkl_phased_magseries_plot(checkplotdict,
 
     # make a grid
     ax = plt.gca()
-    if isinstance(xgridlines,list):
+    if isinstance(xgridlines, (list, tuple)):
         ax.set_xticks(xgridlines, minor=False)
 
     plt.grid(color='#a9a9a9',
@@ -2325,7 +2325,7 @@ def _pkl_phased_magseries_plot(checkplotdict,
             plt.gca().set_axis_bgcolor(bestperiodhighlight)
 
     # if we're making an inset plot showing the full range
-    if (plotxlim and isinstance(plotxlim, list) and
+    if (plotxlim and isinstance(plotxlim, (list, tuple)) and
         len(plotxlim) == 2 and xliminsetmode is True):
 
         # bump the ylim of the plot so that the inset can fit in this axes plot

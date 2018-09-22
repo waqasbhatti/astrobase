@@ -228,7 +228,7 @@ def plot_mag_series(times,
                                                      mingap=segmentmingap)
 
     # get the yrange for all the plots if it's given
-    if yrange and isinstance(yrange,list) and len(yrange) == 2:
+    if yrange and isinstance(yrange,(list,tuple)) and len(yrange) == 2:
         ymin, ymax = yrange
 
     # if it's not given, figure it out
@@ -450,55 +450,6 @@ def plot_magseries(times,
 #########################
 ## PHASED LIGHT CURVES ##
 #########################
-
-def plot_phased_magseries(times,
-                          mags,
-                          period,
-                          magsarefluxes=False,
-                          errs=None,
-                          normto='globalmedian',
-                          normmingap=4.0,
-                          epoch='min',
-                          outfile=None,
-                          sigclip=30.0,
-                          phasewrap=True,
-                          phasesort=True,
-                          phasebin=None,
-                          plotphaselim=(-0.8,0.8),
-                          fitknotfrac=0.01,
-                          yrange=None,
-                          plotdpi=100,
-                          modelmags=None,
-                          modeltimes=None,
-                          modelerrs=None):
-    '''This wraps plot_phased_mag_series for consistent API with lcfit functions.
-
-    '''
-
-    return plot_phased_mag_series(
-        times,
-        mags,
-        period,
-        magsarefluxes=magsarefluxes,
-        errs=errs,
-        normto=normto,
-        normmingap=normmingap,
-        epoch=epoch,
-        outfile=outfile,
-        sigclip=sigclip,
-        phasewrap=phasewrap,
-        phasesort=phasesort,
-        phasebin=phasebin,
-        plotphaselim=plotphaselim,
-        fitknotfrac=fitknotfrac,
-        yrange=yrange,
-        plotdpi=plotdpi,
-        modelmags=modelmags,
-        modeltimes=modeltimes,
-        modelerrs=modelerrs
-    )
-
-
 
 def plot_phased_mag_series(times,
                            mags,
@@ -723,7 +674,7 @@ def plot_phased_mag_series(times,
     ax.get_xaxis().get_major_formatter().set_useOffset(False)
 
     # get the yrange
-    if yrange and isinstance(yrange,list) and len(yrange) == 2:
+    if yrange and isinstance(yrange,(list,tuple)) and len(yrange) == 2:
         ymin, ymax = yrange
     else:
         ymin, ymax = ax.get_ylim()
@@ -794,6 +745,55 @@ def plot_phased_mag_series(times,
         plt.savefig(outfile, bbox_inches='tight', dpi=plotdpi)
         plt.close()
         return period, epoch, os.path.abspath(outfile)
+
+
+
+def plot_phased_magseries(times,
+                          mags,
+                          period,
+                          magsarefluxes=False,
+                          errs=None,
+                          normto='globalmedian',
+                          normmingap=4.0,
+                          epoch='min',
+                          outfile=None,
+                          sigclip=30.0,
+                          phasewrap=True,
+                          phasesort=True,
+                          phasebin=None,
+                          plotphaselim=(-0.8,0.8),
+                          fitknotfrac=0.01,
+                          yrange=None,
+                          plotdpi=100,
+                          modelmags=None,
+                          modeltimes=None,
+                          modelerrs=None):
+    '''This wraps plot_phased_mag_series for consistent API with lcfit functions.
+
+    '''
+
+    return plot_phased_mag_series(
+        times,
+        mags,
+        period,
+        magsarefluxes=magsarefluxes,
+        errs=errs,
+        normto=normto,
+        normmingap=normmingap,
+        epoch=epoch,
+        outfile=outfile,
+        sigclip=sigclip,
+        phasewrap=phasewrap,
+        phasesort=phasesort,
+        phasebin=phasebin,
+        plotphaselim=plotphaselim,
+        fitknotfrac=fitknotfrac,
+        yrange=yrange,
+        plotdpi=plotdpi,
+        modelmags=modelmags,
+        modeltimes=modeltimes,
+        modelerrs=modelerrs
+    )
 
 
 
@@ -1010,7 +1010,7 @@ def fits_finder_chart(
 
 
     # set the coordinate limits if provided
-    if finder_coordlimits and isinstance(finder_coordlimits, list):
+    if finder_coordlimits and isinstance(finder_coordlimits, (list,tuple)):
 
         minra, maxra, mindecl, maxdecl = finder_coordlimits
         cntra, cntdecl = (minra + maxra)/2.0, (mindecl + maxdecl)/2.0
