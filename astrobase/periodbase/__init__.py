@@ -83,8 +83,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -263,7 +263,7 @@ def bootstrap_falsealarmprob(lspdict,
 
             trialbestpeaks = []
 
-            for trial in range(nbootstrap):
+            for _trial in range(nbootstrap):
 
                 # get a scrambled index
                 tindex = np.random.randint(0,
@@ -330,7 +330,12 @@ def bootstrap_falsealarmprob(lspdict,
         return None
 
 
-def get_snr_of_dip(times, mags, modeltimes, modelmags, magsarefluxes=False,
+
+def get_snr_of_dip(times,
+                   mags,
+                   modeltimes,
+                   modelmags,
+                   magsarefluxes=False,
                    verbose=True):
     '''
     Calculate the total SNR of a transit assuming gaussian uncertainties.
@@ -411,11 +416,11 @@ def get_snr_of_dip(times, mags, modeltimes, modelmags, magsarefluxes=False,
     snr = npsqrt(npoints_in_transit) * transitdepth/subtractedrms
 
     if verbose:
-        LOGINFO('\npoints in transit: {:d}'.format(npoints_in_transit)+
-                '\ndepth: {:.2e}'.format(transitdepth)+
-                '\nrms in residual: {:.2e}'.format(subtractedrms)+
-                '\n\t SNR: {:.2e}'.format(snr)
-        )
+
+        LOGINFO('\npoints in transit: {:d}'.format(npoints_in_transit ) +
+                '\ndepth: {:.2e}'.format(transitdepth) +
+                '\nrms in residual: {:.2e}'.format(subtractedrms) +
+                '\n\t SNR: {:.2e}'.format(snr))
 
     return snr, transitdepth, subtractedrms
 

@@ -513,7 +513,7 @@ def bls_parallel_pfind(
         nworkers=None,
         sigclip=10.0,
         verbose=True
-    ):
+):
     '''Runs the Box Least Squares Fitting Search for transit-shaped signals.
 
     Based on eebls.f from Kovacs et al. 2002 and python-bls from Foreman-Mackey
