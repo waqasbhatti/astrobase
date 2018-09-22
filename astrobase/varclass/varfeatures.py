@@ -68,15 +68,13 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
 ## IMPORTS ##
 #############
-
-from time import time as unixtime
 
 from numpy import nan as npnan, sum as npsum, abs as npabs, \
     roll as nproll, isfinite as npisfinite, std as npstd, \
@@ -130,8 +128,9 @@ def stetson_jindex(ftimes, fmags, ferrs, weightbytimediff=False):
         # get the stetson index elements
         delta_prefactor = (ndet/(ndet - 1))
         sigma_i = delta_prefactor*(fmags - medmag)/ferrs
-        sigma_j = nproll(sigma_i,1) # Nicole's clever trick to advance indices
-                                    # by 1 and do x_i*x_(i+1)
+
+        # Nicole's clever trick to advance indices by 1 and do x_i*x_(i+1)
+        sigma_j = nproll(sigma_i,1)
 
         if weightbytimediff:
 
@@ -170,7 +169,7 @@ def stetson_kindex(fmags, ferrs):
 
     # use a fill in value for the errors if they're none
     if ferrs is None:
-        ferrs = npfull_like(mags, 0.005)
+        ferrs = npfull_like(fmags, 0.005)
 
     ndet = len(fmags)
 
@@ -506,7 +505,7 @@ def nonperiodic_lightcurve_features(times, mags, errs, magsarefluxes=False):
 def gilliland_cdpp(times, mags, errs,
                    windowlength=97,
                    polyorder=2,
-                   binsize=23400, # in seconds: 6.5 hours for classic CDPP
+                   binsize=23400,  # in seconds: 6.5 hours for classic CDPP
                    sigclip=5.0,
                    magsarefluxes=False,
                    **kwargs):

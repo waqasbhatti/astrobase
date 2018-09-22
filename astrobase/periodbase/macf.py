@@ -68,8 +68,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -180,8 +180,8 @@ def _get_acf_peakheights(lags, acf, npeaks=20, searchinterval=1):
         if np.all(mxi < mininds):
             continue
 
-        leftminind = mininds[mininds < mxi][-1] # the last index to the left
-        rightminind = mininds[mininds > mxi][0] # the first index to the right
+        leftminind = mininds[mininds < mxi][-1]  # the last index to the left
+        rightminind = mininds[mininds > mxi][0]  # the first index to the right
         relpeakheights[peakind] = (
             acf[mxi] - (acf[leftminind] + acf[rightminind])/2.0
         )
@@ -281,18 +281,18 @@ def macf_period_find(
         forcetimebin=None,
         maxlags=None,
         maxacfpeaks=10,
-        smoothacf=21, # set for Kepler-type LCs, see details below
+        smoothacf=21,  # set for Kepler-type LCs, see details below
         smoothfunc=_smooth_acf_savgol,
         smoothfunckwargs={},
         magsarefluxes=False,
         sigclip=3.0,
         verbose=True,
-        periodepsilon=0.1, # doesn't do anything, for consistent external API
-        nworkers=None,     # doesn't do anything, for consistent external API
-        startp=None,       # doesn't do anything, for consistent external API
-        endp=None,         # doesn't do anything, for consistent external API
-        autofreq=None,     # doesn't do anything, for consistent external API
-        stepsize=None,     # doesn't do anything, for consistent external API
+        periodepsilon=0.1,  # doesn't do anything, for consistent external API
+        nworkers=None,      # doesn't do anything, for consistent external API
+        startp=None,        # doesn't do anything, for consistent external API
+        endp=None,          # doesn't do anything, for consistent external API
+        autofreq=None,      # doesn't do anything, for consistent external API
+        stepsize=None,      # doesn't do anything, for consistent external API
 ):
     '''This finds periods using the McQuillan+ (2013a, 2014) method.
 
@@ -422,9 +422,9 @@ def macf_period_find(
 
         # fit best period is the gradient of fit
         fitbestperiod = fitcoeffs[0]
-        bestperiodrms = np.sqrt(fitcovar[0,0]) # from the covariance matrix
+        bestperiodrms = np.sqrt(fitcovar[0,0])  # from the covariance matrix
 
-    except:
+    except Exception as e:
 
         LOGWARNING('linear fit to time at each peak lag '
                    'value vs. peak number failed, '

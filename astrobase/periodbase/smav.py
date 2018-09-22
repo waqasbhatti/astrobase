@@ -69,8 +69,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -119,7 +119,7 @@ NCPUS = cpu_count()
 
 
 def aovhm_theta(times, mags, errs, frequency,
-                       nharmonics, magvariance):
+                nharmonics, magvariance):
     '''This calculates the harmonic AoV theta for a frequency.
 
     Schwarzenberg-Czerny 1996 equation 11:
@@ -190,7 +190,7 @@ def aovhm_theta(times, mags, errs, frequency,
     theta_aov = 0.0
 
     # go through all the harmonics now up to 2N
-    for n in range(two_nharmonics):
+    for _ in range(two_nharmonics):
 
         # this is <phi, phi>
         phi_dot_phi = np.sum(phi * phi.conjugate())
@@ -268,7 +268,7 @@ def aovhm_periodfind(times,
                      normalize=True,
                      stepsize=1.0e-4,
                      nbestpeaks=5,
-                     periodepsilon=0.1, # 0.1
+                     periodepsilon=0.1,
                      sigclip=10.0,
                      nworkers=None,
                      verbose=True):

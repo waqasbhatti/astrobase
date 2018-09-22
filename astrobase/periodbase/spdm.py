@@ -68,8 +68,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -209,7 +209,7 @@ def stellingwerf_pdm(times,
                      phasebinsize=0.05,
                      mindetperbin=9,
                      nbestpeaks=5,
-                     periodepsilon=0.1, # 0.1
+                     periodepsilon=0.1,
                      sigclip=10.0,
                      nworkers=None,
                      verbose=True):

@@ -43,7 +43,7 @@ try:
     import asyncio
     import uvloop
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-except:
+except Exception as e:
     pass
 
 import tornado.ioloop
@@ -200,7 +200,7 @@ def main():
             # check if this file is readable/writeable by user only
             fileperm = oct(os.stat(options.sharedsecret)[stat.ST_MODE])
 
-            if fileperm == '0100600' or fileperm == '0o100600':
+            if fileperm == '0100400' or fileperm == '0o100400':
 
                 with open(options.sharedsecret,'r') as infd:
 

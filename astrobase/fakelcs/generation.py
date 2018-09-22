@@ -122,8 +122,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -1221,8 +1221,8 @@ def make_fakelc(lcfile,
         # if the SDSS r is unavailable, but we have J, H, K: use those to get
         # the SDSS r by using transformations
         elif ((not randomizemags) and ('jmag' in objectinfo and
-               objectinfo['jmag'] is not None and
-               np.isfinite(objectinfo['jmag'])) and
+                                       objectinfo['jmag'] is not None and
+                                       np.isfinite(objectinfo['jmag'])) and
               ('hmag' in objectinfo and
                objectinfo['hmag'] is not None and
                np.isfinite(objectinfo['hmag'])) and
@@ -1859,12 +1859,13 @@ def add_fakelc_variability(fakelcfile,
     # make sure to bail out if this light curve already has fake variability
     # added
     if ('actual_vartype' in lcdict and
-        'actual_varparams' in lcdict
-        and not overwrite):
+        'actual_varparams' in lcdict and
+        not overwrite):
         LOGERROR('%s has existing variability type: %s '
                  'and params: %s and overwrite = False, '
-                 'skipping this file...' %(fakelcfile, lcdict['actual_vartype'],
-                                           repr(lcdict['actual_varparams'])))
+                 'skipping this file...' %
+                 (fakelcfile, lcdict['actual_vartype'],
+                  repr(lcdict['actual_varparams'])))
         return None
 
     # get the times, mags, errs from this LC
@@ -2031,7 +2032,7 @@ def add_variability_to_fakelc_collection(simbasedir,
     varinfo = {}
 
     # go through all the LCs and add the required type of variability
-    for lc, varf, lcind in zip(lclist, varflag, range(len(lclist))):
+    for lc, varf, _lcind in zip(lclist, varflag, range(len(lclist))):
 
         # if this object is variable, add variability
         if varf:

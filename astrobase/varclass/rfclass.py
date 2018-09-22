@@ -79,30 +79,28 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
 ## IMPORTS ##
 #############
 
-from time import time as unixtime
 import glob
 import os.path
 import os
-import shutil
 import itertools
 
 try:
     import cPickle as pickle
-except:
+except Exception as e:
     import pickle
 
 try:
     from tqdm import tqdm
     TQDM = True
-except:
+except Exception as e:
     TQDM = False
     pass
 
@@ -117,7 +115,7 @@ from scipy.stats import randint as sp_randint
 
 # scikit imports
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import KFold, StratifiedKFold, RandomizedSearchCV
+from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV
 from sklearn.model_selection import train_test_split
 
 from operator import itemgetter
@@ -142,8 +140,8 @@ def gridsearch_report(results, n_top=3):
         for candidate in candidates:
             LOGINFO("Model with rank: {0}".format(i))
             LOGINFO("Mean validation score: {0:.3f} (std: {1:.3f})".format(
-                  results['mean_test_score'][candidate],
-                  results['std_test_score'][candidate]))
+                results['mean_test_score'][candidate],
+                results['std_test_score'][candidate]))
             LOGINFO("Parameters: {0}".format(results['params'][candidate]))
 
 
@@ -372,7 +370,8 @@ def train_rf_classifier(
 
     '''
 
-    if isinstance(collected_features,str) and os.path.exists(collected_features):
+    if (isinstance(collected_features,str) and
+        os.path.exists(collected_features)):
         with open(collected_features,'rb') as infd:
             fdict = pickle.load(infd)
     elif isinstance(collected_features, dict):
@@ -533,7 +532,7 @@ def apply_rf_classifier(classifier,
     featfile = os.path.join(
         os.path.dirname(outpickle),
         'actual-collected-features.pkl'
-        )
+    )
 
     features = collect_features(
         varfeaturesdir,
@@ -597,7 +596,9 @@ def plot_training_results(classifier,
         return None
 
     confmatrix = clfdict['best_confmatrix']
-    overall_feature_importances = clfdict['best_classifier'].feature_importances_
+    overall_feature_importances = clfdict[
+        'best_classifier'
+    ].feature_importances_
     feature_importances_per_tree = np.array([
         tree.feature_importances_
         for tree in clfdict['best_classifier'].estimators_

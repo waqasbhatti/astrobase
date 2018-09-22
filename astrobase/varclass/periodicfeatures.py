@@ -69,17 +69,15 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
 ## IMPORTS ##
 #############
 
-from time import time as unixtime
 from itertools import combinations
-
 import numpy as np
 from scipy.signal import argrelmin, argrelmax
 

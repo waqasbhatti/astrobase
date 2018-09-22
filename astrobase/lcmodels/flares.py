@@ -77,7 +77,7 @@ def flare_model(flareparams, times, mags, errs):
               (times[times < flare_peak_time] -
                flare_peak_time)) /
             (2.0*rise_gaussian_stdev*rise_gaussian_stdev)
-            )
+        )
     )
 
     # after peak exponential decay...
@@ -87,7 +87,7 @@ def flare_model(flareparams, times, mags, errs):
             -((times[times > flare_peak_time] -
                flare_peak_time)) /
             (decay_time_constant)
-            )
+        )
     )
 
     return modelmags, times, mags, errs

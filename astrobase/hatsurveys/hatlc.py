@@ -617,7 +617,7 @@ def validate_sqlitecurve_filters(filterstring, lccolumns):
     stringwords = []
     for x in stringelems:
         try:
-            floatcheck = float(x)
+            float(x)
         except ValueError as e:
             stringwords.append(x)
 
@@ -752,7 +752,7 @@ def read_and_filter_sqlitecurve(lcfile,
 
         # validate the SQL filters for this LC
         if ((sqlfilters is not None) and
-            (isinstance(sqlfilters,str) or isinstance(sqlfilters,unicode))):
+            (isinstance(sqlfilters,str) or isinstance(sqlfilters, unicode))):
 
             # give the validator the sqlfilters string and a list of lccols in
             # the lightcurve
@@ -1635,8 +1635,9 @@ def normalize_lcdict_byinst(
     # check if this lc has been normalized already. return as-is if so
     if 'lcinstnormcols' in lcdict and len(lcdict['lcinstnormcols']) > 0:
         if not quiet:
-            LOGWARNING('this lightcurve is already normalized by instrument keys'
-                       ', returning...')
+            LOGWARNING('this lightcurve is already '
+                       'normalized by instrument keys, '
+                       'returning...')
         return lcdict
 
     # generate the normalization key

@@ -82,7 +82,7 @@ import sys
 try:
     import cPickle as pickle
     from cStringIO import StringIO as strio
-except:
+except Exception as e:
     import pickle
     from io import BytesIO as strio
 import gzip
@@ -112,7 +112,7 @@ import matplotlib.pyplot as plt
 try:
     from tqdm import tqdm
     TQDM = True
-except:
+except Exception as e:
     TQDM = False
     pass
 
@@ -425,7 +425,7 @@ def lclist_parallel_worker(task):
 
             try:
                 thiscolval = dict_get(lcdict, getkey)
-            except:
+            except Exception as e:
                 LOGWARNING('column %s does not exist for %s' %
                            (colkey, lcf))
                 thiscolval = np.nan
@@ -464,7 +464,7 @@ def lclist_parallel_worker(task):
             actualndets = ndetcol[np.isfinite(ndetcol)].size
             lcobjdict['%s.ndet' % getdk[-1]] = actualndets
 
-        except:
+        except Exception as e:
             lcobjdict['%s.ndet' % getdk[-1]] = np.nan
 
 
@@ -481,7 +481,7 @@ def make_lclist(basedir,
                          'objectinfo.ra',
                          'objectinfo.decl',
                          'objectinfo.ndet'],
-                makecoordindex=['objectinfo.ra','objectinfo.decl'],
+                makecoordindex=('objectinfo.ra','objectinfo.decl'),
                 field_fitsfile=None,
                 field_wcsfrom=None,
                 field_scale=ZScaleInterval(),
@@ -586,7 +586,7 @@ def make_lclist(basedir,
                     # use os.walk to go through the directories
                     walker = os.walk(bdir)
 
-                    for root, dirs, files in walker:
+                    for root, dirs, _files in walker:
                         for sdir in dirs:
                             searchpath = os.path.join(root,
                                                       sdir,
@@ -621,7 +621,7 @@ def make_lclist(basedir,
                 walker = os.walk(basedir)
                 matching = []
 
-                for root, dirs, files in walker:
+                for root, dirs, _files in walker:
                     for sdir in dirs:
                         searchpath = os.path.join(root,
                                                   sdir,
@@ -1540,7 +1540,7 @@ def get_varfeatures(lcfile,
             bestmagcolind = np.where(magmads == np.min(magmads))[0]
             resultdict['bestmagcol'] = magcols[bestmagcolind]
 
-        except:
+        except Exception as e:
             resultdict['bestmagcol'] = None
 
         outfile = os.path.join(outdir,
@@ -1574,7 +1574,7 @@ def varfeatures_worker(task):
                                mindet=mindet,
                                lcformat=lcformat)
 
-    except:
+    except Exception as e:
         return None
 
 
@@ -1676,7 +1676,7 @@ def parallel_varfeatures_lcdir(lcdir,
             walker = os.walk(lcdir)
             matching = []
 
-            for root, dirs, files in walker:
+            for root, dirs, _files in walker:
                 for sdir in dirs:
                     searchpath = os.path.join(root,
                                               sdir,
@@ -2003,9 +2003,9 @@ def get_periodicfeatures(pfpickle,
                 resultdict[featkey]['pfmethods'] = available_pfmethods
 
                 # then for each bestperiod, get phasedlc and lcfit features
-                for ind, pfm, bp in zip(range(len(available_bestperiods)),
-                                        available_pfmethods,
-                                        available_bestperiods):
+                for _ind, pfm, bp in zip(range(len(available_bestperiods)),
+                                         available_pfmethods,
+                                         available_bestperiods):
 
                     resultdict[featkey][pfm] = periodicfeatures.lcfit_features(
                         times, mags, errs, bp,
@@ -2170,7 +2170,7 @@ def serial_periodicfeatures(pfpkl_list,
     LOGINFO('processing periodfinding pickles...')
 
     for task in tqdm(tasks):
-        result = periodicfeatures_worker(task)
+        periodicfeatures_worker(task)
 
 
 
@@ -2329,7 +2329,7 @@ def parallel_periodicfeatures_lcdir(
             walker = os.walk(pfpkl_dir)
             matching = []
 
-            for root, dirs, files in walker:
+            for root, dirs, _files in walker:
                 for sdir in dirs:
                     searchpath = os.path.join(root,
                                               sdir,
@@ -2511,7 +2511,7 @@ def starfeatures_worker(task):
                                 deredden=deredden,
                                 custom_bandpasses=custom_bandpasses,
                                 lcformat=lcformat)
-    except:
+    except Exception as e:
         return None
 
 
@@ -2653,7 +2653,7 @@ def parallel_starfeatures_lcdir(lcdir,
             walker = os.walk(lcdir)
             matching = []
 
-            for root, dirs, files in walker:
+            for root, dirs, _files in walker:
                 for sdir in dirs:
                     searchpath = os.path.join(root,
                                               sdir,
@@ -3788,7 +3788,7 @@ def parallel_pf_lcdir(lcdir,
             walker = os.walk(lcdir)
             matching = []
 
-            for root, dirs, files in walker:
+            for root, dirs, _files in walker:
                 for sdir in dirs:
                     searchpath = os.path.join(root,
                                               sdir,

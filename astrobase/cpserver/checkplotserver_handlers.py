@@ -16,7 +16,7 @@ import os
 import os.path
 try:
     import cPickle as pickle
-except:
+except Exception as e:
     import pickle
 import base64
 import logging
@@ -24,7 +24,7 @@ import time as utime
 
 try:
     from cStringIO import StringIO as strio
-except:
+except Exception as e:
     from io import BytesIO as strio
 
 import numpy as np
@@ -90,7 +90,7 @@ from .. import checkplot
 checkplot.set_logger_parent(__name__)
 
 from ..checkplot import checkplot_pickle_update, checkplot_pickle_to_png, \
-    _read_checkplot_picklefile, _base64_to_file, _write_checkplot_picklefile
+    _read_checkplot_picklefile, _write_checkplot_picklefile
 
 # import these for updating plots due to user input
 from ..checkplot import _pkl_finder_objectinfo, _pkl_periodogram, \
@@ -1467,7 +1467,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                         LOGGER.error('lctool %s, does not exist' % lctool)
                         resultdict['status'] = 'error'
                         resultdict['message'] = (
-                        'lctool %s does not exist' % lctool
+                            'lctool %s does not exist' % lctool
                         )
                         resultdict['result'] = {'objectid':cpobjectid}
 
@@ -1480,7 +1480,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                     LOGGER.error('lctool argument not provided')
                     resultdict['status'] = 'error'
                     resultdict['message'] = (
-                    'lctool argument not provided'
+                        'lctool argument not provided'
                     )
                     resultdict['result'] = {'objectid':cpobjectid}
 
@@ -1508,7 +1508,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                 if os.path.exists(tempfpath):
 
                     tempcpdict = yield self.executor.submit(
-                    _read_checkplot_picklefile, tempfpath
+                        _read_checkplot_picklefile, tempfpath
                     )
 
                 # if it doesn't exist, read the times, mags, errs from the
@@ -1584,7 +1584,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                             elif xargtype is float and xarg == 'varepoch':
                                 try:
                                     wbarg = xargtype(wbarg)
-                                except:
+                                except Exception as e:
                                     wbarg = None
                             # usual casting for other types
                             else:
@@ -1777,8 +1777,10 @@ class LCToolHandler(tornado.web.RequestHandler):
                                         filt_hi = float(thisfilt[1])
 
                                         filtermasks.append(
-                                            ((wtimes - cptimes.min()) < filt_hi) &
-                                            ((wtimes - cptimes.min()) > filt_lo)
+                                            ((wtimes -
+                                              cptimes.min()) < filt_hi) &
+                                            ((wtimes -
+                                              cptimes.min()) > filt_lo)
                                         )
 
                                     elif (len(thisfilt) == 3 and
@@ -1789,14 +1791,16 @@ class LCToolHandler(tornado.web.RequestHandler):
                                         filt_hi = float(thisfilt[2])
 
                                         filtermasks.append(np.logical_not(
-                                            (((wtimes - cptimes.min()) < filt_hi) &
-                                             ((wtimes - cptimes.min()) > filt_lo))
+                                            (((wtimes -
+                                               cptimes.min()) < filt_hi) &
+                                             ((wtimes -
+                                               cptimes.min()) > filt_lo))
                                         ))
 
                                     else:
                                         continue
 
-                                except:
+                                except Exception as e:
                                     continue
 
                             # finally, apply the filters if applicable
@@ -1860,8 +1864,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     else:
                                         continue
 
-
-                                except:
+                                except Exception as e:
                                     continue
 
                             # finally, apply the filters if applicable
@@ -1910,13 +1913,13 @@ class LCToolHandler(tornado.web.RequestHandler):
 
 
                         phasedlcargs0 = (None,
-                                        lspmethod,
-                                        -1,
-                                        lctoolargs[0],
-                                        lctoolargs[1],
-                                        lctoolargs[2],
-                                        nbestperiods[0],
-                                        'min')
+                                         lspmethod,
+                                         -1,
+                                         lctoolargs[0],
+                                         lctoolargs[1],
+                                         lctoolargs[2],
+                                         nbestperiods[0],
+                                         'min')
 
                         if len(nbestperiods) > 1:
                             phasedlcargs1 = (None,
@@ -1987,7 +1990,9 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 'bestperiod':funcresults['bestperiod'],
                                 'nbestperiods':funcresults['nbestperiods'],
                                 'nbestlspvals':funcresults['nbestlspvals'],
-                                'periodogram':pgramres[lspmethod]['periodogram'],
+                                'periodogram':(
+                                    pgramres[lspmethod]['periodogram']
+                                ),
                                 0:phasedlc0,
                             }
 
@@ -2191,8 +2196,10 @@ class LCToolHandler(tornado.web.RequestHandler):
                                         filt_hi = float(thisfilt[1])
 
                                         filtermasks.append(
-                                            ((wtimes - cptimes.min()) < filt_hi) &
-                                            ((wtimes  - cptimes.min()) > filt_lo)
+                                            ((wtimes -
+                                              cptimes.min()) < filt_hi) &
+                                            ((wtimes  -
+                                              cptimes.min()) > filt_lo)
                                         )
 
                                     elif (len(thisfilt) == 3 and
@@ -2203,14 +2210,16 @@ class LCToolHandler(tornado.web.RequestHandler):
                                         filt_hi = float(thisfilt[2])
 
                                         filtermasks.append(np.logical_not(
-                                            (((wtimes - cptimes.min()) < filt_hi) &
-                                             ((wtimes - cptimes.min()) > filt_lo))
+                                            (((wtimes -
+                                               cptimes.min()) < filt_hi) &
+                                             ((wtimes -
+                                               cptimes.min()) > filt_lo))
                                         ))
 
                                     else:
                                         continue
 
-                                except:
+                                except Exception as e:
                                     continue
 
                             # finally, apply the filters if applicable
@@ -2272,7 +2281,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     else:
                                         continue
 
-                                except:
+                                except Exception as e:
                                     continue
 
                             # finally, apply the filters if applicable
@@ -2301,10 +2310,10 @@ class LCToolHandler(tornado.web.RequestHandler):
                             )
                             try:
                                 spfit = lcfit.spline_fit_magseries(
-                                    stimes, # times
-                                    smags, # mags
-                                    serrs, # errs
-                                    lctoolargs[6], # period
+                                    stimes,         # times
+                                    smags,          # mags
+                                    serrs,          # errs
+                                    lctoolargs[6],  # period
                                     magsarefluxes=lctoolkwargs['magsarefluxes'],
                                     sigclip=None,
                                     verbose=True
@@ -3094,7 +3103,7 @@ class StandaloneHandler(tornado.web.RequestHandler):
                     base64.b64decode(url_unescape(checkplotfname))
                 )
 
-            except:
+            except Exception as e:
                 msg = 'could not decode the incoming payload'
                 LOGGER.error(msg)
                 resultdict = {'status':'error',

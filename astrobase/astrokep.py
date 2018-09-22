@@ -67,24 +67,23 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
 ## IMPORTS ##
 #############
 
-from time import time as unixtime
 import glob
-import fnmatch
 import sys
 import os.path
 try:
     import cPickle as pickle
-except:
+except Exception as e:
     import pickle
 import gzip
+import os
 
 import numpy as np
 
@@ -102,36 +101,19 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     unique as npunique, argwhere as npargwhere, concatenate as npconcatenate
 
 from numpy.polynomial.legendre import Legendre
-
 from scipy.optimize import leastsq
-from scipy.signal import medfilt
-
-# FIXME: should probably add this to setup.py requirements
-try:
-    from sklearn.ensemble import RandomForestRegressor
-    SKLEARN = True
-except:
-    SKLEARN = False
-
+from scipy.ndimage import median_filter
+from astropy.io import fits as pyfits
+from sklearn.ensemble import RandomForestRegressor
+SKLEARN = True
 
 from .lcmath import sigclip_magseries, find_lc_timegroups
 
-import os
-import matplotlib
-matplotlib.use('Agg')
-
-import matplotlib.pyplot as plt
-
-try:
-    from astropy.io import fits as pyfits
-except:
-    import pyfits
 
 
 ###########################################
 ## UTILITY FUNCTIONS FOR FLUXES AND MAGS ##
 ###########################################
-
 
 def keplerflux_to_keplermag(keplerflux, f12=1.74e5):
     '''
@@ -427,7 +409,7 @@ def read_kepler_fitslc(lcfits,
             'quarter':[hdrinfo['quarter']],
             'season':[hdrinfo['season']],
             'datarelease':[hdrinfo['data_rel']],
-            'campaign':[hdrinfo['campaign']], # this is None for KepPrime
+            'campaign':[hdrinfo['campaign']],  # this is None for KepPrime
             'obsmode':[hdrinfo['obsmode']],
             'objectid':hdrinfo['object'],
             'lcinfo':{
@@ -446,7 +428,7 @@ def read_kepler_fitslc(lcfits,
                 'ndet':[ndet],
             },
             'objectinfo':{
-                'objectid':hdrinfo['object'], # repeated here for checkplot use
+                'objectid':hdrinfo['object'],  # repeated here for checkplot use
                 'keplerid':hdrinfo['keplerid'],
                 'ra':hdrinfo['ra_obj'],
                 'decl':hdrinfo['dec_obj'],
@@ -570,8 +552,8 @@ def consolidate_kepler_fitslc(keplerid,
     if sys.version_info[:2] > (3,4):
 
         matching = glob.glob(os.path.join(lcfitsdir,
-                                            '**',
-                                            'kplr%09i-*_llc.fits' % keplerid),
+                                          '**',
+                                          'kplr%09i-*_llc.fits' % keplerid),
                              recursive=True)
         LOGINFO('found %s files: %s' % (len(matching), repr(matching)))
 
@@ -581,7 +563,7 @@ def consolidate_kepler_fitslc(keplerid,
         # use the os.walk function to start looking for files in lcfitsdir
         walker = os.walk(lcfitsdir)
         matching = []
-        for root, dirs, files in walker:
+        for root, dirs, _files in walker:
             for sdir in dirs:
                 searchpath = os.path.join(root,
                                           sdir,
@@ -783,17 +765,17 @@ def read_k2sff_lightcurve(lcfits):
     # add some of the light curve information to the data arrays so we can sort
     # on them later
     lcdict['channel'] = npfull_like(lcdict['t'],
-                                     lcdict['lcinfo']['channel'][0])
+                                    lcdict['lcinfo']['channel'][0])
     lcdict['skygroup'] = npfull_like(lcdict['t'],
                                      lcdict['lcinfo']['skygroup'][0])
     lcdict['module'] = npfull_like(lcdict['t'],
-                                     lcdict['lcinfo']['module'][0])
+                                   lcdict['lcinfo']['module'][0])
     lcdict['output'] = npfull_like(lcdict['t'],
-                                     lcdict['lcinfo']['output'][0])
+                                   lcdict['lcinfo']['output'][0])
     lcdict['quarter'] = npfull_like(lcdict['t'],
-                                     lcdict['quarter'][0])
+                                    lcdict['quarter'][0])
     lcdict['season'] = npfull_like(lcdict['t'],
-                                     lcdict['season'][0])
+                                   lcdict['season'][0])
     lcdict['campaign'] = npfull_like(lcdict['t'],
                                      lcdict['campaign'][0])
 
@@ -835,8 +817,13 @@ def read_kepler_pklc(picklefile):
 
     '''
 
+    if picklefile.endswith('.gz'):
+        infd = gzip.open(picklefile, 'rb')
+    else:
+        infd = open(picklefile, 'rb')
+
     try:
-        with open(picklefile, 'rb') as infd:
+        with infd:
             lcdict = pickle.load(infd)
 
     except UnicodeDecodeError:
@@ -847,7 +834,7 @@ def read_kepler_pklc(picklefile):
         LOGWARNING('pickle %s was probably from Python 2 '
                    'and failed to load without using "latin1" encoding. '
                    'This is probably a numpy issue: '
-                   'http://stackoverflow.com/q/11305790' % checkplotpickle)
+                   'http://stackoverflow.com/q/11305790' % picklefile)
 
     return lcdict
 
@@ -1093,8 +1080,7 @@ def epd_kepler_lightcurve(lcdict,
         len(timestoignore) > 0):
 
         exclind = npfull_like(times,True)
-
-        nefore = times.size
+        nbefore = times.size
 
         # apply all the masks
         for ignoretime in timestoignore:
@@ -1118,7 +1104,7 @@ def epd_kepler_lightcurve(lcdict,
 
     # now that we're all done, we can do EPD
     # first, smooth the light curve
-    smoothedfluxes = medfilt(fluxes, epdsmooth)
+    smoothedfluxes = median_filter(fluxes, size=epdsmooth)
 
     # initial fit coeffs
     initcoeffs = npones(11)
@@ -1175,190 +1161,181 @@ def epd_kepler_lightcurve(lcdict,
 
 
 
-# FIXME: this is only available if sklearn is available. not sure if we should
-# add yet another dependency
-if SKLEARN:
+def rfepd_kepler_lightcurve(lcdict,
+                            xccol='mom_centr1',
+                            yccol='mom_centr2',
+                            timestoignore=None,
+                            filterflags=True,
+                            writetodict=True,
+                            epdsmooth=23,
+                            decorr='xcc,ycc',
+                            nrftrees=200):
+    '''
+    This uses a RandomForestRegressor to fit and correct K2 light curves.
 
-    def rfepd_kepler_lightcurve(lcdict,
-                                xccol='mom_centr1',
-                                yccol='mom_centr2',
-                                timestoignore=None,
-                                filterflags=True,
-                                writetodict=True,
-                                epdsmooth=23,
-                                decorr='xcc,ycc',
-                                nrftrees=200):
-        '''
-        This uses a RandomForestRegressor to fit and correct K2 light curves.
+    Fits the X and Y positions, and the background and background error.
 
-        Fits the X and Y positions, and the background and background error.
+    timestoignore is a list of tuples containing start and end times to mask
+    when fitting the EPD function:
 
-        timestoignore is a list of tuples containing start and end times to mask
-        when fitting the EPD function:
+    [(time1_start, time1_end), (time2_start, time2_end), ...]
 
-        [(time1_start, time1_end), (time2_start, time2_end), ...]
+    By default, this function removes points in the Kepler LC that have ANY
+    quality flags set.
 
-        By default, this function removes points in the Kepler LC that have ANY
-        quality flags set.
+    if writetodict is set, adds the following columns to the lcdict:
 
-        if writetodict is set, adds the following columns to the lcdict:
+    rfepd_time = time array
+    rfepd_sapflux = uncorrected flux before EPD
+    rfepd_epdsapflux = corrected flux after EPD
+    rfepd_epdsapcorr = EPD flux corrections
+    rfepd_bkg = background array
+    rfepd_bkg_err = background errors array
+    rfepd_xcc = xcoord array
+    rfepd_ycc = ycoord array
+    rfepd_quality = quality flag array
 
-        rfepd_time = time array
-        rfepd_sapflux = uncorrected flux before EPD
-        rfepd_epdsapflux = corrected flux after EPD
-        rfepd_epdsapcorr = EPD flux corrections
-        rfepd_bkg = background array
-        rfepd_bkg_err = background errors array
-        rfepd_xcc = xcoord array
-        rfepd_ycc = ycoord array
-        rfepd_quality = quality flag array
+    and updates the 'columns' list in the lcdict as well.
 
-        and updates the 'columns' list in the lcdict as well.
+    '''
+    times, fluxes, background, background_err = (
+        lcdict['time'],
+        lcdict['sap']['sap_flux'],
+        lcdict['sap']['sap_bkg'],
+        lcdict['sap']['sap_bkg_err']
+    )
+    xcc = lcdict[xccol]
+    ycc = lcdict[yccol]
+    flags = lcdict['sap_quality']
 
-        '''
-        times, fluxes, background, background_err = (
-            lcdict['time'],
-            lcdict['sap']['sap_flux'],
-            lcdict['sap']['sap_bkg'],
-            lcdict['sap']['sap_bkg_err']
-        )
-        xcc = lcdict[xccol]
-        ycc = lcdict[yccol]
-        flags = lcdict['sap_quality']
-
-        # filter all bad LC points as noted by quality flags
-        if filterflags:
-
-            nbefore = times.size
-
-            filterind = flags == 0
-
-            times = times[filterind]
-            fluxes = fluxes[filterind]
-            background = background[filterind]
-            background_err = background_err[filterind]
-            xcc = xcc[filterind]
-            ycc = ycc[filterind]
-            flags = flags[filterind]
-
-            nafter = times.size
-            LOGINFO('applied quality flag filter, ndet before = %s, '
-                    'ndet after = %s'
-                    % (nbefore, nafter))
-
-
-        # remove nans
-        find = (npisfinite(xcc) & npisfinite(ycc) &
-                npisfinite(times) & npisfinite(fluxes) &
-                npisfinite(background) & npisfinite(background_err))
+    # filter all bad LC points as noted by quality flags
+    if filterflags:
 
         nbefore = times.size
 
-        times = times[find]
-        fluxes = fluxes[find]
-        background = background[find]
-        background_err = background_err[find]
-        xcc = xcc[find]
-        ycc = ycc[find]
-        flags = flags[find]
+        filterind = flags == 0
+
+        times = times[filterind]
+        fluxes = fluxes[filterind]
+        background = background[filterind]
+        background_err = background_err[filterind]
+        xcc = xcc[filterind]
+        ycc = ycc[filterind]
+        flags = flags[filterind]
 
         nafter = times.size
-        LOGINFO('removed nans, ndet before = %s, ndet after = %s'
+        LOGINFO('applied quality flag filter, ndet before = %s, '
+                'ndet after = %s'
                 % (nbefore, nafter))
 
 
-        # exclude all times in timestoignore
-        if (timestoignore and
-            isinstance(timestoignore, list) and
-            len(timestoignore) > 0):
+    # remove nans
+    find = (npisfinite(xcc) & npisfinite(ycc) &
+            npisfinite(times) & npisfinite(fluxes) &
+            npisfinite(background) & npisfinite(background_err))
 
-            exclind = npfull_like(times,True)
+    nbefore = times.size
 
-            nefore = times.size
+    times = times[find]
+    fluxes = fluxes[find]
+    background = background[find]
+    background_err = background_err[find]
+    xcc = xcc[find]
+    ycc = ycc[find]
+    flags = flags[find]
 
-            # apply all the masks
-            for ignoretime in timestoignore:
-                time0, time1 = ignoretime[0], ignoretime[1]
-                thismask = (times > time0) & (times < time1)
-                exclind = exclind & thismask
-
-            # quantities after masks have been applied
-            times = times[exclind]
-            fluxes = fluxes[exclind]
-            background = background[exclind]
-            background_err = background_err[exclind]
-            xcc = xcc[exclind]
-            ycc = ycc[exclind]
-            flags = flags[exclind]
-
-            nafter = times.size
-            LOGINFO('removed timestoignore, ndet before = %s, ndet after = %s'
-                    % (nbefore, nafter))
+    nafter = times.size
+    LOGINFO('removed nans, ndet before = %s, ndet after = %s'
+            % (nbefore, nafter))
 
 
-        # now that we're all done, we can do EPD
+    # exclude all times in timestoignore
+    if (timestoignore and
+        isinstance(timestoignore, list) and
+        len(timestoignore) > 0):
 
-        # set up the regressor
-        RFR = RandomForestRegressor(n_estimators=nrftrees)
+        exclind = npfull_like(times,True)
 
-        if decorr == 'xcc,ycc,bgv,bge':
-            # collect the features and target variable
-            features = npcolumn_stack((xcc,ycc,background,background_err))
-        elif decorr == 'xcc,ycc':
-            # collect the features and target variable
-            features = npcolumn_stack((xcc,ycc))
-        elif decorr == 'bgv,bge':
-            # collect the features and target variable
-            features = npcolumn_stack((background,background_err))
-        else:
-            LOGERROR("couldn't understand decorr, not decorrelating...")
-            return None
+        nbefore = times.size
 
-        # smooth the light curve
-        if epdsmooth:
-            smoothedfluxes = medfilt(fluxes, epdsmooth)
-        else:
-            smoothedfluxes = fluxes
+        # apply all the masks
+        for ignoretime in timestoignore:
+            time0, time1 = ignoretime[0], ignoretime[1]
+            thismask = (times > time0) & (times < time1)
+            exclind = exclind & thismask
 
-        # fit, then generate the predicted values, then get corrected values
-        RFR.fit(features, smoothedfluxes)
-        flux_corrections = RFR.predict(features)
-        corrected_fluxes = npmedian(fluxes) + fluxes - flux_corrections
+        # quantities after masks have been applied
+        times = times[exclind]
+        fluxes = fluxes[exclind]
+        background = background[exclind]
+        background_err = background_err[exclind]
+        xcc = xcc[exclind]
+        ycc = ycc[exclind]
+        flags = flags[exclind]
 
-        # remove the random forest to save RAM
-        del RFR
-
-        # write these to the dictionary if requested
-        if writetodict:
-
-            lcdict['rfepd'] = {}
-            lcdict['rfepd']['time'] = times
-            lcdict['rfepd']['sapflux'] = fluxes
-            lcdict['rfepd']['epdsapflux'] = corrected_fluxes
-            lcdict['rfepd']['epdsapcorr'] = flux_corrections
-            lcdict['rfepd']['bkg'] = background
-            lcdict['rfepd']['bkg_err'] = background_err
-            lcdict['rfepd']['xcc'] = xcc
-            lcdict['rfepd']['ycc'] = ycc
-            lcdict['rfepd']['quality'] = flags
-
-            for newcol in ['rfepd.time','rfepd.sapflux',
-                           'rfepd.epdsapflux','rfepd.epdsapcorr',
-                           'rfepd.bkg','rfepd.bkg.err',
-                           'rfepd.xcc','rfepd.ycc',
-                           'rfepd.quality']:
-
-                if newcol not in lcdict['columns']:
-                    lcdict['columns'].append(newcol)
+        nafter = times.size
+        LOGINFO('removed timestoignore, ndet before = %s, ndet after = %s'
+                % (nbefore, nafter))
 
 
-        return times, corrected_fluxes, flux_corrections
+    # now that we're all done, we can do EPD
 
-# if SKLEARN = False
-else:
-    LOGWARNING('scikit-learn package not found, '
-               'function rfepd_kepler_lightcurve '
-               'will not be available')
+    # set up the regressor
+    RFR = RandomForestRegressor(n_estimators=nrftrees)
+
+    if decorr == 'xcc,ycc,bgv,bge':
+        # collect the features and target variable
+        features = npcolumn_stack((xcc,ycc,background,background_err))
+    elif decorr == 'xcc,ycc':
+        # collect the features and target variable
+        features = npcolumn_stack((xcc,ycc))
+    elif decorr == 'bgv,bge':
+        # collect the features and target variable
+        features = npcolumn_stack((background,background_err))
+    else:
+        LOGERROR("couldn't understand decorr, not decorrelating...")
+        return None
+
+    # smooth the light curve
+    if epdsmooth:
+        smoothedfluxes = median_filter(fluxes, size=epdsmooth)
+    else:
+        smoothedfluxes = fluxes
+
+    # fit, then generate the predicted values, then get corrected values
+    RFR.fit(features, smoothedfluxes)
+    flux_corrections = RFR.predict(features)
+    corrected_fluxes = npmedian(fluxes) + fluxes - flux_corrections
+
+    # remove the random forest to save RAM
+    del RFR
+
+    # write these to the dictionary if requested
+    if writetodict:
+
+        lcdict['rfepd'] = {}
+        lcdict['rfepd']['time'] = times
+        lcdict['rfepd']['sapflux'] = fluxes
+        lcdict['rfepd']['epdsapflux'] = corrected_fluxes
+        lcdict['rfepd']['epdsapcorr'] = flux_corrections
+        lcdict['rfepd']['bkg'] = background
+        lcdict['rfepd']['bkg_err'] = background_err
+        lcdict['rfepd']['xcc'] = xcc
+        lcdict['rfepd']['ycc'] = ycc
+        lcdict['rfepd']['quality'] = flags
+
+        for newcol in ['rfepd.time','rfepd.sapflux',
+                       'rfepd.epdsapflux','rfepd.epdsapcorr',
+                       'rfepd.bkg','rfepd.bkg.err',
+                       'rfepd.xcc','rfepd.ycc',
+                       'rfepd.quality']:
+
+            if newcol not in lcdict['columns']:
+                lcdict['columns'].append(newcol)
+
+
+    return times, corrected_fluxes, flux_corrections
+
 
 #######################
 ## CENTROID ANALYSIS ##
@@ -1401,7 +1378,7 @@ def detrend_centroid(lcd, detrend='legendre', sigclip=None, mingap=0.5):
         assert qnum.size == 1, 'lcd should be for a unique quarter'
         assert detrend == 'legendre'
         qnum = int(qnum)
-    except:
+    except Exception as e:
         errflag = True
 
     # Get finite, QUALITY_FLAG != 0 times, centroids, and their errors.
@@ -1426,20 +1403,34 @@ def detrend_centroid(lcd, detrend='legendre', sigclip=None, mingap=0.5):
 
     # Sigma clip whopping outliers. It'd be better to have a general purpose
     # function for this, but sigclip_magseries works.
-    stimes_x, s_ctd_x, s_ctd_x_err = sigclip_magseries(f_times, f_ctd_x,
-            f_ctd_x_err, magsarefluxes=True, sigclip=30.)
-    stimes_y, s_ctd_y, s_ctd_y_err = sigclip_magseries(f_times, f_ctd_y,
-            f_ctd_y_err, magsarefluxes=True, sigclip=30.)
+    stimes_x, s_ctd_x, s_ctd_x_err = sigclip_magseries(
+        f_times,
+        f_ctd_x,
+        f_ctd_x_err,
+        magsarefluxes=True,
+        sigclip=30.0
+    )
+    stimes_y, s_ctd_y, s_ctd_y_err = sigclip_magseries(
+        f_times,
+        f_ctd_y,
+        f_ctd_y_err,
+        magsarefluxes=True,
+        sigclip=30.0
+    )
 
     # Get times and centroids where everything is finite and sigma clipped.
     mask_x = npin1d(stimes_x, stimes_y)
-    s_times, s_ctd_x, s_ctd_x_err = (stimes_x[mask_x],
-                                    s_ctd_x[mask_x],
-                                     s_ctd_x_err[mask_x])
+    s_times, s_ctd_x, s_ctd_x_err = (
+        stimes_x[mask_x],
+        s_ctd_x[mask_x],
+        s_ctd_x_err[mask_x]
+    )
     mask_y = npin1d(stimes_y, stimes_x)
-    tmp, s_ctd_y, s_ctd_y_err  = (stimes_y[mask_y],
-                                 s_ctd_y[mask_y],
-                                  s_ctd_y_err[mask_y])
+    tmp, s_ctd_y, s_ctd_y_err = (
+        stimes_y[mask_y],
+        s_ctd_y[mask_y],
+        s_ctd_y_err[mask_y]
+    )
     try:
         np.testing.assert_array_equal(s_times, tmp)
         assert len(s_ctd_y) == len(s_times)
@@ -1496,23 +1487,25 @@ def detrend_centroid(lcd, detrend='legendre', sigclip=None, mingap=0.5):
 
     # Extra inter-quarter burn-in of 0.5 days.
     try:
-        s_ctd_x = s_ctd_x[(s_times>(npmin(s_times)+mingap)) &
-                          (s_times<(npmax(s_times)-mingap))]
-    except:
+
+        s_ctd_x = s_ctd_x[(s_times > (npmin(s_times)+mingap)) &
+                          (s_times < (npmax(s_times)-mingap))]
+
+    except Exception as e:
         # Case: s_times is wonky, all across this quarter. (Implemented because
         # of a rare bug with a singleton s_times array).
         LOGERROR('DETREND FAILED, qnum {:d}'.format(qnum))
         return npnan, True
 
-    s_ctd_y = s_ctd_y[(s_times>(npmin(s_times)+mingap)) &
-                      (s_times<(npmax(s_times)-mingap))]
-    s_ctd_x_err = s_ctd_x_err[(s_times>(npmin(s_times)+mingap)) &
-                              (s_times<(npmax(s_times)-mingap))]
-    s_ctd_y_err = s_ctd_y_err[(s_times>(npmin(s_times)+mingap)) &
-                              (s_times<(npmax(s_times)-mingap))]
+    s_ctd_y = s_ctd_y[(s_times > (npmin(s_times)+mingap)) &
+                      (s_times < (npmax(s_times)-mingap))]
+    s_ctd_x_err = s_ctd_x_err[(s_times > (npmin(s_times)+mingap)) &
+                              (s_times < (npmax(s_times)-mingap))]
+    s_ctd_y_err = s_ctd_y_err[(s_times > (npmin(s_times)+mingap)) &
+                              (s_times < (npmax(s_times)-mingap))]
     # Careful to do this last...
-    s_times = s_times[(s_times>(npmin(s_times)+mingap)) &
-                      (s_times<(npmax(s_times)-mingap))]
+    s_times = s_times[(s_times > (npmin(s_times)+mingap)) &
+                      (s_times < (npmax(s_times)-mingap))]
 
     nafter = s_times.size
 
@@ -1535,7 +1528,7 @@ def detrend_centroid(lcd, detrend='legendre', sigclip=None, mingap=0.5):
     ctd_dtr = {}
 
     if detrend == 'legendre':
-        mingap = 0.5 # days
+        mingap = 0.5  # days
         ngroups, groups = find_lc_timegroups(s_times, mingap=mingap)
         tmpctdxlegfit, tmpctdylegfit, legdegs = [], [], []
         for group in groups:
@@ -1566,8 +1559,7 @@ def detrend_centroid(lcd, detrend='legendre', sigclip=None, mingap=0.5):
                'fit_ctd_x':fit_ctd_x,
                'ctd_y':s_ctd_y,
                'ctd_y_err':s_ctd_y_err,
-               'fit_ctd_y':fit_ctd_y
-              }
+               'fit_ctd_y':fit_ctd_y}
 
     lcd['ctd_dtr'] = ctd_dtr
 
@@ -1650,11 +1642,13 @@ def get_centroid_offsets(lcd, t_ing_egr, oot_buffer_time=0.1, sample_factor=3):
         oot_window_len = sample_factor * transit_dur
 
         oot_before = times[
-                (times < (t_ing-oot_buffer_time)) &
-                (times > (t_ing-oot_buffer_time-oot_window_len))]
+            (times < (t_ing-oot_buffer_time)) &
+            (times > (t_ing-oot_buffer_time-oot_window_len))
+        ]
         oot_after = times[
-                (times > (t_egr+oot_buffer_time)) &
-                (times < (t_egr+oot_buffer_time+oot_window_len))]
+            (times > (t_egr+oot_buffer_time)) &
+            (times < (t_egr+oot_buffer_time+oot_window_len))
+        ]
 
         oot_times = npconcatenate([oot_before, oot_after])
 
@@ -1674,8 +1668,7 @@ def get_centroid_offsets(lcd, t_ing_egr, oot_buffer_time=0.1, sample_factor=3):
                   'npts_in_tra':len(ctd_x_in_tra),
                   'npts_oot':len(ctd_x_oot),
                   'in_tra_times':in_tra_times,
-                  'oot_times':oot_times
-                 }
+                  'oot_times':oot_times}
 
     LOGINFO('Got centroid offsets (qnum: {:d}).'.format(qnum))
 
@@ -1691,8 +1684,8 @@ def _get_legendre_deg_ctd(npts):
     degs = nparray([4,5,6,10,15])
     pts = nparray([1e2,3e2,5e2,1e3,3e3])
     fn = interp1d(pts, degs, kind='linear',
-                 bounds_error=False,
-                 fill_value=(min(degs), max(degs)))
+                  bounds_error=False,
+                  fill_value=(min(degs), max(degs)))
     legendredeg = int(npfloor(fn(npts)))
 
     return legendredeg
@@ -1701,6 +1694,7 @@ def _get_legendre_deg_ctd(npts):
 #######################################
 # UTILITY FUNCTION FOR ANY DETRENDING #
 #######################################
+
 def _legendre_dtr(x, y, y_err, legendredeg=10):
     '''
     args:
@@ -1711,7 +1705,7 @@ def _legendre_dtr(x, y, y_err, legendredeg=10):
     try:
         p = Legendre.fit(x, y, legendredeg)
         fit_y = p(x)
-    except:
+    except Exception as e:
         fit_y = npzeros_like(y)
 
     fitchisq = npsum(

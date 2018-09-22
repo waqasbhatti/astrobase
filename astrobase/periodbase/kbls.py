@@ -77,7 +77,7 @@ def LOGEXCEPTION(message):
 
 from multiprocessing import Pool, cpu_count
 
-from math import modf, fmod
+from math import fmod
 
 import numpy as np
 
@@ -1036,8 +1036,8 @@ def bls_snr(blsdict,
                     blsmodel[transitindices] - thistransdepth
                 )
 
-            # see __init__/get_snr_of_dip docstring for description of transit SNR
-            # equation, which is what we use for `thissnr`.
+            # see __init__/get_snr_of_dip docstring for description of transit
+            # SNR equation, which is what we use for `thissnr`.
             subtractedmags = tmags - blsmodel
             subtractedrms = npstd(subtractedmags)
             npts_in_transit = len(tmags[transitindices])

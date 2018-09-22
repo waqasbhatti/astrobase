@@ -68,8 +68,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -174,7 +174,7 @@ def generalized_lsp_value(times, mags, errs, omega):
     YC = YpC - Y*C
     YS = YpS - Y*S
     CC = CpC - C*C
-    SS = 1 - CpC - S*S # use SpS = 1 - CpC
+    SS = 1 - CpC - S*S  # use SpS = 1 - CpC
     CS = CpS - C*S
 
     # calculate tau
@@ -246,7 +246,7 @@ def generalized_lsp_value_notau(times, mags, errs, omega):
     YC = YpC - Y*C
     YS = YpS - Y*S
     CC = CpC - C*C
-    SS = 1 - CpC - S*S # use SpS = 1 - CpC
+    SS = 1 - CpC - S*S  # use SpS = 1 - CpC
     CS = CpS - C*S
 
     # P(omega) = (SS*YC*YC + CC*YS*YS - 2.0*CS*YC*YS)/(YY*D)
@@ -276,12 +276,12 @@ def specwindow_lsp_value(times, mags, errs, omega):
     lspval_top_cos = (npsum(1.0 * npcos(omega*(norm_times-tau))) *
                       npsum(1.0 * npcos(omega*(norm_times-tau))))
     lspval_bot_cos = npsum( (npcos(omega*(norm_times-tau))) *
-                             (npcos(omega*(norm_times-tau))) )
+                            (npcos(omega*(norm_times-tau))) )
 
     lspval_top_sin = (npsum(1.0 * npsin(omega*(norm_times-tau))) *
                       npsum(1.0 * npsin(omega*(norm_times-tau))))
     lspval_bot_sin = npsum( (npsin(omega*(norm_times-tau))) *
-                             (npsin(omega*(norm_times-tau))) )
+                            (npsin(omega*(norm_times-tau))) )
 
     lspval = 0.5 * ( (lspval_top_cos/lspval_bot_cos) +
                      (lspval_top_sin/lspval_bot_sin) )
@@ -342,7 +342,7 @@ def pgen_lsp(
         endp=None,
         autofreq=True,
         nbestpeaks=5,
-        periodepsilon=0.1, # 0.1
+        periodepsilon=0.1,
         stepsize=1.0e-4,
         nworkers=None,
         workchunksize=None,
@@ -552,7 +552,7 @@ def specwindow_lsp(
         endp=None,
         autofreq=True,
         nbestpeaks=5,
-        periodepsilon=0.1, # 0.1
+        periodepsilon=0.1,
         stepsize=1.0e-4,
         nworkers=None,
         sigclip=10.0,

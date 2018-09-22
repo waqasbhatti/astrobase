@@ -4,8 +4,7 @@
 '''trends.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2018
 
 Contains light curve trend-removal tools, such as external parameter
-decorrelation (EPD) and an implementation of the trend filtering algorithm
-(TFA).
+decorrelation (EPD).
 
 '''
 

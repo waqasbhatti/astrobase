@@ -136,7 +136,7 @@ try:
     import cPickle as pickle
     import cStringIO
     from cStringIO import StringIO as strio
-except:
+except Exception as e:
     import pickle
     from io import BytesIO as strio
 
@@ -531,7 +531,7 @@ def _make_phased_magseries_plot(axes,
             else:
                 plotvarepoch = varepoch[periodind]
 
-        except:
+        except Exception as e:
             LOGEXCEPTION(
                 "varepoch provided in list form either doesn't match "
                 "the length of nbestperiods from the period-finder "
@@ -733,7 +733,7 @@ def checkplot_png(lspinfo,
                   phasesort=True,
                   phasebin=0.002,
                   minbinelems=7,
-                  plotxlim=[-0.8,0.8],
+                  plotxlim=(-0.8,0.8),
                   xliminsetmode=False,
                   plotdpi=100,
                   bestperiodhighlight=None,
@@ -1054,7 +1054,7 @@ def twolsp_checkplot_png(lspinfo1,
                          phasesort=True,
                          phasebin=0.002,
                          minbinelems=7,
-                         plotxlim=[-0.8,0.8],
+                         plotxlim=(-0.8,0.8),
                          xliminsetmode=False,
                          plotdpi=100,
                          bestperiodhighlight=None,
@@ -2060,7 +2060,7 @@ def _pkl_phased_magseries_plot(checkplotdict,
                                phasesort=True,
                                phasebin=0.002,
                                minbinelems=7,
-                               plotxlim=[-0.8,0.8],
+                               plotxlim=(-0.8,0.8),
                                plotdpi=100,
                                bestperiodhighlight=None,
                                xgridlines=None,
@@ -2162,7 +2162,7 @@ def _pkl_phased_magseries_plot(checkplotdict,
         try:
             thisvarepochlist = varepoch[lspmethodind]
             plotvarepoch = thisvarepochlist[periodind]
-        except:
+        except Exception as e:
             LOGEXCEPTION(
                 "varepoch provided in list form either doesn't match "
                 "the length of nbestperiods from the period-finder "
@@ -2941,7 +2941,7 @@ def checkplot_dict(lspinfolist,
                    xmatchinfo=None,
                    xmatchradiusarcsec=3.0,
                    lcfitfunc=None,
-                   lcfitparams={},
+                   lcfitparams=None,
                    externalplots=None,
                    findercmap='gray_r',
                    finderconvolve=None,
@@ -2954,7 +2954,7 @@ def checkplot_dict(lspinfolist,
                    phasesort=True,
                    phasebin=0.002,
                    minbinelems=7,
-                   plotxlim=[-0.8,0.8],
+                   plotxlim=(-0.8,0.8),
                    xliminsetmode=False,
                    plotdpi=100,
                    bestperiodhighlight=None,
@@ -3284,6 +3284,8 @@ def checkplot_dict(lspinfolist,
                 # if there's a function to use for fitting, do the fit
                 if lcfitfunc:
                     try:
+                        if lcfitparams is None:
+                            lcfitparams = {}
                         overplotfit = lcfitfunc(stimes,
                                                 smags,
                                                 serrs,
@@ -3443,7 +3445,7 @@ def checkplot_pickle(lspinfolist,
                      gaia_mirror='cds',
                      complete_query_later=True,
                      lcfitfunc=None,
-                     lcfitparams={},
+                     lcfitparams=None,
                      varinfo=None,
                      getvarfeatures=True,
                      lclistpkl=None,
@@ -3465,7 +3467,7 @@ def checkplot_pickle(lspinfolist,
                      phasesort=True,
                      phasebin=0.002,
                      minbinelems=7,
-                     plotxlim=[-0.8,0.8],
+                     plotxlim=(-0.8,0.8),
                      xliminsetmode=False,
                      plotdpi=100,
                      returndict=False,

@@ -73,8 +73,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 ####################
@@ -92,7 +92,7 @@ import multiprocessing as mp
 
 try:
     import cPickle as pickle
-except:
+except Exception as e:
     import pickle
 
 import numpy as np
@@ -112,36 +112,36 @@ FRAMEREGEX = re.compile(r'(\d{1})\-(\d{6})(\w{0,1})_(\d{1})')
 # these are the columns in the input text LCs, common to all epdlc and tfalcs
 # an additional column for the TFA magnitude in the current aperture is added
 # for tfalcs. there are three tfalcs for each epdlc, one for each aperture.
-COLDEFS = [('rjd',float),  # The reduced Julian date
-           ('frk',str),    # Framekey: {stationid}-{framenum}{framesub}_{ccdnum}
-           ('hat',str),    # The HATID of the object
-           ('xcc',float),  # Original x coordinate on the imagesub astromref
-           ('ycc',float),  # Original y coordinate on the imagesub astromref
-           ('xic',float),  # Shifted x coordinate on this frame
-           ('yic',float),  # Shifted y coordinate on this frame
-           ('fsv',float),  # Measured S value
-           ('fdv',float),  # Measured D value
-           ('fkv',float),  # Measured K value
-           ('bgv',float),  # Background value
-           ('bge',float),  # Background measurement error
-           ('ifl1',float), # Flux measurement in ADU, aperture 1
-           ('ife1',float), # Flux error in ADU, aperture 1
-           ('irm1',float), # Instrumental magnitude in aperture 1
-           ('ire1',float), # Instrumental magnitude error for aperture 1
-           ('irq1',str),   # Instrumental magnitude quality flag for aperture 1
-           ('ifl2',float), # Flux measurement in ADU, aperture 2
-           ('ife2',float), # Flux error in ADU, aperture 2
-           ('irm2',float), # Instrumental magnitude in aperture 2
-           ('ire2',float), # Instrumental magnitude error for aperture 2
-           ('irq2',str),   # Instrumental magnitude quality flag for aperture 2
-           ('ifl3',float), # Flux measurement in ADU, aperture 3
-           ('ife3',float), # Flux error in ADU, aperture 3
-           ('irm3',float), # Instrumental magnitude in aperture 3
-           ('ire3',float), # Instrumental magnitude error for aperture 3
-           ('irq3',str),   # Instrumental magnitude quality flag for aperture 3
-           ('iep1',float), # EPD magnitude for aperture 1
-           ('iep2',float), # EPD magnitude for aperture 2
-           ('iep3',float)] # EPD magnitude for aperture 3
+COLDEFS = [('rjd',float),   # The reduced Julian date
+           ('frk',str),     # Framekey:{stationid}-{framenum}{framesub}_{ccdnum}
+           ('hat',str),     # The HATID of the object
+           ('xcc',float),   # Original x coordinate on the imagesub astromref
+           ('ycc',float),   # Original y coordinate on the imagesub astromref
+           ('xic',float),   # Shifted x coordinate on this frame
+           ('yic',float),   # Shifted y coordinate on this frame
+           ('fsv',float),   # Measured S value
+           ('fdv',float),   # Measured D value
+           ('fkv',float),   # Measured K value
+           ('bgv',float),   # Background value
+           ('bge',float),   # Background measurement error
+           ('ifl1',float),  # Flux measurement in ADU, aperture 1
+           ('ife1',float),  # Flux error in ADU, aperture 1
+           ('irm1',float),  # Instrumental magnitude in aperture 1
+           ('ire1',float),  # Instrumental magnitude error for aperture 1
+           ('irq1',str),    # Instrumental magnitude quality flag for aperture 1
+           ('ifl2',float),  # Flux measurement in ADU, aperture 2
+           ('ife2',float),  # Flux error in ADU, aperture 2
+           ('irm2',float),  # Instrumental magnitude in aperture 2
+           ('ire2',float),  # Instrumental magnitude error for aperture 2
+           ('irq2',str),    # Instrumental magnitude quality flag for aperture 2
+           ('ifl3',float),  # Flux measurement in ADU, aperture 3
+           ('ife3',float),  # Flux error in ADU, aperture 3
+           ('irm3',float),  # Instrumental magnitude in aperture 3
+           ('ire3',float),  # Instrumental magnitude error for aperture 3
+           ('irq3',str),    # Instrumental magnitude quality flag for aperture 3
+           ('iep1',float),  # EPD magnitude for aperture 1
+           ('iep2',float),  # EPD magnitude for aperture 2
+           ('iep3',float)]  # EPD magnitude for aperture 3
 
 # these are the mag columns
 MAGCOLS = ['ifl1','irm1','iep1','itf1',
@@ -410,8 +410,8 @@ def concatenate_textlcs(lclist,
 
     # update the stations
     lcdict['objectinfo']['stations'] = [
-            'HP%s' % x for x in np.unique(lcdict['stf']).tolist()
-        ]
+        'HP%s' % x for x in np.unique(lcdict['stf']).tolist()
+    ]
 
     # update the total LC count
     lcdict['nconcatenated'] = lccounter + 1
@@ -481,7 +481,7 @@ def concatenate_textlcs_for_objectid(lcbasedir,
     LOGINFO('looking for light curves for %s, aperture %s in directory: %s'
             % (objectid, aperture, lcbasedir))
 
-    if recursive == False:
+    if recursive is False:
 
         matching = glob.glob(os.path.join(lcbasedir,
                                           '*%s*%s*%s' % (objectid,
@@ -506,13 +506,13 @@ def concatenate_textlcs_for_objectid(lcbasedir,
             walker = os.walk(lcbasedir)
             matching = []
 
-            for root, dirs, files in walker:
+            for root, dirs, _files in walker:
                 for sdir in dirs:
                     searchpath = os.path.join(root,
                                               sdir,
                                               '*%s*%s*%s' % (objectid,
                                                              aperture,
-                                                             prefix))
+                                                             postfix))
                     foundfiles = glob.glob(searchpath)
 
                     if foundfiles:
@@ -698,7 +698,7 @@ def read_hatpi_binnedlc(binnedpklf, textlcf, timebinsec):
 
     try:
         binned = pickle.load(infd)
-    except:
+    except Exception as e:
         infd.seek(0)
         binned = pickle.load(infd, encoding='latin1')
     infd.close()
@@ -832,7 +832,7 @@ def generate_hatpi_binnedlc_pkl(binnedpklf, textlcf, timebinsec,
             outfile = os.path.join(
                 os.path.dirname(binnedpklf),
                 '%s-hplc.pkl' % (
-                    os.path.basename(binnedpklf).rstrip('sec-lc.pkl.gz')
+                    os.path.basename(binnedpklf).replace('sec-lc.pkl.gz','')
                 )
             )
 
@@ -947,7 +947,8 @@ def pklc_fovcatalog_objectinfo(
             lcdict['objectinfo'].update(
                 {x:y for x,y in zip(
                     fovcatalog_colnames,
-                    [np.asscalar(fovcat[z][catind]) for z in fovcatalog_colnames]
+                    [np.asscalar(fovcat[z][catind]) for
+                     z in fovcatalog_colnames]
                 )
                 }
             )

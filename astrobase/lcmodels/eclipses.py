@@ -37,8 +37,8 @@ def _gaussian(x, amp, loc, std):
 
 
 def _double_inverted_gaussian(x,
-                             amp1, loc1, std1,
-                             amp2, loc2, std2):
+                              amp1, loc1, std1,
+                              amp2, loc2, std2):
     '''
     This is a double inverted gaussian.
 
@@ -101,8 +101,8 @@ def invgauss_eclipses_func(ebparams, times, mags, errs):
     primaryecl_amp = -pdepth
     secondaryecl_amp = -pdepth * depthratio
 
-    primaryecl_std = pduration/5.0 # we use 5-sigma as full-width -> duration
-    secondaryecl_std = pduration/5.0 # secondary eclipse has the same duration
+    primaryecl_std = pduration/5.0    # we use 5-sigma as full-width -> duration
+    secondaryecl_std = pduration/5.0  # secondary eclipse has the same duration
 
     halfduration = pduration/2.0
 

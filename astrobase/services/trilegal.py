@@ -84,8 +84,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -237,7 +237,8 @@ TRILEGAL_FILTER_SYSTEMS = {
     },
     '2mass_spitzer_wise_washington_ddo51': {
         'desc': '2MASS+Spitzer+WISE+Washington+DDO51',
-        'table': 'tab_mag_odfnew/tab_mag_2mass_spitzer_wise_washington_ddo51.dat'
+        'table': ('tab_mag_odfnew/'
+                  'tab_mag_2mass_spitzer_wise_washington_ddo51.dat')
     },
     'TESS_2mass_kepler': {
         'desc': ('TESS + 2MASS (Vegamags) + Kepler + SDSS griz + '
@@ -340,8 +341,8 @@ TRILEGAL_FILTER_SYSTEMS = {
     'lsst': {
         'desc': ('LSST ugrizY, March 2012 total filter throughputs (all '
                  'ABmags)'),
-        'table': 'tab_mag_odfnew/tab_mag_lsst.dat'}
-    ,
+        'table': 'tab_mag_odfnew/tab_mag_lsst.dat'
+    },
     'megacam': {
         'desc': "CFHT/Megacam u*g'r'i'z'",
         'table': 'tab_mag_odfnew/tab_mag_megacam.dat'

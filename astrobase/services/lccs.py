@@ -64,7 +64,7 @@ __version__ = '0.3.19'
 try:
     from datetime import datetime, timezone
     utc = timezone.utc
-except:
+except Exception as e:
     from datetime import datetime, timedelta, tzinfo
 
     # we'll need to instantiate a tzinfo object because py2.7's datetime
@@ -158,7 +158,7 @@ import time
 
 try:
     import cPickle as pickle
-except:
+except Exception as e:
     import pickle
 
 
@@ -172,7 +172,7 @@ try:
     from urlparse import urlparse
     from urllib2 import urlopen, Request, HTTPError
 # Python 3
-except:
+except Exception as e:
     from urllib.request import urlretrieve, urlopen, Request
     from urllib.error import HTTPError
     from urllib.parse import urlencode, urlparse
@@ -431,7 +431,7 @@ def submit_get_searchquery(url, params, apikey=None):
                 LOGERROR(msg)
                 return 'failed', None, None
 
-            except:
+            except Exception as e:
 
                 LOGEXCEPTION('failed to submit query to %s' % url)
                 return 'failed', None, None
@@ -541,7 +541,7 @@ def submit_post_searchquery(url, data, apikey):
                 LOGERROR(msg)
                 return 'failed', None, None
 
-            except:
+            except Exception as e:
 
                 LOGEXCEPTION('failed to submit query to %s' % url)
                 return 'failed', None, None

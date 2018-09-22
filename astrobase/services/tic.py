@@ -79,26 +79,31 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
 ## IMPORTS ##
 #############
 
-import sys, os, time, re, json
+import sys
+import json
 
-try: # Python 3.x
+# Python 3.x
+try:
     from urllib.parse import quote as urlencode
     from urllib.request import urlretrieve
-except ImportError:  # Python 2.x
+# Python 2.x
+except ImportError:
     from urllib import pathname2url as urlencode
     from urllib import urlretrieve
 
-try: # Python 3.x
+# Python 3.x
+try:
     import http.client as httplib
-except ImportError:  # Python 2.x
+# Python 2.x
+except ImportError:
     import httplib
 
 ###################
@@ -107,9 +112,9 @@ except ImportError:  # Python 2.x
 
 def mast_query(request):
 
-    server='mast.stsci.edu'
+    server = 'mast.stsci.edu'
 
-    # Grab Python Version 
+    # Grab Python Version
     version = ".".join(map(str, sys.version_info[:3]))
 
     # Create Http Header Variables
@@ -136,7 +141,7 @@ def mast_query(request):
     # Close the https connection
     conn.close()
 
-    del conn # needed for tricky memory management reasons
+    del conn  # needed for tricky memory management reasons
 
     return head,content
 
@@ -157,15 +162,15 @@ def tic_single_object_crossmatch(ra, dec, radius):
                                  {"name":"dec","type":"float"}],
                        "data":[{"ra":ra,"dec":dec}]}
 
-    request =  {"service":"Mast.Tic.Crossmatch",
-                "data":crossmatchInput,
-                "params":{
-                    "raColumn":"ra",
-                    "decColumn":"dec",
-                    "radius":radius
-                },
-                "format":"json",
-                'removecache':True}
+    request = {"service":"Mast.Tic.Crossmatch",
+               "data":crossmatchInput,
+               "params":{
+                   "raColumn":"ra",
+                   "decColumn":"dec",
+                   "radius":radius
+               },
+               "format":"json",
+               'removecache':True}
 
     headers,out_string = mast_query(request)
 

@@ -71,7 +71,9 @@ def _autocorr_func2(mags, lag, maglen, magmed, magstd):
     products = (mags[lagindex] - magmed) * (mags[lagindex+lag] - magmed)
 
     autocovarfunc = npsum(products)/lagindex.size
-    varfunc = npsum((mags[lagindex] - magmed)*(mags[lagindex] - magmed))/mags.size
+    varfunc = npsum(
+        (mags[lagindex] - magmed)*(mags[lagindex] - magmed)
+    )/mags.size
 
     acorr = autocovarfunc/varfunc
 
@@ -126,7 +128,7 @@ def autocorr_magseries(times, mags, errs,
                                        verbose=verbose)
 
     if not interpolated:
-        LOGERROR('failed to interpolate light curve to minimum cadence!')
+        print('failed to interpolate light curve to minimum cadence!')
         return None
 
     itimes, imags, ierrs = (interpolated['itimes'],

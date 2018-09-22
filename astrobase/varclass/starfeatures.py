@@ -99,8 +99,6 @@ def LOGEXCEPTION(message):
 ## IMPORTS ##
 #############
 
-from time import time as unixtime
-import pickle
 import gzip
 import os.path
 
@@ -295,7 +293,7 @@ BANDPASSES_COLORS = {
     'wise1':{'dustkey':'WISE-1',
              'label':'W1',
              'colors':[['sdssi-wise1','i - W1'],
-                      ['wise1-wise2','W1 - W2']]},
+                       ['wise1-wise2','W1 - W2']]},
     'wise2':{'dustkey':'WISE-2',
              'label':'W2',
              'colors':[['wise1-wise2','W1 - W2'],

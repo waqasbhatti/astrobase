@@ -84,7 +84,7 @@ import stat
 import hashlib
 try:
     import ConfigParser as configparser
-except:
+except Exception as e:
     import configparser
 
 
@@ -96,13 +96,14 @@ try:
     import psycopg2 as pg
     import psycopg2.extras
 
-except:
+except Exception as e:
 
     LOGEXCEPTION('psycopg2 is not available for import. '
                  'Please install it to use this module.\n'
                  'You may have to get development packages for libpq '
                  '(lipgq-dev, postgresql-devel, etc.) to compile '
-                 'psycopg2 successfully.')
+                 'psycopg2 successfully. '
+                 'Alternatively, install psycopg2-binary from PyPI')
     raise
 
 
@@ -161,7 +162,7 @@ try:
     else:
         HAVECONF = False
 
-except:
+except Exception as e:
 
     LOGEXCEPTION("no configuration file "
                  "found for this module in %s, "

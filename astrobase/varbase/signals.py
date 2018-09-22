@@ -68,8 +68,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -184,7 +184,7 @@ def prewhiten_magseries(times, mags, errs,
         wmags = wmags + median_mag
 
     # prepare the returndict
-    returndict = {'wtimes':wtimes, # these are in the new time order
+    returndict = {'wtimes':wtimes,  # these are in the new time order
                   'wphase':wphase,
                   'wmags':wmags,
                   'werrs':werrs,
@@ -330,7 +330,7 @@ def gls_prewhiten(times, mags, errs,
                   sigclip=30.0,
                   magsarefluxes=False,
                   stepsize=1.0e-4,
-                  fourierorder=3, # 3rd order series to start with
+                  fourierorder=3,  # 3rd order series to start with
                   initfparams=None,
                   nbestpeaks=5,
                   nworkers=4,

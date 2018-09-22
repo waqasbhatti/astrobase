@@ -351,8 +351,8 @@ def fourier_fit_magseries(times, mags, errs, period,
     stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
 
     phase, pmags, perrs, ptimes, mintime = (
-            _get_phased_quantities(stimes, smags, serrs, period)
-        )
+        _get_phased_quantities(stimes, smags, serrs, period)
+    )
 
 
     # get the fourier order either from the scalar order kwarg...
@@ -436,7 +436,7 @@ def fourier_fit_magseries(times, mags, errs, period,
             magseriesepoch = ptimes[fitmagminind]
 
             # assemble the returndict
-            returndict =  {
+            returndict = {
                 'fittype':'fourier',
                 'fitinfo':{
                     'fourierorder':fourierorder,
@@ -512,7 +512,7 @@ def fourier_fit_magseries(times, mags, errs, period,
                 'leastsqfit':None,
                 'fitmags':None,
                 'fitepoch':None
-                },
+            },
             'fitchisq':npnan,
             'fitredchisq':npnan,
             'fitplotfile':None,
@@ -574,7 +574,7 @@ def spline_fit_magseries(times, mags, errs, period,
 
     # phase the mag series
     phase, pmags, perrs, ptimes, mintime = (
-            _get_phased_quantities(stimes, smags, serrs, period)
+        _get_phased_quantities(stimes, smags, serrs, period)
     )
 
     # now figure out the number of knots up to max knots (=100)
@@ -625,7 +625,7 @@ def spline_fit_magseries(times, mags, errs, period,
     magseriesepoch = ptimes[fitmagminind]
 
     # assemble the returndict
-    returndict =  {
+    returndict = {
         'fittype':'spline',
         'fitinfo':{
             'nknots':nknots,
@@ -719,14 +719,14 @@ def savgol_fit_magseries(times, mags, errs, period,
     stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
 
     phase, pmags, perrs, ptimes, mintime = (
-            _get_phased_quantities(stimes, smags, serrs, period)
-        )
+        _get_phased_quantities(stimes, smags, serrs, period)
+    )
 
     if not isinstance(windowlength, int):
         windowlength = max(
-                polydeg+3,
-                int(len(phase)/300)
-                )
+            polydeg + 3,
+            int(len(phase)/300)
+        )
         if windowlength % 2 == 0:
             windowlength += 1
 
@@ -879,9 +879,8 @@ def legendre_fit_magseries(times, mags, errs, period,
 
 
     phase, pmags, perrs, ptimes, mintime = (
-            _get_phased_quantities(stimes, smags, serrs, period)
-        )
-
+        _get_phased_quantities(stimes, smags, serrs, period)
+    )
 
     if verbose:
         LOGINFO('fitting Legendre series with '
@@ -1045,7 +1044,7 @@ def traptransit_fit_magseries(times, mags, errs,
             transitepoch = spfit['fitinfo']['fitepoch']
 
         # if the spline-fit fails, try a savgol fit instead
-        except:
+        except Exception as e:
             sgfit = savgol_fit_magseries(times, mags, errs, transitperiod,
                                          sigclip=sigclip,
                                          magsarefluxes=magsarefluxes,
@@ -1060,7 +1059,7 @@ def traptransit_fit_magseries(times, mags, errs,
                          "can't continue. please provide it in transitparams.")
 
                 # assemble the returndict
-                returndict =  {
+                returndict = {
                     'fittype':'traptransit',
                     'fitinfo':{
                         'initialparams':transitparams,
@@ -1085,7 +1084,8 @@ def traptransit_fit_magseries(times, mags, errs,
 
             else:
 
-                # check the case when there are more than one transitepochs returned
+                # check the case when there are more than one transitepochs
+                # returned
                 if transitepoch.size > 0:
                     if verbose:
                         LOGWARNING(
@@ -1160,7 +1160,7 @@ def traptransit_fit_magseries(times, mags, errs,
         fperiod, fepoch = finalparams[:2]
 
         # assemble the returndict
-        returndict =  {
+        returndict = {
             'fittype':'traptransit',
             'fitinfo':{
                 'initialparams':transitparams,
@@ -1200,7 +1200,7 @@ def traptransit_fit_magseries(times, mags, errs,
         LOGERROR('trapezoid-fit: least-squared fit to the light curve failed!')
 
         # assemble the returndict
-        returndict =  {
+        returndict = {
             'fittype':'traptransit',
             'fitinfo':{
                 'initialparams':transitparams,
@@ -1297,7 +1297,7 @@ def gaussianeb_fit_magseries(times, mags, errs,
             ebepoch = spfit['fitinfo']['fitepoch']
 
         # if the spline-fit fails, try a savgol fit instead
-        except:
+        except Exception as e:
             sgfit = savgol_fit_magseries(times, mags, errs, ebperiod,
                                          sigclip=sigclip,
                                          magsarefluxes=magsarefluxes,
@@ -1312,7 +1312,7 @@ def gaussianeb_fit_magseries(times, mags, errs,
                          "can't continue. please provide it in ebparams.")
 
                 # assemble the returndict
-                returndict =  {
+                returndict = {
                     'fittype':'gaussianeb',
                     'fitinfo':{
                         'initialparams':ebparams,
@@ -1409,7 +1409,7 @@ def gaussianeb_fit_magseries(times, mags, errs,
         fperiod, fepoch = finalparams[:2]
 
         # assemble the returndict
-        returndict =  {
+        returndict = {
             'fittype':'gaussianeb',
             'fitinfo':{
                 'initialparams':ebparams,

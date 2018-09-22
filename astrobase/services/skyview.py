@@ -69,8 +69,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -81,18 +81,14 @@ import os
 import os.path
 import gzip
 import hashlib
-import time
 import re
-import json
-
-import numpy as np
 
 # to do the queries
 import requests
 import requests.exceptions
 try:
     from urllib.parse import urljoin
-except:
+except Exception as e:
     from urlparse import urljoin
 
 import astropy.io.fits as pyfits

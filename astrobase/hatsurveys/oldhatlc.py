@@ -146,36 +146,36 @@ TEXTLC_OUTPUT_COLUMNS = {
     'YIC':['image-subtraction Y coordinate on CCD',
            '%.1f','E',float],
     'IRM1':['image-subtraction lightcurve reduced magnitude (aperture 1)',
-           '%12.5f','D',float],
+            '%12.5f','D',float],
     'IRE1':['image-subtraction lightcurve measurement error (aperture 1)',
-           '%12.5f','D',float],
+            '%12.5f','D',float],
     'IRQ1':['image-subtraction lightcurve quality flag (aperture 1)',
-           '%s','1A',str],
+            '%s','1A',str],
     'IRM2':['image-subtraction lightcurve reduced magnitude (aperture 2)',
-           '%12.5f','D',float],
+            '%12.5f','D',float],
     'IRE2':['image-subtraction lightcurve measurement error (aperture 2)',
-           '%12.5f','D',float],
+            '%12.5f','D',float],
     'IRQ2':['image-subtraction lightcurve quality flag (aperture 2)',
-           '%s','1A',str],
+            '%s','1A',str],
     'IRM3':['image-subtraction lightcurve reduced magnitude (aperture 3)',
-           '%12.5f','D',float],
+            '%12.5f','D',float],
     'IRE3':['image-subtraction lightcurve measurement error (aperture 3)',
-           '%12.5f','D',float],
+            '%12.5f','D',float],
     'IRQ3':['image-subtraction lightcurve quality flag (aperture 3)',
-           '%s','1A',str],
+            '%s','1A',str],
     'IEP1':['image-subtraction EPD lightcurve magnitude (aperture 1)',
-           '%12.5f','D',float],
+            '%12.5f','D',float],
     'IEP2':['image-subtraction EPD lightcurve magnitude (aperture 2)',
-           '%12.5f','D',float],
+            '%12.5f','D',float],
     'IEP3':['image-subtraction EPD lightcurve magnitude (aperture 3)',
-           '%12.5f','D',float],
+            '%12.5f','D',float],
     'ITF1':['image-subtraction TFA lightcurve magnitude (aperture 1)',
-           '%12.5f','D',float],
+            '%12.5f','D',float],
     'ITF2':['image-subtraction TFA lightcurve magnitude (aperture 2)',
-           '%12.5f','D',float],
+            '%12.5f','D',float],
     'ITF3':['image-subtraction TFA lightcurve magnitude (aperture 3)',
-           '%12.5f','D',float],
-    }
+            '%12.5f','D',float],
+}
 
 
 
@@ -236,7 +236,7 @@ def read_hatlc(hatlc):
 
     elif '.csv' in lcfname or '.hatlc' in lcfname:
 
-        lcflines = lcf.read().decode().split('\n') # argh Python 3
+        lcflines = lcf.read().decode().split('\n')
         lcf.close()
 
         # now process the read-in LC
@@ -250,7 +250,7 @@ def read_hatlc(hatlc):
             objectlc = [x.split() for x in objectlc]
 
         # transpose split rows to get columns
-        objectlc = list(zip(*objectlc)) # argh Python 3
+        objectlc = list(zip(*objectlc))
 
         # read the header to figure out the object's info and column names
         objectdata = [x.strip('#') for x in objectdata]
@@ -298,7 +298,7 @@ def read_hatlc(hatlc):
 
         # write the object metadata to the output dictionary
         lcdict['hatid'] = hatid
-        lcdict['twomassid'] = twomassid.strip('2MASS J')
+        lcdict['twomassid'] = twomassid.replace('2MASS J','')
         lcdict['ra'] = ra
         lcdict['dec'] = dec
         lcdict['mags'] = [vmag, rmag, imag, jmag, hmag, kmag]

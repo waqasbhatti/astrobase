@@ -70,24 +70,16 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
 ## IMPORTS ##
 #############
 
-try:
-    import ConfigParser
-except:
-    import configparser as ConfigParser
-
-import time
 import os.path
 import os
-
-import multiprocessing as mp
 
 import numpy as np
 
@@ -126,14 +118,15 @@ except Exception as e:
 
     # this is the URL to the SPK
     spkurl = (
-        'https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de430.bsp'
+        'https://naif.jpl.nasa.gov/'
+        'pub/naif/generic_kernels/spk/planets/de430.bsp'
     )
 
     LOGINFO('JPL kernel de430.bsp not found. Downloading from:\n\n%s\n' %
             spkurl)
     try:
         from urllib import urlretrieve
-    except:
+    except Exception as e:
         from urllib.request import urlretrieve
 
     localf, headerr = urlretrieve(
@@ -210,7 +203,7 @@ def precess_coordinates(ra, dec,
         raproc = (
             raproc +
             (jd - jd_epoch_one)*mu_ra*MAS_P_YR_TO_RAD_P_DAY/np.cos(decproc)
-            )
+        )
         decproc = decproc + (jd - jd_epoch_one)*mu_dec*MAS_P_YR_TO_RAD_P_DAY
 
     ca = np.cos(raproc)
@@ -229,7 +222,7 @@ def precess_coordinates(ra, dec,
         c = (
             ARCSEC_TO_RADIANS*t1*(20043.109 - t2*(85.33 + 0.217*t2) +
                                   t1*(-42.665 - 0.217*t2 - 41.833*t2))
-            )
+        )
         sina, sinb, sinc = np.sin(a), np.sin(b), np.sin(c)
         cosa, cosb, cosc = np.cos(a), np.cos(b), np.cos(c)
 
@@ -237,11 +230,11 @@ def precess_coordinates(ra, dec,
                                  sina*cosb + cosa*sinb*cosc,
                                  cosa*sinc],
                                 [-cosa*sinb - sina*cosb*cosc,
-                                  cosa*cosb - sina*sinb*cosc,
-                                  -sina*sinc],
+                                 cosa*cosb - sina*sinb*cosc,
+                                 -sina*sinc],
                                 [-cosb*sinc,
-                                  -sinb*sinc,
-                                  cosc]])
+                                 -sinb*sinc,
+                                 cosc]])
 
         precmatrix = precmatrix.transpose()
 
@@ -354,106 +347,106 @@ def jd_corr(jd,
             obslat=None,
             obsalt=None,
             jd_type='bjd'):
-     """Return BJD_TDB or HJD_TDB for input JD_UTC
+    """Return BJD_TDB or HJD_TDB for input JD_UTC
 
-     BJD_TDB = JD_UTC + JD_to_TDB_corr + romer_delay
+    BJD_TDB = JD_UTC + JD_to_TDB_corr + romer_delay
 
-     where:
+    where:
 
-     JD_to_TDB_corr is the difference between UTC and TDB JDs
-     romer_delay is the delay caused by finite speed of light from Earth-Sun
+    JD_to_TDB_corr is the difference between UTC and TDB JDs
+    romer_delay is the delay caused by finite speed of light from Earth-Sun
 
-     This is based on the code at:
+    This is based on the code at:
 
-     https://mail.scipy.org/pipermail/astropy/2014-April/003148.html
+    https://mail.scipy.org/pipermail/astropy/2014-April/003148.html
 
-     Note that this does not correct for:
+    Note that this does not correct for:
 
-     1. precession of coordinates if the epoch is not 2000.0
-     2. precession of coordinates if the target has a proper motion
-     3. location of the observatory on the earth (this adds 20 msec error)
-     4. Shapiro delay
-     5. Einstein delay
+    1. precession of coordinates if the epoch is not 2000.0
+    2. precession of coordinates if the target has a proper motion
+    3. location of the observatory on the earth (this adds 20 msec error)
+    4. Shapiro delay
+    5. Einstein delay
 
      """
 
-     if not HAVEKERNEL:
-         LOGERROR('no JPL kernel available, can\'t continue!')
-         return
+    if not HAVEKERNEL:
+        LOGERROR('no JPL kernel available, can\'t continue!')
+        return
 
-     # Source unit-vector
-     ## Assume coordinates in ICRS
-     ## Set distance to unit (kilometers)
+    # Source unit-vector
+    ## Assume coordinates in ICRS
+    ## Set distance to unit (kilometers)
 
-     # convert the angles to degrees
-     rarad = np.radians(ra)
-     decrad = np.radians(dec)
-     cosra = np.cos(rarad)
-     sinra = np.sin(rarad)
-     cosdec = np.cos(decrad)
-     sindec = np.sin(decrad)
+    # convert the angles to degrees
+    rarad = np.radians(ra)
+    decrad = np.radians(dec)
+    cosra = np.cos(rarad)
+    sinra = np.sin(rarad)
+    cosdec = np.cos(decrad)
+    sindec = np.sin(decrad)
 
-     # this assumes that the target is very far away
-     src_unitvector = np.array([cosdec*cosra,cosdec*sinra,sindec])
+    # this assumes that the target is very far away
+    src_unitvector = np.array([cosdec*cosra,cosdec*sinra,sindec])
 
-     # Convert epochs to astropy.time.Time
-     ## Assume JD(UTC)
-     if (obslon is None) or (obslat is None) or (obsalt is None):
-         t = astime.Time(jd, scale='utc', format='jd')
-     else:
-         t = astime.Time(jd, scale='utc', format='jd',
-                         location=('%.5fd' % obslon,
-                                   '%.5fd' % obslat,
-                                   obsalt))
+    # Convert epochs to astropy.time.Time
+    ## Assume JD(UTC)
+    if (obslon is None) or (obslat is None) or (obsalt is None):
+        t = astime.Time(jd, scale='utc', format='jd')
+    else:
+        t = astime.Time(jd, scale='utc', format='jd',
+                        location=('%.5fd' % obslon,
+                                  '%.5fd' % obslat,
+                                  obsalt))
 
-     # Get Earth-Moon barycenter position
-     ## NB: jplephem uses Barycentric Dynamical Time, e.g. JD(TDB)
-     ## and gives positions relative to solar system barycenter
-     barycenter_earthmoon = jplkernel[0,3].compute(t.tdb.jd)
+    # Get Earth-Moon barycenter position
+    ## NB: jplephem uses Barycentric Dynamical Time, e.g. JD(TDB)
+    ## and gives positions relative to solar system barycenter
+    barycenter_earthmoon = jplkernel[0,3].compute(t.tdb.jd)
 
-     # Get Moon position vectors from the center of Earth to the Moon
-     # this means we get the following vectors from the ephemerides
-     # Earth Barycenter (3) -> Moon (301)
-     # Earth Barycenter (3) -> Earth (399)
-     # so the final vector is [3,301] - [3,399]
-     # units are in km
-     moonvector = (jplkernel[3,301].compute(t.tdb.jd) -
-                   jplkernel[3,399].compute(t.tdb.jd))
+    # Get Moon position vectors from the center of Earth to the Moon
+    # this means we get the following vectors from the ephemerides
+    # Earth Barycenter (3) -> Moon (301)
+    # Earth Barycenter (3) -> Earth (399)
+    # so the final vector is [3,301] - [3,399]
+    # units are in km
+    moonvector = (jplkernel[3,301].compute(t.tdb.jd) -
+                  jplkernel[3,399].compute(t.tdb.jd))
 
-     # Compute Earth position vectors (this is for the center of the earth with
-     # respect to the solar system barycenter)
-     # all these units are in km
-     pos_earth = (barycenter_earthmoon - moonvector * 1.0/(1.0+EMRAT))
+    # Compute Earth position vectors (this is for the center of the earth with
+    # respect to the solar system barycenter)
+    # all these units are in km
+    pos_earth = (barycenter_earthmoon - moonvector * 1.0/(1.0+EMRAT))
 
-     if jd_type == 'bjd':
+    if jd_type == 'bjd':
 
-         # Compute BJD correction
-         ## Assume source vectors parallel at Earth and Solar System
-         ## Barycenter
-         ## i.e. source is at infinity
-         # the romer_delay correction is (r.dot.n)/c where:
-         # r is the vector from SSB to earth center
-         # n is the unit vector from
-         correction_seconds = np.dot(pos_earth.T, src_unitvector)/CLIGHT_KPS
-         correction_days = correction_seconds/SEC_P_DAY
+        # Compute BJD correction
+        ## Assume source vectors parallel at Earth and Solar System
+        ## Barycenter
+        ## i.e. source is at infinity
+        # the romer_delay correction is (r.dot.n)/c where:
+        # r is the vector from SSB to earth center
+        # n is the unit vector from
+        correction_seconds = np.dot(pos_earth.T, src_unitvector)/CLIGHT_KPS
+        correction_days = correction_seconds/SEC_P_DAY
 
-     elif jd_type == 'hjd':
+    elif jd_type == 'hjd':
 
-         # Compute HJD correction via Sun ephemeris
+        # Compute HJD correction via Sun ephemeris
 
-         # this is the position vector of the center of the sun in km
-         # Solar System Barycenter (0) -> Sun (10)
-         pos_sun = jplkernel[0,10].compute(t.tdb.jd)
+        # this is the position vector of the center of the sun in km
+        # Solar System Barycenter (0) -> Sun (10)
+        pos_sun = jplkernel[0,10].compute(t.tdb.jd)
 
-         # this is the vector from the center of the sun to the center of the
-         # earth
-         sun_earth_vec = pos_earth - pos_sun
+        # this is the vector from the center of the sun to the center of the
+        # earth
+        sun_earth_vec = pos_earth - pos_sun
 
-         # calculate the heliocentric correction
-         correction_seconds = np.dot(sun_earth_vec.T, src_unitvector)/CLIGHT_KPS
-         correction_days = correction_seconds/SEC_P_DAY
+        # calculate the heliocentric correction
+        correction_seconds = np.dot(sun_earth_vec.T, src_unitvector)/CLIGHT_KPS
+        correction_days = correction_seconds/SEC_P_DAY
 
-     # TDB is the appropriate time scale for these ephemerides
-     new_jd = t.tdb.jd + correction_days
+    # TDB is the appropriate time scale for these ephemerides
+    new_jd = t.tdb.jd + correction_days
 
-     return new_jd
+    return new_jd

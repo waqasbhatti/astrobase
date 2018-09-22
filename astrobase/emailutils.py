@@ -30,21 +30,18 @@ import smtplib
 import socket
 
 import os.path
-import sys
 import os
 import stat
 
 import time
 from datetime import datetime
 
-import subprocess
-
 ## EMAIL SETTINGS ##
 
 # get config from the astrobase.conf file
 try:
     import ConfigParser
-except:
+except Exception as e:
     import configparser as ConfigParser
 
 modpath = os.path.abspath(os.path.dirname(__file__))
@@ -109,7 +106,7 @@ def send_email(sender,
         hostname=socket.gethostname(),
         activity_time='%sZ' % datetime.utcnow().isoformat(),
         activity_report=content
-        )
+    )
 
     email_sender = '%s <%s>' % (sender, EMAIL_USER)
 
@@ -128,7 +125,7 @@ def send_email(sender,
         sender,
         socket.gethostname(),
         subject
-        )
+    )
     email_msg['Date'] = formatdate(time.time())
 
     # start the email process
@@ -150,7 +147,7 @@ def send_email(sender,
                     server.sendmail(email_sender,
                                     email_address_list,
                                     email_msg.as_string())
-                    )
+                )
 
             except Exception as e:
                 print('script email sending failed with error: %s'
@@ -177,7 +174,7 @@ def send_email(sender,
 
     except Exception as e:
         print('sending email failed with error: %s' % e)
-        returnval =  False
+        returnval = False
 
 
     quit_response = server.quit()

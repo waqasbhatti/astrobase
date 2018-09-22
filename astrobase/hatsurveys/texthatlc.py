@@ -72,8 +72,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -81,10 +81,7 @@ def LOGEXCEPTION(message):
 #############
 
 import numpy as np
-from numpy import nan
-
 from astropy.io import ascii as astascii
-
 
 
 def read_original_textlc(lcpath):
@@ -107,7 +104,7 @@ def read_original_textlc(lcpath):
     with open(lcpath, 'rb') as file:
         head = [next(file) for ind in range(N_lines_to_parse_comments)]
 
-    N_comment_lines = len([l for l in head if l.decode('UTF-8')[0]=='#'])
+    N_comment_lines = len([l for l in head if l.decode('UTF-8')[0] == '#'])
 
     # if there are too many comment lines, fail out
     if N_comment_lines < N_lines_to_parse_comments:
@@ -157,7 +154,7 @@ def read_original_textlc(lcpath):
                       float,float,float]
         dtype_pairs = [el for el in zip(col_names, col_dtypes)]
         data = np.genfromtxt(lcpath, names=col_names, dtype=col_dtypes,
-            skip_header=N_comment_lines, delimiter=None)
+                             skip_header=N_comment_lines, delimiter=None)
         out = {}
         for ix in range(len(data.dtype.names)):
             out[data.dtype.names[ix]] = data[data.dtype.names[ix]]
@@ -180,7 +177,7 @@ def read_original_textlc(lcpath):
                       float,float,float]
         dtype_pairs = [el for el in zip(col_names, col_dtypes)]
         data = np.genfromtxt(lcpath, names=col_names, dtype=col_dtypes,
-            skip_header=N_comment_lines, delimiter=None)
+                             skip_header=N_comment_lines, delimiter=None)
         out = {}
         for ix in range(len(data.dtype.names)):
             out[data.dtype.names[ix]] = data[data.dtype.names[ix]]

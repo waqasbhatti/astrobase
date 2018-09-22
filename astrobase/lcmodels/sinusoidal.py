@@ -20,12 +20,11 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
     zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
     correlate as npcorrelate, nonzero as npnonzero, diag as npdiag
 
-from scipy.signal import medfilt, savgol_filter
+
 
 ##################################
 ## MODEL AND RESIDUAL FUNCTIONS ##
 ##################################
-
 
 def fourier_sinusoidal_func(fourierparams, times, mags, errs):
     '''This generates a sinusoidal light curve using a Fourier series.

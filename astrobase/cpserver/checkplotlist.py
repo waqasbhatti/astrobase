@@ -79,7 +79,7 @@ This makes a checkplot file list for use with the checkplot-viewer.html (for
 checkplot PNGs) or the checkplotserver.py (for checkplot pickles) webapps.
 '''
 
-PROGEPILOG= '''\
+PROGEPILOG = '''\
 SEARCHING FOR CHECKPLOT PNGS OR PICKLES
 ---------------------------------------
 If you have checkplots that don't have 'checkplot' somewhere in their file name,
@@ -167,7 +167,7 @@ import argparse
 
 try:
     import cPickle as pickle
-except:
+except Exception as e:
     import pickle
 
 # suppress warnings
@@ -214,7 +214,7 @@ def checkplot_infokey_worker(task):
 
         try:
             resultkeys.append(dict_get(cpd, k))
-        except:
+        except Exception as e:
             resultkeys.append(np.nan)
 
     return resultkeys
@@ -675,7 +675,7 @@ def main():
                         'checkplot list file in this '
                         'directory:\n    %s\nDo you want to '
                         'overwrite it completely? (default: no) [y/n] ' %
-                    outjson
+                        outjson
                     )
 
                 # if it's OK to overwrite, then do so

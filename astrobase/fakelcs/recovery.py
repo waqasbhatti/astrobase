@@ -70,8 +70,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -134,10 +134,10 @@ def read_fakelc(fakelcfile):
     '''
 
     try:
-        with open(lcfile,'rb') as infd:
+        with open(fakelcfile,'rb') as infd:
             lcdict = pickle.load(infd)
     except UnicodeDecodeError:
-        with open(lcfile,'rb') as infd:
+        with open(fakelcfile,'rb') as infd:
             lcdict = pickle.load(infd, encoding='latin1')
 
     return lcdict
@@ -332,8 +332,8 @@ def get_recovered_variables_for_magbin(simbasedir,
 
     # go through all the mag bins and bin up the objectids, actual variables,
     # and actual not-variables
-    for mbinind, magi in zip(np.unique(magbininds),
-                             range(len(magbins)-1)):
+    for mbinind, _magi in zip(np.unique(magbininds),
+                              range(len(magbins)-1)):
 
         thisbinind = np.where(magbininds == mbinind)
 
@@ -602,7 +602,7 @@ def magbin_varind_gridsearch_worker(task):
                                                  iqr_stdev_min=gridpoint[2],
                                                  statsonly=True)
         return res
-    except:
+    except Exception as e:
         LOGEXCEPTION('failed to get info for %s' % gridpoint)
         return None
 
@@ -695,16 +695,16 @@ def variable_index_gridsearch_magbin(simbasedir,
                 stet_inveta_iqr_grid.append(grid_point)
 
     # the output dict
-    grid_results =  {'stetson_grid':stetson_grid,
-                     'inveta_grid':inveta_grid,
-                     'iqr_grid':iqr_grid,
-                     'stet_inveta_iqr_grid':stet_inveta_iqr_grid,
-                     'magbinmedians':magbinmedians,
-                     'timecols':timecols,
-                     'magcols':magcols,
-                     'errcols':errcols,
-                     'simbasedir':os.path.abspath(simbasedir),
-                     'recovery':[]}
+    grid_results = {'stetson_grid':stetson_grid,
+                    'inveta_grid':inveta_grid,
+                    'iqr_grid':iqr_grid,
+                    'stet_inveta_iqr_grid':stet_inveta_iqr_grid,
+                    'magbinmedians':magbinmedians,
+                    'timecols':timecols,
+                    'magcols':magcols,
+                    'errcols':errcols,
+                    'simbasedir':os.path.abspath(simbasedir),
+                    'recovery':[]}
 
 
     # set up the pool
@@ -1418,11 +1418,11 @@ def run_periodfinding(simbasedir,
                                 getblssnr=getblssnr,
                                 sigclip=sigclip,
                                 nperiodworkers=nperiodworkers,
-                                ncontrolworkers=ncontrolworker)
+                                ncontrolworkers=ncontrolworkers)
 
     with open(os.path.join(simbasedir,
                            'fakelc-periodfinding.pkl'),'wb') as outfd:
-        pickle.dump(varinfo, outfd, pickle.HIGHEST_PROTOCOL)
+        pickle.dump(pfinfo, outfd, pickle.HIGHEST_PROTOCOL)
 
     return os.path.join(simbasedir,'fakelc-periodfinding.pkl')
 
@@ -2028,7 +2028,7 @@ def plot_periodicvar_recovery_results(
     ndetbininds = np.digitize(np.ravel(periodicvar_ndet), ndetbins)
 
     for nbinind, ndeti in zip(np.unique(ndetbininds),
-                             range(len(ndetbins)-1)):
+                              range(len(ndetbins)-1)):
 
         thisbin_periodicvars = periodicvar_objectids[ndetbininds == nbinind]
 
@@ -2060,12 +2060,12 @@ def plot_periodicvar_recovery_results(
 
     # find all the matching objects for these recovered statuses
     recovered_periodicvars = np.array(
-            [precvar['details'][x]['objectid'] for x in precvar['details']
-             if (precvar['details'][x] is not None and
-                 precvar['details'][x]['best_recovered_status']
-                 in recovered_status)],
-            dtype=np.unicode_
-        )
+        [precvar['details'][x]['objectid'] for x in precvar['details']
+         if (precvar['details'][x] is not None and
+             precvar['details'][x]['best_recovered_status']
+             in recovered_status)],
+        dtype=np.unicode_
+    )
 
     LOGINFO('recovered %s/%s periodic variables (frac: %.3f) with '
             'period recovery status: %s' %
@@ -2169,9 +2169,9 @@ def plot_periodicvar_recovery_results(
 
     # figure out all vartypes
     all_vartypes = np.unique(
-            [(precvar['details'][x]['actual_vartype'])
-             for x in precvar['details'] if
-             (precvar['details'][x]['actual_vartype'] is not None)]
+        [(precvar['details'][x]['actual_vartype'])
+         for x in precvar['details'] if
+         (precvar['details'][x]['actual_vartype'] is not None)]
     )
 
     # figure out all alias types
@@ -2342,9 +2342,9 @@ def plot_periodicvar_recovery_results(
 
     # figure out all vartypes
     all_vartypes = np.unique(
-            [(precvar['details'][x]['actual_vartype'])
-             for x in precvar['details'] if
-             (precvar['details'][x]['actual_vartype'] is not None)]
+        [(precvar['details'][x]['actual_vartype'])
+         for x in precvar['details'] if
+         (precvar['details'][x]['actual_vartype'] is not None)]
     )
 
     for vt in all_vartypes:
@@ -2567,9 +2567,9 @@ def plot_periodicvar_recovery_results(
 
     # figure out all vartypes
     all_vartypes = np.unique(
-            [(precvar['details'][x]['actual_vartype'])
-             for x in precvar['details'] if
-             (precvar['details'][x]['actual_vartype'] is not None)]
+        [(precvar['details'][x]['actual_vartype'])
+         for x in precvar['details'] if
+         (precvar['details'][x]['actual_vartype'] is not None)]
     )
 
     for vt in all_vartypes:
@@ -2577,7 +2577,7 @@ def plot_periodicvar_recovery_results(
         thisvt_recfracs = []
 
         for periodbin_pv, periodbin_rv in zip(periodbinned_periodicvars,
-                                        periodbinned_recovered_objects):
+                                              periodbinned_recovered_objects):
 
             thisbin_thisvt_recvars = [
                 x for x in periodbin_rv
@@ -2802,9 +2802,9 @@ def plot_periodicvar_recovery_results(
 
     # figure out all vartypes
     all_vartypes = np.unique(
-            [(precvar['details'][x]['actual_vartype'])
-             for x in precvar['details'] if
-             (precvar['details'][x]['actual_vartype'] is not None)]
+        [(precvar['details'][x]['actual_vartype'])
+         for x in precvar['details'] if
+         (precvar['details'][x]['actual_vartype'] is not None)]
     )
 
     for vt in all_vartypes:
@@ -2995,7 +2995,7 @@ def plot_periodicvar_recovery_results(
         thispf_recfracs = []
 
         for ndetbin_pv, ndetbin_rv in zip(ndetbinned_periodicvars,
-                                        ndetbinned_recovered_objects):
+                                          ndetbinned_recovered_objects):
 
             thisbin_thispf_recvars = [
                 x for x in ndetbin_rv
@@ -3041,9 +3041,9 @@ def plot_periodicvar_recovery_results(
 
     # figure out all vartypes
     all_vartypes = np.unique(
-            [(precvar['details'][x]['actual_vartype'])
-             for x in precvar['details'] if
-             (precvar['details'][x]['actual_vartype'] in PERIODIC_VARTYPES)]
+        [(precvar['details'][x]['actual_vartype'])
+         for x in precvar['details'] if
+         (precvar['details'][x]['actual_vartype'] in PERIODIC_VARTYPES)]
     )
 
     for vt in all_vartypes:

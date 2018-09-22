@@ -68,8 +68,8 @@ def LOGEXCEPTION(message):
             '[%s - EXC!] %s\nexception was: %s' % (
                 datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 message, format_exc()
-                )
             )
+        )
 
 
 #############
@@ -146,7 +146,7 @@ def flare_model(times,
                   (times[times < flare_peak_time] -
                    flare_peak_time)) /
                 (2.0*rise_gaussian_stdev*rise_gaussian_stdev)
-                )
+            )
         )
 
         # after peak exponential decay...
@@ -156,7 +156,7 @@ def flare_model(times,
                 -((times[times > flare_peak_time] -
                    flare_peak_time)) /
                 (decay_time_constant)
-                )
+            )
         )
 
     else:
@@ -170,7 +170,7 @@ def flare_model(times,
                   (times[times < flare_peak_time] -
                    flare_peak_time)) /
                 (2.0*rise_gaussian_stdev*rise_gaussian_stdev)
-                )
+            )
         )
 
         # after peak exponential decay...
@@ -180,7 +180,7 @@ def flare_model(times,
                 -((times[times > flare_peak_time] -
                    flare_peak_time)) /
                 (decay_time_constant)
-                )
+            )
         )
 
 
@@ -270,9 +270,9 @@ def simple_flare_find(times, mags, errs,
 
     # find extreme positive deviations
     if magsarefluxes:
-        extind = npwhere(subtracted > (minflaresigma*series_stdev))
+        extind = npwhere(subtracted > (flareminsigma*series_stdev))
     else:
-        extind = npwhere(subtracted < (-minflaresigma*series_stdev))
+        extind = npwhere(subtracted < (-flareminsigma*series_stdev))
 
     # see if there are any extrema
     if extind and extind[0]:
@@ -282,11 +282,8 @@ def simple_flare_find(times, mags, errs,
 
         # find the deviations within the requested flaremaxcadencediff
         for ind, extrema_index in enumerate(extrema_indices):
-
-            stuff_to_do()
-
-
-
+            # FIXME: finish this
+            pass
 
 
 
