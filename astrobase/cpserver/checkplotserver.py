@@ -215,7 +215,7 @@ def main():
                     )
             else:
                 LOGGER.error('permissions on the shared secret file '
-                             'should be 0100600')
+                             'should be 0100400')
                 sys.exit(1)
 
         else:
