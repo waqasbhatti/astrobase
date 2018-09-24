@@ -401,7 +401,7 @@ def lclist_parallel_worker(task):
     lcf, columns, readerfunc, lcndetkey = task
 
     # we store the full path of the light curve
-    lcobjdict = {'lcfname':lcf}
+    lcobjdict = {'lcfname':os.path.abspath(lcf)}
 
     try:
 
@@ -4121,7 +4121,10 @@ def runcp(pfpickle,
           timecols=None,
           magcols=None,
           errcols=None,
-          skipdone=False):
+          skipdone=False,
+          done_callback=None,
+          done_callback_args=None,
+          done_callback_kwargs=None):
     '''This runs a checkplot for the given period-finding result pickle
     produced by runpf.
 
@@ -4193,6 +4196,19 @@ def runcp(pfpickle,
     `skipdone` indicates if this function will skip creating checkplots that
     already exist corresponding to the current objectid and magcol. If
     `skipdone` is set to True, this will be done.
+
+    `done_callback` is used to provide a function to execute after the checkplot
+    pickles are generated. This is useful if you want to stream the results of
+    checkplot making to some other process, e.g. directly running an ingestion
+    into an LCC-Server collection. The function will always get the list of the
+    generated checkplot pickles as its first arg, and all of the kwargs for
+    runcp in the kwargs dict. Additional args and kwargs can be provided by
+    giving a list in the `done_callbacks_args` kwarg and a dict in the
+    `done_callbacks_kwargs` kwarg.
+
+    NOTE: the function you pass in here should be pickleable by normal Python if
+    you want to use it with the parallel_cp and parallel_cp_lcdir functions
+    below.
 
     Returns
     -------
@@ -4388,7 +4404,79 @@ def runcp(pfpickle,
 
         cpfs.append(cpf)
 
+    #
+    # done with checkplot making
+    #
+
     LOGINFO('done with %s -> %s' % (objectid, repr(cpfs)))
+    if done_callback is not None:
+
+        if (done_callback_args is not None and
+            isinstance(done_callback_args,list)):
+            done_callback_args = tuple([cpfs] + done_callback_args)
+
+        else:
+            done_callback_args = (cpfs,)
+
+        if (done_callback_kwargs is not None and
+            isinstance(done_callback_kwargs, dict)):
+            done_callback_kwargs.update(dict(
+                fast_mode=fast_mode,
+                lcfname=lcfname,
+                cprenorm=cprenorm,
+                lclistpkl=lclistpkl,
+                nbrradiusarcsec=nbrradiusarcsec,
+                maxnumneighbors=maxnumneighbors,
+                gaia_max_timeout=gaia_max_timeout,
+                gaia_mirror=gaia_mirror,
+                xmatchinfo=xmatchinfo,
+                xmatchradiusarcsec=xmatchradiusarcsec,
+                minobservations=minobservations,
+                sigclip=sigclip,
+                lcformat=lcformat,
+                fileglob=fileglob,
+                readerfunc=readerfunc,
+                normfunc=normfunc,
+                magsarefluxes=magsarefluxes,
+                timecols=timecols,
+                magcols=magcols,
+                errcols=errcols,
+                skipdone=skipdone,
+            ))
+
+        else:
+            done_callback_kwargs = dict(
+                fast_mode=fast_mode,
+                lcfname=lcfname,
+                cprenorm=cprenorm,
+                lclistpkl=lclistpkl,
+                nbrradiusarcsec=nbrradiusarcsec,
+                maxnumneighbors=maxnumneighbors,
+                gaia_max_timeout=gaia_max_timeout,
+                gaia_mirror=gaia_mirror,
+                xmatchinfo=xmatchinfo,
+                xmatchradiusarcsec=xmatchradiusarcsec,
+                minobservations=minobservations,
+                sigclip=sigclip,
+                lcformat=lcformat,
+                fileglob=fileglob,
+                readerfunc=readerfunc,
+                normfunc=normfunc,
+                magsarefluxes=magsarefluxes,
+                timecols=timecols,
+                magcols=magcols,
+                errcols=errcols,
+                skipdone=skipdone,
+            )
+
+        # fire the callback
+        try:
+            done_callback(*done_callback_args, **done_callback_kwargs)
+            LOGINFO('callback fired successfully for %r' % cpfs)
+        except Exception as e:
+            LOGEXCEPTION('callback function failed for %r' % cpfs)
+
+    # at the end, return the list of checkplot files generated
     return cpfs
 
 
@@ -4434,7 +4522,10 @@ def parallel_cp(pfpicklelist,
                 magcols=None,
                 errcols=None,
                 skipdone=False,
-                nworkers=NCPUS):
+                nworkers=NCPUS,
+                done_callback=None,
+                done_callback_args=None,
+                done_callback_kwargs=None):
     '''This drives the parallel execution of runcp for a list of periodfinding
     result pickles.
 
@@ -4482,7 +4573,10 @@ def parallel_cp(pfpicklelist,
                   'minobservations':minobservations,
                   'skipdone':skipdone,
                   'cprenorm':cprenorm,
-                  'fast_mode':fast_mode}) for
+                  'fast_mode':fast_mode,
+                  'done_callback':done_callback,
+                  'done_callback_args':done_callback_args,
+                  'done_callback_kwargs':done_callback_kwargs}) for
                 x,y in zip(pfpicklelist, lcfnamelist)]
 
     resultfutures = []
@@ -4519,7 +4613,10 @@ def parallel_cp_pfdir(pfpickledir,
                       magcols=None,
                       errcols=None,
                       skipdone=False,
-                      nworkers=32):
+                      nworkers=32,
+                      done_callback=None,
+                      done_callback_args=None,
+                      done_callback_kwargs=None):
 
     '''This drives the parallel execution of runcp for a directory of
     periodfinding pickles.
@@ -4551,7 +4648,10 @@ def parallel_cp_pfdir(pfpickledir,
                        magcols=magcols,
                        errcols=errcols,
                        skipdone=skipdone,
-                       nworkers=nworkers)
+                       nworkers=nworkers,
+                       done_callback=done_callback,
+                       done_callback_args=done_callback_args,
+                       done_callback_kwargs=done_callback_kwargs)
 
 
 
