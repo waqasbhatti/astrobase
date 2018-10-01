@@ -1854,12 +1854,10 @@ def mandelagol_fit_magseries(times, mags, errs,
     ecc = _get_value('ecc', medianparams, fixedparams)
     omega = _get_value('omega', medianparams, fixedparams)
     limb_dark = _get_value('limb_dark', medianparams, fixedparams)
-    u = []
-    for u_type in ['u_linear','u_quad']:
-        for paramtype in [fixedparams,medianparams]:
-            if u_type in list(paramtype.keys()):
-                u.append(paramtype[u_type])
-                continue
+    try:
+        u = fixedparams['u']
+    except:
+        u = [medianparams['u_linear'], medianparams['u_quad']]
 
     fit_params, fit_m = _transit_model(stimes, t0, per, rp, sma, incl, ecc,
                                        omega, u, limb_dark)
