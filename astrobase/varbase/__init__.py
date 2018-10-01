@@ -14,6 +14,9 @@ varbase.signals: masking periodic signals, pre-whitening light curves
 
 '''
 
+import numpy as np
+from astropy import units as u
+
 # there's nothing else here in this top-level module
 
 def estimate_achievable_tmid_precision(snr, t_ingress_min=10,
