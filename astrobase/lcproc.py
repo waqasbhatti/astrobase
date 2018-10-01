@@ -474,6 +474,7 @@ def lclist_parallel_worker(task):
 
 def make_lclist(basedir,
                 outfile,
+                use_list_of_filenames=None,
                 lcformat='hat-sql',
                 fileglob=None,
                 recursive=True,
@@ -557,34 +558,76 @@ def make_lclist(basedir,
     # set to the magnitudes column
     lcndetkey = LCFORM[lcformat][3]
 
-    # handle the case where basedir is a list of directories
-    if isinstance(basedir, list):
+    if isinstance(use_list_of_filenames, list):
 
-        matching = []
+        matching = use_list_of_filenames
 
-        for bdir in basedir:
+    else:
+
+        # handle the case where basedir is a list of directories
+        if isinstance(basedir, list):
+
+            matching = []
+
+            for bdir in basedir:
+
+                # now find the files
+                LOGINFO('searching for %s light curves in %s ...' % (lcformat,
+                                                                     bdir))
+
+                if recursive is False:
+                    matching.extend(glob.glob(os.path.join(bdir, fileglob)))
+
+                else:
+                    # use recursive glob for Python 3.5+
+                    if sys.version_info[:2] > (3,4):
+
+                        matching.extend(glob.glob(os.path.join(bdir,
+                                                               '**',
+                                                               fileglob),
+                                                  recursive=True))
+
+                    # otherwise, use os.walk and glob
+                    else:
+
+                        # use os.walk to go through the directories
+                        walker = os.walk(bdir)
+
+                        for root, dirs, _files in walker:
+                            for sdir in dirs:
+                                searchpath = os.path.join(root,
+                                                          sdir,
+                                                          fileglob)
+                                foundfiles = glob.glob(searchpath)
+
+                                if foundfiles:
+                                    matching.extend(foundfiles)
+
+
+        # otherwise, handle the usual case of one basedir to search in
+        else:
 
             # now find the files
-            LOGINFO('searching for %s light curves in %s ...' % (lcformat,
-                                                                 bdir))
+            LOGINFO('searching for %s light curves in %s ...' %
+                    (lcformat, basedir))
 
             if recursive is False:
-                matching.extend(glob.glob(os.path.join(bdir, fileglob)))
+                matching = glob.glob(os.path.join(basedir, fileglob))
 
             else:
                 # use recursive glob for Python 3.5+
                 if sys.version_info[:2] > (3,4):
 
-                    matching.extend(glob.glob(os.path.join(bdir,
-                                                           '**',
-                                                           fileglob),
-                                              recursive=True))
+                    matching = glob.glob(os.path.join(basedir,
+                                                      '**',
+                                                      fileglob),recursive=True)
 
                 # otherwise, use os.walk and glob
                 else:
 
                     # use os.walk to go through the directories
-                    walker = os.walk(bdir)
+                    walker = os.walk(basedir)
+                    matching = []
 
                     for root, dirs, _files in walker:
                         for sdir in dirs:
@@ -596,44 +639,9 @@ def make_lclist(basedir,
                             if foundfiles:
                                 matching.extend(foundfiles)
 
-
-    # otherwise, handle the usual case of one basedir to search in
-    else:
-
-        # now find the files
-        LOGINFO('searching for %s light curves in %s ...' % (lcformat, basedir))
-
-        if recursive is False:
-            matching = glob.glob(os.path.join(basedir, fileglob))
-
-        else:
-            # use recursive glob for Python 3.5+
-            if sys.version_info[:2] > (3,4):
-
-                matching = glob.glob(os.path.join(basedir,
-                                                  '**',
-                                                  fileglob),recursive=True)
-
-            # otherwise, use os.walk and glob
-            else:
-
-                # use os.walk to go through the directories
-                walker = os.walk(basedir)
-                matching = []
-
-                for root, dirs, _files in walker:
-                    for sdir in dirs:
-                        searchpath = os.path.join(root,
-                                                  sdir,
-                                                  fileglob)
-                        foundfiles = glob.glob(searchpath)
-
-                        if foundfiles:
-                            matching.extend(foundfiles)
-
-
-
+    #
     # now that we have all the files, process them
+    #
     if matching and len(matching) > 0:
 
         LOGINFO('found %s light curves' % len(matching))
