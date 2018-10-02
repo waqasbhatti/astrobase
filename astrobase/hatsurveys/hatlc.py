@@ -531,7 +531,7 @@ def gzip_sqlitecurve(sqlitecurve, force=False):
             return outfile
 
         else:
-            procout = subprocess.check_output(cmd, shell=True)
+            subprocess.check_output(cmd, shell=True)
 
             # check if the output file was successfully created
             if os.path.exists(outfile):
@@ -555,7 +555,7 @@ def gunzip_sqlitecurve(sqlitecurve):
     cmd = 'gunzip -k %s' % sqlitecurve
 
     try:
-        procout = subprocess.check_output(cmd, shell=True)
+        subprocess.check_output(cmd, shell=True)
         return sqlitecurve.replace('.gz','')
     except subprocess.CalledProcessError:
         return None
@@ -731,7 +731,7 @@ def read_and_filter_sqlitecurve(lcfile,
         if not proceed:
             # recompress the lightcurve at the end
             if '.gz' in lcfile[-4:] and lcf:
-                dcf = compress_sqlitecurve(lcf, force=forcerecompress)
+                compress_sqlitecurve(lcf, force=forcerecompress)
             LOGERROR('requested columns are invalid!')
             return None, "requested columns are invalid"
 
@@ -752,7 +752,8 @@ def read_and_filter_sqlitecurve(lcfile,
 
         # validate the SQL filters for this LC
         if ((sqlfilters is not None) and
-            (isinstance(sqlfilters,str) or isinstance(sqlfilters, unicode))):
+            (isinstance(sqlfilters,str) or
+             isinstance(sqlfilters, unicode))):
 
             # give the validator the sqlfilters string and a list of lccols in
             # the lightcurve
@@ -824,7 +825,7 @@ def read_and_filter_sqlitecurve(lcfile,
 
         # recompress the lightcurve at the end
         if '.gz' in lcfile[-4:] and lcf:
-            dcf = compress_sqlitecurve(lcf, force=forcerecompress)
+            compress_sqlitecurve(lcf, force=forcerecompress)
 
 
         # return ndarrays if that's set
@@ -842,7 +843,7 @@ def read_and_filter_sqlitecurve(lcfile,
 
         # recompress the lightcurve at the end
         if '.gz' in lcfile[-4:] and lcf:
-            dcf = compress_sqlitecurve(lcf, force=forcerecompress)
+            compress_sqlitecurve(lcf, force=forcerecompress)
 
         if raiseonfail:
             raise
@@ -1611,7 +1612,7 @@ def normalize_lcdict_byinst(
         lcdict,
         magcols='all',
         normto='sdssr',
-        normkeylist=['stf','flt','fld','prj','exp'],
+        normkeylist=('stf','ccd','flt','fld','prj','exp'),
         debugmode=False,
         quiet=False
 ):
