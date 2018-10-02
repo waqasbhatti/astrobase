@@ -92,7 +92,7 @@ normalize_lcdict(lcdict, timecol='rjd', magcols='all', mingap=4.0,
 
 
 normalize_lcdict_byinst(lcdict, magcols='all', normto='sdssr',
-                        normkeylist=['stf','flt','fld','prj','exp'],
+                        normkeylist=('stf','ccd','flt','fld','prj','exp'),
                         debugmode=False)
 
     This normalizes magnitude columns (specified in the magcols keyword
@@ -102,6 +102,7 @@ normalize_lcdict_byinst(lcdict, magcols='all', normto='sdssr',
     key (specified in the normkeylist kwarg) is a combination of:
 
     - HAT station IDs ('stf')
+    - camera position ID ('ccd'; useful for HATSouth observations)
     - camera filters ('flt')
     - observed HAT field names ('fld')
     - HAT project IDs ('prj')
