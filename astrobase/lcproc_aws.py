@@ -88,6 +88,7 @@ def LOGEXCEPTION(message):
 import os.path
 import os
 import json
+import pickle
 
 try:
 
@@ -124,6 +125,20 @@ def s3_get_file(bucket, filename, local_file, client=None):
     except Exception as e:
         LOGEXCEPTION('could not download s3://%s/%s' % (bucket, filename))
         return None
+
+
+
+def s3_get_url(url, client=None):
+    '''
+    This gets a file from an S3 bucket based on its s3:// URL.
+
+    '''
+
+    bucket_item = url.replace('s3://','')
+    bucket_item = os.path.split(bucket_item)
+    bucket = bucket_item[0]
+    filekey = '/'.join(bucket[1:])
+    return s3_get_file(bucket, filekey, bucket[-1], client=client)
 
 
 
@@ -408,51 +423,79 @@ def sqs_enqueue_local_filelist(filelist_fname,
 ## EC2 ##
 #########
 
-def make_ec2_node(ami='ami-04681a1dbd79675a5',
-                  instance='c5.2xlarge',
-                  security_groupid=None,
-                  keypair=None):
-    '''
-    This makes a new EC2 worker node.
+SUPPORTED_AMIS = [
+    # Debian 9
+    'ami-03006931f694ea7eb',
+    # Amazon Linux 2
+    'ami-04681a1dbd79675a5'
+]
+
+def make_ec2_node(
+        ami='ami-03006931f694ea7eb',
+        instance='c5.2xlarge',
+        security_groupid=None,
+        keypair=None,
+        client=None
+):
+    '''This makes a new EC2 worker node.
 
     Installs Python 3.6, a virtualenv, and a git checked out copy of astrobase.
 
     Returns instance ID.
 
+    The default AMI is a Debian 9 instance:
+
+    https://wiki.debian.org/Cloud/AmazonEC2Image/Stretch
+
+    The Amazon Linux 2 AMI is: ami-04681a1dbd79675a5.
+
+    This uses EC2's cloud-init bits to set up the required astrobase bits.
+
+    Returns instance ID.
+
+    '''
+
+    if not client:
+        client = boto3.client('ec2')
+
+    #
+
+
+
+def delete_ec2_node(
+    instance_id,
+    client=None
+):
+    '''
+    This deletes an EC2 node and terminates the instance.
+
     '''
 
 
-def make_ec2_cluster(nodes,
-                     ami='ami-04681a1dbd79675a5',
-                     instance='c5.2xlarge',
-                     security_groupid=None,
-                     keypair=None):
+
+def make_ec2_cluster(
+        nodes,
+        ami='ami-03006931f694ea7eb',
+        instance='c5.2xlarge',
+        security_groupid=None,
+        keypair=None
+):
     '''
     This makes a full EC2 cluster to work on the light curves.
 
-    '''
-
-
-
-
-######################
-## WORKER FUNCTIONS ##
-######################
-
-
-def runpf_worker():
-    '''
-    This is the basic worker for running period-finding on a light curve.
+    Returns instance IDs.
 
     '''
 
 
-def runcp_worker():
+def delete_ec2_cluster(
+        instance_ids,
+        client=None,
+):
     '''
-    This is the basic worker for running checkplot making on a light curve.
+    This kills all the nodes in the instance_ids list.
 
     '''
-
 
 
 
@@ -467,12 +510,278 @@ def runpf_loop():
     '''
 
 
-def runcp_loop():
-    '''
-    This runs period-finding in a loop until interrupted.
+
+def runcp_loop(
+        in_queue_url,
+        workdir,
+        lclist_pkl_s3url,
+        wait_time_seconds=5,
+        sqs_client=None,
+        s3_client=None
+):
+    '''This runs checkplot making in a loop until interrupted.
+
+    For the moment, we don't generate neighbor light curves since this would
+    require a lot more S3 calls.
 
     '''
 
+    if not sqs_client:
+        sqs_client = boto3.client('sqs')
+    if not s3_client:
+        s3_client = boto3.client('s3')
+
+    # get the lclist pickle from S3 to help with neighbor queries
+    lclist_pklf = s3_get_url(
+        lclist_pkl_s3url,
+        client=s3_client
+    )
+
+    with open(lclist_pklf,'rb') as infd:
+        lclistpkl = pickle.load(infd)
+
+    while True:
+
+        try:
+
+            # receive a single message from the inqueue
+            work = sqs_get_item(in_queue_url,
+                                client=sqs_client)
+
+            # JSON deserialize the work item
+            if work is not None:
+
+                target = work['item']['target']
+                args = work['item']['args']
+                kwargs = work['item']['kwargs']
+                outbucket = work['item']['outbucket']
+
+                if 'outqueue' in work['item']:
+                    out_queue_url = work['item']['outqueue']
+                else:
+                    out_queue_url = None
+
+                receipt = work['receipt_handle']
+
+                # download the target from S3 to a file in the work directory
+                try:
+
+                    lc_filename = s3_get_url(
+                        target,
+                        client=s3_client
+                    )
+
+                    # get the period-finder pickle if present in args
+                    if args[0] is not None:
+
+                        pf_pickle = s3_get_url(
+                            args[0],
+                            client=s3_client
+                        )
+
+                    else:
+
+                        pf_pickle = None
+
+                    # now runcp
+                    cpfs = lcproc.runcp(
+                        pf_pickle,
+                        workdir,
+                        workdir,
+                        lcfname=lc_filename,
+                        lclistpkl=lclistpkl,
+                        makeneighborlcs=False,
+                        **kwargs
+                    )
+
+                    if cpfs and all(os.path.exists(x) for x in cpfs):
+
+                        LOGINFO('runcp OK for LC: %s, PF: %s -> %s' %
+                                (lc_filename, pf_pickle, cpfs))
+
+                        for cpf in cpfs:
+
+                            put_url = s3_put_file(cpf,
+                                                  outbucket,
+                                                  client=s3_client)
+
+                            if put_url is not None:
+
+                                LOGINFO('result uploaded to %s' % put_url)
+
+                                # put the S3 URL of the output into the output
+                                # queue if requested
+                                if out_queue_url is not None:
+
+                                    sqs_put_item(
+                                        out_queue_url,
+                                        {'cpf':put_url,
+                                         'lc_filename':lc_filename,
+                                         'lclistpkl':lclist_pklf,
+                                         'kwargs':kwargs}
+                                    )
+
+                                # delete the input item from the input queue to
+                                # acknowledge its receipt and indicate that
+                                # processing is done and successful
+                                sqs_delete_item(in_queue_url,
+                                                receipt)
+
+                            # if the upload fails, don't acknowledge the
+                            # message. might be a temporary S3 failure, so
+                            # another worker might succeed later.
+                            else:
+                                LOGERROR('failed to upload %s to S3' % cpf)
+
+
+                    # if runcp failed outright, don't requeue. instead, write a
+                    # ('failed-checkplot-%s.pkl' % lc_filename) file to the
+                    # output S3 bucket.
+                    else:
+
+                        LOGWARNING('runcp failed for LC: %s, PF: %s' %
+                                   (lc_filename, pf_pickle))
+
+                        with open('failed-checkplot-%s.pkl' %
+                                  lc_filename) as outfd:
+                            pickle.dump(
+                                {'in_queue_url':in_queue_url,
+                                 'target':target,
+                                 'lc_filename':lc_filename,
+                                 'lclistpkl':lclist_pklf,
+                                 'kwargs':kwargs,
+                                 'outbucket':outbucket,
+                                 'out_queue_url':out_queue_url},
+                                outfd, pickle.HIGHEST_PROTOCOL
+                            )
+
+                        put_url = s3_put_file(
+                            'failed-checkplot-%s.pkl' % lc_filename,
+                            outbucket,
+                            client=s3_client
+                        )
+
+
+                        # put the S3 URL of the output into the output
+                        # queue if requested
+                        if out_queue_url is not None:
+
+                            sqs_put_item(
+                                out_queue_url,
+                                {'cpf':put_url,
+                                 'lc_filename':lc_filename,
+                                 'lclistpkl':lclist_pklf,
+                                 'kwargs':kwargs}
+                            )
+
+                        # delete the input item from the input queue to
+                        # acknowledge its receipt and indicate that
+                        # processing is done and successful
+                        sqs_delete_item(in_queue_url,
+                                        receipt)
+
+
+                # if there's an exception, put a failed response into the output
+                # bucket and queue
+                except Exception as e:
+
+                    LOGEXCEPTION('could not process input from queue')
+
+                    with open('failed-checkplot-%s.pkl' %
+                              lc_filename) as outfd:
+                        pickle.dump(
+                            {'in_queue_url':in_queue_url,
+                             'target':target,
+                             'lc_filename':lc_filename,
+                             'lclistpkl':lclist_pklf,
+                             'kwargs':kwargs,
+                             'outbucket':outbucket,
+                             'out_queue_url':out_queue_url},
+                            outfd, pickle.HIGHEST_PROTOCOL
+                        )
+
+                    put_url = s3_put_file(
+                        'failed-checkplot-%s.pkl' % lc_filename,
+                        outbucket,
+                        client=s3_client
+                    )
+
+
+                    # put the S3 URL of the output into the output
+                    # queue if requested
+                    if out_queue_url is not None:
+
+                        sqs_put_item(
+                            out_queue_url,
+                            {'cpf':put_url,
+                             'lc_filename':lc_filename,
+                             'lclistpkl':lclistpkl,
+                             'kwargs':kwargs}
+                        )
+
+                    # delete the input item from the input queue to
+                    # acknowledge its receipt and indicate that
+                    # processing is done and successful
+                    sqs_delete_item(in_queue_url,
+                                    receipt)
+
+
+        # a keyboard interrupt kills the loop
+        except KeyboardInterrupt:
+
+            LOGWARNING('breaking out of the processing loop.')
+            break
+
+        # any other exception continues the loop we'll write the output file to
+        # the output S3 bucket (and any optional output queue), but add a
+        # failed-* prefix to it to indicate that processing failed. FIXME: could
+        # use a dead-letter queue for this instead
+        except Exception as e:
+
+
+            LOGEXCEPTION('could not process input from queue')
+
+            with open('failed-checkplot-%s.pkl' %
+                      lc_filename) as outfd:
+                pickle.dump(
+                    {'in_queue_url':in_queue_url,
+                     'target':target,
+                     'lclistpkl':lclist_pklf,
+                     'kwargs':kwargs,
+                     'outbucket':outbucket,
+                     'out_queue_url':out_queue_url},
+                    outfd, pickle.HIGHEST_PROTOCOL
+                )
+
+            put_url = s3_put_file(
+                'failed-checkplot-%s.pkl' % lc_filename,
+                outbucket,
+                client=s3_client
+            )
+
+
+            # put the S3 URL of the output into the output
+            # queue if requested
+            if out_queue_url is not None:
+
+                sqs_put_item(
+                    out_queue_url,
+                    {'cpf':put_url,
+                     'lclistpkl':lclist_pklf,
+                     'kwargs':kwargs}
+                )
+
+            # delete the input item from the input queue to
+            # acknowledge its receipt and indicate that
+            # processing is done and successful
+            sqs_delete_item(in_queue_url, receipt)
+
+
+
+
+############################################
+## STARTING WORKER LOOPS ON EC2 INSTANCES ##
+############################################
 
 
 def runpf_loop_on_instance():
@@ -501,7 +810,6 @@ def main():
 
     <action>
     <inqueue>
-    <outqueue>
 
     '''
 

@@ -4119,6 +4119,7 @@ def runcp(pfpickle,
           lclistpkl=None,
           nbrradiusarcsec=60.0,
           maxnumneighbors=5,
+          makeneighborlcs=True,
           gaia_max_timeout=60.0,
           gaia_mirror='cds',
           xmatchinfo=None,
@@ -4394,13 +4395,15 @@ def runcp(pfpickle,
                              # plots otherwise, destroying LPVs in particular
         )
 
-        # include any neighbor information as well
-        cpdupdated = update_checkplotdict_nbrlcs(
-            cpd,
-            tcol, mcol, ecol,
-            lcformat=lcformat,
-            verbose=False
-        )
+        if makeneighborlcs:
+
+            # include any neighbor information as well
+            cpdupdated = update_checkplotdict_nbrlcs(
+                cpd,
+                tcol, mcol, ecol,
+                lcformat=lcformat,
+                verbose=False
+            )
 
         # write the update checkplot dict to disk
         cpf = checkplot._write_checkplot_picklefile(
@@ -4519,6 +4522,7 @@ def parallel_cp(pfpicklelist,
                 gaia_mirror='cds',
                 nbrradiusarcsec=60.0,
                 maxnumneighbors=5,
+                makeneighborlcs=True,
                 xmatchinfo=None,
                 xmatchradiusarcsec=3.0,
                 sigclip=10.0,
@@ -4575,6 +4579,7 @@ def parallel_cp(pfpicklelist,
                   'gaia_mirror':gaia_mirror,
                   'nbrradiusarcsec':nbrradiusarcsec,
                   'maxnumneighbors':maxnumneighbors,
+                  'makeneighborlcs':makeneighborlcs,
                   'xmatchinfo':xmatchinfo,
                   'xmatchradiusarcsec':xmatchradiusarcsec,
                   'sigclip':sigclip,
@@ -4610,6 +4615,7 @@ def parallel_cp_pfdir(pfpickledir,
                       gaia_mirror='cds',
                       nbrradiusarcsec=60.0,
                       maxnumneighbors=5,
+                      makeneighborlcs=True,
                       xmatchinfo=None,
                       xmatchradiusarcsec=3.0,
                       sigclip=10.0,
@@ -4645,6 +4651,7 @@ def parallel_cp_pfdir(pfpickledir,
                        gaia_max_timeout=gaia_max_timeout,
                        gaia_mirror=gaia_mirror,
                        maxnumneighbors=maxnumneighbors,
+                       makeneighborlcs=makeneighborlcs,
                        xmatchinfo=xmatchinfo,
                        xmatchradiusarcsec=xmatchradiusarcsec,
                        sigclip=sigclip,
