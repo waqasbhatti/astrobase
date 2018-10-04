@@ -195,7 +195,7 @@ def extinction_query(lon, lat,
             # if we did, download it to the cache directory
             if tableurl:
 
-                tableurl = tableurl[0]
+                tableurl = tableurl.group(0)
 
                 req2 = requests.get(tableurl, timeout=timeout)
 
