@@ -786,6 +786,9 @@ def runcp_consumer_loop(
                                         raiseonfail=True
                                     )
 
+                                # delete the result from the local directory
+                                os.remove(cpf)
+
                             # if the upload fails, don't acknowledge the
                             # message. might be a temporary S3 failure, so
                             # another worker might succeed later.
@@ -798,6 +801,8 @@ def runcp_consumer_loop(
                         sqs_delete_item(in_queue_url,
                                         receipt)
 
+                        # delete the light curve file when we're done with it
+                        os.remove(lc_filename)
 
                     # if runcp failed outright, don't requeue. instead, write a
                     # ('failed-checkplot-%s.pkl' % lc_filename) file to the
@@ -826,7 +831,6 @@ def runcp_consumer_loop(
                             client=s3_client
                         )
 
-
                         # put the S3 URL of the output into the output
                         # queue if requested
                         if out_queue_url is not None:
@@ -842,10 +846,13 @@ def runcp_consumer_loop(
 
                         # delete the input item from the input queue to
                         # acknowledge its receipt and indicate that
-                        # processing is done and successful
+                        # processing is done
                         sqs_delete_item(in_queue_url,
                                         receipt,
                                         raiseonfail=True)
+
+                        # delete the light curve file when we're done with it
+                        os.remove(lc_filename)
 
 
                 except ClientError as e:
@@ -895,11 +902,13 @@ def runcp_consumer_loop(
 
                     # delete the input item from the input queue to
                     # acknowledge its receipt and indicate that
-                    # processing is done and successful
+                    # processing is done
                     sqs_delete_item(in_queue_url,
                                     receipt,
                                     raiseonfail=True)
 
+                    # delete the light curve file when we're done with it
+                    os.remove(lc_filename)
 
         # a keyboard interrupt kills the loop
         except KeyboardInterrupt:
@@ -958,9 +967,8 @@ def runcp_consumer_loop(
 
             # delete the input item from the input queue to
             # acknowledge its receipt and indicate that
-            # processing is done and successful
+            # processing is done
             sqs_delete_item(in_queue_url, receipt, raiseonfail=True)
-
 
 
 
