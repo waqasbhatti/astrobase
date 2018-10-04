@@ -89,6 +89,7 @@ import os.path
 import os
 import json
 import pickle
+import time
 
 try:
 
@@ -514,7 +515,109 @@ def runpf_loop():
 
 
 
-def runcp_loop(
+def runcp_producer_loop(
+        lightcurve_list,
+        input_queue,
+        input_bucket,
+        result_queue,
+        result_bucket,
+        runcp_args=(),
+        download_when_done=True,
+        runcp_kwargs=None,
+        list_slice=None,
+        s3_client=None,
+        sqs_client=None
+):
+    '''This sends tasks to the input queue and monitors the result queue for
+    task completion.
+
+    list_slice is highly recommended because SQS can only handle up to 120k
+    messages per queue.
+
+    '''
+
+    if not sqs_client:
+        sqs_client = boto3.client('sqs')
+    if not s3_client:
+        s3_client = boto3.client('s3')
+
+    # get the LC list
+    with open(lightcurve_list, 'r') as infd:
+        lclist = infd.readlines()
+
+    lclist = [x.replace('\n','') for x in infd if len(x) > 0]
+    if list_slice is not None:
+        lclist = lclist[list_slice[0]:list_slice[1]]
+    lclist = [x[1:] for x in lclist if x.startswith('/')]
+    lclist = ['s3://%s/%s' % (input_bucket, x) for x in lclist]
+
+    # set up the input and output queues
+    inq = sqs_create_queue(input_queue, client=sqs_client)
+    outq = sqs_create_queue(result_queue, client=sqs_client)
+
+    LOGINFO('set up input queue: %s' % inq['url'])
+    LOGINFO('set up output queue: %s' % outq['url'])
+
+    # wait until queues are up
+    LOGINFO('waiting for queues to start...')
+    time.sleep(15.0)
+
+    # for each item in the lightcurve_list, send it to the input queue and wait
+    # until it's done to send another one
+    for lc in lclist:
+
+        this_item = {
+            'target': lc,
+            'action': 'runcp',
+            'args': runcp_args,
+            'kwargs':runcp_kwargs if runcp_kwargs is not None else {},
+            'outbucket': result_bucket,
+            'outqueue': outq['url']
+        }
+
+        resp = sqs_put_item(inq, this_item, client=sqs_client)
+        if resp:
+            LOGINFO('sent %s to queue: %s' % inq)
+
+    # now block until all objects are done
+    done_objects = {}
+
+    while len(done_objects.keys()) < lclist:
+
+        result = sqs_get_item(outq, client=sqs_client)
+
+        if result is not None and len(result) > 0:
+
+            recv = result[0]
+            processed_object = recv['item']['target']
+            cpf = recv['item']['cpf']
+            receipt = recv['receipt_handle']
+
+            if processed_object in lclist:
+
+                if processed_object not in done_objects:
+                    done_objects[processed_object] = [cpf]
+                else:
+                    done_objects[processed_object].append(cpf)
+
+                LOGINFO('done with %s -> %s' % (processed_object, cpf))
+
+                if download_when_done:
+
+                    getobj = s3_get_url(
+                        cpf,
+                        client=s3_client
+                    )
+                    LOGINFO('downloaded %s -> %s' % (cpf, getobj))
+
+            sqs_delete_item(outq, receipt)
+
+
+    return done_objects
+
+
+
+def runcp_consumer_loop(
         in_queue_url,
         workdir,
         lclist_pkl_s3url,
@@ -522,6 +625,7 @@ def runcp_loop(
         sqs_client=None,
         s3_client=None
 ):
+
     '''This runs checkplot making in a loop until interrupted.
 
     For the moment, we don't generate neighbor light curves since this would
@@ -534,11 +638,15 @@ def runcp_loop(
     if not s3_client:
         s3_client = boto3.client('s3')
 
-    # get the lclist pickle from S3 to help with neighbor queries
-    lclist_pklf = s3_get_url(
-        lclist_pkl_s3url,
-        client=s3_client
-    )
+    lclist_pklf = lclist_pkl_s3url.split('/')[-1]
+
+    if not os.path.exists(lclist_pklf):
+
+        # get the lclist pickle from S3 to help with neighbor queries
+        lclist_pklf = s3_get_url(
+            lclist_pkl_s3url,
+            client=s3_client
+        )
 
     with open(lclist_pklf,'rb') as infd:
         lclistpkl = pickle.load(infd)
@@ -610,6 +718,25 @@ def runcp_loop(
                         LOGINFO('runcp OK for LC: %s, PF: %s -> %s' %
                                 (lc_filename, pf_pickle, cpfs))
 
+                        # check if the file exists already because it's been
+                        # processed somewhere else
+                        resp = s3_client.list_objects_v2(
+                            Bucket=outbucket,
+                            MaxKeys=1,
+                            Prefix=cpfs[0]
+                        )
+                        outbucket_list = resp.get('Contents',[])
+
+                        if outbucket_list and len(outbucket_list) > 0:
+
+                            LOGWARNING(
+                                'not uploading runcp results for %s because '
+                                'they exist in the output bucket already'
+                                % target
+                            )
+                            sqs_delete_item(in_queue_url, receipt)
+                            continue
+
                         for cpf in cpfs:
 
                             put_url = s3_put_file(cpf,
@@ -627,6 +754,7 @@ def runcp_loop(
                                     sqs_put_item(
                                         out_queue_url,
                                         {'cpf':put_url,
+                                         'target': target,
                                          'lc_filename':lc_filename,
                                          'lclistpkl':lclist_pklf,
                                          'kwargs':kwargs}
