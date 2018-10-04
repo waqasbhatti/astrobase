@@ -552,19 +552,27 @@ def runcp_loop(
                                 client=sqs_client)
 
             # JSON deserialize the work item
-            if work is not None:
+            if work is not None and len(work) > 0:
 
-                target = work['item']['target']
-                args = work['item']['args']
-                kwargs = work['item']['kwargs']
-                outbucket = work['item']['outbucket']
+                recv = work[0]
 
-                if 'outqueue' in work['item']:
-                    out_queue_url = work['item']['outqueue']
+                # skip any messages that don't tell us to runcp
+                # FIXME: use the MessageAttributes for setting topics instead
+                action = recv['item']['action']
+                if action != 'runcp':
+                    continue
+
+                target = recv['item']['target']
+                args = recv['item']['args']
+                kwargs = recv['item']['kwargs']
+                outbucket = recv['item']['outbucket']
+
+                if 'outqueue' in recv['item']:
+                    out_queue_url = recv['item']['outqueue']
                 else:
                     out_queue_url = None
 
-                receipt = work['receipt_handle']
+                receipt = recv['receipt_handle']
 
                 # download the target from S3 to a file in the work directory
                 try:
@@ -575,7 +583,7 @@ def runcp_loop(
                     )
 
                     # get the period-finder pickle if present in args
-                    if args[0] is not None:
+                    if len(args) > 0 and args[0] is not None:
 
                         pf_pickle = s3_get_url(
                             args[0],
@@ -624,17 +632,17 @@ def runcp_loop(
                                          'kwargs':kwargs}
                                     )
 
-                                # delete the input item from the input queue to
-                                # acknowledge its receipt and indicate that
-                                # processing is done and successful
-                                sqs_delete_item(in_queue_url,
-                                                receipt)
-
                             # if the upload fails, don't acknowledge the
                             # message. might be a temporary S3 failure, so
                             # another worker might succeed later.
                             else:
                                 LOGERROR('failed to upload %s to S3' % cpf)
+
+                        # delete the input item from the input queue to
+                        # acknowledge its receipt and indicate that
+                        # processing is done and successful
+                        sqs_delete_item(in_queue_url,
+                                        receipt)
 
 
                     # if runcp failed outright, don't requeue. instead, write a
@@ -646,7 +654,7 @@ def runcp_loop(
                                    (lc_filename, pf_pickle))
 
                         with open('failed-checkplot-%s.pkl' %
-                                  lc_filename) as outfd:
+                                  lc_filename, 'wb') as outfd:
                             pickle.dump(
                                 {'in_queue_url':in_queue_url,
                                  'target':target,
@@ -691,7 +699,7 @@ def runcp_loop(
                     LOGEXCEPTION('could not process input from queue')
 
                     with open('failed-checkplot-%s.pkl' %
-                              lc_filename) as outfd:
+                              lc_filename,'wb') as outfd:
                         pickle.dump(
                             {'in_queue_url':in_queue_url,
                              'target':target,
@@ -745,7 +753,7 @@ def runcp_loop(
             LOGEXCEPTION('could not process input from queue')
 
             with open('failed-checkplot-%s.pkl' %
-                      lc_filename) as outfd:
+                      lc_filename,'wb') as outfd:
                 pickle.dump(
                     {'in_queue_url':in_queue_url,
                      'target':target,

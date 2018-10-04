@@ -4405,6 +4405,10 @@ def runcp(pfpickle,
                 verbose=False
             )
 
+        else:
+
+            cpdupdated = cpd
+
         # write the update checkplot dict to disk
         cpf = checkplot._write_checkplot_picklefile(
             cpdupdated,
