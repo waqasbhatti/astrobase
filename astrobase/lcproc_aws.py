@@ -431,17 +431,22 @@ SUPPORTED_AMIS = [
 ]
 
 def make_ec2_node(
+        security_groupid,
+        subnet_id,
+        keypair_name,
         ami='ami-03006931f694ea7eb',
-        instance='c5.2xlarge',
-        security_groupid=None,
-        keypair=None,
+        instance='t3.micro',
+        wait_until_up=False,
         client=None
 ):
     '''This makes a new EC2 worker node.
 
-    Installs Python 3.6, a virtualenv, and a git checked out copy of astrobase.
+    This requires a security group ID attached to a VPC config and a keypair
+    generated beforehand. See:
 
-    Returns instance ID.
+    https://docs.aws.amazon.com/cli/latest/userguide/tutorial-ec2-ubuntu.html
+
+    Installs Python 3.6, a virtualenv, and a git checked out copy of astrobase.
 
     The default AMI is a Debian 9 instance:
 
@@ -455,10 +460,6 @@ def make_ec2_node(
 
     '''
 
-    if not client:
-        client = boto3.client('ec2')
-
-    #
 
 
 
@@ -475,10 +476,11 @@ def delete_ec2_node(
 
 def make_ec2_cluster(
         nodes,
+        security_groupid,
+        subnet_id,
+        keypair_name,
         ami='ami-03006931f694ea7eb',
-        instance='c5.2xlarge',
-        security_groupid=None,
-        keypair=None
+        instance='t3.micro',
 ):
     '''
     This makes a full EC2 cluster to work on the light curves.

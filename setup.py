@@ -66,6 +66,11 @@ EXTRAS_REQUIRE = {
         'h5py',
         'batman-package',
         'corner',
+    ],
+    'aws':[
+        'paramiko',
+        'boto3',
+        'awscli',
     ]
 }
 
