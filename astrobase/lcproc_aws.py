@@ -94,6 +94,7 @@ import time
 try:
 
     import boto3
+    from botocore.exceptions import ClientError
     import paramiko
 
 except ImportError:
@@ -246,7 +247,8 @@ def sqs_delete_queue(queue_url, client=None):
 def sqs_put_item(queue_url,
                  item,
                  delay_seconds=0,
-                 client=None):
+                 client=None,
+                 raiseonfail=False):
     '''
     This pushes an item to the specified queue name.
 
@@ -273,7 +275,12 @@ def sqs_put_item(queue_url,
             return resp
 
     except Exception as e:
+
         LOGEXCEPTION('could not send item to queue: %s' % queue_url)
+
+        if raiseonfail:
+            raise
+
         return None
 
 
@@ -281,7 +288,8 @@ def sqs_put_item(queue_url,
 def sqs_get_item(queue_url,
                  max_items=1,
                  wait_time_seconds=5,
-                 client=None):
+                 client=None,
+                 raiseonfail=False):
     '''This gets a single item from the SQS queue.
 
     The queue url is composed of some internal SQS junk plus a queue_name. The
@@ -358,13 +366,18 @@ def sqs_get_item(queue_url,
 
     except Exception as e:
         LOGEXCEPTION('could not get items from queue: %s' % queue_url)
+
+        if raiseonfail:
+            raise
+
         return None
 
 
 
 def sqs_delete_item(queue_url,
                     receipt_handle,
-                    client=None):
+                    client=None,
+                    raiseonfail=False):
     '''This deletes a message from the queue, effectively acknowledging its
     receipt.
 
@@ -388,6 +401,9 @@ def sqs_delete_item(queue_url,
             'could not delete message with receipt handle: '
             '%s from queue: %s' % (receipt_handle, queue_url)
         )
+
+        if raiseonfail:
+            raise
 
 
 
@@ -522,8 +538,8 @@ def runcp_producer_loop(
         result_queue,
         result_bucket,
         runcp_args=(),
-        download_when_done=True,
         runcp_kwargs=None,
+        download_when_done=True,
         list_slice=None,
         s3_client=None,
         sqs_client=None
@@ -532,7 +548,9 @@ def runcp_producer_loop(
     task completion.
 
     list_slice is highly recommended because SQS can only handle up to 120k
-    messages per queue.
+    messages per queue (or maybe this is only 120k received messages and not
+    120k messages actually put into the queue? the SQS docs suck, so whatever
+    tf).
 
     '''
 
@@ -545,7 +563,7 @@ def runcp_producer_loop(
     with open(lightcurve_list, 'r') as infd:
         lclist = infd.readlines()
 
-    lclist = [x.replace('\n','') for x in infd if len(x) > 0]
+    lclist = [x.replace('\n','') for x in lclist if len(x) > 0]
     if list_slice is not None:
         lclist = lclist[list_slice[0]:list_slice[1]]
     lclist = [x[1:] for x in lclist if x.startswith('/')]
@@ -575,16 +593,16 @@ def runcp_producer_loop(
             'outqueue': outq['url']
         }
 
-        resp = sqs_put_item(inq, this_item, client=sqs_client)
+        resp = sqs_put_item(inq['url'], this_item, client=sqs_client)
         if resp:
-            LOGINFO('sent %s to queue: %s' % inq)
+            LOGINFO('sent %s to queue: %s' % (lc,inq['url']))
 
     # now block until all objects are done
     done_objects = {}
 
-    while len(done_objects.keys()) < lclist:
+    while len(list(done_objects.keys())) < len(lclist):
 
-        result = sqs_get_item(outq, client=sqs_client)
+        result = sqs_get_item(outq['url'], client=sqs_client)
 
         if result is not None and len(result) > 0:
 
@@ -610,8 +628,14 @@ def runcp_producer_loop(
                     )
                     LOGINFO('downloaded %s -> %s' % (cpf, getobj))
 
-            sqs_delete_item(outq, receipt)
+            sqs_delete_item(outq['url'], receipt)
 
+
+    # delete the input and output queues when we're done
+    LOGINFO('done with processing. deleting queues...')
+    time.sleep(1.0)
+    sqs_delete_queue(inq['url'])
+    sqs_delete_queue(outq['url'])
 
     return done_objects
 
@@ -657,7 +681,8 @@ def runcp_consumer_loop(
 
             # receive a single message from the inqueue
             work = sqs_get_item(in_queue_url,
-                                client=sqs_client)
+                                client=sqs_client,
+                                raiseonfail=True)
 
             # JSON deserialize the work item
             if work is not None and len(work) > 0:
@@ -757,7 +782,8 @@ def runcp_consumer_loop(
                                          'target': target,
                                          'lc_filename':lc_filename,
                                          'lclistpkl':lclist_pklf,
-                                         'kwargs':kwargs}
+                                         'kwargs':kwargs},
+                                        raiseonfail=True
                                     )
 
                             # if the upload fails, don't acknowledge the
@@ -810,18 +836,26 @@ def runcp_consumer_loop(
                                 {'cpf':put_url,
                                  'lc_filename':lc_filename,
                                  'lclistpkl':lclist_pklf,
-                                 'kwargs':kwargs}
+                                 'kwargs':kwargs},
+                                raiseonfail=True
                             )
 
                         # delete the input item from the input queue to
                         # acknowledge its receipt and indicate that
                         # processing is done and successful
                         sqs_delete_item(in_queue_url,
-                                        receipt)
+                                        receipt,
+                                        raiseonfail=True)
 
 
-                # if there's an exception, put a failed response into the output
-                # bucket and queue
+                except ClientError as e:
+
+                    LOGWARNING('queues have disappeared. stopping worker loop')
+                    break
+
+
+                # if there's any other exception, put a failed response into the
+                # output bucket and queue
                 except Exception as e:
 
                     LOGEXCEPTION('could not process input from queue')
@@ -855,14 +889,16 @@ def runcp_consumer_loop(
                             {'cpf':put_url,
                              'lc_filename':lc_filename,
                              'lclistpkl':lclistpkl,
-                             'kwargs':kwargs}
+                             'kwargs':kwargs},
+                            raiseonfail=True
                         )
 
                     # delete the input item from the input queue to
                     # acknowledge its receipt and indicate that
                     # processing is done and successful
                     sqs_delete_item(in_queue_url,
-                                    receipt)
+                                    receipt,
+                                    raiseonfail=True)
 
 
         # a keyboard interrupt kills the loop
@@ -870,6 +906,15 @@ def runcp_consumer_loop(
 
             LOGWARNING('breaking out of the processing loop.')
             break
+
+
+        # if the queues disappear, then the producer loop is done and we should
+        # exit
+        except ClientError as e:
+
+            LOGWARNING('queues have disappeared. stopping worker loop')
+            break
+
 
         # any other exception continues the loop we'll write the output file to
         # the output S3 bucket (and any optional output queue), but add a
@@ -907,13 +952,14 @@ def runcp_consumer_loop(
                     out_queue_url,
                     {'cpf':put_url,
                      'lclistpkl':lclist_pklf,
-                     'kwargs':kwargs}
+                     'kwargs':kwargs},
+                    raiseonfail=True
                 )
 
             # delete the input item from the input queue to
             # acknowledge its receipt and indicate that
             # processing is done and successful
-            sqs_delete_item(in_queue_url, receipt)
+            sqs_delete_item(in_queue_url, receipt, raiseonfail=True)
 
 
 
