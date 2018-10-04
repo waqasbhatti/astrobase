@@ -537,20 +537,23 @@ def runcp_producer_loop(
         input_bucket,
         result_queue,
         result_bucket,
-        runcp_args=(),
+        pfresult_list=None,
         runcp_kwargs=None,
+        process_list_slice=None,
         download_when_done=True,
-        list_slice=None,
+        purge_queues_when_done=True,
+        save_state_when_done=True,
+        delete_queues_when_done=False,
         s3_client=None,
         sqs_client=None
 ):
     '''This sends tasks to the input queue and monitors the result queue for
     task completion.
 
-    list_slice is highly recommended because SQS can only handle up to 120k
-    messages per queue (or maybe this is only 120k received messages and not
-    120k messages actually put into the queue? the SQS docs suck, so whatever
-    tf).
+    process_list_slice is highly recommended because SQS can only handle up to
+    120k messages per queue (or maybe this is only 120k received messages and
+    not 120k messages actually put into the queue? the SQS docs suck, so
+    whatever tf).
 
     '''
 
@@ -559,85 +562,211 @@ def runcp_producer_loop(
     if not s3_client:
         s3_client = boto3.client('s3')
 
-    # get the LC list
-    with open(lightcurve_list, 'r') as infd:
-        lclist = infd.readlines()
+    if isinstance(lightcurve_list, str) and os.path.exists(lightcurve_list):
 
-    lclist = [x.replace('\n','') for x in lclist if len(x) > 0]
-    if list_slice is not None:
-        lclist = lclist[list_slice[0]:list_slice[1]]
-    lclist = [x[1:] for x in lclist if x.startswith('/')]
-    lclist = ['s3://%s/%s' % (input_bucket, x) for x in lclist]
+        # get the LC list
+        with open(lightcurve_list, 'r') as infd:
+            lclist = infd.readlines()
+
+        lclist = [x.replace('\n','') for x in lclist if len(x) > 0]
+        if process_list_slice is not None:
+            lclist = lclist[process_list_slice[0]:process_list_slice[1]]
+        lclist = [x[1:] for x in lclist if x.startswith('/')]
+        lclist = ['s3://%s/%s' % (input_bucket, x) for x in lclist]
+
+    # this handles direct invocation using lists of s3:// urls of light curves
+    elif isinstance(lightcurve_list, list):
+        lclist = lightcurve_list
 
     # set up the input and output queues
-    inq = sqs_create_queue(input_queue, client=sqs_client)
-    outq = sqs_create_queue(result_queue, client=sqs_client)
 
-    LOGINFO('set up input queue: %s' % inq['url'])
-    LOGINFO('set up output queue: %s' % outq['url'])
+    # check if the queues by the input and output names given exist already
+    # if they do, go ahead and use them
+    # if they don't, make new ones.
+    try:
+        inq = sqs_client.get_queue_url(QueueName=input_queue)
+        inq_url = inq['QueueUrl']
+    except ClientError as e:
+        inq = sqs_create_queue(input_queue, client=sqs_client)
+        inq_url = inq['url']
+
+    try:
+        outq = sqs_client.get_queue_url(QueueName=result_queue)
+        outq_url = outq['QueueUrl']
+    except ClientError as e:
+        outq = sqs_create_queue(result_queue, client=sqs_client)
+        outq_url = outq['url']
+
+    LOGINFO('set up input queue: %s' % inq_url)
+    LOGINFO('set up output queue: %s' % outq_url)
 
     # wait until queues are up
-    LOGINFO('waiting for queues to start...')
-    time.sleep(15.0)
+    LOGINFO('waiting for queues to become ready...')
+    time.sleep(10.0)
 
     # for each item in the lightcurve_list, send it to the input queue and wait
     # until it's done to send another one
-    for lc in lclist:
+
+    if pfresult_list is None:
+        pfresult_list = [None for x in lclist]
+
+    for lc, pf in zip(lclist, pfresult_list):
 
         this_item = {
             'target': lc,
             'action': 'runcp',
-            'args': runcp_args,
+            'args': (pf,),
             'kwargs':runcp_kwargs if runcp_kwargs is not None else {},
             'outbucket': result_bucket,
-            'outqueue': outq['url']
+            'outqueue': outq_url
         }
 
-        resp = sqs_put_item(inq['url'], this_item, client=sqs_client)
+        resp = sqs_put_item(inq_url, this_item, client=sqs_client)
         if resp:
-            LOGINFO('sent %s to queue: %s' % (lc,inq['url']))
+            LOGINFO('sent %s to queue: %s' % (lc,inq_url))
 
     # now block until all objects are done
     done_objects = {}
 
+    LOGINFO('all items queued, waiting for results...')
+
     while len(list(done_objects.keys())) < len(lclist):
 
-        result = sqs_get_item(outq['url'], client=sqs_client)
+        try:
 
-        if result is not None and len(result) > 0:
+            result = sqs_get_item(outq_url, client=sqs_client)
 
-            recv = result[0]
-            processed_object = recv['item']['target']
-            cpf = recv['item']['cpf']
-            receipt = recv['receipt_handle']
+            if result is not None and len(result) > 0:
 
-            if processed_object in lclist:
+                recv = result[0]
+                processed_object = recv['item']['target']
+                cpf = recv['item']['cpf']
+                receipt = recv['receipt_handle']
 
-                if processed_object not in done_objects:
-                    done_objects[processed_object] = [cpf]
-                else:
-                    done_objects[processed_object].append(cpf)
+                if processed_object in lclist:
 
-                LOGINFO('done with %s -> %s' % (processed_object, cpf))
+                    if processed_object not in done_objects:
+                        done_objects[processed_object] = [cpf]
+                    else:
+                        done_objects[processed_object].append(cpf)
 
-                if download_when_done:
+                    LOGINFO('done with %s -> %s' % (processed_object, cpf))
 
-                    getobj = s3_get_url(
-                        cpf,
-                        client=s3_client
-                    )
-                    LOGINFO('downloaded %s -> %s' % (cpf, getobj))
+                    if download_when_done:
 
-            sqs_delete_item(outq['url'], receipt)
+                        getobj = s3_get_url(
+                            cpf,
+                            client=s3_client
+                        )
+                        LOGINFO('downloaded %s -> %s' % (cpf, getobj))
+
+                sqs_delete_item(outq_url, receipt)
+
+        except KeyboardInterrupt as e:
+
+            LOGWARNING('breaking out of producer wait-loop')
+            break
 
 
     # delete the input and output queues when we're done
-    LOGINFO('done with processing. deleting queues...')
+    LOGINFO('done with processing.')
     time.sleep(1.0)
-    sqs_delete_queue(inq['url'])
-    sqs_delete_queue(outq['url'])
 
-    return done_objects
+    if purge_queues_when_done:
+        LOGWARNING('purging queues at exit, please wait 10 seconds...')
+        sqs_client.purge_queue(QueueUrl=inq_url)
+        sqs_client.purge_queue(QueueUrl=outq_url)
+        time.sleep(10.0)
+
+    if delete_queues_when_done:
+        LOGWARNING('deleting queues at exit')
+        sqs_delete_queue(inq_url)
+        sqs_delete_queue(outq_url)
+
+    work_state = {
+        'done': done_objects,
+        'in_progress': list(set(lclist) - set(done_objects.keys())),
+        'args':(os.path.abspath(lightcurve_list),
+                input_queue,
+                input_bucket,
+                result_queue,
+                result_bucket),
+        'kwargs':{'pfresult_list':pfresult_list,
+                  'runcp_kwargs':runcp_kwargs,
+                  'process_list_slice':process_list_slice,
+                  'download_when_done':download_when_done,
+                  'purge_queues_when_done':purge_queues_when_done,
+                  'save_state_when_done':save_state_when_done,
+                  'delete_queues_when_done':delete_queues_when_done,
+                  's3_client':s3_client,
+                  'sqs_client':sqs_client}
+    }
+
+    if save_state_when_done:
+        with open('runcp-queue-producer-loop-state.pkl','wb') as outfd:
+            pickle.dump(work_state, outfd, pickle.HIGHEST_PROTOCOL)
+
+    # at the end, return the done_objects dict
+    # also return the list of unprocessed items if any
+    return work_state
+
+
+
+def runcp_producer_loop_savedstate(
+        use_saved_state=None,
+        lightcurve_list=None,
+        input_queue=None,
+        input_bucket=None,
+        result_queue=None,
+        result_bucket=None,
+        pfresult_list=None,
+        runcp_kwargs=None,
+        process_list_slice=None,
+        download_when_done=True,
+        purge_queues_when_done=True,
+        save_state_when_done=True,
+        delete_queues_when_done=False,
+        s3_client=None,
+        sqs_client=None
+):
+    '''This wraps the function above to allow for loading previous state from a
+    file.
+
+    '''
+
+    if use_saved_state is not None and os.path.exists(use_saved_state):
+
+        with open(use_saved_state,'rb') as infd:
+            saved_state = pickle.load(infd)
+
+        # run the producer loop using the saved state's todo list
+        return runcp_producer_loop(
+            saved_state['in_progress'],
+            saved_state['args'][1],
+            saved_state['args'][2],
+            saved_state['args'][3],
+            saved_state['args'][4],
+            **saved_state['kwargs']
+        )
+
+    else:
+
+        return runcp_producer_loop(
+            lightcurve_list,
+            input_queue,
+            input_bucket,
+            result_queue,
+            result_bucket,
+            pfresult_list=pfresult_list,
+            runcp_kwargs=runcp_kwargs,
+            process_list_slice=process_list_slice,
+            download_when_done=download_when_done,
+            purge_queues_when_done=purge_queues_when_done,
+            save_state_when_done=save_state_when_done,
+            delete_queues_when_done=delete_queues_when_done,
+            s3_client=s3_client,
+            sqs_client=sqs_client
+        )
 
 
 
