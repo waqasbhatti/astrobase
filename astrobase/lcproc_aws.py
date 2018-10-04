@@ -135,10 +135,11 @@ def s3_get_url(url, client=None):
     '''
 
     bucket_item = url.replace('s3://','')
-    bucket_item = os.path.split(bucket_item)
+    bucket_item = bucket_item.split('/')
     bucket = bucket_item[0]
-    filekey = '/'.join(bucket[1:])
-    return s3_get_file(bucket, filekey, bucket[-1], client=client)
+    filekey = '/'.join(bucket_item[1:])
+
+    return s3_get_file(bucket, filekey, bucket_item[-1], client=client)
 
 
 
