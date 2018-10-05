@@ -90,6 +90,7 @@ import os
 import json
 import pickle
 import time
+import signal
 
 try:
 
@@ -523,6 +524,10 @@ def delete_ec2_cluster(
 ## WORKER LOOPS ##
 ##################
 
+def kill_handler(sig, frame):
+    raise KeyboardInterrupt
+
+
 def runpf_loop():
     '''
     This runs period-finding in a loop until interrupted.
@@ -629,6 +634,11 @@ def runcp_producer_loop(
     done_objects = {}
 
     LOGINFO('all items queued, waiting for results...')
+
+    # listen to the kill and term signals and raise KeyboardInterrupt when
+    # called
+    signal.signal(signal.SIGINT, kill_handler)
+    signal.signal(signal.SIGTERM, kill_handler)
 
     while len(list(done_objects.keys())) < len(lclist):
 
@@ -803,6 +813,11 @@ def runcp_consumer_loop(
 
     with open(lclist_pklf,'rb') as infd:
         lclistpkl = pickle.load(infd)
+
+    # listen to the kill and term signals and raise KeyboardInterrupt when
+    # called
+    signal.signal(signal.SIGINT, kill_handler)
+    signal.signal(signal.SIGTERM, kill_handler)
 
     while True:
 
