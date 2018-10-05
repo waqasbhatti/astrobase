@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''lcproc_aws.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2018
+"""lcproc_aws.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2018
 License: MIT - see the LICENSE file for the full text.
 
 This contains lcproc worker loops useful for AWS processing of light curves.
@@ -15,7 +15,41 @@ as described at:
 
 https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html
 
-'''
+Example script for runcp_consumer_loop() to launch one processing loop per CPU
+on an EC2 instance (this goes in the instance's run-data [assuming AMZ Linux 2]
+to execute when the instance finishes launching):
+
+---
+
+#!/bin/bash
+
+sudo yum install -y python3-devel gcc-gfortran jq htop emacs-nox git
+
+cat << 'EOF' > launch-runcp.sh
+#!/bin/bash
+
+python3 -m venv ~ec2-user/py3
+source ~ec2-user/py3/bin/activate
+
+git clone https://github.com/waqasbhatti/astrobase
+cd ~ec2-user/astrobase
+pip install pip setuptools numpy -U
+pip install -e .[aws]
+
+mkdir ~ec2-user/work
+cd ~ec2-user/work
+
+for s in seq `lscpu -J | jq ".lscpu[3].data|tonumber`; do \
+nohup python3 -u -c "from astrobase import lcproc_aws as lcp; \
+lcp.runcp_consumer_loop('{{ inq_url }}','.','{{ lclist_s3_url }}')" \
+> runcp-loop.out & done
+EOF
+
+su ec2-user -c 'bash launch-runcp.sh'
+
+---
+
+"""
 
 #############
 ## LOGGING ##
@@ -91,6 +125,10 @@ import json
 import pickle
 import time
 import signal
+import subprocess
+
+import requests
+from requests.exceptions import HTTPError
 
 try:
 
@@ -114,10 +152,10 @@ from astrobase import lcproc
 ########
 
 def s3_get_file(bucket, filename, local_file, client=None):
-    '''
+    """
     This justs gets a file from S3.
 
-    '''
+    """
 
     if not client:
         client = boto3.client('s3')
@@ -132,10 +170,10 @@ def s3_get_file(bucket, filename, local_file, client=None):
 
 
 def s3_get_url(url, client=None):
-    '''
+    """
     This gets a file from an S3 bucket based on its s3:// URL.
 
-    '''
+    """
 
     bucket_item = url.replace('s3://','')
     bucket_item = bucket_item.split('/')
@@ -147,10 +185,10 @@ def s3_get_url(url, client=None):
 
 
 def s3_put_file(local_file, bucket, client=None):
-    '''
+    """
     This uploads a file to S3.
 
-    '''
+    """
 
     if not client:
         client = boto3.client('s3')
@@ -166,10 +204,10 @@ def s3_put_file(local_file, bucket, client=None):
 
 
 def s3_delete_file(bucket, filename, client=None):
-    '''
+    """
     This deletes a file from S3.
 
-    '''
+    """
 
     if not client:
         client = boto3.client('s3')
@@ -193,10 +231,10 @@ def s3_delete_file(bucket, filename, client=None):
 #########
 
 def sqs_create_queue(queue_name, options=None, client=None):
-    '''
+    """
     This creates a queue.
 
-    '''
+    """
 
     if not client:
         client = boto3.client('sqs')
@@ -225,10 +263,10 @@ def sqs_create_queue(queue_name, options=None, client=None):
 
 
 def sqs_delete_queue(queue_url, client=None):
-    '''
+    """
     This deletes a queue.
 
-    '''
+    """
 
     if not client:
         client = boto3.client('sqs')
@@ -250,12 +288,12 @@ def sqs_put_item(queue_url,
                  delay_seconds=0,
                  client=None,
                  raiseonfail=False):
-    '''
+    """
     This pushes an item to the specified queue name.
 
     item is a JSON object. It will be serialized to a JSON string.
 
-    '''
+    """
 
     if not client:
         client = boto3.client('sqs')
@@ -291,7 +329,7 @@ def sqs_get_item(queue_url,
                  wait_time_seconds=5,
                  client=None,
                  raiseonfail=False):
-    '''This gets a single item from the SQS queue.
+    """This gets a single item from the SQS queue.
 
     The queue url is composed of some internal SQS junk plus a queue_name. The
     queue name will be something like:
@@ -324,7 +362,7 @@ def sqs_get_item(queue_url,
     be returned. If the timeout doesn't expire, the function will return a list
     of items received (up to max_items).
 
-    '''
+    """
 
     if not client:
         client = boto3.client('sqs')
@@ -379,12 +417,12 @@ def sqs_delete_item(queue_url,
                     receipt_handle,
                     client=None,
                     raiseonfail=False):
-    '''This deletes a message from the queue, effectively acknowledging its
+    """This deletes a message from the queue, effectively acknowledging its
     receipt.
 
     Call this only at the end of processing.
 
-    '''
+    """
 
     if not client:
         client = boto3.client('sqs')
@@ -416,10 +454,10 @@ def sqs_enqueue_s3_filelist(bucket,
                             outqueue=None,
                             client=None):
 
-    '''
+    """
     This puts all of the files in the specified filelist into the SQS queue.
 
-    '''
+    """
 
 
 
@@ -430,12 +468,12 @@ def sqs_enqueue_local_filelist(filelist_fname,
                                outbucket,
                                outqueue=None,
                                client=None):
-    '''This puts all of the files in the specified filelist into the SQS queue.
+    """This puts all of the files in the specified filelist into the SQS queue.
 
     All of the files will be first uploaded to the specified bucket and then put
     into an SQS queue for processing.
 
-    '''
+    """
 
 
 #########
@@ -458,7 +496,7 @@ def make_ec2_node(
         wait_until_up=False,
         client=None
 ):
-    '''This makes a new EC2 worker node.
+    """This makes a new EC2 worker node.
 
     This requires a security group ID attached to a VPC config and a keypair
     generated beforehand. See:
@@ -477,7 +515,7 @@ def make_ec2_node(
 
     Returns instance ID.
 
-    '''
+    """
 
 
 
@@ -486,10 +524,10 @@ def delete_ec2_node(
     instance_id,
     client=None
 ):
-    '''
+    """
     This deletes an EC2 node and terminates the instance.
 
-    '''
+    """
 
 
 
@@ -501,22 +539,22 @@ def make_ec2_cluster(
         ami='ami-03006931f694ea7eb',
         instance='t3.micro',
 ):
-    '''
+    """
     This makes a full EC2 cluster to work on the light curves.
 
     Returns instance IDs.
 
-    '''
+    """
 
 
 def delete_ec2_cluster(
         instance_ids,
         client=None,
 ):
-    '''
+    """
     This kills all the nodes in the instance_ids list.
 
-    '''
+    """
 
 
 
@@ -528,11 +566,70 @@ def kill_handler(sig, frame):
     raise KeyboardInterrupt
 
 
+def cache_clean_handler(min_age_hours=1):
+    """This periodically cleans up the ~/.astrobase cache to save us from
+    disk-space doom.
+
+    """
+
+    # find the files to delete
+    cmd = (
+        "find ~ec2-user/.astrobase -type f -mmin +{mmin} -exec rm -v '{{}}' \;"
+    )
+    mmin = '%.1f' % (min_age_hours*60.0)
+    cmd = cmd.format(mmin=mmin)
+
+    try:
+        proc = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE)
+        ndeleted = len(proc.stdout.decode().split('\n'))
+        LOGWARNING('cache clean: %s files older than %s hours deleted' %
+                   (ndeleted, min_age_hours))
+    except Exception as e:
+        LOGEXCEPTION('cache clean: could not delete old files')
+
+
+
+def shutdown_check_handler():
+    """This checks the instance data URL to see if there's a pending
+    shutdown for the instance.
+
+    This is useful for spot instances. If there is a pending shutdown posted to
+    the instance data URL, we'll break out of the loop.
+
+    """
+
+    url = 'http://169.254.169.254/latest/meta-data/spot/instance-action'
+
+    try:
+        resp = requests.get(url)
+        resp.raise_for_status()
+
+        stopinfo = resp.json()
+        if 'action' in stopinfo and stopinfo['action'] in ('stop',
+                                                           'terminate',
+                                                           'hibernate'):
+            stoptime = stopinfo['time']
+            LOGWARNING('instance is going to %s at %s' % (stopinfo['action'],
+                                                          stoptime))
+
+            resp.close()
+            return True
+        else:
+            resp.close()
+            return False
+
+    except HTTPError as e:
+        resp.close()
+        return False
+
+
+
 def runpf_loop():
-    '''
+
+    """
     This runs period-finding in a loop until interrupted.
 
-    '''
+    """
 
 
 
@@ -552,7 +649,7 @@ def runcp_producer_loop(
         s3_client=None,
         sqs_client=None
 ):
-    '''This sends tasks to the input queue and monitors the result queue for
+    """This sends tasks to the input queue and monitors the result queue for
     task completion.
 
     process_list_slice is highly recommended because SQS can only handle up to
@@ -560,7 +657,7 @@ def runcp_producer_loop(
     not 120k messages actually put into the queue? the SQS docs suck, so
     whatever tf).
 
-    '''
+    """
 
     if not sqs_client:
         sqs_client = boto3.client('sqs')
@@ -739,10 +836,10 @@ def runcp_producer_loop_savedstate(
         s3_client=None,
         sqs_client=None
 ):
-    '''This wraps the function above to allow for loading previous state from a
+    """This wraps the function above to allow for loading previous state from a
     file.
 
-    '''
+    """
 
     if use_saved_state is not None and os.path.exists(use_saved_state):
 
@@ -785,16 +882,18 @@ def runcp_consumer_loop(
         workdir,
         lclist_pkl_s3url,
         wait_time_seconds=5,
+        cache_clean_timer_seconds=3600.0,
+        shutdown_check_timer_seconds=60.0,
         sqs_client=None,
         s3_client=None
 ):
 
-    '''This runs checkplot making in a loop until interrupted.
+    """This runs checkplot making in a loop until interrupted.
 
     For the moment, we don't generate neighbor light curves since this would
     require a lot more S3 calls.
 
-    '''
+    """
 
     if not sqs_client:
         sqs_client = boto3.client('sqs')
@@ -819,7 +918,23 @@ def runcp_consumer_loop(
     signal.signal(signal.SIGINT, kill_handler)
     signal.signal(signal.SIGTERM, kill_handler)
 
+    shutdown_last_time = time.monotic()
+    diskspace_last_time = time.monotic()
+
     while True:
+
+        curr_time = time.monotic()
+
+        if (curr_time - shutdown_last_time) > shutdown_check_timer_seconds:
+            shutdown_check = shutdown_check_handler()
+            if shutdown_check:
+                LOGWARNING('instance will die soon, breaking loop')
+                break
+            shutdown_last_time = time.monotic()
+
+        if (curr_time - diskspace_last_time) > cache_clean_timer_seconds:
+            cache_clean_handler()
+            diskspace_last_time = time.monotic()
 
         try:
 
@@ -1122,17 +1237,17 @@ def runcp_consumer_loop(
 
 
 def runpf_loop_on_instance():
-    '''
+    """
     This starts a runpf worker loop on the given EC2 instance.
 
-    '''
+    """
 
 
 def runcp_loop_on_instance():
-    '''
+    """
     This starts a runcp worker loop on the given EC2 instance.
 
-    '''
+    """
 
 
 ##########
@@ -1140,7 +1255,7 @@ def runcp_loop_on_instance():
 ##########
 
 def main():
-    '''
+    """
     This starts the lcproc_aws process.
 
     The cmdline args are:
@@ -1148,7 +1263,7 @@ def main():
     <action>
     <inqueue>
 
-    '''
+    """
 
 
 
