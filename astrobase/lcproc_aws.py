@@ -25,27 +25,23 @@ to execute when the instance finishes launching):
 
 yum install -y python3-devel gcc-gfortran jq htop emacs-nox git
 
-cat << 'EOF' > launch-runcp.sh
+cat << 'EOF' > /home/ec2-user/launch-runcp.sh
 #!/bin/bash
 
-python3 -m venv ~ec2-user/py3
-source ~ec2-user/py3/bin/activate
+python3 -m venv /home/ec2-user/py3
 
 git clone https://github.com/waqasbhatti/astrobase
-cd ~ec2-user/astrobase
+cd /home/ec2-user/astrobase
 pip install pip setuptools numpy -U
 pip install -e .[aws]
 
-mkdir ~ec2-user/work
-cd ~ec2-user/work
+mkdir /home/ec2-user/work
+cd /home/ec2-user/work
 
-for s in seq `lscpu -J | jq ".lscpu[3].data|tonumber"`; do \
-nohup python3 -u -c "from astrobase import lcproc_aws as lcp; \
-lcp.runcp_consumer_loop('{{ inq_url }}','.','{{ lclist_s3_url }}')" \
-> runcp-loop.out & done
+for s in seq `lscpu -J | jq ".lscpu[3].data|tonumber"`; do nohup /home/ec2-user/py3/bin/python3 -u -c "from astrobase import lcproc_aws as lcp; lcp.runcp_consumer_loop('{{ inq_url }}','.','{{ lclist_s3_url }}')" > runcp-loop.out & done
 EOF
 
-su ec2-user -c 'bash launch-runcp.sh'
+su ec2-user -c 'bash /home/ec2-user/launch-runcp.sh'
 
 ---
 
@@ -918,23 +914,23 @@ def runcp_consumer_loop(
     signal.signal(signal.SIGINT, kill_handler)
     signal.signal(signal.SIGTERM, kill_handler)
 
-    shutdown_last_time = time.monotic()
-    diskspace_last_time = time.monotic()
+    shutdown_last_time = time.monotonic()
+    diskspace_last_time = time.monotonic()
 
     while True:
 
-        curr_time = time.monotic()
+        curr_time = time.monotonic()
 
         if (curr_time - shutdown_last_time) > shutdown_check_timer_seconds:
             shutdown_check = shutdown_check_handler()
             if shutdown_check:
                 LOGWARNING('instance will die soon, breaking loop')
                 break
-            shutdown_last_time = time.monotic()
+            shutdown_last_time = time.monotonic()
 
         if (curr_time - diskspace_last_time) > cache_clean_timer_seconds:
             cache_clean_handler()
-            diskspace_last_time = time.monotic()
+            diskspace_last_time = time.monotonic()
 
         try:
 
