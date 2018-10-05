@@ -23,7 +23,7 @@ to execute when the instance finishes launching):
 
 #!/bin/bash
 
-sudo yum install -y python3-devel gcc-gfortran jq htop emacs-nox git
+yum install -y python3-devel gcc-gfortran jq htop emacs-nox git
 
 cat << 'EOF' > launch-runcp.sh
 #!/bin/bash
@@ -39,7 +39,7 @@ pip install -e .[aws]
 mkdir ~ec2-user/work
 cd ~ec2-user/work
 
-for s in seq `lscpu -J | jq ".lscpu[3].data|tonumber`; do \
+for s in seq `lscpu -J | jq ".lscpu[3].data|tonumber"`; do \
 nohup python3 -u -c "from astrobase import lcproc_aws as lcp; \
 lcp.runcp_consumer_loop('{{ inq_url }}','.','{{ lclist_s3_url }}')" \
 > runcp-loop.out & done
