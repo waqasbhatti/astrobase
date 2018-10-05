@@ -23,22 +23,28 @@ to execute when the instance finishes launching):
 
 #!/bin/bash
 
-yum install -y python3-devel gcc-gfortran jq htop emacs-nox git
-
 cat << 'EOF' > /home/ec2-user/launch-runcp.sh
 #!/bin/bash
+
+sudo yum install -y python3-devel gcc-gfortran jq htop emacs-nox git
 
 python3 -m venv /home/ec2-user/py3
 
 git clone https://github.com/waqasbhatti/astrobase
 cd /home/ec2-user/astrobase
-pip install pip setuptools numpy -U
-pip install -e .[aws]
+/home/ec2-user/py3/bin/pip install pip setuptools numpy -U
+/home/ec2-user/py3/bin/pip install -e .[aws]
 
 mkdir /home/ec2-user/work
 cd /home/ec2-user/work
 
-for s in seq `lscpu -J | jq ".lscpu[3].data|tonumber"`; do nohup /home/ec2-user/py3/bin/python3 -u -c "from astrobase import lcproc_aws as lcp; lcp.runcp_consumer_loop('https://queue-url','.','s3://path/to/lclist.pkl')" > runcp-loop.out & done
+# wait a bit for the instance info to be populated
+sleep 5
+
+export AWS_DEFAULT_REGION=`curl --silent http://169.254.169.254/latest/dynamic/instance-identity/document/ | jq '.region' | tr -d '"'`
+export NCPUS=`lscpu -J | jq ".lscpu[3].data|tonumber"`
+
+for s in `seq $NCPUS`; do nohup /home/ec2-user/py3/bin/python3 -u -c "from astrobase import lcproc_aws as lcp; lcp.runcp_consumer_loop('https://queue-url','.','s3://path/to/lclist.pkl')" > runcp-$s-loop.out & done
 EOF
 
 chown ec2-user /home/ec2-user/launch-runcp.sh
@@ -55,17 +61,23 @@ and the directories set up already:
 
 #!/bin/bash
 
-yum install -y python3-devel gcc-gfortran jq htop emacs-nox git
-
 cat << 'EOF' > /home/ec2-user/launch-runcp.sh
 #!/bin/bash
+
+sudo yum install -y python3-devel gcc-gfortran jq htop emacs-nox git
 
 cd /home/ec2-user/astrobase
 git pull origin master
 
 cd /home/ec2-user/work
 
-for s in seq `lscpu -J | jq ".lscpu[3].data|tonumber"`; do nohup /home/ec2-user/py3/bin/python3 -u -c "from astrobase import lcproc_aws as lcp; lcp.runcp_consumer_loop('https://queue-url','.','s3://path/to/lclist.pkl')" > runcp-loop.out & done
+# wait a bit for the instance info to be populated
+sleep 5
+
+export AWS_DEFAULT_REGION=`curl --silent http://169.254.169.254/latest/dynamic/instance-identity/document/ | jq '.region' | tr -d '"'`
+export NCPUS=`lscpu -J | jq ".lscpu[3].data|tonumber"`
+
+for s in `seq $NCPUS`; do nohup /home/ec2-user/py3/bin/python3 -u -c "from astrobase import lcproc_aws as lcp; lcp.runcp_consumer_loop('https://queue-url','.','s3://path/to/lclist.pkl')" > runcp-$s-loop.out & done
 EOF
 
 chown ec2-user /home/ec2-user/launch-runcp.sh
@@ -162,6 +174,7 @@ try:
     import boto3
     from botocore.exceptions import ClientError
     import paramiko
+    import paramiko.client
 
 except ImportError:
     raise ImportError(
@@ -174,11 +187,61 @@ from astrobase import lcproc
 
 
 
+#############################
+## SSHING TO EC2 INSTANCES ##
+#############################
+
+def ec2_ssh(ip_address,
+            keypem_file,
+            username='ec2-user',
+            raiseonfail=False):
+    """This opens an SSH connection to the EC2 instance at ip_address.
+
+    Returns an SSHClient object.
+
+    use SSHClient.exec_command(command, environment=None) to exec a shell
+    command.
+
+    use SSHClient.open_sftp() to get a SFTPClient for the server.
+
+    use SFTPClient.get() and .put() to copy files from and to the server.
+
+    """
+
+    c = paramiko.client.SSHClient()
+    c.load_system_host_keys()
+    c.set_missing_host_key_policy(paramiko.client.AutoAddPolicy)
+
+    # load the private key from the AWS keypair pem
+    privatekey = paramiko.RSAKey.from_private_key_file(keypem_file)
+
+    # connect to the server
+    try:
+
+        c.connect(ip_address,
+                  pkey=privatekey,
+                  username='ec2-user')
+
+        return c
+
+    except Exception as e:
+        LOGEXCEPTION('could not connect to EC2 instance at %s '
+                     'using keyfile: %s and user: %s' %
+                     (ip_address, keypem_file, username))
+        if raiseonfail:
+            raise
+
+        return None
+
+
+
+
 ########
 ## S3 ##
 ########
 
 def s3_get_file(bucket, filename, local_file, client=None):
+
     """
     This justs gets a file from S3.
 
@@ -999,7 +1062,7 @@ def runcp_producer_loop(
         runcp_kwargs=None,
         process_list_slice=None,
         download_when_done=True,
-        purge_queues_when_done=True,
+        purge_queues_when_done=False,
         save_state_when_done=True,
         delete_queues_when_done=False,
         s3_client=None,
@@ -1106,7 +1169,12 @@ def runcp_producer_loop(
             if result is not None and len(result) > 0:
 
                 recv = result[0]
-                processed_object = recv['item']['target']
+                try:
+                    processed_object = recv['item']['target']
+                except KeyError:
+                    LOGWARNING('unknown target in received item: %s' % recv)
+                    processed_object = 'unknown-lc'
+
                 cpf = recv['item']['cpf']
                 receipt = recv['receipt_handle']
 
@@ -1126,6 +1194,11 @@ def runcp_producer_loop(
                             client=s3_client
                         )
                         LOGINFO('downloaded %s -> %s' % (cpf, getobj))
+
+                else:
+                    LOGWARNING('processed object returned is not in '
+                               'queued target list, probably from an '
+                               'earlier run. accepting but not downloading.')
 
                 sqs_delete_item(outq_url, receipt)
 
