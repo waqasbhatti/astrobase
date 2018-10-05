@@ -612,7 +612,13 @@ def make_ec2_nodes(
                 ready_instances = []
 
                 LOGINFO('waiting until launched instances are up...')
-                while len(ready_instances) < len(list(instance_dict.keys())):
+
+                ntries = 5
+                curr_try = 0
+
+                while ( (curr_try < ntries) or
+                        ( len(ready_instances) <
+                          len(list(instance_dict.keys()))) ):
 
                     resp = client.describe_instances(
                         InstanceIds=list(instance_dict.keys()),
@@ -641,7 +647,16 @@ def make_ec2_nodes(
                                         ]['info'] = instance
 
                     # sleep for a bit so we don't hit the API too often
+                    curr_try = curr_try + 1
                     time.sleep(5.0)
+
+                if len(ready_instances) == len(list(instance_dict.keys())):
+                    LOGINFO('all instances now up.')
+                else:
+                    LOGWARNING(
+                        'reached maximum number of tries for instance status, '
+                        'not all instances may be up.'
+                    )
 
 
             return instance_dict
@@ -665,8 +680,8 @@ def make_ec2_nodes(
 
 
 def delete_ec2_nodes(
-    instance_id_list,
-    client=None
+        instance_id_list,
+        client=None
 ):
     """
     This deletes EC2 nodes and terminates the instances.
@@ -703,13 +718,12 @@ SPOT_FLEET_CONFIG = {
 
 
 SPOT_INSTANCE_TYPES = [
-    "t2.large",
-    "t2.xlarge",
-    "t2.2xlarge",
-    "c4.8xlarge",
-    "c4.large",
-    "c4.xlarge"
-    "m5.large"
+    "m5.xlarge",
+    "m5.2xlarge",
+    "c4.xlarge",
+    "c4.2xlarge",
+    "c5.xlarge",
+    "c5.2xlarge",
 ]
 
 
@@ -727,7 +741,6 @@ SPOT_PERINSTANCE_CONFIG = {
         }
     ],
     "UserData":"base64-encoded-userdata",
-    "WeightedCapacity":1
 }
 
 
@@ -738,7 +751,7 @@ def make_spot_fleet_cluster(
         keypair_name,
         iam_instance_profile_arn,
         spot_fleet_iam_role,
-        target_capacity=32,
+        target_capacity=20,
         spot_price=0.33,
         expires_days=7,
         allocation_strategy='lowestPrice',
@@ -762,8 +775,11 @@ def make_spot_fleet_cluster(
     fleetconfig['AllocationStrategy'] = allocation_strategy
     fleetconfig['TargetCapacity'] = target_capacity
     fleetconfig['SpotPrice'] = str(spot_price)
-    fleetconfig['ValidUntil'] = (datetime.utcnow() +
-                                 timedelta(days=expires_days))
+    fleetconfig['ValidUntil'] = (
+        datetime.utcnow() + timedelta(days=expires_days)
+    ).strftime(
+        '%Y-%m-%dT%H:%M:%SZ'
+    )
 
     # get the user data from a string or a file
     if (isinstance(instance_user_data, str) and
@@ -781,11 +797,7 @@ def make_spot_fleet_cluster(
         )
         udata = base64.b64encode(udata.encode()).decode()
 
-    # figure out the instance weights
-    if instance_weights is None:
-        instance_weights = [1 for x in instance_types]
-
-    for itype, iweight in zip(instance_types, instance_weights):
+    for ind, itype in enumerate(instance_types):
 
         thisinstance = SPOT_PERINSTANCE_CONFIG.copy()
         thisinstance['InstanceType'] = itype
@@ -793,11 +805,18 @@ def make_spot_fleet_cluster(
         thisinstance['SubnetId'] = subnet_id
         thisinstance['KeyName'] = keypair_name
         thisinstance['IamInstanceProfile']['Arn'] = iam_instance_profile_arn
-        thisinstance['SecurityGroups']['GroupId'] = security_groupid
-        thisinstance['WeightedCapacity'] = iweight
+        thisinstance['SecurityGroups'][0] = {'GroupId':security_groupid}
         thisinstance['UserData'] = udata
 
+        # get the instance weights
+        if isinstance(instance_weights, list):
+            thisinstance['WeightedCapacity'] = instance_weights[ind]
+
         fleetconfig['LaunchSpecifications'].append(thisinstance)
+
+    #
+    # launch the fleet
+    #
 
     if not client:
         client = boto3.client('ec2')
@@ -1008,6 +1027,7 @@ def runcp_producer_loop(
             lclist = infd.readlines()
 
         lclist = [x.replace('\n','') for x in lclist if len(x) > 0]
+
         if process_list_slice is not None:
             lclist = lclist[process_list_slice[0]:process_list_slice[1]]
 
