@@ -591,6 +591,7 @@ def runcp_producer_loop(
     try:
         inq = sqs_client.get_queue_url(QueueName=input_queue)
         inq_url = inq['QueueUrl']
+        LOGINFO('input queue already exists, skipping creation...')
     except ClientError as e:
         inq = sqs_create_queue(input_queue, client=sqs_client)
         inq_url = inq['url']
@@ -598,12 +599,13 @@ def runcp_producer_loop(
     try:
         outq = sqs_client.get_queue_url(QueueName=result_queue)
         outq_url = outq['QueueUrl']
+        LOGINFO('result queue already exists, skipping creation...')
     except ClientError as e:
         outq = sqs_create_queue(result_queue, client=sqs_client)
         outq_url = outq['url']
 
-    LOGINFO('set up input queue: %s' % inq_url)
-    LOGINFO('set up output queue: %s' % outq_url)
+    LOGINFO('input queue: %s' % inq_url)
+    LOGINFO('output queue: %s' % outq_url)
 
     # wait until queues are up
     LOGINFO('waiting for queues to become ready...')
@@ -707,9 +709,7 @@ def runcp_producer_loop(
                   'download_when_done':download_when_done,
                   'purge_queues_when_done':purge_queues_when_done,
                   'save_state_when_done':save_state_when_done,
-                  'delete_queues_when_done':delete_queues_when_done,
-                  's3_client':s3_client,
-                  'sqs_client':sqs_client}
+                  'delete_queues_when_done':delete_queues_when_done}
     }
 
     if save_state_when_done:
