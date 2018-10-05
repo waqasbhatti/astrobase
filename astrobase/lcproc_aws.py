@@ -68,6 +68,8 @@ sudo yum install -y python3-devel gcc-gfortran jq htop emacs-nox git
 
 cd /home/ec2-user/astrobase
 git pull origin master
+/home/ec2-user/py3/bin/pip install pip setuptools numpy -U
+/home/ec2-user/py3/bin/pip install -e .[aws]
 
 cd /home/ec2-user/work
 
@@ -769,8 +771,8 @@ def delete_ec2_nodes(
 SPOT_FLEET_CONFIG = {
     "IamFleetRole": "iam-fleet-role-arn",
     "AllocationStrategy": "lowestPrice",
-    "TargetCapacity": 32,
-    "SpotPrice": "0.33",
+    "TargetCapacity": 20,
+    "SpotPrice": "0.4",
     "TerminateInstancesWithExpiration": True,
     'InstanceInterruptionBehavior': 'terminate',
     "LaunchSpecifications": [],
@@ -783,10 +785,9 @@ SPOT_FLEET_CONFIG = {
 SPOT_INSTANCE_TYPES = [
     "m5.xlarge",
     "m5.2xlarge",
-    "c4.xlarge",
-    "c4.2xlarge",
     "c5.xlarge",
     "c5.2xlarge",
+    "c5.4xlarge",
 ]
 
 
@@ -1075,6 +1076,11 @@ def runcp_producer_loop(
     120k messages per queue (or maybe this is only 120k received messages and
     not 120k messages actually put into the queue? the SQS docs suck, so
     whatever tf).
+
+    use None for a slice index elem to emulate single slice spec behavior:
+
+    process_list_slice = [10, None]  -> lclist[10:]
+    process_list_slice = [None, 500] -> lclist[:500]
 
     """
 
