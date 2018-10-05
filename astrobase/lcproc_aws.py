@@ -151,6 +151,8 @@ import pickle
 import time
 import signal
 import subprocess
+from datetime import timedelta
+import base64
 
 import requests
 from requests.exceptions import HTTPError
@@ -663,8 +665,8 @@ def make_ec2_nodes(
 
 
 def delete_ec2_nodes(
-    instance_id_list,
-    client=None
+        instance_id_list,
+        client=None
 ):
     """
     This deletes EC2 nodes and terminates the instances.
@@ -682,30 +684,214 @@ def delete_ec2_nodes(
 
 
 
-def make_ec2_cluster(
-        nodes,
+#########################
+## SPOT FLEET CLUSTERS ##
+#########################
+
+SPOT_FLEET_CONFIG = {
+    "IamFleetRole": "iam-fleet-role-arn",
+    "AllocationStrategy": "lowestPrice",
+    "TargetCapacity": 32,
+    "SpotPrice": "0.33",
+    "TerminateInstancesWithExpiration": True,
+    'InstanceInterruptionBehavior': 'terminate',
+    "LaunchSpecifications": [],
+    "Type": "maintain",
+    "ReplaceUnhealthyInstances": True,
+    "ValidUntil": "datetime-utc"
+}
+
+
+SPOT_INSTANCE_TYPES = [
+    "t2.large",
+    "t2.xlarge",
+    "t2.2xlarge",
+    "c4.8xlarge",
+    "c4.large",
+    "c4.xlarge"
+    "m5.large"
+]
+
+
+SPOT_PERINSTANCE_CONFIG = {
+    "InstanceType": "instance-type",
+    "ImageId": "image-id",
+    "SubnetId": "subnet-id",
+    "KeyName": "keypair-name",
+    "IamInstanceProfile": {
+        "Arn": "instance-profile-role-arn"
+    },
+    "SecurityGroups": [
+        {
+            "GroupId": "security-group-id"
+        }
+    ],
+    "UserData":"base64-encoded-userdata",
+    "WeightedCapacity":1
+}
+
+
+
+def make_spot_fleet_cluster(
         security_groupid,
         subnet_id,
         keypair_name,
-        ami='ami-04681a1dbd79675a5',
-        instance='t3.micro',
+        iam_instance_profile_arn,
+        spot_fleet_iam_role,
+        target_capacity=32,
+        spot_price=0.33,
+        expires_days=7,
+        allocation_strategy='lowestPrice',
+        instance_types=SPOT_INSTANCE_TYPES,
+        instance_weights=None,
+        instance_ami='ami-04681a1dbd79675a5',
+        instance_user_data=None,
+        wait_until_up=True,
+        client=None,
+        raiseonfail=False
 ):
     """
-    This makes a full EC2 cluster to work on the light curves.
+    This makes an EC2 spot-fleet cluster to work on the light curves.
 
-    Returns instance IDs.
+    Returns the spot fleet request ID if successful.
 
     """
 
+    fleetconfig = SPOT_FLEET_CONFIG.copy()
+    fleetconfig['IamFleetRole'] = spot_fleet_iam_role
+    fleetconfig['AllocationStrategy'] = allocation_strategy
+    fleetconfig['TargetCapacity'] = target_capacity
+    fleetconfig['SpotPrice'] = str(spot_price)
+    fleetconfig['ValidUntil'] = (datetime.utcnow() +
+                                 timedelta(days=expires_days))
 
-def delete_ec2_cluster(
-        instance_ids,
+    # get the user data from a string or a file
+    if (isinstance(instance_user_data, str) and
+        os.path.exists(instance_user_data)):
+        with open(instance_user_data,'rb') as infd:
+            udata = base64.b64encode(infd.read()).decode()
+
+    elif isinstance(instance_user_data, str):
+        udata = base64.b64encode(instance_user_data.encode()).decode()
+
+    else:
+        udata = (
+            '#!/bin/bash\necho "No user data provided. '
+            'Launched instance at: %s UTC"' % datetime.utcnow().isoformat()
+        )
+        udata = base64.b64encode(udata.encode()).decode()
+
+    # figure out the instance weights
+    if instance_weights is None:
+        instance_weights = [1 for x in instance_types]
+
+    for itype, iweight in zip(instance_types, instance_weights):
+
+        thisinstance = SPOT_PERINSTANCE_CONFIG.copy()
+        thisinstance['InstanceType'] = itype
+        thisinstance['ImageId'] = instance_ami
+        thisinstance['SubnetId'] = subnet_id
+        thisinstance['KeyName'] = keypair_name
+        thisinstance['IamInstanceProfile']['Arn'] = iam_instance_profile_arn
+        thisinstance['SecurityGroups']['GroupId'] = security_groupid
+        thisinstance['WeightedCapacity'] = iweight
+        thisinstance['UserData'] = udata
+
+        fleetconfig['LaunchSpecifications'].append(thisinstance)
+
+    if not client:
+        client = boto3.client('ec2')
+
+    try:
+
+        resp = client.request_spot_fleet(
+            SpotFleetRequestConfig=fleetconfig,
+        )
+
+        if not resp:
+
+            LOGERROR('spot fleet request failed.')
+            return None
+
+        else:
+
+            spot_fleet_reqid = resp['SpotFleetRequestId']
+            LOGINFO('spot fleet requested successfully. request ID: %s' %
+                    spot_fleet_reqid)
+
+            if not wait_until_up:
+                return spot_fleet_reqid
+
+            else:
+
+                ntries = 10
+                curr_try = 1
+
+                while curr_try < ntries:
+
+                    resp = client.describe_spot_fleet_requests(
+                        SpotFleetRequestIds=[
+                            spot_fleet_reqid
+                        ]
+                    )
+
+                    curr_state = resp.get('SpotFleetRequestConfigs',[])
+
+                    if len(curr_state) > 0:
+
+                        curr_state = curr_state[0]['SpotFleetRequestState']
+
+                        if curr_state == 'active':
+                            LOGINFO('spot fleet with reqid: %s is now active' %
+                                    spot_fleet_reqid)
+                            break
+
+                    curr_try = curr_try + 1
+                    LOGINFO(
+                        'spot fleet not yet active, waiting 15 seconds. '
+                        'try %s/%s' % (curr_try, ntries)
+                    )
+                    time.sleep(15.0)
+
+                return spot_fleet_reqid
+
+
+    except ClientError as e:
+
+        LOGEXCEPTION('could not launch spot fleet')
+        if raiseonfail:
+            raise
+
+        return None
+
+    except Exception as e:
+
+        LOGEXCEPTION('could not launch spot fleet')
+        if raiseonfail:
+            raise
+
+        return None
+
+
+
+def delete_spot_fleet_cluster(
+        spot_fleet_reqid,
         client=None,
 ):
     """
-    This kills all the nodes in the instance_ids list.
+    This deletes a spot-fleet cluster.
 
     """
+
+    if not client:
+        client = boto3.client('ec2')
+
+    resp = client.cancel_spot_fleet_requests(
+        SpotFleetRequestIds=[spot_fleet_reqid],
+        TerminateInstances=True
+    )
+
+    return resp
 
 
 
@@ -824,8 +1010,8 @@ def runcp_producer_loop(
         lclist = [x.replace('\n','') for x in lclist if len(x) > 0]
         if process_list_slice is not None:
             lclist = lclist[process_list_slice[0]:process_list_slice[1]]
-        lclist = [x[1:] for x in lclist if x.startswith('/')]
-        lclist = ['s3://%s/%s' % (input_bucket, x) for x in lclist]
+            lclist = [x[1:] for x in lclist if x.startswith('/')]
+            lclist = ['s3://%s/%s' % (input_bucket, x) for x in lclist]
 
     # this handles direct invocation using lists of s3:// urls of light curves
     elif isinstance(lightcurve_list, list):
