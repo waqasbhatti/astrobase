@@ -665,8 +665,8 @@ def make_ec2_nodes(
 
 
 def delete_ec2_nodes(
-        instance_id_list,
-        client=None
+    instance_id_list,
+    client=None
 ):
     """
     This deletes EC2 nodes and terminates the instances.
@@ -1010,8 +1010,9 @@ def runcp_producer_loop(
         lclist = [x.replace('\n','') for x in lclist if len(x) > 0]
         if process_list_slice is not None:
             lclist = lclist[process_list_slice[0]:process_list_slice[1]]
-            lclist = [x[1:] for x in lclist if x.startswith('/')]
-            lclist = ['s3://%s/%s' % (input_bucket, x) for x in lclist]
+
+        lclist = [x[1:] for x in lclist if x.startswith('/')]
+        lclist = ['s3://%s/%s' % (input_bucket, x) for x in lclist]
 
     # this handles direct invocation using lists of s3:// urls of light curves
     elif isinstance(lightcurve_list, list):
