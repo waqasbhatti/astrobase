@@ -589,6 +589,7 @@ def make_ec2_nodes(
         launch_instances=1,
         ami='ami-04681a1dbd79675a5',
         instance='t3.micro',
+        ebs_optimized=True,
         user_data=None,
         wait_until_up=True,
         client=None,
@@ -625,6 +626,7 @@ def make_ec2_nodes(
             'Launched instance at: %s UTC"' % datetime.utcnow().isoformat()
         )
 
+
     # fire the request
     try:
         resp = client.run_instances(
@@ -640,7 +642,7 @@ def make_ec2_nodes(
             KeyName=keypair_name,
             MaxCount=launch_instances,
             MinCount=launch_instances,
-            EbsOptimized=True
+            EbsOptimized=ebs_optimized,
         )
 
         if not resp:
@@ -805,6 +807,7 @@ SPOT_PERINSTANCE_CONFIG = {
         }
     ],
     "UserData":"base64-encoded-userdata",
+    "EbsOptimized":True,
 }
 
 
@@ -823,6 +826,7 @@ def make_spot_fleet_cluster(
         instance_weights=None,
         instance_ami='ami-04681a1dbd79675a5',
         instance_user_data=None,
+        instance_ebs_optimized=True,
         wait_until_up=True,
         client=None,
         raiseonfail=False
@@ -846,6 +850,7 @@ def make_spot_fleet_cluster(
     )
 
     # get the user data from a string or a file
+    # we need to base64 encode it here
     if (isinstance(instance_user_data, str) and
         os.path.exists(instance_user_data)):
         with open(instance_user_data,'rb') as infd:
@@ -861,6 +866,7 @@ def make_spot_fleet_cluster(
         )
         udata = base64.b64encode(udata.encode()).decode()
 
+
     for ind, itype in enumerate(instance_types):
 
         thisinstance = SPOT_PERINSTANCE_CONFIG.copy()
@@ -871,6 +877,7 @@ def make_spot_fleet_cluster(
         thisinstance['IamInstanceProfile']['Arn'] = iam_instance_profile_arn
         thisinstance['SecurityGroups'][0] = {'GroupId':security_groupid}
         thisinstance['UserData'] = udata
+        thisinstance['EbsOptimized'] = instance_ebs_optimized
 
         # get the instance weights
         if isinstance(instance_weights, list):
@@ -908,7 +915,7 @@ def make_spot_fleet_cluster(
             else:
 
                 ntries = 10
-                curr_try = 1
+                curr_try = 0
 
                 while curr_try < ntries:
 
@@ -929,11 +936,11 @@ def make_spot_fleet_cluster(
                                     spot_fleet_reqid)
                             break
 
-                    curr_try = curr_try + 1
                     LOGINFO(
                         'spot fleet not yet active, waiting 15 seconds. '
                         'try %s/%s' % (curr_try, ntries)
                     )
+                    curr_try = curr_try + 1
                     time.sleep(15.0)
 
                 return spot_fleet_reqid
