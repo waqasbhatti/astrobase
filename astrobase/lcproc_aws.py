@@ -1008,7 +1008,7 @@ def shutdown_check_handler():
     url = 'http://169.254.169.254/latest/meta-data/spot/instance-action'
 
     try:
-        resp = requests.get(url)
+        resp = requests.get(url, timeout=1.0)
         resp.raise_for_status()
 
         stopinfo = resp.json()
@@ -1029,6 +1029,9 @@ def shutdown_check_handler():
         resp.close()
         return False
 
+    except Exception as e:
+        resp.close()
+        return False
 
 
 ############################
