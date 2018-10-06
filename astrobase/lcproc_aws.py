@@ -1745,7 +1745,7 @@ def runpf_producer_loop(
         this_item = {
             'target': lc,
             'action': 'runpf',
-            'args': (lc, '.'),
+            'args': ('.',),
             'kwargs':all_runpf_kwargs,
             'outbucket': result_bucket,
             'outqueue': outq_url
@@ -1930,9 +1930,11 @@ def runpf_consumer_loop(
                         client=s3_client
                     )
 
+                    runpf_args = (lc_filename, args[0])
+
                     # now runpf
                     pfresult = lcproc.runpf(
-                        *args,
+                        *runpf_args,
                         **kwargs
                     )
 
