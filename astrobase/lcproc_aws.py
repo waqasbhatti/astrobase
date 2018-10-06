@@ -67,6 +67,43 @@ su ec2-user -c 'bash /home/ec2-user/launch-runcp.sh'
 
 ---
 
+Here's a similar script for a runpf consumer loop. We launch only a single instance of the loop because runpf will use all CPUs by default for its period-finder parallelized functions.
+
+---
+
+#!/bin/bash
+
+cat << 'EOF' > /home/ec2-user/launch-runpf.sh
+#!/bin/bash
+sudo yum -y install python3-devel gcc-gfortran jq htop emacs-nox git
+
+python3 -m venv /home/ec2-user/py3
+
+cd /home/ec2-user
+git clone https://github.com/waqasbhatti/astrobase
+
+cd /home/ec2-user/astrobase
+/home/ec2-user/py3/bin/pip install pip setuptools numpy -U
+/home/ec2-user/py3/bin/pip install -e .[aws]
+
+mkdir /home/ec2-user/work
+cd /home/ec2-user/work
+
+# wait a bit for the instance info to be populated
+sleep 5
+
+export AWS_DEFAULT_REGION=`curl --silent http://169.254.169.254/latest/dynamic/instance-identity/document/ | jq '.region' | tr -d '"'`
+export NCPUS=`lscpu -J | jq ".lscpu[3].data|tonumber"`
+
+# launch the processes
+nohup /home/ec2-user/py3/bin/python3 -u -c "from astrobase import lcproc_aws as lcp; lcp.runpf_consumer_loop('https://input-queue-url','.')" > runpf-loop.out &
+EOF
+
+chown ec2-user /home/ec2-user/launch-runpf.sh
+su ec2-user -c 'bash /home/ec2-user/launch-runpf.sh'
+
+---
+
 """
 
 #############
