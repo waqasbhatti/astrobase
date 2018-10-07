@@ -15,6 +15,24 @@ as described at:
 
 https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html
 
+General recommendations:
+
+- use t3.medium or t3.micro instances for runcp_consumer_loop. Checkplot making
+  isn't really a CPU intensive activity, so using these will be cheaper.
+
+- use c5.2xlarge or above instances for runpf_consumer_loop. Period-finders
+  require a decent number of fast cores, so a spot fleet of these instances
+  should be cost-effective.
+
+- you may want a t3.micro instance running in the same region and VPC as your
+  worker node instances to serve as a head node driving the producer_loop
+  functions. This can be done from a machine outside AWS, but you'll incur
+  (probably tiny) charges for network egress from the output queues.
+
+- It's best not to download results from S3 as soon as they're produced. Leave
+  them on S3 until everything is done, then use rclone (https://rclone.org) to
+  sync them back to your machines using --transfers <large number>.
+
 The user_data and instance_user_data kwargs for the make_ec2_nodes and
 make_spot_fleet_cluster functions can be used to start processing loops as soon
 as EC2 brings up the VM instance. This is especially useful for spot fleets set
@@ -67,7 +85,9 @@ su ec2-user -c 'bash /home/ec2-user/launch-runcp.sh'
 
 ---
 
-Here's a similar script for a runpf consumer loop. We launch only a single instance of the loop because runpf will use all CPUs by default for its period-finder parallelized functions.
+Here's a similar script for a runpf consumer loop. We launch only a single
+instance of the loop because runpf will use all CPUs by default for its
+period-finder parallelized functions.
 
 ---
 
@@ -261,7 +281,7 @@ def ec2_ssh(ip_address,
 def s3_get_file(bucket, filename, local_file, client=None):
 
     """
-    This justs gets a file from S3.
+    This gets a file from an S3 bucket.
 
     """
 
@@ -596,7 +616,6 @@ SUPPORTED_AMIS = [
 ]
 
 
-
 def make_ec2_nodes(
         security_groupid,
         subnet_id,
@@ -835,7 +854,7 @@ def make_spot_fleet_cluster(
         iam_instance_profile_arn,
         spot_fleet_iam_role,
         target_capacity=20,
-        spot_price=0.33,
+        spot_price=0.4,
         expires_days=7,
         allocation_strategy='lowestPrice',
         instance_types=SPOT_INSTANCE_TYPES,
@@ -1069,6 +1088,7 @@ def shutdown_check_handler():
     except Exception as e:
         resp.close()
         return False
+
 
 
 ############################
