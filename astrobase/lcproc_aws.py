@@ -1536,7 +1536,8 @@ def runcp_consumer_loop(
                                         receipt)
 
                         # delete the light curve file when we're done with it
-                        os.remove(lc_filename)
+                        if os.path.exists(lc_filename):
+                            os.remove(lc_filename)
 
                     # if runcp failed outright, don't requeue. instead, write a
                     # ('failed-checkplot-%s.pkl' % lc_filename) file to the
@@ -1586,7 +1587,8 @@ def runcp_consumer_loop(
                                         raiseonfail=True)
 
                         # delete the light curve file when we're done with it
-                        os.remove(lc_filename)
+                        if os.path.exists(lc_filename):
+                            os.remove(lc_filename)
 
 
                 except ClientError as e:
@@ -1631,11 +1633,13 @@ def runcp_consumer_loop(
                                 out_queue_url,
                                 {'cpf':put_url,
                                  'lc_filename':lc_filename,
-                                 'lclistpkl':lclistpkl,
+                                 'lclistpkl':lclist_pklf,
                                  'kwargs':kwargs},
                                 raiseonfail=True
                             )
-                        os.remove(lc_filename)
+
+                        if os.path.exists(lc_filename):
+                            os.remove(lc_filename)
 
                     # delete the input item from the input queue to
                     # acknowledge its receipt and indicate that
@@ -1701,7 +1705,8 @@ def runcp_consumer_loop(
                         raiseonfail=True
                     )
 
-                os.remove(lc_filename)
+                if os.path.exists(lc_filename):
+                    os.remove(lc_filename)
 
             # delete the input item from the input queue to
             # acknowledge its receipt and indicate that
@@ -2060,7 +2065,8 @@ def runpf_consumer_loop(
                         sqs_delete_item(in_queue_url, receipt)
 
                         # delete the light curve file when we're done with it
-                        os.remove(lc_filename)
+                        if os.path.exists(lc_filename):
+                            os.remove(lc_filename)
 
                     # if runcp failed outright, don't requeue. instead, write a
                     # ('failed-checkplot-%s.pkl' % lc_filename) file to the
@@ -2108,7 +2114,8 @@ def runpf_consumer_loop(
                                         raiseonfail=True)
 
                         # delete the light curve file when we're done with it
-                        os.remove(lc_filename)
+                        if os.path.exists(lc_filename):
+                            os.remove(lc_filename)
 
 
                 except ClientError as e:
@@ -2157,7 +2164,8 @@ def runpf_consumer_loop(
                             )
 
                         # delete the light curve file when we're done with it
-                        os.remove(lc_filename)
+                        if os.path.exists(lc_filename):
+                            os.remove(lc_filename)
 
                     # delete the input item from the input queue to
                     # acknowledge its receipt and indicate that
@@ -2219,8 +2227,8 @@ def runpf_consumer_loop(
                          'kwargs':kwargs},
                         raiseonfail=True
                     )
-
-                os.remove(lc_filename)
+                if os.path.exists(lc_filename):
+                    os.remove(lc_filename)
 
             # delete the input item from the input queue to
             # acknowledge its receipt and indicate that
