@@ -191,8 +191,8 @@ def main():
                          'standalone mode. Generate one using: \n\n'
                          'python3 -c "import secrets; '
                          'print(secrets.token_urlsafe(32))" '
-                         '> secret-key-file.txt\n\nSet user-only rw '
-                         'permissions on the generated file (chmod 600)')
+                         '> secret-key-file.txt\n\nSet user-only ro '
+                         'permissions on the generated file (chmod 400)')
             sys.exit(1)
 
         elif options.sharedsecret and os.path.exists(options.sharedsecret):
