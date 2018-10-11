@@ -713,3 +713,100 @@ def read_tess_pklc(picklefile):
                    'http://stackoverflow.com/q/11305790' % picklefile)
 
     return lcdict
+
+
+
+################################
+## TESS LIGHTCURVE PROCESSING ##
+################################
+
+def filter_tess_lcdict(lcdict,
+                       filterflags=True,
+                       nanfilter='sap,pdc',
+                       timestoignore=None):
+    '''This filters the TESS light curve dict.
+
+    By default, this function removes points in the TESS LC that have ANY
+    quality flags set. Also removes nans.
+
+    timestoignore is a list of tuples containing start and end times to mask:
+
+    [(time1_start, time1_end), (time2_start, time2_end), ...]
+
+    This function filters the dict IN PLACE!
+
+    '''
+
+    cols = lcdict['columns']
+
+    # filter all bad LC points as noted by quality flags
+    if filterflags:
+
+        nbefore = lcdict['time'].size
+        filterind = lcdict['quality'] == 0
+
+        for col in cols:
+            if '.' in col:
+                key, subkey = col.split('.')
+                lcdict[key][subkey] = lcdict[key][subkey][filterind]
+            else:
+                lcdict[col] = lcdict[col][filterind]
+
+        nafter = lcdict['time'].size
+        LOGINFO('applied quality flag filter, ndet before = %s, ndet after = %s'
+                % (nbefore, nafter))
+
+
+    if nanfilter and nanfilter == 'sap,pdc':
+        notnanind = (
+            np.isfinite(lcdict['sap']['sap_flux']) &
+            np.isfinite(lcdict['pdc']['pdcsap_flux'])
+        )
+    elif nanfilter and nanfilter == 'sap':
+        notnanind = np.isfinite(lcdict['sap']['sap_flux'])
+    elif nanfilter and nanfilter == 'pdc':
+        notnanind = np.isfinite(lcdict['pdc']['pdcsap_flux'])
+
+
+    # remove nans from all columns
+    if nanfilter:
+
+        nbefore = lcdict['time'].size
+        for col in cols:
+            if '.' in col:
+                key, subkey = col.split('.')
+                lcdict[key][subkey] = lcdict[key][subkey][notnanind]
+            else:
+                lcdict[col] = lcdict[col][notnanind]
+
+        nafter = lcdict['time'].size
+
+        LOGINFO('removed nans, ndet before = %s, ndet after = %s'
+                % (nbefore, nafter))
+
+
+    # exclude all times in timestoignore
+    if (timestoignore and
+        isinstance(timestoignore, list) and
+        len(timestoignore) > 0):
+
+        exclind = np.full_like(lcdict['time'],True)
+        nbefore = exclind.size
+
+        # get all the masks
+        for ignoretime in timestoignore:
+            time0, time1 = ignoretime[0], ignoretime[1]
+            thismask = (lcdict['time'] > time0) & (lcdict['time'] < time1)
+            exclind = exclind & thismask
+
+        # apply the masks
+        for col in cols:
+            if '.' in col:
+                key, subkey = col.split('.')
+                lcdict[key][subkey] = lcdict[key][subkey][exclind]
+            else:
+                lcdict[col] = lcdict[col][exclind]
+
+        nafter = lcdict['time'].size
+        LOGINFO('removed timestoignore, ndet before = %s, ndet after = %s'
+                % (nbefore, nafter))
