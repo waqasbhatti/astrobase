@@ -534,7 +534,6 @@ def read_tess_fitslc(lcfits,
                 'cr_spocclean':[hdrinfo['crspoc']],
             },
             'objectinfo':{
-                'objectid':hdrinfo['object'],  # repeated here for checkplot use
                 'ticid':hdrinfo['ticid'],
                 'tessmag':hdrinfo['tessmag'],
                 'ra':hdrinfo['ra_obj'],
@@ -546,6 +545,8 @@ def read_tess_fitslc(lcfits,
                 'star_logg':hdrinfo['logg'],
                 'star_mh':hdrinfo['mh'],
                 'star_radius':hdrinfo['radius'],
+                'observatory':'TESS',
+                'telescope':'TESS photometer',
             },
             'varinfo':{
                 'cdpp0_5':[hdrinfo['cdpp0_5']],
