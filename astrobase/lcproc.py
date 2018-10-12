@@ -3410,6 +3410,7 @@ def runpf(lcfile,
           sigclip=10.0,
           getblssnr=False,
           nworkers=NCPUS,
+          minobservations=500,
           excludeprocessed=False):
     '''This runs the period-finding for a single LC.
 
@@ -3539,8 +3540,19 @@ def runpf(lcfile,
 
                 times, mags, errs = ntimes, nmags, errs
 
+
             # run each of the requested period-finder functions
             resultdict[mcol] = {}
+
+            # check if we have enough non-nan observations to proceed
+            finmags = mags[np.isfinite(mags)]
+
+            if finmags.size < minobservations:
+
+                LOGERROR('not enough non-nan observations for '
+                         'this LC. have: %s, required: %s, magcol: %s, skipping...' %
+                         (finmags.size, mcol, minobservations))
+                continue
 
             pfmkeys = []
 
@@ -3650,7 +3662,8 @@ def runpf_worker(task):
     '''
 
     (lcfile, outdir, timecols, magcols, errcols, lcformat,
-     pfmethods, pfkwargs, getblssnr, sigclip, nworkers, excludeprocessed) = task
+     pfmethods, pfkwargs, getblssnr, sigclip, nworkers, minobservations,
+     excludeprocessed) = task
 
     if os.path.exists(lcfile):
         pfresult = runpf(lcfile,
@@ -3664,6 +3677,7 @@ def runpf_worker(task):
                          getblssnr=getblssnr,
                          sigclip=sigclip,
                          nworkers=nworkers,
+                         minobservations=minobservations,
                          excludeprocessed=excludeprocessed)
         return pfresult
     else:
@@ -3686,6 +3700,7 @@ def parallel_pf(lclist,
                 ncontrolworkers=1,
                 liststartindex=None,
                 listmaxobjects=None,
+                minobservations=500,
                 excludeprocessed=True):
     '''This drives the overall parallel period processing.
 
@@ -3735,6 +3750,7 @@ def parallel_pf(lclist,
 
     tasklist = [(x, outdir, timecols, magcols, errcols, lcformat,
                  pfmethods, pfkwargs, getblssnr, sigclip, nperiodworkers,
+                 minobservations,
                  excludeprocessed)
                 for x in lclist]
 
@@ -3761,6 +3777,7 @@ def parallel_pf_lcdir(lcdir,
                       ncontrolworkers=1,
                       liststartindex=None,
                       listmaxobjects=None,
+                      minobservations=500,
                       excludeprocessed=True):
     '''
     This runs parallel light curve period finding for directory of LCs.
@@ -3828,6 +3845,7 @@ def parallel_pf_lcdir(lcdir,
                            ncontrolworkers=ncontrolworkers,
                            liststartindex=liststartindex,
                            listmaxobjects=listmaxobjects,
+                           minobservations=minobservations,
                            excludeprocessed=excludeprocessed)
 
     else:
@@ -4267,11 +4285,15 @@ def runcp(pfpickle,
 
             if os.path.exists(lcfsearchpath):
                 lcfpath = lcfsearchpath
+
+            elif lcfname is not None and os.path.exists(lcfname):
+                lcfpath = lcfname
+
             else:
                 LOGERROR('could not find light curve for '
                          'pfresult %s, objectid %s, '
-                         'used search path: %s' %
-                         (pfpickle, objectid, lcfsearchpath))
+                         'used search path: %s, lcfname kwarg: %s' %
+                         (pfpickle, objectid, lcfsearchpath, lcfname))
                 return None
 
         else:
@@ -4292,6 +4314,7 @@ def runcp(pfpickle,
     # get the object ID from the light curve if pfpickle is None or we used
     # lcfname directly
     if objectid is None:
+
         if 'objectid' in lcdict:
             objectid = lcdict['objectid']
         elif ('objectid' in lcdict['objectinfo'] and
@@ -4335,12 +4358,16 @@ def runcp(pfpickle,
         if pfpickle is not None:
 
             if 'pfmethods' in pfresults[mcol]:
-                pflist = [pfresults[mcol][x]
-                          for x in pfresults[mcol]['pfmethods']]
+                pflist = [
+                    pfresults[mcol][x] for x in
+                    pfresults[mcol]['pfmethods'] if
+                    len(pfresults[mcol][x].keys()) > 0
+                ]
             else:
                 pflist = []
                 for pfm in PFMETHODS:
-                    if pfm in pfresults[mcol]:
+                    if (pfm in pfresults[mcol] and
+                        len(pfresults[mcol][pfm].keys()) > 0):
                         pflist.append(pfresults[mcol][pfm])
 
         # special case of generating a checkplot with no phased LCs
