@@ -3550,8 +3550,9 @@ def runpf(lcfile,
             if finmags.size < minobservations:
 
                 LOGERROR('not enough non-nan observations for '
-                         'this LC. have: %s, required: %s, magcol: %s, skipping...' %
-                         (finmags.size, mcol, minobservations))
+                         'this LC. have: %s, required: %s, '
+                         'magcol: %s, skipping...' %
+                         (finmags.size, minobservations, mcol))
                 continue
 
             pfmkeys = []
