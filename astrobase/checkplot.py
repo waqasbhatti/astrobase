@@ -2959,7 +2959,7 @@ def checkplot_dict(lspinfolist,
                    plotdpi=100,
                    bestperiodhighlight=None,
                    xgridlines=None,
-                   mindet=1000,
+                   mindet=99,
                    verbose=True):
 
     '''This writes a multiple lspinfo checkplot to a dict.
@@ -3474,7 +3474,7 @@ def checkplot_pickle(lspinfolist,
                      pickleprotocol=None,
                      bestperiodhighlight=None,
                      xgridlines=None,
-                     mindet=1000,
+                     mindet=99,
                      verbose=True):
 
     '''This writes a multiple lspinfo checkplot to a (gzipped) pickle file.
