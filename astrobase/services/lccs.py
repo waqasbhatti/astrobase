@@ -39,18 +39,6 @@ The functions below support various auxiliary LCC services:
 
 - collections  -> use list_lc_collections(lcc_server)
 
-
-COMMAND-LINE USAGE
-------------------
-
-TODO: make this actually happen...
-
-You can use this module as a command line tool. If you installed astrobase from
-pip or setup.py, you will have the `lccs` script available on your $PATH. If you
-just downloaded this file as a standalone module, make it executable (using
-chmod u+x or similar), then run `./lccs.py`. Use the --help flag to see all
-available commands and options.
-
 '''
 
 # put this in here because lccs can be used as a standalone module
@@ -940,14 +928,18 @@ def cone_search(lcc_server,
 
 def fulltext_search(lcc_server,
                     searchterm,
+                    result_visibility='unlisted',
+                    email_when_done=False,
                     collections=None,
                     columns=None,
                     filters=None,
+                    sortspec=None,
+                    limitspec=None,
+                    samplespec=None,
                     download_data=True,
                     outdir=None,
                     maxtimeout=300.0,
-                    refresh=15.0,
-                    result_ispublic=True):
+                    refresh=15.0):
 
     '''This runs a full-text search query.
 
@@ -966,6 +958,23 @@ def fulltext_search(lcc_server,
     exact match to a string (like an object name), you can add double quotes
     around the string, e.g. searchitem = '"exact match to me needed"'.
 
+    result_visibility is one of 'private', 'unlisted', 'public'.
+
+    'private' -> the dataset and its products are not visible or accessible by
+                 any user other than the one that created the dataset.
+
+    'unlisted' -> the dataset and its products are not visible in the list of
+                  public datasets, but can be accessed if the dataset URL is
+                  known
+
+    'public' -> the dataset and its products are visible in the list of public
+                datasets and can be accessed by anyone.
+
+    email_when_done is either True or False. If True, the LCC-Server will email
+    you when the search is complete. This will also set download_data to
+    False. Using this requires an LCC-Server account and an API key tied to that
+    account.
+
     collections is a list of LC collections to search in. If this is None, all
     collections will be searched.
 
@@ -978,13 +987,15 @@ def fulltext_search(lcc_server,
     the Collections tab in the LCC server's browser UI. The filter operators
     allowed are:
 
-    lt -> less than
-    gt -> greater than
-    ge -> greater than or equal to
-    le -> less than or equal to
-    eq -> equal to
-    ne -> not equal to
-    ct -> contains text
+    lt      -> less than
+    gt      -> greater than
+    ge      -> greater than or equal to
+    le      -> less than or equal to
+    eq      -> equal to
+    ne      -> not equal to
+    ct      -> contains text
+    isnull  -> column value is null
+    notnull -> column value is not null
 
     You may use the 'and' and 'or' operators between filter specifications to
     chain them together logically.
@@ -995,6 +1006,24 @@ def fulltext_search(lcc_server,
     "(dered_jmag_kmag gt 2.0) and (aep_000_stetsonj gt 10.0)"
     "(gaia_status ct 'ok') and (propermotion gt 300.0)"
     "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg lt 0.5)"
+
+    sortspec is a tuple of two items:
+
+    ('column to sort by', 'asc|desc')
+
+    This sets the column to sort the results by. For cone_search, the default
+    column and sort order are 'dist_arcsec' and 'asc', meaning the distance from
+    the search center in ascending order.
+
+    samplespec is an integer indicating how many rows from the initial search
+    result to return as a uniform random sample.
+
+    limitspec is an integer indicating how many rows from the initial search
+    result to return in total.
+
+    sortspec, samplespec, and limitspec are applied in this order:
+
+    sample -> sort -> limit
 
     download_data sets if the accompanying data from the search results will be
     downloaded automatically. This includes the data table CSV, the dataset
@@ -1012,11 +1041,6 @@ def fulltext_search(lcc_server,
     outdir if not None, sets the output directory of the downloaded dataset
     files. If None, they will be downloaded to the current directory.
 
-    result_ispublic sets if you want your dataset to be publicly visible on the
-    Recent Datasets tab and /datasets page of the LCC server you're talking
-    to. If False, only people who know the unique dataset URL can view and fetch
-    data files from it later.
-
     '''
 
     # turn the input into a param dict
@@ -1028,15 +1052,31 @@ def fulltext_search(lcc_server,
         params['columns'] = columns
     if filters:
         params['filters'] = filters
+    if sortspec:
+        params['sortspec'] = json.dumps([sortspec])
+    if samplespec:
+        params['samplespec'] = int(samplespec)
+    if limitspec:
+        params['limitspec'] = int(limitspec)
 
-    params['result_ispublic'] = 1 if result_ispublic else 0
+    params['visibility'] = result_visibility
+    params['emailwhendone'] = email_when_done
+
+    # we won't wait for the LC ZIP to complete if email_when_done = True
+    if email_when_done:
+        download_data = False
+
+    # check if we have an API key already
+    have_apikey, apikey, expires = check_existing_apikey(lcc_server)
+
+    # if not, get a new one
+    if not have_apikey:
+        apikey, expires = get_new_apikey(lcc_server)
 
     # hit the server
     api_url = '%s/api/ftsquery' % lcc_server
 
-    # no API key is required for now, but we'll load one automatically if we
-    # require it in the future
-    searchresult = submit_get_searchquery(api_url, params, apikey=None)
+    searchresult = submit_post_searchquery(api_url, params, apikey)
 
     # check the status of the search
     status = searchresult[0]
@@ -1101,15 +1141,17 @@ def fulltext_search(lcc_server,
 
 def column_search(lcc_server,
                   filters,
-                  sortcolumn='sdssr',
-                  sortorder='asc',
+                  result_visibility='unlisted',
+                  email_when_done=False,
                   collections=None,
                   columns=None,
+                  sortspec=('sdssr','asc'),
+                  limitspec=None,
+                  samplespec=None,
                   download_data=True,
                   outdir=None,
                   maxtimeout=300.0,
-                  refresh=15.0,
-                  result_ispublic=True):
+                  refresh=15.0):
 
     '''This runs a column search query.
 
@@ -1134,6 +1176,8 @@ def column_search(lcc_server,
     eq -> equal to
     ne -> not equal to
     ct -> contains text
+    isnull  -> column value is null
+    notnull -> column value is not null
 
     You may use the 'and' and 'or' operators between filter specifications to
     chain them together logically.
@@ -1145,8 +1189,22 @@ def column_search(lcc_server,
     "(gaia_status ct 'ok') and (propermotion gt 300.0)"
     "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg lt 0.5)"
 
-    sortcolumn is the database column to sort the results by. sortorder is the
-    order to sort in: 'asc' -> ascending, 'desc' -> descending.
+    result_visibility is one of 'private', 'unlisted', 'public'.
+
+    'private' -> the dataset and its products are not visible or accessible by
+                 any user other than the one that created the dataset.
+
+    'unlisted' -> the dataset and its products are not visible in the list of
+                  public datasets, but can be accessed if the dataset URL is
+                  known
+
+    'public' -> the dataset and its products are visible in the list of public
+                datasets and can be accessed by anyone.
+
+    email_when_done is either True or False. If True, the LCC-Server will email
+    you when the search is complete. This will also set download_data to
+    False. Using this requires an LCC-Server account and an API key tied to that
+    account.
 
     collections is a list of LC collections to search in. If this is None, all
     collections will be searched.
@@ -1154,6 +1212,24 @@ def column_search(lcc_server,
     columns is a list of columns to return in the results. Matching objects'
     object IDs, RAs, DECs, and links to light curve files will always be
     returned so there is no need to specify these columns.
+
+    sortspec is a tuple of two items:
+
+    ('column to sort by', 'asc|desc')
+
+    This sets the column to sort the results by. For cone_search, the default
+    column and sort order are 'dist_arcsec' and 'asc', meaning the distance from
+    the search center in ascending order.
+
+    samplespec is an integer indicating how many rows from the initial search
+    result to return as a uniform random sample.
+
+    limitspec is an integer indicating how many rows from the initial search
+    result to return in total.
+
+    sortspec, samplespec, and limitspec are applied in this order:
+
+    sample -> sort -> limit
 
     download_data sets if the accompanying data from the search results will be
     downloaded automatically. This includes the data table CSV, the dataset
@@ -1171,31 +1247,44 @@ def column_search(lcc_server,
     outdir if not None, sets the output directory of the downloaded dataset
     files. If None, they will be downloaded to the current directory.
 
-    result_ispublic sets if you want your dataset to be publicly visible on the
-    Recent Datasets tab and /datasets page of the LCC server you're talking
-    to. If False, only people who know the unique dataset URL can view and fetch
-    data files from it later.
-
     '''
 
     # turn the input into a param dict
-    params = {'filters':filters,
-              'sortcol':sortcolumn,
-              'sortorder':sortorder}
+    params = {
+        'filters':filters
+    }
 
     if collections:
         params['collections'] = collections
     if columns:
         params['columns'] = columns
+    if sortspec:
+        params['sortspec'] = json.dumps([sortspec])
+    if samplespec:
+        params['samplespec'] = int(samplespec)
+    if limitspec:
+        params['limitspec'] = int(limitspec)
 
-    params['result_ispublic'] = 1 if result_ispublic else 0
+    params['visibility'] = result_visibility
+    params['emailwhendone'] = email_when_done
+
+    # we won't wait for the LC ZIP to complete if email_when_done = True
+    if email_when_done:
+        download_data = False
+
+    # check if we have an API key already
+    have_apikey, apikey, expires = check_existing_apikey(lcc_server)
+
+    # if not, get a new one
+    if not have_apikey:
+        apikey, expires = get_new_apikey(lcc_server)
 
     # hit the server
     api_url = '%s/api/columnsearch' % lcc_server
 
     # no API key is required for now, but we'll load one automatically if we
     # require it in the future
-    searchresult = submit_get_searchquery(api_url, params, apikey=None)
+    searchresult = submit_post_searchquery(api_url, params, apikey)
 
     # check the status of the search
     status = searchresult[0]
@@ -1260,15 +1349,19 @@ def column_search(lcc_server,
 
 def xmatch_search(lcc_server,
                   file_to_upload,
+                  result_visibility='unlisted',
+                  email_when_done=False,
                   xmatch_dist_arcsec=3.0,
                   collections=None,
                   columns=None,
                   filters=None,
+                  sortspec=None,
+                  limitspec=None,
+                  samplespec=None,
                   download_data=True,
                   outdir=None,
                   maxtimeout=300.0,
-                  refresh=15.0,
-                  result_ispublic=True):
+                  refresh=15.0):
 
     '''This runs a column search query.
 
@@ -1304,6 +1397,23 @@ def xmatch_search(lcc_server,
     to an uploaded object are possible and will be returned in order of
     increasing distance.
 
+    result_visibility is one of 'private', 'unlisted', 'public'.
+
+    'private' -> the dataset and its products are not visible or accessible by
+                 any user other than the one that created the dataset.
+
+    'unlisted' -> the dataset and its products are not visible in the list of
+                  public datasets, but can be accessed if the dataset URL is
+                  known
+
+    'public' -> the dataset and its products are visible in the list of public
+                datasets and can be accessed by anyone.
+
+    email_when_done is either True or False. If True, the LCC-Server will email
+    you when the search is complete. This will also set download_data to
+    False. Using this requires an LCC-Server account and an API key tied to that
+    account.
+
     collections is a list of LC collections to search in. If this is None, all
     collections will be searched.
 
@@ -1323,6 +1433,8 @@ def xmatch_search(lcc_server,
     eq -> equal to
     ne -> not equal to
     ct -> contains text
+    isnull  -> column value is null
+    notnull -> column value is not null
 
     You may use the 'and' and 'or' operators between filter specifications to
     chain them together logically.
@@ -1333,6 +1445,24 @@ def xmatch_search(lcc_server,
     "(dered_jmag_kmag gt 2.0) and (aep_000_stetsonj gt 10.0)"
     "(gaia_status ct 'ok') and (propermotion gt 300.0)"
     "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg lt 0.5)"
+
+    sortspec is a tuple of two items:
+
+    ('column to sort by', 'asc|desc')
+
+    This sets the column to sort the results by. For cone_search, the default
+    column and sort order are 'dist_arcsec' and 'asc', meaning the distance from
+    the search center in ascending order.
+
+    samplespec is an integer indicating how many rows from the initial search
+    result to return as a uniform random sample.
+
+    limitspec is an integer indicating how many rows from the initial search
+    result to return in total.
+
+    sortspec, samplespec, and limitspec are applied in this order:
+
+    sample -> sort -> limit
 
     download_data sets if the accompanying data from the search results will be
     downloaded automatically. This includes the data table CSV, the dataset
@@ -1349,11 +1479,6 @@ def xmatch_search(lcc_server,
 
     outdir if not None, sets the output directory of the downloaded dataset
     files. If None, they will be downloaded to the current directory.
-
-    result_ispublic sets if you want your dataset to be publicly visible on the
-    Recent Datasets tab and /datasets page of the LCC server you're talking
-    to. If False, only people who know the unique dataset URL can view and fetch
-    data files from it later.
 
     '''
 
@@ -1380,19 +1505,29 @@ def xmatch_search(lcc_server,
     if filters:
         params['filters'] = filters
 
-    params['result_ispublic'] = 1 if result_ispublic else 0
+    if sortspec:
+        params['sortspec'] = json.dumps([sortspec])
+    if samplespec:
+        params['samplespec'] = int(samplespec)
+    if limitspec:
+        params['limitspec'] = int(limitspec)
 
-    # hit the server
-    api_url = '%s/api/xmatch' % lcc_server
+    params['visibility'] = result_visibility
+    params['emailwhendone'] = email_when_done
 
-    # we need an API key for xmatch
+    # we won't wait for the LC ZIP to complete if email_when_done = True
+    if email_when_done:
+        download_data = False
 
-    # check if we have one already
+    # check if we have an API key already
     have_apikey, apikey, expires = check_existing_apikey(lcc_server)
 
     # if not, get a new one
     if not have_apikey:
         apikey, expires = get_new_apikey(lcc_server)
+
+    # hit the server
+    api_url = '%s/api/xmatch' % lcc_server
 
     searchresult = submit_post_searchquery(api_url, params, apikey)
 
@@ -1674,46 +1809,3 @@ def list_lc_collections(lcc_server):
                  (url, e.code, e.reason))
 
         return None
-
-
-
-###################################
-## SUPPORT FOR EXECUTION AS MAIN ##
-###################################
-
-def main():
-
-    '''
-    This supports execution of the module as a script.
-
-    TODO: finish this.
-
-    '''
-
-    # handle SIGPIPE sent by less, head, et al.
-    import signal
-    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
-    import argparse
-
-    aparser = argparse.ArgumentParser(
-        description='interact with an LCC server on the command-line'
-    )
-
-    aparser.add_argument('server',
-                         action='store',
-                         type='str',
-                         help=("the base URL of the LCC server "
-                               "you want to talk to"))
-
-    aparser.add_argument('action',
-                         choices=['conesearch',
-                                  'columnsearch',
-                                  'ftsearch',
-                                  'xmatch',
-                                  'datasets',
-                                  'collections',
-                                  'objectinfo',
-                                  'getdata'],
-                         action='store',
-                         type='str',
-                         help=("the action you want to perform"))
