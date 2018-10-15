@@ -134,6 +134,7 @@ from astrobase.hatsurveys.hatlc import read_and_filter_sqlitecurve, \
     read_csvlc, normalize_lcdict_byinst
 from astrobase.hatsurveys.hplc import read_hatpi_textlc, read_hatpi_pklc
 from astrobase.astrokep import read_kepler_fitslc, read_kepler_pklc
+from astrobase.astrotess import read_tess_fitslc, read_tess_pklc
 
 from astrobase import periodbase, checkplot
 from astrobase.varclass import varfeatures, starfeatures, periodicfeatures
@@ -262,6 +263,24 @@ LCFORM = {
     'kep-pkl':[
         '-keplc.pkl',
         read_kepler_pklc,
+        ['time','time'],
+        ['sap.sap_flux','pdc.pdc_sapflux'],
+        ['sap.sap_flux_err','pdc.pdc_sapflux_err'],
+        True,
+        None,
+    ],
+    'tess-fits':[
+        '*_llc.fits',
+        read_tess_fitslc,
+        ['time','time'],
+        ['sap.sap_flux','pdc.pdc_sapflux'],
+        ['sap.sap_flux_err','pdc.pdc_sapflux_err'],
+        True,
+        None,
+    ],
+    'tess-pkl':[
+        '-tesslc.pkl',
+        read_tess_pklc,
         ['time','time'],
         ['sap.sap_flux','pdc.pdc_sapflux'],
         ['sap.sap_flux_err','pdc.pdc_sapflux_err'],
