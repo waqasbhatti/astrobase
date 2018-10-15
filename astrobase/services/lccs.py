@@ -325,8 +325,8 @@ def import_apikey(lcc_server, apikey_text_json):
     # now that we have an API key dict, get the API key out of it and write it
     # to the APIKEYFILE
     #
-    apikey = respdict['result']['apikey']
-    expires = respdict['result']['expires']
+    apikey = respdict['apikey']
+    expires = respdict['expires']
 
     # write this to the apikey file
 
