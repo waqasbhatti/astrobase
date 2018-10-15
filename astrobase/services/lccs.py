@@ -300,6 +300,53 @@ def get_new_apikey(lcc_server):
 
 
 
+def import_apikey(lcc_server, apikey_text_json):
+    '''This imports an API key from text and writes it to the cache dir.
+
+    Use this with the JSON text copied from the API key text box on your
+    LCC-Server user home page.
+
+    '''
+    USERHOME = os.path.expanduser('~')
+    APIKEYFILE = os.path.join(USERHOME,
+                              '.astrobase',
+                              'lccs',
+                              'apikey-%s' % lcc_server.replace(
+                                  'https://',
+                                  'https-'
+                              ).replace(
+                                  'http://',
+                                  'http-'
+                              ))
+
+    respdict = json.loads(apikey_text_json)
+
+    #
+    # now that we have an API key dict, get the API key out of it and write it
+    # to the APIKEYFILE
+    #
+    apikey = respdict['result']['apikey']
+    expires = respdict['result']['expires']
+
+    # write this to the apikey file
+
+    if not os.path.exists(os.path.dirname(APIKEYFILE)):
+        os.makedirs(os.path.dirname(APIKEYFILE))
+
+    with open(APIKEYFILE,'w') as outfd:
+        outfd.write('%s %s\n' % (apikey, expires))
+
+    # chmod it to the correct value
+    os.chmod(APIKEYFILE, 0o100600)
+
+    LOGINFO('key fetched successfully from: %s. expires on: %s' % (lcc_server,
+                                                                   expires))
+    LOGINFO('written to: %s' % APIKEYFILE)
+
+    return apikey, expires
+
+
+
 ########################
 ## DOWNLOAD UTILITIES ##
 ########################
