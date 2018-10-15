@@ -556,7 +556,7 @@ def runcp_consumer_loop(
         in_queue_url,
         workdir,
         lclist_pkl_s3url,
-        lc_altexts=None,
+        lc_altexts=('',),
         wait_time_seconds=5,
         cache_clean_timer_seconds=3600.0,
         shutdown_check_timer_seconds=60.0,
@@ -1131,7 +1131,7 @@ def runpf_producer_loop(
 def runpf_consumer_loop(
         in_queue_url,
         workdir,
-        lc_altexts=None,
+        lc_altexts=('',),
         wait_time_seconds=5,
         shutdown_check_timer_seconds=60.0,
         sqs_client=None,
