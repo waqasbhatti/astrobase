@@ -152,10 +152,19 @@ def ec2_ssh(ip_address,
 ## S3 ##
 ########
 
-def s3_get_file(bucket, filename, local_file, client=None):
+def s3_get_file(bucket,
+                filename,
+                local_file,
+                altexts=None,
+                client=None):
 
-    """
-    This gets a file from an S3 bucket.
+    """This gets a file from an S3 bucket.
+
+    altexts is a list of alternate extensions to try for the file other than the
+    one provided.
+
+    e.g. to get anything that's an .sqlite where .sqlite.gz is expected, use
+    altexts=[''] to strip the .gz.
 
     """
 
@@ -163,15 +172,40 @@ def s3_get_file(bucket, filename, local_file, client=None):
         client = boto3.client('s3')
 
     try:
+
         client.download_file(bucket, filename, local_file)
         return local_file
+
     except Exception as e:
-        LOGEXCEPTION('could not download s3://%s/%s' % (bucket, filename))
-        return None
+
+        if altexts is not None:
+
+            for alt_extension in altexts:
+
+                split_ext = os.path.splitext(filename)
+                check_file = split_ext[0] + alt_extension
+                try:
+                    client.download_file(
+                        bucket,
+                        check_file,
+                        local_file.replace(split_ext[-1],
+                                           alt_extension)
+                    )
+                    return local_file.replace(split_ext[-1],
+                                              alt_extension)
+                except Exception as e:
+                    pass
+
+        else:
+
+            LOGEXCEPTION('could not download s3://%s/%s' % (bucket, filename))
+            return None
 
 
 
-def s3_get_url(url, client=None):
+def s3_get_url(url,
+               altexts=None,
+               client=None):
     """
     This gets a file from an S3 bucket based on its s3:// URL.
 
@@ -182,7 +216,11 @@ def s3_get_url(url, client=None):
     bucket = bucket_item[0]
     filekey = '/'.join(bucket_item[1:])
 
-    return s3_get_file(bucket, filekey, bucket_item[-1], client=client)
+    return s3_get_file(bucket,
+                       filekey,
+                       bucket_item[-1],
+                       altexts=altexts,
+                       client=client)
 
 
 

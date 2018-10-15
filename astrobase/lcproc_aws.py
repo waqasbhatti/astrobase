@@ -556,6 +556,7 @@ def runcp_consumer_loop(
         in_queue_url,
         workdir,
         lclist_pkl_s3url,
+        lc_altexts=None,
         wait_time_seconds=5,
         cache_clean_timer_seconds=3600.0,
         shutdown_check_timer_seconds=60.0,
@@ -646,7 +647,8 @@ def runcp_consumer_loop(
 
                     lc_filename = awsutils.s3_get_url(
                         target,
-                        client=s3_client
+                        altexts=lc_altexts,
+                        client=s3_client,
                     )
 
                     # get the period-finder pickle if present in args
@@ -736,7 +738,8 @@ def runcp_consumer_loop(
                                                  receipt)
 
                         # delete the light curve file when we're done with it
-                        if os.path.exists(lc_filename):
+                        if ( (lc_filename is not None) and
+                             (os.path.exists(lc_filename)) ):
                             os.remove(lc_filename)
 
                     # if runcp failed outright, don't requeue. instead, write a
@@ -787,7 +790,8 @@ def runcp_consumer_loop(
                                                  raiseonfail=True)
 
                         # delete the light curve file when we're done with it
-                        if os.path.exists(lc_filename):
+                        if ( (lc_filename is not None) and
+                             (os.path.exists(lc_filename)) ):
                             os.remove(lc_filename)
 
 
@@ -838,7 +842,8 @@ def runcp_consumer_loop(
                                 raiseonfail=True
                             )
 
-                        if os.path.exists(lc_filename):
+                        if ( (lc_filename is not None) and
+                             (os.path.exists(lc_filename)) ):
                             os.remove(lc_filename)
 
                     # delete the input item from the input queue to
@@ -905,7 +910,8 @@ def runcp_consumer_loop(
                         raiseonfail=True
                     )
 
-                if os.path.exists(lc_filename):
+                if ( (lc_filename is not None) and
+                     (os.path.exists(lc_filename)) ):
                     os.remove(lc_filename)
 
             # delete the input item from the input queue to
@@ -1125,6 +1131,7 @@ def runpf_producer_loop(
 def runpf_consumer_loop(
         in_queue_url,
         workdir,
+        lc_altexts=None,
         wait_time_seconds=5,
         shutdown_check_timer_seconds=60.0,
         sqs_client=None,
@@ -1192,6 +1199,7 @@ def runpf_consumer_loop(
 
                     lc_filename = awsutils.s3_get_url(
                         target,
+                        altexts=lc_altexts,
                         client=s3_client
                     )
 
@@ -1265,7 +1273,8 @@ def runpf_consumer_loop(
                         awsutils.sqs_delete_item(in_queue_url, receipt)
 
                         # delete the light curve file when we're done with it
-                        if os.path.exists(lc_filename):
+                        if ( (lc_filename is not None) and
+                             (os.path.exists(lc_filename)) ):
                             os.remove(lc_filename)
 
                     # if runcp failed outright, don't requeue. instead, write a
@@ -1314,7 +1323,8 @@ def runpf_consumer_loop(
                                                  raiseonfail=True)
 
                         # delete the light curve file when we're done with it
-                        if os.path.exists(lc_filename):
+                        if ( (lc_filename is not None) and
+                             (os.path.exists(lc_filename)) ):
                             os.remove(lc_filename)
 
 
@@ -1364,7 +1374,8 @@ def runpf_consumer_loop(
                             )
 
                         # delete the light curve file when we're done with it
-                        if os.path.exists(lc_filename):
+                        if ( (lc_filename is not None) and
+                             (os.path.exists(lc_filename)) ):
                             os.remove(lc_filename)
 
                     # delete the input item from the input queue to
@@ -1427,7 +1438,8 @@ def runpf_consumer_loop(
                          'kwargs':kwargs},
                         raiseonfail=True
                     )
-                if os.path.exists(lc_filename):
+                if ( (lc_filename is not None) and
+                     (os.path.exists(lc_filename)) ):
                     os.remove(lc_filename)
 
             # delete the input item from the input queue to
