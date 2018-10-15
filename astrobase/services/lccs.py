@@ -290,7 +290,7 @@ def get_new_apikey(lcc_server):
     # now that we have an API key dict, get the API key out of it and write it
     # to the APIKEYFILE
     #
-    apikey = respdict['result']['key']
+    apikey = respdict['result']['apikey']
     expires = respdict['result']['expires']
 
     # write this to the apikey file
@@ -556,7 +556,8 @@ def submit_post_searchquery(url, data, apikey):
 
 def retrieve_dataset_files(searchresult,
                            getpickle=False,
-                           outdir=None):
+                           outdir=None,
+                           apikey=None):
     '''This retrieves the dataset's CSV and any LC zip files.
 
     Takes the output from submit_*_query functions above or a pickle file
@@ -572,6 +573,13 @@ def retrieve_dataset_files(searchresult,
 
     Puts the files in outdir. If it's None, they will be placed in the current
     directory.
+
+    TODO: implement below. this will require using urlopen instead of
+    urlretrieve.
+
+    If apikey is not None, uses the given apikey to authenticate the download
+    request. This is useful when you have a private dataset you want to get
+    products for.
 
     '''
 
@@ -708,14 +716,18 @@ def cone_search(lcc_server,
                 center_ra,
                 center_decl,
                 radiusarcmin=5.0,
+                result_visibility='unlisted',
+                email_when_done=False,
                 collections=None,
                 columns=None,
                 filters=None,
+                sortspec=None,
+                limitspec=None,
+                samplespec=None,
                 download_data=True,
                 outdir=None,
                 maxtimeout=300.0,
-                refresh=15.0,
-                result_ispublic=True):
+                refresh=15.0):
 
     '''This runs a cone-search query.
 
@@ -741,6 +753,23 @@ def cone_search(lcc_server,
     radiusarcmin is the search radius. This is in arcminutes. The maximum radius
     you can use is 60 arcminutes.
 
+    result_visibility is one of 'private', 'unlisted', 'public'.
+
+    'private' -> the dataset and its products are not visible or accessible by
+                 any user other than the one that created the dataset.
+
+    'unlisted' -> the dataset and its products are not visible in the list of
+                  public datasets, but can be accessed if the dataset URL is
+                  known
+
+    'public' -> the dataset and its products are visible in the list of public
+                datasets and can be accessed by anyone.
+
+    email_when_done is either True or False. If True, the LCC-Server will email
+    you when the search is complete. This will also set download_data to
+    False. Using this requires an LCC-Server account and an API key tied to that
+    account.
+
     collections is a list of LC collections to search in. If this is None, all
     collections will be searched.
 
@@ -753,13 +782,15 @@ def cone_search(lcc_server,
     the Collections tab in the LCC server's browser UI. The filter operators
     allowed are:
 
-    lt -> less than
-    gt -> greater than
-    ge -> greater than or equal to
-    le -> less than or equal to
-    eq -> equal to
-    ne -> not equal to
-    ct -> contains text
+    lt      -> less than
+    gt      -> greater than
+    ge      -> greater than or equal to
+    le      -> less than or equal to
+    eq      -> equal to
+    ne      -> not equal to
+    ct      -> contains text
+    isnull  -> column value is null
+    notnull -> column value is not null
 
     You may use the 'and' and 'or' operators between filter specifications to
     chain them together logically.
@@ -770,6 +801,24 @@ def cone_search(lcc_server,
     "(dered_jmag_kmag gt 2.0) and (aep_000_stetsonj gt 10.0)"
     "(gaia_status ct 'ok') and (propermotion gt 300.0)"
     "(simbad_best_objtype ct 'RR') and (dered_sdssu_sdssg lt 0.5)"
+
+    sortspec is a tuple of two items:
+
+    ('column to sort by', 'asc|desc')
+
+    This sets the column to sort the results by. For cone_search, the default
+    column and sort order are 'dist_arcsec' and 'asc', meaning the distance from
+    the search center in ascending order.
+
+    samplespec is an integer indicating how many rows from the initial search
+    result to return as a uniform random sample.
+
+    limitspec is an integer indicating how many rows from the initial search
+    result to return in total.
+
+    sortspec, samplespec, and limitspec are applied in this order:
+
+    sample -> sort -> limit
 
     download_data sets if the accompanying data from the search results will be
     downloaded automatically. This includes the data table CSV, the dataset
@@ -787,17 +836,14 @@ def cone_search(lcc_server,
     outdir if not None, sets the output directory of the downloaded dataset
     files. If None, they will be downloaded to the current directory.
 
-    result_ispublic sets if you want your dataset to be publicly visible on the
-    Recent Datasets tab and /datasets page of the LCC server you're talking
-    to. If False, only people who know the unique dataset URL can view and fetch
-    data files from it later.
-
     '''
 
     # turn the input into a param dict
 
-    coords = '%s %s %s' % (center_ra, center_decl, radiusarcmin)
-    params = {'coords':coords}
+    coords = '%.5f %.5f %.1f' % (center_ra, center_decl, radiusarcmin)
+    params = {
+        'coords':coords
+    }
 
     if collections:
         params['collections'] = collections
@@ -805,15 +851,31 @@ def cone_search(lcc_server,
         params['columns'] = columns
     if filters:
         params['filters'] = filters
+    if sortspec:
+        params['sortspec'] = json.dumps([sortspec])
+    if samplespec:
+        params['samplespec'] = int(samplespec)
+    if limitspec:
+        params['limitspec'] = int(limitspec)
 
-    params['result_ispublic'] = 1 if result_ispublic else 0
+    params['visibility'] = result_visibility
+    params['emailwhendone'] = email_when_done
+
+    # we won't wait for the LC ZIP to complete if email_when_done = True
+    if email_when_done:
+        download_data = False
+
+    # check if we have an API key already
+    have_apikey, apikey, expires = check_existing_apikey(lcc_server)
+
+    # if not, get a new one
+    if not have_apikey:
+        apikey, expires = get_new_apikey(lcc_server)
 
     # hit the server
     api_url = '%s/api/conesearch' % lcc_server
 
-    # no API key is required for now, but we'll load one automatically if we
-    # require it in the future
-    searchresult = submit_get_searchquery(api_url, params, apikey=None)
+    searchresult = submit_post_searchquery(api_url, params, apikey)
 
     # check the status of the search
     status = searchresult[0]
@@ -1332,8 +1394,6 @@ def xmatch_search(lcc_server,
     if not have_apikey:
         apikey, expires = get_new_apikey(lcc_server)
 
-    # no API key is required for now, but we'll load one automatically if we
-    # require it in the future
     searchresult = submit_post_searchquery(api_url, params, apikey)
 
     # check the status of the search
