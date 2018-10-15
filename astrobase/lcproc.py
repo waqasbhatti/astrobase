@@ -270,7 +270,7 @@ LCFORM = {
         None,
     ],
     'tess-fits':[
-        '*_llc.fits',
+        '*_lc.fits',
         read_tess_fitslc,
         ['time','time'],
         ['sap.sap_flux','pdc.pdc_sapflux'],
