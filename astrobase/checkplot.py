@@ -164,6 +164,8 @@ from PIL import Image, ImageDraw, ImageFont
 # import sps.cKDTree for external catalog xmatches
 from scipy.spatial import cKDTree
 
+from tornado.escape import squeeze
+
 
 ###################
 ## LOCAL IMPORTS ##
@@ -2840,7 +2842,7 @@ def _write_checkplot_picklefile(checkplotdict,
 
             outfile = (
                 'checkplot-{objectid}.pkl.gz'.format(
-                    objectid=checkplotdict['objectid']
+                    objectid=squeeze(checkplotdict['objectid']).replace(' ','-')
                 )
             )
 
@@ -2853,7 +2855,7 @@ def _write_checkplot_picklefile(checkplotdict,
 
             outfile = (
                 'checkplot-{objectid}.pkl'.format(
-                    objectid=checkplotdict['objectid']
+                    objectid=squeeze(checkplotdict['objectid']).replace(' ','-')
                 )
             )
 
