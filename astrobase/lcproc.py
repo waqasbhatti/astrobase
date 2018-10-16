@@ -732,6 +732,17 @@ def make_lclist(basedir,
 
         if duplicated_objectids.size > 0:
 
+            # redo the objectid array so it has a bit larger dtype so the extra
+            # tag can fit into the field
+            dt = lclistdict['objects']['objectid'].dtype.str
+            dt = '<U%s' % (
+                int(dt.replace('<','').replace('U','').replace('S','')) + 3
+            )
+            lclistdict['objects']['objectid'] = np.array(
+                lclistdict['objects']['objectid'],
+                dtype=dt
+            )
+
             for objid in duplicated_objectids:
 
                 objid_inds = np.where(
