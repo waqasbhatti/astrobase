@@ -347,17 +347,6 @@ def import_apikey(lcc_server, apikey_text_json):
 
 
 
-########################
-## DOWNLOAD UTILITIES ##
-########################
-
-# this function is used to check progress of the download
-def on_download_chunk(transferred, blocksize, totalsize):
-    progress = transferred*blocksize/float(totalsize)*100.0
-    print('Downloading: {progress:.1f}%'.format(progress=progress),end='\r')
-
-
-
 ##############################
 ## QUERY HANDLING FUNCTIONS ##
 ##############################
@@ -675,10 +664,28 @@ def retrieve_dataset_files(searchresult,
 
             else:
 
-                localf, header = urlretrieve(dataset_pickle_link,
-                                             os.path.join(localdir,
-                                                          dataset_pickle),
-                                             reporthook=on_download_chunk)
+                # if apikey is not None, add it in as an Authorization: Bearer
+                # [apikey] header
+                if apikey:
+                    headers = {'Authorization':'Bearer: %s' % apikey}
+                else:
+                    headers = {}
+
+                req = Request(
+                    dataset_pickle_link,
+                    data=None,
+                    headers=headers
+                )
+                resp = urlopen(req)
+
+                # save the file
+                LOGINFO('saving %s' % dataset_pickle)
+                localf = os.path.join(localdir, dataset_pickle)
+                with open(localf, 'wb') as outfd:
+                    with resp:
+                        data = resp.read()
+                        outfd.write(data)
+
                 LOGINFO('OK -> %s' % localf)
                 local_dataset_pickle = localf
 
@@ -703,13 +710,33 @@ def retrieve_dataset_files(searchresult,
 
         else:
 
-            localf, header = urlretrieve(dataset_csv_link,
-                                         os.path.join(localdir, dataset_csv),
-                                         reporthook=on_download_chunk)
+            # if apikey is not None, add it in as an Authorization: Bearer
+            # [apikey] header
+            if apikey:
+                headers = {'Authorization':'Bearer: %s' % apikey}
+            else:
+                headers = {}
+
+            req = Request(
+                dataset_csv_link,
+                data=None,
+                headers=headers
+            )
+            resp = urlopen(req)
+
+            # save the file
+            LOGINFO('saving %s' % dataset_csv)
+            localf = os.path.join(localdir, dataset_csv)
+            with open(localf, 'wb') as outfd:
+                with resp:
+                    data = resp.read()
+                    outfd.write(data)
+
             LOGINFO('OK -> %s' % localf)
             local_dataset_csv = localf
 
     except HTTPError as e:
+
         LOGERROR('could not download %s, HTTP status code was: %s, reason: %s' %
                  (dataset_csv_link, e.code, e.reason))
         local_dataset_csv = None
@@ -727,9 +754,28 @@ def retrieve_dataset_files(searchresult,
 
         else:
 
-            localf, header = urlretrieve(dataset_lczip_link,
-                                         os.path.join(localdir, dataset_lczip),
-                                         reporthook=on_download_chunk)
+            # if apikey is not None, add it in as an Authorization: Bearer
+            # [apikey] header
+            if apikey:
+                headers = {'Authorization':'Bearer: %s' % apikey}
+            else:
+                headers = {}
+
+            req = Request(
+                dataset_lczip_link,
+                data=None,
+                headers=headers
+            )
+            resp = urlopen(req)
+
+            # save the file
+            LOGINFO('saving %s' % dataset_lczip)
+            localf = os.path.join(localdir, dataset_lczip)
+            with open(localf, 'wb') as outfd:
+                with resp:
+                    data = resp.read()
+                    outfd.write(data)
+
             LOGINFO('OK -> %s' % localf)
             local_dataset_lczip = localf
 
@@ -922,7 +968,8 @@ def cone_search(lcc_server,
 
             LOGINFO('query complete, downloading associated data...')
             csv, lczip, pkl = retrieve_dataset_files(searchresult,
-                                                     outdir=outdir)
+                                                     outdir=outdir,
+                                                     apikey=apikey)
 
             if pkl:
                 return searchresult[1], csv, lczip, pkl
@@ -944,7 +991,8 @@ def cone_search(lcc_server,
 
                     time.sleep(refresh)
                     csv, lczip, pkl = retrieve_dataset_files(searchresult,
-                                                             outdir=outdir)
+                                                             outdir=outdir,
+                                                             apikey=apikey)
 
                     if (csv and os.path.exists(csv) and
                         lczip and os.path.exists(lczip)):
@@ -1135,7 +1183,8 @@ def fulltext_search(lcc_server,
 
             LOGINFO('query complete, downloading associated data...')
             csv, lczip, pkl = retrieve_dataset_files(searchresult,
-                                                     outdir=outdir)
+                                                     outdir=outdir,
+                                                     apikey=apikey)
 
             if pkl:
                 return searchresult[1], csv, lczip, pkl
@@ -1157,7 +1206,8 @@ def fulltext_search(lcc_server,
 
                     time.sleep(refresh)
                     csv, lczip, pkl = retrieve_dataset_files(searchresult,
-                                                             outdir=outdir)
+                                                             outdir=outdir,
+                                                             apikey=apikey)
 
                     if (csv and os.path.exists(csv) and
                         lczip and os.path.exists(lczip)):
@@ -1343,7 +1393,8 @@ def column_search(lcc_server,
 
             LOGINFO('query complete, downloading associated data...')
             csv, lczip, pkl = retrieve_dataset_files(searchresult,
-                                                     outdir=outdir)
+                                                     outdir=outdir,
+                                                     apikey=apikey)
 
             if pkl:
                 return searchresult[1], csv, lczip, pkl
@@ -1365,7 +1416,8 @@ def column_search(lcc_server,
 
                     time.sleep(refresh)
                     csv, lczip, pkl = retrieve_dataset_files(searchresult,
-                                                             outdir=outdir)
+                                                             outdir=outdir,
+                                                             apikey=apikey)
 
                     if (csv and os.path.exists(csv) and
                         lczip and os.path.exists(lczip)):
@@ -1588,7 +1640,8 @@ def xmatch_search(lcc_server,
 
             LOGINFO('query complete, downloading associated data...')
             csv, lczip, pkl = retrieve_dataset_files(searchresult,
-                                                     outdir=outdir)
+                                                     outdir=outdir,
+                                                     apikey=apikey)
 
             if pkl:
                 return searchresult[1], csv, lczip, pkl
@@ -1610,7 +1663,8 @@ def xmatch_search(lcc_server,
 
                     time.sleep(refresh)
                     csv, lczip, pkl = retrieve_dataset_files(searchresult,
-                                                             outdir=outdir)
+                                                             outdir=outdir,
+                                                             apikey=apikey)
 
                     if (csv and os.path.exists(csv) and
                         lczip and os.path.exists(lczip)):
