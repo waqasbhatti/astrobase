@@ -662,6 +662,9 @@ def read_tess_fitslc(lcfits,
          'procversion', 'datarelease']
     )
 
+    # update the ndet key in the objectinfo with the sum of all observations
+    lcdict['objectinfo']['ndet'] = sum(lcdict['lcinfo']['ndet'])
+
     # return the lcdict at the end
     return lcdict
 
