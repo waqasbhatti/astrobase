@@ -723,6 +723,34 @@ def make_lclist(basedir,
         for col in lclistdict['objects']:
             lclistdict['objects'][col] = np.array(lclistdict['objects'][col])
 
+        # handle duplicate objectids with different light curves
+
+        uniques, counts = np.unique(lclistdict['objects']['objectid'],
+                                    return_counts=True)
+
+        duplicated_objectids = uniques[counts > 1]
+
+        if duplicated_objectids.size > 0:
+
+            for objid in duplicated_objectids:
+
+                objid_inds = np.where(
+                    lclistdict['objects']['objectid'] == objid
+                )
+
+                # mark the duplicates, assume the first instance is the actual
+                # one
+                for ncounter, nind in enumerate(objid_inds[0][1:]):
+                    lclistdict['objects']['objectid'][nind] = '%s-%s' % (
+                        lclistdict['objects']['objectid'][nind],
+                        ncounter+2
+                    )
+                    LOGWARNING(
+                        'tagging instance %s of duplicated objectid: '
+                        '%s as %s-%s' %
+                        (ncounter+2, objid, objid, ncounter+2)
+                    )
+
         # if we're supposed to make a spatial index, do so
         if (makecoordindex and
             isinstance(makecoordindex, (list, tuple)) and
