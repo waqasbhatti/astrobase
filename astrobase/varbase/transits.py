@@ -225,7 +225,7 @@ def estimate_achievable_tmid_precision(snr, t_ingress_min=10,
 
 
 
-def get_transit_times(blsd, time, N, trapd=None):
+def get_transit_times(blsd, time, N, trapd=None, nperiodint=1000):
     '''
     Given a BLS period, epoch, and transit ingress/egress points (usually from
     kbls.bls_stats_singleperiod), return the times within ~N transit durations
@@ -242,6 +242,13 @@ def get_transit_times(blsd, time, N, trapd=None):
         N (float): separation from in-transit points you desire, in units of
         the transit duration.  N = 0 if you just want points inside transit.
         (see below).
+
+    kwargs:
+
+        trapd (dict): dictionary returned by lcfit.traptransit_fit_magseries
+
+        nperiodint (int): how many periods back/forward to try and identify
+        transits from the epoch reported in blsd or trapd.
 
     returns:
 
@@ -276,7 +283,7 @@ def get_transit_times(blsd, time, N, trapd=None):
                 'this edge case must be dealt with separately.'
             )
 
-    tmids = [t0 + ix*period for ix in range(-1000,1000)]
+    tmids = [t0 + ix*period for ix in range(-nperiodint,nperiodint)]
 
     sel = (tmids > np.nanmin(time)) & (tmids < np.nanmax(time))
     tmids_obsd = np.array(tmids)[sel]
