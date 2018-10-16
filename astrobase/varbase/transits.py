@@ -78,6 +78,9 @@ def LOGEXCEPTION(message):
 import numpy as np
 from astropy import units as u
 
+from astrobase import periodbase
+from astrobase.periodbase import kbls
+from astrobase.varbase import lcfit
 
 ##############################
 ## TRANSIT MODEL ASSESSMENT ##
@@ -219,3 +222,120 @@ def estimate_achievable_tmid_precision(snr, t_ingress_min=10,
                 sigma_tc.to(u.minute), sigma_tc.to(u.hour), sigma_tc.to(u.day)))
 
     return sigma_tc.to(u.day).value
+
+
+
+def get_transit_times(blsd, time, N, trapd=None, nperiodint=1000):
+    '''
+    Given a BLS period, epoch, and transit ingress/egress points (usually from
+    kbls.bls_stats_singleperiod), return the times within ~N transit durations
+    of each transit.  Optionally, use the (more accurate) trapezoidal fit
+    period and epoch, if it's passed.  Useful for inspecting individual
+    transits, and masking them out if desired.
+
+    args:
+
+        blsd (dict): dictionary returned by kbls.bls_stats_singleperiod
+
+        time (np.ndarray): vector of times
+
+        N (float): separation from in-transit points you desire, in units of
+        the transit duration.  N = 0 if you just want points inside transit.
+        (see below).
+
+    kwargs:
+
+        trapd (dict): dictionary returned by lcfit.traptransit_fit_magseries
+
+        nperiodint (int): how many periods back/forward to try and identify
+        transits from the epoch reported in blsd or trapd.
+
+    returns:
+
+        tmids_obsd, t_starts, t_ends (tuple of np.ndarrays):
+
+            tmids_obsd (np.ndarray): best guess of transit midtimes in
+            lightcurve. Has length number of transits in lightcurve.
+
+            t_starts (np.ndarray): t_Is - N*tdur, for t_Is transit first
+            contact point.
+
+            t_ends (np.ndarray): t_Is + N*tdur, for t_Is transit first contact
+            point.
+
+    '''
+
+    if trapd:
+        period = trapd['fitinfo']['finalparams'][0]
+        t0 = trapd['fitinfo']['fitepoch']
+        transitduration_phase = trapd['fitinfo']['finalparams'][3]
+        tdur = period * transitduration_phase
+    else:
+        period = blsd['period']
+        t0 = blsd['epoch']
+        tdur = (
+            period*
+            (blsd['transegressbin']-blsd['transingressbin'])/blsd['nphasebins']
+        )
+        if not blsd['transegressbin'] > blsd['transingressbin']:
+            raise NotImplementedError(
+                'careful of the width. '
+                'this edge case must be dealt with separately.'
+            )
+
+    tmids = [t0 + ix*period for ix in range(-nperiodint,nperiodint)]
+
+    sel = (tmids > np.nanmin(time)) & (tmids < np.nanmax(time))
+    tmids_obsd = np.array(tmids)[sel]
+
+    t_Is = tmids_obsd - tdur/2
+    t_IVs = tmids_obsd + tdur/2
+
+    # focus on the times around transit
+    t_starts = t_Is - N*tdur
+    t_ends = t_IVs + N*tdur
+
+    return tmids_obsd, t_starts, t_ends
+
+
+def given_lc_get_transit_tmids_tstarts_tends(
+    time, flux, err_flux, blsfit_savpath=None, trapfit_savpath=None,
+    magsarefluxes=True, nworkers=1, sigclip=None, N=0.03):
+    '''
+    N = 0.03: mask _slightly_ more than the guessed transit duration
+    '''
+    # first, run BLS to get an initial epoch and period.
+    endp = 1.05*(np.nanmax(time) - np.nanmin(time))/2
+    blsdict = kbls.bls_parallel_pfind(time, flux, err_flux,
+                                      magsarefluxes=magsarefluxes, startp=0.1,
+                                      endp=endp, maxtransitduration=0.3,
+                                      nworkers=nworkers, sigclip=sigclip)
+    blsd = kbls.bls_stats_singleperiod(time, flux, err_flux,
+                                       blsdict['bestperiod'],
+                                       magsarefluxes=True, sigclip=sigclip,
+                                       perioddeltapercent=5)
+    #  plot the BLS model.
+    if blsfit_savpath:
+        lcfit._make_fit_plot(blsd['phases'], blsd['phasedmags'], None,
+                             blsd['blsmodel'], blsd['period'], blsd['epoch'],
+                             blsd['epoch'], blsfit_savpath,
+                             magsarefluxes=magsarefluxes)
+
+    ingduration_guess = blsd['transitduration']*0.2 # a guesstimate.
+    transitparams = [blsd['period'], blsd['epoch'], blsd['transitdepth'],
+                     blsd['transitduration'], ingduration_guess
+                    ]
+
+    # fit a trapezoidal transit model; plot the resulting phased LC.
+    if trapfit_savpath:
+        trapd = lcfit.traptransit_fit_magseries(time, flux, err_flux,
+                                                transitparams,
+                                                magsarefluxes=magsarefluxes,
+                                                sigclip=sigclip,
+                                                plotfit=trapfit_savpath)
+
+    # use the trapezoidal model's epoch as the guess to identify (roughly) in
+    # and out of transit points
+    tmids, t_starts, t_ends = get_transit_times(blsd, time, N, trapd=trapd)
+
+    return tmids, t_starts, t_ends
