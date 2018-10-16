@@ -233,7 +233,7 @@ def get_transit_times(
 ):
     '''Given a BLS period, epoch, and transit ingress/egress points
     (usually from kbls.bls_stats_singleperiod), return the times within
-    ~extra_maskfrac transit durations of each transit.
+    transit durations + ~extra_maskfrac of each transit.
 
     Optionally, use the (more accurate) trapezoidal fit period and epoch, if
     it's passed.  Useful for inspecting individual transits, and masking them
@@ -284,6 +284,7 @@ def get_transit_times(
             (blsd['transegressbin']-blsd['transingressbin'])/blsd['nphasebins']
         )
         if not blsd['transegressbin'] > blsd['transingressbin']:
+
             raise NotImplementedError(
                 'careful of the width. '
                 'this edge case must be dealt with separately.'
