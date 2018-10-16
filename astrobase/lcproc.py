@@ -116,6 +116,8 @@ except Exception as e:
     TQDM = False
     pass
 
+from tornado.escape import squeeze
+
 # to turn a list of keys into a dict address
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
@@ -1336,7 +1338,8 @@ def timebinlc(lcfile,
         outdir = os.path.dirname(lcfile)
 
     outfile = os.path.join(outdir, '%s-binned%.1fsec-%s.pkl' %
-                           (lcdict['objectid'], binsizesec, lcformat))
+                           (squeeze(lcdict['objectid']).replace(' ','-'),
+                            binsizesec, lcformat))
 
     with open(outfile, 'wb') as outfd:
         pickle.dump(lcdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
@@ -1573,7 +1576,8 @@ def get_varfeatures(lcfile,
             resultdict['bestmagcol'] = None
 
         outfile = os.path.join(outdir,
-                               'varfeatures-%s.pkl' % resultdict['objectid'])
+                               'varfeatures-%s.pkl' %
+                               squeeze(resultdict['objectid']).replace(' ','-'))
 
         with open(outfile, 'wb') as outfd:
             pickle.dump(resultdict, outfd, protocol=4)
@@ -1883,7 +1887,8 @@ def get_periodicfeatures(pfpickle,
                 nbrlcdict = nbrlcdict[0]
 
         # this will be the output file
-        outfile = os.path.join(outdir, 'periodicfeatures-%s.pkl' % objectid)
+        outfile = os.path.join(outdir, 'periodicfeatures-%s.pkl' %
+                               squeeze(objectid).replace(' ','-'))
 
         # normalize using the special function if specified
         if normfunc is not None:
@@ -2067,7 +2072,8 @@ def get_periodicfeatures(pfpickle,
         # end of per magcol processing
         #
         # write resultdict to pickle
-        outfile = os.path.join(outdir, 'periodicfeatures-%s.pkl' % objectid)
+        outfile = os.path.join(outdir, 'periodicfeatures-%s.pkl' %
+                               squeeze(objectid).replace(' ','-'))
         with open(outfile,'wb') as outfd:
             pickle.dump(resultdict, outfd, pickle.HIGHEST_PROTOCOL)
 
@@ -2507,7 +2513,8 @@ def get_starfeatures(lcfile,
         resultdict.update(nbrfeat)
 
         outfile = os.path.join(outdir,
-                               'starfeatures-%s.pkl' % resultdict['objectid'])
+                               'starfeatures-%s.pkl' %
+                               squeeze(resultdict['objectid']).replace(' ','-'))
 
         with open(outfile, 'wb') as outfd:
             pickle.dump(resultdict, outfd, protocol=4)
@@ -3483,7 +3490,7 @@ def runpf(lcfile,
             lcdict = lcdict[0]
 
         outfile = os.path.join(outdir, 'periodfinding-%s.pkl' %
-                               lcdict['objectid'])
+                               squeeze(lcdict['objectid']).replace(' ', '-'))
 
         # if excludeprocessed is True, return the output file if it exists and
         # has a size that is at least 100 kilobytes (this should be enough to
@@ -4396,7 +4403,10 @@ def runcp(pfpickle,
 
         # generate the output filename
         outfile = os.path.join(outdir,
-                               'checkplot-%s-%s.pkl' % (objectid, mcol))
+                               'checkplot-%s-%s.pkl' % (
+                                   squeeze(objectid).replace(' ','-'),
+                                   mcol
+                               ))
 
         if skipdone and os.path.exists(outfile):
             LOGWARNING('skipdone = True and '
@@ -4434,6 +4444,7 @@ def runcp(pfpickle,
             mindet=minobservations,
             verbose=False,
             fast_mode=fast_mode,
+            magsarefluxes=magsarefluxes,
             normto=cprenorm  # we've done the renormalization already, so this
                              # should be False by default. just messes up the
                              # plots otherwise, destroying LPVs in particular
@@ -5604,8 +5615,11 @@ def apply_epd_magseries(lcfile,
     # save the EPD magseries to a pickle LC
     lcdict['epd'] = epd
     outfile = os.path.join(os.path.dirname(lcfile),
-                           '%s-epd-%s-pklc.pkl' % (objectid,
-                                                   magcol))
+                           '%s-epd-%s-pklc.pkl' % (
+                               squeeze(objectid).replace(' ','-'),
+                               magcol
+                           )
+    )
     with open(outfile,'wb') as outfd:
         pickle.dump(lcdict, outfd,
                     protocol=pickle.HIGHEST_PROTOCOL)
@@ -6645,8 +6659,13 @@ def apply_tfa_magseries(lcfile,
 
     # we'll write back the tfa times and mags to the lcdict
     lcdict['tfa'] = outdict
-    outfile = os.path.join(os.path.dirname(lcfile),
-                           '%s-tfa-%s-pklc.pkl' % (objectid, magcol))
+    outfile = os.path.join(
+        os.path.dirname(lcfile),
+        '%s-tfa-%s-pklc.pkl' % (
+            squeeze(objectid).replace(' ','-'),
+            magcol
+        )
+    )
     with open(outfile,'wb') as outfd:
         pickle.dump(lcdict, outfd, pickle.HIGHEST_PROTOCOL)
 
