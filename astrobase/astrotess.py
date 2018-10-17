@@ -452,53 +452,63 @@ def read_tess_fitslc(lcfits,
         lcdict['exptime'] = np.concatenate(
             (lcdict['exptime'],
              np.full_like(lcdata['TIME'],
-                          hdrinfo['exposure']))
+                          hdrinfo['exposure'],
+                          dtype=np.float64))
         )
         lcdict['sector'] = np.concatenate(
             (lcdict['sector'],
              np.full_like(lcdata['TIME'],
-                          hdrinfo['sector']))
+                          hdrinfo['sector'],
+                          dtype=np.int64))
         )
         lcdict['camera'] = np.concatenate(
             (lcdict['camera'],
              np.full_like(lcdata['TIME'],
-                          hdrinfo['camera']))
+                          hdrinfo['camera'],
+                          dtype=np.int64))
         )
         lcdict['ccd'] = np.concatenate(
             (lcdict['ccd'],
              np.full_like(lcdata['TIME'],
-                          hdrinfo['ccd']))
+                          hdrinfo['ccd'],
+                          dtype=np.int64))
         )
 
         lcdict['pixel_table_id'] = np.concatenate(
             (lcdict['pixel_table_id'],
              np.full_like(lcdata['TIME'],
-                          hdrinfo['pxtable']))
+                          hdrinfo['pxtable'],
+                          dtype=np.int64))
         )
         lcdict['origin'] = np.concatenate(
             (lcdict['origin'],
              np.full_like(lcdata['TIME'],
-                          hdrinfo['origin']))
+                          hdrinfo['origin'],
+                          dtype='U100'))
         )
         lcdict['date_obs_start'] = np.concatenate(
             (lcdict['date_obs_start'],
              np.full_like(lcdata['TIME'],
-                          hdrinfo['date-obs']))
+                          hdrinfo['date-obs'],
+                          dtype='U100'))
         )
         lcdict['date_obs_end'] = np.concatenate(
             (lcdict['date_obs_end'],
              np.full_like(lcdata['TIME'],
-                          hdrinfo['date-end']))
+                          hdrinfo['date-end'],
+                          dtype='U100'))
         )
         lcdict['procversion'] = np.concatenate(
             (lcdict['procversion'],
              np.full_like(lcdata['TIME'],
-                          hdrinfo['procver']))
+                          hdrinfo['procver'],
+                          dtype='U255'))
         )
         lcdict['datarelease'] = np.concatenate(
             (lcdict['datarelease'],
              np.full_like(lcdata['TIME'],
-                          hdrinfo['data_rel']))
+                          hdrinfo['data_rel'],
+                          dtype=np.int64))
         )
 
 
@@ -667,6 +677,96 @@ def read_tess_fitslc(lcfits,
 
     # return the lcdict at the end
     return lcdict
+
+
+
+def consolidate_tess_fitslc(lclist,
+                            normalize=True,
+                            headerkeys=LCHEADERKEYS,
+                            datakeys=LCDATAKEYS,
+                            sapkeys=LCSAPKEYS,
+                            pdckeys=LCPDCKEYS,
+                            topkeys=LCTOPKEYS,
+                            apkeys=LCAPERTUREKEYS):
+    '''This consolidates a list of LCs for a single TIC object.
+
+    NOTE: if light curve time arrays contain nans, these and their associated
+    measurements will be sorted to the end of the final combined arrays.
+
+    If normalize == True, then each component light curve's SAP_FLUX, SAP_BKG,
+    and PDCSAP_FLUX measurements will be normalized to 1.0 by dividing out the
+    median flux measurement for the component light curve. Their errors will
+    also be normalized in the same way.
+
+    '''
+
+    # get the first file
+    consolidated = read_tess_fitslc(lclist[0],
+                                    normalize=normalize,
+                                    headerkeys=LCHEADERKEYS,
+                                    datakeys=LCDATAKEYS,
+                                    sapkeys=LCSAPKEYS,
+                                    pdckeys=LCPDCKEYS,
+                                    topkeys=LCTOPKEYS,
+                                    apkeys=LCAPERTUREKEYS)
+
+    # get the rest of the files
+    if len(lclist) > 1:
+
+        for lcf in lclist[1:]:
+
+            consolidated = read_tess_fitslc(lcf,
+                                            appendto=consolidated,
+                                            normalize=normalize,
+                                            headerkeys=LCHEADERKEYS,
+                                            datakeys=LCDATAKEYS,
+                                            sapkeys=LCSAPKEYS,
+                                            pdckeys=LCPDCKEYS,
+                                            topkeys=LCTOPKEYS,
+                                            apkeys=LCAPERTUREKEYS)
+
+
+    # get the sort indices. we use time for the columns and sectors for the
+    # bits in lcinfo and varinfo
+    LOGINFO('sorting by time...')
+
+    # NOTE: nans in time will be sorted to the end of the array
+    finiteind = np.isfinite(consolidated['time'])
+    if np.sum(finiteind) < consolidated['time'].size:
+        LOGWARNING('some time values are nan! '
+                   'measurements at these times will be '
+                   'sorted to the end of the column arrays.')
+
+    # get the time sort index
+    column_sort_ind = np.argsort(consolidated['time'])
+
+    # sort the columns by time
+    for col in consolidated['columns']:
+        if '.' in col:
+            key, subkey = col.split('.')
+            consolidated[key][subkey] = (
+                consolidated[key][subkey][column_sort_ind]
+            )
+        else:
+            consolidated[col] = consolidated[col][column_sort_ind]
+
+
+    info_sort_ind = np.argsort(consolidated['lcinfo']['sector'])
+
+    # sort the keys in lcinfo
+    for key in consolidated['lcinfo']:
+        consolidated['lcinfo'][key] = (
+            np.array(consolidated['lcinfo'][key])[info_sort_ind].tolist()
+        )
+
+    # sort the keys in varinfo
+    for key in consolidated['varinfo']:
+        consolidated['varinfo'][key] = (
+            np.array(consolidated['varinfo'][key])[info_sort_ind].tolist()
+        )
+
+
+    return consolidated
 
 
 
