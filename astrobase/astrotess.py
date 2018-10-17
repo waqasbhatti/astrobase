@@ -452,7 +452,6 @@ def read_tess_fitslc(lcfits,
             if key.lower() in lcdict['sap']:
 
                 sapflux_median = np.nanmedian(lcdata['SAP_FLUX'])
-                sapbkg_median = np.nanmedian(lcdata['SAP_BKG'])
 
                 # normalize the current flux measurements if needed
                 if normalize and key == 'SAP_FLUX':
@@ -460,9 +459,9 @@ def read_tess_fitslc(lcfits,
                 elif normalize and key == 'SAP_FLUX_ERR':
                     thislcdata = lcdata[key] / sapflux_median
                 elif normalize and key == 'SAP_BKG':
-                    thislcdata = lcdata[key] / sapbkg_median
+                    thislcdata = lcdata[key] / sapflux_median
                 elif normalize and key == 'SAP_BKG_ERR':
-                    thislcdata = lcdata[key] / sapbkg_median
+                    thislcdata = lcdata[key] / sapflux_median
                 else:
                     thislcdata = lcdata[key]
 
@@ -672,7 +671,6 @@ def read_tess_fitslc(lcfits,
         if normalize:
 
             sapflux_median = np.nanmedian(lcdict['sap']['sap_flux'])
-            sapbkg_median = np.nanmedian(lcdict['sap']['sap_bkg'])
             pdcsap_flux_median = np.nanmedian(lcdict['pdc']['pdcsap_flux'])
 
             lcdict['sap']['sap_flux'] = (
@@ -686,11 +684,11 @@ def read_tess_fitslc(lcfits,
 
             lcdict['sap']['sap_bkg'] = (
                 lcdict['sap']['sap_bkg'] /
-                sapbkg_median
+                sapflux_median
             )
             lcdict['sap']['sap_bkg_err'] = (
                 lcdict['sap']['sap_bkg_err'] /
-                sapbkg_median
+                sapflux_median
             )
 
             lcdict['pdc']['pdcsap_flux'] = (
