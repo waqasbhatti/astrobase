@@ -765,7 +765,6 @@ def consolidate_tess_fitslc(lclist,
             np.array(consolidated['varinfo'][key])[info_sort_ind].tolist()
         )
 
-
     return consolidated
 
 
@@ -914,3 +913,6 @@ def filter_tess_lcdict(lcdict,
         nafter = lcdict['time'].size
         LOGINFO('removed timestoignore, ndet before = %s, ndet after = %s'
                 % (nbefore, nafter))
+
+
+    return lcdict

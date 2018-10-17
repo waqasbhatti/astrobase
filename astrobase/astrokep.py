@@ -333,31 +333,44 @@ def read_kepler_fitslc(lcfits,
                 )
 
         for key in sapkeys:
+
             if key.lower() in lcdict['sap']:
+
+                sapflux_median = np.nanmedian(lcdata['SAP_FLUX'])
+                sapbkg_median = np.nanmedian(lcdata['SAP_BKG'])
 
                 # normalize the current flux measurements if needed
                 if normalize and key == 'SAP_FLUX':
-                    LOGINFO('normalizing SAP_FLUX')
-                    thislcdata = lcdata[key] / np.nanmedian(lcdata[key])
+                    thislcdata = lcdata[key] / sapflux_median
+                elif normalize and key == 'SAP_FLUX_ERR':
+                    thislcdata = lcdata[key] / sapflux_median
+                elif normalize and key == 'SAP_BKG':
+                    thislcdata = lcdata[key] / sapbkg_median
+                elif normalize and key == 'SAP_BKG_ERR':
+                    thislcdata = lcdata[key] / sapbkg_median
                 else:
                     thislcdata = lcdata[key]
 
                 lcdict['sap'][key.lower()] = (
-                    npconcatenate((lcdict['sap'][key.lower()], thislcdata))
+                    np.concatenate((lcdict['sap'][key.lower()], thislcdata))
                 )
 
         for key in pdckeys:
+
             if key.lower() in lcdict['pdc']:
+
+                pdcsap_flux_median = np.nanmedian(lcdata['PDCSAP_FLUX'])
 
                 # normalize the current flux measurements if needed
                 if normalize and key == 'PDCSAP_FLUX':
-                    LOGINFO('normalizing PDCSAP_FLUX')
-                    thislcdata = lcdata[key] / np.nanmedian(lcdata[key])
+                    thislcdata = lcdata[key] / pdcsap_flux_median
+                elif normalize and key == 'PDCSAP_FLUX_ERR':
+                    thislcdata = lcdata[key] / pdcsap_flux_median
                 else:
                     thislcdata = lcdata[key]
 
                 lcdict['pdc'][key.lower()] = (
-                    npconcatenate((lcdict['pdc'][key.lower()], thislcdata))
+                    np.concatenate((lcdict['pdc'][key.lower()], thislcdata))
                 )
 
 
@@ -486,19 +499,42 @@ def read_kepler_fitslc(lcfits,
         lcdict['lc_campaign'] = npfull_like(lcdict['time'],
                                             lcdict['campaign'][0])
 
-    ## END OF LIGHT CURVE CONSTRUCTION ##
+        # normalize the SAP and PDCSAP fluxes if needed
+        if normalize:
 
-    # normalize the SAP and PDCSAP fluxes if needed
-    # FIXME: should we normalize the other stuff too?
-    if normalize:
-        lcdict['sap']['sap_flux'] = (
-            lcdict['sap']['sap_flux'] /
-            np.nanmedian(lcdict['sap']['sap_flux'])
-        )
-        lcdict['pdc']['pdcsap_flux'] = (
-            lcdict['pdc']['pdcsap_flux'] /
-            np.nanmedian(lcdict['pdc']['pdcsap_flux'])
-        )
+            sapflux_median = np.nanmedian(lcdict['sap']['sap_flux'])
+            sapbkg_median = np.nanmedian(lcdict['sap']['sap_bkg'])
+            pdcsap_flux_median = np.nanmedian(lcdict['pdc']['pdcsap_flux'])
+
+            lcdict['sap']['sap_flux'] = (
+                lcdict['sap']['sap_flux'] /
+                sapflux_median
+            )
+            lcdict['sap']['sap_flux_err'] = (
+                lcdict['sap']['sap_flux_err'] /
+                sapflux_median
+            )
+
+            lcdict['sap']['sap_bkg'] = (
+                lcdict['sap']['sap_bkg'] /
+                sapbkg_median
+            )
+            lcdict['sap']['sap_bkg_err'] = (
+                lcdict['sap']['sap_bkg_err'] /
+                sapbkg_median
+            )
+
+            lcdict['pdc']['pdcsap_flux'] = (
+                lcdict['pdc']['pdcsap_flux'] /
+                pdcsap_flux_median
+            )
+            lcdict['pdc']['pdcsap_flux_err'] = (
+                lcdict['pdc']['pdcsap_flux_err'] /
+                pdcsap_flux_median
+            )
+
+
+    ## END OF LIGHT CURVE CONSTRUCTION ##
 
     # update the lcdict columns with the actual columns
     lcdict['columns'] = (
@@ -944,6 +980,8 @@ def filter_kepler_lcdict(lcdict,
         nafter = lcdict['time'].size
         LOGINFO('removed timestoignore, ndet before = %s, ndet after = %s'
                 % (nbefore, nafter))
+
+    return lcdict
 
 
 
