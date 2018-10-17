@@ -83,6 +83,48 @@ import numpy as np
 from astropy.io import fits as pyfits
 
 
+#######################################
+## UTILITY FUNCTIONS FOR FLUXES/MAGS ##
+#######################################
+
+def normalized_flux_to_mag(lcdict,
+                           columns=('sap.sap_flux',
+                                    'sap.sap_flux_err',
+                                    'sap.sap_bkg',
+                                    'sap.sap_bkg_err',
+                                    'pdc.pdcsap_flux',
+                                    'pdc.pdcsap_flux_err')):
+    '''
+    This converts the normalized fluxes in the TESS lcdicts to TESS mags.
+
+    Uses the object's TESS mag stored in lcdict['objectinfo']['tessmag']:
+
+    mag - object_tess_mag = -2.5 log (flux/median_flux)
+
+    '''
+
+    tess_mag = lcdict['objectinfo']['tessmag']
+
+    for key in columns:
+
+        k1, k2 = key.split('.')
+
+        if 'err' not in k2:
+
+            lcdict[k1][k2.replace('flux','mag')] = (
+                tess_mag - 2.5*np.log10(lcdict[k1][k2])
+            )
+
+        else:
+
+            lcdict[k1][k2.replace('flux','mag')] = (
+                - 2.5*np.log10(1.0 - lcdict[k1][k2])
+            )
+
+    return lcdict
+
+
+
 ########################################
 ## READING AMES LLC FITS LCS FOR TESS ##
 ########################################
