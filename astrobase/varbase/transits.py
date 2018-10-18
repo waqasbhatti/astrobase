@@ -233,7 +233,7 @@ def get_transit_times(
 ):
     '''Given a BLS period, epoch, and transit ingress/egress points
     (usually from kbls.bls_stats_singleperiod), return the times within
-    transit durations + ~extra_maskfrac of each transit.
+    transit durations + extra_maskfrac of each transit.
 
     Optionally, use the (more accurate) trapezoidal fit period and epoch, if
     it's passed.  Useful for inspecting individual transits, and masking them
@@ -317,9 +317,26 @@ def given_lc_get_transit_tmids_tstarts_tends(
         sigclip=None,
         extra_maskfrac=0.03
 ):
-    '''extra_maskfrac = 0.03: mask _slightly_ more than the guessed transit
-    duration
+    '''
+    args:
+        should be obvious
 
+    kwargs:
+
+        blsfit_savpath (str): path to plot the fit BLS model
+
+        trapfit_savpath (str): path to plot the fit trapezoidal transit model
+
+        sigclip (None/int/list): if list, will be asymmetric
+
+        extra_maskfrac (float): t_starts = t_Is - N*tdur, t_ends = t_IVs +
+        N*tdur. Thus setting N=0.03 masks slightly more than the guessed
+        transit duration.
+
+    returns:
+
+        tmids_obsd, t_starts, t_ends (tuple of np.ndarrays): see
+        get_transit_times docstring.
     '''
 
     # first, run BLS to get an initial epoch and period.
@@ -363,3 +380,57 @@ def given_lc_get_transit_tmids_tstarts_tends(
                                                 trapd=trapd)
 
     return tmids, t_starts, t_ends
+
+
+def _in_out_transit_plot(time, flux, intransit, ootransit, savpath):
+
+    f, ax = plt.subplots(nrows=1, ncols=1, sharex=True, figsize=(8,4))
+
+    ax.scatter(time[ootransit], flux[ootransit], c='k', s=1.5, rasterized=True,
+              linewidths=0)
+    ax.scatter(time[intransit], flux[intransit], c='r', s=1.5, rasterized=True,
+              linewidths=0)
+
+    ax.set_ylabel('relative flux')
+    ax.set_xlabel('time [days]')
+    f.tight_layout(h_pad=0, w_pad=0)
+    f.savefig(savpath, dpi=400, bbox_inches='tight')
+
+
+def given_lc_get_out_of_transit_points(
+    time, flux, err_flux, blsfit_savpath=None, trapfit_savpath=None,
+    in_out_transit_savpath=None, magsarefluxes=True, nworkers=1, sigclip=None,
+    extra_maskfrac=0.03
+):
+    '''
+    relevant during iterative masking of transits for multiple planet system
+    search.
+
+    returns:
+
+        tuple of np.ndarrays:
+        time[out_of_transit], flux[out_of_transit], err_flux[out_of_transit]
+    '''
+
+    tmids_obsd, t_starts, t_ends = (
+        given_lc_get_transit_tmids_tstarts_tends(
+            time, flux, err_flux, blsfit_savpath=blsfit_savpath,
+            trapfit_savpath=trapfit_savpath, magsarefluxes=magsarefluxes,
+            nworkers=nworkers, sigclip=sigclip, extra_maskfrac=extra_maskfrac)
+    )
+
+    in_transit = np.zeros_like(time).astype(bool)
+
+    for t_start, t_end in zip(t_starts, t_ends):
+
+        this_transit = ( (time > t_start) & (time < t_end) )
+
+        in_transit |= this_transit
+
+    out_of_transit = ~in_transit
+
+    if in_out_transit_savpath:
+        _in_out_transit_plot(time, flux, in_transit, out_of_transit,
+                             in_out_transit_savpath)
+
+    return time[out_of_transit], flux[out_of_transit], err_flux[out_of_transit]
