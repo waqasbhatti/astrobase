@@ -1697,15 +1697,15 @@ def xmatch_search(lcc_server,
 ## DATASET AND OBJECT INFO FUNCTIONS ##
 #######################################
 
-def get_dataset(lcc_server, dataset_id, strformat=False):
+def get_dataset(lcc_server,
+                dataset_id,
+                strformat=False,
+                page=1):
     '''This downloads a JSON form of the dataset from the specified lcc_server.
 
     This returns a dict from the parsed JSON. The interesting keys in the dict
     to look at are: 'coldesc' for the column descriptions and 'rows' for the
-    actual data rows. Note that if there are more than 3000 objects in the
-    dataset, the JSON will only contain the top 3000 objects. In this case, it's
-    better to use retrieve_dataset_files to get the dataset CSV, which contains
-    the full data table.
+    actual data rows.
 
     lcc_server is the base URL of the LCC server to talk to.
 
@@ -1721,16 +1721,23 @@ def get_dataset(lcc_server, dataset_id, strformat=False):
     look at the 'coldesc' item in the returned dict, which gives the Python and
     Numpy string format specifiers for each column in the data table.
 
+    If the dataset contains more than 1000 rows, it will be paginated, so you
+    must use the page kwarg to get the page you want. The dataset JSON will
+    contain the keys 'npages', 'currpage', and 'rows_per_page' to help with
+    this.
+
     The JSON contains metadata about the query that produced the dataset,
     information about the data table's columns, and links to download the
     dataset's products including the light curve ZIP and the dataset CSV.
 
     '''
 
-    dataset_url = '%s/set/%s?json=1' % (lcc_server, dataset_id)
+    urlparams = {'strformat':1 if strformat else 0,
+                 'page':page,
+                 'json':1}
+    urlqs = urlencode(urlparams)
 
-    if strformat:
-        dataset_url = '%s?strformat=1' % dataset_url
+    dataset_url = '%s/set/%s?%s' % (lcc_server, dataset_id, urlqs)
 
     LOGINFO('retrieving dataset %s from %s, using URL: %s ...' % (lcc_server,
                                                                   dataset_id,
@@ -1738,9 +1745,24 @@ def get_dataset(lcc_server, dataset_id, strformat=False):
 
     try:
 
-        resp = urlopen(dataset_url)
-        dataset = json.loads(resp.read())
+        # check if we have an API key already
+        have_apikey, apikey, expires = check_existing_apikey(lcc_server)
 
+        # if not, get a new one
+        if not have_apikey:
+            apikey, expires = get_new_apikey(lcc_server)
+
+        # if apikey is not None, add it in as an Authorization: Bearer [apikey]
+        # header
+        if apikey:
+            headers = {'Authorization':'Bearer: %s' % apikey}
+        else:
+            headers = {}
+
+        # hit the server
+        req = Request(dataset_url, data=None, headers=headers)
+        resp = urlopen(req)
+        dataset = json.loads(resp.read())
         return dataset
 
     except Exception as e:
@@ -1767,9 +1789,11 @@ def object_info(lcc_server, objectid, db_collection_id):
     search results.
 
     NOTE: you can pass the result dict returned by this function directly into
-    the astrobase.checkplot function:
+    the astrobase.checkplot.checkplot_pickle_to_png function, e.g.:
 
-    astrobase.checkplot.checkplot_pickle_to_png(result_dict, 'object-info.png')
+    astrobase.checkplot.checkplot_pickle_to_png(result_dict,
+                                                'object-%s-info.png' %
+                                                result_dict['objectid'])
 
     to generate a quick PNG overview of the object information.
 
@@ -1807,9 +1831,13 @@ def object_info(lcc_server, objectid, db_collection_id):
 
     '''
 
-    url = '%s/api/object?objectid=%s&collection=%s' % (lcc_server,
-                                                       objectid,
-                                                       db_collection_id)
+    urlparams = {
+        'objectid':objectid,
+        'collection':db_collection_id
+    }
+
+    urlqs = urlencode(urlparams)
+    url = '%s/api/object?%s' % (lcc_server, urlqs)
 
     try:
 
@@ -1820,7 +1848,24 @@ def object_info(lcc_server, objectid, db_collection_id):
                 lcc_server
             )
         )
-        resp = urlopen(url)
+
+        # check if we have an API key already
+        have_apikey, apikey, expires = check_existing_apikey(lcc_server)
+
+        # if not, get a new one
+        if not have_apikey:
+            apikey, expires = get_new_apikey(lcc_server)
+
+        # if apikey is not None, add it in as an Authorization: Bearer [apikey]
+        # header
+        if apikey:
+            headers = {'Authorization':'Bearer: %s' % apikey}
+        else:
+            headers = {}
+
+        # hit the server
+        req = Request(url, data=None, headers=headers)
+        resp = urlopen(req)
         objectinfo = json.loads(resp.read())['result']
         return objectinfo
 
@@ -1855,20 +1900,45 @@ def list_recent_datasets(lcc_server, nrecent=25):
     nrecent indicates how many recent public datasets you want to list. This is
     always capped at 1000.
 
+    If you provide an API key that is associated with an LCC-Server user
+    account, datasets that belong to this user will be returned as well, even if
+    they are not visible to the public.
+
     '''
 
-    url = '%s/api/datasets?nsets=%s' % (lcc_server, nrecent)
+    urlparams = {'nsets':nrecent}
+    urlqs = urlencode(urlparams)
+
+    url = '%s/api/datasets?%s' % (lcc_server, urlqs)
 
     try:
 
         LOGINFO(
-            'getting list of recent publicly visible datasets from %s' % (
+            'getting list of recent publicly '
+            'visible and owned datasets from %s' % (
                 lcc_server,
             )
         )
-        resp = urlopen(url)
-        objectinfo = json.loads(resp.read())['result']
-        return objectinfo
+
+        # check if we have an API key already
+        have_apikey, apikey, expires = check_existing_apikey(lcc_server)
+
+        # if not, get a new one
+        if not have_apikey:
+            apikey, expires = get_new_apikey(lcc_server)
+
+        # if apikey is not None, add it in as an Authorization: Bearer [apikey]
+        # header
+        if apikey:
+            headers = {'Authorization':'Bearer: %s' % apikey}
+        else:
+            headers = {}
+
+        # hit the server
+        req = Request(url, data=None, headers=headers)
+        resp = urlopen(req)
+        recent_datasets = json.loads(resp.read())['result']
+        return recent_datasets
 
     except HTTPError as e:
 
@@ -1895,13 +1965,31 @@ def list_lc_collections(lcc_server):
     try:
 
         LOGINFO(
-            'getting list of recent publicly visible datasets from %s' % (
+            'getting list of recent publicly visible '
+            'and owned LC collections from %s' % (
                 lcc_server,
             )
         )
-        resp = urlopen(url)
-        objectinfo = json.loads(resp.read())['result']['collections']
-        return objectinfo
+
+        # check if we have an API key already
+        have_apikey, apikey, expires = check_existing_apikey(lcc_server)
+
+        # if not, get a new one
+        if not have_apikey:
+            apikey, expires = get_new_apikey(lcc_server)
+
+        # if apikey is not None, add it in as an Authorization: Bearer [apikey]
+        # header
+        if apikey:
+            headers = {'Authorization':'Bearer: %s' % apikey}
+        else:
+            headers = {}
+
+        # hit the server
+        req = Request(url, data=None, headers=headers)
+        resp = urlopen(req)
+        lcc_list = json.loads(resp.read())['result']['collections']
+        return lcc_list
 
     except HTTPError as e:
 
