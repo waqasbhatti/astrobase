@@ -110,7 +110,7 @@ setup(
               'astrobase.cpserver'],
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
-    tests_require=['pytest',],
+    tests_require=['pytest==3.8.2',],
     cmdclass={'test':PyTest},
     entry_points={
         'console_scripts':[

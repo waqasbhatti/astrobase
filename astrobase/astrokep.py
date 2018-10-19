@@ -573,9 +573,6 @@ def consolidate_kepler_fitslc(keplerid,
     PDCSAP_FLUX measurements will be normalized to 1.0 by dividing out the
     median flux for the component light curve.
 
-    NOTE: The other flux related measurements, such as errors and backgrounds
-    WILL NOT be normalized (FIXME: for now).
-
     '''
 
     LOGINFO('looking for Kepler light curve FITS in %s for %s...' % (lcfitsdir,
