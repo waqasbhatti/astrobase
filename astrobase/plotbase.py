@@ -1114,9 +1114,9 @@ def fits_finder_chart(
 ##################
 
 PLOTYLABELS = {'gls':'Generalized Lomb-Scargle normalized power',
-               'pdm':'Stellingwerf PDM $\Theta$',
-               'aov':'Schwarzenberg-Czerny AoV $\Theta$',
-               'mav':'Schwarzenberg-Czerny AoVMH $\Theta$',
+               'pdm':r'Stellingwerf PDM $\Theta$',
+               'aov':r'Schwarzenberg-Czerny AoV $\Theta$',
+               'mav':r'Schwarzenberg-Czerny AoVMH $\Theta$',
                'bls':'Box Least-squared Search SR',
                'acf':'Autocorrelation Function',
                'sls':'Lomb-Scargle normalized power',

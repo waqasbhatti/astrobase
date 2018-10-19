@@ -389,7 +389,7 @@ def _make_periodogram(axes,
                                      objectinfo['pmdecl'],
                                      objectinfo['decl'])
 
-            axes.text(0.05,0.67,'$\mu$ = %.2f mas yr$^{-1}$' % pm,
+            axes.text(0.05,0.67,r'$\mu$ = %.2f mas yr$^{-1}$' % pm,
                       ha='left',va='center',transform=axes.transAxes,
                       fontsize=18.0)
 
@@ -2268,7 +2268,7 @@ def _pkl_phased_magseries_plot(checkplotdict,
         plotfitphase = fitphasedlc['phase']
         plotfitmags = fitphasedlc['mags']
 
-        plotfitlabel = ('%s fit ${\chi}^2/{\mathrm{dof}} = %.3f$' %
+        plotfitlabel = (r'%s fit ${\chi}^2/{\mathrm{dof}} = %.3f$' %
                         (fitmethod, fitredchisq))
 
         # plot the fit phase and mags
