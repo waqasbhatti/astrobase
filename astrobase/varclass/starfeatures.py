@@ -135,53 +135,50 @@ def coord_features(objectinfo):
 
     '''
 
-    if ('pmra' in objectinfo and 'pmdecl' in objectinfo and
-        'jmag' in objectinfo and
-        'ra' in objectinfo and 'decl' in objectinfo and
-        objectinfo['pmra'] is not None and objectinfo['pmdecl'] is not None and
+    retdict = {'propermotion': np.nan,
+               'gl':np.nan,
+               'gb':np.nan,
+               'rpmj':np.nan}
+
+    if ('ra' in objectinfo and
+        objectinfo['ra'] is not None and
+        np.isfinite(objectinfo['ra']) and
+        'decl' in objectinfo and
+        objectinfo['decl'] is not None and
+        np.isfinite(objectinfo['decl'])):
+
+        retdict['gl'], retdict['gb'] = coordutils.equatorial_to_galactic(
+            objectinfo['ra'],
+            objectinfo['decl']
+        )
+
+    if ('pmra' in objectinfo and
+        objectinfo['pmra'] is not None and
+        np.isfinite(objectinfo['pmra']) and
+        'pmdecl' in objectinfo and
+        objectinfo['pmdecl'] is not None and
+        np.isfinite(objectinfo['pmdecl']) and
+        'decl' in objectinfo and
+        objectinfo['decl'] is not None and
+        np.isfinite(objectinfo['decl'])):
+
+        retdict['propermotion'] = coordutils.total_proper_motion(
+            objectinfo['pmra'],
+            objectinfo['pmdecl'],
+            objectinfo['decl']
+        )
+
+    if ('jmag' in objectinfo and
         objectinfo['jmag'] is not None and
-        objectinfo['ra'] is not None and objectinfo['decl'] is not None):
+        np.isfinite(objectinfo['jmag']) and
+        np.isfinite(retdict['propermotion'])):
 
-        gl, gb = coordutils.equatorial_to_galactic(objectinfo['ra'],
-                                                   objectinfo['decl'])
+        retdict['rpmj'] = coordutils.reduced_proper_motion(
+            objectinfo['jmag'],
+            retdict['propermotion']
+        )
 
-        propermotion = coordutils.total_proper_motion(objectinfo['pmra'],
-                                                      objectinfo['pmdecl'],
-                                                      objectinfo['decl'])
-
-        rpm = coordutils.reduced_proper_motion(objectinfo['jmag'],
-                                               propermotion)
-
-        return {'propermotion':propermotion,
-                'gl':gl,
-                'gb':gb,
-                'rpmj':rpm}
-
-    elif ('ra' in objectinfo and 'decl' in objectinfo and
-          objectinfo['ra'] is not None and objectinfo['decl'] is not None):
-
-        gl, gb = coordutils.equatorial_to_galactic(objectinfo['ra'],
-                                                   objectinfo['decl'])
-
-        LOGWARNING("one or more of the 'pmra', 'pmdecl', 'jmag' keys "
-                   "are missing from the input objectinfo dict, "
-                   "can't get proper motion features")
-
-        return {'propermotion':np.nan,
-                'gl':gl,
-                'gb':gb,
-                'rpmj':np.nan}
-
-    else:
-
-        LOGERROR("one or more of the 'pmra', 'pmdecl', 'jmag', "
-                 "'ra', 'decl' keys are missing from the input "
-                 "objectinfo dict, can't get proper motion or coord features")
-        return {'propermotion':np.nan,
-                'gl':np.nan,
-                'gb':np.nan,
-                'rpmj':np.nan}
-
+    return retdict
 
 
 
@@ -304,15 +301,31 @@ BANDPASSES_COLORS = {
     'wise4':{'dustkey':None,
              'label':'W4',
              'colors':[['wise3-wise4','W3 - W4']]},
+    'tessmag':{'dustkey':None,
+               'label':'T',
+               'colors':[
+                   ['tessmag-jmag', 'T - J'],
+                   ['tessmag-kmag', 'T - Ks'],
+               ]},
+    'kepmag':{'dustkey':None,
+              'label':'Kp',
+              'colors':[
+                  ['kepmag-jmag', 'Kp - J'],
+                  ['kepmag-kmag', 'Kp - Ks']
+              ]}
 }
 
 
-BANDPASS_LIST = ['umag','bmag','vmag','rmag','imag',
-                 'jmag','hmag','kmag',
-                 'sdssu','sdssg','sdssr','sdssi','sdssz',
-                 'ujmag','uhmag','ukmag',
-                 'irac1','irac2','irac3','irac4',
-                 'wise1','wise2','wise3','wise4']
+BANDPASS_LIST = [
+    'umag','bmag','vmag','rmag','imag',
+    'jmag','hmag','kmag',
+    'sdssu','sdssg','sdssr','sdssi','sdssz',
+    'ujmag','uhmag','ukmag',
+    'irac1','irac2','irac3','irac4',
+    'wise1','wise2','wise3','wise4',
+    'tessmag',
+    'kepmag',
+]
 
 
 def color_features(in_objectinfo,
