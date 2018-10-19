@@ -5685,11 +5685,12 @@ def apply_epd_magseries(lcfile,
 
     # save the EPD magseries to a pickle LC
     lcdict['epd'] = epd
-    outfile = os.path.join(os.path.dirname(lcfile),
-                           '%s-epd-%s-pklc.pkl' % (
-                               squeeze(objectid).replace(' ','-'),
-                               magcol
-                           )
+    outfile = os.path.join(
+        os.path.dirname(lcfile),
+        '%s-epd-%s-pklc.pkl' % (
+            squeeze(objectid).replace(' ','-'),
+            magcol
+        )
     )
     with open(outfile,'wb') as outfd:
         pickle.dump(lcdict, outfd,

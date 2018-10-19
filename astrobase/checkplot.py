@@ -1742,8 +1742,8 @@ def _pkl_finder_objectinfo(objectinfo,
 
             if 'ok' in nbrfeat['gaia_status']:
 
-                objectinfo['pmra'] = nbrfeat['gaia_pmra'][0]
-                objectinfo['pmra_err'] = nbrfeat['gaia_pmra_err'][0]
+                objectinfo['pmra'] = nbrfeat['gaia_pmras'][0]
+                objectinfo['pmra_err'] = nbrfeat['gaia_pmra_errs'][0]
                 objectinfo['pmra_source'] = 'gaia'
 
                 if verbose:
@@ -1760,8 +1760,8 @@ def _pkl_finder_objectinfo(objectinfo,
 
             if 'ok' in nbrfeat['gaia_status']:
 
-                objectinfo['pmdecl'] = nbrfeat['gaia_pmdecl'][0]
-                objectinfo['pmdecl_err'] = nbrfeat['gaia_pmdecl_err'][0]
+                objectinfo['pmdecl'] = nbrfeat['gaia_pmdecls'][0]
+                objectinfo['pmdecl_err'] = nbrfeat['gaia_pmdecl_errs'][0]
                 objectinfo['pmdecl_source'] = 'gaia'
 
                 if verbose:
@@ -1792,10 +1792,10 @@ def _pkl_finder_objectinfo(objectinfo,
             objectinfo['gaia_parallax_err'] = (
                 objectinfo['gaia_parallax_errs'][0]
             )
-            objectinfo['gaia_pmra'] = objectinfo['gaia_pmra'][0]
-            objectinfo['gaia_pmra_err'] = objectinfo['gaia_pmra_err'][0]
-            objectinfo['gaia_pmdecl'] = objectinfo['gaia_pmdecl'][0]
-            objectinfo['gaia_pmdecl_err'] = objectinfo['gaia_pmdecl_err'][0]
+            objectinfo['gaia_pmra'] = objectinfo['gaia_pmras'][0]
+            objectinfo['gaia_pmra_err'] = objectinfo['gaia_pmra_errs'][0]
+            objectinfo['gaia_pmdecl'] = objectinfo['gaia_pmdecls'][0]
+            objectinfo['gaia_pmdecl_err'] = objectinfo['gaia_pmdecl_errs'][0]
 
         else:
             objectinfo['gaiamag'] = np.nan
