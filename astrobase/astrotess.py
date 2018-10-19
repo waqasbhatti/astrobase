@@ -331,7 +331,10 @@ def read_tess_fitslc(lcfits,
                      topkeys=LCTOPKEYS,
                      apkeys=LCAPERTUREKEYS,
                      normalize=False,
-                     appendto=None):
+                     appendto=None,
+                     filterflags=False,
+                     nanfilter=None,
+                     timestoignore=None):
     '''This extracts the light curve from a single TESS .lc.fits file.
 
     This works on the light curves available at MAST:
@@ -717,6 +720,15 @@ def read_tess_fitslc(lcfits,
     # update the ndet key in the objectinfo with the sum of all observations
     lcdict['objectinfo']['ndet'] = sum(lcdict['lcinfo']['ndet'])
 
+    # filter the LC dict if requested
+    if (filterflags is not False or
+        nanfilter is not None or
+        timestoignore is not None):
+        lcdict = filter_tess_lcdict(lcdict,
+                                    filterflags,
+                                    nanfilter=nanfilter,
+                                    timestoignore=timestoignore)
+
     # return the lcdict at the end
     return lcdict
 
@@ -724,6 +736,9 @@ def read_tess_fitslc(lcfits,
 
 def consolidate_tess_fitslc(lclist,
                             normalize=True,
+                            filterflags=False,
+                            nanfilter=None,
+                            timestoignore=None,
                             headerkeys=LCHEADERKEYS,
                             datakeys=LCDATAKEYS,
                             sapkeys=LCSAPKEYS,
@@ -733,9 +748,10 @@ def consolidate_tess_fitslc(lclist,
     '''This consolidates a list of LCs for a single TIC object.
 
     lclist is either a list of actual light curve files or a string that is
-    valid for glob.glob to search for a generate a light curve list based on the
-    file glob. This is useful for consolidating LC FITS files across different
-    TESS sectors for a single TIC ID using a glob like '*<TICID>*_lc.fits'.
+    valid for glob.glob to search for and generate a light curve list based on
+    the file glob. This is useful for consolidating LC FITS files across
+    different TESS sectors for a single TIC ID using a glob like
+    '*<TICID>*_lc.fits'.
 
     If normalize == True, then each component light curve's SAP_FLUX, SAP_BKG,
     and PDCSAP_FLUX measurements will be normalized to 1.0 by dividing out the
@@ -852,6 +868,17 @@ def consolidate_tess_fitslc(lclist,
             np.array(consolidated['varinfo'][key])[info_sort_ind].tolist()
         )
 
+
+    # filter the LC dict if requested
+    # we do this at the end
+    if (filterflags is not False or
+        nanfilter is not None or
+        timestoignore is not None):
+        consolidated = filter_tess_lcdict(consolidated,
+                                          filterflags,
+                                          nanfilter=nanfilter,
+                                          timestoignore=timestoignore)
+
     return consolidated
 
 
@@ -913,7 +940,8 @@ def read_tess_pklc(picklefile):
 def filter_tess_lcdict(lcdict,
                        filterflags=True,
                        nanfilter='sap,pdc',
-                       timestoignore=None):
+                       timestoignore=None,
+                       quiet=False):
     '''This filters the TESS light curve dict.
 
     By default, this function removes points in the TESS LC that have ANY
@@ -943,8 +971,10 @@ def filter_tess_lcdict(lcdict,
                 lcdict[col] = lcdict[col][filterind]
 
         nafter = lcdict['time'].size
-        LOGINFO('applied quality flag filter, ndet before = %s, ndet after = %s'
-                % (nbefore, nafter))
+        if not quiet:
+            LOGINFO('applied quality flag filter, '
+                    'ndet before = %s, ndet after = %s'
+                    % (nbefore, nafter))
 
 
     if nanfilter and nanfilter == 'sap,pdc':
@@ -971,8 +1001,9 @@ def filter_tess_lcdict(lcdict,
 
         nafter = lcdict['time'].size
 
-        LOGINFO('removed nans, ndet before = %s, ndet after = %s'
-                % (nbefore, nafter))
+        if not quiet:
+            LOGINFO('removed nans, ndet before = %s, ndet after = %s'
+                    % (nbefore, nafter))
 
 
     # exclude all times in timestoignore
@@ -998,8 +1029,8 @@ def filter_tess_lcdict(lcdict,
                 lcdict[col] = lcdict[col][exclind]
 
         nafter = lcdict['time'].size
-        LOGINFO('removed timestoignore, ndet before = %s, ndet after = %s'
-                % (nbefore, nafter))
-
+        if not quiet:
+            LOGINFO('removed timestoignore, ndet before = %s, ndet after = %s'
+                    % (nbefore, nafter))
 
     return lcdict
