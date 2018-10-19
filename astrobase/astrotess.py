@@ -78,6 +78,8 @@ def LOGEXCEPTION(message):
 import pickle
 import os.path
 import gzip
+import sys
+import glob
 
 import numpy as np
 from astropy.io import fits as pyfits
@@ -730,18 +732,63 @@ def consolidate_tess_fitslc(lclist,
                             apkeys=LCAPERTUREKEYS):
     '''This consolidates a list of LCs for a single TIC object.
 
-    NOTE: if light curve time arrays contain nans, these and their associated
-    measurements will be sorted to the end of the final combined arrays.
+    lclist is either a list of actual light curve files or a string that is
+    valid for glob.glob to search for a generate a light curve list based on the
+    file glob. This is useful for consolidating LC FITS files across different
+    TESS sectors for a single TIC ID using a glob like '*<TICID>*_lc.fits'.
 
     If normalize == True, then each component light curve's SAP_FLUX, SAP_BKG,
     and PDCSAP_FLUX measurements will be normalized to 1.0 by dividing out the
     median flux measurement for the component light curve. Their errors will
     also be normalized in the same way.
 
+    NOTE: if light curve time arrays contain nans, these and their associated
+    measurements will be sorted to the end of the final combined arrays.
+
     '''
 
+    # if the lclist is a string, assume that we're passing in a fileglob
+    if isinstance(lclist, str):
+
+        if sys.version_info[:2] > (3,4):
+
+            matching = glob.glob(lclist,
+                                 recursive=True)
+            LOGINFO('found %s LCs: %r' % (len(matching), matching))
+
+        else:
+
+            lcfitsdir = os.path.dirname(lclist)
+            lcfitsfile = os.path.basename(lclist)
+            walker = os.walk(lcfitsdir)
+            matching = []
+            for root, dirs, _files in walker:
+                for sdir in dirs:
+                    searchpath = os.path.join(root,
+                                              sdir,
+                                              lcfitsfile)
+                    foundfiles = glob.glob(searchpath)
+
+                    if foundfiles:
+                        matching.extend(foundfiles)
+                        LOGINFO(
+                            'found %s in dir: %s' % (repr(foundfiles),
+                                                     os.path.join(root,sdir))
+                        )
+
+
+        if len(matching) == 0:
+            LOGERROR('could not find any TESS LC files matching glob: %s' %
+                     lclist)
+            return None
+
+    # if the lclist is an actual list of LCs, then use it directly
+    else:
+
+        matching = lclist
+
     # get the first file
-    consolidated = read_tess_fitslc(lclist[0],
+    consolidated = read_tess_fitslc(matching[0],
                                     normalize=normalize,
                                     headerkeys=LCHEADERKEYS,
                                     datakeys=LCDATAKEYS,
@@ -751,9 +798,9 @@ def consolidate_tess_fitslc(lclist,
                                     apkeys=LCAPERTUREKEYS)
 
     # get the rest of the files
-    if len(lclist) > 1:
+    if len(matching) > 1:
 
-        for lcf in lclist[1:]:
+        for lcf in matching[1:]:
 
             consolidated = read_tess_fitslc(lcf,
                                             appendto=consolidated,
