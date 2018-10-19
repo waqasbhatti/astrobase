@@ -590,6 +590,7 @@ def read_tess_fitslc(lcfits,
                 'cr_spocclean':[hdrinfo['crspoc']],
             },
             'objectinfo':{
+                'objectid':hdrinfo['object'],
                 'ticid':hdrinfo['ticid'],
                 'tessmag':hdrinfo['tessmag'],
                 'ra':hdrinfo['ra_obj'],
