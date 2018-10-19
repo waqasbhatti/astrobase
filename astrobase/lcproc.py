@@ -120,7 +120,7 @@ from tornado.escape import squeeze
 
 # to turn a list of keys into a dict address
 # from https://stackoverflow.com/a/14692747
-from functools import reduce
+from functools import reduce, partial
 from operator import getitem
 def dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
@@ -135,8 +135,10 @@ def dict_get(datadict, keylist):
 from astrobase.hatsurveys.hatlc import read_and_filter_sqlitecurve, \
     read_csvlc, normalize_lcdict_byinst
 from astrobase.hatsurveys.hplc import read_hatpi_textlc, read_hatpi_pklc
-from astrobase.astrokep import read_kepler_fitslc, read_kepler_pklc
-from astrobase.astrotess import read_tess_fitslc, read_tess_pklc
+from astrobase.astrokep import read_kepler_fitslc, read_kepler_pklc, \
+    filter_kepler_lcdict
+from astrobase.astrotess import read_tess_fitslc, read_tess_pklc, \
+    filter_tess_lcdict
 
 from astrobase import periodbase, checkplot
 from astrobase.varclass import varfeatures, starfeatures, periodicfeatures
@@ -215,10 +217,14 @@ PFMETHODS = {'bls':periodbase.bls_parallel_pfind,
 
 
 
-# LC format -> [default fileglob,  function to read LC format]
+# This is the lcproc dictionary to store registered light curve formats and the
+# means to read and normalize light curve files associated with each format. The
+# format spec for a light curve format is a list with the elements outlined
+# below. To register a new light curve format, use the register_custom_lcformat
+# function below.
 LCFORM = {
     'hat-sql':[
-        '*-hatlc.sqlite*',           # default fileglob
+        '*-hatlc.sqlite*',             # default fileglob
         read_and_filter_sqlitecurve,   # function to read this LC
         ['rjd','rjd'],                 # default timecols to use for period/var
         ['aep_000','atf_000'],         # default magcols to use for period/var
@@ -260,7 +266,7 @@ LCFORM = {
         ['sap.sap_flux','pdc.pdc_sapflux'],
         ['sap.sap_flux_err','pdc.pdc_sapflux_err'],
         True,
-        None,
+        filter_kepler_lcdict,
     ],
     'kep-pkl':[
         '-keplc.pkl',
@@ -269,7 +275,7 @@ LCFORM = {
         ['sap.sap_flux','pdc.pdc_sapflux'],
         ['sap.sap_flux_err','pdc.pdc_sapflux_err'],
         True,
-        None,
+        filter_kepler_lcdict,
     ],
     'tess-fits':[
         '*_lc.fits',
@@ -278,7 +284,7 @@ LCFORM = {
         ['sap.sap_flux','pdc.pdc_sapflux'],
         ['sap.sap_flux_err','pdc.pdc_sapflux_err'],
         True,
-        None,
+        filter_tess_lcdict,
     ],
     'tess-pkl':[
         '-tesslc.pkl',
@@ -287,7 +293,7 @@ LCFORM = {
         ['sap.sap_flux','pdc.pdc_sapflux'],
         ['sap.sap_flux_err','pdc.pdc_sapflux_err'],
         True,
-        None,
+        filter_tess_lcdict,
     ],
     # binned light curve format
     'binned-hat':[
@@ -327,14 +333,16 @@ def register_custom_lcformat(formatkey,
                              timecols,
                              magcols,
                              errcols,
-                             magsarefluxes=False,
-                             specialnormfunc=None):
+                             readerfunc_kwargs=None,
+                             specialnormfunc=None,
+                             normfunc_kwargs=None,
+                             magsarefluxes=False):
     '''This adds a custom format LC to the dict above.
 
     Allows handling of custom format light curves for astrobase lcproc
     drivers. Once the format is successfully registered, light curves should
-    work transparently with all of the functions below, by simply calling them
-    with the formatkey in the lcformat keyword argument.
+    work transparently with all of the functions in this module, by simply
+    calling them with the formatkey in the lcformat keyword argument.
 
     Args
     ----
@@ -372,10 +380,8 @@ def register_custom_lcformat(formatkey,
     examples.
 
 
-    magsarefluxes: <boolean>: if this is True, then all functions will treat the
-    magnitude columns as flux instead, so things like default normalization and
-    sigma-clipping will be done correctly. If this is False, magnitudes will be
-    treated as magnitudes.
+    readerfunc_kwargs is a dictionary containing any kwargs to pass through to
+    the light curve reader function.
 
 
     specialnormfunc: <function>: if you intend to use a special normalization
@@ -388,16 +394,41 @@ def register_custom_lcformat(formatkey,
     an example of a special normalization function, see normalize_lcdict_by_inst
     in the astrobase.hatlc module.
 
+
+    normfunc_kwargs is a dictionary containing any kwargs to pass through to
+    the special light curve normalization function.
+
+
+    magsarefluxes: <boolean>: if this is True, then all functions will treat the
+    magnitude columns as flux instead, so things like default normalization and
+    sigma-clipping will be done correctly. If this is False, magnitudes will be
+    treated as magnitudes.
+
     '''
+
+    #
+    # generate the partials
+    #
+
+    if isinstance(readerfunc_kwargs, dict):
+        lcrfunc = partial(readerfunc, **readerfunc_kwargs)
+    else:
+        lcrfunc = readerfunc
+
+    if specialnormfunc is not None and isinstance(normfunc_kwargs, dict):
+        lcnfunc = partial(specialnormfunc, **normfunc_kwargs)
+    else:
+        lcnfunc = specialnormfunc
+
 
     globals()['LCFORM'][formatkey] = [
         fileglob,
-        readerfunc,
+        lcrfunc,
         timecols,
         magcols,
         errcols,
         magsarefluxes,
-        specialnormfunc
+        lcnfunc
     ]
 
     LOGINFO('added %s to registry' % formatkey)
@@ -757,9 +788,10 @@ def make_lclist(basedir,
                         ncounter+2
                     )
                     LOGWARNING(
-                        'tagging instance %s of duplicated objectid: '
-                        '%s as %s-%s' %
-                        (ncounter+2, objid, objid, ncounter+2)
+                        'tagging duplicated instance %s of objectid: '
+                        '%s as %s-%s, lightcurve: %s' %
+                        (ncounter+2, objid, objid, ncounter+2,
+                         lclistdict['objects']['lcfname'][nind])
                     )
 
         # if we're supposed to make a spatial index, do so
