@@ -7,6 +7,10 @@ License: MIT. See the LICENSE file for more details.
 This interfaces with the MAST API. The main use for this (for now) is to fill in
 TIC information for checkplots.
 
+The MAST API service documentation is at:
+
+https://mast.stsci.edu/api/v0/index.html
+
 For a more general and useful interface to MAST, see the astroquery
 package by A. Ginsburg, B. Sipocz, et al.:
 
@@ -84,15 +88,9 @@ def LOGEXCEPTION(message):
 
 import os
 import os.path
-import gzip
 import hashlib
 import time
-import pickle
 import json
-
-import numpy as np
-
-import random
 
 # to do the queries
 import requests
@@ -109,14 +107,6 @@ MAST_URLS = {
 }
 
 
-# valid return formats
-RETURN_FORMATS = {
-    'json':'json.gz',
-    'csv':'csv.gz',
-    'votable':'vot',
-}
-
-
 #####################
 ## QUERY FUNCTIONS ##
 #####################
@@ -125,14 +115,14 @@ RETURN_FORMATS = {
 def mast_query(service,
                params,
                apiversion='v0',
-               returnformat='json',
                forcefetch=False,
                cachedir='~/.astrobase/mast-cache',
                verbose=True,
                timeout=10.0,
-               refresh=10.0,
+               refresh=5.0,
                maxtimeout=90.0,
-               maxtries=3):
+               maxtries=3,
+               raiseonfail=False):
     '''This queries the STScI MAST service.
 
     service is the name of the service to use:
@@ -164,7 +154,7 @@ def mast_query(service,
     # this matches:
     # https://mast.stsci.edu/api/v0/class_mashup_1_1_mashup_request.html
     inputparams = {
-        'format':returnformat,
+        'format':'json',
         'params':params,
         'service':service,
         'timeout':timeout,
@@ -183,7 +173,7 @@ def mast_query(service,
 
     cachefname = os.path.join(
         cachedir,
-        '%s.%s' % (cachekey, RETURN_FORMATS[returnformat])
+        '%s.json' % (cachekey,)
     )
     provenance = 'cache'
 
@@ -200,14 +190,19 @@ def mast_query(service,
         timeelapsed = 0.0
         ntries = 1
 
+        url = MAST_URLS[apiversion]['url']
+        formdata = {'request':json.dumps(inputparams)}
+
         while (not waitdone) or (ntries < maxtries):
+
+            if timeelapsed > maxtimeout:
+                retdict = None
+                break
 
             try:
 
-                url = MAST_URLS[apiversion]['url']
-
                 resp = requests.post(url,
-                                     data=inputparams,
+                                     data=formdata,
                                      # we'll let the service time us out first
                                      # if that fails, we'll timeout ourselves
                                      timeout=timeout+1.0)
@@ -222,7 +217,7 @@ def mast_query(service,
 
                     if nrows > 0:
 
-                        with gzip.open(cachefname, 'wb') as outfd:
+                        with open(cachefname, 'w') as outfd:
                             json.dump(respjson, outfd)
 
                         retdict = {
@@ -232,31 +227,144 @@ def mast_query(service,
                         }
                         waitdone = True
 
+                        if verbose:
+                            LOGINFO('query successful. nmatches: %s' % nrows)
+
+                        break
+
                     else:
 
-                        LOGERROR('no matching objects found for inputparams: %r' %
-                                 inputparams)
+                        LOGERROR(
+                            'no matching objects found for inputparams: %r' %
+                            inputparams
+                        )
                         retdict = None
+                        waitdone = True
                         break
 
                 # if we're still executing after the initial timeout is done
                 elif respjson['status'] == 'EXECUTING':
 
-                    LOGINFO('query is still executing, '
-                            'waiting %s seconds to retry' % refresh)
+                    if verbose:
+                        LOGINFO('query is still executing, '
+                                'waiting %s seconds to retry...' % refresh)
                     waitdone = False
                     time.sleep(refresh)
                     timeelapsed = timeelapsed + refresh
+                    retdict = None
 
                 else:
 
-                    LOGERROR('query failed! message from service: %s' %
+                    LOGERROR('Query failed! Message from service: %s' %
                              respjson['msg'])
                     retdict = None
                     waitdone = True
+                    break
 
+            except requests.exceptions.Timeout as e:
+
+                if verbose:
+                    LOGWARNING('MAST query try timed out, '
+                               'site is probably down. '
+                               'Waiting for %s seconds to try again...' %
+                               refresh)
+                waitdone = False
+                time.sleep(refresh)
+                timeelapsed = timeelapsed + refresh
+                retdict = None
+
+            except KeyboardInterrupt as e:
+
+                LOGERROR('MAST request wait aborted for '
+                         '%s' % repr(inputparams))
+                return None
 
             except Exception as e:
-                pass
 
+                LOGEXCEPTION('MAST query failed!')
+
+                if raiseonfail:
+                    raise
+
+                return None
+
+            #
+            # increment number of tries at the bottom of the loop
+            #
             ntries = ntries + 1
+
+        #
+        # done with waiting for completion
+        #
+        if retdict is None:
+
+            LOGERROR('Timed out, errored out, or reached maximum number '
+                     'of tries with no response. Query was: %r' % inputparams)
+            return None
+
+        else:
+
+            return retdict
+
+    # otherwise, get the file from the cache
+    else:
+
+        if verbose:
+            LOGINFO('getting cached MAST query result for '
+                    'request: %s' %
+                    (repr(inputparams)))
+
+        retdict = {
+            'params':inputparams,
+            'provenance':provenance,
+            'cachefname':cachefname
+        }
+
+        return retdict
+
+
+
+def tic_conesearch(ra,
+                   decl,
+                   radius_arcmin=5.0,
+                   apiversion='v0',
+                   forcefetch=False,
+                   cachedir='~/.astrobase/mast-cache',
+                   verbose=True,
+                   timeout=10.0,
+                   refresh=5.0,
+                   maxtimeout=90.0,
+                   maxtries=3,
+                   raiseonfail=False):
+    '''This runs a TESS Input Catalog cone search.
+
+    If successful, the result is written to a JSON text file in the specified
+    cachedir.
+
+    If you use this, please cite the TIC paper (Stassun et al 2018;
+    http://adsabs.harvard.edu/abs/2018AJ....156..102S). Also see the "living"
+    TESS input catalog docs:
+
+    https://docs.google.com/document/d/1zdiKMs4Ld4cXZ2DW4lMX-fuxAF6hPHTjqjIwGqnfjqI
+
+    Also see: https://mast.stsci.edu/api/v0/_t_i_cfields.html for the fields
+    returned by the service and present in the result JSON file.
+
+    '''
+
+    params = {'ra':ra,
+              'dec':decl,
+              'radius':radius_arcmin/60.0}
+    service = 'Mast.Catalogs.Tic.Cone'
+
+    return mast_query(service,
+                      params,
+                      apiversion=apiversion,
+                      forcefetch=forcefetch,
+                      cachedir=cachedir,
+                      verbose=verbose,
+                      timeout=timeout,
+                      refresh=refresh,
+                      maxtimeout=maxtimeout,
+                      maxtries=maxtries,
+                      raiseonfail=raiseonfail)
