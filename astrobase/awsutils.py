@@ -486,36 +486,6 @@ def sqs_delete_item(queue_url,
 
 
 
-def sqs_enqueue_s3_filelist(bucket,
-                            filelist_fname,
-                            queue_name,
-                            action,
-                            outbucket,
-                            outqueue=None,
-                            client=None):
-
-    """
-    This puts all of the files in the specified filelist into the SQS queue.
-
-    """
-
-
-
-def sqs_enqueue_local_filelist(filelist_fname,
-                               bucket,
-                               queue_name,
-                               action,
-                               outbucket,
-                               outqueue=None,
-                               client=None):
-    """This puts all of the files in the specified filelist into the SQS queue.
-
-    All of the files will be first uploaded to the specified bucket and then put
-    into an SQS queue for processing.
-
-    """
-
-
 #########
 ## EC2 ##
 #########
@@ -526,6 +496,7 @@ SUPPORTED_AMIS = [
     # Amazon Linux 2
     'ami-04681a1dbd79675a5',
 ]
+
 
 
 def make_ec2_nodes(
