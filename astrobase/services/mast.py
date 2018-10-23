@@ -91,6 +91,7 @@ import os.path
 import hashlib
 import time
 import json
+import random
 
 # to do the queries
 import requests
@@ -335,6 +336,7 @@ def tic_conesearch(ra,
                    refresh=5.0,
                    maxtimeout=90.0,
                    maxtries=3,
+                   jitter=5.0,
                    raiseonfail=False):
     '''This runs a TESS Input Catalog cone search.
 
@@ -350,12 +352,17 @@ def tic_conesearch(ra,
     Also see: https://mast.stsci.edu/api/v0/_t_i_cfields.html for the fields
     returned by the service and present in the result JSON file.
 
+    Use the jitter parameter to control the scale of the random wait in seconds
+    before starting the query.
+
     '''
 
     params = {'ra':ra,
               'dec':decl,
               'radius':radius_arcmin/60.0}
     service = 'Mast.Catalogs.Tic.Cone'
+
+    time.sleep(random.randint(1,jitter))
 
     return mast_query(service,
                       params,

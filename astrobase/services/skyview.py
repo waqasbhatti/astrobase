@@ -82,6 +82,8 @@ import os.path
 import gzip
 import hashlib
 import re
+import random
+import time
 
 # to do the queries
 import requests
@@ -132,7 +134,8 @@ def get_stamp(ra, decl,
               cachedir='~/.astrobase/stamp-cache',
               timeout=10.0,
               retry_failed=True,
-              verbose=True):
+              verbose=True,
+              jitter=5.0):
     '''This gets a FITS cutout from the NASA GSFC SkyView service.
 
     ra, decl are decimal equatorial coordinates for the cutout center.
@@ -151,6 +154,8 @@ def get_stamp(ra, decl,
     service.
 
     '''
+
+    time.sleep(random.randint(1,jitter))
 
     # parse the given params into the correct format for the form
     formposition = ['%.4f, %.4f' % (ra, decl)]

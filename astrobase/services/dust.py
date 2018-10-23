@@ -90,6 +90,8 @@ import os
 import os.path
 import hashlib
 import re
+import random
+import time
 
 import numpy as np
 
@@ -124,7 +126,8 @@ def extinction_query(lon, lat,
                      forcefetch=False,
                      cachedir='~/.astrobase/dust-cache',
                      verbose=True,
-                     timeout=10.0):
+                     timeout=10.0,
+                     jitter=5.0):
     '''This queries the 2MASS DUST service to find the extinction parameters
     for the given lon, lat.
 
@@ -143,7 +146,12 @@ def extinction_query(lon, lat,
     timeout sets the amount of time in seconds to wait for the service to
     respond to our request.
 
+    Use jitter to control the scale of the random wait in seconds before
+    starting the query.
+
     '''
+
+    time.sleep(random.randint(1,jitter))
 
     dustparams = DUST_PARAMS.copy()
 

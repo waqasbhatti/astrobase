@@ -149,7 +149,8 @@ def tap_query(querystr,
               refresh=2.0,
               maxtimeout=90.0,
               maxtries=3,
-              complete_query_later=False):
+              complete_query_later=False,
+              jitter=5):
     '''This queries the SIMBAD TAP service using the ADQL querystr.
 
     querystr is an ADQL query. See: http://www.ivoa.net/documents/ADQL/2.0 for
@@ -175,6 +176,8 @@ def tap_query(querystr,
     maxtimeout is reached or the results file becomes available.
 
     '''
+
+    time.sleep(random.randint(1,jitter))
 
     # get the default params
     inputparams = TAP_PARAMS.copy()
