@@ -123,7 +123,7 @@ https://github.com/waqasbhatti/astrobase-notebooks/blob/master/lightcurve-work.i
 '''
 
 # put this in here because hatlc can be used as a standalone module
-__version__ = '0.3.19'
+__version__ = '0.3.20'
 
 
 #############

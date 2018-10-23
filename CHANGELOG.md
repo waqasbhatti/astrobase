@@ -1,3 +1,50 @@
+# v0.3.20
+
+## New stuff
+
+- `plotbase.plot_phased_magseries` can now overplot a light curve model. Added
+  by @lgbouma.
+- new `varbase/transits.py` module for planet transit specific tools. Added by
+  @lgbouma.
+- new `awsutils.py` module for interfacing with various AWS services for
+  `lcproc_aws.py`.
+- new `lcproc_aws.py` module for lcproc functions ported to AWS workflows.
+- `astrotess` now has `read_tess_fitslc`, `consolidate_tess_fitslc`, and
+  `filter_tess_fitslc` functions like `astrokep`.
+- new `services/mast.py` module for querying the STScI MAST API. Added a
+  `tic_conesearch` function to help with future checkplot making that will
+  include TIC IDs and TESS mags.
+- `lcproc.register_custom_lcformat` can now provide arbitrary kwargs to the
+  LC reader and normalization functions.
+
+
+## Changes
+
+- `services`: service clients that talk to single mirrors now use a random sleep
+  before launching the request to avoid overload when running in many parallel
+  processes.
+- `checkplot, starfeatures`: include all GAIA neighbor proper motions instead of
+  just the target object proper motions.
+- `starfeatures` functions now recognize TESS and Kepler mags for checkplot
+  making.
+- `services/lccs.py`: updated for v0.2 of the LCC-Server's API.
+- `lcproc.make_lclist` now accepts an input list of actual filenames to turn
+  into a lclist catalog pickle.
+- `hatsurveys.hatlc.normalize_lcdict_byinst` now also uses the LC's CCD column
+  to generate the normalization key.
+
+
+## Fixes
+
+- added checks in various places for both lists and tuples where lists only were
+  expected.
+- `lcfit.mandelagol_fit_magseries`: various bugfixes.
+- `lcproc.make_lclist` now handles duplicate object IDs with different light
+  curve files correctly.
+- `lcproc, checkplot`: remove spaces in object IDs for output filenames.
+- `astrokep.py`: fix LC normalization.
+
+
 # v0.3.19
 
 ## New stuff
