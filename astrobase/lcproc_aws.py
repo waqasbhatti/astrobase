@@ -933,7 +933,7 @@ def runpf_producer_loop(
         result_bucket,
         pfmethods=('gls','pdm','mav','bls','win'),
         pfkwargs=({}, {}, {}, {}, {}),
-        extra_runpf_kwargs=None,
+        extra_runpf_kwargs={'getblssnr':True},
         process_list_slice=None,
         purge_queues_when_done=False,
         delete_queues_when_done=False,

@@ -82,7 +82,6 @@ import os
 import json
 import time
 from datetime import timedelta
-import base64
 
 try:
 
@@ -238,27 +237,20 @@ def gps_create_topic():
 
 def gps_delete_topic():
     """
-    This creates a Google Pub/Sub topic.
+    This deletes a Google Pub/Sub topic.
 
     """
 
 
-def gps_subscribe_topic():
+def gps_topic_pull():
     """
-    This subscribes to a pubsub topic.
+    This pulls a single message from a pubsub topic.
 
     """
 
 
-def gps_publish_topic():
+def gps_topic_publish():
     """
     This publishes a JSON message to a topic.
-
-    """
-
-
-def gps_message_recv_callback():
-    """
-    This runs a function when a message arrives for a subscribed topic.
 
     """
