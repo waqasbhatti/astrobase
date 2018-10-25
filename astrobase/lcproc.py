@@ -5231,6 +5231,143 @@ def add_cmds_cpdir(cpdir, cmdpkl,
 
 
 
+def cp_objectinfo_worker(task):
+    '''
+    This is a parallel worker for parallel_update_cp_objectinfo.
+
+    task[0] = checkplot pickle file
+    task[1] = kwargs
+
+    '''
+
+    cpf, cpkwargs = task
+
+    try:
+
+        newcpf = checkplot.update_checkplot_objectinfo(cpf, **cpkwargs)
+        return newcpf
+
+    except Exception as e:
+        LOGEXCEPTION('failed to update objectinfo for %s' % cpf)
+        return None
+
+
+
+def parallel_update_objectinfo_cplist(cplist,
+                                      liststartindex=None,
+                                      maxobjects=None,
+                                      nworkers=NCPUS,
+                                      fast_mode=False,
+                                      findercmap='gray_r',
+                                      finderconvolve=None,
+                                      deredden_object=True,
+                                      custom_bandpasses=None,
+                                      gaia_submit_timeout=10.0,
+                                      gaia_submit_tries=3,
+                                      gaia_max_timeout=180.0,
+                                      gaia_mirror=None,
+                                      complete_query_later=True,
+                                      lclistpkl=None,
+                                      nbrradiusarcsec=60.0,
+                                      maxnumneighbors=5,
+                                      plotdpi=100,
+                                      findercachedir='~/.astrobase/stamp-cache',
+                                      verbose=True):
+    '''
+    This updates objectinfo for a list of checkplots.
+
+    '''
+
+    # handle the start and end indices
+    if (liststartindex is not None) and (maxobjects is None):
+        cplist = cplist[liststartindex:]
+
+    elif (liststartindex is None) and (maxobjects is not None):
+        cplist = cplist[:maxobjects]
+
+    elif (liststartindex is not None) and (maxobjects is not None):
+        cplist = (
+            cplist[liststartindex:liststartindex+maxobjects]
+        )
+
+    tasks = [(x, {'fast_mode':fast_mode,
+                  'findercmap':findercmap,
+                  'finderconvolve':finderconvolve,
+                  'deredden_object':deredden_object,
+                  'custom_bandpasses':custom_bandpasses,
+                  'gaia_submit_timeout':gaia_submit_timeout,
+                  'gaia_submit_tries':gaia_submit_tries,
+                  'gaia_max_timeout':gaia_max_timeout,
+                  'gaia_mirror':gaia_mirror,
+                  'complete_query_later':complete_query_later,
+                  'lclistpkl':lclistpkl,
+                  'nbrradiusarcsec':nbrradiusarcsec,
+                  'maxnumneighbors':maxnumneighbors,
+                  'plotdpi':plotdpi,
+                  'findercachedir':findercachedir,
+                  'verbose':verbose}) for x in cplist]
+
+    resultfutures = []
+    results = []
+
+    with ProcessPoolExecutor(max_workers=nworkers) as executor:
+        resultfutures = executor.map(cp_objectinfo_worker, tasks)
+
+    results = [x for x in resultfutures]
+
+    executor.shutdown()
+    return results
+
+
+
+def parallel_update_objectinfo_cpdir(cpdir,
+                                     cpglob='checkplot-*.pkl*',
+                                     liststartindex=None,
+                                     maxobjects=None,
+                                     nworkers=NCPUS,
+                                     fast_mode=False,
+                                     findercmap='gray_r',
+                                     finderconvolve=None,
+                                     deredden_object=True,
+                                     custom_bandpasses=None,
+                                     gaia_submit_timeout=10.0,
+                                     gaia_submit_tries=3,
+                                     gaia_max_timeout=180.0,
+                                     gaia_mirror=None,
+                                     complete_query_later=True,
+                                     lclistpkl=None,
+                                     nbrradiusarcsec=60.0,
+                                     maxnumneighbors=5,
+                                     plotdpi=100,
+                                     findercachedir='~/.astrobase/stamp-cache',
+                                     verbose=True):
+
+    cplist = sorted(glob.glob(os.path.join(cpdir, cpglob)))
+
+    return parallel_update_objectinfo_cplist(
+        cplist,
+        liststartindex=liststartindex,
+        maxobjects=maxobjects,
+        nworkers=nworkers,
+        fast_mode=fast_mode,
+        findercmap=findercmap,
+        finderconvolve=finderconvolve,
+        deredden_object=deredden_object,
+        custom_bandpasses=custom_bandpasses,
+        gaia_submit_timeout=gaia_submit_timeout,
+        gaia_submit_tries=gaia_submit_tries,
+        gaia_max_timeout=gaia_max_timeout,
+        gaia_mirror=gaia_mirror,
+        complete_query_later=complete_query_later,
+        lclistpkl=lclistpkl,
+        nbrradiusarcsec=nbrradiusarcsec,
+        maxnumneighbors=maxnumneighbors,
+        plotdpi=plotdpi,
+        findercachedir=findercachedir,
+        verbose=verbose
+    )
+
+
 ############################################################
 ## ADDING CHECKPLOT INFO BACK TO THE LIGHT CURVE CATALOGS ##
 ############################################################
