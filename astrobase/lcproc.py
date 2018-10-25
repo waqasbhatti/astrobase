@@ -279,7 +279,7 @@ LCFORM = {
     ],
     'tess-fits':[
         '*_lc.fits',
-        partial(read_tess_fitslc,normalize=True)
+        partial(read_tess_fitslc,normalize=True),
         ['time','time'],
         ['sap.sap_flux','pdc.pdcsap_flux'],
         ['sap.sap_flux_err','pdc.pdcsap_flux_err'],
