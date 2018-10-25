@@ -185,6 +185,8 @@ from .plotbase import skyview_stamp, \
     PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
 from .coordutils import total_proper_motion, reduced_proper_motion
 
+from .services.mast import tic_conesearch
+from . import magnitudes
 
 #######################
 ## UTILITY FUNCTIONS ##
@@ -1711,13 +1713,7 @@ def _pkl_finder_objectinfo(objectinfo,
                        'making up a random one: %s')
 
 
-        # first, the color features
-        colorfeat = color_features(objectinfo,
-                                   deredden=deredden_object,
-                                   custom_bandpasses=custom_bandpasses,
-                                   dust_timeout=dust_timeout)
-
-        # next, get the neighbor features and GAIA info
+        # get the neighbor features and GAIA info
         nbrfeat = neighbor_gaia_features(
             objectinfo,
             kdt,
@@ -1730,6 +1726,7 @@ def _pkl_finder_objectinfo(objectinfo,
             complete_query_later=complete_query_later,
             search_simbad=search_simbad
         )
+        objectinfo.update(nbrfeat)
 
         # see if the objectinfo dict has pmra/pmdecl entries.  if it doesn't,
         # then we'll see if the nbrfeat dict has pmra/pmdecl from GAIA. we'll
@@ -1771,21 +1768,11 @@ def _pkl_finder_objectinfo(objectinfo,
         else:
             objectinfo['pmdecl_source'] = 'light curve'
 
-
-        # try to get the object's coord features next
-        coordfeat = coord_features(objectinfo)
-
-        # finally, get the object's color classification
-        colorclass = color_classification(colorfeat, coordfeat)
-
-        # update the objectinfo dict with everything
-        objectinfo.update(colorfeat)
-        objectinfo.update(coordfeat)
-        objectinfo.update(colorclass)
-        objectinfo.update(nbrfeat)
-
+        #
         # update GAIA info so it's available at the first level
+        #
         if 'ok' in objectinfo['gaia_status']:
+            objectinfo['gaiaid'] = objectinfo['gaia_ids'][0]
             objectinfo['gaiamag'] = objectinfo['gaia_mags'][0]
             objectinfo['gaia_absmag'] = objectinfo['gaia_absolute_mags'][0]
             objectinfo['gaia_parallax'] = objectinfo['gaia_parallaxes'][0]
@@ -1798,6 +1785,7 @@ def _pkl_finder_objectinfo(objectinfo,
             objectinfo['gaia_pmdecl_err'] = objectinfo['gaia_pmdecl_errs'][0]
 
         else:
+            objectinfo['gaiaid'] = None
             objectinfo['gaiamag'] = np.nan
             objectinfo['gaia_absmag'] = np.nan
             objectinfo['gaia_parallax'] = np.nan
@@ -1806,6 +1794,324 @@ def _pkl_finder_objectinfo(objectinfo,
             objectinfo['gaia_pmra_err'] = np.nan
             objectinfo['gaia_pmdecl'] = np.nan
             objectinfo['gaia_pmdecl_err'] = np.nan
+
+        #
+        # get the object's TIC information
+        #
+        if ('ra' in objectinfo and
+            objectinfo['ra'] is not None and
+            np.isfinite(objectinfo['ra']) and
+            'decl' in objectinfo and
+            objectinfo['decl'] is not None and
+            np.isfinite(objectinfo['decl'])):
+
+            try:
+                ticres = tic_conesearch(objectinfo['ra'],
+                                        objectinfo['decl'],
+                                        radius_arcmin=5.0/60.0,
+                                        verbose=False,
+                                        timeout=gaia_max_timeout,
+                                        maxtries=gaia_submit_tries)
+
+                if ticres is not None:
+
+                    with open(ticres['cachefname'],'r') as infd:
+                        ticinfo = json.load(infd)
+
+                    if ('data' in ticinfo and
+                        len(ticinfo['data']) > 0 and
+                        isinstance(ticinfo['data'][0], dict)):
+
+                        objectinfo['ticid'] = ticinfo['data'][0]['ID']
+                        objectinfo['tessmag'] = ticinfo['data'][0]['Tmag']
+                        objectinfo['tic_version'] = (
+                            ticinfo['data'][0]['version']
+                        )
+                        objectinfo['tic_distarcsec'] = (
+                            ticinfo['data'][0]['dstArcSec']
+                        )
+                        objectinfo['tessmag_origin'] = (
+                            ticinfo['data'][0]['TESSflag']
+                        )
+
+                        objectinfo['tic_starprop_origin'] = (
+                            ticinfo['data'][0]['SPFlag']
+                        )
+                        objectinfo['tic_lumclass'] = (
+                            ticinfo['data'][0]['lumclass']
+                        )
+                        objectinfo['tic_teff'] = (
+                            ticinfo['data'][0]['Teff']
+                        )
+                        objectinfo['tic_teff_err'] = (
+                            ticinfo['data'][0]['e_Teff']
+                        )
+                        objectinfo['tic_logg'] = (
+                            ticinfo['data'][0]['logg']
+                        )
+                        objectinfo['tic_logg_err'] = (
+                            ticinfo['data'][0]['e_logg']
+                        )
+                        objectinfo['tic_mh'] = (
+                            ticinfo['data'][0]['MH']
+                        )
+                        objectinfo['tic_mh_err'] = (
+                            ticinfo['data'][0]['e_MH']
+                        )
+                        objectinfo['tic_radius'] = (
+                            ticinfo['data'][0]['rad']
+                        )
+                        objectinfo['tic_radius_err'] = (
+                            ticinfo['data'][0]['e_rad']
+                        )
+                        objectinfo['tic_mass'] = (
+                            ticinfo['data'][0]['mass']
+                        )
+                        objectinfo['tic_mass_err'] = (
+                            ticinfo['data'][0]['e_mass']
+                        )
+                        objectinfo['tic_density'] = (
+                            ticinfo['data'][0]['rho']
+                        )
+                        objectinfo['tic_density_err'] = (
+                            ticinfo['data'][0]['e_rho']
+                        )
+                        objectinfo['tic_luminosity'] = (
+                            ticinfo['data'][0]['lum']
+                        )
+                        objectinfo['tic_luminosity_err'] = (
+                            ticinfo['data'][0]['e_lum']
+                        )
+                        objectinfo['tic_distancepc'] = (
+                            ticinfo['data'][0]['d']
+                        )
+                        objectinfo['tic_distancepc_err'] = (
+                            ticinfo['data'][0]['e_d']
+                        )
+
+                        #
+                        # fill in any missing info using the TIC entry
+                        #
+                        if ('gaiaid' not in objectinfo or
+                            ('gaiaid' in objectinfo and
+                             (objectinfo['gaiaid'] is None))):
+                            objectinfo['gaiaid'] = ticinfo['data'][0]['GAIA']
+
+                        if ('gaiamag' not in objectinfo or
+                            ('gaiamag' in objectinfo and
+                             (objectinfo['gaiamag'] is None or
+                              not np.isfinite(objectinfo['gaiamag'])))):
+                            objectinfo['gaiamag'] = (
+                                ticinfo['data'][0]['GAIAmag']
+                            )
+                            objectinfo['gaiamag_err'] = (
+                                ticinfo['data'][0]['e_GAIAmag']
+                            )
+
+                        if ('gaia_parallax' not in objectinfo or
+                            ('gaia_parallax' in objectinfo and
+                             (objectinfo['gaia_parallax'] is None or
+                              not np.isfinite(objectinfo['gaia_parallax'])))):
+
+                            objectinfo['gaia_parallax'] = (
+                                ticinfo['data'][0]['plx']
+                            )
+                            objectinfo['gaia_parallax_err'] = (
+                                ticinfo['data'][0]['e_plx']
+                            )
+
+                            if (objectinfo['gaiamag'] is not None and
+                                np.isfinite(objectinfo['gaiamag']) and
+                                objectinfo['gaia_parallax'] is not None and
+                                np.isfinite(objectinfo['gaia_parallax'])):
+
+                                objectinfo['gaia_absmag'] = (
+                                    magnitudes.absolute_gaia_magnitude(
+                                        objectinfo['gaiamag'],
+                                        objectinfo['gaia_parallax']
+                                    )
+                                )
+
+                        if ('pmra' not in objectinfo or
+                            ('pmra' in objectinfo and
+                             (objectinfo['pmra'] is None or
+                              not np.isfinite(objectinfo['pmra'])))):
+                            objectinfo['pmra'] = ticinfo['data'][0]['pmRA']
+                            objectinfo['pmra_err'] = (
+                                ticinfo['data'][0]['e_pmRA']
+                            )
+                            objectinfo['pmra_source'] = 'TIC'
+
+                        if ('pmdecl' not in objectinfo or
+                            ('pmdecl' in objectinfo and
+                             (objectinfo['pmdecl'] is None or
+                              not np.isfinite(objectinfo['pmdecl'])))):
+                            objectinfo['pmdecl'] = ticinfo['data'][0]['pmDEC']
+                            objectinfo['pmdecl_err'] = (
+                                ticinfo['data'][0]['e_pmDEC']
+                            )
+                            objectinfo['pmdecl_source'] = 'TIC'
+
+                        if ('bmag' not in objectinfo or
+                            ('bmag' in objectinfo and
+                             (objectinfo['bmag'] is None or
+                              not np.isfinite(objectinfo['bmag'])))):
+                            objectinfo['bmag'] = ticinfo['data'][0]['Bmag']
+                            objectinfo['bmag_err'] = (
+                                ticinfo['data'][0]['e_Bmag']
+                            )
+
+                        if ('vmag' not in objectinfo or
+                            ('vmag' in objectinfo and
+                             (objectinfo['vmag'] is None or
+                              not np.isfinite(objectinfo['vmag'])))):
+                            objectinfo['vmag'] = ticinfo['data'][0]['Vmag']
+                            objectinfo['vmag_err'] = (
+                                ticinfo['data'][0]['e_Vmag']
+                            )
+
+                        if ('sdssu' not in objectinfo or
+                            ('sdssu' in objectinfo and
+                             (objectinfo['sdssu'] is None or
+                              not np.isfinite(objectinfo['sdssu'])))):
+                            objectinfo['sdssu'] = ticinfo['data'][0]['umag']
+                            objectinfo['sdssu_err'] = (
+                                ticinfo['data'][0]['e_umag']
+                            )
+
+                        if ('sdssg' not in objectinfo or
+                            ('sdssg' in objectinfo and
+                             (objectinfo['sdssg'] is None or
+                              not np.isfinite(objectinfo['sdssg'])))):
+                            objectinfo['sdssg'] = ticinfo['data'][0]['gmag']
+                            objectinfo['sdssg_err'] = (
+                                ticinfo['data'][0]['e_gmag']
+                            )
+
+                        if ('sdssr' not in objectinfo or
+                            ('sdssr' in objectinfo and
+                             (objectinfo['sdssr'] is None or
+                              not np.isfinite(objectinfo['sdssr'])))):
+                            objectinfo['sdssr'] = ticinfo['data'][0]['rmag']
+                            objectinfo['sdssr_err'] = (
+                                ticinfo['data'][0]['e_rmag']
+                            )
+
+                        if ('sdssi' not in objectinfo or
+                            ('sdssi' in objectinfo and
+                             (objectinfo['sdssi'] is None or
+                              not np.isfinite(objectinfo['sdssi'])))):
+                            objectinfo['sdssi'] = ticinfo['data'][0]['imag']
+                            objectinfo['sdssi_err'] = (
+                                ticinfo['data'][0]['e_imag']
+                            )
+
+                        if ('sdssz' not in objectinfo or
+                            ('sdssz' in objectinfo and
+                             (objectinfo['sdssz'] is None or
+                              not np.isfinite(objectinfo['sdssz'])))):
+                            objectinfo['sdssz'] = ticinfo['data'][0]['zmag']
+                            objectinfo['sdssz_err'] = (
+                                ticinfo['data'][0]['e_zmag']
+                            )
+
+                        if ('jmag' not in objectinfo or
+                            ('jmag' in objectinfo and
+                             (objectinfo['jmag'] is None or
+                              not np.isfinite(objectinfo['jmag'])))):
+                            objectinfo['jmag'] = ticinfo['data'][0]['Jmag']
+                            objectinfo['jmag_err'] = (
+                                ticinfo['data'][0]['e_Jmag']
+                            )
+
+                        if ('hmag' not in objectinfo or
+                            ('hmag' in objectinfo and
+                             (objectinfo['hmag'] is None or
+                              not np.isfinite(objectinfo['hmag'])))):
+                            objectinfo['hmag'] = ticinfo['data'][0]['Hmag']
+                            objectinfo['hmag_err'] = (
+                                ticinfo['data'][0]['e_Hmag']
+                            )
+
+                        if ('kmag' not in objectinfo or
+                            ('kmag' in objectinfo and
+                             (objectinfo['kmag'] is None or
+                              not np.isfinite(objectinfo['kmag'])))):
+                            objectinfo['kmag'] = ticinfo['data'][0]['Kmag']
+                            objectinfo['kmag_err'] = (
+                                ticinfo['data'][0]['e_Kmag']
+                            )
+
+                        if ('wise1' not in objectinfo or
+                            ('wise1' in objectinfo and
+                             (objectinfo['wise1'] is None or
+                              not np.isfinite(objectinfo['wise1'])))):
+                            objectinfo['wise1'] = ticinfo['data'][0]['w1mag']
+                            objectinfo['wise1_err'] = (
+                                ticinfo['data'][0]['e_w1mag']
+                            )
+
+                        if ('wise2' not in objectinfo or
+                            ('wise2' in objectinfo and
+                             (objectinfo['wise2'] is None or
+                              not np.isfinite(objectinfo['wise2'])))):
+                            objectinfo['wise2'] = ticinfo['data'][0]['w2mag']
+                            objectinfo['wise2_err'] = (
+                                ticinfo['data'][0]['e_w2mag']
+                            )
+
+                        if ('wise3' not in objectinfo or
+                            ('wise3' in objectinfo and
+                             (objectinfo['wise3'] is None or
+                              not np.isfinite(objectinfo['wise3'])))):
+                            objectinfo['wise3'] = ticinfo['data'][0]['w3mag']
+                            objectinfo['wise3_err'] = (
+                                ticinfo['data'][0]['e_w3mag']
+                            )
+
+                        if ('wise4' not in objectinfo or
+                            ('wise4' in objectinfo and
+                             (objectinfo['wise4'] is None or
+                              not np.isfinite(objectinfo['wise4'])))):
+                            objectinfo['wise4'] = ticinfo['data'][0]['w4mag']
+                            objectinfo['wise4_err'] = (
+                                ticinfo['data'][0]['e_w4mag']
+                            )
+
+                else:
+                    LOGERROR('could not look up TIC '
+                             'information for object: %s '
+                             'at (%.3f, %.3f)' %
+                             (objectinfo['objectid'],
+                              objectinfo['ra'],
+                              objectinfo['decl']))
+
+            except Exception as e:
+
+                LOGEXCEPTION('could not look up TIC '
+                             'information for object: %s '
+                             'at (%.3f, %.3f)' %
+                             (objectinfo['objectid'],
+                              objectinfo['ra'],
+                              objectinfo['decl']))
+
+
+        # try to get the object's coord features
+        coordfeat = coord_features(objectinfo)
+
+        # get the color features
+        colorfeat = color_features(objectinfo,
+                                   deredden=deredden_object,
+                                   custom_bandpasses=custom_bandpasses,
+                                   dust_timeout=dust_timeout)
+
+        # get the object's color classification
+        colorclass = color_classification(colorfeat, coordfeat)
+
+        # update the objectinfo dict with everything
+        objectinfo.update(colorfeat)
+        objectinfo.update(coordfeat)
+        objectinfo.update(colorclass)
 
         # put together the initial checkplot pickle dictionary
         # this will be updated by the functions below as appropriate
