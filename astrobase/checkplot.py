@@ -3306,7 +3306,9 @@ def checkplot_dict(lspinfolist,
                 # allows us to use the correct transit center epochs if
                 # calculated using bls_snr and added back to the kbls function
                 # result dicts
-                if 'bls' in lspinfo['method'] and 'epochs' in lspinfo:
+                if (lspinfo is not None and
+                    'bls' in lspinfo['method'] and
+                    'epochs' in lspinfo):
                     thisvarepoch = lspinfo['epochs'][nbpind]
                     if verbose:
                         LOGINFO(
@@ -3346,11 +3348,6 @@ def checkplot_dict(lspinfolist,
                 if override_pfmethod in checkplotdict:
                     checkplotdict[override_pfmethod]['snr'] = (
                         lspinfo['snr']
-                    )
-            if 'altsnr' in lspinfo:
-                if override_pfmethod in checkplotdict:
-                    checkplotdict[override_pfmethod]['altsnr'] = (
-                        lspinfo['altsnr']
                     )
             if 'transitdepth' in lspinfo:
                 if override_pfmethod in checkplotdict:
