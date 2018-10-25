@@ -1392,7 +1392,7 @@ def _pkl_finder_objectinfo(objectinfo,
                            gaia_submit_timeout=10.0,
                            gaia_submit_tries=3,
                            gaia_max_timeout=180.0,
-                           gaia_mirror='cds',
+                           gaia_mirror=None,
                            fast_mode=False,
                            complete_query_later=True):
     '''This returns the finder chart and object information as a dict.
@@ -1404,7 +1404,7 @@ def _pkl_finder_objectinfo(objectinfo,
         skyview_timeout = 10.0
         skyview_retry_failed = False
         dust_timeout = 10.0
-        gaia_submit_timeout = 5.0
+        gaia_submit_timeout = 7.0
         gaia_max_timeout = 10.0
         gaia_submit_tries = 1
         complete_query_later = False
@@ -2933,7 +2933,7 @@ def checkplot_dict(lspinfolist,
                    gaia_submit_timeout=10.0,
                    gaia_submit_tries=3,
                    gaia_max_timeout=180.0,
-                   gaia_mirror='cds',
+                   gaia_mirror=None,
                    complete_query_later=True,
                    varinfo=None,
                    getvarfeatures=True,
@@ -3457,7 +3457,7 @@ def checkplot_pickle(lspinfolist,
                      gaia_submit_timeout=10.0,
                      gaia_submit_tries=3,
                      gaia_max_timeout=180.0,
-                     gaia_mirror='cds',
+                     gaia_mirror=None,
                      complete_query_later=True,
                      lcfitfunc=None,
                      lcfitparams=None,
@@ -4916,7 +4916,7 @@ def update_checkplot_objectinfo(cpf,
                                 gaia_submit_timeout=10.0,
                                 gaia_submit_tries=3,
                                 gaia_max_timeout=180.0,
-                                gaia_mirror='cds',
+                                gaia_mirror=None,
                                 complete_query_later=True,
                                 lclistpkl=None,
                                 nbrradiusarcsec=60.0,

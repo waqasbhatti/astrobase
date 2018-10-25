@@ -131,16 +131,6 @@ GAIA_URLS = {
               'resultkeyword':'result'},
 }
 
-# use phasekeyword = 'uws:phase' and resultkeyword = 'uws:result'
-TAP_URL = "http://gea.esac.esa.int/tap-server/tap/async"
-
-# use phasekeyword = 'phase' and resultkeyword = 'result'
-ARI_URL = 'http://gaia.ari.uni-heidelberg.de/tap/async'
-
-# FIXME: get this working
-CDS_TAPURL = "http://tapvizier.u-strasbg.fr/TAPVizieR/tap/async"
-CDS_TABLE = '"I/337/gaia"'
-
 # default TAP query params, will be copied and overridden
 TAP_PARAMS = {
     'REQUEST':'doQuery',

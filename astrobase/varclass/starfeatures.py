@@ -1065,7 +1065,7 @@ def neighbor_gaia_features(objectinfo,
                            gaia_submit_timeout=10.0,
                            gaia_submit_tries=3,
                            gaia_max_timeout=180.0,
-                           gaia_mirror='cds',
+                           gaia_mirror=None,
                            complete_query_later=True,
                            search_simbad=False):
     '''Gets several neighbor and GAIA features:
