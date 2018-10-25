@@ -59,18 +59,37 @@ INSTALL_REQUIRES = [
 
 EXTRAS_REQUIRE = {
     'all':[
-        # for lcdb
         'psycopg2-binary',
-        # for lcfit.mandelagol_fit_magseries
+        'emcee==3.0rc1',
+        'h5py',
+        'batman-package',
+        'corner',
+        'paramiko',
+        'boto3',
+        'awscli',
+        'google-api-python-client',
+        'google-cloud-storage',
+        'google-cloud-pubsub',
+    ],
+    # for lcfit.mandelagol_fit_magseries
+    'mandelagol':[
         'emcee==3.0rc1',
         'h5py',
         'batman-package',
         'corner',
     ],
+    # for lcproc_aws and awsutils
     'aws':[
         'paramiko',
         'boto3',
         'awscli',
+    ],
+    # for lcproc_gcp and gcputils
+    'gcp':[
+        'paramiko',
+        'google-api-python-client',
+        'google-cloud-storage',
+        'google-cloud-pubsub',
     ]
 }
 

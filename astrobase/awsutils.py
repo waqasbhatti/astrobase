@@ -4,7 +4,8 @@
 """awsutils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2018
 License: MIT - see the LICENSE file for the full text.
 
-This contains functions that handle various AWS services useful for lcproc.py.
+This contains functions that handle various AWS services for use with
+lcproc_aws.py.
 
 """
 
