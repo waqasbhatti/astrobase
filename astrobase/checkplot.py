@@ -1409,7 +1409,7 @@ def _pkl_finder_objectinfo(objectinfo,
         dust_timeout = 10.0
         gaia_submit_timeout = 7.0
         gaia_max_timeout = 10.0
-        gaia_submit_tries = 1
+        gaia_submit_tries = 2
         complete_query_later = False
         search_simbad = False
 
@@ -1419,7 +1419,7 @@ def _pkl_finder_objectinfo(objectinfo,
         dust_timeout = fast_mode
         gaia_submit_timeout = 0.66*fast_mode
         gaia_max_timeout = fast_mode
-        gaia_submit_tries = 1
+        gaia_submit_tries = 2
         complete_query_later = False
         search_simbad = False
 
