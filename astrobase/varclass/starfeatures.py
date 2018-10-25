@@ -1189,13 +1189,16 @@ def neighbor_gaia_features(objectinfo,
 
             with gzip.open(gaia_objlistf,'rb') as infd:
 
-                gaia_objlist = np.genfromtxt(
-                    infd,
-                    names=True,
-                    delimiter=',',
-                    dtype='U20,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8',
-                    usecols=(0,1,2,3,4,5,6,7,8,9,10,11,12)
-                )
+                try:
+                    gaia_objlist = np.genfromtxt(
+                        infd,
+                        names=True,
+                        delimiter=',',
+                        dtype='U20,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8,f8',
+                        usecols=(0,1,2,3,4,5,6,7,8,9,10,11,12)
+                    )
+                except Exception as e:
+                    gaia_objlist = []
 
             gaia_objlist = np.atleast_1d(gaia_objlist)
 
@@ -1344,9 +1347,12 @@ def neighbor_gaia_features(objectinfo,
             # or this object is not covered by GAIA. return nothing
             else:
 
-                LOGERROR('no GAIA objects at this position')
+                LOGERROR('no GAIA objects at this position or GAIA query failed')
 
-                gaia_status = 'failed: no GAIA objects at this position'
+                gaia_status = (
+                    'failed: no GAIA objects at this '
+                    'position or GAIA query failed.'
+                )
                 gaia_nneighbors = np.nan
                 gaia_ids = None
                 gaia_mags = None
@@ -1463,14 +1469,17 @@ def neighbor_gaia_features(objectinfo,
 
         with gzip.open(simbad_result['result'],'rb') as infd:
 
-            simbad_objectnames = np.genfromtxt(
-                infd,
-                names=True,
-                delimiter=',',
-                dtype='U20,f8,f8,U20,U20,U20,i8,U600,f8',
-                usecols=(0,1,2,3,4,5,6,7,8),
-                comments='?',
-            )
+            try:
+                simbad_objectnames = np.genfromtxt(
+                    infd,
+                    names=True,
+                    delimiter=',',
+                    dtype='U20,f8,f8,U20,U20,U20,i8,U600,f8',
+                    usecols=(0,1,2,3,4,5,6,7,8),
+                    comments='?',
+                )
+            except Exception as e:
+                simbad_objectnames = []
 
             simbad_objectnames = np.atleast_1d(simbad_objectnames)
 
