@@ -1809,7 +1809,7 @@ def _pkl_finder_objectinfo(objectinfo,
                 ticres = tic_conesearch(objectinfo['ra'],
                                         objectinfo['decl'],
                                         radius_arcmin=5.0/60.0,
-                                        verbose=False,
+                                        verbose=verbose,
                                         timeout=gaia_max_timeout,
                                         maxtries=gaia_submit_tries)
 
@@ -1822,7 +1822,7 @@ def _pkl_finder_objectinfo(objectinfo,
                         len(ticinfo['data']) > 0 and
                         isinstance(ticinfo['data'][0], dict)):
 
-                        objectinfo['ticid'] = ticinfo['data'][0]['ID']
+                        objectinfo['ticid'] = str(ticinfo['data'][0]['ID'])
                         objectinfo['tessmag'] = ticinfo['data'][0]['Tmag']
                         objectinfo['tic_version'] = (
                             ticinfo['data'][0]['version']

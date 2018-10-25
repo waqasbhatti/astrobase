@@ -157,7 +157,8 @@ def s3_get_file(bucket,
                 filename,
                 local_file,
                 altexts=None,
-                client=None):
+                client=None,
+                raiseonfail=False):
 
     """This gets a file from an S3 bucket.
 
@@ -200,13 +201,18 @@ def s3_get_file(bucket,
         else:
 
             LOGEXCEPTION('could not download s3://%s/%s' % (bucket, filename))
+
+            if raiseonfail:
+                raise
+
             return None
 
 
 
 def s3_get_url(url,
                altexts=None,
-               client=None):
+               client=None,
+               raiseonfail=False):
     """
     This gets a file from an S3 bucket based on its s3:// URL.
 
@@ -221,11 +227,12 @@ def s3_get_url(url,
                        filekey,
                        bucket_item[-1],
                        altexts=altexts,
-                       client=client)
+                       client=client,
+                       raiseonfail=raiseonfail)
 
 
 
-def s3_put_file(local_file, bucket, client=None):
+def s3_put_file(local_file, bucket, client=None, raiseonfail=False):
     """
     This uploads a file to S3.
 
@@ -240,11 +247,15 @@ def s3_put_file(local_file, bucket, client=None):
     except Exception as e:
         LOGEXCEPTION('could not upload %s to bucket: %s' % (local_file,
                                                             bucket))
+
+        if raiseonfail:
+            raise
+
         return None
 
 
 
-def s3_delete_file(bucket, filename, client=None):
+def s3_delete_file(bucket, filename, client=None, raiseonfail=False):
     """
     This deletes a file from S3.
 
@@ -263,6 +274,10 @@ def s3_delete_file(bucket, filename, client=None):
     except Exception as e:
         LOGEXCEPTION('could not delete file %s from bucket %s' % (filename,
                                                                   bucket))
+
+        if raiseonfail:
+            raise
+
         return None
 
 

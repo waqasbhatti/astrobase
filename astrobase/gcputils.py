@@ -203,23 +203,123 @@ def delete_gce_instances():
 ## GCS CLIENT ##
 ################
 
-def gcs_get_file():
+def gcs_get_file(bucketname,
+                 filename,
+                 local_file,
+                 altexts=None,
+                 client=None,
+                 service_account_json=None,
+                 raiseonfail=False):
     """This gets a single file from a Google Cloud Storage bucket.
 
     """
 
+    if not client:
 
-def gcs_get_url():
+        if (service_account_json is not None and
+            os.path.exists(service_account_json)):
+            client = storage.Client.from_service_account_json(
+                service_account_json
+            )
+        else:
+            client = storage.Client()
+
+    try:
+
+        bucket = client.get_bucket(bucketname)
+        blob = bucket.get_blob(filename)
+        blob.download_to_filename(local_file)
+        return local_file
+
+    except Exception as e:
+
+        for alt_extension in altexts:
+
+            split_ext = os.path.splitext(filename)
+            check_file = split_ext[0] + alt_extension
+            try:
+                bucket = client.get_bucket(bucket)
+                blob = bucket.get_blob(check_file)
+                blob.download_to_filename(
+                    local_file.replace(split_ext[-1],
+                                       alt_extension)
+                )
+                return local_file.replace(split_ext[-1],
+                                          alt_extension)
+            except Exception as e:
+                pass
+
+    else:
+
+        LOGEXCEPTION('could not download gs://%s/%s' % (bucket, filename))
+
+        if raiseonfail:
+            raise
+
+        return None
+
+
+
+def gcs_get_url(url,
+                altexts=None,
+                client=None,
+                service_account_json=None,
+                raiseonfail=False):
     """This gets a single file from a Google Cloud Storage bucket.
 
     This uses the gs:// URL instead of a bucket name and key.
 
     """
+    bucket_item = url.replace('gs://','')
+    bucket_item = bucket_item.split('/')
+    bucket = bucket_item[0]
+    filekey = '/'.join(bucket_item[1:])
 
-def gcs_put_file():
+    return gcs_get_file(bucket,
+                        filekey,
+                        bucket_item[-1],
+                        altexts=altexts,
+                        client=client,
+                        service_account_json=service_account_json,
+                        raiseonfail=raiseonfail)
+
+
+
+def gcs_put_file(local_file,
+                 bucketname,
+                 service_account_json=None,
+                 client=None,
+                 raiseonfail=False):
     """This puts a single file into a Google Cloud Storage bucket.
 
     """
+
+    if not client:
+
+        if (service_account_json is not None and
+            os.path.exists(service_account_json)):
+            client = storage.Client.from_service_account_json(
+                service_account_json
+            )
+        else:
+            client = storage.Client()
+
+    try:
+
+        bucket = client.get_bucket(bucketname)
+        remote_blob = bucket.blob(local_file)
+        remote_blob.upload_from_filename(local_file)
+        return 'gs://%s/%s' % (bucketname, local_file.lstrip('/'))
+
+    except Exception as e:
+
+        LOGEXCEPTION('could not upload %s to bucket %s' % (local_file,
+                                                           bucket))
+
+        if raiseonfail:
+            raise
+
+        return None
 
 
 
@@ -242,11 +342,13 @@ def gps_delete_topic():
     """
 
 
+
 def gps_topic_pull():
     """
-    This pulls a single message from a pubsub topic.
+    This synchronously pulls a single message from a pubsub topic.
 
     """
+
 
 
 def gps_topic_publish():
