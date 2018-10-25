@@ -155,8 +155,6 @@ def get_stamp(ra, decl,
 
     '''
 
-    time.sleep(random.randint(1,jitter))
-
     # parse the given params into the correct format for the form
     formposition = ['%.4f, %.4f' % (ra, decl)]
     formscaling = [scaling]
@@ -193,7 +191,8 @@ def get_stamp(ra, decl,
     # if this exists in the cache and we're not refetching, get the frame
     if forcefetch or (not os.path.exists(cachefname)):
 
-        provenance= 'new download'
+        provenance = 'new download'
+        time.sleep(random.randint(1,jitter))
 
         # fire the request
         try:

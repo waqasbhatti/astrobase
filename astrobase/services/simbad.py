@@ -177,8 +177,6 @@ def tap_query(querystr,
 
     '''
 
-    time.sleep(random.randint(1,jitter))
-
     # get the default params
     inputparams = TAP_PARAMS.copy()
 
@@ -417,6 +415,7 @@ def tap_query(querystr,
     if forcefetch or (not os.path.exists(cachefname)):
 
         provenance = 'new download'
+        time.sleep(random.randint(1,jitter))
 
         # generate a jobid here and update the input params
         jobid = 'ab-simbad-%i' % time.time()

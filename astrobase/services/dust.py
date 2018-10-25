@@ -151,8 +151,6 @@ def extinction_query(lon, lat,
 
     '''
 
-    time.sleep(random.randint(1,jitter))
-
     dustparams = DUST_PARAMS.copy()
 
     # convert the lon, lat to the required format
@@ -183,6 +181,7 @@ def extinction_query(lon, lat,
     # if this does not exist in cache or if we're forcefetching, do the query
     if forcefetch or (not os.path.exists(cachefname)):
 
+        time.sleep(random.randint(1,jitter))
         provenance = 'new download'
 
         try:

@@ -123,7 +123,8 @@ def mast_query(service,
                refresh=5.0,
                maxtimeout=90.0,
                maxtries=3,
-               raiseonfail=False):
+               raiseonfail=False,
+               jitter=5):
     '''This queries the STScI MAST service.
 
     service is the name of the service to use:
@@ -178,13 +179,14 @@ def mast_query(service,
     )
     provenance = 'cache'
 
-
     #####################
     ## RUN A NEW QUERY ##
     #####################
 
     # otherwise, we check the cache if it's done already, or run it again if not
     if forcefetch or (not os.path.exists(cachefname)):
+
+        time.sleep(random.randint(1,jitter))
 
         provenance = 'new download'
         waitdone = False
@@ -362,10 +364,9 @@ def tic_conesearch(ra,
               'radius':radius_arcmin/60.0}
     service = 'Mast.Catalogs.Tic.Cone'
 
-    time.sleep(random.randint(1,jitter))
-
     return mast_query(service,
                       params,
+                      jitter=jitter,
                       apiversion=apiversion,
                       forcefetch=forcefetch,
                       cachedir=cachedir,
