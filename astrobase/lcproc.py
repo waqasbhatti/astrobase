@@ -261,10 +261,10 @@ LCFORM = {
     ],
     'kep-fits':[
         '*_llc.fits',
-        read_kepler_fitslc,
+        partial(read_kepler_fitslc,normalize=True),
         ['time','time'],
         ['sap.sap_flux','pdc.pdc_sapflux'],
-        ['sap.sap_flux_err','pdc.pdc_sapflux_err'],
+        ['sap.sap_flux_err','pdc.pdcsap_flux_err'],
         True,
         filter_kepler_lcdict,
     ],
@@ -272,17 +272,17 @@ LCFORM = {
         '-keplc.pkl',
         read_kepler_pklc,
         ['time','time'],
-        ['sap.sap_flux','pdc.pdc_sapflux'],
-        ['sap.sap_flux_err','pdc.pdc_sapflux_err'],
+        ['sap.sap_flux','pdc.pdcsap_flux'],
+        ['sap.sap_flux_err','pdc.pdcsap_flux_err'],
         True,
         filter_kepler_lcdict,
     ],
     'tess-fits':[
         '*_lc.fits',
-        read_tess_fitslc,
+        partial(read_tess_fitslc,normalize=True)
         ['time','time'],
-        ['sap.sap_flux','pdc.pdc_sapflux'],
-        ['sap.sap_flux_err','pdc.pdc_sapflux_err'],
+        ['sap.sap_flux','pdc.pdcsap_flux'],
+        ['sap.sap_flux_err','pdc.pdcsap_flux_err'],
         True,
         filter_tess_lcdict,
     ],
@@ -290,8 +290,8 @@ LCFORM = {
         '-tesslc.pkl',
         read_tess_pklc,
         ['time','time'],
-        ['sap.sap_flux','pdc.pdc_sapflux'],
-        ['sap.sap_flux_err','pdc.pdc_sapflux_err'],
+        ['sap.sap_flux','pdc.pdcsap_flux'],
+        ['sap.sap_flux_err','pdc.pdcsap_flux_err'],
         True,
         filter_tess_lcdict,
     ],
@@ -3508,7 +3508,8 @@ def runpf(lcfile,
           getblssnr=False,
           nworkers=NCPUS,
           minobservations=500,
-          excludeprocessed=False):
+          excludeprocessed=False,
+          raiseonfail=False):
     '''This runs the period-finding for a single LC.
 
     pfmethods is a list of period finding methods to run. Each element is a
@@ -3710,6 +3711,13 @@ def runpf(lcfile,
                                 'transitduration':blssnr['transitduration'],
                             })
 
+                            # update the BLS result dict with the refit periods
+                            # and epochs using the results from bls_snr
+                            resultdict[mcol][pfmk].update({
+                                'nbestperiods':blssnr['period'],
+                                'epochs':blssnr['epoch']
+                            })
+
                         except Exception as e:
 
                             LOGEXCEPTION('could not calculate BLS SNR for %s' %
@@ -3749,6 +3757,10 @@ def runpf(lcfile,
     except Exception as e:
 
         LOGEXCEPTION('failed to run for %s, because: %s' % (lcfile, e))
+
+        if raiseonfail:
+            raise
+
         return None
 
 
