@@ -3301,13 +3301,29 @@ def checkplot_dict(lspinfolist,
                 else:
                     overplotfit = None
 
+
+                # get the varepoch from a run of bls_snr if available. this
+                # allows us to use the correct transit center epochs if
+                # calculated using bls_snr and added back to the kbls function
+                # result dicts
+                if 'bls' in lspinfo['method'] and 'epochs' in lspinfo:
+                    thisvarepoch = lspinfo['epochs'][nbpind]
+                    if verbose:
+                        LOGINFO(
+                            'using pre-calculated transit-center epoch value: '
+                            '%.6f from kbls.bls_snr() for period: %.5f'
+                            % (thisvarepoch, nbperiod)
+                        )
+                else:
+                    thisvarepoch = varepoch
+
                 # this updates things as it runs
                 checkplotdict = _pkl_phased_magseries_plot(
                     checkplotdict,
                     lspinfo['method'],
                     nbpind,
                     stimes, smags, serrs,
-                    nbperiod, varepoch,
+                    nbperiod, thisvarepoch,
                     lspmethodind=lspind,
                     phasewrap=phasewrap,
                     phasesort=phasesort,
