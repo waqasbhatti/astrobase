@@ -4685,6 +4685,12 @@ def parallel_cp(pfpicklelist,
 
     '''
 
+    # work around the Darwin segfault after fork if no network activity in
+    # main thread bug: https://bugs.python.org/issue30385#msg293958
+    if sys.platform == 'darwin':
+        import requests
+        requests.get('http://captive.apple.com/hotspot-detect.html')
+
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
@@ -5277,6 +5283,12 @@ def parallel_update_objectinfo_cplist(cplist,
     This updates objectinfo for a list of checkplots.
 
     '''
+
+    # work around the Darwin segfault after fork if no network activity in
+    # main thread bug: https://bugs.python.org/issue30385#msg293958
+    if sys.platform == 'darwin':
+        import requests
+        requests.get('http://captive.apple.com/hotspot-detect.html')
 
     # handle the start and end indices
     if (liststartindex is not None) and (maxobjects is None):
