@@ -9,6 +9,11 @@ This contains functions to search for objects and get light curves from a Light
 Curve Collection (LCC) server (https://github.com/waqasbhatti/lcc-server) using
 its HTTP API.
 
+The LCC-Server requires an API key to access most services. The service
+functions in this module will automatically acquire an anonymous user API key on
+first use (and upon API key expiry afterwards). If you sign up for an LCC-Server
+user account, you can import the API key generated for that account on the user
+home page. To do this, use the import_apikey function in this module.
 
 SERVICES SUPPORTED
 ------------------
@@ -598,9 +603,6 @@ def retrieve_dataset_files(searchresult,
     Puts the files in outdir. If it's None, they will be placed in the current
     directory.
 
-    TODO: implement below. this will require using urlopen instead of
-    urlretrieve.
-
     If apikey is not None, uses the given apikey to authenticate the download
     request. This is useful when you have a private dataset you want to get
     products for.
@@ -1106,9 +1108,10 @@ def fulltext_search(lcc_server,
 
     ('column to sort by', 'asc|desc')
 
-    This sets the column to sort the results by. For cone_search, the default
-    column and sort order are 'dist_arcsec' and 'asc', meaning the distance from
-    the search center in ascending order.
+    This sets the column to sort the results by. For fulltext_search, the
+    default column and sort order are 'relevance' and 'asc', meaning the search
+    term relevance in ascending order (i.e. from most relevant to least
+    relevant).
 
     samplespec is an integer indicating how many rows from the initial search
     result to return as a uniform random sample.
@@ -1314,9 +1317,9 @@ def column_search(lcc_server,
 
     ('column to sort by', 'asc|desc')
 
-    This sets the column to sort the results by. For cone_search, the default
-    column and sort order are 'dist_arcsec' and 'asc', meaning the distance from
-    the search center in ascending order.
+    This sets the column to sort the results by. For column_search, the default
+    column and sort order are 'sdssr' and 'asc', meaning the SDSS r column in
+    ascending order (i.e. brighter to fainter magnitudes).
 
     samplespec is an integer indicating how many rows from the initial search
     result to return as a uniform random sample.
@@ -1549,9 +1552,9 @@ def xmatch_search(lcc_server,
 
     ('column to sort by', 'asc|desc')
 
-    This sets the column to sort the results by. For cone_search, the default
+    This sets the column to sort the results by. For xmatch_search, the default
     column and sort order are 'dist_arcsec' and 'asc', meaning the distance from
-    the search center in ascending order.
+    each target object in ascending order.
 
     samplespec is an integer indicating how many rows from the initial search
     result to return as a uniform random sample.
