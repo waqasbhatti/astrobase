@@ -80,6 +80,7 @@ import os.path
 import gzip
 import sys
 import glob
+import warnings
 
 import numpy as np
 from astropy.io import fits as pyfits
@@ -152,6 +153,13 @@ def get_time_flux_errs_from_Ames_lightcurve(infile,
     returns:
         (tuple): times, normalized (to median) fluxes, flux errors.
     '''
+
+    warnings.warn(
+        "Use the astrotess.read_tess_fitslc and "
+        "astrotess.consolidate_tess_fitslc functions instead of this function. "
+        "This function will be removed in astrobase v0.3.22.",
+        FutureWarning
+    )
 
     if lctype not in ('PDCSAP','SAP'):
         raise ValueError('unknown light curve type requested: %s' % lctype)
@@ -337,7 +345,8 @@ def read_tess_fitslc(lcfits,
                      timestoignore=None):
     '''This extracts the light curve from a single TESS .lc.fits file.
 
-    This works on the light curves available at MAST:
+    This works on the light curves available at MAST. Provide the filename in
+    the lcfits argument.
 
     Returns an lcdict.
 
