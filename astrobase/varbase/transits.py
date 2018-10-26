@@ -382,19 +382,35 @@ def given_lc_get_transit_tmids_tstarts_tends(
     return tmids, t_starts, t_ends
 
 
+
 def _in_out_transit_plot(time, flux, intransit, ootransit, savpath):
+
+    import matplotlib.pyplot as plt
 
     f, ax = plt.subplots(nrows=1, ncols=1, sharex=True, figsize=(8,4))
 
-    ax.scatter(time[ootransit], flux[ootransit], c='k', s=1.5, rasterized=True,
-              linewidths=0)
-    ax.scatter(time[intransit], flux[intransit], c='r', s=1.5, rasterized=True,
-              linewidths=0)
+    ax.scatter(
+        time[ootransit],
+        flux[ootransit],
+        c='k',
+        s=1.5,
+        rasterized=True,
+        linewidths=0
+    )
+    ax.scatter(
+        time[intransit],
+        flux[intransit],
+        c='r',
+        s=1.5,
+        rasterized=True,
+        linewidths=0
+    )
 
     ax.set_ylabel('relative flux')
     ax.set_xlabel('time [days]')
     f.tight_layout(h_pad=0, w_pad=0)
     f.savefig(savpath, dpi=400, bbox_inches='tight')
+
 
 
 def given_lc_get_out_of_transit_points(
@@ -416,7 +432,8 @@ def given_lc_get_out_of_transit_points(
         given_lc_get_transit_tmids_tstarts_tends(
             time, flux, err_flux, blsfit_savpath=blsfit_savpath,
             trapfit_savpath=trapfit_savpath, magsarefluxes=magsarefluxes,
-            nworkers=nworkers, sigclip=sigclip, extra_maskfrac=extra_maskfrac)
+            nworkers=nworkers, sigclip=sigclip, extra_maskfrac=extra_maskfrac
+        )
     )
 
     in_transit = np.zeros_like(time).astype(bool)
