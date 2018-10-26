@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''
-tic - Luke Bouma (luke@astro.princeton.edu) - Sep 2018
+'''tic - Luke Bouma (luke@astro.princeton.edu) - Sep 2018
 License: MIT. See the LICENSE file for more details.
+
+NOTE: The services.mast.tic_conesearch and services.mast_tic_xmatch functions
+are preferred over using functions in this module. This module will be
+deprecated in astrobase v0.3.22.
 
 This interacts with the TESS Input Catalog (TIC) hosted on MAST.  The code was
 almost entirely pilfered from the tutorial at
@@ -17,7 +20,20 @@ and
     https://mast.stsci.edu/api/v0/pyex.html
 and
     https://mast.stsci.edu/api/v0/_t_i_cfields.html
+
 '''
+
+#########################
+## DEPRECATION WARNING ##
+#########################
+
+import warnings
+warnings.warn(
+    "The services.mast.tic_conesearch and services.mast_tic_xmatch "
+    "functions are preferred over using functions in this module. "
+    "This module will be removed in astrobase v0.3.22.",
+    FutureWarning
+)
 
 #############
 ## LOGGING ##
