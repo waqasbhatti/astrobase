@@ -112,9 +112,9 @@ MAST_URLS = {
 ## QUERY FUNCTIONS ##
 #####################
 
-
 def mast_query(service,
                params,
+               data=None,
                apiversion='v0',
                forcefetch=False,
                cachedir='~/.astrobase/mast-cache',
@@ -133,6 +133,8 @@ def mast_query(service,
 
     params is a dict containing the input params to the service as described on
     its details page linked off the page above.
+
+    data is optional data to upload to the service.
 
     returnformat is one of 'csv', 'votable', or 'json':
 
@@ -161,6 +163,9 @@ def mast_query(service,
         'service':service,
         'timeout':timeout,
     }
+
+    if data is not None:
+        inputparams['data'] = data
 
     # see if the cachedir exists
     if '~' in cachedir:
@@ -366,6 +371,65 @@ def tic_conesearch(ra,
 
     return mast_query(service,
                       params,
+                      jitter=jitter,
+                      apiversion=apiversion,
+                      forcefetch=forcefetch,
+                      cachedir=cachedir,
+                      verbose=verbose,
+                      timeout=timeout,
+                      refresh=refresh,
+                      maxtimeout=maxtimeout,
+                      maxtries=maxtries,
+                      raiseonfail=raiseonfail)
+
+
+
+def tic_xmatch(ra,
+               decl,
+               radius_arcsec=5.0,
+               apiversion='v0',
+               forcefetch=False,
+               cachedir='~/.astrobase/mast-cache',
+               verbose=True,
+               timeout=90.0,
+               refresh=5.0,
+               maxtimeout=180.0,
+               maxtries=3,
+               jitter=5.0,
+               raiseonfail=False):
+    '''This does a cross-match with TIC.
+
+    ra and decl are numpy arrays or lists of floats with decimal coordinates.
+
+    If successful, the result is written to a JSON text file in the specified
+    cachedir.
+
+    If you use this, please cite the TIC paper (Stassun et al 2018;
+    http://adsabs.harvard.edu/abs/2018AJ....156..102S). Also see the "living"
+    TESS input catalog docs:
+
+    https://docs.google.com/document/d/1zdiKMs4Ld4cXZ2DW4lMX-fuxAF6hPHTjqjIwGqnfjqI
+
+    Also see: https://mast.stsci.edu/api/v0/_t_i_cfields.html for the fields
+    returned by the service and present in the result JSON file.
+
+    Use the jitter parameter to control the scale of the random wait in seconds
+    before starting the query.
+    '''
+
+    service = 'Mast.Tic.Crossmatch'
+
+    xmatch_input = {'fields':[{'name':'ra','type':'float'},
+                              {'name':'dec','type':'float'}]}
+    xmatch_input['data'] = [{'ra':x, 'dec':y} for (x,y) in zip(ra, decl)]
+
+    params = {'raColumn':'ra',
+              'decColumn':'dec',
+              'radius':radius_arcsec/3600.0}
+
+    return mast_query(service,
+                      params,
+                      data=xmatch_input,
                       jitter=jitter,
                       apiversion=apiversion,
                       forcefetch=forcefetch,
