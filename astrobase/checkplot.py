@@ -1404,6 +1404,7 @@ def _pkl_finder_objectinfo(objectinfo,
 
     # optional mode to hit external services and fail fast if they timeout
     if fast_mode is True:
+        skyview_lookup = False
         skyview_timeout = 10.0
         skyview_retry_failed = False
         dust_timeout = 10.0
@@ -1414,6 +1415,7 @@ def _pkl_finder_objectinfo(objectinfo,
         search_simbad = False
 
     elif isinstance(fast_mode, (int, float)) and fast_mode > 0.0:
+        skyview_lookup = True
         skyview_timeout = fast_mode
         skyview_retry_failed = False
         dust_timeout = fast_mode
@@ -1424,6 +1426,7 @@ def _pkl_finder_objectinfo(objectinfo,
         search_simbad = False
 
     else:
+        skyview_lookup = True
         skyview_timeout = 10.0
         skyview_retry_failed = True
         dust_timeout = 10.0
@@ -1440,33 +1443,22 @@ def _pkl_finder_objectinfo(objectinfo,
         else:
             objectid = objectinfo['objectid']
 
-        if verbose:
+        if verbose and skyview_lookup:
             LOGINFO('adding in object information and '
                     'finder chart for %s at RA: %.3f, DEC: %.3f' %
+                    (objectid, objectinfo['ra'], objectinfo['decl']))
+        elif verbose and not skyview_lookup:
+            LOGINFO('adding in object information '
+                    'for %s at RA: %.3f, DEC: %.3f. '
+                    'skipping finder chart because skyview_lookup = False' %
                     (objectid, objectinfo['ra'], objectinfo['decl']))
 
         # get the finder chart
         try:
 
-            try:
+            if skyview_lookup:
 
-                # generate the finder chart
-                finder, finderheader = skyview_stamp(
-                    objectinfo['ra'],
-                    objectinfo['decl'],
-                    convolvewith=finderconvolve,
-                    verbose=verbose,
-                    flip=False,
-                    cachedir=findercachedir,
-                    timeout=skyview_timeout,
-                    retry_failed=skyview_retry_failed,
-                )
-
-            except OSError as e:
-
-                if not fast_mode:
-
-                    LOGERROR('finder image appears to be corrupt, retrying...')
+                try:
 
                     # generate the finder chart
                     finder, finderheader = skyview_stamp(
@@ -1476,20 +1468,45 @@ def _pkl_finder_objectinfo(objectinfo,
                         verbose=verbose,
                         flip=False,
                         cachedir=findercachedir,
-                        forcefetch=True,
                         timeout=skyview_timeout,
-                        retry_failed=False  # do not start an infinite loop
+                        retry_failed=skyview_retry_failed,
                     )
 
+                except OSError as e:
 
-            finderfig = plt.figure(figsize=(3,3),dpi=plotdpi)
+                    if not fast_mode:
 
-            # initialize the finder WCS
-            finderwcs = WCS(finderheader)
+                        LOGERROR(
+                            'finder image appears to be corrupt, retrying...'
+                        )
 
-            # use the WCS transform for the plot
-            ax = finderfig.add_subplot(111, frameon=False)
-            ax.imshow(finder, cmap=findercmap, origin='lower')
+                        # generate the finder chart
+                        finder, finderheader = skyview_stamp(
+                            objectinfo['ra'],
+                            objectinfo['decl'],
+                            convolvewith=finderconvolve,
+                            verbose=verbose,
+                            flip=False,
+                            cachedir=findercachedir,
+                            forcefetch=True,
+                            timeout=skyview_timeout,
+                            retry_failed=False  # do not start an infinite loop
+                        )
+
+
+                finderfig = plt.figure(figsize=(3,3),dpi=plotdpi)
+
+                # initialize the finder WCS
+                finderwcs = WCS(finderheader)
+
+                # use the WCS transform for the plot
+                ax = finderfig.add_subplot(111, frameon=False)
+                ax.imshow(finder, cmap=findercmap, origin='lower')
+
+            else:
+                finder, finderheader, finderfig, finderwcs = (
+                    None, None, None, None
+                )
 
             # skip down to after nbr stuff for the rest of the finderchart...
 
@@ -1570,62 +1587,82 @@ def _pkl_finder_objectinfo(objectinfo,
 
                         if np.isfinite(md) and md > 0.0:
 
-                            # generate the xy for the finder we'll use a HTML5
-                            # canvas and these pixcoords to highlight each
-                            # neighbor when we mouse over its row in the
-                            # neighbors tab
-                            pixcoords = finderwcs.all_world2pix(
-                                np.array([[lclist['objects']['ra'][mi],
-                                           lclist['objects']['decl'][mi]]]),
-                                1
-                            )
+                            if skyview_lookup:
 
-                            # each elem is {'objectid',
-                            #               'ra','decl',
-                            #               'xpix','ypix',
-                            #               'dist','lcfpath'}
-                            thisnbr = {
-                                'objectid':lclist['objects']['objectid'][mi],
-                                'ra':lclist['objects']['ra'][mi],
-                                'decl':lclist['objects']['decl'][mi],
-                                'xpix':pixcoords[0,0],
-                                'ypix':300.0 - pixcoords[0,1],
-                                'dist':_xyzdist_to_distarcsec(md),
-                                'lcfpath': lclist['objects']['lcfname'][mi]
-                            }
-                            neighbors.append(thisnbr)
-                            nbrind = nbrind+1
+                                # generate the xy for the finder we'll use a
+                                # HTML5 canvas and these pixcoords to highlight
+                                # each neighbor when we mouse over its row in
+                                # the neighbors tab
+                                pixcoords = finderwcs.all_world2pix(
+                                    np.array([[lclist['objects']['ra'][mi],
+                                               lclist['objects']['decl'][mi]]]),
+                                    1
+                                )
 
-                            # put in a nice marker for this neighbor into the
-                            # overall finder chart
-                            annotatex = pixcoords[0,0]
-                            annotatey = pixcoords[0,1]
+                                # each elem is {'objectid',
+                                #               'ra','decl',
+                                #               'xpix','ypix',
+                                #               'dist','lcfpath'}
+                                thisnbr = {
+                                    'objectid':(
+                                        lclist['objects']['objectid'][mi]
+                                    ),
+                                    'ra':lclist['objects']['ra'][mi],
+                                    'decl':lclist['objects']['decl'][mi],
+                                    'xpix':pixcoords[0,0],
+                                    'ypix':300.0 - pixcoords[0,1],
+                                    'dist':_xyzdist_to_distarcsec(md),
+                                    'lcfpath': lclist['objects']['lcfname'][mi]
+                                }
+                                neighbors.append(thisnbr)
+                                nbrind = nbrind+1
 
-                            if ((300.0 - annotatex) > 50.0):
-                                offx = annotatex + 30.0
-                                xha = 'center'
+                                # put in a nice marker for this neighbor into
+                                # the overall finder chart
+                                annotatex = pixcoords[0,0]
+                                annotatey = pixcoords[0,1]
+
+                                if ((300.0 - annotatex) > 50.0):
+                                    offx = annotatex + 30.0
+                                    xha = 'center'
+                                else:
+                                    offx = annotatex - 30.0
+                                    xha = 'center'
+                                if ((300.0 - annotatey) > 50.0):
+                                    offy = annotatey - 30.0
+                                    yha = 'center'
+                                else:
+                                    offy = annotatey + 30.0
+                                    yha = 'center'
+
+                                ax.annotate('N%s' % nbrind,
+                                            (annotatex, annotatey),
+                                            xytext=(offx, offy),
+                                            arrowprops={'facecolor':'blue',
+                                                        'edgecolor':'blue',
+                                                        'width':1.0,
+                                                        'headwidth':1.0,
+                                                        'headlength':0.1,
+                                                        'shrink':0.0},
+                                            color='blue',
+                                            horizontalalignment=xha,
+                                            verticalalignment=yha)
+
                             else:
-                                offx = annotatex - 30.0
-                                xha = 'center'
-                            if ((300.0 - annotatey) > 50.0):
-                                offy = annotatey - 30.0
-                                yha = 'center'
-                            else:
-                                offy = annotatey + 30.0
-                                yha = 'center'
 
-                            ax.annotate('N%s' % nbrind,
-                                        (annotatex, annotatey),
-                                        xytext=(offx, offy),
-                                        arrowprops={'facecolor':'blue',
-                                                    'edgecolor':'blue',
-                                                    'width':1.0,
-                                                    'headwidth':1.0,
-                                                    'headlength':0.1,
-                                                    'shrink':0.0},
-                                        color='blue',
-                                        horizontalalignment=xha,
-                                        verticalalignment=yha)
+                                thisnbr = {
+                                    'objectid':(
+                                        lclist['objects']['objectid'][mi]
+                                    ),
+                                    'ra':lclist['objects']['ra'][mi],
+                                    'decl':lclist['objects']['decl'][mi],
+                                    'xpix':0.0,
+                                    'ypix':0.0,
+                                    'dist':_xyzdist_to_distarcsec(md),
+                                    'lcfpath': lclist['objects']['lcfname'][mi]
+                                }
+                                neighbors.append(thisnbr)
+                                nbrind = nbrind+1
 
             # if there are no neighbors, set the 'neighbors' key to None
             else:
@@ -1633,47 +1670,56 @@ def _pkl_finder_objectinfo(objectinfo,
                 neighbors = None
                 kdt = None
 
-            #
-            # finish up the finder chart after neighbors are processed
-            #
-            ax.set_xticks([])
-            ax.set_yticks([])
+            if skyview_lookup:
 
-            # add a reticle pointing to the object's coordinates
-            object_pixcoords = finderwcs.all_world2pix([[objectinfo['ra'],
-                                                         objectinfo['decl']]],1)
+                #
+                # finish up the finder chart after neighbors are processed
+                #
+                ax.set_xticks([])
+                ax.set_yticks([])
 
-            ax.axvline(
-                # x=150.0,
-                x=object_pixcoords[0,0],
-                ymin=0.375,
-                ymax=0.45,
-                linewidth=1,
-                color='b'
-            )
-            ax.axhline(
-                # y=150.0,
-                y=object_pixcoords[0,1],
-                xmin=0.375,
-                xmax=0.45,
-                linewidth=1,
-                color='b'
-            )
-            ax.set_frame_on(False)
+                # add a reticle pointing to the object's coordinates
+                object_pixcoords = finderwcs.all_world2pix(
+                    [[objectinfo['ra'],
+                      objectinfo['decl']]],
+                    1
+                )
 
-            # this is the output instance
-            finderpng = strio()
-            finderfig.savefig(finderpng,
-                              bbox_inches='tight',
-                              pad_inches=0.0, format='png')
-            plt.close()
+                ax.axvline(
+                    # x=150.0,
+                    x=object_pixcoords[0,0],
+                    ymin=0.375,
+                    ymax=0.45,
+                    linewidth=1,
+                    color='b'
+                )
+                ax.axhline(
+                    # y=150.0,
+                    y=object_pixcoords[0,1],
+                    xmin=0.375,
+                    xmax=0.45,
+                    linewidth=1,
+                    color='b'
+                )
+                ax.set_frame_on(False)
 
-            # encode the finderpng instance to base64
-            finderpng.seek(0)
-            finderb64 = base64.b64encode(finderpng.read())
+                # this is the output instance
+                finderpng = strio()
+                finderfig.savefig(finderpng,
+                                  bbox_inches='tight',
+                                  pad_inches=0.0, format='png')
+                plt.close()
 
-            # close the stringio buffer
-            finderpng.close()
+                # encode the finderpng instance to base64
+                finderpng.seek(0)
+                finderb64 = base64.b64encode(finderpng.read())
+
+                # close the stringio buffer
+                finderpng.close()
+
+            else:
+
+                finderb64 = None
 
         except Exception as e:
 
@@ -3297,13 +3343,16 @@ def checkplot_dict(lspinfolist,
     dust_timeout = 10.0
     gaia_submit_timeout = 5.0
     gaia_max_timeout = 10.0
-    gaia_submit_tries = 1
+    gaia_submit_tries = 2
     complete_query_later = False
+
+    If fast_mode = True, no calls will be made to SkyView or SIMBAD.
 
     If fast_mode is a positive integer or float, timeouts will be set to
     fast_mode and the gaia_submit_timeout will be set to
     0.66*fast_mode. gaia_submit_timeout and gaia_max_timeout are re-used for
-    SIMBAD as well.
+    SIMBAD as well. No calls will be made to SIMBAD, but SkyView will still be
+    queried for the finder-chart.
 
     nperiodstouse controls how many 'best' periods to make phased LC plots
     for. By default, this is the 3 best. If this is set to None, all 'best'
@@ -3824,13 +3873,16 @@ def checkplot_pickle(lspinfolist,
     dust_timeout = 10.0
     gaia_submit_timeout = 5.0
     gaia_max_timeout = 10.0
-    gaia_submit_tries = 1
+    gaia_submit_tries = 2
     complete_query_later = False
+
+    If fast_mode = True, no calls will be made to SkyView or SIMBAD.
 
     If fast_mode is a positive integer or float, timeouts will be set to
     fast_mode and the gaia_submit_timeout will be set to
     0.66*fast_mode. gaia_submit_timeout and gaia_max_timeout are re-used for
-    SIMBAD as well.
+    SIMBAD as well. No calls will be made to SIMBAD, but SkyView will still be
+    queried for the finder-chart.
 
     nperiodstouse controls how many 'best' periods to make phased LC plots
     for. By default, this is the 3 best. If this is set to None, all 'best'
