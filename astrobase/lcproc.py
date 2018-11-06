@@ -6936,6 +6936,7 @@ def parallel_tfa_worker(task):
                                   sigclip=sigclip)
         if res:
             LOGINFO('%s -> %s TFA OK' % (lcfile, res))
+        return res
 
     except Exception as e:
 
