@@ -49,7 +49,7 @@ INSTALL_REQUIRES = [
     'matplotlib',
     'Pillow',
     'jplephem',
-    'requests',
+    'requests>=2.20',
     'tornado',
     'pyeebls',
     'tqdm',

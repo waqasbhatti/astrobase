@@ -6,7 +6,7 @@ Pillow
 jplephem
 tornado
 pyeebls
-requests
+requests>=2.20
 tqdm
 scikit-learn
 futures;python_version<"3.2"
