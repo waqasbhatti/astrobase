@@ -98,9 +98,6 @@ import gzip
 import hashlib
 import time
 import pickle
-
-import numpy as np
-
 import random
 
 # to do the queries
@@ -831,13 +828,14 @@ def objectlist_conesearch(racenter,
                           declcenter,
                           searchradiusarcsec,
                           gaia_mirror=None,
-                          columns=['source_id',
+                          columns=('source_id',
                                    'ra','dec',
                                    'phot_g_mean_mag',
                                    'l','b',
                                    'parallax', 'parallax_error',
                                    'pmra','pmra_error',
-                                   'pmdec','pmdec_error'],
+                                   'pmdec','pmdec_error'),
+                          extra_filter=None,
                           returnformat='csv',
                           forcefetch=False,
                           cachedir='~/.astrobase/gaia-cache',
@@ -884,12 +882,19 @@ def objectlist_conesearch(racenter,
         "CONTAINS(POINT('ICRS',{{table}}.ra, {{table}}.dec),"
         "CIRCLE('ICRS',{ra_center:.5f},{decl_center:.5f},"
         "{search_radius:.6f}))=1 "
+        "{extra_filter_str}"
         "ORDER by dist_arcsec asc "
     )
+
+    if extra_filter is not None:
+        extra_filter_str = ' and %s ' % extra_filter
+    else:
+        extra_filter_str = ''
 
     formatted_query = query.format(ra_center=racenter,
                                    decl_center=declcenter,
                                    search_radius=searchradiusarcsec/3600.0,
+                                   extra_filter_str=extra_filter_str,
                                    columns=', '.join(columns))
 
     return tap_query(formatted_query,
@@ -908,13 +913,14 @@ def objectlist_conesearch(racenter,
 
 def objectlist_radeclbox(radeclbox,
                          gaia_mirror=None,
-                         columns=['source_id',
+                         columns=('source_id',
                                   'ra','dec',
                                   'phot_g_mean_mag',
                                   'l','b',
                                   'parallax, parallax_error',
                                   'pmra','pmra_error',
-                                  'pmdec','pmdec_error'],
+                                  'pmdec','pmdec_error'),
+                         extra_filter=None,
                          returnformat='csv',
                          forcefetch=False,
                          cachedir='~/.astrobase/gaia-cache',
@@ -957,6 +963,7 @@ def objectlist_radeclbox(radeclbox,
         "CONTAINS(POINT('ICRS',{{table}}.ra, {{table}}.dec),"
         "BOX('ICRS',{ra_center:.5f},{decl_center:.5f},"
         "{ra_width:.5f},{decl_height:.5f}))=1"
+        "{extra_filter_str}"
     )
 
     ra_min, ra_max, decl_min, decl_max = radeclbox
@@ -965,7 +972,13 @@ def objectlist_radeclbox(radeclbox,
     ra_width = ra_max - ra_min
     decl_height = decl_max - decl_min
 
+    if extra_filter is not None:
+        extra_filter_str = ' and %s ' % extra_filter
+    else:
+        extra_filter_str = ''
+
     formatted_query = query.format(columns=', '.join(columns),
+                                   extra_filter_str=extra_filter_str,
                                    ra_center=ra_center,
                                    decl_center=decl_center,
                                    ra_width=ra_width,
