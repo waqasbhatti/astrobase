@@ -888,6 +888,7 @@ def skyview_stamp(ra, decl,
 def fits_finder_chart(
         fitsfile,
         outfile,
+        fitsext=0,
         wcsfrom=None,
         scale=ZScaleInterval(),
         stretch=LinearStretch(),
@@ -968,7 +969,7 @@ def fits_finder_chart(
     if wcsfrom is None:
 
         hdulist = pyfits.open(fitsfile)
-        img, hdr = hdulist[0].data, hdulist[0].header
+        img, hdr = hdulist[fitsext].data, hdulist[fitsext].header
         hdulist.close()
 
         frameshape = (hdr['NAXIS1'], hdr['NAXIS2'])
@@ -977,7 +978,7 @@ def fits_finder_chart(
     elif os.path.exists(wcsfrom):
 
         hdulist = pyfits.open(fitsfile)
-        img, hdr = hdulist[0].data, hdulist[0].header
+        img, hdr = hdulist[fitsext].data, hdulist[fitsext].header
         hdulist.close()
 
         frameshape = (hdr['NAXIS1'], hdr['NAXIS2'])
