@@ -1593,10 +1593,13 @@ def _pkl_finder_objectinfo(objectinfo,
                                 # HTML5 canvas and these pixcoords to highlight
                                 # each neighbor when we mouse over its row in
                                 # the neighbors tab
+
+                                # we use coord origin = 0 here and not the usual
+                                # 1 because we're annotating a numpy array
                                 pixcoords = finderwcs.all_world2pix(
                                     np.array([[lclist['objects']['ra'][mi],
                                                lclist['objects']['decl'][mi]]]),
-                                    1
+                                    0
                                 )
 
                                 # each elem is {'objectid',
@@ -1679,10 +1682,12 @@ def _pkl_finder_objectinfo(objectinfo,
                 ax.set_yticks([])
 
                 # add a reticle pointing to the object's coordinates
+                # we use coord origin = 0 here and not the usual
+                # 1 because we're annotating a numpy array
                 object_pixcoords = finderwcs.all_world2pix(
                     [[objectinfo['ra'],
                       objectinfo['decl']]],
-                    1
+                    0
                 )
 
                 ax.axvline(
