@@ -1019,7 +1019,7 @@ def filter_tess_lcdict(lcdict,
             np.isfinite(lcdict['pdc']['pdcsap_flux_err']) &
             np.isfinite(lcdict['time'])
         )
-    elif nanfilter == None:
+    elif nanfilter is None:
         pass
     else:
         raise NotImplementedError

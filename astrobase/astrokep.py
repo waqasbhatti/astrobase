@@ -925,12 +925,19 @@ def filter_kepler_lcdict(lcdict,
     if nanfilter and nanfilter == 'sap,pdc':
         notnanind = (
             npisfinite(lcdict['sap']['sap_flux']) &
-            npisfinite(lcdict['pdc']['pdcsap_flux'])
+            npisfinite(lcdict['pdc']['pdcsap_flux']) &
+            npisfinite(lcdict['time'])
         )
     elif nanfilter and nanfilter == 'sap':
-        notnanind = npisfinite(lcdict['sap']['sap_flux'])
+        notnanind = (
+            npisfinite(lcdict['sap']['sap_flux']) &
+            npisfinite(lcdict['time'])
+        )
     elif nanfilter and nanfilter == 'pdc':
-        notnanind = npisfinite(lcdict['pdc']['pdcsap_flux'])
+        notnanind = (
+            npisfinite(lcdict['pdc']['pdcsap_flux']) &
+            npisfinite(lcdict['time'])
+        )
 
 
     # remove nans from all columns
@@ -955,13 +962,13 @@ def filter_kepler_lcdict(lcdict,
         isinstance(timestoignore, list) and
         len(timestoignore) > 0):
 
-        exclind = npfull_like(lcdict['time'],True)
+        exclind = npfull_like(lcdict['time'], True, dtype=np.bool_)
         nbefore = exclind.size
 
         # get all the masks
         for ignoretime in timestoignore:
             time0, time1 = ignoretime[0], ignoretime[1]
-            thismask = (lcdict['time'] > time0) & (lcdict['time'] < time1)
+            thismask = ~((lcdict['time'] >= time0) & (lcdict['time'] <= time1))
             exclind = exclind & thismask
 
         # apply the masks
