@@ -340,7 +340,7 @@ def read_tess_fitslc(lcfits,
                      apkeys=LCAPERTUREKEYS,
                      normalize=False,
                      appendto=None,
-                     filterflags=False,
+                     filterqualityflags=False,
                      nanfilter=None,
                      timestoignore=None):
     '''This extracts the light curve from a single TESS .lc.fits file.
@@ -731,11 +731,11 @@ def read_tess_fitslc(lcfits,
     lcdict['objectinfo']['ndet'] = sum(lcdict['lcinfo']['ndet'])
 
     # filter the LC dict if requested
-    if (filterflags is not False or
+    if (filterqualityflags is not False or
         nanfilter is not None or
         timestoignore is not None):
         lcdict = filter_tess_lcdict(lcdict,
-                                    filterflags,
+                                    filterqualityflags,
                                     nanfilter=nanfilter,
                                     timestoignore=timestoignore)
 
@@ -746,7 +746,7 @@ def read_tess_fitslc(lcfits,
 
 def consolidate_tess_fitslc(lclist,
                             normalize=True,
-                            filterflags=False,
+                            filterqualityflags=False,
                             nanfilter=None,
                             timestoignore=None,
                             headerkeys=LCHEADERKEYS,
@@ -881,11 +881,11 @@ def consolidate_tess_fitslc(lclist,
 
     # filter the LC dict if requested
     # we do this at the end
-    if (filterflags is not False or
+    if (filterqualityflags is not False or
         nanfilter is not None or
         timestoignore is not None):
         consolidated = filter_tess_lcdict(consolidated,
-                                          filterflags,
+                                          filterqualityflags,
                                           nanfilter=nanfilter,
                                           timestoignore=timestoignore)
 
@@ -948,27 +948,39 @@ def read_tess_pklc(picklefile):
 ################################
 
 def filter_tess_lcdict(lcdict,
-                       filterflags=True,
-                       nanfilter='sap,pdc',
+                       filterqualityflags=True,
+                       nanfilter='sap,pdc,time',
                        timestoignore=None,
                        quiet=False):
-    '''This filters the TESS light curve dict.
+    '''
+    Filter a TESS light curve dict IN PLACE!
 
-    By default, this function removes points in the TESS LC that have ANY
-    quality flags set. Also removes nans.
+    Args:
+        lcdict (dict): made by `astrotess.read_tess_fitslc`
 
-    timestoignore is a list of tuples containing start and end times to mask:
+    Kwargs:
+        filterqualityflags (bool): if true, removes points in the TESS LC with
+        nonzero quality flags.
 
-    [(time1_start, time1_end), (time2_start, time2_end), ...]
+        nanfilter (str): remove points in the TESS LC that have non-finite
+        'sap,pdc,time' columns. Allowed strings: ('sap,pdc,time','pdc,time',
+        'sap,time').
 
-    This function filters the dict IN PLACE!
+        timestoignore (list): list of tuples containing start and end times to
+        mask:
+            [(time1_start, time1_end), (time2_start, time2_end), ...]
+        note that these are _closed_ intervals, not open intervals.
 
+        quiet (bool): whether to log information.
+
+    Returns:
+        lcdict (dict): filtered version of input dict.
     '''
 
     cols = lcdict['columns']
 
     # filter all bad LC points as noted by quality flags
-    if filterflags:
+    if filterqualityflags:
 
         nbefore = lcdict['time'].size
         filterind = lcdict['quality'] == 0
@@ -987,16 +999,30 @@ def filter_tess_lcdict(lcdict,
                     % (nbefore, nafter))
 
 
-    if nanfilter and nanfilter == 'sap,pdc':
+    if nanfilter and nanfilter == 'sap,pdc,time':
         notnanind = (
             np.isfinite(lcdict['sap']['sap_flux']) &
-            np.isfinite(lcdict['pdc']['pdcsap_flux'])
+            np.isfinite(lcdict['sap']['sap_flux_err']) &
+            np.isfinite(lcdict['pdc']['pdcsap_flux']) &
+            np.isfinite(lcdict['pdc']['pdcsap_flux_err']) &
+            np.isfinite(lcdict['time'])
         )
-    elif nanfilter and nanfilter == 'sap':
-        notnanind = np.isfinite(lcdict['sap']['sap_flux'])
-    elif nanfilter and nanfilter == 'pdc':
-        notnanind = np.isfinite(lcdict['pdc']['pdcsap_flux'])
-
+    elif nanfilter and nanfilter == 'sap,time':
+        notnanind = (
+            np.isfinite(lcdict['sap']['sap_flux']) &
+            np.isfinite(lcdict['sap']['sap_flux_err']) &
+            np.isfinite(lcdict['time'])
+        )
+    elif nanfilter and nanfilter == 'pdc,time':
+        notnanind = (
+            np.isfinite(lcdict['pdc']['pdcsap_flux']) &
+            np.isfinite(lcdict['pdc']['pdcsap_flux_err']) &
+            np.isfinite(lcdict['time'])
+        )
+    elif nanfilter == None:
+        pass
+    else:
+        raise NotImplementedError
 
     # remove nans from all columns
     if nanfilter:
@@ -1021,13 +1047,13 @@ def filter_tess_lcdict(lcdict,
         isinstance(timestoignore, list) and
         len(timestoignore) > 0):
 
-        exclind = np.full_like(lcdict['time'],True)
+        exclind = np.full_like(lcdict['time'],True).astype(bool)
         nbefore = exclind.size
 
         # get all the masks
         for ignoretime in timestoignore:
             time0, time1 = ignoretime[0], ignoretime[1]
-            thismask = (lcdict['time'] > time0) & (lcdict['time'] < time1)
+            thismask = ~((lcdict['time'] >= time0) & (lcdict['time'] <= time1))
             exclind = exclind & thismask
 
         # apply the masks
