@@ -89,8 +89,11 @@ def get_snr_of_dip(times,
                    mags,
                    modeltimes,
                    modelmags,
+                   atol_normalization=1e-8,
                    magsarefluxes=False,
-                   verbose=True):
+                   verbose=True,
+                   transitdepth=None,
+                   npoints_in_transit=None):
     '''
     Calculate the total SNR of a transit assuming gaussian uncertainties.
     `modelmags` gets interpolated onto the cadence of `mags`. The noise is
@@ -126,13 +129,21 @@ def get_snr_of_dip(times,
 
         magsarefluxes (bool): currently forced to be true.
 
+        atol_normalization (float): absolute tolerance to which the median of
+        the passed model fluxes must be equal to 1.
+
+        transitdepth (float): if transit depth is known can pass it. otherwise,
+        it is calculated assuming OOT flux is 1.
+
+        npoints_in_transit (int): if known, can pass it.
+
     Returns:
 
         snr, transit depth, and noise of residual lightcurve (tuple)
     '''
 
     if magsarefluxes:
-        if not np.nanmedian(modelmags) == 1:
+        if not np.isclose(np.nanmedian(modelmags), 1, atol=atol_normalization):
             raise AssertionError('snr calculation assumes modelmags are '
                                  'median-normalized')
     else:
@@ -141,8 +152,9 @@ def get_snr_of_dip(times,
             'mags are mags, and not fluxes'
         )
 
-    # calculate transit depth from whatever model magnitudes are passed.
-    transitdepth = np.abs(np.max(modelmags) - np.min(modelmags))
+    if not transitdepth:
+        # calculate transit depth from whatever model magnitudes are passed.
+        transitdepth = np.abs(np.max(modelmags) - np.min(modelmags))
 
     # generally, mags (data) and modelmags are at different cadence.
     # interpolate modelmags onto the cadence of mags.
@@ -163,15 +175,19 @@ def get_snr_of_dip(times,
 
     def _get_npoints_in_transit(modelmags):
         # assumes median-normalized fluxes are input
-        return len(modelmags[(modelmags != 1)])
+        if np.nanmedian(modelmags)==1:
+            return len(modelmags[(modelmags != 1)])
+        else:
+            raise NotImplementedError
 
-    npoints_in_transit = _get_npoints_in_transit(modelmags)
+    if not npoints_in_transit:
+        npoints_in_transit = _get_npoints_in_transit(modelmags)
 
     snr = np.sqrt(npoints_in_transit) * transitdepth/subtractedrms
 
     if verbose:
 
-        LOGINFO('\npoints in transit: {:d}'.format(npoints_in_transit ) +
+        LOGINFO('\npoints in transit: {:d}'.format(npoints_in_transit) +
                 '\ndepth: {:.2e}'.format(transitdepth) +
                 '\nrms in residual: {:.2e}'.format(subtractedrms) +
                 '\n\t SNR: {:.2e}'.format(snr))
