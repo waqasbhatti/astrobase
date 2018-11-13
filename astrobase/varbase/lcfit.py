@@ -7,31 +7,30 @@ Waqas Bhatti and Luke Bouma - Feb 2017
 
 Fitting routines for light curves. Includes:
 
-- fourier_fit_magseries: fit an arbitrary order Fourier series to a
-                         magnitude/flux time series.
+fourier_fit_magseries: fit an arbitrary order Fourier series to a
+    magnitude/flux time series.
 
-- spline_fit_magseries: fit a univariate cubic spline to a magnitude/flux time
-                        series with a specified spline knot fraction.
+spline_fit_magseries: fit a univariate cubic spline to a
+    magnitude/flux time series with a specified spline knot fraction.
 
-- savgol_fit_magseries: apply a Savitzky-Golay smoothing filter to a
-                        magnitude/flux time series, returning the resulting
-                        smoothed function as a "fit".
+savgol_fit_magseries: apply a Savitzky-Golay smoothing filter to a
+    magnitude/flux time series, returning the resulting smoothed function
+    as a "fit".
 
-- legendre_fit_magseries: fit a Legendre function of the specified order to the
-                          magnitude/flux time series.
+legendre_fit_magseries: fit a Legendre function of the specified order
+    to the magnitude/flux time series.
 
-- traptransit_fit_magseries: fit a trapezoid-shaped transit signal to the
-                             magnitude/flux time series
+traptransit_fit_magseries: fit a trapezoid-shaped transit signal to
+    the magnitude/flux time series
 
-- gaussianeb_fit_magseries: fit a double inverted gaussian eclipsing binary
-                            model to the magnitude/flux time series
+gaussianeb_fit_magseries: fit a double inverted gaussian eclipsing
+    binary model to the magnitude/flux time series
 
-- mandelagol_fit_magseries: fit a Mandel & Agol 2002 model to the flux time
-                            series.
+mandelagol_fit_magseries: fit a Mandel & Agol 2002 model to the flux
+    time series.
 
-TODO:
-- Find correct dof for reduced chi squared in savgol_fit_magseries
-
+mandelagol_and_line_fit_magseries: fit a Mandel & Agol 2002 model, + a
+    local line to the flux time series.
 '''
 
 #############
@@ -690,25 +689,28 @@ def savgol_fit_magseries(times, mags, errs, period,
     values across the full width of the N=windowlength point window is <
     sqrt(N/2) times the measurement noise on a single point.
 
+    TODO:
+    - Find correct dof for reduced chi squared in savgol_fit_magseries
+
     Args:
 
     windowlength (int): length of the filter window (the number of
     coefficients). Must be either positive and odd, or None. (The window is
-    the number of points to the left, and to the right, of whatever point is
-    having a polynomial fit to it locally). Bigger windows at fixed polynomial
-    order risk lowering the amplitude of sharp features. If None, this routine
-    (arbitrarily) sets the windowlength for phased LCs to be either the number
-    of finite data points divided by 300, or polydeg+3, whichever is bigger.
+    the number of points to the left, and to the right, of whatever point
+    is having a polynomial fit to it locally). Bigger windows at fixed
+    polynomial order risk lowering the amplitude of sharp features. If
+    None, this routine (arbitrarily) sets the windowlength for phased LCs
+    to be either the number of finite data points divided by 300, or
+    polydeg+3, whichever is bigger.
 
-    polydeg (int): the order of the polynomial used to fit the samples. Must
-    be less than windowlength. "Higher-order filters do better at preserving
-    feature heights and widths, but do less smoothing on broader features."
-    (NumRec).
+    polydeg (int): the order of the polynomial used to fit the samples.
+    Must be less than windowlength. "Higher-order filters do better at
+    preserving feature heights and widths, but do less smoothing on broader
+    features." (NumRec).
 
     magsarefluxes (bool): sets the ylabel and ylimits of plots for either
     magnitudes (False) or flux units (i.e. normalized to 1, in which case
     magsarefluxes should be set to True).
-
     '''
     stimes, smags, serrs = sigclip_magseries(times, mags, errs,
                                              sigclip=sigclip,
@@ -1478,6 +1480,20 @@ def gaussianeb_fit_magseries(times, mags, errs,
 # helper functions for interfacing between emcee & BATMAN #
 ###########################################################
 
+def _get_value(quantitystr, fitparams, fixedparams):
+    """when you want to get the value of some parameter, but you're not sure if
+    it's being fit or if it is fixed. then:
+    period_value = _get_value('period', fitparams, fixedparams)"""
+    # for Mandel-Agol fitting, sometimes we want to fix some parameters,
+    # and fit others. this function allows that flexibility.
+    fitparamskeys, fixedparamskeys = fitparams.keys(), fixedparams.keys()
+    if quantitystr in fitparamskeys:
+        quantity = fitparams[quantitystr]
+    elif quantitystr in fixedparamskeys:
+        quantity = fixedparams[quantitystr]
+    return quantity
+
+
 def _transit_model(times, t0, per, rp, a, inc, ecc, w, u, limb_dark,
                    exp_time_minutes=2, supersample_factor=7):
     '''
@@ -1505,7 +1521,7 @@ def _transit_model(times, t0, per, rp, a, inc, ecc, w, u, limb_dark,
     return params, m
 
 
-def _log_prior(theta, priorbounds):
+def _log_prior_transit(theta, priorbounds):
     '''
     Assume priors on all parameters have uniform probability.
     '''
@@ -1526,7 +1542,12 @@ def _log_prior(theta, priorbounds):
     return -np.inf
 
 
-def _log_likelihood(theta, params, model, t, flux, err_flux, priorbounds):
+def _log_prior_transit_plus_line(theta, priorbounds):
+    return _log_prior_transit(theta, priorbounds)
+
+
+def _log_likelihood_transit(theta, params, model, t, flux, err_flux,
+                            priorbounds):
     '''
     Given a batman TransitModel and its proposed parameters (theta), update the
     batman params object with the proposed parameters and evaluate the gaussian
@@ -1539,28 +1560,25 @@ def _log_likelihood(theta, params, model, t, flux, err_flux, priorbounds):
 
     for ix, key in enumerate(sorted(priorbounds.keys())):
 
-        # FIXME: should the rest of the if's be elif's?
         if key == 'rp':
             params.rp = theta[ix]
-        if key == 't0':
+        elif key == 't0':
             params.t0 = theta[ix]
-        if key == 'sma':
+        elif key == 'sma':
             params.a = theta[ix]
-        if key == 'incl':
+        elif key == 'incl':
             params.inc = theta[ix]
-        if key == 'per':
+        elif key == 'per':
             params.per = theta[ix]
-        if key == 'ecc':
+        elif key == 'ecc':
             params.per = theta[ix]
-        if key == 'omega':
+        elif key == 'omega':
             params.w = theta[ix]
-        if key == 'u_linear':
+        elif key == 'u_linear':
             u.append(theta[ix])
-        if key == 'u_quadratic':
+        elif key == 'u_quadratic':
             u.append(theta[ix])
             params.u = u
-
-    # params.rp, params.u, params.t0 = theta[0], [theta[1],theta[2]], theta[3]
 
     lc = model.light_curve(params)
     residuals = flux - lc
@@ -1571,17 +1589,90 @@ def _log_likelihood(theta, params, model, t, flux, err_flux, priorbounds):
     return log_likelihood
 
 
-def log_posterior(theta, params, model, t, flux, err_flux, priorbounds):
+def _log_likelihood_transit_plus_line(theta, params, model, t, data_flux,
+                                      err_flux, priorbounds):
+    '''
+    Given a batman TransitModel and its proposed parameters (theta), update the
+    batman params object with the proposed parameters and evaluate the gaussian
+    likelihood.
+
+    Note: the priorbounds are only needed to parse theta.
+    '''
+
+    u = []
+    for ix, key in enumerate(sorted(priorbounds.keys())):
+
+        if key == 'rp':
+            params.rp = theta[ix]
+        elif key == 't0':
+            params.t0 = theta[ix]
+        elif key == 'sma':
+            params.a = theta[ix]
+        elif key == 'incl':
+            params.inc = theta[ix]
+        elif key == 'per':
+            params.per = theta[ix]
+        elif key == 'ecc':
+            params.per = theta[ix]
+        elif key == 'omega':
+            params.w = theta[ix]
+        elif key == 'u_linear':
+            u.append(theta[ix])
+        elif key == 'u_quadratic':
+            u.append(theta[ix])
+            params.u = u
+        elif key == 'poly_order0':
+            poly_order0 = theta[ix]
+        elif key == 'poly_order1':
+            poly_order1 = theta[ix]
+
+    try:
+        poly_order0
+    except:
+        poly_order0 = 0
+    else:
+        pass
+
+    transit = model.light_curve(params)
+    line = poly_order0 + t*poly_order1
+    model = transit + line
+
+    residuals = data_flux - model
+
+    log_likelihood = -0.5*(
+        np.sum((residuals/err_flux)**2 + np.log(2*np.pi*(err_flux)**2))
+    )
+
+    return log_likelihood
+
+
+def log_posterior_transit(theta, params, model, t, flux, err_flux, priorbounds):
     '''
     Evaluate posterior probability given proposed model parameters and
     the observed flux timeseries.
     '''
-    lp = _log_prior(theta, priorbounds)
+    lp = _log_prior_transit(theta, priorbounds)
     if not np.isfinite(lp):
         return -np.inf
     else:
-        return lp + _log_likelihood(theta, params, model, t, flux, err_flux,
-                                    priorbounds)
+        return lp + _log_likelihood_transit(theta, params, model, t, flux,
+                                            err_flux, priorbounds)
+
+
+def log_posterior_transit_plus_line(theta, params, model, t, flux, err_flux,
+                                    priorbounds):
+    '''
+    Evaluate posterior probability given proposed model parameters and
+    the observed flux timeseries.
+    '''
+    lp = _log_prior_transit_plus_line(theta, priorbounds)
+    if not np.isfinite(lp):
+        return -np.inf
+    else:
+        return (
+            lp + _log_likelihood_transit_plus_line(
+                theta, params, model, t, flux, err_flux, priorbounds)
+        )
 
 
 ###################################################
@@ -1682,7 +1773,7 @@ def mandelagol_fit_magseries(times, mags, errs,
     returns:
 
         returndict =  {
-            'fittype':'mandelagoltransit',
+            'fittype':'mandelagol',
             'fitinfo':{
                 'initialparams':fitparams,
                 'fixedparams':fixedparams,
@@ -1702,6 +1793,7 @@ def mandelagol_fit_magseries(times, mags, errs,
     '''
 
     from multiprocessing import Pool
+    fittype = 'mandelagol'
 
     if not magsarefluxes:
         raise NotImplementedError('magsarefluxes is not implemented yet.')
@@ -1720,16 +1812,6 @@ def mandelagol_fit_magseries(times, mags, errs,
                                              magsarefluxes=magsarefluxes)
     nzind = npnonzero(serrs)
     stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
-
-    def _get_value(quantitystr, fitparams, fixedparams):
-        # for Mandel-Agol fitting, sometimes we want to fix some parameters,
-        # and fit others. this function allows that flexibility.
-        fitparamskeys, fixedparamskeys = fitparams.keys(), fixedparams.keys()
-        if quantitystr in fitparamskeys:
-            quantity = fitparams[quantitystr]
-        elif quantitystr in fixedparamskeys:
-            quantity = fixedparams[quantitystr]
-        return quantity
 
     init_period = _get_value('period', fitparams, fixedparams)
     init_epoch = _get_value('t0', fitparams, fixedparams)
@@ -1792,20 +1874,20 @@ def mandelagol_fit_magseries(times, mags, errs,
 
         if verbose and isfirstrun:
             LOGINFO(
-                'start MCMC with {:d} dims, {:d} steps, {:d} walkers,'.format(
-                    n_dim, n_mcmc_steps, n_walkers
-                ) + ' {:d} threads'.format(nworkers)
+                'start {:s} MCMC with {:d} dims, {:d} steps, {:d} walkers,'.
+                format(fittype, n_dim, n_mcmc_steps, n_walkers)
+                +' {:d} threads'.format(nworkers)
             )
         elif verbose and not isfirstrun:
             LOGINFO(
-                'continue with {:d} dims, {:d} steps, {:d} walkers, '.format(
-                    n_dim, n_mcmc_steps, n_walkers
-                ) + '{:d} threads'.format(nworkers)
+                'continue {:s} with {:d} dims, {:d} steps, {:d} walkers, '.
+                format(fittype, n_dim, n_mcmc_steps, n_walkers)
+                +'{:d} threads'.format(nworkers)
             )
 
         with Pool(nworkers) as pool:
             sampler = emcee.EnsembleSampler(
-                n_walkers, n_dim, log_posterior,
+                n_walkers, n_dim, log_posterior_transit,
                 args=(init_params, init_m, stimes, smags, serrs, priorbounds),
                 pool=pool,
                 backend=backend
@@ -1815,8 +1897,8 @@ def mandelagol_fit_magseries(times, mags, errs,
 
         if verbose:
             LOGINFO(
-                'ended MCMC run with {:d} steps, {:d} walkers, '.format(
-                    n_mcmc_steps, n_walkers
+                'ended {:s} MCMC run with {:d} steps, {:d} walkers, '.format(
+                    fittype, n_mcmc_steps, n_walkers
                 ) + '{:d} threads'.format(nworkers)
             )
 
@@ -1829,13 +1911,9 @@ def mandelagol_fit_magseries(times, mags, errs,
     log_prior_samples = reader.get_blobs(discard=n_to_discard, flat=True)
 
     # Get best-fit parameters and their 1-sigma error bars
-    # FIXME: rewrite this as a simpler list comprehension?
-    # FIXME: why is the zip transpose required?
-    # fit_statistics = [(v[1], v[2] - v[1], v[1] - v[0]) for v in
-    #                   (np.percentile(samples, (16, 50, 84), axis=0)).T]
     fit_statistics = list(
         map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
-            list(zip( *np.percentile(samples, [16, 50, 84], axis=0))))
+            list(zip( *np.percentile(samples, [15.85, 50, 84.15], axis=0))))
     )
 
     medianparams, std_perrs, std_merrs = {}, {}, {}
@@ -1866,7 +1944,7 @@ def mandelagol_fit_magseries(times, mags, errs,
 
     # assemble the return dictionary
     returndict = {
-        'fittype':'mandelagoltransit',
+        'fittype':fittype,
         'fitinfo':{
             'initialparams':fitparams,
             'initialmags':init_flux,
@@ -1894,12 +1972,12 @@ def mandelagol_fit_magseries(times, mags, errs,
                 samples,
                 labels=trueparamkeys,
                 truths=trueparams,
-                quantiles=[0.16, 0.5, 0.84], show_titles=True
+                quantiles=[0.1585, 0.5, .8415], show_titles=True
             )
         else:
             fig = corner.corner(samples,
                                 labels=fitparamnames,
-                                quantiles=[0.16, 0.5, 0.84],
+                                quantiles=[0.1585, 0.5, .8415],
                                 show_titles=True)
 
         plt.savefig(plotcorner, dpi=300)
@@ -1922,6 +2000,397 @@ def mandelagol_fit_magseries(times, mags, errs,
         )
         ax.legend(loc='best')
         ax.set(xlabel='time [days]', ylabel='relative flux')
+        f.savefig(plotfit, dpi=300, bbox_inches='tight')
+        if verbose:
+            LOGINFO('saved {:s}'.format(plotfit))
+
+        returndict['fitplotfile'] = plotfit
+
+    return returndict
+
+
+def mandelagol_and_line_fit_magseries(
+    times, mags, errs,
+    fitparams,
+    priorbounds,
+    fixedparams,
+    trueparams=None,
+    sigclip=10.0,
+    burninpercent=0.3,
+    plotfit=False,
+    plotcorner=False,
+    samplesavpath=False,
+    magsarefluxes=True,
+    verbose=True,
+    nworkers=4,
+    n_walkers=50,
+    n_mcmc_steps=400,
+    eps=1e-4,
+    skipsampling=False,
+    overwriteexistingsamples=False,
+    mcmcprogressbar=False,
+    timeoffset=0):
+    '''
+    The model fit by this function is: a Mandel & Agol (2002) transit, PLUS a
+    line.  You can fit and fix whatever parameters you want.
+
+    A typical use case: you want to measure transit times of individual SNR >~
+    50 transits. You fix all the transit parameters except for the mid-time,
+    and also fit for a line locally.
+
+    args:
+        fitparams (dict): initial parameter guesses for MCMC, found e.g., by
+        BLS. The key string format must not be changed. Any parameter can be
+        either "fit" or "fixed". If it is "fit", it must have a corresponding
+        prior. For example:
+
+            fitparams = {'t0':1325.9,
+                         'poly_order0':1,
+                         'poly_order1':0.}
+
+        where u is a list of the limb darkening parameters, linear first, then
+        quadratic. Quadratic limb darkening is the only form implemented.
+        "poly_order0" corresponds to the intercept of the line, "poly_order1"
+        is the slope.
+
+        priorbounds (dict): lower & upper bounds on uniform prior, e.g.,
+
+            priorbounds = {'t0':(np.min(time), np.max(time)),
+                            'poly_order0':(0.5,1.5),
+                            'poly_order1':(-0.5,0.5) }
+
+        fixedparams (dict): fixed parameters, e.g.,
+
+            fixedparams = {'ecc':0.,
+                           'omega':90.,
+                           'limb_dark':'quadratic',
+                           'period':fitd['period'],
+                           'rp':np.sqrt(fitd['transitdepth']),
+                           'sma':6.17, 'incl':85, 'u':[0.3, 0.2]
+                           }
+
+        `limb_dark` must be "quadratic".  It's "fixed", because once you
+        choose your limb-darkening model, it's fixed.
+
+        Between these dicts, you must specify
+        ['t0','rp','sma','incl','u','rp','ecc', 'omega','period',
+        'poly_order0', 'poly_order1'], or the model will fail to initialize.
+
+
+    kwargs:
+        trueparams (list): true parameter values you're fitting for, if they're
+        known (e.g., a known planet, or fake data). Only for plotting purposes.
+
+        burninpercent (float): percent of samples to discard as burn-in.
+
+        skipsampling (bool): if you've already collected samples, and you do
+        not want any more sampling (e.g., just make the plots), set this to be
+        True.
+
+        overwriteexistingsamples (bool): if you've collected samples, but you
+        want to overwrite them, set this to True.  Usually, it should be False,
+        which appends samples to samplesavpath h5py file.
+
+        n_walkers (int): number of walkers
+
+        n_mcmc_steps (int): number of MCMC steps
+
+        plotcorner (bool/str): path to a saved corner plot of the parameters
+        you fit.
+
+        samplesavpath (str): MANDATORY path to hdf5 file with MCMC samples,
+        e.g., '/foo/samples.h5'
+
+        magsarefluxes (bool): currently only implemented if True
+
+        eps (float): radius of n_walkers-dimensional Gaussian ball used to
+        initialize the MCMC.
+
+        mcmcprogressbar (bool): whether to show the emcee progreess bar.
+
+        timeoffset (float): if input times are offset by some constant, and you
+        want saved pickles to fix that.
+
+    returns:
+
+        returndict =  {
+            'fittype':'mandelagol_and_line',
+            'fitinfo':{
+                'initialparams':fitparams,
+                'fixedparams':fixedparams,
+                'finalparams':finalparams,
+                'finalparamerrs':stderrs,
+                'fitmags':fitmags,
+                'fitepoch':fepoch,
+            },
+            'fitplotfile':None,
+            'magseries':{
+                'times':stimes,
+                'mags':smags,
+                'errs':serrs,
+                'magsarefluxes':magsarefluxes,
+            },
+        }
+    '''
+
+    from multiprocessing import Pool
+    fittype = 'mandelagol_and_line'
+
+    if not magsarefluxes:
+        raise NotImplementedError('magsarefluxes is not implemented yet.')
+    if not samplesavpath:
+        raise ValueError(
+            'This function requires that you save the samples somewhere'
+        )
+    if not mandel_agol_dependencies:
+        raise ImportError(
+            'This function depends on BATMAN, emcee>3.0, corner, and h5py.'
+        )
+
+    # sigma clip and get rid of zero errs
+    stimes, smags, serrs = sigclip_magseries(times, mags, errs,
+                                             sigclip=sigclip,
+                                             magsarefluxes=magsarefluxes)
+    nzind = npnonzero(serrs)
+    stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
+
+    init_period = _get_value('period', fitparams, fixedparams)
+    init_epoch = _get_value('t0', fitparams, fixedparams)
+    init_rp = _get_value('rp', fitparams, fixedparams)
+    init_sma = _get_value('sma', fitparams, fixedparams)
+    init_incl = _get_value('incl', fitparams, fixedparams)
+    init_ecc = _get_value('ecc', fitparams, fixedparams)
+    init_omega = _get_value('omega', fitparams, fixedparams)
+    limb_dark = _get_value('limb_dark', fitparams, fixedparams)
+    init_u = _get_value('u', fitparams, fixedparams)
+
+    init_poly_order0 = _get_value('poly_order0', fitparams, fixedparams)
+    init_poly_order1 = _get_value('poly_order1', fitparams, fixedparams)
+
+    if not limb_dark == 'quadratic':
+        raise ValueError(
+            'only quadratic limb-darkening is supported at the moment'
+        )
+
+    # initialize the model and calculate the initial model light-curve
+    init_params, init_m = _transit_model(
+        stimes, init_epoch, init_period, init_rp, init_sma, init_incl,
+        init_ecc, init_omega, init_u, limb_dark)
+
+    init_flux = (
+        init_m.light_curve(init_params) +
+        init_poly_order0 + init_poly_order1*stimes
+    )
+
+    # guessed initial params. give nice guesses, or else emcee struggles.
+    theta, fitparamnames = [], []
+    for k in np.sort(list(fitparams.keys())):
+        if isinstance(fitparams[k], float) or isinstance(fitparams[k], int):
+            theta.append(fitparams[k])
+            fitparamnames.append(fitparams[k])
+        elif isinstance(fitparams[k], list):
+            if not len(fitparams[k]) == 2:
+                raise ValueError('should only be quadratic LD coeffs')
+            theta.append(fitparams[k][0])
+            theta.append(fitparams[k][1])
+            fitparamnames.append(fitparams[k][0])
+            fitparamnames.append(fitparams[k][1])
+
+    # initialize sampler
+    n_dim = len(theta)
+
+    # run the MCMC, unless you just want to load the available samples
+    if not skipsampling:
+
+        backend = emcee.backends.HDFBackend(samplesavpath)
+        if overwriteexistingsamples:
+            LOGWARNING(
+                'erased samples previously at {:s}'.format(samplesavpath)
+            )
+            backend.reset(n_walkers, n_dim)
+
+        # if this is the first run, then start from a gaussian ball, centered
+        # on the maximum likelihood solution.  otherwise, resume from the
+        # previous samples.
+        from scipy.optimize import minimize
+        nll = lambda *args: -_log_likelihood_transit_plus_line(*args)
+        soln = spminimize(
+            nll, theta, method='BFGS',
+            args= (init_params, init_m, stimes, smags, serrs, priorbounds)
+        )
+        theta_ml = soln.x
+        ml_poly_order0 = theta_ml[0]
+        ml_poly_order1 = theta_ml[1]
+        ml_rp = theta_ml[2]
+        ml_t0 = theta_ml[3]
+
+        ml_params, ml_m = _transit_model(stimes, ml_t0, init_period,
+                                         ml_rp, init_sma, init_incl,
+                                         init_ecc, init_omega, init_u,
+                                         limb_dark)
+        ml_mags = (
+            ml_m.light_curve(ml_params) +
+            ml_poly_order0 + ml_poly_order1*stimes
+        )
+
+        initial_position_vec = [theta_ml+ eps*np.random.randn(n_dim)
+                                for i in range(n_walkers)]
+        starting_positions = initial_position_vec
+        isfirstrun = True
+        if os.path.exists(backend.filename):
+            if backend.iteration > 1:
+                starting_positions = None
+                isfirstrun = False
+
+        if verbose and isfirstrun:
+            LOGINFO(
+                'start {:s} MCMC with {:d} dims, {:d} steps, {:d} walkers,'.
+                format(fittype, n_dim, n_mcmc_steps, n_walkers)
+                +' {:d} threads'.format(nworkers)
+            )
+        elif verbose and not isfirstrun:
+            LOGINFO(
+                'continue {:s} with {:d} dims, {:d} steps, {:d} walkers, '.
+                format(fittype, n_dim, n_mcmc_steps, n_walkers)
+                +'{:d} threads'.format(nworkers)
+            )
+
+        with Pool(nworkers) as pool:
+            sampler = emcee.EnsembleSampler(
+                n_walkers, n_dim, log_posterior_transit_plus_line,
+                args=(init_params, init_m, stimes, smags, serrs, priorbounds),
+                pool=pool,
+                backend=backend
+            )
+            sampler.run_mcmc(starting_positions, n_mcmc_steps,
+                             progress=mcmcprogressbar)
+
+        if verbose:
+            LOGINFO(
+                'ended {:s} MCMC run with {:d} steps, {:d} walkers, '.format(
+                    fittype, n_mcmc_steps, n_walkers
+                ) + '{:d} threads'.format(nworkers)
+            )
+
+    reader = emcee.backends.HDFBackend(samplesavpath)
+
+    n_to_discard = int(burninpercent*n_mcmc_steps)
+
+    samples = reader.get_chain(discard=n_to_discard, flat=True)
+    log_prob_samples = reader.get_log_prob(discard=n_to_discard, flat=True)
+    log_prior_samples = reader.get_blobs(discard=n_to_discard, flat=True)
+
+    # Get best-fit parameters and their 1-sigma error bars
+    fit_statistics = list(
+        map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
+            list(zip( *np.percentile(samples, [15.85, 50, 84.15], axis=0))))
+    )
+
+    medianparams, std_perrs, std_merrs = {}, {}, {}
+    for ix, k in enumerate(np.sort(list(priorbounds.keys()))):
+        medianparams[k] = fit_statistics[ix][0]
+        std_perrs[k] = fit_statistics[ix][1]
+        std_merrs[k] = fit_statistics[ix][2]
+
+    stderrs = {'std_perrs':std_perrs, 'std_merrs':std_merrs}
+
+    per = _get_value('period', medianparams, fixedparams)
+    t0 = _get_value('t0', medianparams, fixedparams)
+    rp = _get_value('rp', medianparams, fixedparams)
+    sma = _get_value('sma', medianparams, fixedparams)
+    incl = _get_value('incl', medianparams, fixedparams)
+    ecc = _get_value('ecc', medianparams, fixedparams)
+    omega = _get_value('omega', medianparams, fixedparams)
+    limb_dark = _get_value('limb_dark', medianparams, fixedparams)
+    try:
+        u = fixedparams['u']
+    except:
+        u = [medianparams['u_linear'], medianparams['u_quad']]
+
+    poly_order0 = _get_value('poly_order0', medianparams, fixedparams)
+    poly_order1 = _get_value('poly_order1', medianparams, fixedparams)
+
+    # initialize the model and calculate the initial model light-curve
+    fit_params, fit_m = _transit_model(stimes, t0, per, rp, sma, incl, ecc,
+                                       omega, u, limb_dark)
+    fitmags = (
+        fit_m.light_curve(fit_params) +
+        poly_order0 + poly_order1*stimes
+    )
+    fepoch = t0
+
+    # assemble the return dictionary
+    medianparams['t0'] += timeoffset
+    returndict = {
+        'fittype':fittype,
+        'fitinfo':{
+            'initialparams':fitparams,
+            'initialmags':init_flux,
+            'fixedparams':fixedparams,
+            'finalparams':medianparams,
+            'finalparamerrs':stderrs,
+            'fitmags':fitmags,
+            'fitepoch':fepoch+timeoffset,
+        },
+        'fitplotfile':None,
+        'magseries':{
+            'times':stimes+timeoffset,
+            'mags':smags,
+            'errs':serrs,
+            'magsarefluxes':magsarefluxes,
+        },
+    }
+
+    # make the output corner plot, and lightcurve plot if desired
+    if plotcorner:
+        fig = corner.corner(
+            samples,
+            labels=['line intercept-1', 'line slope',
+                    'rp','t0-{:.4f}'.format(timeoffset)],
+            truths=[ml_poly_order0, ml_poly_order1, ml_rp, ml_t0],
+            quantiles=[0.1585, 0.5, .8415], show_titles=True
+        )
+        plt.savefig(plotcorner, dpi=300)
+        if verbose:
+            LOGINFO('saved {:s}'.format(plotcorner))
+
+    if plotfit and isinstance(plotfit, str):
+
+        plt.close('all')
+        f, (a0, a1) = plt.subplots(nrows=2, ncols=1, sharex=True,
+                                   figsize=(8,5), gridspec_kw=
+                                   {'height_ratios':[3, 1]})
+
+        a0.scatter(stimes, smags, c='k', alpha=0.9, label='data', zorder=1,
+                   s=10, rasterized=True, linewidths=0)
+
+        DEBUGGING = False
+        if DEBUGGING:
+            a0.scatter(stimes, init_flux, c='r', alpha=1, s=3.5, zorder=2,
+                       rasterized=True, linewidths=0,
+                       label='initial guess for ml')
+            a0.scatter(stimes, ml_mags, c='g', alpha=1, s=3.5, zorder=2,
+                       rasterized=True, linewidths=0, label='max likelihood')
+
+        a0.plot(
+            stimes, fitmags, c='b',
+            zorder=0, rasterized=True, lw=2, alpha=0.4,
+            label='{:s} fit, {:d} dims'.format(fittype, len(fitparamnames))
+        )
+
+        a1.scatter(
+            stimes, smags-fitmags, c='k', alpha=0.9,
+            rasterized=True, s=10, linewidths=0
+        )
+        a1.set_xlabel('time-t0 [days]')
+        a0.set_ylabel('relative flux')
+        a1.set_ylabel('residual')
+        a0.legend(loc='best', fontsize='x-small')
+        for a in [a0, a1]:
+            a.get_yaxis().set_tick_params(which='both', direction='in')
+            a.get_xaxis().set_tick_params(which='both', direction='in')
+
+        f.tight_layout(h_pad=0, w_pad=0)
         f.savefig(plotfit, dpi=300, bbox_inches='tight')
         if verbose:
             LOGINFO('saved {:s}'.format(plotfit))
