@@ -382,8 +382,8 @@ def lcfit_features(times, mags, errs, period,
         LOGWARNING('EB x2 period fit: no standard errors available '
                    'for fit parameters, fit is bad, '
                    'setting fit chisq and red-chisq to np.nan')
-        ebfit_chisq = np.nan
-        ebfit_redchisq = np.nan
+        ebfitx2_chisq = np.nan
+        ebfitx2_redchisq = np.nan
         ebx2_residual_median = np.nan
         ebx2_residual_mad = np.nan
         ebx2_residual_mad_over_lcmad = np.nan
