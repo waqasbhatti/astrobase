@@ -105,13 +105,19 @@ def lcfit_features(times, mags, errs, period,
                    ebparams=[-0.2,0.3,0.7,0.5],
                    sigclip=10.0,
                    magsarefluxes=False,
+                   fitfailure_means_featurenan=False,
                    verbose=True):
-    '''
-    This calculates various features related to fitting models to light curves.
+    '''This calculates various features related to fitting models to light curves.
 
     - calculates R_ij and phi_ij ratios for Fourier fit amplitudes and phases
     - calculates the redchisq for fourier, EB, and planet transit fits
     - calculates the redchisq for fourier, EB, planet transit fits w/2 x period
+
+    For fitfailure_means_featurenan: if the planet, EB and EBx2 fits don't
+    return standard errors because the covariance matrix could not be generated,
+    then the fit is suspicious and the features calculated can't be trusted. If
+    fitfailure_means_featurenan is True, then the output features for these fits
+    will be set to nan.
 
     '''
 
@@ -263,32 +269,50 @@ def lcfit_features(times, mags, errs, period,
                                                  verbose=verbose)
 
     planetfit_finalparams = planet_fit['fitinfo']['finalparams']
-    planetfit_chisq = planet_fit['fitchisq']
-    planetfit_redchisq = planet_fit['fitredchisq']
 
-    if planetfit_finalparams is not None:
+    planetfit_finalparamerrs = planet_fit['fitinfo']['finalparamerrs']
 
-        planet_modelmags, _, _, ppmags, _ = transits.trapezoid_transit_func(
-            planetfit_finalparams,
-            ftimes,
-            fmags,
-            ferrs
-        )
+    if planetfit_finalparamerrs is None and fitfailure_means_featurenan:
+
+        LOGWARNING('planet fit: no standard errors available '
+                   'for fit parameters, fit is bad, '
+                   'setting fit chisq and red-chisq to np.nan')
+        planetfit_chisq = np.nan
+        planetfit_redchisq = np.nan
+        planet_residual_median = np.nan
+        planet_residual_mad = np.nan
+        planet_residual_mad_over_lcmad = np.nan
 
     else:
 
-        LOGERROR('LC fit to transit planet model failed, using initial params')
-        planet_modelmags, _, _, ppmags, _ = transits.trapezoid_transit_func(
-            planetfitparams,
-            ftimes,
-            fmags,
-            ferrs
-        )
+        planetfit_chisq = planet_fit['fitchisq']
+        planetfit_redchisq = planet_fit['fitredchisq']
 
-    planet_residuals = planet_modelmags - ppmags
-    planet_residual_median = np.median(planet_residuals)
-    planet_residual_mad = np.median(np.abs(planet_residuals -
-                                           planet_residual_median))
+        if planetfit_finalparams is not None:
+
+            planet_modelmags, _, _, ppmags, _ = transits.trapezoid_transit_func(
+                planetfit_finalparams,
+                ftimes,
+                fmags,
+                ferrs
+            )
+
+        else:
+
+            LOGERROR('LC fit to transit planet model '
+                     'failed, using initial params')
+            planet_modelmags, _, _, ppmags, _ = transits.trapezoid_transit_func(
+                planetfitparams,
+                ftimes,
+                fmags,
+                ferrs
+            )
+
+        planet_residuals = planet_modelmags - ppmags
+        planet_residual_median = np.median(planet_residuals)
+        planet_residual_mad = np.median(np.abs(planet_residuals -
+                                               planet_residual_median))
+        planet_residual_mad_over_lcmad = planet_residual_mad/lightcurve_mad
 
 
     eb_fit = lcfit.gaussianeb_fit_magseries(ftimes, fmags, ferrs,
@@ -298,32 +322,49 @@ def lcfit_features(times, mags, errs, period,
                                             verbose=verbose)
 
     ebfit_finalparams = eb_fit['fitinfo']['finalparams']
-    ebfit_chisq = eb_fit['fitchisq']
-    ebfit_redchisq = eb_fit['fitredchisq']
+    ebfit_finalparamerrs = eb_fit['fitinfo']['finalparamerrs']
 
-    if ebfit_finalparams is not None:
+    if ebfit_finalparamerrs is None and fitfailure_means_featurenan:
 
-        eb_modelmags, _, _, ebpmags, _ = eclipses.invgauss_eclipses_func(
-            ebfit_finalparams,
-            ftimes,
-            fmags,
-            ferrs
-        )
+        LOGWARNING('EB fit: no standard errors available '
+                   'for fit parameters, fit is bad, '
+                   'setting fit chisq and red-chisq to np.nan')
+        ebfit_chisq = np.nan
+        ebfit_redchisq = np.nan
+        eb_residual_median = np.nan
+        eb_residual_mad = np.nan
+        eb_residual_mad_over_lcmad = np.nan
 
     else:
 
-        LOGERROR('LC fit to EB model failed, using initial params')
+        ebfit_chisq = eb_fit['fitchisq']
+        ebfit_redchisq = eb_fit['fitredchisq']
 
-        eb_modelmags, _, _, ebpmags, _ = eclipses.invgauss_eclipses_func(
-            ebfitparams,
-            ftimes,
-            fmags,
-            ferrs
-        )
+        if ebfit_finalparams is not None:
 
-    eb_residuals = eb_modelmags - ebpmags
-    eb_residual_median = np.median(eb_residuals)
-    eb_residual_mad = np.median(np.abs(eb_residuals - eb_residual_median))
+            eb_modelmags, _, _, ebpmags, _ = eclipses.invgauss_eclipses_func(
+                ebfit_finalparams,
+                ftimes,
+                fmags,
+                ferrs
+            )
+
+        else:
+
+            LOGERROR('LC fit to EB model failed, using initial params')
+
+            eb_modelmags, _, _, ebpmags, _ = eclipses.invgauss_eclipses_func(
+                ebfitparams,
+                ftimes,
+                fmags,
+                ferrs
+            )
+
+        eb_residuals = eb_modelmags - ebpmags
+        eb_residual_median = np.median(eb_residuals)
+        eb_residual_mad = np.median(np.abs(eb_residuals - eb_residual_median))
+        eb_residual_mad_over_lcmad = eb_residual_mad/lightcurve_mad
+
 
     # do the EB fit with 2 x period
     ebfitparams[0] = ebfitparams[0]*2.0
@@ -334,33 +375,55 @@ def lcfit_features(times, mags, errs, period,
                                               verbose=verbose)
 
     ebfitx2_finalparams = eb_fitx2['fitinfo']['finalparams']
-    ebfitx2_chisq = eb_fitx2['fitchisq']
-    ebfitx2_redchisq = eb_fitx2['fitredchisq']
+    ebfitx2_finalparamerrs = eb_fitx2['fitinfo']['finalparamerrs']
 
-    if ebfitx2_finalparams is not None:
+    if ebfitx2_finalparamerrs is None and fitfailure_means_featurenan:
 
-        ebx2_modelmags, _, _, ebx2pmags, _ = eclipses.invgauss_eclipses_func(
-            ebfitx2_finalparams,
-            ftimes,
-            fmags,
-            ferrs
-        )
+        LOGWARNING('EB x2 period fit: no standard errors available '
+                   'for fit parameters, fit is bad, '
+                   'setting fit chisq and red-chisq to np.nan')
+        ebfit_chisq = np.nan
+        ebfit_redchisq = np.nan
+        ebx2_residual_median = np.nan
+        ebx2_residual_mad = np.nan
+        ebx2_residual_mad_over_lcmad = np.nan
 
     else:
 
-        LOGERROR('LC fit to EB model with 2xP failed, using initial params')
+        ebfitx2_chisq = eb_fitx2['fitchisq']
+        ebfitx2_redchisq = eb_fitx2['fitredchisq']
 
-        ebx2_modelmags, _, _, ebx2pmags, _ = eclipses.invgauss_eclipses_func(
-            ebfitparams,
-            ftimes,
-            fmags,
-            ferrs
-        )
+        if ebfitx2_finalparams is not None:
 
-    ebx2_residuals = ebx2_modelmags - ebx2pmags
-    ebx2_residual_median = np.median(ebx2_residuals)
-    ebx2_residual_mad = np.median(np.abs(ebx2_residuals -
-                                         ebx2_residual_median))
+            ebx2_modelmags, _, _, ebx2pmags, _ = (
+                eclipses.invgauss_eclipses_func(
+                    ebfitx2_finalparams,
+                    ftimes,
+                    fmags,
+                    ferrs
+                )
+            )
+
+        else:
+
+            LOGERROR('LC fit to EB model with 2xP failed, using initial params')
+
+            ebx2_modelmags, _, _, ebx2pmags, _ = (
+                eclipses.invgauss_eclipses_func(
+                    ebfitparams,
+                    ftimes,
+                    fmags,
+                    ferrs
+                )
+            )
+
+        ebx2_residuals = ebx2_modelmags - ebx2pmags
+        ebx2_residual_median = np.median(ebx2_residuals)
+        ebx2_residual_mad = np.median(np.abs(ebx2_residuals -
+                                             ebx2_residual_median))
+
+        ebx2_residual_mad_over_lcmad = ebx2_residual_mad/lightcurve_mad
+
 
     # update the outdict
     outdict.update({
@@ -370,7 +433,7 @@ def lcfit_features(times, mags, errs, period,
         'planet_residual_median':planet_residual_median,
         'planet_residual_mad':planet_residual_mad,
         'planet_residual_mad_over_lcmad':(
-            planet_residual_mad/lightcurve_mad,
+            planet_residual_mad_over_lcmad,
         ),
         'eb_fitparams':ebfit_finalparams,
         'eb_chisq':ebfit_chisq,
@@ -378,7 +441,7 @@ def lcfit_features(times, mags, errs, period,
         'eb_residual_median':eb_residual_median,
         'eb_residual_mad':eb_residual_mad,
         'eb_residual_mad_over_lcmad':(
-            eb_residual_mad/lightcurve_mad,
+            eb_residual_mad_over_lcmad,
         ),
         'ebx2_fitparams':ebfitx2_finalparams,
         'ebx2_chisq':ebfitx2_chisq,
@@ -386,7 +449,7 @@ def lcfit_features(times, mags, errs, period,
         'ebx2_residual_median':ebx2_residual_median,
         'ebx2_residual_mad':ebx2_residual_mad,
         'ebx2_residual_mad_over_lcmad':(
-            ebx2_residual_mad/lightcurve_mad,
+            ebx2_residual_mad_over_lcmad,
         ),
     })
 
