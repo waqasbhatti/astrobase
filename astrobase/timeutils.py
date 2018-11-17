@@ -266,6 +266,56 @@ def precess_coordinates(ra, dec,
         return np.degrees(raproc), np.degrees(decproc)
 
 
+############################
+## EPOCHS FOR EPHEMERIDES ##
+############################
+
+def get_epochs_given_midtimes_and_period(t_mid, period, t0_percentile=None,
+                                         verbose=False):
+    '''
+    t_mid = period*epoch + t0.
+
+    args:
+        t_mid (np.array): array of transit mid-time measurements
+
+        period (float): period used to calculate epochs, per the equation
+        above. for typical use cases, a period precise to ~1e-5 days is
+        sufficient to get correct epochs.
+
+    kwargs:
+        t0_percentile (optional float): if passed, uses this percentile
+        of t_mid to define t0.
+    '''
+
+    t_mid = t_mid[np.isfinite(t_mid)]
+    N_midtimes = len(t_mid)
+
+    if not t0_percentile:
+        # if there are an odd number of times, take the median time as epoch=0.
+        # elif there are an even number of times, take the lower of the two
+        # middle times as epoch=0.
+        if N_midtimes % 2 == 1:
+            t0 = np.median(t_mid)
+        else:
+            t0 = t_mid[int(N_midtimes/2)]
+    else:
+        t0 = np.percentile(t_mid, t0_percentile)
+
+    epoch = (t_mid - t0)/period
+
+    # do not convert numpy entries to actual ints, because np.nan is float type
+    int_epoch = np.round(epoch, 0)
+
+    if verbose:
+        LOGINFO('epochs before rounding')
+        LOGINFO('\n{:s}'.format(repr(epoch)))
+        LOGINFO('epochs after rounding')
+        LOGINFO('\n{:s}'.format(repr(int_epoch)))
+
+    return int_epoch, t0
+
+
+
 
 ###########################
 ## JULIAN DATE FUNCTIONS ##
