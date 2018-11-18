@@ -266,6 +266,70 @@ def precess_coordinates(ra, dec,
         return np.degrees(raproc), np.degrees(decproc)
 
 
+############################
+## EPOCHS FOR EPHEMERIDES ##
+############################
+
+def get_epochs_given_midtimes_and_period(t_mid, period, t0_fixed=None,
+                                         t0_percentile=None, verbose=False):
+    '''
+    t_mid = period*epoch + t0.
+
+    Default behavior if no kwargs are used is to define t0 as the median finite
+    time of the passed mid-time array.
+
+    args:
+        t_mid (np.array): array of transit mid-time measurements
+
+        period (float): period used to calculate epochs, per the equation
+        above. for typical use cases, a period precise to ~1e-5 days is
+        sufficient to get correct epochs.
+
+    kwargs:
+        t0_fixed (optional float): if passed, use this t0. (Overrides all
+        others).
+
+        t0_percentile (optional float): if passed, uses this percentile
+        of t_mid to define t0.
+
+    return:
+        int_epoch, t0 (tuple): where int_epoch is an array of integer epochs
+        (float-type), of length equal to the number of *finite* mid-times
+        passed.
+    '''
+
+    t_mid = t_mid[np.isfinite(t_mid)]
+    N_midtimes = len(t_mid)
+
+    if t0_fixed:
+        pass
+    else:
+        if not t0_percentile:
+            # if there are an odd number of times, take the median time as epoch=0.
+            # elif there are an even number of times, take the lower of the two
+            # middle times as epoch=0.
+            if N_midtimes % 2 == 1:
+                t0 = np.median(t_mid)
+            else:
+                t0 = t_mid[int(N_midtimes/2)]
+        else:
+            t0 = np.sort(t_mid)[int(N_midtimes*t0_percentile/100)]
+
+    epoch = (t_mid - t0)/period
+
+    # do not convert numpy entries to actual ints, because np.nan is float type
+    int_epoch = np.round(epoch, 0)
+
+    if verbose:
+        LOGINFO('epochs before rounding')
+        LOGINFO('\n{:s}'.format(repr(epoch)))
+        LOGINFO('epochs after rounding')
+        LOGINFO('\n{:s}'.format(repr(int_epoch)))
+
+    return int_epoch, t0
+
+
+
 
 ###########################
 ## JULIAN DATE FUNCTIONS ##
