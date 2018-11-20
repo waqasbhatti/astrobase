@@ -302,7 +302,7 @@ def get_epochs_given_midtimes_and_period(t_mid, period, t0_fixed=None,
     N_midtimes = len(t_mid)
 
     if t0_fixed:
-        pass
+        t0 = t0_fixed
     else:
         if not t0_percentile:
             # if there are an odd number of times, take the median time as epoch=0.
