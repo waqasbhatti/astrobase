@@ -270,13 +270,23 @@ def precess_coordinates(ra, dec,
 ## EPOCHS FOR EPHEMERIDES ##
 ############################
 
-def get_epochs_given_midtimes_and_period(t_mid, period, t0_fixed=None,
-                                         t0_percentile=None, verbose=False):
+def _single_true(iterable):
+    # return True if exactly one true found
+    iterator = iter(iterable)
+    has_true = any(iterator) # consume from "i" until first true or it's exhuasted
+    has_another_true = any(iterator) # carry on consuming until another true value / exhausted
+    return has_true and not has_another_true
+
+def get_epochs_given_midtimes_and_period(t_mid, period, err_t_mid=None,
+                                         t0_fixed=None, t0_percentile=None,
+                                         verbose=False):
     '''
     t_mid = period*epoch + t0.
 
     Default behavior if no kwargs are used is to define t0 as the median finite
     time of the passed mid-time array.
+
+    Only one of err_t_mid, t0_fixed, should be passed.
 
     args:
         t_mid (np.array): array of transit mid-time measurements
@@ -286,6 +296,13 @@ def get_epochs_given_midtimes_and_period(t_mid, period, t0_fixed=None,
         sufficient to get correct epochs.
 
     kwargs:
+        err_t_mid (optional np.array of length t_mid): errors of the transit
+        mid-time measurements. If passed, the zero-point epoch is set equal to
+        the average of the transit times, weighted as 1/err_t_mid^2 . This
+        minimizes the covariance between the transit epoch and the period
+        (e.g., Gibson et al. 2013). For standard O-C analysis this is the best
+        method.
+
         t0_fixed (optional float): if passed, use this t0. (Overrides all
         others).
 
@@ -298,11 +315,23 @@ def get_epochs_given_midtimes_and_period(t_mid, period, t0_fixed=None,
         passed.
     '''
 
+    kwargarr = np.array([isinstance(err_t_mid,np.ndarray),
+                       t0_fixed,
+                       t0_percentile])
+    if not _single_true(kwargarr) and not np.all(~kwargarr.astype(bool)):
+        raise AssertionError(
+            'can have at most one of err_t_mid, t0_fixed, t0_percentile')
+
     t_mid = t_mid[np.isfinite(t_mid)]
     N_midtimes = len(t_mid)
 
     if t0_fixed:
         t0 = t0_fixed
+    elif isinstance(err_t_mid,np.ndarray):
+        # get the weighted average. then round it to the nearest transit epoch.
+        t0_avg = np.average(t_mid, weights=1/err_t_mid**2)
+        t0_options = np.arange(min(t_mid), max(t_mid)+period, period)
+        t0 = t0_options[np.argmin(np.abs(t0_options - t0_avg))]
     else:
         if not t0_percentile:
             # if there are an odd number of times, take the median time as epoch=0.
