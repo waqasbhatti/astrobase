@@ -90,6 +90,7 @@ def get_snr_of_dip(times,
                    modeltimes,
                    modelmags,
                    atol_normalization=1e-8,
+                   indsintransit=None,
                    magsarefluxes=False,
                    verbose=True,
                    transitdepth=None,
@@ -107,8 +108,7 @@ def get_snr_of_dip(times,
     r = Rp/Rstar,
     T = transit duration,
     δ = transit depth,
-    σ = RMS of the lightcurve in transit. For simplicity, we assume this is the
-        same as the RMS of the residual=mags-modelmags.
+    σ = RMS of the lightcurve in transit.
     Γ = sampling rate
 
     Thus Γ * T is roughly the number of points obtained during transit.
@@ -127,6 +127,10 @@ def get_snr_of_dip(times,
 
     Kwargs:
 
+        indsintransit (np.ndarray): boolean array of len(mags) used to select
+        points in transit, for the RMS measurement. If not passed, the RMS of
+        the entire passed timeseries is used as an approximation.
+
         magsarefluxes (bool): currently forced to be true.
 
         atol_normalization (float): absolute tolerance to which the median of
@@ -135,7 +139,8 @@ def get_snr_of_dip(times,
         transitdepth (float): if transit depth is known can pass it. otherwise,
         it is calculated assuming OOT flux is 1.
 
-        npoints_in_transit (int): if known, can pass it.
+        npoints_in_transit (int): if known, can pass it, to override naive
+        guess.
 
     Returns:
 
@@ -171,7 +176,14 @@ def get_snr_of_dip(times,
 
     subtractedmags = mags - modelmags
 
-    subtractedrms = np.std(subtractedmags)
+    if isinstance(indsintransit, np.ndarray):
+        subtractedrms = np.std(subtractedmags[indsintransit])
+        if verbose:
+            LOGINFO('using in-transit points to measure RMS')
+    else:
+        subtractedrms = np.std(subtractedmags)
+        if verbose:
+            LOGINFO('using all points to measure RMS')
 
     def _get_npoints_in_transit(modelmags):
         # assumes median-normalized fluxes are input
