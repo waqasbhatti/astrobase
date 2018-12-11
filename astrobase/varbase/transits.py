@@ -90,7 +90,7 @@ def get_snr_of_dip(times,
                    modeltimes,
                    modelmags,
                    atol_normalization=1e-8,
-                   indsintransit=None,
+                   indsforrms=None,
                    magsarefluxes=False,
                    verbose=True,
                    transitdepth=None,
@@ -127,9 +127,11 @@ def get_snr_of_dip(times,
 
     Kwargs:
 
-        indsintransit (np.ndarray): boolean array of len(mags) used to select
-        points in transit, for the RMS measurement. If not passed, the RMS of
-        the entire passed timeseries is used as an approximation.
+        indsforrms (np.ndarray): boolean array of len(mags) used to select
+        points for the RMS measurement. If not passed, the RMS of the entire
+        passed timeseries is used as an approximation. Genearlly, it's best to
+        use out of transit points, so the RMS measurement is not
+        model-dependent.
 
         magsarefluxes (bool): currently forced to be true.
 
@@ -176,10 +178,10 @@ def get_snr_of_dip(times,
 
     subtractedmags = mags - modelmags
 
-    if isinstance(indsintransit, np.ndarray):
-        subtractedrms = np.std(subtractedmags[indsintransit])
+    if isinstance(indsforrms, np.ndarray):
+        subtractedrms = np.std(subtractedmags[indsforrms])
         if verbose:
-            LOGINFO('using in-transit points to measure RMS')
+            LOGINFO('using selected points to measure RMS')
     else:
         subtractedrms = np.std(subtractedmags)
         if verbose:
