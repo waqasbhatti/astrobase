@@ -1967,11 +1967,11 @@ def mandelagol_fit_magseries(times, mags, errs,
     if plotcorner:
         if isinstance(trueparams,dict):
             trueparamkeys = np.sort(list(trueparams.keys()))
-            trueparams = [trueparams[k] for k in trueparamkeys]
+            truelist = [trueparams[k] for k in trueparamkeys]
             fig = corner.corner(
                 samples,
                 labels=trueparamkeys,
-                truths=trueparams,
+                truths=truelist,
                 quantiles=[0.1585, 0.5, .8415], show_titles=True
             )
         else:
