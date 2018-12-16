@@ -432,7 +432,6 @@ def fourier_fit_magseries(times, mags, errs, period,
                 fitmagminind = npwhere(fitmags == npmin(fitmags))
             if len(fitmagminind[0]) > 1:
                 fitmagminind = (fitmagminind[0][0],)
-            magseriesepoch = ptimes[fitmagminind]
 
             # assemble the returndict
             returndict = {
@@ -443,7 +442,7 @@ def fourier_fit_magseries(times, mags, errs, period,
                     'initialfit':initialfit,
                     'leastsqfit':leastsqfit,
                     'fitmags':fitmags,
-                    'fitepoch':magseriesepoch
+                    'fitepoch':mintime
                 },
                 'fitchisq':fitchisq,
                 'fitredchisq':fitredchisq,
@@ -461,7 +460,7 @@ def fourier_fit_magseries(times, mags, errs, period,
             if plotfit and isinstance(plotfit, str):
 
                 _make_fit_plot(phase, pmags, perrs, fitmags,
-                               period, mintime, magseriesepoch,
+                               period, mintime, mintime,
                                plotfit,
                                magsarefluxes=magsarefluxes)
 
