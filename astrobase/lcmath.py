@@ -870,12 +870,25 @@ def phase_magseries_with_errs(times, mags, errs, period, epoch,
 def time_bin_magseries(times, mags,
                        binsize=540.0,
                        minbinelems=7):
-    '''This bins the given mag timeseries in time using the binsize given.
+    '''
+    Bins the given mag timeseries in time using the binsize given.
 
-    binsize is in seconds.
+    Args:
 
-    minbinelems is the minimum number of elements per bin.
+        times, mags (np.ndarray). Times have units of days.
 
+    Kwargs:
+
+        binsize (float): in seconds.
+
+        minbinelems (int): the minimum number of elements per bin.
+
+    Returns:
+
+        bin_dict (dict): has the following keys:
+
+            ['jdbins_indices', 'jdbins', 'nbins', 'binnedtimes',
+            'binsize', 'binnedmags'])
     '''
 
     # check if the input arrays are ok

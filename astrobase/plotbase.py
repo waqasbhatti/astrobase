@@ -470,7 +470,10 @@ def plot_phased_mag_series(times,
                            plotdpi=100,
                            modelmags=None,
                            modeltimes=None,
-                           modelerrs=None):
+                           modelerrs=None,
+                           xtimenotphase=False,
+                           xaxlabel='phase',
+                           yaxlabel=None):
     '''This plots a phased magnitude time series using the period provided.
 
     Args
@@ -508,6 +511,10 @@ def plot_phased_mag_series(times,
 
     plotdpi (int): sets the DPI for PNG plots.
 
+    xtimenotphase (bool):
+        if True, x axis gets units of time (multiplies phase by period).
+
+    xaxlabel, yaxlabel (str): labels for x and y axes.
 
     Returns
     -------
@@ -634,6 +641,9 @@ def plot_phased_mag_series(times,
         fig.set_size_inches(7.5,4.8)
         ax = plt.gca()
 
+    if xtimenotphase:
+        plotphase *= period
+
     if phasebin:
         ax.errorbar(plotphase, plotmags, fmt='o',
                     color='#B2BEB5',
@@ -642,6 +652,8 @@ def plot_phased_mag_series(times,
                     markeredgewidth=0.0,
                     ecolor='#B2BEB5',
                     capsize=0)
+        if xtimenotphase:
+            binplotphase *= period
         ax.errorbar(binplotphase, binplotmags, fmt='bo', yerr=binploterrs,
                     markersize=5.0, markeredgewidth=0.0, ecolor='#B2BEB5',
                     capsize=0)
@@ -654,6 +666,8 @@ def plot_phased_mag_series(times,
     if (isinstance(modelplotphase, np.ndarray) and
         isinstance(modelplotmags, np.ndarray)):
 
+        if xtimenotphase:
+            modelplotphase *= period
         ax.plot(modelplotphase, modelplotmags, zorder=5, linewidth=2,
                 alpha=0.9, color='#181c19')
 
@@ -666,8 +680,12 @@ def plot_phased_mag_series(times,
 
     # make lines for phase 0.0, 0.5, and -0.5
     ax.axvline(0.0,alpha=0.9,linestyle='dashed',color='g')
-    ax.axvline(-0.5,alpha=0.9,linestyle='dashed',color='g')
-    ax.axvline(0.5,alpha=0.9,linestyle='dashed',color='g')
+    if not xtimenotphase:
+        ax.axvline(-0.5,alpha=0.9,linestyle='dashed',color='g')
+        ax.axvline(0.5,alpha=0.9,linestyle='dashed',color='g')
+    else:
+        ax.axvline(-period*0.5,alpha=0.9,linestyle='dashed',color='g')
+        ax.axvline(period*0.5,alpha=0.9,linestyle='dashed',color='g')
 
     # fix the ticks to use no offsets
     ax.get_yaxis().get_major_formatter().set_useOffset(False)
@@ -680,22 +698,26 @@ def plot_phased_mag_series(times,
         ymin, ymax = ax.get_ylim()
 
     # set the y axis labels and range
-    if not magsarefluxes:
-        ax.set_ylim(ymax, ymin)
-        yaxlabel = 'magnitude'
-    else:
-        ax.set_ylim(ymin, ymax)
-        yaxlabel = 'flux'
+    if not yaxlabel:
+        if not magsarefluxes:
+            ax.set_ylim(ymax, ymin)
+            yaxlabel = 'magnitude'
+        else:
+            ax.set_ylim(ymin, ymax)
+            yaxlabel = 'flux'
 
     # set the x axis limit
     if not plotphaselim:
         ax.set_xlim((npmin(plotphase)-0.1,
                      npmax(plotphase)+0.1))
     else:
-        ax.set_xlim((plotphaselim[0],plotphaselim[1]))
+        if xtimenotphase:
+            ax.set_xlim((period*plotphaselim[0],period*plotphaselim[1]))
+        else:
+            ax.set_xlim((plotphaselim[0],plotphaselim[1]))
 
     # set up the axis labels and plot title
-    ax.set_xlabel('phase')
+    ax.set_xlabel(xaxlabel)
     ax.set_ylabel(yaxlabel)
     ax.set_title('period: %.6f d - epoch: %.6f' % (period, epoch))
 
