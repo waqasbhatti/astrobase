@@ -1567,7 +1567,7 @@ def _log_likelihood_transit(theta, params, model, t, flux, err_flux,
             params.a = theta[ix]
         elif key == 'incl':
             params.inc = theta[ix]
-        elif key == 'per':
+        elif key == 'period':
             params.per = theta[ix]
         elif key == 'ecc':
             params.per = theta[ix]
@@ -1609,7 +1609,7 @@ def _log_likelihood_transit_plus_line(theta, params, model, t, data_flux,
             params.a = theta[ix]
         elif key == 'incl':
             params.inc = theta[ix]
-        elif key == 'per':
+        elif key == 'period':
             params.per = theta[ix]
         elif key == 'ecc':
             params.per = theta[ix]
