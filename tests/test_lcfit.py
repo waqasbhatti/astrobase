@@ -84,8 +84,10 @@ def test_fourierfit():
     assert_allclose(fit['fitinfo']['fitepoch'],
                     np.array([56092.640558]),
                     rtol=1.0e-5)
-    assert_allclose(fit['fitinfo']['finalparams'], FOURIERPARAMS,
-                    rtol=1.0e-4)
+    assert_allclose(fit['fitinfo']['finalparams'],
+                    FOURIERPARAMS,
+                    rtol=1.0e-5,
+                    atol=0.01)
 
 
 
