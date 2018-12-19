@@ -332,6 +332,12 @@ def fourier_fit_magseries(times, mags, errs, period,
     This folds the time series using the given period and at the first
     observation. Can optionally sigma-clip observations.
 
+    NOTE: the returned value of 'fitepoch' in the 'fitinfo' dict returned by
+    this function is the time value of the first observation since this is where
+    the LC is folded for the fit procedure. To get the actual time of minimum
+    epoch as calculated by a spline fit to the phased LC, use the key
+    'actual_fitepoch' in the 'fitinfo' dict.
+
     if ignoreinitfail is True, ignores the initial failure to find a set of
     optimized Fourier parameters and proceeds to do a least-squares fit anyway.
 
@@ -442,7 +448,8 @@ def fourier_fit_magseries(times, mags, errs, period,
                     'initialfit':initialfit,
                     'leastsqfit':leastsqfit,
                     'fitmags':fitmags,
-                    'fitepoch':mintime
+                    'fitepoch':mintime,
+                    'actual_fitepoch':ptimes[fitmagminind]
                 },
                 'fitchisq':fitchisq,
                 'fitredchisq':fitredchisq,
