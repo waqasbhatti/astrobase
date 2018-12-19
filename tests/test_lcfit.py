@@ -78,7 +78,7 @@ def test_fourierfit():
     assert os.path.exists('test-fourierfit.png')
 
     assert_allclose(fit['fitredchisq'], 2.892135304465803, rtol=1.0e-6)
-    assert_allclose(fit['fitinfo']['fitepoch'], np.array([56853.3082622]))
+    assert_allclose(fit['fitinfo']['fitepoch'], np.array([56092.640558]))
     assert_allclose(fit['fitinfo']['finalparams'], FOURIERPARAMS, rtol=1.0e-5)
 
 
