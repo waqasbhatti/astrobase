@@ -5552,6 +5552,18 @@ CPINFO_DEFAULTKEYS = [
      np.unicode_, True, True, '', ''),
     ('objectinfo.simbad_best_distarcsec',
      np.float_, True, True, np.nan, np.nan),
+    #
+    # TIC info
+    #
+    ('objectinfo.ticid',
+     np.unicode_, True, True, '', ''),
+    ('objectinfo.tic_version',
+     np.unicode_, True, True, '', ''),
+    ('objectinfo.tessmag',
+     np.float_, True, True, np.nan, np.nan),
+    #
+    # variability info
+    #
     ('varinfo.vartags',
      np.unicode_, False, True, '', ''),
     ('varinfo.varperiod',
