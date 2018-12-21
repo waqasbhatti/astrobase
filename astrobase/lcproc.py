@@ -205,7 +205,6 @@ FILTEROPS = {'eq':'==',
              'ne':'!='}
 
 
-
 # used to figure out which period finder to run given a list of methods
 PFMETHODS = {'bls':periodbase.bls_parallel_pfind,
              'gls':periodbase.pgen_lsp,
@@ -215,6 +214,15 @@ PFMETHODS = {'bls':periodbase.bls_parallel_pfind,
              'acf':periodbase.macf_period_find,
              'win':periodbase.specwindow_lsp}
 
+PFMETHOD_NAMES = {
+    'gls':'Generalized Lomb-Scargle periodogram',
+    'pdm':'Stellingwerf phase-dispersion minimization',
+    'aov':'Schwarzenberg-Czerny AoV',
+    'mav':'Schwarzenberg-Czerny AoV multi-harmonic',
+    'bls':'Box Least-squared Search',
+    'acf':'McQuillan+ ACF Period Search',
+    'win':'Timeseries Sampling Lomb-Scargle periodogram'
+}
 
 
 # This is the lcproc dictionary to store registered light curve formats and the
