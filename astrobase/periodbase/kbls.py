@@ -1119,6 +1119,7 @@ def bls_snr(blsdict,
 
 
 def bls_stats_singleperiod(times, mags, errs, period,
+                           maxtransitduration=0.3,
                            magsarefluxes=False,
                            sigclip=10.0,
                            perioddeltapercent=10,
@@ -1170,7 +1171,8 @@ def bls_stats_singleperiod(times, mags, errs, period,
                                   startp=startp,
                                   endp=endp,
                                   nphasebins=nphasebins,
-                                  magsarefluxes=magsarefluxes)
+                                  magsarefluxes=magsarefluxes,
+                                  maxtransitduration=maxtransitduration)
 
         thistransdepth = blsres['blsresult']['transdepth']
         thistransduration = blsres['blsresult']['transduration']
