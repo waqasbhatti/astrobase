@@ -214,7 +214,7 @@ def bls_serial_pfind(times, mags, errs,
                      endp=100.0,  # ... 100.0 d -- don't search full timebase
                      stepsize=5.0e-4,
                      mintransitduration=0.01,  # minimum transit length in phase
-                     maxtransitduration=0.8,   # maximum transit length in phase
+                     maxtransitduration=0.4,   # maximum transit length in phase
                      nphasebins=200,
                      autofreq=True,  # figure out f0, nf, and df automatically
                      periodepsilon=0.1,
@@ -505,7 +505,7 @@ def bls_parallel_pfind(
         endp=100.0,  # ... 100.0 d -- don't search full timebase
         stepsize=1.0e-4,
         mintransitduration=0.01,  # minimum transit length in phase
-        maxtransitduration=0.8,   # maximum transit length in phase
+        maxtransitduration=0.4,   # maximum transit length in phase
         nphasebins=200,
         autofreq=True,  # figure out f0, nf, and df automatically
         nbestpeaks=5,
@@ -887,7 +887,6 @@ def bls_snr(blsdict,
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
 
         nbestsnrs = []
-        nbestasnrs = []
         transitdepth, transitduration = [], []
 
         # get these later
@@ -1123,6 +1122,8 @@ def bls_stats_singleperiod(times, mags, errs, period,
                            sigclip=10.0,
                            perioddeltapercent=10,
                            nphasebins=200,
+                           mintransitduration=0.01,
+                           maxtransitduration=0.4,
                            verbose=True):
     '''This calculates the SNR, refit period, and time of center-transit for a
     single period.
@@ -1170,6 +1171,8 @@ def bls_stats_singleperiod(times, mags, errs, period,
                                   startp=startp,
                                   endp=endp,
                                   nphasebins=nphasebins,
+                                  mintransitduration=mintransitduration,
+                                  maxtransitduration=maxtransitduration,
                                   magsarefluxes=magsarefluxes)
 
         thistransdepth = blsres['blsresult']['transdepth']
