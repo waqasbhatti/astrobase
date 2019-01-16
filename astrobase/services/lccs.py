@@ -161,12 +161,12 @@ except Exception as e:
 
 # Python 2
 try:
-    from urllib import urlretrieve, urlencode
+    from urllib import urlencode
     from urlparse import urlparse
     from urllib2 import urlopen, Request, HTTPError
 # Python 3
 except Exception as e:
-    from urllib.request import urlretrieve, urlopen, Request
+    from urllib.request import urlopen, Request
     from urllib.error import HTTPError
     from urllib.parse import urlencode, urlparse
 
@@ -1025,6 +1025,7 @@ def cone_search(lcc_server,
 
 def fulltext_search(lcc_server,
                     searchterm,
+                    sesame_lookup=False,
                     result_visibility='unlisted',
                     email_when_done=False,
                     collections=None,
@@ -1054,6 +1055,15 @@ def fulltext_search(lcc_server,
     the LCC server's full-text search tab in its browser UI. To search for an
     exact match to a string (like an object name), you can add double quotes
     around the string, e.g. searchitem = '"exact match to me needed"'.
+
+    sesame_lookup: True means the LCC-Server will assume the provided search
+    term is a single object's name, look up its coordinates using the CDS SIMBAD
+    SESAME name resolution service, and then search the LCC-Server for any
+    matching objects. The object name can be either a star name known to SIMBAD,
+    or it can be an extended source name (e.g. an open cluster or nebula). In
+    the first case, a search radius of 5 arcseconds will be used. In the second
+    case, a search radius of 1 degree will be used to find all nearby database
+    objects associated with an extended source name.
 
     result_visibility is one of 'private', 'unlisted', 'public'.
 
@@ -1159,6 +1169,7 @@ def fulltext_search(lcc_server,
 
     params['visibility'] = result_visibility
     params['emailwhendone'] = email_when_done
+    params['sesame'] = sesame_lookup
 
     # we won't wait for the LC ZIP to complete if email_when_done = True
     if email_when_done:
