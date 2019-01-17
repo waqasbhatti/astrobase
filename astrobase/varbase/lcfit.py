@@ -1094,7 +1094,7 @@ def traptransit_fit_magseries(times, mags, errs,
 
                 # check the case when there are more than one transitepochs
                 # returned
-                if transitepoch.size > 0:
+                if transitepoch.size > 1:
                     if verbose:
                         LOGWARNING(
                             "could not auto-find a single minimum in LC for "
@@ -1109,7 +1109,7 @@ def traptransit_fit_magseries(times, mags, errs,
                             'using automatically determined transitepoch = %.5f'
                             % transitepoch
                         )
-                    transitparams[1] = transitepoch
+                    transitparams[1] = transitepoch.item()
 
     # next, check the transitdepth and fix it to the form required
     if magsarefluxes:
@@ -1358,7 +1358,7 @@ def gaussianeb_fit_magseries(times, mags, errs,
                             'using automatically determined ebepoch = %.5f'
                             % ebepoch
                         )
-                    ebparams[1] = ebepoch
+                    ebparams[1] = ebepoch.item()
 
     # next, check the ebdepth and fix it to the form required
     if magsarefluxes:
