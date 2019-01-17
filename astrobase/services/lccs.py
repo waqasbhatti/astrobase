@@ -20,13 +20,13 @@ SERVICES SUPPORTED
 
 This currently supports the following LCC server functions:
 
-- conesearch   -> use cone_search(lcc_server, center_ra, center_decl, ...)
+- conesearch   -> cone_search(lcc_server_url, center_ra, center_decl, ...)
 
-- ftsquery     -> use fulltext_search(lcc_server, searchterm, ...)
+- ftsquery     -> fulltext_search(lcc_server_url, searchterm, sesame=False, ...)
 
-- columnsearch -> use column_search(lcc_server, filters, ...)
+- columnsearch -> column_search(lcc_server_url, filters, ...)
 
-- xmatch       -> use xmatch_search(lcc_server, file_to_upload, ...)
+- xmatch       -> xmatch_search(lcc_server_url, file_to_upload, ...)
 
 The functions above will download the data products (data table CSVs, light
 curve ZIP files) of the search results automatically, or in case the query takes
@@ -36,13 +36,13 @@ long-running queries later.
 
 The functions below support various auxiliary LCC services:
 
-- get-dataset  -> use get_dataset(lcc_server, dataset_id)
+- get-dataset  -> get_dataset(lcc_server_url, dataset_id)
 
-- objectinfo   -> use object_info(lcc_server, objectid, collection, ...)
+- objectinfo   -> object_info(lcc_server_url, objectid, collection, ...)
 
-- dataset-list -> use list_recent_datasets(lcc_server, nrecent=25, ...)
+- dataset-list -> list_recent_datasets(lcc_server_url, nrecent=25, ...)
 
-- collections  -> use list_lc_collections(lcc_server)
+- collections  -> list_lc_collections(lcc_server_url)
 
 '''
 
