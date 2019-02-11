@@ -166,12 +166,27 @@ from .zgls import pgen_lsp, specwindow_lsp
 from .spdm import stellingwerf_pdm
 from .saov import aov_periodfind
 from .smav import aovhm_periodfind
-from .kbls import bls_serial_pfind, bls_parallel_pfind
 from .macf import macf_period_find
 
 # provide the get_snr_of_dip function (this was moved to varbase.transits)
 from ..varbase.transits import get_snr_of_dip
 
+# get the appropriate BLS functions
+import astropy
+apversion = astropy.__version__
+apversion = apversion.split('.')
+apversion = [int(x) for x in apversion]
+
+if len(apversion) == 2:
+    apversion.append(0)
+
+apversion = tuple(apversion)
+
+if apversion >= (3,1,0):
+    from .abls import bls_serial_pfind, bls_parallel_pfind
+else:
+    LOGINFO('Using pyeebls implementation of BLS because Astropy <= 3.1')
+    from .kbls import bls_serial_pfind, bls_parallel_pfind
 
 
 #############################################################
