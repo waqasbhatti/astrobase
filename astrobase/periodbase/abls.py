@@ -108,7 +108,8 @@ from ..lcmath import phase_magseries, sigclip_magseries, \
     time_bin_magseries, phase_bin_magseries, \
     phase_magseries_with_errs, phase_bin_magseries_with_errs
 
-
+from astropy.stats import BoxLeastSquares
+from astropy import units as u
 
 from pyeebls import eebls
 
@@ -127,21 +128,6 @@ NCPUS = cpu_count()
 ## UTILITY FUNCTIONS ##
 #######################
 
-def auto_transit_duration(min_radius_hint,
-                          max_radius_hint):
-    '''
-    This figures out the minimum and max transit duration (q) automatically.
-
-    q ~ 0.076 x R**(2/3) x P**(-2/3)
-
-    P = period in days
-    R = stellar radius in solar radii
-
-    '''
-
-
-
-
 def bls_serial_pfind(times, mags, errs,
                      magsarefluxes=False,
                      startp=0.1,  # search from 0.1 d to...
@@ -149,18 +135,17 @@ def bls_serial_pfind(times, mags, errs,
                      stepsize=5.0e-4,
                      mintransitduration=0.01,  # minimum transit length in phase
                      maxtransitduration=0.4,   # maximum transit length in phase
-                     nphasebins=200,
+                     nphasebins=200,  # this is used to generate the q array
+                     blsobjective='likelihood',
+                     blsmethod='fast',
+                     blsoversample=10,
                      autofreq=True,  # figure out f0, nf, and df automatically
                      periodepsilon=0.1,
                      nbestpeaks=5,
                      sigclip=10.0,
-                     verbose=True):
+                     verbose=True,
+                     raiseonfail=False):
     '''Runs the Box Least Squares Fitting Search for transit-shaped signals.
-
-    Based on eebls.f from Kovacs et al. 2002 and python-bls from Foreman-Mackey
-    et al. 2015. This is the serial version (which is good enough in most cases
-    because BLS in Fortran is fairly fast). If nfreq > 5e5, this will take a
-    while.
 
     '''
 
@@ -241,11 +226,42 @@ def bls_serial_pfind(times, mags, errs,
         # run BLS
         try:
 
-            blsresult = 1
-
             frequencies = minfreq + nparange(nfreq)*stepsize
             periods = 1.0/frequencies
-            lsp = blsresult['power']
+
+            # astropy's BLS requires durations in units of time
+            # we set the number of durations as nphasebins/blsoversample
+            durations = np.linspace(mintransitduration*startp,
+                                    maxtransitduration*startp,
+                                    int(nphasebins/blsoversample))
+            print(durations)
+
+            # set up the correct units for the BLS
+            if magsarefluxes:
+
+                blsmodel = BoxLeastSquares(
+                    stimes*u.day,
+                    smags*u.dimensionless_unscaled,
+                    dy=serrs*u.dimensionless_unscaled
+                )
+
+            else:
+
+                blsmodel = BoxLeastSquares(
+                    stimes*u.day,
+                    smags*u.mag,
+                    dy=serrs*u.mag
+                )
+
+            blsresult = blsmodel.power(
+                periods,
+                durations,
+                objective=blsobjective,
+                method=blsmethod,
+                oversample=blsoversample
+            )
+
+            lsp = blsresult.power
 
             # find the nbestpeaks for the periodogram: 1. sort the lsp array
             # by highest value first 2. go down the values until we find
@@ -274,12 +290,17 @@ def bls_serial_pfind(times, mags, errs,
                         'lspvals':None,
                         'periods':None,
                         'method':'bls',
+                        'blsresult':None,
+                        'blsmodel':None,
                         'kwargs':{'startp':startp,
                                   'endp':endp,
                                   'stepsize':stepsize,
                                   'mintransitduration':mintransitduration,
                                   'maxtransitduration':maxtransitduration,
                                   'nphasebins':nphasebins,
+                                  'blsobjective':blsobjective,
+                                  'blsmethod':blsmethod,
+                                  'blsoversample':blsoversample,
                                   'autofreq':autofreq,
                                   'periodepsilon':periodepsilon,
                                   'nbestpeaks':nbestpeaks,
@@ -290,7 +311,6 @@ def bls_serial_pfind(times, mags, errs,
             sortedlspperiods = finperiods[sortedlspind]
             sortedlspvals = finlsp[sortedlspind]
 
-            prevbestlspval = sortedlspvals[0]
             # now get the nbestpeaks
             nbestperiods, nbestlspvals, peakcount = (
                 [finperiods[bestperiodind]],
@@ -336,6 +356,7 @@ def bls_serial_pfind(times, mags, errs,
                 'frequencies':frequencies,
                 'periods':periods,
                 'blsresult':blsresult,
+                'blsmodel':blsmodel,
                 'stepsize':stepsize,
                 'nfreq':nfreq,
                 'nphasebins':nphasebins,
@@ -348,6 +369,9 @@ def bls_serial_pfind(times, mags, errs,
                           'mintransitduration':mintransitduration,
                           'maxtransitduration':maxtransitduration,
                           'nphasebins':nphasebins,
+                          'blsobjective':blsobjective,
+                          'blsmethod':blsmethod,
+                          'blsoversample':blsoversample,
                           'autofreq':autofreq,
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
@@ -359,6 +383,10 @@ def bls_serial_pfind(times, mags, errs,
         except Exception as e:
 
             LOGEXCEPTION('BLS failed!')
+
+            if raiseonfail:
+                raise
+
             return {'bestperiod':npnan,
                     'bestlspval':npnan,
                     'nbestpeaks':nbestpeaks,
@@ -366,6 +394,8 @@ def bls_serial_pfind(times, mags, errs,
                     'nbestperiods':None,
                     'lspvals':None,
                     'periods':None,
+                    'blsresult':None,
+                    'blsmodel':None,
                     'stepsize':stepsize,
                     'nfreq':nfreq,
                     'nphasebins':nphasebins,
@@ -378,6 +408,9 @@ def bls_serial_pfind(times, mags, errs,
                               'mintransitduration':mintransitduration,
                               'maxtransitduration':maxtransitduration,
                               'nphasebins':nphasebins,
+                              'blsobjective':blsobjective,
+                              'blsmethod':blsmethod,
+                              'blsoversample':blsoversample,
                               'autofreq':autofreq,
                               'periodepsilon':periodepsilon,
                               'nbestpeaks':nbestpeaks,
@@ -395,6 +428,8 @@ def bls_serial_pfind(times, mags, errs,
                 'nbestperiods':None,
                 'lspvals':None,
                 'periods':None,
+                'blsresult':None,
+                'blsmodel':None,
                 'stepsize':stepsize,
                 'nfreq':None,
                 'nphasebins':None,
@@ -407,6 +442,9 @@ def bls_serial_pfind(times, mags, errs,
                           'mintransitduration':mintransitduration,
                           'maxtransitduration':maxtransitduration,
                           'nphasebins':nphasebins,
+                          'blsobjective':blsobjective,
+                          'blsmethod':blsmethod,
+                          'blsoversample':blsoversample,
                           'autofreq':autofreq,
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
@@ -423,7 +461,10 @@ def bls_parallel_pfind(
         stepsize=1.0e-4,
         mintransitduration=0.01,  # minimum transit length in phase
         maxtransitduration=0.4,   # maximum transit length in phase
-        nphasebins=200,
+        nphasebins=200,  # used with blsoversample to figure out ndurations
+        blsobjective='likelihood',
+        blsmethod='fast',
+        blsoversample=10,
         autofreq=True,  # figure out f0, nf, and df automatically
         nbestpeaks=5,
         periodepsilon=0.1,  # 0.1
@@ -433,9 +474,8 @@ def bls_parallel_pfind(
 ):
     '''Runs the Box Least Squares Fitting Search for transit-shaped signals.
 
-    Based on eebls.f from Kovacs et al. 2002 and python-bls from Foreman-Mackey
-    et al. 2015. Breaks up the full frequency space into chunks and passes them
-    to parallel BLS workers.
+    Breaks up the full frequency space into chunks and passes them to parallel
+    BLS workers.
 
     NOTE: the combined BLS spectrum produced by this function is not identical
     to that produced by running BLS in one shot for the entire frequency
