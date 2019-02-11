@@ -282,6 +282,7 @@ def bls_serial_pfind(times, mags, errs,
 
                 LOGERROR('no finite periodogram values '
                          'for this mag series, skipping...')
+
                 return {'bestperiod':npnan,
                         'bestlspval':npnan,
                         'nbestpeaks':nbestpeaks,
@@ -289,6 +290,7 @@ def bls_serial_pfind(times, mags, errs,
                         'nbestperiods':None,
                         'lspvals':None,
                         'periods':None,
+                        'durations':None,
                         'method':'bls',
                         'blsresult':None,
                         'blsmodel':None,
@@ -355,6 +357,7 @@ def bls_serial_pfind(times, mags, errs,
                 'lspvals':lsp,
                 'frequencies':frequencies,
                 'periods':periods,
+                'durations':durations,
                 'blsresult':blsresult,
                 'blsmodel':blsmodel,
                 'stepsize':stepsize,
@@ -376,7 +379,8 @@ def bls_serial_pfind(times, mags, errs,
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
                           'sigclip':sigclip,
-                          'magsarefluxes':magsarefluxes}}
+                          'magsarefluxes':magsarefluxes}
+            }
 
             return resultdict
 
@@ -394,6 +398,7 @@ def bls_serial_pfind(times, mags, errs,
                     'nbestperiods':None,
                     'lspvals':None,
                     'periods':None,
+                    'durations':None,
                     'blsresult':None,
                     'blsmodel':None,
                     'stepsize':stepsize,
@@ -428,6 +433,7 @@ def bls_serial_pfind(times, mags, errs,
                 'nbestperiods':None,
                 'lspvals':None,
                 'periods':None,
+                'durations':None,
                 'blsresult':None,
                 'blsmodel':None,
                 'stepsize':stepsize,
