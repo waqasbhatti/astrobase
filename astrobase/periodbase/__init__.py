@@ -183,6 +183,7 @@ if len(apversion) == 2:
 apversion = tuple(apversion)
 
 if apversion >= (3,1,0):
+    LOGINFO('Using Astropy implementation of BLS because Astropy >= 3.1')
     from .abls import bls_serial_pfind, bls_parallel_pfind
 else:
     LOGINFO('Using pyeebls implementation of BLS because Astropy <= 3.1')
