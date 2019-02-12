@@ -111,8 +111,6 @@ from ..lcmath import phase_magseries, sigclip_magseries, \
 from astropy.stats import BoxLeastSquares
 from astropy import units as u
 
-from pyeebls import eebls
-
 from ..varbase.lcfit import savgol_fit_magseries, \
     traptransit_fit_magseries
 
@@ -941,26 +939,6 @@ def bls_snr(blsdict,
     ingress/egress bin specific to those chunks. These may not be valid for the
     global best peaks in the periodogram, so we need to rerun bls_serial_pfind
     around each peak in blsdict['nbestperiods'] to get correct values for these.
-
-    FIXME: for now, we're only doing simple RMS. Need to calculate red and
-    white-noise RMS as outlined below:
-
-      - calculate the white noise rms and the red noise rms of the residual.
-
-        - the white noise rms is just the rms of the residual
-        - the red noise rms = sqrt(binnedrms^2 - expectedbinnedrms^2)
-
-      - calculate the SNR using:
-
-        sqrt(delta^2 / ((sigma_w ^2 / nt) + (sigma_r ^2 / Nt))))
-
-        where:
-
-        delta = transit depth
-        sigma_w = white noise rms
-        sigma_r = red noise rms
-        nt = number of in-transit points
-        Nt = number of distinct transits sampled
 
     '''
 
