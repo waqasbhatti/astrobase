@@ -244,7 +244,8 @@ def _make_periodogram(axes,
     if (objectinfo and isinstance(objectinfo, dict) and
         ('objectid' in objectinfo or 'hatid' in objectinfo) and
         'ra' in objectinfo and 'decl' in objectinfo and
-        objectinfo['ra'] and objectinfo['decl']):
+        objectinfo['ra'] and objectinfo['decl']
+    ):
 
         if 'objectid' not in objectinfo:
             objectid = objectinfo['hatid']
@@ -271,6 +272,13 @@ def _make_periodogram(axes,
             bvcolor = None
             jkcolor = None
             ijcolor = None
+
+        if ('teff' in objectinfo and 'gmag' in objectinfo and
+            objectinfo['teff'] and objectinfo['gmag']):
+            # Gaia data input
+            teff_val = objectinfo['teff']
+            gmag = objectinfo['gmag']
+
 
         # bump the ylim of the LSP plot so that the overplotted finder and
         # objectinfo can fit in this axes plot
@@ -384,6 +392,16 @@ def _make_periodogram(axes,
                       ha='left',va='center',transform=axes.transAxes,
                       fontsize=18.0)
 
+        if ('teff' in objectinfo and 'gmag' in objectinfo and
+            objectinfo['teff'] and objectinfo['gmag']):
+
+            # gaia data available
+            axes.text(0.05,0.87,
+                      '$G$ = %.1f, $T_\mathrm{eff}$ = %d' % (
+                          gmag, int(teff_val)),
+                      ha='left',va='center',transform=axes.transAxes,
+                      fontsize=18.0)
+
         # add in proper motion stuff if available in objectinfo
         if ('pmra' in objectinfo and objectinfo['pmra'] and
             'pmdecl' in objectinfo and objectinfo['pmdecl']):
@@ -409,7 +427,8 @@ def _make_magseries_plot(axes,
                          stimes,
                          smags,
                          serrs,
-                         magsarefluxes=False):
+                         magsarefluxes=False,
+                         ms=2.0):
     '''makes the magseries plot tile.
 
     '''
@@ -419,7 +438,7 @@ def _make_magseries_plot(axes,
     axes.plot(scaledplottime,
               smags,
               marker='o',
-              ms=2.0, ls='None',mew=0,
+              ms=ms, ls='None',mew=0,
               color='green',
               rasterized=True)
 
@@ -468,7 +487,9 @@ def _make_phased_magseries_plot(axes,
                                 xliminsetmode=False,
                                 twolspmode=False,
                                 magsarefluxes=False,
-                                verbose=True):
+                                verbose=True,
+                                phasems=2.0,
+                                phasebinms=4.0):
     '''makes the phased magseries plot tile.
 
     if xliminsetmode = True, then makes a zoomed-in plot with the provided
@@ -578,7 +599,7 @@ def _make_phased_magseries_plot(axes,
     axes.plot(plotphase,
               plotmags,
               marker='o',
-              ms=2.0, ls='None',mew=0,
+              ms=phasems, ls='None',mew=0,
               color='gray',
               rasterized=True)
 
@@ -587,7 +608,7 @@ def _make_phased_magseries_plot(axes,
         axes.plot(binplotphase,
                   binplotmags,
                   marker='o',
-                  ms=4.0, ls='None',mew=0,
+                  ms=phasebinms, ls='None',mew=0,
                   color='#1c1e57',
                   rasterized=True)
 
@@ -1063,7 +1084,10 @@ def twolsp_checkplot_png(lspinfo1,
                          xliminsetmode=False,
                          plotdpi=100,
                          bestperiodhighlight=None,
-                         verbose=True):
+                         verbose=True,
+                         phasems=2.0,
+                         phasebinms=4.0,
+                         unphasedms=2.0):
     '''This makes a checkplot using results from two independent period-finders.
 
     Adapted from Luke Bouma's implementation of the same. This makes a special
@@ -1223,7 +1247,8 @@ def twolsp_checkplot_png(lspinfo1,
         ##############################
 
         _make_magseries_plot(axes[2], stimes, smags, serrs,
-                             magsarefluxes=magsarefluxes)
+                             magsarefluxes=magsarefluxes,
+                             ms=unphasedms)
 
         # make the plot for each best period
         lspbestperiods1 = nbestperiods1[::]
@@ -1255,7 +1280,9 @@ def twolsp_checkplot_png(lspinfo1,
                                         twolspmode=True,
                                         magsarefluxes=magsarefluxes,
                                         xliminsetmode=xliminsetmode,
-                                        verbose=verbose)
+                                        verbose=verbose,
+                                        phasems=phasems,
+                                        phasebinms=phasebinms)
 
         ##########################################################
         ### NOW PLOT PHASED LCS FOR 3 BEST PERIODS IN LSPINFO2 ###
@@ -1283,7 +1310,9 @@ def twolsp_checkplot_png(lspinfo1,
                                         twolspmode=True,
                                         magsarefluxes=magsarefluxes,
                                         xliminsetmode=xliminsetmode,
-                                        verbose=verbose)
+                                        verbose=verbose,
+                                        phasems=phasems,
+                                        phasebinms=phasebinms)
 
         # end of plotting for each ax
 
