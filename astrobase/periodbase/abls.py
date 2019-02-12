@@ -260,7 +260,7 @@ def bls_serial_pfind(times, mags, errs,
                 oversample=blsoversample
             )
 
-            lsp = blsresult.power
+            lsp = np.array(blsresult.power)
 
             # find the nbestpeaks for the periodogram: 1. sort the lsp array
             # by highest value first 2. go down the values until we find
@@ -466,6 +466,95 @@ def bls_serial_pfind(times, mags, errs,
 
 
 
+def parallel_bls_worker(task):
+    '''
+    This wraps Astropy's BoxLeastSquares for use with bls_parallel_pfind below.
+
+        # task[0] = times
+        # task[1] = mags
+        # task[2] = errs
+        # task[3] = magsarefluxes
+
+        # task[4] = minfreq
+        # task[5] = nfreq
+        # task[6] = stepsize
+
+        # task[7] = nphasebins
+        # task[8] = mintransitduration
+        # task[9] = maxtransitduration
+
+        # task[10] = blsobjective
+        # task[11] = blsmethod
+        # task[12] = blsoversample
+
+    '''
+
+    try:
+
+        times, mags, errs = task[:3]
+        magsarefluxes = task[3]
+
+        minfreq, nfreq, stepsize = task[4:7]
+
+        nphasebins, mintransitduration, maxtransitduration = task[7:10]
+
+        blsobjective, blsmethod, blsoversample = task[10:]
+
+        frequencies = minfreq + nparange(nfreq)*stepsize
+        periods = 1.0/frequencies
+
+        # astropy's BLS requires durations in units of time
+        # we set the number of durations as nphasebins/blsoversample
+        durations = np.linspace(mintransitduration*periods.min(),
+                                maxtransitduration*periods.min(),
+                                int(nphasebins/blsoversample))
+
+        # set up the correct units for the BLS model
+        if magsarefluxes:
+
+            blsmodel = BoxLeastSquares(
+                times*u.day,
+                mags*u.dimensionless_unscaled,
+                dy=errs*u.dimensionless_unscaled
+            )
+
+        else:
+
+            blsmodel = BoxLeastSquares(
+                times*u.day,
+                mags*u.mag,
+                dy=errs*u.mag
+            )
+
+        blsresult = blsmodel.power(
+            periods,
+            durations,
+            objective=blsobjective,
+            method=blsmethod,
+            oversample=blsoversample
+        )
+
+        return {
+            'blsresult': blsresult,
+            'blsmodel': blsmodel,
+            'durations': durations,
+            'power': np.array(blsresult.power)
+        }
+
+    except Exception as e:
+
+        LOGEXCEPTION('BLS for frequency chunk: (%.6f, %.6f) failed.' %
+                     (frequencies[0], frequencies[-1]))
+
+        return {
+            'blsresult': None,
+            'blsmodel': None,
+            'durations': durations,
+            'power': np.array([npnan for x in range(nfreq)]),
+        }
+
+
+
 def bls_parallel_pfind(
         times, mags, errs,
         magsarefluxes=False,
@@ -603,20 +692,178 @@ def bls_parallel_pfind(
 
 
         # populate the tasks list
-        tasks = [(stimes, smags,
-                  chunk_minf, chunk_nf,
-                  stepsize, nphasebins,
-                  mintransitduration, maxtransitduration)
-                 for (chunk_nf, chunk_minf)
+        #
+        # task[0] = times
+        # task[1] = mags
+        # task[2] = errs
+        # task[3] = magsarefluxes
+
+        # task[4] = minfreq
+        # task[5] = nfreq
+        # task[6] = stepsize
+
+        # task[7] = nphasebins
+        # task[8] = mintransitduration
+        # task[9] = maxtransitduration
+
+        # task[10] = blsobjective
+        # task[11] = blsmethod
+        # task[12] = blsoversample
+
+        # populate the tasks list
+        tasks = [(stimes, smags, serrs, magsarefluxes,
+                  chunk_minf, chunk_nf, stepsize,
+                  nphasebins, mintransitduration, maxtransitduration,
+                  blsobjective, blsmethod, blsoversample)
+                 for (chunk_minf, chunk_nf)
                  in zip(chunk_minfreqs, chunk_nfreqs)]
 
         if verbose:
             for ind, task in enumerate(tasks):
                 LOGINFO('worker %s: minfreq = %.6f, nfreqs = %s' %
-                        (ind+1, task[3], task[2]))
+                        (ind+1, task[4], task[5]))
             LOGINFO('running...')
 
         # return tasks
+
+        # start the pool
+        pool = Pool(nworkers)
+        results = pool.map(parallel_bls_worker, tasks)
+
+        pool.close()
+        pool.join()
+        del pool
+
+        # now concatenate the output lsp arrays
+        lsp = np.concatenate([x['power'] for x in results])
+        periods = 1.0/frequencies
+
+        # find the nbestpeaks for the periodogram: 1. sort the lsp array
+        # by highest value first 2. go down the values until we find
+        # five values that are separated by at least periodepsilon in
+        # period
+        # make sure to get only the finite peaks in the periodogram
+        # this is needed because BLS may produce infs for some peaks
+        finitepeakind = npisfinite(lsp)
+        finlsp = lsp[finitepeakind]
+        finperiods = periods[finitepeakind]
+
+        # make sure that finlsp has finite values before we work on it
+        try:
+
+            bestperiodind = npargmax(finlsp)
+
+        except ValueError:
+
+            LOGERROR('no finite periodogram values '
+                     'for this mag series, skipping...')
+
+            return {'bestperiod':npnan,
+                    'bestlspval':npnan,
+                    'nbestpeaks':nbestpeaks,
+                    'nbestinds':None,
+                    'nbestlspvals':None,
+                    'nbestperiods':None,
+                    'lspvals':None,
+                    'periods':None,
+                    'durations':None,
+                    'method':'bls',
+                    'blsresult':None,
+                    'blsmodel':None,
+                    'kwargs':{'startp':startp,
+                              'endp':endp,
+                              'stepsize':stepsize,
+                              'mintransitduration':mintransitduration,
+                              'maxtransitduration':maxtransitduration,
+                              'nphasebins':nphasebins,
+                              'blsobjective':blsobjective,
+                              'blsmethod':blsmethod,
+                              'blsoversample':blsoversample,
+                              'autofreq':autofreq,
+                              'periodepsilon':periodepsilon,
+                              'nbestpeaks':nbestpeaks,
+                              'sigclip':sigclip,
+                              'magsarefluxes':magsarefluxes}}
+
+        sortedlspind = np.argsort(finlsp)[::-1]
+        sortedlspperiods = finperiods[sortedlspind]
+        sortedlspvals = finlsp[sortedlspind]
+
+        # now get the nbestpeaks
+        nbestperiods, nbestlspvals, nbestinds, peakcount = (
+            [finperiods[bestperiodind]],
+            [finlsp[bestperiodind]],
+            [bestperiodind],
+            1
+        )
+        prevperiod = sortedlspperiods[0]
+
+        # find the best nbestpeaks in the lsp and their periods
+        for period, lspval, ind in zip(sortedlspperiods,
+                                       sortedlspvals,
+                                       sortedlspind):
+
+            if peakcount == nbestpeaks:
+                break
+            perioddiff = abs(period - prevperiod)
+            bestperiodsdiff = [abs(period - x) for x in nbestperiods]
+
+            # print('prevperiod = %s, thisperiod = %s, '
+            #       'perioddiff = %s, peakcount = %s' %
+            #       (prevperiod, period, perioddiff, peakcount))
+
+            # this ensures that this period is different from the last
+            # period and from all the other existing best periods by
+            # periodepsilon to make sure we jump to an entire different
+            # peak in the periodogram
+            if (perioddiff > (periodepsilon*prevperiod) and
+                all(x > (periodepsilon*prevperiod)
+                    for x in bestperiodsdiff)):
+                nbestperiods.append(period)
+                nbestlspvals.append(lspval)
+                nbestinds.append(ind)
+                peakcount = peakcount + 1
+
+            prevperiod = period
+
+
+        # generate the return dict
+        resultdict = {
+            'bestperiod':finperiods[bestperiodind],
+            'bestlspval':finlsp[bestperiodind],
+            'nbestpeaks':nbestpeaks,
+            'nbestinds':nbestinds,
+            'nbestlspvals':nbestlspvals,
+            'nbestperiods':nbestperiods,
+            'lspvals':lsp,
+            'frequencies':frequencies,
+            'periods':periods,
+            'durations':[x['durations'] for x in results],
+            'blsresult':[x['blsresult'] for x in results],
+            'blsmodel':[x['blsmodel'] for x in results],
+            'stepsize':stepsize,
+            'nfreq':nfreq,
+            'nphasebins':nphasebins,
+            'mintransitduration':mintransitduration,
+            'maxtransitduration':maxtransitduration,
+            'method':'bls',
+            'kwargs':{'startp':startp,
+                      'endp':endp,
+                      'stepsize':stepsize,
+                      'mintransitduration':mintransitduration,
+                      'maxtransitduration':maxtransitduration,
+                      'nphasebins':nphasebins,
+                      'blsobjective':blsobjective,
+                      'blsmethod':blsmethod,
+                      'blsoversample':blsoversample,
+                      'autofreq':autofreq,
+                      'periodepsilon':periodepsilon,
+                      'nbestpeaks':nbestpeaks,
+                      'sigclip':sigclip,
+                      'magsarefluxes':magsarefluxes}
+        }
+
+        return resultdict
 
 
     else:
@@ -624,12 +871,15 @@ def bls_parallel_pfind(
         LOGERROR('no good detections for these times and mags, skipping...')
         return {'bestperiod':npnan,
                 'bestlspval':npnan,
+                'nbestinds':None,
                 'nbestpeaks':nbestpeaks,
                 'nbestlspvals':None,
                 'nbestperiods':None,
                 'lspvals':None,
                 'periods':None,
+                'durations':None,
                 'blsresult':None,
+                'blsmodel':None,
                 'stepsize':stepsize,
                 'nfreq':None,
                 'nphasebins':None,
@@ -642,6 +892,9 @@ def bls_parallel_pfind(
                           'mintransitduration':mintransitduration,
                           'maxtransitduration':maxtransitduration,
                           'nphasebins':nphasebins,
+                          'blsobjective':blsobjective,
+                          'blsmethod':blsmethod,
+                          'blsoversample':blsoversample,
                           'autofreq':autofreq,
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
@@ -710,6 +963,15 @@ def bls_snr(blsdict,
         Nt = number of distinct transits sampled
 
     '''
+
+    # get rid of nans first and sigclip
+    stimes, smags, serrs = sigclip_magseries(times,
+                                             mags,
+                                             errs,
+                                             magsarefluxes=magsarefluxes,
+                                             sigclip=sigclip)
+
+
 
 def bls_stats_singleperiod(times, mags, errs, period,
                            magsarefluxes=False,

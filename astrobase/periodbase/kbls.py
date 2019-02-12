@@ -373,7 +373,6 @@ def bls_serial_pfind(times, mags, errs,
             sortedlspperiods = finperiods[sortedlspind]
             sortedlspvals = finlsp[sortedlspind]
 
-            prevbestlspval = sortedlspvals[0]
             # now get the nbestpeaks
             nbestperiods, nbestlspvals, peakcount = (
                 [finperiods[bestperiodind]],
