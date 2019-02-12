@@ -234,9 +234,8 @@ def bls_serial_pfind(times, mags, errs,
             durations = np.linspace(mintransitduration*startp,
                                     maxtransitduration*startp,
                                     int(nphasebins/blsoversample))
-            print(durations)
 
-            # set up the correct units for the BLS
+            # set up the correct units for the BLS model
             if magsarefluxes:
 
                 blsmodel = BoxLeastSquares(
@@ -286,6 +285,7 @@ def bls_serial_pfind(times, mags, errs,
                 return {'bestperiod':npnan,
                         'bestlspval':npnan,
                         'nbestpeaks':nbestpeaks,
+                        'nbestinds':None,
                         'nbestlspvals':None,
                         'nbestperiods':None,
                         'lspvals':None,
@@ -314,15 +314,18 @@ def bls_serial_pfind(times, mags, errs,
             sortedlspvals = finlsp[sortedlspind]
 
             # now get the nbestpeaks
-            nbestperiods, nbestlspvals, peakcount = (
+            nbestperiods, nbestlspvals, nbestinds, peakcount = (
                 [finperiods[bestperiodind]],
                 [finlsp[bestperiodind]],
+                [bestperiodind],
                 1
             )
             prevperiod = sortedlspperiods[0]
 
             # find the best nbestpeaks in the lsp and their periods
-            for period, lspval in zip(sortedlspperiods, sortedlspvals):
+            for period, lspval, ind in zip(sortedlspperiods,
+                                           sortedlspvals,
+                                           sortedlspind):
 
                 if peakcount == nbestpeaks:
                     break
@@ -342,6 +345,7 @@ def bls_serial_pfind(times, mags, errs,
                         for x in bestperiodsdiff)):
                     nbestperiods.append(period)
                     nbestlspvals.append(lspval)
+                    nbestinds.append(ind)
                     peakcount = peakcount + 1
 
                 prevperiod = period
@@ -352,6 +356,7 @@ def bls_serial_pfind(times, mags, errs,
                 'bestperiod':finperiods[bestperiodind],
                 'bestlspval':finlsp[bestperiodind],
                 'nbestpeaks':nbestpeaks,
+                'nbestinds':nbestinds,
                 'nbestlspvals':nbestlspvals,
                 'nbestperiods':nbestperiods,
                 'lspvals':lsp,
@@ -393,6 +398,7 @@ def bls_serial_pfind(times, mags, errs,
 
             return {'bestperiod':npnan,
                     'bestlspval':npnan,
+                    'nbestinds':None,
                     'nbestpeaks':nbestpeaks,
                     'nbestlspvals':None,
                     'nbestperiods':None,
@@ -428,6 +434,7 @@ def bls_serial_pfind(times, mags, errs,
         LOGERROR('no good detections for these times and mags, skipping...')
         return {'bestperiod':npnan,
                 'bestlspval':npnan,
+                'nbestinds':None,
                 'nbestpeaks':nbestpeaks,
                 'nbestlspvals':None,
                 'nbestperiods':None,
