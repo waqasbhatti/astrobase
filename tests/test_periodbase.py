@@ -161,7 +161,7 @@ def test_kbls_serial():
 
 def test_kbls_parallel():
     '''
-    Tests periodbase.bls_parallel_pfind.
+    Tests periodbase.kbls.bls_parallel_pfind.
 
     '''
     lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
@@ -172,3 +172,22 @@ def test_kbls_parallel():
 
     assert isinstance(bls, dict)
     assert_allclose(bls['bestperiod'], 3.08560655)
+
+
+
+def test_abls_serial():
+    '''
+    This tests periodbase.abls.bls_serial_pfind.
+
+    '''
+
+    EXPECTED_PERIOD = 3.0873018
+
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
+    bls = abls.bls_serial_pfind(lcd['rjd'],
+                                lcd['aep_000'],
+                                lcd['aie_000'],
+                                startp=1.0)
+
+    assert isinstance(bls, dict)
+    assert_allclose(bls['bestperiod'], EXPECTED_PERIOD)
