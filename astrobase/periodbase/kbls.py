@@ -703,8 +703,6 @@ def bls_parallel_pfind(
         sortedlspperiods = finperiods[sortedlspind]
         sortedlspvals = finlsp[sortedlspind]
 
-        prevbestlspval = sortedlspvals[0]
-
         # now get the nbestpeaks
         nbestperiods, nbestlspvals, peakcount = (
             [finperiods[bestperiodind]],
