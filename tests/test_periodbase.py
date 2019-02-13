@@ -13,7 +13,7 @@ import os
 import os.path
 try:
     from urllib import urlretrieve
-except:
+except Exception as e:
     from urllib.request import urlretrieve
 from numpy.testing import assert_allclose
 
@@ -188,6 +188,26 @@ def test_abls_serial():
                                 lcd['aep_000'],
                                 lcd['aie_000'],
                                 startp=1.0)
+
+    assert isinstance(bls, dict)
+    assert_allclose(bls['bestperiod'], EXPECTED_PERIOD)
+
+
+
+
+def test_abls_parallel():
+    '''
+    This tests periodbase.abls.bls_serial_pfind.
+
+    '''
+
+    EXPECTED_PERIOD = 3.0847452
+
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
+    bls = abls.bls_parallel_pfind(lcd['rjd'],
+                                  lcd['aep_000'],
+                                  lcd['aie_000'],
+                                  startp=1.0)
 
     assert isinstance(bls, dict)
     assert_allclose(bls['bestperiod'], EXPECTED_PERIOD)
