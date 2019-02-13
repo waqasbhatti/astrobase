@@ -133,7 +133,7 @@ def bls_serial_pfind(times, mags, errs,
                      stepsize=5.0e-4,
                      mintransitduration=0.01,  # minimum transit length in phase
                      maxtransitduration=0.4,   # maximum transit length in phase
-                     nphasebins=200,  # this is used to generate the q array
+                     ndurations=50,
                      blsobjective='likelihood',
                      blsmethod='fast',
                      blsoversample=10,
@@ -160,9 +160,6 @@ def bls_serial_pfind(times, mags, errs,
         # if we're setting up everything automatically
         if autofreq:
 
-            # figure out the best number of phasebins to use
-            nphasebins = int(np.ceil(2.0/mintransitduration))
-
             # use heuristic to figure out best timestep
             stepsize = 0.25*mintransitduration/(stimes.max()-stimes.min())
 
@@ -177,9 +174,9 @@ def bls_serial_pfind(times, mags, errs,
                         'minfreq: %s, maxfreq: %s' % (startp, endp, nfreq,
                                                       minfreq, maxfreq))
                 LOGINFO('autofreq = True: using AUTOMATIC values for '
-                        'freq stepsize: %s, nphasebins: %s, '
+                        'freq stepsize: %s, ndurations: %s, '
                         'min transit duration: %s, max transit duration: %s' %
-                        (stepsize, nphasebins,
+                        (stepsize, ndurations,
                          mintransitduration, maxtransitduration))
 
         else:
@@ -194,9 +191,9 @@ def bls_serial_pfind(times, mags, errs,
                         'minfreq: %s, maxfreq: %s' % (startp, endp, nfreq,
                                                       minfreq, maxfreq))
                 LOGINFO('autofreq = False: using PROVIDED values for '
-                        'freq stepsize: %s, nphasebins: %s, '
+                        'freq stepsize: %s, ndurations: %s, '
                         'min transit duration: %s, max transit duration: %s' %
-                        (stepsize, nphasebins,
+                        (stepsize, ndurations,
                          mintransitduration, maxtransitduration))
 
 
@@ -228,13 +225,9 @@ def bls_serial_pfind(times, mags, errs,
             periods = 1.0/frequencies
 
             # astropy's BLS requires durations in units of time
-            # we set the number of durations as nphasebins/blsoversample
-            # if n_durations < 50, we'll use that instead
-            n_durations = max([int(nphasebins/blsoversample), 50])
-
             durations = np.linspace(mintransitduration*startp,
                                     maxtransitduration*startp,
-                                    n_durations)
+                                    ndurations)
 
 
             # set up the correct units for the BLS model
@@ -301,7 +294,7 @@ def bls_serial_pfind(times, mags, errs,
                                   'stepsize':stepsize,
                                   'mintransitduration':mintransitduration,
                                   'maxtransitduration':maxtransitduration,
-                                  'nphasebins':nphasebins,
+                                  'ndurations':ndurations,
                                   'blsobjective':blsobjective,
                                   'blsmethod':blsmethod,
                                   'blsoversample':blsoversample,
@@ -369,7 +362,6 @@ def bls_serial_pfind(times, mags, errs,
                 'blsmodel':blsmodel,
                 'stepsize':stepsize,
                 'nfreq':nfreq,
-                'nphasebins':nphasebins,
                 'mintransitduration':mintransitduration,
                 'maxtransitduration':maxtransitduration,
                 'method':'bls',
@@ -378,7 +370,7 @@ def bls_serial_pfind(times, mags, errs,
                           'stepsize':stepsize,
                           'mintransitduration':mintransitduration,
                           'maxtransitduration':maxtransitduration,
-                          'nphasebins':nphasebins,
+                          'ndurations':ndurations,
                           'blsobjective':blsobjective,
                           'blsmethod':blsmethod,
                           'blsoversample':blsoversample,
@@ -411,7 +403,6 @@ def bls_serial_pfind(times, mags, errs,
                     'blsmodel':None,
                     'stepsize':stepsize,
                     'nfreq':nfreq,
-                    'nphasebins':nphasebins,
                     'mintransitduration':mintransitduration,
                     'maxtransitduration':maxtransitduration,
                     'method':'bls',
@@ -420,7 +411,7 @@ def bls_serial_pfind(times, mags, errs,
                               'stepsize':stepsize,
                               'mintransitduration':mintransitduration,
                               'maxtransitduration':maxtransitduration,
-                              'nphasebins':nphasebins,
+                              'ndurations':ndurations,
                               'blsobjective':blsobjective,
                               'blsmethod':blsmethod,
                               'blsoversample':blsoversample,
@@ -456,7 +447,7 @@ def bls_serial_pfind(times, mags, errs,
                           'stepsize':stepsize,
                           'mintransitduration':mintransitduration,
                           'maxtransitduration':maxtransitduration,
-                          'nphasebins':nphasebins,
+                          'ndurations':ndurations,
                           'blsobjective':blsobjective,
                           'blsmethod':blsmethod,
                           'blsoversample':blsoversample,
@@ -481,7 +472,7 @@ def parallel_bls_worker(task):
         # task[5] = nfreq
         # task[6] = stepsize
 
-        # task[7] = nphasebins
+        # task[7] = ndurations
         # task[8] = mintransitduration
         # task[9] = maxtransitduration
 
@@ -498,22 +489,17 @@ def parallel_bls_worker(task):
 
         minfreq, nfreq, stepsize = task[4:7]
 
-        nphasebins, mintransitduration, maxtransitduration = task[7:10]
+        ndurations, mintransitduration, maxtransitduration = task[7:10]
 
         blsobjective, blsmethod, blsoversample = task[10:]
 
         frequencies = minfreq + nparange(nfreq)*stepsize
         periods = 1.0/frequencies
 
-        # we set the number of durations as nphasebins/blsoversample
         # astropy's BLS requires durations in units of time
-        # we set the number of durations as nphasebins/blsoversample
-        # if n_durations < 50, we'll use that instead
-        n_durations = max([int(nphasebins/blsoversample), 50])
-
         durations = np.linspace(mintransitduration*periods.min(),
                                 maxtransitduration*periods.min(),
-                                n_durations)
+                                ndurations)
 
         # set up the correct units for the BLS model
         if magsarefluxes:
@@ -569,7 +555,7 @@ def bls_parallel_pfind(
         stepsize=1.0e-4,
         mintransitduration=0.01,  # minimum transit length in phase
         maxtransitduration=0.4,   # maximum transit length in phase
-        nphasebins=200,  # used with blsoversample to figure out ndurations
+        ndurations=50,
         blsobjective='likelihood',
         blsmethod='fast',
         blsoversample=10,
@@ -609,9 +595,6 @@ def bls_parallel_pfind(
         # if we're setting up everything automatically
         if autofreq:
 
-            # figure out the best number of phasebins to use
-            nphasebins = int(np.ceil(2.0/mintransitduration))
-
             # use heuristic to figure out best timestep
             stepsize = 0.25*mintransitduration/(stimes.max()-stimes.min())
 
@@ -626,9 +609,9 @@ def bls_parallel_pfind(
                         'minfreq: %s, maxfreq: %s' % (startp, endp, nfreq,
                                                       minfreq, maxfreq))
                 LOGINFO('autofreq = True: using AUTOMATIC values for '
-                        'freq stepsize: %s, nphasebins: %s, '
+                        'freq stepsize: %s, ndurations: %s, '
                         'min transit duration: %s, max transit duration: %s' %
-                        (stepsize, nphasebins,
+                        (stepsize, ndurations,
                          mintransitduration, maxtransitduration))
 
         else:
@@ -643,9 +626,9 @@ def bls_parallel_pfind(
                         'minfreq: %s, maxfreq: %s' % (startp, endp, nfreq,
                                                       minfreq, maxfreq))
                 LOGINFO('autofreq = False: using PROVIDED values for '
-                        'freq stepsize: %s, nphasebins: %s, '
+                        'freq stepsize: %s, ndurations: %s, '
                         'min transit duration: %s, max transit duration: %s' %
-                        (stepsize, nphasebins,
+                        (stepsize, ndurations,
                          mintransitduration, maxtransitduration))
 
         # check the minimum frequency
@@ -719,7 +702,7 @@ def bls_parallel_pfind(
         # populate the tasks list
         tasks = [(stimes, smags, serrs, magsarefluxes,
                   chunk_minf, chunk_nf, stepsize,
-                  nphasebins, mintransitduration, maxtransitduration,
+                  ndurations, mintransitduration, maxtransitduration,
                   blsobjective, blsmethod, blsoversample)
                  for (chunk_minf, chunk_nf)
                  in zip(chunk_minfreqs, chunk_nfreqs)]
@@ -781,7 +764,7 @@ def bls_parallel_pfind(
                               'stepsize':stepsize,
                               'mintransitduration':mintransitduration,
                               'maxtransitduration':maxtransitduration,
-                              'nphasebins':nphasebins,
+                              'ndurations':ndurations,
                               'blsobjective':blsobjective,
                               'blsmethod':blsmethod,
                               'blsoversample':blsoversample,
@@ -849,7 +832,6 @@ def bls_parallel_pfind(
             'blsmodel':[x['blsmodel'] for x in results],
             'stepsize':stepsize,
             'nfreq':nfreq,
-            'nphasebins':nphasebins,
             'mintransitduration':mintransitduration,
             'maxtransitduration':maxtransitduration,
             'method':'bls',
@@ -858,7 +840,7 @@ def bls_parallel_pfind(
                       'stepsize':stepsize,
                       'mintransitduration':mintransitduration,
                       'maxtransitduration':maxtransitduration,
-                      'nphasebins':nphasebins,
+                      'ndurations':ndurations,
                       'blsobjective':blsobjective,
                       'blsmethod':blsmethod,
                       'blsoversample':blsoversample,
@@ -897,7 +879,7 @@ def bls_parallel_pfind(
                           'stepsize':stepsize,
                           'mintransitduration':mintransitduration,
                           'maxtransitduration':maxtransitduration,
-                          'nphasebins':nphasebins,
+                          'ndurations':ndurations,
                           'blsobjective':blsobjective,
                           'blsmethod':blsmethod,
                           'blsoversample':blsoversample,
