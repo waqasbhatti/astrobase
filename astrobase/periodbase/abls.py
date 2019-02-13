@@ -968,7 +968,7 @@ def bls_stats_singleperiod(times, mags, errs, period,
             blsres['blsresult'].depth_snr[bestperiod_ind].to_value()
         )
 
-       # get stats for the best period
+        # get stats for the best period
         bls_stats = blsres['blsmodel'].compute_stats(
             bestperiod,
             bestperiod_duration,

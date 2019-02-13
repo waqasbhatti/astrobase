@@ -197,7 +197,7 @@ def test_abls_serial():
 
 def test_abls_parallel():
     '''
-    This tests periodbase.abls.bls_serial_pfind.
+    This tests periodbase.abls.bls_parallel_pfind.
 
     '''
 
