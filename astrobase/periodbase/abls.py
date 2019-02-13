@@ -957,19 +957,29 @@ def bls_stats_singleperiod(times, mags, errs, period,
                                   magsarefluxes=magsarefluxes)
 
         bestperiod_ind = np.argmax(blsres['blsresult'].power)
-        bestperiod = np.argmax(blsres['blsresult'].period[bestperiod_ind])
-        bestperiod_epoch = blsres['blsresult'].transit_time[bestperiod_ind]
-        bestperiod_duration = blsres['blsresult'].duration[bestperiod_ind]
+        bestperiod = blsres['blsresult'].period[bestperiod_ind].to_value()
+        bestperiod_epoch = (
+            blsres['blsresult'].transit_time[bestperiod_ind].to_value()
+        )
+        bestperiod_duration = (
+            blsres['blsresult'].duration[bestperiod_ind].to_value()
+        )
+        bestperiod_snr = (
+            blsres['blsresult'].depth_snr[bestperiod_ind].to_value()
+        )
 
-        # get stats for the best period
+       # get stats for the best period
         bls_stats = blsres['blsmodel'].compute_stats(
             bestperiod,
             bestperiod_duration,
             bestperiod_epoch
         )
 
-
-
+        return {'period':bestperiod,
+                'transitdepth':bls_stats['depth'][0],
+                'snr':bestperiod_snr,
+                'stats':bls_stats,
+                'blsresult':blsres['blsresult']}
 
     # if there aren't enough points in the mag series, bail out
     else:
