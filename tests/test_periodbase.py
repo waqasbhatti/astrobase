@@ -187,7 +187,8 @@ def test_abls_serial():
     bls = abls.bls_serial_pfind(lcd['rjd'],
                                 lcd['aep_000'],
                                 lcd['aie_000'],
-                                startp=1.0)
+                                startp=1.0,
+                                ndurations=50)
 
     assert isinstance(bls, dict)
     assert_allclose(bls['bestperiod'], EXPECTED_PERIOD)
@@ -207,7 +208,8 @@ def test_abls_parallel():
     bls = abls.bls_parallel_pfind(lcd['rjd'],
                                   lcd['aep_000'],
                                   lcd['aie_000'],
-                                  startp=1.0)
+                                  startp=1.0,
+                                  ndurations=50)
 
     assert isinstance(bls, dict)
     assert_allclose(bls['bestperiod'], EXPECTED_PERIOD)
