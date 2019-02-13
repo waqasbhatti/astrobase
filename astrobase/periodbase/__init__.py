@@ -167,11 +167,25 @@ from .spdm import stellingwerf_pdm
 from .saov import aov_periodfind
 from .smav import aovhm_periodfind
 from .macf import macf_period_find
+from .kbls import bls_serial_pfind, bls_parallel_pfind
 
 # provide the get_snr_of_dip function (this was moved to varbase.transits)
 from ..varbase.transits import get_snr_of_dip
 
-# get the appropriate BLS functions
+
+# used to figure out which function to run for bootstrap resampling
+LSPMETHODS = {
+    'bls':bls_parallel_pfind,
+    'gls':pgen_lsp,
+    'aov':aov_periodfind,
+    'mav':aovhm_periodfind,
+    'pdm':stellingwerf_pdm,
+    'acf':macf_period_find,
+    'win':specwindow_lsp
+}
+
+
+# check if we have the astropy implementation of BLS available
 import astropy
 apversion = astropy.__version__
 apversion = apversion.split('.')
@@ -183,27 +197,21 @@ if len(apversion) == 2:
 apversion = tuple(apversion)
 
 if apversion >= (3,1,0):
-    LOGINFO('Using Astropy implementation of BLS because Astropy >= 3.1')
-    from .abls import bls_serial_pfind, bls_parallel_pfind
-else:
-    LOGINFO('Using pyeebls implementation of BLS because Astropy <= 3.1')
-    from .kbls import bls_serial_pfind, bls_parallel_pfind
+
+    LOGINFO('Astropy implementation of BLS is available.')
+    LOGINFO('To use it, call the periodbase.use_astropy_bls() function')
+
+    def use_astropy_bls():
+        from .abls import bls_serial_pfind, bls_parallel_pfind
+        globals()['bls_serial_pfind'] = bls_serial_pfind
+        globals()['bls_parallel_pfind'] = bls_parallel_pfind
+        globals()['LSPMETHODS']['bls'] = bls_parallel_pfind
+
 
 
 #############################################################
 ## FUNCTIONS FOR TESTING SIGNIFICANCE OF PERIODOGRAM PEAKS ##
 #############################################################
-
-# used to figure out which function to run for bootstrap resampling
-LSPMETHODS = {'bls':bls_parallel_pfind,
-              'gls':pgen_lsp,
-              'aov':aov_periodfind,
-              'mav':aovhm_periodfind,
-              'pdm':stellingwerf_pdm,
-              'acf':macf_period_find,
-              'win':specwindow_lsp}
-
-
 
 def bootstrap_falsealarmprob(lspdict,
                              times,
