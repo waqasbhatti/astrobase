@@ -202,7 +202,7 @@ def test_abls_parallel():
 
     '''
 
-    EXPECTED_PERIOD = 3.0847452
+    EXPECTED_PERIOD = 3.0848887
 
     lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
     bls = abls.bls_parallel_pfind(lcd['rjd'],
