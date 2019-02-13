@@ -397,7 +397,7 @@ def _make_periodogram(axes,
 
             # gaia data available
             axes.text(0.05,0.87,
-                      '$G$ = %.1f, $T_\mathrm{eff}$ = %d' % (
+                      r'$G$ = %.1f, $T_\mathrm{eff}$ = %d' % (
                           gmag, int(teff_val)),
                       ha='left',va='center',transform=axes.transAxes,
                       fontsize=18.0)

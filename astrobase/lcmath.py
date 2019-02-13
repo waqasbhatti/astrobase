@@ -81,7 +81,7 @@ import numpy as np
 from numpy import isfinite as npisfinite, median as npmedian, \
     mean as npmean, abs as npabs, std as npstddev
 
-from scipy.spatial import cKDTree as kdtree
+from scipy.spatial import cKDTree
 
 import scipy.stats
 
@@ -914,14 +914,14 @@ def time_bin_magseries(times, mags,
     # need to add a bogus y coord to make this a problem that KD-trees can
     # solve.
     time_coords = np.array([[x,1.0] for x in finite_times])
-    jdtree = kdtree(time_coords)
+    jdtree = cKDTree(time_coords)
     binned_finite_timeseries_indices = []
 
     collected_binned_mags = {}
 
     for jd in jdbins:
         # find all bin indices close to within binsizejd of this point
-        # using the kdtree query. we use the p-norm = 1 (I think this
+        # using the cKDTree query. we use the p-norm = 1 (I think this
         # means straight-up pairwise distance? FIXME: check this)
         bin_indices = jdtree.query_ball_point(np.array([jd,1.0]),
                                               binsizejd/2.0, p=1.0)
@@ -994,7 +994,7 @@ def time_bin_magseries_with_errs(times, mags, errs,
     # need to add a bogus y coord to make this a problem that KD-trees can
     # solve.
     time_coords = np.array([[x,1.0] for x in finite_times])
-    jdtree = kdtree(time_coords)
+    jdtree = cKDTree(time_coords)
     binned_finite_timeseries_indices = []
 
     collected_binned_mags = {}
@@ -1002,7 +1002,7 @@ def time_bin_magseries_with_errs(times, mags, errs,
     for jd in jdbins:
 
         # find all bin indices close to within binsize of this point using the
-        # kdtree query. we use the p-norm = 1 for pairwise Euclidean distance.
+        # cKDTree query. we use the p-norm = 1 for pairwise Euclidean distance.
         bin_indices = jdtree.query_ball_point(np.array([jd,1.0]),
                                               binsizejd/2.0, p=1.0)
 
@@ -1078,7 +1078,7 @@ def phase_bin_magseries(phases, mags,
     # need to add a bogus y coord to make this a problem that KD-trees can
     # solve.
     time_coords = np.array([[x,1.0] for x in finite_phases])
-    phasetree = kdtree(time_coords)
+    phasetree = cKDTree(time_coords)
     binned_finite_phaseseries_indices = []
 
     collected_binned_mags = {}
@@ -1086,7 +1086,7 @@ def phase_bin_magseries(phases, mags,
     for phase in phasebins:
 
         # find all bin indices close to within binsize of this point using the
-        # kdtree query. we use the p-norm = 1 for pairwise Euclidean distance.
+        # cKDTree query. we use the p-norm = 1 for pairwise Euclidean distance.
         bin_indices = phasetree.query_ball_point(np.array([phase,1.0]),
                                                  binsize/2.0, p=1.0)
 
@@ -1158,7 +1158,7 @@ def phase_bin_magseries_with_errs(phases, mags, errs,
     # need to add a bogus y coord to make this a problem that KD-trees can
     # solve.
     time_coords = np.array([[x,1.0] for x in finite_phases])
-    phasetree = kdtree(time_coords)
+    phasetree = cKDTree(time_coords)
     binned_finite_phaseseries_indices = []
 
     collected_binned_mags = {}
@@ -1166,7 +1166,7 @@ def phase_bin_magseries_with_errs(phases, mags, errs,
     for phase in phasebins:
 
         # find all bin indices close to within binsize of this point using the
-        # kdtree query. we use the p-norm = 1 for pairwise Euclidean distance.
+        # cKDTree query. we use the p-norm = 1 for pairwise Euclidean distance.
         bin_indices = phasetree.query_ball_point(np.array([phase,1.0]),
                                                  binsize/2.0, p=1.0)
 
@@ -1302,7 +1302,7 @@ def fill_magseries_gaps(times, mags, errs,
 
     # just use scipy.stats.mode instead of our hacked together nonsense earlier.
     gapmoderes = scipy.stats.mode(gaps)
-    gapmode = np.asscalar(gapmoderes[0])
+    gapmode = gapmoderes[0].item()
 
     LOGINFO('auto-cadence for mag series: %.5f' % gapmode)
 
