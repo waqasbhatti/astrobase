@@ -133,7 +133,7 @@ def bls_serial_pfind(times, mags, errs,
                      stepsize=5.0e-4,
                      mintransitduration=0.01,  # minimum transit length in phase
                      maxtransitduration=0.4,   # maximum transit length in phase
-                     ndurations=50,
+                     ndurations=100,
                      blsobjective='likelihood',
                      blsmethod='fast',
                      blsoversample=10,
@@ -555,7 +555,7 @@ def bls_parallel_pfind(
         stepsize=1.0e-4,
         mintransitduration=0.01,  # minimum transit length in phase
         maxtransitduration=0.4,   # maximum transit length in phase
-        ndurations=50,
+        ndurations=100,
         blsobjective='likelihood',
         blsmethod='fast',
         blsoversample=10,
@@ -895,7 +895,7 @@ def bls_stats_singleperiod(times, mags, errs, period,
                            magsarefluxes=False,
                            sigclip=10.0,
                            perioddeltapercent=10,
-                           ndurations=50,
+                           ndurations=100,
                            mintransitduration=0.01,
                            maxtransitduration=0.4,
                            blsobjective='likelihood',
