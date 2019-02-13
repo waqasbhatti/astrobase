@@ -904,6 +904,10 @@ def bls_snr(blsdict,
 
             # get the period interval
             startp = period - perioddeltapercent*period/100.0
+
+            if startp < 0:
+                startp = period
+
             endp = period + perioddeltapercent*period/100.0
 
             # see if we need to rerun bls_serial_pfind
@@ -1159,6 +1163,10 @@ def bls_stats_singleperiod(times, mags, errs, period,
 
         # get the period interval
         startp = period - perioddeltapercent*period/100.0
+
+        if startp < 0:
+            startp = period
+
         endp = period + perioddeltapercent*period/100.0
 
         # rerun BLS in serial mode around the specified period to get the
