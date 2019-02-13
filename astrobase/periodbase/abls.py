@@ -229,9 +229,13 @@ def bls_serial_pfind(times, mags, errs,
 
             # astropy's BLS requires durations in units of time
             # we set the number of durations as nphasebins/blsoversample
+            # if n_durations < 50, we'll use that instead
+            n_durations = max([int(nphasebins/blsoversample), 50])
+
             durations = np.linspace(mintransitduration*startp,
                                     maxtransitduration*startp,
-                                    int(nphasebins/blsoversample))
+                                    n_durations)
+
 
             # set up the correct units for the BLS model
             if magsarefluxes:
@@ -501,11 +505,15 @@ def parallel_bls_worker(task):
         frequencies = minfreq + nparange(nfreq)*stepsize
         periods = 1.0/frequencies
 
+        # we set the number of durations as nphasebins/blsoversample
         # astropy's BLS requires durations in units of time
         # we set the number of durations as nphasebins/blsoversample
+        # if n_durations < 50, we'll use that instead
+        n_durations = max([int(nphasebins/blsoversample), 50])
+
         durations = np.linspace(mintransitduration*periods.min(),
                                 maxtransitduration*periods.min(),
-                                int(nphasebins/blsoversample))
+                                n_durations)
 
         # set up the correct units for the BLS model
         if magsarefluxes:
