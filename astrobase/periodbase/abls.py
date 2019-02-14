@@ -964,6 +964,11 @@ def bls_stats_singleperiod(times, mags, errs, period,
         bestperiod_duration = (
             blsres['blsresult'].duration[bestperiod_ind].to_value()
         )
+
+        # this is the fractional transit duration (q) as is conventional
+        # duration of transit (L) = q * best_period
+        bestperiod_q = bestperiod_duration/bestperiod
+
         bestperiod_snr = (
             blsres['blsresult'].depth_snr[bestperiod_ind].to_value()
         )
@@ -976,7 +981,9 @@ def bls_stats_singleperiod(times, mags, errs, period,
         )
 
         return {'period':bestperiod,
+                'epoch':None,  # FIXME: figure this out
                 'transitdepth':bls_stats['depth'][0],
+                'transitduration':bestperiod_q,
                 'snr':bestperiod_snr,
                 'stats':bls_stats,
                 'blsresult':blsres['blsresult']}

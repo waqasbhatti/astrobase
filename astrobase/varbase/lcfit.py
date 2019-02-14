@@ -1136,9 +1136,12 @@ def traptransit_fit_magseries(times, mags, errs,
         covxmatrix = leastsqfit[1]
 
         # calculate the chisq and reduced chisq
-        fitmags, phase, ptimes, pmags, perrs = transits.trapezoid_transit_func(
-            finalparams,
-            stimes, smags, serrs
+        fitmags, phase, ptimes, pmags, perrs, n_transitpoints = (
+            transits.trapezoid_transit_func(
+                finalparams,
+                stimes, smags, serrs,
+                get_ntransitpoints=True
+            )
         )
         fitchisq = npsum(
             ((fitmags - pmags)*(fitmags - pmags)) / (perrs*perrs)
@@ -1177,6 +1180,7 @@ def traptransit_fit_magseries(times, mags, errs,
                 'leastsqfit':leastsqfit,
                 'fitmags':fitmags,
                 'fitepoch':fepoch,
+                'ntransitpoints':n_transitpoints
             },
             'fitchisq':fitchisq,
             'fitredchisq':fitredchisq,
@@ -1217,6 +1221,7 @@ def traptransit_fit_magseries(times, mags, errs,
                 'leastsqfit':leastsqfit,
                 'fitmags':None,
                 'fitepoch':None,
+                'ntransitpoints':0
             },
             'fitchisq':npnan,
             'fitredchisq':npnan,

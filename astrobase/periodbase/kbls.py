@@ -1253,91 +1253,162 @@ def bls_stats_singleperiod(times, mags, errs, period,
                            % repr(thisminepoch))
             thisminepoch = thisminepoch[0]
 
-        # phase using this epoch
-        phased_magseries = phase_magseries_with_errs(stimes,
-                                                     smags,
-                                                     serrs,
-                                                     thisbestperiod,
-                                                     thisminepoch,
-                                                     wrap=False,
-                                                     sort=True)
+        # set up trapezoid transit model to fit for this LC
+        transitparams = [
+            thisbestperiod,
+            thisminepoch,
+            thistransdepth,
+            thistransduration,
+            0.15*thistransduration  # initial test value for ingress duration
+        ]
 
-        tphase = phased_magseries['phase']
-        tmags = phased_magseries['mags']
-
-        # use the transit depth and duration to subtract the BLS transit
-        # model from the phased mag series. we're centered about 0.0 as the
-        # phase of the transit minimum so we need to look at stuff from
-        # [0.0, transitphase] and [1.0-transitphase, 1.0]
-        transitphase = thistransduration/2.0
-
-        transitindices = ((tphase < transitphase) |
-                          (tphase > (1.0 - transitphase)))
-
-        # this is the BLS model
-        # constant = median(tmags) outside transit
-        # constant = thistransitdepth inside transit
-        blsmodel = npfull_like(tmags, npmedian(tmags))
-
-        if magsarefluxes:
-
-            # eebls.f returns +ve transit depth for fluxes
-            # so we need to subtract here to get fainter fluxes in transit
-            blsmodel[transitindices] = (
-                blsmodel[transitindices] - thistransdepth
-            )
-        else:
-
-            # eebls.f returns -ve transit depth for magnitudes
-            # so we need to subtract here to get fainter mags in transits
-            blsmodel[transitindices] = (
-                blsmodel[transitindices] - thistransdepth
-            )
-
-        # see __init__/get_snr_of_dip docstring for description of transit SNR
-        # equation, which is what we use for `thissnr`.
-        subtractedmags = tmags - blsmodel
-        subtractedrms = npstd(subtractedmags)
-        npts_in_transit = len(tmags[transitindices])
-        thissnr = (
-            npsqrt(npts_in_transit) * npabs(thistransdepth/subtractedrms)
+        modelfit = traptransit_fit_magseries(
+            stimes,
+            smags,
+            serrs,
+            transitparams,
+            sigclip=None,
+            magsarefluxes=magsarefluxes,
+            verbose=verbose
         )
 
-        # tell user about stuff if verbose = True
-        if verbose:
+        # if the model fit succeeds, calculate SNR using the trapezoid model fit
+        if modelfit and modelfit['fitinfo']['finalparams'] is not None:
 
-            LOGINFO('refit best period: %.6f, '
-                    'refit center of transit: %.5f' %
-                    (thisbestperiod, thisminepoch))
+            fitparams = modelfit['fitinfo']['finalparams']
+            fiterrs = modelfit['fitinfo']['finalparamerrs']
+            modelmags, actualmags, modelphase = (
+                modelfit['fitinfo']['fitmags'],
+                modelfit['magseries']['mags'],
+                modelfit['magseries']['phase']
+            )
+            subtractedmags = actualmags - modelmags
+            subtractedrms = np.std(subtractedmags)
 
-            LOGINFO('transit ingress phase = %.3f to %.3f' % (1.0 -
-                                                              transitphase,
-                                                              1.0))
-            LOGINFO('transit egress phase = %.3f to %.3f' % (0.0,
-                                                             transitphase))
-            LOGINFO('npoints in transit: %s' % tmags[transitindices].size)
+            npts_in_transit = modelfit['fitinfo']['ntransitpoints']
+            transit_snr = (
+                np.sqrt(npts_in_transit) * np.abs(thistransdepth/subtractedrms)
+            )
 
-            LOGINFO('transit depth (delta): %.5f, '
-                    'frac transit length (q): %.3f, '
-                    ' SNR: %.3f' %
-                    (thistransdepth,
-                     thistransduration,
-                     thissnr))
+            fit_period, fit_epoch, fit_depth, fit_duration, fit_ingress_dur = (
+                fitparams
+            )
 
-        return {'period':thisbestperiod,
-                'epoch':thisminepoch,
-                'snr':thissnr,
-                'whitenoise':npnan,
-                'rednoise':npnan,
-                'transitdepth':thistransdepth,
-                'transitduration':thistransduration,
-                'nphasebins':nphasebins,
-                'transingressbin':thistransingressbin,
-                'transegressbin':thistransegressbin,
-                'blsmodel':blsmodel,
-                'subtractedmags':subtractedmags,
-                'phasedmags':tmags,
-                'phases':tphase}
+            if verbose:
+
+                LOGINFO('refit best period: %.6f, '
+                        'refit center of transit: %.5f' %
+                        (fit_period, fit_epoch))
+
+                LOGINFO('npoints in transit: %s' % npts_in_transit)
+
+                LOGINFO('transit depth (delta): %.5f, '
+                        'frac transit length (q): %.3f, '
+                        ' SNR: %.3f' %
+                        (fit_depth,
+                         fit_duration,
+                         transit_snr))
+
+            return {'period':fit_period,
+                    'epoch':fit_epoch,
+                    'snr':transit_snr,
+                    'transitdepth':fit_depth,
+                    'transitduration':fit_duration,
+                    'blsmodel':modelmags,
+                    'subtractedmags':subtractedmags,
+                    'phasedmags':actualmags,
+                    'phases':modelphase,
+                    'fitparams':fitparams,
+                    'fiterrs':fiterrs,
+                    'fitinfo':modelfit}
+
+
+        # if the model fit doesn't work, then do the SNR calculation the old way
+        else:
+
+            # phase using this epoch
+            phased_magseries = phase_magseries_with_errs(stimes,
+                                                         smags,
+                                                         serrs,
+                                                         thisbestperiod,
+                                                         thisminepoch,
+                                                         wrap=False,
+                                                         sort=True)
+
+            tphase = phased_magseries['phase']
+            tmags = phased_magseries['mags']
+
+            # use the transit depth and duration to subtract the BLS transit
+            # model from the phased mag series. we're centered about 0.0 as the
+            # phase of the transit minimum so we need to look at stuff from
+            # [0.0, transitphase] and [1.0-transitphase, 1.0]
+            transitphase = thistransduration/2.0
+
+            transitindices = ((tphase < transitphase) |
+                              (tphase > (1.0 - transitphase)))
+
+            # this is the BLS model
+            # constant = median(tmags) outside transit
+            # constant = thistransitdepth inside transit
+            blsmodel = npfull_like(tmags, npmedian(tmags))
+
+            if magsarefluxes:
+
+                # eebls.f returns +ve transit depth for fluxes
+                # so we need to subtract here to get fainter fluxes in transit
+                blsmodel[transitindices] = (
+                    blsmodel[transitindices] - thistransdepth
+                )
+            else:
+
+                # eebls.f returns -ve transit depth for magnitudes
+                # so we need to subtract here to get fainter mags in transits
+                blsmodel[transitindices] = (
+                    blsmodel[transitindices] - thistransdepth
+                )
+
+            # see __init__/get_snr_of_dip docstring for description of transit
+            # SNR equation, which is what we use for `thissnr`.
+            subtractedmags = tmags - blsmodel
+            subtractedrms = npstd(subtractedmags)
+            npts_in_transit = len(tmags[transitindices])
+            thissnr = (
+                npsqrt(npts_in_transit) * npabs(thistransdepth/subtractedrms)
+            )
+
+            # tell user about stuff if verbose = True
+            if verbose:
+
+                LOGINFO('refit best period: %.6f, '
+                        'refit center of transit: %.5f' %
+                        (thisbestperiod, thisminepoch))
+
+                LOGINFO('transit ingress phase = %.3f to %.3f' % (1.0 -
+                                                                  transitphase,
+                                                                  1.0))
+                LOGINFO('transit egress phase = %.3f to %.3f' % (0.0,
+                                                                 transitphase))
+                LOGINFO('npoints in transit: %s' % tmags[transitindices].size)
+
+                LOGINFO('transit depth (delta): %.5f, '
+                        'frac transit length (q): %.3f, '
+                        ' SNR: %.3f' %
+                        (thistransdepth,
+                         thistransduration,
+                         thissnr))
+
+            return {'period':thisbestperiod,
+                    'epoch':thisminepoch,
+                    'snr':thissnr,
+                    'transitdepth':thistransdepth,
+                    'transitduration':thistransduration,
+                    'nphasebins':nphasebins,
+                    'transingressbin':thistransingressbin,
+                    'transegressbin':thistransegressbin,
+                    'blsmodel':blsmodel,
+                    'subtractedmags':subtractedmags,
+                    'phasedmags':tmags,
+                    'phases':tphase}
 
 
     # if there aren't enough points in the mag series, bail out

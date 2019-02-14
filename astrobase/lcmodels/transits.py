@@ -26,7 +26,8 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
 ## MODEL AND RESIDUAL FUNCTIONS ##
 ##################################
 
-def trapezoid_transit_func(transitparams, times, mags, errs):
+def trapezoid_transit_func(transitparams, times, mags, errs,
+                           get_ntransitpoints=False):
     '''This returns a trapezoid transit-shaped function.
 
     Suitable for first order modeling of transit signals.
@@ -83,12 +84,20 @@ def trapezoid_transit_func(transitparams, times, mags, errs):
     # during egress
     egressind = (phase > thirdcontact) & (phase < fourthcontact)
 
+    # count the number of points in transit
+    in_transit_points = ingressind | bottomind | egressind
+    n_transit_points = np.sum(in_transit_points)
+
     # set the mags
     modelmags[ingressind] = zerolevel - slope*(phase[ingressind] - firstcontact)
     modelmags[bottomind] = bottomlevel
     modelmags[egressind] = bottomlevel + slope*(phase[egressind] - thirdcontact)
 
-    return modelmags, phase, ptimes, pmags, perrs
+    if get_ntransitpoints:
+        return modelmags, phase, ptimes, pmags, perrs, n_transit_points
+
+    else:
+        return modelmags, phase, ptimes, pmags, perrs
 
 
 
