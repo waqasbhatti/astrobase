@@ -1011,7 +1011,6 @@ def bls_snr(blsdict,
 
             tphase = phased_magseries['phase']
             tmags = phased_magseries['mags']
-            terrs = phased_magseries['errs']
 
             # use the transit depth and duration to subtract the BLS transit
             # model from the phased mag series. we're centered about 0.0 as the
@@ -1129,6 +1128,7 @@ def bls_stats_singleperiod(times, mags, errs, period,
                            nphasebins=200,
                            mintransitduration=0.01,
                            maxtransitduration=0.4,
+                           ingressdurationfraction=0.1,
                            verbose=True):
     '''This calculates the SNR, refit period, and time of center-transit for a
     single period.
@@ -1259,7 +1259,7 @@ def bls_stats_singleperiod(times, mags, errs, period,
             thisminepoch,
             thistransdepth,
             thistransduration,
-            0.15*thistransduration  # initial test value for ingress duration
+            ingressdurationfraction*thistransduration
         ]
 
         modelfit = traptransit_fit_magseries(
