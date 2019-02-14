@@ -1284,14 +1284,13 @@ def bls_stats_singleperiod(times, mags, errs, period,
             )
             subtractedmags = actualmags - modelmags
             subtractedrms = np.std(subtractedmags)
+            fit_period, fit_epoch, fit_depth, fit_duration, fit_ingress_dur = (
+                fitparams
+            )
 
             npts_in_transit = modelfit['fitinfo']['ntransitpoints']
             transit_snr = (
-                np.sqrt(npts_in_transit) * np.abs(thistransdepth/subtractedrms)
-            )
-
-            fit_period, fit_epoch, fit_depth, fit_duration, fit_ingress_dur = (
-                fitparams
+                np.sqrt(npts_in_transit) * np.abs(fit_depth/subtractedrms)
             )
 
             if verbose:
