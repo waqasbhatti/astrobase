@@ -1026,6 +1026,102 @@ def _get_bls_stats(stimes,
 
 
 
+def bls_stats_singleperiod(times, mags, errs, period,
+                           magsarefluxes=False,
+                           sigclip=10.0,
+                           perioddeltapercent=10,
+                           nphasebins=200,
+                           mintransitduration=0.01,
+                           maxtransitduration=0.4,
+                           ingressdurationfraction=0.1,
+                           verbose=True):
+    '''This calculates the SNR, refit period, and time of center-transit for a
+    single period.
+
+    times, mags, errs are numpy arrays containing these values.
+
+    period is the period for which the SNR, refit period, and refit epoch should
+    be calculated.
+
+    sigclip is the amount of sigmaclip to apply to the magnitude time-series.
+
+    perioddeltapercent is used to set the search window around the specified
+    period, which will be used to rerun BLS to get the transit ingress and
+    egress bins.
+
+    nphasebins is the number of phase bins to use for the BLS process. This
+    should be equal to the value of nphasebins you used for your initial BLS run
+    to find the specified period.
+
+    verbose indicates whether this function should report its progress.
+
+    This returns a dict similar to bls_snr above.
+
+    '''
+
+    # get rid of nans first and sigclip
+    stimes, smags, serrs = sigclip_magseries(times,
+                                             mags,
+                                             errs,
+                                             magsarefluxes=magsarefluxes,
+                                             sigclip=sigclip)
+
+
+    # make sure there are enough points to calculate a spectrum
+    if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
+
+        # get the period interval
+        startp = period - perioddeltapercent*period/100.0
+
+        if startp < 0:
+            startp = period
+
+        endp = period + perioddeltapercent*period/100.0
+
+        # rerun BLS in serial mode around the specified period to get the
+        # transit depth, duration, ingress and egress bins
+        blsres = bls_serial_pfind(stimes, smags, serrs,
+                                  verbose=verbose,
+                                  startp=startp,
+                                  endp=endp,
+                                  nphasebins=nphasebins,
+                                  mintransitduration=mintransitduration,
+                                  maxtransitduration=maxtransitduration,
+                                  magsarefluxes=magsarefluxes,
+                                  sigclip=None)
+
+        thistransdepth = blsres['blsresult']['transdepth']
+        thistransduration = blsres['blsresult']['transduration']
+        thisbestperiod = blsres['bestperiod']
+        thistransingressbin = blsres['blsresult']['transingressbin']
+        thistransegressbin = blsres['blsresult']['transegressbin']
+        thisnphasebins = nphasebins
+
+        stats = _get_bls_stats(stimes,
+                               smags,
+                               serrs,
+                               thistransdepth,
+                               thistransduration,
+                               ingressdurationfraction,
+                               nphasebins,
+                               thistransingressbin,
+                               thistransegressbin,
+                               thisbestperiod,
+                               thisnphasebins,
+                               magsarefluxes=magsarefluxes,
+                               verbose=verbose)
+
+        return stats
+
+
+    # if there aren't enough points in the mag series, bail out
+    else:
+
+        LOGERROR('no good detections for these times and mags, skipping...')
+        return None
+
+
+
 def bls_snr(blsdict,
             times,
             mags,
@@ -1199,99 +1295,3 @@ def bls_snr(blsdict,
             'allsubtractedmags':allsubtractedmags,
             'allphasedmags':allphasedmags,
             'allphases':allphases}
-
-
-
-def bls_stats_singleperiod(times, mags, errs, period,
-                           magsarefluxes=False,
-                           sigclip=10.0,
-                           perioddeltapercent=10,
-                           nphasebins=200,
-                           mintransitduration=0.01,
-                           maxtransitduration=0.4,
-                           ingressdurationfraction=0.1,
-                           verbose=True):
-    '''This calculates the SNR, refit period, and time of center-transit for a
-    single period.
-
-    times, mags, errs are numpy arrays containing these values.
-
-    period is the period for which the SNR, refit period, and refit epoch should
-    be calculated.
-
-    sigclip is the amount of sigmaclip to apply to the magnitude time-series.
-
-    perioddeltapercent is used to set the search window around the specified
-    period, which will be used to rerun BLS to get the transit ingress and
-    egress bins.
-
-    nphasebins is the number of phase bins to use for the BLS process. This
-    should be equal to the value of nphasebins you used for your initial BLS run
-    to find the specified period.
-
-    verbose indicates whether this function should report its progress.
-
-    This returns a dict similar to bls_snr above.
-
-    '''
-
-    # get rid of nans first and sigclip
-    stimes, smags, serrs = sigclip_magseries(times,
-                                             mags,
-                                             errs,
-                                             magsarefluxes=magsarefluxes,
-                                             sigclip=sigclip)
-
-
-    # make sure there are enough points to calculate a spectrum
-    if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
-
-        # get the period interval
-        startp = period - perioddeltapercent*period/100.0
-
-        if startp < 0:
-            startp = period
-
-        endp = period + perioddeltapercent*period/100.0
-
-        # rerun BLS in serial mode around the specified period to get the
-        # transit depth, duration, ingress and egress bins
-        blsres = bls_serial_pfind(stimes, smags, serrs,
-                                  verbose=verbose,
-                                  startp=startp,
-                                  endp=endp,
-                                  nphasebins=nphasebins,
-                                  mintransitduration=mintransitduration,
-                                  maxtransitduration=maxtransitduration,
-                                  magsarefluxes=magsarefluxes,
-                                  sigclip=None)
-
-        thistransdepth = blsres['blsresult']['transdepth']
-        thistransduration = blsres['blsresult']['transduration']
-        thisbestperiod = blsres['bestperiod']
-        thistransingressbin = blsres['blsresult']['transingressbin']
-        thistransegressbin = blsres['blsresult']['transegressbin']
-        thisnphasebins = nphasebins
-
-        stats = _get_bls_stats(stimes,
-                               smags,
-                               serrs,
-                               thistransdepth,
-                               thistransduration,
-                               ingressdurationfraction,
-                               nphasebins,
-                               thistransingressbin,
-                               thistransegressbin,
-                               thisbestperiod,
-                               thisnphasebins,
-                               magsarefluxes=magsarefluxes,
-                               verbose=verbose)
-
-        return stats
-
-
-    # if there aren't enough points in the mag series, bail out
-    else:
-
-        LOGERROR('no good detections for these times and mags, skipping...')
-        return None

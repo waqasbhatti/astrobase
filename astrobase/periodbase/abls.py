@@ -947,14 +947,17 @@ def bls_stats_singleperiod(times, mags, errs, period,
 
         # rerun BLS in serial mode around the specified period to get the
         # transit depth, duration, ingress and egress bins
-        blsres = bls_serial_pfind(times, mags, errs,
+        blsres = bls_serial_pfind(stimes,
+                                  smags,
+                                  serrs,
                                   verbose=verbose,
                                   startp=startp,
                                   endp=endp,
                                   ndurations=ndurations,
                                   mintransitduration=mintransitduration,
                                   maxtransitduration=maxtransitduration,
-                                  magsarefluxes=magsarefluxes)
+                                  magsarefluxes=magsarefluxes,
+                                  sigclip=None)
 
         bestperiod_ind = np.argmax(blsres['blsresult'].power)
         try:
