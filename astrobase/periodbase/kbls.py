@@ -245,6 +245,8 @@ def bls_serial_pfind(times, mags, errs,
 
             # figure out the best number of phasebins to use
             nphasebins = int(np.ceil(2.0/mintransitduration))
+            if nphasebins > 3000:
+                nphasebins = 3000
 
             # use heuristic to figure out best timestep
             stepsize = 0.25*mintransitduration/(stimes.max()-stimes.min())
@@ -545,6 +547,8 @@ def bls_parallel_pfind(
 
             # figure out the best number of phasebins to use
             nphasebins = int(np.ceil(2.0/mintransitduration))
+            if nphasebins > 3000:
+                nphasebins = 3000
 
             # use heuristic to figure out best timestep
             stepsize = 0.25*mintransitduration/(stimes.max()-stimes.min())
