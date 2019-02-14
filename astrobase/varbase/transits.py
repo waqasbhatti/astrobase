@@ -81,6 +81,36 @@ from astropy import units as u
 from astrobase.periodbase import kbls
 from astrobase.varbase import lcfit
 
+
+#######################
+## UTILITY FUNCTIONS ##
+#######################
+
+def transit_duration_range(period,
+                           min_radius_hint,
+                           max_radius_hint):
+    '''This figures out the minimum and max transit duration (q) given a period
+    and min/max stellar radius hints.
+
+    One can get stellar radii from various places:
+    - GAIA distances and luminosities
+    - the TESS input catalog
+    - isochrone fits
+
+    q ~ 0.076 x R**(2/3) x P**(-2/3)
+
+    P = period in days
+    R = stellar radius in solar radii
+
+    '''
+
+    return (
+        0.076 * (min_radius_hint**(2./3.)) * (period**(-2./3.)),
+        0.076 * (max_radius_hint**(2./3.)) * (period**(-2./3.))
+    )
+
+
+
 ##############################
 ## TRANSIT MODEL ASSESSMENT ##
 ##############################

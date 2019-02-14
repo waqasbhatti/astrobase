@@ -118,25 +118,6 @@ from ..varbase.lcfit import spline_fit_magseries, savgol_fit_magseries, \
 NCPUS = cpu_count()
 
 
-#######################
-## UTILITY FUNCTIONS ##
-#######################
-
-def auto_transit_duration(min_radius_hint,
-                          max_radius_hint):
-    '''
-    This figures out the minimum and max transit duration (q) automatically.
-
-    q ~ 0.076 x R**(2/3) x P**(-2/3)
-
-    P = period in days
-    R = stellar radius in solar radii
-
-    '''
-
-
-
-
 ######################################
 ## BLS (Kovacs, Zucker, Mazeh 2002) ##
 ######################################
