@@ -176,11 +176,12 @@ This package requires the following other packages:
 - tqdm
 - scikit-learn
 
-For some extra functionality:
+For optional functionality, some additional packages are required:
 
-- for `astrobase.lcdb` to work, you'll also need `psycopg2-binary`.
+- for `astrobase.lcdb` to work, you'll need `psycopg2-binary`.
 - for `varbase.lcfit.mandelagol_fit_magseries`, you'll need `batman-package`,
   `emcee`, `corner`, and `h5py`.
+- for `lcproc_aws.py`, you'll need `paramiko`, `boto3`', and `awscli`.
 
 ## Installing with pip
 
@@ -234,6 +235,7 @@ $ cd astrobase
 $ python setup.py install
 $ # or use pip install . to install requirements automatically
 $ # or use pip install -e . to install in develop mode along with requirements
+$ # or use pip install -e .[all] to install in develop mode along with all requirements
 ```
 
 # License
