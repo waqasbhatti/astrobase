@@ -189,19 +189,46 @@ def _get_phased_quantities(stimes, smags, serrs, period):
 def _make_fit_plot(phase, pmags, perrs, fitmags,
                    period, mintime, magseriesepoch,
                    plotfit,
-                   magsarefluxes=False):
+                   magsarefluxes=False,
+                   wrap=False):
 
     # set up the figure
     plt.close('all')
     plt.figure(figsize=(8,4.8))
 
-    # plot the light curve and the fit
-    plt.plot(phase,pmags,
-             marker='o',
-             markersize=1.0,
-             linestyle='none',
-             rasterized=True)
-    plt.plot(phase, fitmags, linewidth=3.0)
+    if not wrap:
+
+        # plot the fit LC below the actual LC so we can see if the points line up
+        plt.plot(phase, fitmags, linewidth=3.0, color='red')
+        plt.plot(phase,pmags,
+                 marker='o',
+                 markersize=1.0,
+                 linestyle='none',
+                 rasterized=True, color='k')
+
+        # set the x axis ticks and label
+        plt.gca().set_xticks(
+            [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
+        )
+
+    else:
+        plt.plot(np.concatenate([phase-1.0,phase]),
+                 np.concatenate([fitmags,fitmags]),
+                 linewidth=3.0,
+                 color='red')
+        plt.plot(np.concatenate([phase-1.0,phase]),
+                 np.concatenate([pmags,pmags]),
+                 marker='o',
+                 markersize=1.0,
+                 linestyle='none',
+                 rasterized=True, color='k')
+
+        plt.gca().set_xlim((-0.8,0.8))
+        # set the x axis ticks and label
+        plt.gca().set_xticks(
+            [-0.8,-0.7,-0.6,-0.5,-0.4,-0.3,-0.2,-0.1,
+             0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8]
+        )
 
     # set the y axis limit and label
     ymin, ymax = plt.ylim()
@@ -211,12 +238,8 @@ def _make_fit_plot(phase, pmags, perrs, fitmags,
     else:
         plt.ylabel('flux')
 
-    # set the x axis ticks and label
-    plt.gca().set_xticks(
-        [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
-    )
-    plt.xlabel('phase')
 
+    plt.xlabel('phase')
     plt.title('period: %.6f, folded at %.6f, fit epoch: %.6f' %
               (period, mintime, magseriesepoch))
     plt.savefig(plotfit)
