@@ -169,10 +169,6 @@ from .smav import aovhm_periodfind
 from .macf import macf_period_find
 from .kbls import bls_serial_pfind, bls_parallel_pfind
 
-# provide the get_snr_of_dip function (this was moved to varbase.transits)
-from ..varbase.transits import get_snr_of_dip
-
-
 # used to figure out which function to run for bootstrap resampling
 LSPMETHODS = {
     'bls':bls_parallel_pfind,
