@@ -957,21 +957,41 @@ def bls_stats_singleperiod(times, mags, errs, period,
                                   magsarefluxes=magsarefluxes)
 
         bestperiod_ind = np.argmax(blsres['blsresult'].power)
-        bestperiod = blsres['blsresult'].period[bestperiod_ind].to_value()
-        bestperiod_epoch = (
-            blsres['blsresult'].transit_time[bestperiod_ind].to_value()
-        )
-        bestperiod_duration = (
-            blsres['blsresult'].duration[bestperiod_ind].to_value()
-        )
+        try:
+            bestperiod = blsres['blsresult'].period[bestperiod_ind].to_value()
+        except Exception as e:
+            bestperiod = blsres['blsresult'].period[bestperiod_ind]
+
+        try:
+            bestperiod_epoch = (
+                blsres['blsresult'].transit_time[bestperiod_ind].to_value()
+            )
+        except Exception as e:
+            bestperiod_epoch = (
+                blsres['blsresult'].transit_time[bestperiod_ind]
+            )
+
+        try:
+            bestperiod_duration = (
+                blsres['blsresult'].duration[bestperiod_ind].to_value()
+            )
+        except Exception as e:
+            bestperiod_duration = (
+                blsres['blsresult'].duration[bestperiod_ind]
+            )
 
         # this is the fractional transit duration (q) as is conventional
         # duration of transit (L) = q * best_period
         bestperiod_q = bestperiod_duration/bestperiod
 
-        bestperiod_snr = (
-            blsres['blsresult'].depth_snr[bestperiod_ind].to_value()
-        )
+        try:
+            bestperiod_snr = (
+                blsres['blsresult'].depth_snr[bestperiod_ind].to_value()
+            )
+        except Exception as e:
+            bestperiod_snr = (
+                blsres['blsresult'].depth_snr[bestperiod_ind]
+            )
 
         # get stats for the best period
         bls_stats = blsres['blsmodel'].compute_stats(

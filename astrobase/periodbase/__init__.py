@@ -198,8 +198,10 @@ apversion = tuple(apversion)
 
 if apversion >= (3,1,0):
 
-    LOGINFO('Astropy implementation of BLS is available.')
-    LOGINFO('To enable it, call the periodbase.use_astropy_bls() function.')
+    LOGINFO('An Astropy implementation of BLS is '
+            'available because Astropy >= 3.1.')
+    LOGINFO('If you want to use it as the default periodbase BLS runner, '
+            'call the periodbase.use_astropy_bls() function.')
 
     def use_astropy_bls():
         from .abls import bls_serial_pfind, bls_parallel_pfind
