@@ -784,15 +784,258 @@ def bls_parallel_pfind(
 
 
 
+def _get_bls_stats(stimes,
+                   smags,
+                   serrs,
+                   thistransdepth,
+                   thistransduration,
+                   ingressdurationfraction,
+                   nphasebins,
+                   thistransingressbin,
+                   thistransegressbin,
+                   thisbestperiod,
+                   thisnphasebins,
+                   magsarefluxes=False,
+                   verbose=False):
+    '''
+    Actually calculates the stats.
+
+    '''
+
+    try:
+
+        # try getting the minimum light epoch using the phase bin method
+        me_epochbin = int((thistransegressbin +
+                           thistransingressbin)/2.0)
+
+        me_phases = (
+            (stimes - stimes.min())/thisbestperiod -
+            npfloor((stimes - stimes.min())/thisbestperiod)
+        )
+        me_phases_sortind = np.argsort(me_phases)
+        me_sorted_phases = me_phases[me_phases_sortind]
+        me_sorted_times = stimes[me_phases_sortind]
+
+        me_bins = nplinspace(0.0, 1.0, thisnphasebins)
+        me_bininds = npdigitize(me_sorted_phases, me_bins)
+
+        me_centertransit_ind = me_bininds == me_epochbin
+        me_centertransit_phase = (
+            np.median(me_sorted_phases[me_centertransit_ind])
+        )
+        me_centertransit_timeloc = npwhere(
+            npabs(me_sorted_phases - me_centertransit_phase) ==
+            npmin(npabs(me_sorted_phases - me_centertransit_phase))
+        )
+        me_centertransit_time = me_sorted_times[
+            me_centertransit_timeloc
+        ]
+
+        if me_centertransit_time.size > 1:
+            LOGWARNING('multiple possible times-of-center transits '
+                       'found for period %.7f, picking the first '
+                       'one from: %s' %
+                       (thisbestperiod, repr(me_centertransit_time)))
+
+        thisminepoch = me_centertransit_time[0]
+
+    except Exception as e:
+
+        LOGEXCEPTION(
+            'could not determine the center time of transit for '
+            'the phased LC, trying SavGol fit instead...'
+        )
+        # fit a Savitsky-Golay instead and get its minimum
+        savfit = savgol_fit_magseries(stimes, smags, serrs,
+                                      thisbestperiod,
+                                      magsarefluxes=magsarefluxes,
+                                      verbose=verbose,
+                                      sigclip=None)
+        thisminepoch = savfit['fitinfo']['fitepoch']
+
+
+    if isinstance(thisminepoch, np.ndarray):
+        if verbose:
+            LOGWARNING('minimum epoch is actually an array:\n'
+                       '%s\n'
+                       'instead of a float, '
+                       'are there duplicate time values '
+                       'in the original input? '
+                       'will use the first value in this array.'
+                       % repr(thisminepoch))
+        thisminepoch = thisminepoch[0]
+
+    # set up trapezoid transit model to fit for this LC
+    transitparams = [
+        thisbestperiod,
+        thisminepoch,
+        thistransdepth,
+        thistransduration,
+        ingressdurationfraction*thistransduration
+    ]
+
+    modelfit = traptransit_fit_magseries(
+        stimes,
+        smags,
+        serrs,
+        transitparams,
+        sigclip=None,
+        magsarefluxes=magsarefluxes,
+        verbose=verbose
+    )
+
+    # if the model fit succeeds, calculate SNR using the trapezoid model fit
+    if modelfit and modelfit['fitinfo']['finalparams'] is not None:
+
+        fitparams = modelfit['fitinfo']['finalparams']
+        fiterrs = modelfit['fitinfo']['finalparamerrs']
+        modelmags, actualmags, modelphase = (
+            modelfit['fitinfo']['fitmags'],
+            modelfit['magseries']['mags'],
+            modelfit['magseries']['phase']
+        )
+        subtractedmags = actualmags - modelmags
+        subtractedrms = np.std(subtractedmags)
+        fit_period, fit_epoch, fit_depth, fit_duration, fit_ingress_dur = (
+            fitparams
+        )
+
+        npts_in_transit = modelfit['fitinfo']['ntransitpoints']
+        transit_snr = (
+            np.sqrt(npts_in_transit) * np.abs(fit_depth/subtractedrms)
+        )
+
+        if verbose:
+
+            LOGINFO('refit best period: %.6f, '
+                    'refit center of transit: %.5f' %
+                    (fit_period, fit_epoch))
+
+            LOGINFO('npoints in transit: %s' % npts_in_transit)
+
+            LOGINFO('transit depth (delta): %.5f, '
+                    'frac transit length (q): %.3f, '
+                    ' SNR: %.3f' %
+                    (fit_depth,
+                     fit_duration,
+                     transit_snr))
+
+        return {'period':fit_period,
+                'epoch':fit_epoch,
+                'snr':transit_snr,
+                'transitdepth':fit_depth,
+                'transitduration':fit_duration,
+                'nphasebins':nphasebins,
+                'transingressbin':thistransingressbin,
+                'transegressbin':thistransegressbin,
+                'blsmodel':modelmags,
+                'subtractedmags':subtractedmags,
+                'phasedmags':actualmags,
+                'phases':modelphase,
+                'fitparams':fitparams,
+                'fiterrs':fiterrs,
+                'fitinfo':modelfit}
+
+
+    # if the model fit doesn't work, then do the SNR calculation the old way
+    else:
+
+        # phase using this epoch
+        phased_magseries = phase_magseries_with_errs(stimes,
+                                                     smags,
+                                                     serrs,
+                                                     thisbestperiod,
+                                                     thisminepoch,
+                                                     wrap=False,
+                                                     sort=True)
+
+        tphase = phased_magseries['phase']
+        tmags = phased_magseries['mags']
+
+        # use the transit depth and duration to subtract the BLS transit
+        # model from the phased mag series. we're centered about 0.0 as the
+        # phase of the transit minimum so we need to look at stuff from
+        # [0.0, transitphase] and [1.0-transitphase, 1.0]
+        transitphase = thistransduration/2.0
+
+        transitindices = ((tphase < transitphase) |
+                          (tphase > (1.0 - transitphase)))
+
+        # this is the BLS model
+        # constant = median(tmags) outside transit
+        # constant = thistransitdepth inside transit
+        blsmodel = npfull_like(tmags, npmedian(tmags))
+
+        if magsarefluxes:
+
+            # eebls.f returns +ve transit depth for fluxes
+            # so we need to subtract here to get fainter fluxes in transit
+            blsmodel[transitindices] = (
+                blsmodel[transitindices] - thistransdepth
+            )
+        else:
+
+            # eebls.f returns -ve transit depth for magnitudes
+            # so we need to subtract here to get fainter mags in transits
+            blsmodel[transitindices] = (
+                blsmodel[transitindices] - thistransdepth
+            )
+
+        # see __init__/get_snr_of_dip docstring for description of transit
+        # SNR equation, which is what we use for `thissnr`.
+        subtractedmags = tmags - blsmodel
+        subtractedrms = npstd(subtractedmags)
+        npts_in_transit = len(tmags[transitindices])
+        thissnr = (
+            npsqrt(npts_in_transit) * npabs(thistransdepth/subtractedrms)
+        )
+
+        # tell user about stuff if verbose = True
+        if verbose:
+
+            LOGINFO('refit best period: %.6f, '
+                    'refit center of transit: %.5f' %
+                    (thisbestperiod, thisminepoch))
+
+            LOGINFO('transit ingress phase = %.3f to %.3f' % (1.0 -
+                                                              transitphase,
+                                                              1.0))
+            LOGINFO('transit egress phase = %.3f to %.3f' % (0.0,
+                                                             transitphase))
+            LOGINFO('npoints in transit: %s' % tmags[transitindices].size)
+
+            LOGINFO('transit depth (delta): %.5f, '
+                    'frac transit length (q): %.3f, '
+                    ' SNR: %.3f' %
+                    (thistransdepth,
+                     thistransduration,
+                     thissnr))
+
+        return {'period':thisbestperiod,
+                'epoch':thisminepoch,
+                'snr':thissnr,
+                'transitdepth':thistransdepth,
+                'transitduration':thistransduration,
+                'nphasebins':nphasebins,
+                'transingressbin':thistransingressbin,
+                'transegressbin':thistransegressbin,
+                'blsmodel':blsmodel,
+                'subtractedmags':subtractedmags,
+                'phasedmags':tmags,
+                'phases':tphase}
+
+
+
 def bls_snr(blsdict,
             times,
             mags,
             errs,
+            assumeserialbls=False,
             magsarefluxes=False,
             sigclip=10.0,
-            perioddeltapercent=10,
             npeaks=None,
-            assumeserialbls=False,
+            perioddeltapercent=10,
+            ingressdurationfraction=0.1,
             verbose=True):
     '''Calculates the signal to noise ratio for each best peak in the BLS
     periodogram.
@@ -823,26 +1066,6 @@ def bls_snr(blsdict,
     global best peaks in the periodogram, so we need to rerun bls_serial_pfind
     around each peak in blsdict['nbestperiods'] to get correct values for these.
 
-    FIXME: for now, we're only doing simple RMS. Need to calculate red and
-    white-noise RMS as outlined below:
-
-      - calculate the white noise rms and the red noise rms of the residual.
-
-        - the white noise rms is just the rms of the residual
-        - the red noise rms = sqrt(binnedrms^2 - expectedbinnedrms^2)
-
-      - calculate the SNR using:
-
-        sqrt(delta^2 / ((sigma_w ^2 / nt) + (sigma_r ^2 / Nt))))
-
-        where:
-
-        delta = transit depth
-        sigma_w = white noise rms
-        sigma_r = red noise rms
-        nt = number of in-transit points
-        Nt = number of distinct transits sampled
-
     '''
 
     # figure out how many periods to work on
@@ -870,9 +1093,6 @@ def bls_snr(blsdict,
 
         nbestsnrs = []
         transitdepth, transitduration = [], []
-
-        # get these later
-        whitenoise, rednoise = [], []
         nphasebins, transingressbin, transegressbin = [], [], []
 
         # keep these around for diagnostics
@@ -885,7 +1105,7 @@ def bls_snr(blsdict,
         refitperiods = []
         refitepochs = []
 
-        for ind, period in enumerate(nbestperiods):
+        for period in enumerate(nbestperiods):
 
             # get the period interval
             startp = period - perioddeltapercent*period/100.0
@@ -899,14 +1119,17 @@ def bls_snr(blsdict,
             if not assumeserialbls:
 
                 # run bls_serial_pfind with the kwargs copied over from the
-                # initial run. replace only the startp, endp, and verbose kwarg
-                # values
+                # initial run. replace only the startp, endp, verbose, sigclip
+                # kwarg values
                 prevkwargs = blsdict['kwargs'].copy()
                 prevkwargs['verbose'] = verbose
                 prevkwargs['startp'] = startp
                 prevkwargs['endp'] = endp
+                prevkwargs['sigclip'] = None
 
-                blsres = bls_serial_pfind(times, mags, errs,
+                blsres = bls_serial_pfind(stimes,
+                                          smags,
+                                          serrs,
                                           **prevkwargs)
 
             else:
@@ -919,159 +1142,38 @@ def bls_snr(blsdict,
             thistransegressbin = blsres['blsresult']['transegressbin']
             thisnphasebins = blsdict['kwargs']['nphasebins']
 
-            try:
+            stats = _get_bls_stats(stimes,
+                                   smags,
+                                   serrs,
+                                   thistransdepth,
+                                   thistransduration,
+                                   ingressdurationfraction,
+                                   nphasebins,
+                                   thistransingressbin,
+                                   thistransegressbin,
+                                   thisbestperiod,
+                                   thisnphasebins,
+                                   magsarefluxes=magsarefluxes,
+                                   verbose=verbose)
 
-                # try getting the minimum light epoch using the phase bin method
-                me_epochbin = int((thistransegressbin +
-                                   thistransingressbin)/2.0)
-
-                me_phases = (
-                    (times - times.min())/thisbestperiod -
-                    npfloor((times - times.min())/thisbestperiod)
-                )
-                me_phases_sortind = np.argsort(me_phases)
-                me_sorted_phases = me_phases[me_phases_sortind]
-                me_sorted_times = times[me_phases_sortind]
-
-                me_bins = nplinspace(0.0, 1.0, thisnphasebins)
-                me_bininds = npdigitize(me_sorted_phases, me_bins)
-
-                me_centertransit_ind = me_bininds == me_epochbin
-                me_centertransit_phase = (
-                    np.median(me_sorted_phases[me_centertransit_ind])
-                )
-                me_centertransit_timeloc = npwhere(
-                    npabs(me_sorted_phases - me_centertransit_phase) ==
-                    npmin(npabs(me_sorted_phases - me_centertransit_phase))
-                )
-                me_centertransit_time = me_sorted_times[
-                    me_centertransit_timeloc
-                ]
-
-                if me_centertransit_time.size > 1:
-                    LOGWARNING('multiple possible times-of-center transits '
-                               'found for period %.7f, picking the first '
-                               'one from: %s' %
-                               (thisbestperiod, repr(me_centertransit_time)))
-
-                thisminepoch = me_centertransit_time[0]
-
-            except Exception as e:
-
-                LOGEXCEPTION(
-                    'could not determine the center time of transit for '
-                    'the phased LC, trying SavGol fit instead...'
-                )
-                # fit a Savitsky-Golay instead and get its minimum
-                savfit = savgol_fit_magseries(times, mags, errs,
-                                              thisbestperiod,
-                                              magsarefluxes=magsarefluxes,
-                                              verbose=verbose)
-                thisminepoch = savfit['fitinfo']['fitepoch']
-
-
-            if isinstance(thisminepoch, np.ndarray):
-                if verbose:
-                    LOGWARNING('minimum epoch is actually an array:\n'
-                               '%s\n'
-                               'instead of a float, '
-                               'are there duplicate time values '
-                               'in the original input? '
-                               'will use the first value in this array.'
-                               % repr(thisminepoch))
-                thisminepoch = thisminepoch[0]
-
-            # phase using this epoch
-            phased_magseries = phase_magseries_with_errs(stimes,
-                                                         smags,
-                                                         serrs,
-                                                         thisbestperiod,
-                                                         thisminepoch,
-                                                         wrap=False,
-                                                         sort=True)
-
-            tphase = phased_magseries['phase']
-            tmags = phased_magseries['mags']
-
-            # use the transit depth and duration to subtract the BLS transit
-            # model from the phased mag series. we're centered about 0.0 as the
-            # phase of the transit minimum so we need to look at stuff from
-            # [0.0, transitphase] and [1.0-transitphase, 1.0]
-            transitphase = thistransduration/2.0
-
-            transitindices = ((tphase < transitphase) |
-                              (tphase > (1.0 - transitphase)))
-
-            # this is the BLS model
-            # constant = median(tmags) outside transit
-            # constant = thistransitdepth inside transit
-            blsmodel = npfull_like(tmags, npmedian(tmags))
-
-            if magsarefluxes:
-                # eebls.f returns +ve depths for fluxes
-                # so we need to subtract here to get fainter fluxes in transit
-                blsmodel[transitindices] = (
-                    blsmodel[transitindices] - thistransdepth
-                )
-            else:
-                # eebls.f returns -ve depths for mags
-                # so we need to subtract here to get fainter mags in transit
-                blsmodel[transitindices] = (
-                    blsmodel[transitindices] - thistransdepth
-                )
-
-            # see __init__/get_snr_of_dip docstring for description of transit
-            # SNR equation, which is what we use for `thissnr`.
-            subtractedmags = tmags - blsmodel
-            subtractedrms = npstd(subtractedmags)
-            npts_in_transit = len(tmags[transitindices])
-            thissnr = (
-                npsqrt(npts_in_transit) * npabs(thistransdepth/subtractedrms)
-            )
-
-            # tell user about stuff if verbose = True
-            if verbose:
-
-                LOGINFO('peak %s: new best period: %.6f, '
-                        'fit center of transit: %.5f' %
-                        (ind+1, thisbestperiod, thisminepoch))
-
-                LOGINFO('transit ingress phase = %.3f to %.3f' % (1.0 -
-                                                                  transitphase,
-                                                                  1.0))
-                LOGINFO('transit egress phase = %.3f to %.3f' % (0.0,
-                                                                 transitphase))
-                LOGINFO('npoints in transit: %s' % tmags[transitindices].size)
-
-                LOGINFO('transit depth (delta): %.5f, '
-                        'frac transit length (q): %.3f, '
-                        ' SNR: %.3f' %
-                        (thistransdepth,
-                         thistransduration,
-                         thissnr))
 
             # update the lists with results from this peak
-            nbestsnrs.append(thissnr)
-            transitdepth.append(thistransdepth)
-            transitduration.append(thistransduration)
-            transingressbin.append(thistransingressbin)
-            transegressbin.append(thistransegressbin)
-            nphasebins.append(thisnphasebins)
+            nbestsnrs.append(stats['snr'])
+            transitdepth.append(stats['transitdepth'])
+            transitduration.append(stats['transitduration'])
+            transingressbin.append(stats['transingressbin'])
+            transegressbin.append(stats['transegressbin'])
+            nphasebins.append(stats['nphasebins'])
 
             # update the refit periods and epochs
-            refitperiods.append(thisbestperiod)
-            refitepochs.append(thisminepoch)
+            refitperiods.append(stats['period'])
+            refitepochs.append(stats['epoch'])
 
             # update the diagnostics
-            allsubtractedmags.append(subtractedmags)
-            allphasedmags.append(tmags)
-            allphases.append(tphase)
-            allblsmodels.append(blsmodel)
-
-            # update these when we figure out how to do it
-            # nphasebins.append(thisnphasebins)
-            # transingressbin.append(thisingressbin)
-            # transegressbin.append(thisegressbin)
+            allsubtractedmags.append(stats['subtractedmags'])
+            allphasedmags.append(stats['phasedmags'])
+            allphases.append(stats['phases'])
+            allblsmodels.append(stats['blsmodel'])
 
         # done with working on each peak
 
@@ -1079,7 +1181,7 @@ def bls_snr(blsdict,
     else:
 
         LOGERROR('no good detections for these times and mags, skipping...')
-        nbestsnrs, whitenoise, rednoise = None, None, None
+        nbestsnrs = None
         transitdepth, transitduration = None, None
         nphasebins, transingressbin, transegressbin = None, None, None
         allsubtractedmags, allphases, allphasedmags = None, None, None
@@ -1088,8 +1190,6 @@ def bls_snr(blsdict,
             'period':refitperiods,
             'epoch':refitepochs,
             'snr':nbestsnrs,
-            'whitenoise':whitenoise,
-            'rednoise':rednoise,
             'transitdepth':transitdepth,
             'transitduration':transitduration,
             'nphasebins':nphasebins,
@@ -1156,14 +1256,15 @@ def bls_stats_singleperiod(times, mags, errs, period,
 
         # rerun BLS in serial mode around the specified period to get the
         # transit depth, duration, ingress and egress bins
-        blsres = bls_serial_pfind(times, mags, errs,
+        blsres = bls_serial_pfind(stimes, smags, serrs,
                                   verbose=verbose,
                                   startp=startp,
                                   endp=endp,
                                   nphasebins=nphasebins,
                                   mintransitduration=mintransitduration,
                                   maxtransitduration=maxtransitduration,
-                                  magsarefluxes=magsarefluxes)
+                                  magsarefluxes=magsarefluxes,
+                                  sigclip=None)
 
         thistransdepth = blsres['blsresult']['transdepth']
         thistransduration = blsres['blsresult']['transduration']
@@ -1172,223 +1273,21 @@ def bls_stats_singleperiod(times, mags, errs, period,
         thistransegressbin = blsres['blsresult']['transegressbin']
         thisnphasebins = nphasebins
 
-        try:
+        stats = _get_bls_stats(stimes,
+                               smags,
+                               serrs,
+                               thistransdepth,
+                               thistransduration,
+                               ingressdurationfraction,
+                               nphasebins,
+                               thistransingressbin,
+                               thistransegressbin,
+                               thisbestperiod,
+                               thisnphasebins,
+                               magsarefluxes=magsarefluxes,
+                               verbose=verbose)
 
-            # try getting the minimum light epoch using the phase bin method
-            me_epochbin = int((thistransegressbin +
-                               thistransingressbin)/2.0)
-
-            me_phases = (
-                (times - times.min())/thisbestperiod -
-                npfloor((times - times.min())/thisbestperiod)
-            )
-            me_phases_sortind = np.argsort(me_phases)
-            me_sorted_phases = me_phases[me_phases_sortind]
-            me_sorted_times = times[me_phases_sortind]
-
-            me_bins = nplinspace(0.0, 1.0, thisnphasebins)
-            me_bininds = npdigitize(me_sorted_phases, me_bins)
-
-            me_centertransit_ind = me_bininds == me_epochbin
-            me_centertransit_phase = (
-                np.median(me_sorted_phases[me_centertransit_ind])
-            )
-            me_centertransit_timeloc = npwhere(
-                npabs(me_sorted_phases - me_centertransit_phase) ==
-                npmin(npabs(me_sorted_phases - me_centertransit_phase))
-            )
-            me_centertransit_time = me_sorted_times[
-                me_centertransit_timeloc
-            ]
-
-            if me_centertransit_time.size > 1:
-                LOGWARNING('multiple possible times-of-center transits '
-                           'found for period %.7f, picking the first '
-                           'one from: %s' %
-                           (thisbestperiod, repr(me_centertransit_time)))
-
-            thisminepoch = me_centertransit_time[0]
-
-        except Exception as e:
-
-            LOGEXCEPTION(
-                'could not determine the center time of transit for '
-                'the phased LC, trying SavGol fit instead...'
-            )
-            # fit a Savitsky-Golay instead and get its minimum
-            savfit = savgol_fit_magseries(times, mags, errs,
-                                          thisbestperiod,
-                                          magsarefluxes=magsarefluxes,
-                                          verbose=verbose)
-            thisminepoch = savfit['fitinfo']['fitepoch']
-
-
-        if isinstance(thisminepoch, np.ndarray):
-            if verbose:
-                LOGWARNING('minimum epoch is actually an array:\n'
-                           '%s\n'
-                           'instead of a float, '
-                           'are there duplicate time values '
-                           'in the original input? '
-                           'will use the first value in this array.'
-                           % repr(thisminepoch))
-            thisminepoch = thisminepoch[0]
-
-        # set up trapezoid transit model to fit for this LC
-        transitparams = [
-            thisbestperiod,
-            thisminepoch,
-            thistransdepth,
-            thistransduration,
-            ingressdurationfraction*thistransduration
-        ]
-
-        modelfit = traptransit_fit_magseries(
-            stimes,
-            smags,
-            serrs,
-            transitparams,
-            sigclip=None,
-            magsarefluxes=magsarefluxes,
-            verbose=verbose
-        )
-
-        # if the model fit succeeds, calculate SNR using the trapezoid model fit
-        if modelfit and modelfit['fitinfo']['finalparams'] is not None:
-
-            fitparams = modelfit['fitinfo']['finalparams']
-            fiterrs = modelfit['fitinfo']['finalparamerrs']
-            modelmags, actualmags, modelphase = (
-                modelfit['fitinfo']['fitmags'],
-                modelfit['magseries']['mags'],
-                modelfit['magseries']['phase']
-            )
-            subtractedmags = actualmags - modelmags
-            subtractedrms = np.std(subtractedmags)
-            fit_period, fit_epoch, fit_depth, fit_duration, fit_ingress_dur = (
-                fitparams
-            )
-
-            npts_in_transit = modelfit['fitinfo']['ntransitpoints']
-            transit_snr = (
-                np.sqrt(npts_in_transit) * np.abs(fit_depth/subtractedrms)
-            )
-
-            if verbose:
-
-                LOGINFO('refit best period: %.6f, '
-                        'refit center of transit: %.5f' %
-                        (fit_period, fit_epoch))
-
-                LOGINFO('npoints in transit: %s' % npts_in_transit)
-
-                LOGINFO('transit depth (delta): %.5f, '
-                        'frac transit length (q): %.3f, '
-                        ' SNR: %.3f' %
-                        (fit_depth,
-                         fit_duration,
-                         transit_snr))
-
-            return {'period':fit_period,
-                    'epoch':fit_epoch,
-                    'snr':transit_snr,
-                    'transitdepth':fit_depth,
-                    'transitduration':fit_duration,
-                    'blsmodel':modelmags,
-                    'subtractedmags':subtractedmags,
-                    'phasedmags':actualmags,
-                    'phases':modelphase,
-                    'fitparams':fitparams,
-                    'fiterrs':fiterrs,
-                    'fitinfo':modelfit}
-
-
-        # if the model fit doesn't work, then do the SNR calculation the old way
-        else:
-
-            # phase using this epoch
-            phased_magseries = phase_magseries_with_errs(stimes,
-                                                         smags,
-                                                         serrs,
-                                                         thisbestperiod,
-                                                         thisminepoch,
-                                                         wrap=False,
-                                                         sort=True)
-
-            tphase = phased_magseries['phase']
-            tmags = phased_magseries['mags']
-
-            # use the transit depth and duration to subtract the BLS transit
-            # model from the phased mag series. we're centered about 0.0 as the
-            # phase of the transit minimum so we need to look at stuff from
-            # [0.0, transitphase] and [1.0-transitphase, 1.0]
-            transitphase = thistransduration/2.0
-
-            transitindices = ((tphase < transitphase) |
-                              (tphase > (1.0 - transitphase)))
-
-            # this is the BLS model
-            # constant = median(tmags) outside transit
-            # constant = thistransitdepth inside transit
-            blsmodel = npfull_like(tmags, npmedian(tmags))
-
-            if magsarefluxes:
-
-                # eebls.f returns +ve transit depth for fluxes
-                # so we need to subtract here to get fainter fluxes in transit
-                blsmodel[transitindices] = (
-                    blsmodel[transitindices] - thistransdepth
-                )
-            else:
-
-                # eebls.f returns -ve transit depth for magnitudes
-                # so we need to subtract here to get fainter mags in transits
-                blsmodel[transitindices] = (
-                    blsmodel[transitindices] - thistransdepth
-                )
-
-            # see __init__/get_snr_of_dip docstring for description of transit
-            # SNR equation, which is what we use for `thissnr`.
-            subtractedmags = tmags - blsmodel
-            subtractedrms = npstd(subtractedmags)
-            npts_in_transit = len(tmags[transitindices])
-            thissnr = (
-                npsqrt(npts_in_transit) * npabs(thistransdepth/subtractedrms)
-            )
-
-            # tell user about stuff if verbose = True
-            if verbose:
-
-                LOGINFO('refit best period: %.6f, '
-                        'refit center of transit: %.5f' %
-                        (thisbestperiod, thisminepoch))
-
-                LOGINFO('transit ingress phase = %.3f to %.3f' % (1.0 -
-                                                                  transitphase,
-                                                                  1.0))
-                LOGINFO('transit egress phase = %.3f to %.3f' % (0.0,
-                                                                 transitphase))
-                LOGINFO('npoints in transit: %s' % tmags[transitindices].size)
-
-                LOGINFO('transit depth (delta): %.5f, '
-                        'frac transit length (q): %.3f, '
-                        ' SNR: %.3f' %
-                        (thistransdepth,
-                         thistransduration,
-                         thissnr))
-
-            return {'period':thisbestperiod,
-                    'epoch':thisminepoch,
-                    'snr':thissnr,
-                    'transitdepth':thistransdepth,
-                    'transitduration':thistransduration,
-                    'nphasebins':nphasebins,
-                    'transingressbin':thistransingressbin,
-                    'transegressbin':thistransegressbin,
-                    'blsmodel':blsmodel,
-                    'subtractedmags':subtractedmags,
-                    'phasedmags':tmags,
-                    'phases':tphase}
+        return stats
 
 
     # if there aren't enough points in the mag series, bail out

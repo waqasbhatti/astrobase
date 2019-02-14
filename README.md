@@ -95,8 +95,8 @@ for your purposes.
 - **[fakelcs](astrobase/fakelcs)**: modules and functions to conduct an
   end-to-end variable star recovery simulation.
 
-- **[fortney2k7](astrobase/services/fortney2k7.py)**: giant planet models from Fortney
-  et al. 2007, ApJ, 2659, 1661 made importable as Python dicts.
+- **[fortney2k7](astrobase/services/fortney2k7.py)**: giant planet models from
+  Fortney et al. 2007, ApJ, 2659, 1661 made importable as Python dicts.
 
 - **[hatsurveys](astrobase/hatsurveys)**: modules to read, filter, and normalize
   light curves from various HAT surveys.
@@ -181,7 +181,7 @@ For optional functionality, some additional packages are required:
 - for `astrobase.lcdb` to work, you'll need `psycopg2-binary`.
 - for `varbase.lcfit.mandelagol_fit_magseries`, you'll need `batman-package`,
   `emcee`, `corner`, and `h5py`.
-- for `lcproc_aws.py`, you'll need `paramiko`, `boto3`', and `awscli`.
+- for `lcproc_aws.py`, you'll need `paramiko`, `boto3`, and `awscli`.
 
 ## Installing with pip
 
