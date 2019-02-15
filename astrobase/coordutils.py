@@ -22,12 +22,24 @@ import scipy.spatial as sps
 ## ANGLE CONVERSIONS ##
 #######################
 
-def angle_wrap(angle,radians=False):
-    '''
-    Wraps the input angle to 360.0 degrees.
+def angle_wrap(angle, radians=False):
+    '''Wraps the input angle to 360.0 degrees.
 
-    if radians is True: input is assumed to be in radians, output is also in
-    radians
+    Parameters
+    ----------
+
+    angle : float
+        The angle to wrap around 360.0 deg.
+
+    radians : bool
+        If True, will assume that the input is in radians. The output will then
+        also be in radians.
+
+    Returns
+    -------
+
+    Wrapped angle. If radians is True: input is assumed to be in radians, output
+    is also in radians.
 
     '''
 
@@ -45,9 +57,22 @@ def angle_wrap(angle,radians=False):
     return wrapped
 
 
+
 def decimal_to_dms(decimal_value):
-    '''
-    This converts from decimal degrees to DD:MM:SS, returned as a tuple.
+    '''Converts from decimal degrees (for declination coords) to DD:MM:SS.
+
+    Parameters
+    ----------
+
+    decimal_value : float
+        A decimal value to convert to degrees, minutes, seconds sexagesimal
+        format.
+
+    Returns
+    -------
+
+    tuple
+        A four element tuple is returned: (sign, HH, MM, SS.ssss...)
 
     '''
 
@@ -72,10 +97,22 @@ def decimal_to_dms(decimal_value):
         return '+', degrees, minutes_out, seconds
 
 
+
 def decimal_to_hms(decimal_value):
-    '''
-    This converts from decimal degrees to HH:MM:SS, returned as a
-    tuple. Negative values of degrees are wrapped to 360.0.
+    '''Converts from decimal degrees (for RA coords) to HH:MM:SS.
+
+    Parameters
+    ----------
+
+    decimal_value : float
+        A decimal value to convert to hours, minutes, seconds. Negative values
+        will be wrapped around 360.0.
+
+    Returns
+    -------
+
+    tuple
+        A three element tuple is returned: (HH, MM, SS.ssss...)
 
     '''
 
@@ -109,10 +146,22 @@ def decimal_to_hms(decimal_value):
         return hours, minutes_out, seconds
 
 
+
 def hms_str_to_tuple(hms_string):
-    '''
-    Converts a string of the form HH:MM:SS or HH MM SS to a tuple of the form
-    (HH,MM,SS).
+    '''Converts a string of the form HH:MM:SS or HH MM SS to a tuple of the form
+    (HH, MM, SS).
+
+    Parameters
+    ----------
+
+    hms_string : str
+        A RA coordinate string of the form 'HH:MM:SS.sss' or 'HH MM SS.sss'.
+
+    Returns
+    -------
+
+    tuple
+        A three element tuple is returned (HH, MM, SS.ssss...)
 
     '''
 
@@ -126,10 +175,25 @@ def hms_str_to_tuple(hms_string):
     return int(hh), int(mm), float(ss)
 
 
+
 def dms_str_to_tuple(dms_string):
-    '''
-    Converts a string of the form +/-DD:MM:SS or +/-DD MM SS to a tuple of the
-    form (sign,DD,MM,SS).
+    '''Converts a string of the form [+-]DD:MM:SS or [+-]DD MM SS to a tuple of
+    the form (sign, DD, MM, SS).
+
+    Parameters
+    ----------
+
+    dms_string : str
+        A declination coordinate string of the form '[+-]DD:MM:SS.sss' or
+        '[+-]DD MM SS.sss'. The sign in front of DD is optional. If it's not
+        there, this function will assume that the coordinate string is a
+        positive value.
+
+    Returns
+    -------
+
+    tuple
+        A four element tuple of the form: (sign, DD, MM, SS.ssss...).
 
     '''
     if ':' in dms_string:
@@ -146,28 +210,75 @@ def dms_str_to_tuple(dms_string):
     return sign, int(dd), int(mm), float(ss)
 
 
+
 def hms_str_to_decimal(hms_string):
-    '''
-    Converts a HH:MM:SS string to decimal degrees.
+    '''Converts a HH:MM:SS string to decimal degrees.
+
+    Parameters
+    ----------
+
+    hms_string : str
+        A right ascension coordinate string of the form: 'HH:MM:SS.sss'
+        or 'HH MM SS.sss'.
+
+    Returns
+    -------
+
+    float
+        The RA value in decimal degrees (wrapped around 360.0 deg if necessary.)
 
     '''
     return hms_to_decimal(*hms_str_to_tuple(hms_string))
 
 
+
 def dms_str_to_decimal(dms_string):
-    '''
-    Converts a DD:MM:SS string to decimal degrees.
+    '''Converts a DD:MM:SS string to decimal degrees.
+
+    Parameters
+    ----------
+
+    dms_string : str
+        A declination coordinate string of the form: '[+-]DD:MM:SS.sss'
+        or '[+-]DD MM SS.sss'.
+
+    Returns
+    -------
+
+    float
+        The declination value in decimal degrees.
 
     '''
     return dms_to_decimal(*dms_str_to_tuple(dms_string))
 
 
-def hms_to_decimal(hours, minutes, seconds, returndeg=True):
-    '''
-    Converts from HH:MM:SS to a decimal value.
 
-    if returndeg is True: returns decimal degrees
-    if returndeg is False: returns decimal hours
+def hms_to_decimal(hours, minutes, seconds, returndeg=True):
+    '''Converts from HH, MM, SS to a decimal value.
+
+    Parameters
+    ----------
+
+    hours : int
+        The HH part of a RA coordinate.
+
+    minutes : int
+        The MM part of a RA coordinate.
+
+    seconds : float
+        The SS.sss part of a RA coordinate.
+
+    returndeg : bool
+        If this is True, then will return decimal degrees as the output.
+        If this is False, then will return decimal HOURS as the output.
+        Decimal hours are sometimes used in FITS headers.
+
+    Returns
+    -------
+
+    float
+        The right ascension value in either decimal degrees or decimal hours
+        depending on `returndeg`.
 
     '''
 
@@ -191,9 +302,30 @@ def hms_to_decimal(hours, minutes, seconds, returndeg=True):
             return dec_hours
 
 
+
 def dms_to_decimal(sign, degrees, minutes, seconds):
-    '''
-    Converts from DD:MM:SS to a decimal value. Returns decimal degrees.
+    '''Converts from DD:MM:SS to a decimal value.
+
+    Parameters
+    ----------
+
+    sign : {'+', '-', ''}
+        The sign part of a Dec coordinate.
+
+    degrees : int
+        The DD part of a Dec coordinate.
+
+    minutes : int
+        The MM part of a Dec coordinate.
+
+    seconds : float
+        The SS.sss part of a Dec coordinate.
+
+    Returns
+    -------
+
+    float
+        The declination value in decimal degrees.
 
     '''
 
@@ -205,38 +337,53 @@ def dms_to_decimal(sign, degrees, minutes, seconds):
         return dec_deg
 
 
+
 ############################
 ## DISTANCE AND XMATCHING ##
 ############################
 
 def great_circle_dist(ra1, dec1, ra2, dec2):
-    '''
+    '''Calculates the great circle angular distance between two coords.
+
     This calculates the great circle angular distance in arcseconds between two
     coordinates (ra1,dec1) and (ra2,dec2). This is basically a clone of GCIRC
     from the IDL Astrolib.
 
-    PARAMETERS:
+    Parameters
+    ----------
 
-    ra1,dec1: first coordinate (decimal degrees) -- scalar or np.array
-    ra2,dec2: second coordinate (decimal degrees) -- scalar or np.array
+    ra1, dec1 : float or array-like
+        The first coordinate's right ascension and declination value(s) in
+        decimal degrees.
 
-    RETURNS:
+    ra2, dec2 : float or array-like
+        The second coordinate's right ascension and declination value(s) in
+        decimal degrees.
 
-    great circle distance between the two coordinates in arseconds.
+    Returns
+    -------
 
-    if (ra1,dec1) scalar and (ra2,dec2) scalar: result is a scalar
+    float or array-like
+        Great circle distance between the two coordinates in arseconds.
 
-    if (ra1,dec1) scalar and (ra2,dec2) np.array: result is np.array with
-    distance between (ra1,dec1) and each element of (ra2,dec2)
+    Notes
+    -----
 
-    if (ra1,dec1) np.array and (ra2,dec2) scalar: result is np.array with
-    distance between (ra2,dec2) and each element of (ra1,dec1)
+    If (`ra1`, `dec1`) is scalar and (`ra2`, `dec2`) is scalar: the result is a
+    float distance in arcseconds.
 
-    if (ra1,dec1) and (ra2,dec2) both np.arrays: result is np.array with
-    pair-wise distance between each element of the two coordinate lists.
+    If (`ra1`, `dec1`) is scalar and (`ra2`, `dec2`) is array-like: the result
+    is an np.array with distance in arcseconds between (`ra1`, `dec1`) and each
+    element of (`ra2`, `dec2`).
 
-    If the input np.arrays are not the same length, then excess elements of the
-    longer ones will be ignored.
+    If (`ra1`, `dec1`) is array-like and (`ra2`, `dec2`) is scalar: the result
+    is an np.array with distance in arcseconds between (`ra2`, `dec2`) and each
+    element of (`ra1`, `dec1`).
+
+    If (`ra1`, `dec1`) and (`ra2`, `dec2`) are both array-like: the result is an
+    np.array with the pair-wise distance in arcseconds between each element of
+    the two coordinate lists. In this case, if the input array-likes are not the
+    same length, then excess elements of the longer one will be ignored.
 
     '''
 
@@ -262,22 +409,36 @@ def great_circle_dist(ra1, dec1, ra2, dec2):
     return np.rad2deg(dist_rad)*3600.0
 
 
+
 def xmatch_basic(ra1, dec1, ra2, dec2, match_radius=5.0):
-    '''
-    This is a quick matcher that uses great_circle_dist to find the closest
-    object in (ra2,dec2) within match_radius to (ra1,dec1). (ra1,dec1) must be a
-    scalar pair, while (ra2,dec2) must be np.arrays of the same lengths.
+    '''Finds the closest object in (`ra2`, `dec2`) to scalar coordinate pair
+    (`ra1`, `dec1`) and returns the distance in arcseconds.
 
-    PARAMETERS:
-    ra1/dec1: coordinates of the target to match
-    ra2/dec2: coordinate np.arrays of the list of coordinates to match to
+    This is a quick matcher that uses the `great_circle_dist` function to find
+    the closest object in (`ra2`, `dec2`) within `match_radius` arcseconds to
+    (`ra1`, `dec1`). (`ra1`, `dec1`) must be a scalar pair, while
+    (`ra2`, `dec2`) must be array-likes of the same lengths.
 
-    RETURNS:
+    Parameters
+    ----------
 
-    A tuple like the following:
+    ra1, dec1 : float
+        Coordinate of the object to find matches to. In decimal degrees.
 
-    (True -> no match or False -> matched,
-     minimum distance between target and list)
+    ra2, dec2 : array-like
+        The coordinates that will be searched for matches. In decimal degrees.
+
+    match_radius : float
+        The match radius in arcseconds to use for the match.
+
+    Returns
+    -------
+
+    tuple
+        A two element tuple like the following:
+
+        (True -> no match found or False -> found a match,
+         minimum distance between target and list in arcseconds)
 
     '''
 
@@ -290,31 +451,49 @@ def xmatch_basic(ra1, dec1, ra2, dec2, match_radius=5.0):
 
 
 
-def xmatch_neighbors(ra1, dec1, ra2, dec2, match_radius=60.0,
-                     includeself=False,sortresults=True):
-    '''
-    This is a quick matcher that uses great_circle_dist to find the closest
-    neighbors in (ra2,dec2) within match_radius to (ra1,dec1). (ra1,dec1) must
-    be a scalar pair, while (ra2,dec2) must be np.arrays of the same lengths
+def xmatch_neighbors(ra1, dec1,
+                     ra2, dec2,
+                     match_radius=60.0,
+                     includeself=False,
+                     sortresults=True):
+    '''Finds the closest objects in (`ra2`, `dec2`) to scalar coordinate pair
+    (`ra1`, `dec1`) and returns the indices of the objects that match.
 
-    PARAMETERS:
-    ra1/dec1: coordinates of the target to match
+    This is a quick matcher that uses the `great_circle_dist` function to find
+    the closest object in (`ra2`, `dec2`) within `match_radius` arcseconds to
+    (`ra1`, `dec1`). (`ra1`, `dec1`) must be a scalar pair, while
+    (`ra2`, `dec2`) must be array-likes of the same lengths.
 
-    ra2/dec2: coordinate np.arrays of the list of coordinates to match to
+    Parameters
+    ----------
 
-    includeself: if True, includes matches in list to self-coordinates
+    ra1, dec1 : float
+        Coordinate of the object to find matches to. In decimal degrees.
 
-    sortresults: if True, returns match_index in order of increasing distance
-    from target
+    ra2, dec2 : array-like
+        The coordinates that will be searched for matches. In decimal degrees.
 
-    RETURNS:
+    match_radius : float
+        The match radius in arcseconds to use for the match.
 
-    A tuple like the following:
+    includeself : bool
+        If this is True, the object itself will be included in the match
+        results.
 
-    (True -> no match or False -> matched,
-     minimum distance between target and list,
-     np.array of indices where list of coordinates is closer than match_radius
-     to the target)
+    sortresults : bool
+        If this is True, the match indices will be sorted by distance.
+
+    Returns
+    -------
+
+    tuple
+        A tuple like the following is returned:
+
+        (True -> matches found or False -> no matches found,
+         minimum distance between target and list,
+         np.array of indices where list of coordinates is
+         closer than `match_radius` arcseconds from the target,
+         np.array of distances in arcseconds)
 
     '''
 
@@ -348,8 +527,20 @@ def xmatch_neighbors(ra1, dec1, ra2, dec2, match_radius=60.0,
 ######################
 
 def make_kdtree(ra, decl):
-    '''
-    This makes a scipy.spatial.CKDTree on ra, decl.
+    '''This makes a `scipy.spatial.CKDTree` on (`ra`, `decl`).
+
+    Parameters
+    ----------
+
+    ra, decl : array-like
+        The right ascension and declination coordinate pairs in decimal degrees.
+
+    Returns
+    -------
+
+    `scipy.spatial.CKDTree`
+        The cKDTRee object generated by this function is returned and can be
+        used to run various spatial queries.
 
     '''
 
@@ -374,10 +565,34 @@ def conesearch_kdtree(kdtree,
                       declcenter,
                       searchradiusdeg,
                       conesearchworkers=1):
-    '''
-    This does a cone-search around (racenter, declcenter) in kdtree.
+    '''This does a cone-search around (`racenter`, `declcenter`) in `kdtree`.
 
-    Returns the indices of kdtree.data that match the specified criteria.
+    Parameters
+    ----------
+
+    kdtree : scipy.spatial.CKDTree
+        This is a kdtree object generated by the `make_kdtree` function.
+
+    racenter, declcenter : float or array-like
+        This is the center coordinate to run the cone-search around in decimal
+        degrees. If this is an np.array, will search for all coordinate pairs in
+        the array.
+
+    searchradiusdeg : float
+        The search radius to use for the cone-search in decimal degrees.
+
+    conesearchworkers : int
+        The number of parallel workers to launch for the cone-search.
+
+    Returns
+    -------
+
+    list or np.array of lists
+        If (`racenter`, `declcenter`) is a single coordinate, this will return a
+        list of the indices of the matching objects in the kdtree. If
+        (`racenter`, `declcenter`) are array-likes, this will return an object
+        array containing lists of matching object indices for each coordinate
+        searched.
 
     '''
 
@@ -404,15 +619,40 @@ def xmatch_kdtree(kdtree,
                   extra, extdecl,
                   xmatchdistdeg,
                   closestonly=True):
-    '''This cross-matches between kdtree and (extra, extdecl) arrays.
+    '''This cross-matches between `kdtree` and (`extra`, `extdecl`) arrays.
 
     Returns the indices of the kdtree and the indices of extra, extdecl that
     xmatch successfully.
 
-    If closestonly is True, then this function returns only the closest matching
-    indices in (extra, extdecl) for each object in kdtree if there are any
-    matches. Otherwise, it returns a list of indices in (extra, extdecl) for all
-    matches within xmatchdistdeg between kdtree and (extra, extdecl).
+    Parameters
+    ----------
+
+    kdtree : scipy.spatial.CKDTree
+        This is a kdtree object generated by the `make_kdtree` function.
+
+    extra, extdecl : array-like
+        These are np.arrays of 'external' coordinates in decimal degrees that
+        will be cross-matched against the objects in `kdtree`.
+
+    xmatchdistdeg : float
+        The match radius to use for the cross-match in decimal degrees.
+
+    closestonly : bool
+        If closestonly is True, then this function returns only the closest
+        matching indices in (extra, extdecl) for each object in kdtree if there
+        are any matches. Otherwise, it returns a list of indices in (extra,
+        extdecl) for all matches within xmatchdistdeg between kdtree and (extra,
+        extdecl).
+
+    Returns
+    -------
+
+    tuple of lists
+        Returns a tuple of the form:
+
+        (list of `kdtree` indices matching to external objects,
+         list of all `extra`/`extdecl` indices that match to each
+         element in `kdtree` within the specified cross-match distance)
 
     '''
 
@@ -459,8 +699,25 @@ def xmatch_kdtree(kdtree,
 
 def total_proper_motion(pmra, pmdecl, decl):
 
-    '''
-    This calculates the total proper motion of an object.
+    '''This calculates the total proper motion of an object.
+
+    Parameters
+    ----------
+
+    pmra : float or array-like
+        The proper motion(s) in right ascension, measured in mas/yr.
+
+    pmdecl : float or array-like
+        The proper motion(s) in declination, measured in mas/yr.
+
+    decl : float or array-like
+        The declination of the object(s) in decimal degrees.
+
+    Returns
+    -------
+
+    float or array-like
+        The total proper motion(s) of the object(s) in mas/yr.
 
     '''
 
@@ -469,16 +726,34 @@ def total_proper_motion(pmra, pmdecl, decl):
     return pm
 
 
-def reduced_proper_motion(jmag, propermotion):
+
+def reduced_proper_motion(mag, propermotion):
+    '''This calculates the reduced proper motion using the mag measurement
+    provided.
+
+    Parameters
+    ----------
+
+    mag : float or array-like
+        The magnitude(s) to use to calculate the reduced proper motion(s).
+
+    propermotion : float or array-like
+        The total proper motion of the object(s). Use the `total_proper_motion`
+        function to calculate this if you have `pmra`, `pmdecl`, and `decl`
+        values. `propermotion` should be in mas/yr.
+
+    Returns
+    -------
+
+    float or array-like
+        The reduced proper motion for the object(s). This is effectively a
+        measure of the absolute magnitude in the band provided.
+
     '''
-    This calculates the reduced proper motion using the J magnitude.
 
-    This is an effective measure of the absolute magnitude in the J band.
-
-    '''
-
-    rpm = jmag + 5.0*np.log10(propermotion/1000.0)
+    rpm = mag + 5.0*np.log10(propermotion/1000.0)
     return rpm
+
 
 
 ###########################
@@ -486,8 +761,27 @@ def reduced_proper_motion(jmag, propermotion):
 ###########################
 
 def equatorial_to_galactic(ra, decl, equinox='J2000'):
-    '''
-    This simply converts from equatorial coords to galactic coords.
+    '''This converts from equatorial coords to galactic coords.
+
+    Parameters
+    ----------
+
+    ra : float or array-like
+        Right ascension values(s) in decimal degrees.
+
+    decl : float or array-like
+        Declination value(s) in decimal degrees.
+
+    equinox : str
+        The equinox that the coordinates are measured at. This must be
+        recognizable by Astropy's `SkyCoord` class.
+
+    Returns
+    -------
+
+    tuple of (float, float) or tuple of (np.array, np.array)
+        The galactic coordinates (l, b) for each element of the input
+        (`ra`, `decl`).
 
     '''
 
@@ -500,9 +794,25 @@ def equatorial_to_galactic(ra, decl, equinox='J2000'):
     return gl, gb
 
 
+
 def galactic_to_equatorial(gl, gb):
-    '''
-    This converts from galactic coords to equatorial coordinates.
+    '''This converts from galactic coords to equatorial coordinates.
+
+    Parameters
+    ----------
+
+    gl : float or array-like
+        Galactic longitude values(s) in decimal degrees.
+
+    gb : float or array-like
+        Galactic latitude value(s) in decimal degrees.
+
+    Returns
+    -------
+
+    tuple of (float, float) or tuple of (np.array, np.array)
+        The equatorial coordinates (RA, DEC) for each element of the input
+        (`gl`, `gb`) in decimal degrees. These are reported in the ICRS frame.
 
     '''
 
@@ -518,11 +828,33 @@ def galactic_to_equatorial(gl, gb):
 ## XI-ETA PROJECTIONS ##
 ########################
 
-def xieta_from_radecl(inra, indecl, incenterra, incenterdecl, deg=True):
+def xieta_from_radecl(inra, indecl,
+                      incenterra, incenterdecl,
+                      deg=True):
     '''This returns the image-plane projected xi-eta coords for inra, indecl.
 
-    If deg = True, the input angles are assumed to be in degrees and the output
-    is in degrees as well. A center RA and DEC are required.
+    Parameters
+    ----------
+
+    inra, indecl : array-like
+        The equatorial coordinates to get the xi, eta coordinates for in decimal
+        degrees or radians.
+
+    incenterra, incenterdecl : float
+        The center coordinate values to use to calculate the plane-projected
+        coordinates around.
+
+    deg : bool
+        If this is True, the input angles are assumed to be in degrees and the
+        output is in degrees as well.
+
+    Returns
+    -------
+
+    tuple of np.arrays
+        This is the (`xi`, `eta`) coordinate pairs corresponding to the
+        image-plane projected coordinates for each pair of input equatorial
+        coordinates in (`inra`, `indecl`).
 
     '''
 
