@@ -79,12 +79,27 @@ from .lcmath import sigclip_magseries, find_lc_timegroups
 ###########################################
 
 def keplerflux_to_keplermag(keplerflux, f12=1.74e5):
-    '''
-    This converts the kepler flux in electrons/sec to kepler magnitude.
+    '''This converts the Kepler flux in electrons/sec to Kepler magnitude.
 
     kepler mag/flux relation:
     - fkep = (10.0**(-0.4*(kepmag - 12.0)))*f12
     - f12 = 1.74e5 # electrons/sec
+
+    Parameters
+    ----------
+
+    keplerflux : float or array-like
+        The flux value(s) to convert to magnitudes.
+
+    f12 : float
+        The flux value in the Kepler band corresponding to Kepler mag = 12.0.
+
+    Returns
+    -------
+
+    np.array
+        Magnitudes in the Kepler band corresponding to the input `keplerflux`
+        flux value(s).
 
     '''
 
@@ -92,9 +107,25 @@ def keplerflux_to_keplermag(keplerflux, f12=1.74e5):
     return kepmag
 
 
+
 def keplermag_to_keplerflux(keplermag, f12=1.74e5):
-    '''
-    This converts the kepler mag back to kepler flux.
+    '''This converts the Kepler mag back to Kepler flux.
+
+    Parameters
+    ----------
+
+    keplermag : float or array-like
+        The Kepler magnitude value(s) to convert to fluxes.
+
+    f12 : float
+        The flux value in the Kepler band corresponding to Kepler mag = 12.0.
+
+    Returns
+    -------
+
+    np.array
+        Fluxes in the Kepler band corresponding to the input `keplermag`
+        magnitude value(s).
 
     '''
 
@@ -102,14 +133,26 @@ def keplermag_to_keplerflux(keplermag, f12=1.74e5):
     return kepflux
 
 
+
 def keplermag_to_sdssr(keplermag, kic_sdssg, kic_sdssr):
-    '''
+    '''Converts magnitude measurements in Kepler band to SDSS r band.
 
-    convert from kepmag to SDSS r mag, we must know the sdssg of the target
-    (from UCAC4 or other transforms). this appears to be a very rough
-    transformation.
+    Parameters
+    ----------
 
-    Get kic_sdssg and kic_sdssr from extension 0 of a Kepler llc.fits file.
+    keplermag : float or array-like
+        The Kepler magnitude value(s) to convert to fluxes.
+
+    kic_sdssg, kic_sdssr : float or array-like
+        The SDSS g and r magnitudes of the object(s) from the Kepler Input
+        Catalog. The .llc.fits MAST light curve file for a Kepler object
+        contains these values in the FITS extension 0 header.
+
+    Returns
+    -------
+
+    float or array-like
+        SDSS r band magnitude(s) converted from the Kepler band magnitude.
 
     '''
     kic_sdssgr = kic_sdssg - kic_sdssr
@@ -121,11 +164,27 @@ def keplermag_to_sdssr(keplermag, kic_sdssg, kic_sdssr):
     return kepsdssr
 
 
+
 def flux_ppm_to_magnitudes(ppm):
-    '''
-    This converts Kepler's flux parts-per-million to magnitudes.
+    '''This converts Kepler's flux parts-per-million to magnitudes.
+
+    Mostly useful for turning PPMs reported by Kepler or TESS into millimag
+    values to compare with ground-based surveys.
+
+    Parameters
+    ----------
+
+    ppm : float or array-like
+        Kepler flux measurement errors or RMS values in parts-per-million.
+
+    Returns
+    -------
+
+    float or array-like
+        Measurement errors or RMS values expressed in magnitudes.
 
     '''
+
     return -2.5*nplog10(1.0 - ppm/1.0e6)
 
 
@@ -180,15 +239,18 @@ LCTOPKEYS = ['CHANNEL','SKYGROUP','MODULE','OUTPUT',
 LCAPERTUREKEYS = ['NPIXSAP','NPIXMISS','CDELT1','CDELT2']
 
 
-def read_kepler_fitslc(lcfits,
-                       headerkeys=LCHEADERKEYS,
-                       datakeys=LCDATAKEYS,
-                       sapkeys=LCSAPKEYS,
-                       pdckeys=LCPDCKEYS,
-                       topkeys=LCTOPKEYS,
-                       apkeys=LCAPERTUREKEYS,
-                       normalize=False,
-                       appendto=None):
+
+def read_kepler_fitslc(
+        lcfits,
+        headerkeys=LCHEADERKEYS,
+        datakeys=LCDATAKEYS,
+        sapkeys=LCSAPKEYS,
+        pdckeys=LCPDCKEYS,
+        topkeys=LCTOPKEYS,
+        apkeys=LCAPERTUREKEYS,
+        appendto=None,
+        normalize=False,
+):
     '''This extracts the light curve from a single Kepler or K2 LC FITS file.
 
     This works on the light curves available at MAST:
@@ -197,16 +259,55 @@ def read_kepler_fitslc(lcfits,
 
     -> ktwo{epicid}-c{campaign}_llc.fits files from the K2 mission
 
-    Returns an lcdict.
+    Parameters
+    ----------
 
-    If normalize == True, then each component light curve's flux measurements
-    will be normalized to 1.0 by dividing out the median flux for the component
-    light curve.
+    lcfits : str
+        The filename of a MAST Kepler/K2 light curve FITS file.
 
-    If appendto is an lcdict, will append measurements to that dict. This is
-    used for consolidating light curves for the same object across different
-    files (quarters). The appending does not care about the time order. To
-    consolidate light curves in time order, use consolidate_kepler_fitslc below.
+    headerkeys : list
+        A list of FITS header keys that will be extracted from the FITS light
+        curve file. These describe the observations. The default value for this
+        is given in `LCHEADERKEYS` above.
+
+    datakeys : list
+        A list of FITS column names that correspond to the auxiliary
+        measurements in the light curve. The default is `LCDATAKEYS` above.
+
+    sapkeys : list
+        A list of FITS column names that correspond to the SAP flux
+        measurements in the light curve. The default is `LCSAPKEYS` above.
+
+    pdckeys : list
+        A list of FITS column names that correspond to the PDC flux
+        measurements in the light curve. The default is `LCPDCKEYS` above.
+
+    topkeys : list
+        A list of FITS header keys that describe the object in the light
+        curve. The default is `LCTOPKEYS` above.
+
+    apkeys : list
+        A list of FITS header keys that describe the flux measurement apertures
+        used by the Kepler/K2 pipeline. The default is `LCAPERTUREKEYS` above.
+
+    appendto : lcdict or None
+        If appendto is an `lcdict`, will append measurements of this `lcdict` to
+        that `lcdict`. This is used for consolidating light curves for the same
+        object across different files (quarters). The appending does not care
+        about the time order. To consolidate light curves in time order, use
+        `consolidate_kepler_fitslc` below.
+
+    normalize : bool
+        If True, then each component light curve's SAP_FLUX and PDCSAP_FLUX
+        measurements will be normalized to 1.0 by dividing out the median flux
+        for the component light curve.
+
+    Returns
+    -------
+
+    lcdict
+        Returns an `lcdict` (this is useable by most astrobase functions for LC
+        processing).
 
     '''
 
@@ -520,21 +621,66 @@ def consolidate_kepler_fitslc(keplerid,
                               pdckeys=LCPDCKEYS,
                               topkeys=LCTOPKEYS,
                               apkeys=LCAPERTUREKEYS):
-    '''This gets all light curves for the given keplerid in lcfitsdir.
+    '''This gets all Kepler/K2 light curves for the given `keplerid`
+    in `lcfitsdir`.
 
-    Searches recursively in lcfitsdir for all of the files belonging to the
-    specified keplerid. Sorts the light curves by time. Returns an lcdict. This
-    is meant to be used for light curves across quarters.
+    Searches recursively in `lcfitsdir` for all of the files belonging to the
+    specified `keplerid`. Sorts the light curves by time. Returns an
+    `lcdict`. This is meant to be used to consolidate light curves for a single
+    object across Kepler quarters.
 
-    NOTE: keplerid is an integer (without the leading zeros). This is usually
+    NOTE: `keplerid` is an integer (without the leading zeros). This is usually
     the KIC ID.
 
-    NOTE: if light curve time arrays contain nans, these and their associated
+    NOTE: if light curve time arrays contain `nans`, these and their associated
     measurements will be sorted to the end of the final combined arrays.
 
-    If normalize == True, then each component light curve's SAP_FLUX and
-    PDCSAP_FLUX measurements will be normalized to 1.0 by dividing out the
-    median flux for the component light curve.
+    Parameters
+    ----------
+
+    keplerid : int
+        The Kepler ID of the object to consolidate LCs for, as an integer
+        without any leading zeros. This is usually the KIC or EPIC ID.
+
+    lcfitsdir : str
+        The directory to look in for LCs of the specified object.
+
+    normalize : bool
+        If True, then each component light curve's SAP_FLUX and PDCSAP_FLUX
+        measurements will be normalized to 1.0 by dividing out the median flux
+        for the component light curve.
+
+    headerkeys : list
+        A list of FITS header keys that will be extracted from the FITS light
+        curve file. These describe the observations. The default value for this
+        is given in `LCHEADERKEYS` above.
+
+    datakeys : list
+        A list of FITS column names that correspond to the auxiliary
+        measurements in the light curve. The default is `LCDATAKEYS` above.
+
+    sapkeys : list
+        A list of FITS column names that correspond to the SAP flux
+        measurements in the light curve. The default is `LCSAPKEYS` above.
+
+    pdckeys : list
+        A list of FITS column names that correspond to the PDC flux
+        measurements in the light curve. The default is `LCPDCKEYS` above.
+
+    topkeys : list
+        A list of FITS header keys that describe the object in the light
+        curve. The default is `LCTOPKEYS` above.
+
+    apkeys : list
+        A list of FITS header keys that describe the flux measurement apertures
+        used by the Kepler/K2 pipeline. The default is `LCAPERTUREKEYS` above.
+
+    Returns
+    -------
+
+    lcdict
+        Returns an `lcdict` (this is useable by most astrobase functions for LC
+        processing).
 
     '''
 
@@ -656,6 +802,7 @@ def consolidate_kepler_fitslc(keplerid,
         return None
 
 
+
 ########################
 ## READING K2 SFF LCs ##
 ########################
@@ -665,9 +812,24 @@ SFFHEADERKEYS = LCHEADERKEYS + ['MASKTYPE','MASKINDE','NPIXSAP']
 SFFDATAKEYS = ['T','FRAW','FCOR','ARCLENGTH','MOVING','CADENCENO']
 
 
+
 def read_k2sff_lightcurve(lcfits):
-    '''
-    This reads a K2 SFF (Vandenberg+ 2014) light curve into an lcdict.
+    '''This reads a K2 SFF (Vandenberg+ 2014) light curve into an `lcdict`.
+
+    Use this with the light curves from the K2 SFF project at MAST.
+
+    Parameters
+    ----------
+
+    lcfits : str
+        The filename of the FITS light curve file downloaded from MAST.
+
+    Returns
+    -------
+
+    lcdict
+        Returns an `lcdict` (this is useable by most astrobase functions for LC
+        processing).
 
     '''
 
@@ -788,9 +950,25 @@ def read_k2sff_lightcurve(lcfits):
 ## INPUT/OUTPUT ##
 ##################
 
-def kepler_lcdict_to_pkl(lcdict,
-                         outfile=None):
-    '''This simply writes the lcdict to a pickle.
+def kepler_lcdict_to_pkl(lcdict, outfile=None):
+    '''This writes the `lcdict` to a Python pickle.
+
+    Parameters
+    ----------
+
+    lcdict : lcdict
+        This is the input `lcdict` to write to a pickle.
+
+    outfile : str or None
+        If this is None, the object's Kepler ID/EPIC ID will determined from the
+        `lcdict` and used to form the filename of the output pickle file. If
+        this is a `str`, the provided filename will be used.
+
+    Returns
+    -------
+
+    str
+        The absolute path to the written pickle file.
 
     '''
 
@@ -807,7 +985,21 @@ def kepler_lcdict_to_pkl(lcdict,
 
 
 def read_kepler_pklc(picklefile):
-    '''This turns the pickled lightcurve back into an lcdict.
+    '''This turns the pickled lightcurve file back into an `lcdict`.
+
+    Parameters
+    ----------
+
+    picklefile : str
+        The path to a previously written Kepler LC picklefile generated by
+        `kepler_lcdict_to_pkl` above.
+
+    Returns
+    -------
+
+    lcdict
+        Returns an `lcdict` (this is useable by most astrobase functions for LC
+        processing).
 
     '''
 
@@ -839,10 +1031,25 @@ def read_kepler_pklc(picklefile):
 ##########################
 
 def stitch_kepler_lcdict(lcdict):
-    '''
-    This stitches Kepler light curves together across quarters.
+    '''This stitches Kepler light curves together across quarters.
 
     FIXME: implement this.
+
+    Parameters
+    ----------
+
+    lcdict : lcdict
+        An `lcdict` produced by `consolidate_kepler_fitslc`. The flux
+        measurements between quarters will be stitched together.
+
+    Returns
+    -------
+
+    lcdict
+        Returns an `lcdict` (this is useable by most astrobase functions for LC
+        processing). The flux measurements will have been shifted to form a
+        seamless light curve across quarters suitable for long-term variability
+        investigation.
 
     '''
 
@@ -852,16 +1059,44 @@ def filter_kepler_lcdict(lcdict,
                          filterflags=True,
                          nanfilter='sap,pdc',
                          timestoignore=None):
-    '''This filters the Kepler light curve dict.
+    '''This filters the Kepler light curve dict, removing nans and bad
+    observations.
 
     By default, this function removes points in the Kepler LC that have ANY
-    quality flags set. Also removes nans.
+    quality flags set.
 
-    timestoignore is a list of tuples containing start and end times to mask:
+    Parameters
+    ----------
 
-    [(time1_start, time1_end), (time2_start, time2_end), ...]
+    lcdict : lcdict
+        An `lcdict` produced by `consolidate_kepler_fitslc`. or
+        `read_kepler_fitslc`.
 
-    This function filters the dict IN PLACE!
+    filterflags : bool
+        If True, will remove any measurements that have non-zero quality flags
+        present. This usually indicates an issue with the instrument or
+        spacecraft.
+
+    nanfilter : {'sap','pdc','sap,pdc'}
+        Indicates the flux measurement type(s) to apply the filtering to.
+
+    timestoignore : list of tuples
+        This is of the form:
+
+        [(time1_start, time1_end), (time2_start, time2_end), ...]
+
+        and indicates the start and end times to mask out of the final
+        lcdict. Use this to remove anything that wasn't caught by the quality
+        flags.
+
+    Returns
+    -------
+
+    lcdict
+        Returns an `lcdict` (this is useable by most astrobase functions for LC
+        processing). The flux measurements will have been shifted to form a
+        seamless light curve across quarters suitable for long-term variability
+        investigation. The `lcdict` is filtered IN PLACE!
 
     '''
 
@@ -955,8 +1190,31 @@ def filter_kepler_lcdict(lcdict,
 ###################
 
 def _epd_function(coeffs, fluxes, xcc, ycc, bgv, bge):
-    '''
-    This is the EPD function to fit.
+    '''This is the EPD function to fit.
+
+    Parameters
+    ----------
+
+    coeffs : array-like of floats
+        Contains the EPD coefficients that will be used to generate the EPD fit
+        function.
+
+    fluxes : array-like
+        The flux measurement array being used.
+
+    xcc, ycc : array-like
+        Arrays of the x and y coordinates associated with each measurement in
+        `fluxes`.
+
+    bgv, bge : array-like
+        Arrays of the flux background value and the flux background error
+        associated with each measurement in `fluxes`.
+
+    Returns
+    -------
+
+    np.array
+        Contains the fit function evaluated at each flux measurement value.
 
     '''
 
@@ -975,8 +1233,32 @@ def _epd_function(coeffs, fluxes, xcc, ycc, bgv, bge):
 
 
 def _epd_residual(coeffs, fluxes, xcc, ycc, bgv, bge):
-    '''
-    This is the residual function to minimize using scipy.optimize.leastsq.
+    '''This is the residual function to minimize using scipy.optimize.leastsq.
+
+    Parameters
+    ----------
+
+    coeffs : array-like of floats
+        Contains the EPD coefficients that will be used to generate the EPD fit
+        function.
+
+    fluxes : array-like
+        The flux measurement array being used.
+
+    xcc, ycc : array-like
+        Arrays of the x and y coordinates associated with each measurement in
+        `fluxes`.
+
+    bgv, bge : array-like
+        Arrays of the flux background value and the flux background error
+        associated with each measurement in `fluxes`.
+
+    Returns
+    -------
+
+    np.array
+        Contains the fit function residual evaluated at each flux measurement
+        value.
 
     '''
 
@@ -1002,30 +1284,58 @@ def epd_kepler_lightcurve(lcdict,
         c5*sin(4*pi*x) + c6*cos(4*pi*x) + c7*sin(4*pi*y) + c8*cos(4*pi*y) +
         c9*bgv + c10*bge
 
-    timestoignore is a list of tuples containing start and end times to mask
-    when fitting the EPD function:
+    By default, this function removes points in the Kepler LC that have ANY
+    quality flags set.
 
-    [(time1_start, time1_end), (time2_start, time2_end), ...]
+    Parameters
+    ----------
 
-    NOTES:
+    lcdict : lcdict
+        An `lcdict` produced by `consolidate_kepler_fitslc` or
+        `read_kepler_fitslc`.
 
-    - this function returns times and mags by default
-    - by default, this function removes points in the Kepler LC that have ANY
-      quality flags set
+    xcol, ycol : str
+        Indicates the x and y coordinate column names to use from the Kepler LC
+        in the EPD fit.
 
-    if writetodict is set, adds the following columns to the lcdict:
+    timestoignore : list of tuples
+        This is of the form:
 
-    epd_time = time array
-    epd_sapflux = uncorrected flux before EPD
-    epd_epdsapflux = corrected flux after EPD
-    epd_epdsapcorr = EPD flux corrections
-    epd_bkg = background array
-    epd_bkg_err = background errors array
-    epd_xcc = xcoord array
-    epd_ycc = ycoord array
-    epd_quality = quality flag array
+        [(time1_start, time1_end), (time2_start, time2_end), ...]
 
-    and updates the 'columns' list in the lcdict as well.
+        and indicates the start and end times to mask out of the final
+        lcdict. Use this to remove anything that wasn't caught by the quality
+        flags.
+
+    filterflags : bool
+        If True, will remove any measurements that have non-zero quality flags
+        present. This usually indicates an issue with the instrument or
+        spacecraft.
+
+    writetodict : bool
+        If writetodict is True, adds the following columns to the lcdict:
+
+        epd_time = time array
+        epd_sapflux = uncorrected flux before EPD
+        epd_epdsapflux = corrected flux after EPD
+        epd_epdsapcorr = EPD flux corrections
+        epd_bkg = background array
+        epd_bkg_err = background errors array
+        epd_xcc = xcoord array
+        epd_ycc = ycoord array
+        epd_quality = quality flag array
+
+        and updates the 'columns' list in the lcdict as well.
+
+    epdsmooth : int
+        Sets the number of light curve points to smooth over when generating the
+        EPD fit function.
+
+    Returns
+    -------
+
+    tuple
+        Returns a tuple of the form: (times, epdfluxes, fitcoeffs, epdfit)
 
     '''
 
@@ -1164,43 +1474,86 @@ def epd_kepler_lightcurve(lcdict,
 
 
 
-def rfepd_kepler_lightcurve(lcdict,
-                            xccol='mom_centr1',
-                            yccol='mom_centr2',
-                            timestoignore=None,
-                            filterflags=True,
-                            writetodict=True,
-                            epdsmooth=23,
-                            decorr='xcc,ycc',
-                            nrftrees=200):
-    '''
-    This uses a RandomForestRegressor to fit and correct K2 light curves.
+def rfepd_kepler_lightcurve(
+        lcdict,
+        xccol='mom_centr1',
+        yccol='mom_centr2',
+        timestoignore=None,
+        filterflags=True,
+        writetodict=True,
+        epdsmooth=23,
+        decorr='xcc,ycc',
+        nrftrees=200
+):
+    '''This uses a `RandomForestRegressor` to fit and decorrelate Kepler light
+    curves.
 
-    Fits the X and Y positions, and the background and background error.
-
-    timestoignore is a list of tuples containing start and end times to mask
-    when fitting the EPD function:
-
-    [(time1_start, time1_end), (time2_start, time2_end), ...]
+    Fits the X and Y positions, the background, and background error.
 
     By default, this function removes points in the Kepler LC that have ANY
     quality flags set.
 
-    if writetodict is set, adds the following columns to the lcdict:
+    Parameters
+    ----------
 
-    rfepd_time = time array
-    rfepd_sapflux = uncorrected flux before EPD
-    rfepd_epdsapflux = corrected flux after EPD
-    rfepd_epdsapcorr = EPD flux corrections
-    rfepd_bkg = background array
-    rfepd_bkg_err = background errors array
-    rfepd_xcc = xcoord array
-    rfepd_ycc = ycoord array
-    rfepd_quality = quality flag array
+    lcdict : lcdict
+        An `lcdict` produced by `consolidate_kepler_fitslc` or
+        `read_kepler_fitslc`.
 
-    and updates the 'columns' list in the lcdict as well.
+    xcol, ycol : str
+        Indicates the x and y coordinate column names to use from the Kepler LC
+        in the EPD fit.
+
+    timestoignore : list of tuples
+        This is of the form:
+
+        [(time1_start, time1_end), (time2_start, time2_end), ...]
+
+        and indicates the start and end times to mask out of the final
+        lcdict. Use this to remove anything that wasn't caught by the quality
+        flags.
+
+    filterflags : bool
+        If True, will remove any measurements that have non-zero quality flags
+        present. This usually indicates an issue with the instrument or
+        spacecraft.
+
+    writetodict : bool
+        If writetodict is True, adds the following columns to the lcdict:
+
+        rfepd_time = time array
+        rfepd_sapflux = uncorrected flux before EPD
+        rfepd_epdsapflux = corrected flux after EPD
+        rfepd_epdsapcorr = EPD flux corrections
+        rfepd_bkg = background array
+        rfepd_bkg_err = background errors array
+        rfepd_xcc = xcoord array
+        rfepd_ycc = ycoord array
+        rfepd_quality = quality flag array
+
+        and updates the 'columns' list in the lcdict as well.
+
+    epdsmooth : int
+        Sets the number of light curve points to smooth over when generating the
+        EPD fit function.
+
+    decorr : {'xcc,ycc','bgv,bge','xcc,ycc,bgv,bge'}
+        Indicates whether to use the x,y coords alone; background value and
+        error alone; or x,y coords and background value, error in combination as
+        the features to training the `RandomForestRegressor` on and perform the
+        fit.
+
+    nrftrees : int
+        The number of trees to use in the `RandomForestRegressor`.
+
+    Returns
+    -------
+
+    tuple
+        Returns a tuple of the form: (times, corrected_fluxes, flux_corrections)
 
     '''
+
     times, fluxes, background, background_err = (
         lcdict['time'],
         lcdict['sap']['sap_flux'],
@@ -1336,8 +1689,8 @@ def rfepd_kepler_lightcurve(lcdict,
             if newcol not in lcdict['columns']:
                 lcdict['columns'].append(newcol)
 
-
     return times, corrected_fluxes, flux_corrections
+
 
 
 #######################
@@ -1345,35 +1698,49 @@ def rfepd_kepler_lightcurve(lcdict,
 #######################
 
 def detrend_centroid(lcd, detrend='legendre', sigclip=None, mingap=0.5):
-    '''
-    You are given a dictionary, for a single quarter of Kepler data, returned
-    by `astrokep.read_kepler_fitslc`. This module returns this same dictionary,
+    '''Detrends the x and y coordinate centroids for a Kepler light curve.
+
+    Given an `lcdict` for a single quarter of Kepler data, returned by
+    `read_kepler_fitslc`, this function returns this same dictionary,
     appending detrended centroid_x and centroid_y values.
 
     Here "detrended" means "finite, SAP quality flag set to 0, sigma clipped,
     timegroups selected based on `mingap` day gaps, then fit vs time by a
     legendre polynomial of lowish degree".
 
-    Args:
-        lcd (dict): the lightcurvedictionary returned by
-        astrokep.read_kepler_fitslc.
+    Parameters
+    ----------
 
-        detrend (str): method by which to detrend the LC. 'legendre' is the
-        only thing implemented.
+    lcd : lcdict
+        An `lcdict` generated by the `read_kepler_fitslc` function.
 
-        sigclip (float or list): to pass to astrobase.lcmath.sigclip_magseries
+    detrend : {'legendre'}
+        Method by which to detrend the LC. 'legendre' is the only thing
+        implemented at the moment.
 
-        mingap (float): number of days by which to define "timegroups" (for
-        individual fitting each of timegroup, and to eliminate "burn-in" of
-        Kepler spacecraft. For long cadence data, 0.5 days is typical.
+    sigclip : None or float or int or sequence of floats/ints
+        Determines the type and amount of sigma-clipping done on the light curve
+        to remove outliers. If None, no sigma-clipping is performed. If a two
+        element sequence of floats/ints, the first element corresponds to the
+        fainter sigma-clip limit, and the second element corresponds to the
+        brighter sigma-clip limit.
 
-    Returns:
-        tuple of (lcd, errflag), where
+    mingap : float
+        Number of days by which to define "timegroups" (for individual fitting
+        each of timegroup, and to eliminate "burn-in" of Kepler spacecraft. For
+        long cadence data, 0.5 days is typical.
 
-        lcd (dict): lcd, with the new key lcd['centroids'], containing the
+    Returns
+    -------
+
+    tuple
+        This is of the form (lcd, errflag), where:
+
+        `lcd` : an `lcdict` with the new key `lcd['centroids']`, containing the
         detrended times, (centroid_x, centroid_y) values, and their errors.
 
-        errflag (bool): boolean error flag, could be raised at various points.
+        `errflag` : boolean error flag, could be raised at various points.
+
     '''
 
     qnum = npunique(lcd['quarter'])
@@ -1441,7 +1808,7 @@ def detrend_centroid(lcd, detrend='legendre', sigclip=None, mingap=0.5):
         assert len(s_ctd_x) == len(s_times)
         assert len(s_ctd_x_err) == len(s_times)
     except AssertionError:
-        errflag = True
+        return lcd, True
 
     nqflag = s_times.size
 
@@ -1569,11 +1936,12 @@ def detrend_centroid(lcd, detrend='legendre', sigclip=None, mingap=0.5):
     return lcd, False
 
 
+
 def get_centroid_offsets(lcd, t_ing_egr, oot_buffer_time=0.1, sample_factor=3):
-    '''
-    After running detrend_centroid, get positions of centroids during transits,
-    and outside of transits. These positions can then be used in a false
-    positive analysis.
+    '''After running `detrend_centroid`, this gets positions of centroids during
+    transits, and outside of transits.
+
+    These positions can then be used in a false positive analysis.
 
     This routine requires knowing the ingress and egress times for every
     transit of interest within the quarter this routine is being called for.
@@ -1585,37 +1953,47 @@ def get_centroid_offsets(lcd, t_ing_egr, oot_buffer_time=0.1, sample_factor=3):
     side of the transit as are in the transit (or however many are specified by
     `sample_factor`).
 
-    args:
-        lcd (dict): "lightcurvedict", the dictionary output by
-        astrokep.read_kepler_fitslc (data from a single Kepler quarter).
-        Assumes astrokep.detrend_centroid has been run.
+    Parameters
+    ----------
 
-        t_ing_egr (list of tuples): [(ingress time of i^th transit, egress time
-        of i^th transit)] for i the transit number index in this quarter
-        (starts at zero at the beginning of every quarter). Assumes units of
-        BJD.
+    lcd : lcdict
+        An `lcdict` generated by the `read_kepler_fitslc` function. We assume
+        that the `detrend_centroid` function has been run on this `lcdict`.
 
-        oot_buffer_time (float): number of days away from ingress and egress
-        times to begin sampling "out of transit" centroid points. The number of
-        out of transit points to take per transit is 3x the number of points in
-        transit.
+    t_ing_egr : list of tuples
+        This is of the form:
 
-        sample_factor (float): size of out of transit window from which to
-        sample.
+        [(ingress time of i^th transit, egress time of i^th transit)]
 
-    returns:
-        cd (dict): dictionary keyed by transit number (i.e. the same index as
-        t_ing_egr), where each key contains:
-            {'ctd_x_in_tra':ctd_x_in_tra,
-            'ctd_y_in_tra':ctd_y_in_tra,
-            'ctd_x_oot':ctd_x_oot,
-            'ctd_y_oot':ctd_y_oot,
-            'npts_in_tra':len(ctd_x_in_tra),
-            'npts_oot':len(ctd_x_oot),
-            'in_tra_times':in_tra_times,
-            'oot_times':oot_times
-            }
+        for i the transit number index in this quarter (starts at zero at the
+        beginning of every quarter). Assumes units of BJD.
+
+    oot_buffer_time : float
+        Number of days away from ingress and egress times to begin sampling "out
+        of transit" centroid points. The number of out of transit points to take
+        per transit is 3x the number of points in transit.
+
+    sample_factor : float
+        The size of out of transit window from which to sample.
+
+    Returns
+    -------
+
+    dict
+        This is a dictionary keyed by transit number (i.e., the same index as
+        `t_ing_egr`), where each key contains the following value:
+
+        {'ctd_x_in_tra':ctd_x_in_tra,
+         'ctd_y_in_tra':ctd_y_in_tra,
+         'ctd_x_oot':ctd_x_oot,
+         'ctd_y_oot':ctd_y_oot,
+         'npts_in_tra':len(ctd_x_in_tra),
+         'npts_oot':len(ctd_x_oot),
+         'in_tra_times':in_tra_times,
+         'oot_times':oot_times}
+
     '''
+
     # NOTE:
     # Bryson+ (2013) gives a more complicated and more correct approach to this
     # problem, computing offsets relative to positions defined on the SKY. This
@@ -1678,10 +2056,16 @@ def get_centroid_offsets(lcd, t_ing_egr, oot_buffer_time=0.1, sample_factor=3):
     return cd
 
 
+
 ############################################
 # UTILITY FUNCTION FOR CENTROID DETRENDING #
 ############################################
+
 def _get_legendre_deg_ctd(npts):
+    '''This is a helper function for centroid detrending.
+
+    '''
+
     from scipy.interpolate import interp1d
 
     degs = nparray([4,5,6,10,15])
@@ -1694,16 +2078,37 @@ def _get_legendre_deg_ctd(npts):
     return legendredeg
 
 
+
 #######################################
 # UTILITY FUNCTION FOR ANY DETRENDING #
 #######################################
 
 def _legendre_dtr(x, y, y_err, legendredeg=10):
-    '''
-    args:
-        x (np.array): independent variable.
-        y (np.array): dependent variable.
-        y_err (np.array): errors of y for x**2 calculation.
+    '''This calculates the residual and chi-sq values for a Legendre
+    function fit.
+
+    Parameters
+    ----------
+
+    x : np.array
+        Array of the independent variable.
+
+    y : np.array
+        Array of the dependent variable.
+
+    y_err : np.array
+        Array of errors associated with each `y` value. Used to calculate fit
+        weights.
+
+    legendredeg : int
+        The degree of the Legendre function to use when fitting.
+
+    Returns
+    -------
+
+    tuple
+        The tuple returned is of the form: (fit_y, fitchisq, fitredchisq)
+
     '''
     try:
         p = Legendre.fit(x, y, legendredeg)
