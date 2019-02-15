@@ -84,11 +84,7 @@ from tornado import gen
 ###################
 
 from .. import lcmath
-lcmath.set_logger_parent(__name__)
-
 from .. import checkplot
-checkplot.set_logger_parent(__name__)
-
 from ..checkplot import checkplot_pickle_update, checkplot_pickle_to_png, \
     _read_checkplot_picklefile, _write_checkplot_picklefile
 
@@ -97,26 +93,16 @@ from ..checkplot import _pkl_finder_objectinfo, _pkl_periodogram, \
     _pkl_magseries_plot, _pkl_phased_magseries_plot
 
 from ..varclass import varfeatures
-varfeatures.set_logger_parent(__name__)
-
 from ..varbase import lcfit
-lcfit.set_logger_parent(__name__)
-
 from ..varbase import signals
-signals.set_logger_parent(__name__)
 
 from ..periodbase import zgls
-zgls.set_logger_parent(__name__)
 from ..periodbase import saov
-saov.set_logger_parent(__name__)
 from ..periodbase import smav
-smav.set_logger_parent(__name__)
 from ..periodbase import spdm
-spdm.set_logger_parent(__name__)
 from ..periodbase import kbls
-kbls.set_logger_parent(__name__)
 from ..periodbase import macf
-macf.set_logger_parent(__name__)
+
 
 
 #######################

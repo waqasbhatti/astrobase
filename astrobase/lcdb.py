@@ -15,63 +15,26 @@ project.
 #############
 
 import logging
-from datetime import datetime
-from traceback import format_exc
+from astrobase import log_sub, log_fmt, log_date_fmt
 
-# setup a logger
-LOGGER = None
-LOGMOD = __name__
 DEBUG = False
+if DEBUG:
+    level = logging.DEBUG
+else:
+    level = logging.INFO
+LOGGER = logging.getLogger(__name__)
+logging.basicConfig(
+    level=level,
+    style=log_sub,
+    format=log_fmt,
+    datefmt=log_date_fmt,
+)
 
-def set_logger_parent(parent_name):
-    globals()['LOGGER'] = logging.getLogger('%s.%s' % (parent_name, LOGMOD))
-
-def LOGDEBUG(message):
-    if LOGGER:
-        LOGGER.debug(message)
-    elif DEBUG:
-        print('[%s - DBUG] %s' % (
-            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
-            message)
-        )
-
-def LOGINFO(message):
-    if LOGGER:
-        LOGGER.info(message)
-    else:
-        print('[%s - INFO] %s' % (
-            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
-            message)
-        )
-
-def LOGERROR(message):
-    if LOGGER:
-        LOGGER.error(message)
-    else:
-        print('[%s - ERR!] %s' % (
-            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
-            message)
-        )
-
-def LOGWARNING(message):
-    if LOGGER:
-        LOGGER.warning(message)
-    else:
-        print('[%s - WRN!] %s' % (
-            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
-            message)
-        )
-
-def LOGEXCEPTION(message):
-    if LOGGER:
-        LOGGER.exception(message)
-    else:
-        print(
-            '[%s - EXC!] %s\nexception was: %s' % (
-                datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
-                message, format_exc()
-            )
-        )
+LOGDEBUG = LOGGER.debug
+LOGINFO = LOGGER.info
+LOGWARNING = LOGGER.warning
+LOGERROR = LOGGER.error
+LOGEXCEPTION = LOGGER.exception
 
 
 #############
