@@ -97,9 +97,27 @@ def convert_constants(jmag, hmag, kmag,
                       cjhk,
                       cjh, cjk, chk,
                       cj, ch, ck):
-    '''
-    This uses the constants above to convert from JHK to either BVRI or SDSS
-    ugriz. while taking care of missing values for any of jmag, hmag, or kmag.
+    '''This converts between JHK and BVRI/SDSS mags.
+
+    Not meant to be used directly. See the functions below for more sensible
+    interface. This function does the grunt work of converting from JHK to
+    either BVRI or SDSS ugriz. while taking care of missing values for any of
+    jmag, hmag, or kmag.
+
+    Parameters
+    ----------
+
+    jmag, hmag, kmag : float
+        2MASS J, H, Ks mags to use to convert.
+
+    cjhk, cjh, cjk, chk, cj, ch, ck : list
+        Constants to use when converting.
+
+    Returns
+    -------
+
+    float
+        The converted magnitude in SDSS or BVRI system.
 
     '''
 
@@ -153,6 +171,21 @@ def convert_constants(jmag, hmag, kmag,
 ###############################
 
 def jhk_to_bmag(jmag, hmag, kmag):
+    '''Converts given J, H, Ks mags to a B magnitude value.
+
+    Parameters
+    ----------
+
+    jmag, hmag, kmag : float
+        2MASS J, H, Ks mags of the object.
+
+    Returns
+    -------
+
+    float
+        The converted B band magnitude.
+
+    '''
 
     return convert_constants(jmag, hmag, kmag,
                              BJHK,
@@ -162,6 +195,21 @@ def jhk_to_bmag(jmag, hmag, kmag):
 
 
 def jhk_to_vmag(jmag, hmag, kmag):
+    '''Converts given J, H, Ks mags to a V magnitude value.
+
+    Parameters
+    ----------
+
+    jmag, hmag, kmag : float
+        2MASS J, H, Ks mags of the object.
+
+    Returns
+    -------
+
+    float
+        The converted V band magnitude.
+
+    '''
 
     return convert_constants(jmag, hmag, kmag,
                              VJHK,
@@ -171,6 +219,21 @@ def jhk_to_vmag(jmag, hmag, kmag):
 
 
 def jhk_to_rmag(jmag, hmag, kmag):
+    '''Converts given J, H, Ks mags to an R magnitude value.
+
+    Parameters
+    ----------
+
+    jmag, hmag, kmag : float
+        2MASS J, H, Ks mags of the object.
+
+    Returns
+    -------
+
+    float
+        The converted R band magnitude.
+
+    '''
 
     return convert_constants(jmag, hmag, kmag,
                              RJHK,
@@ -180,6 +243,21 @@ def jhk_to_rmag(jmag, hmag, kmag):
 
 
 def jhk_to_imag(jmag, hmag, kmag):
+    '''Converts given J, H, Ks mags to an I magnitude value.
+
+    Parameters
+    ----------
+
+    jmag, hmag, kmag : float
+        2MASS J, H, Ks mags of the object.
+
+    Returns
+    -------
+
+    float
+        The converted I band magnitude.
+
+    '''
 
     return convert_constants(jmag, hmag, kmag,
                              IJHK,
@@ -192,6 +270,21 @@ def jhk_to_imag(jmag, hmag, kmag):
 #####################################
 
 def jhk_to_sdssu(jmag, hmag, kmag):
+    '''Converts given J, H, Ks mags to an SDSS u magnitude value.
+
+    Parameters
+    ----------
+
+    jmag, hmag, kmag : float
+        2MASS J, H, Ks mags of the object.
+
+    Returns
+    -------
+
+    float
+        The converted SDSS u band magnitude.
+
+    '''
 
     return convert_constants(jmag, hmag, kmag,
                              SDSSU_JHK,
@@ -201,6 +294,21 @@ def jhk_to_sdssu(jmag, hmag, kmag):
 
 
 def jhk_to_sdssg(jmag, hmag, kmag):
+    '''Converts given J, H, Ks mags to an SDSS g magnitude value.
+
+    Parameters
+    ----------
+
+    jmag, hmag, kmag : float
+        2MASS J, H, Ks mags of the object.
+
+    Returns
+    -------
+
+    float
+        The converted SDSS g band magnitude.
+
+    '''
 
     return convert_constants(jmag, hmag, kmag,
                              SDSSG_JHK,
@@ -210,6 +318,21 @@ def jhk_to_sdssg(jmag, hmag, kmag):
 
 
 def jhk_to_sdssr(jmag, hmag, kmag):
+    '''Converts given J, H, Ks mags to an SDSS r magnitude value.
+
+    Parameters
+    ----------
+
+    jmag, hmag, kmag : float
+        2MASS J, H, Ks mags of the object.
+
+    Returns
+    -------
+
+    float
+        The converted SDSS r band magnitude.
+
+    '''
 
     return convert_constants(jmag, hmag, kmag,
                              SDSSR_JHK,
@@ -219,6 +342,21 @@ def jhk_to_sdssr(jmag, hmag, kmag):
 
 
 def jhk_to_sdssi(jmag, hmag, kmag):
+    '''Converts given J, H, Ks mags to an SDSS i magnitude value.
+
+    Parameters
+    ----------
+
+    jmag, hmag, kmag : float
+        2MASS J, H, Ks mags of the object.
+
+    Returns
+    -------
+
+    float
+        The converted SDSS i band magnitude.
+
+    '''
 
     return convert_constants(jmag, hmag, kmag,
                              SDSSI_JHK,
@@ -228,11 +366,27 @@ def jhk_to_sdssi(jmag, hmag, kmag):
 
 
 def jhk_to_sdssz(jmag, hmag, kmag):
+    '''Converts given J, H, Ks mags to an SDSS z magnitude value.
+
+    Parameters
+    ----------
+
+    jmag, hmag, kmag : float
+        2MASS J, H, Ks mags of the object.
+
+    Returns
+    -------
+
+    float
+        The converted SDSS z band magnitude.
+
+    '''
 
     return convert_constants(jmag, hmag, kmag,
                              SDSSZ_JHK,
                              SDSSZ_JH, SDSSZ_JK, SDSSZ_HK,
                              SDSSZ_J, SDSSZ_H, SDSSZ_K)
+
 
 
 #########################################
@@ -291,6 +445,31 @@ def absolute_gaia_magnitude(gaia_mag,
 
     G - M_G = 5 x log10(d_pc) - 5
     M_G = 5 - 5log10(d_pc) + G
+
+    Parameters
+    ----------
+
+    gaia_mag : float or array-like
+        The measured GAIA G magnitude.
+
+    gaia_parallax_max : float or array-like
+        The measured parallax of the object in mas.
+
+    gaia_mag_err : float or array-like or None
+        The measurement error in GAIA G magnitude.
+
+    gaia_parallax_err_mas : float or array-like or None
+        The measurement error in GAIA parallax in mas.
+
+    Returns
+    -------
+
+    float or array-like
+        The absolute magnitude M_G of the object(s).
+
+    If both `_err` input kwargs are provided, will return a tuple of the form:
+
+    (M_G float or array-like, M_G_err float or array-like)
 
     '''
 
