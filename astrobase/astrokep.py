@@ -1059,7 +1059,7 @@ def filter_kepler_lcdict(lcdict,
                          filterflags=True,
                          nanfilter='sap,pdc',
                          timestoignore=None):
-    '''This filters the Kepler light curve dict, removing nans and bad
+    '''This filters the Kepler `lcdict`, removing nans and bad
     observations.
 
     By default, this function removes points in the Kepler LC that have ANY
@@ -1069,7 +1069,7 @@ def filter_kepler_lcdict(lcdict,
     ----------
 
     lcdict : lcdict
-        An `lcdict` produced by `consolidate_kepler_fitslc`. or
+        An `lcdict` produced by `consolidate_kepler_fitslc` or
         `read_kepler_fitslc`.
 
     filterflags : bool
@@ -1080,7 +1080,7 @@ def filter_kepler_lcdict(lcdict,
     nanfilter : {'sap','pdc','sap,pdc'}
         Indicates the flux measurement type(s) to apply the filtering to.
 
-    timestoignore : list of tuples
+    timestoignore : list of tuples or None
         This is of the form:
 
         [(time1_start, time1_end), (time2_start, time2_end), ...]
@@ -1094,9 +1094,7 @@ def filter_kepler_lcdict(lcdict,
 
     lcdict
         Returns an `lcdict` (this is useable by most astrobase functions for LC
-        processing). The flux measurements will have been shifted to form a
-        seamless light curve across quarters suitable for long-term variability
-        investigation. The `lcdict` is filtered IN PLACE!
+        processing). The `lcdict` is filtered IN PLACE!
 
     '''
 

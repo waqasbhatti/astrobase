@@ -60,12 +60,30 @@ def normalized_flux_to_mag(lcdict,
                                     'sap.sap_bkg_err',
                                     'pdc.pdcsap_flux',
                                     'pdc.pdcsap_flux_err')):
-    '''
-    This converts the normalized fluxes in the TESS lcdicts to TESS mags.
+    '''This converts the normalized fluxes in the TESS lcdicts to TESS mags.
 
     Uses the object's TESS mag stored in lcdict['objectinfo']['tessmag']:
 
     mag - object_tess_mag = -2.5 log (flux/median_flux)
+
+    Parameters
+    ----------
+
+    lcdict : lcdict
+        An `lcdict` produced by `read_tess_fitslc` or
+        `consolidate_tess_fitslc`. This must have normalized fluxes in its
+        measurement columns (use the `normalize` kwarg for these functions).
+
+    columns : sequence of str
+        The column keys of the normalized flux and background measurements in
+        the `lcdict` to operate on and convert to magnitudes in TESS band (T).
+
+    Returns
+    -------
+
+    lcdict
+        The returned `lcdict` will contain extra columns corresponding to
+        magnitudes for each input normalized flux/background column.
 
     '''
 
@@ -98,23 +116,39 @@ def normalized_flux_to_mag(lcdict,
 def get_time_flux_errs_from_Ames_lightcurve(infile,
                                             lctype,
                                             cadence_min=2):
-    '''
-    MIT TOI alerts include Ames lightcurve files. This function gets the
-    finite, nonzero times, fluxes, and errors with QUALITY == 0.
+    '''Reads TESS Ames-format FITS light curve files.
 
-    NB. the PDCSAP lightcurve typically still need "pre-whitening" after this
+    MIT TOI alerts include Ames lightcurve files. This function gets the finite,
+    nonzero times, fluxes, and errors with QUALITY == 0.
+
+    NOTE: the PDCSAP lightcurve typically still need "pre-whitening" after this
     step.
 
-    args:
-        infile (str): path to *.fits.gz TOI alert file, from Ames pipeline.
-        lctype (str): PDCSAP or SAP
+    .. deprecated:: 0.3.20
+        This function will be removed in astrobase v0.3.22. Use the
+        `read_tess_fitslc` and `consolidate_tess_fitslc` functions instead.
 
-    kwargs:
-        cadence_min (float): expected frame cadence in units of minutes. Raises
-        ValueError if you use the wrong cadence.
+    Parameters
+    ----------
 
-    returns:
-        (tuple): times, normalized (to median) fluxes, flux errors.
+    infile : str
+        The path to *.fits.gz TOI alert file, from Ames pipeline.
+
+    lctype : {'PDCSAP','SAP'}
+        The type of light curve to extract from the FITS LC file.
+
+    cadence_min : int
+        The expected frame cadence in units of minutes. Raises ValueError if you
+        use the wrong cadence.
+
+    Returns
+    -------
+
+    tuple
+        The tuple returned is of the form:
+
+        (times, normalized (to median) fluxes, flux errors)
+
     '''
 
     warnings.warn(
@@ -308,20 +342,7 @@ def read_tess_fitslc(lcfits,
                      timestoignore=None):
     '''This extracts the light curve from a single TESS .lc.fits file.
 
-    This works on the light curves available at MAST. Provide the filename in
-    the lcfits argument.
-
-    Returns an lcdict.
-
-    If normalize == True, then each component light curve's flux measurements
-    will be normalized to 1.0 by dividing out the median flux for the component
-    light curve.
-
-    If appendto is an lcdict, will append measurements to that dict. This is
-    used for consolidating light curves for the same object across different
-    files (sectors/cameras/CCDs?). The appending does not care about the time
-    order. To consolidate light curves in time order, use
-    consolidate_tess_fitslc below.
+    This works on the light curves available at MAST.
 
     TODO: look at:
 
@@ -329,6 +350,73 @@ def read_tess_fitslc(lcfits,
 
     for details on the column descriptions and to fill in any other info we
     need.
+
+    Parameters
+    ----------
+
+    lcfits : str
+        The filename of a MAST Kepler/K2 light curve FITS file.
+
+    headerkeys : list
+        A list of FITS header keys that will be extracted from the FITS light
+        curve file. These describe the observations. The default value for this
+        is given in `LCHEADERKEYS` above.
+
+    datakeys : list
+        A list of FITS column names that correspond to the auxiliary
+        measurements in the light curve. The default is `LCDATAKEYS` above.
+
+    sapkeys : list
+        A list of FITS column names that correspond to the SAP flux
+        measurements in the light curve. The default is `LCSAPKEYS` above.
+
+    pdckeys : list
+        A list of FITS column names that correspond to the PDC flux
+        measurements in the light curve. The default is `LCPDCKEYS` above.
+
+    topkeys : list
+        A list of FITS header keys that describe the object in the light
+        curve. The default is `LCTOPKEYS` above.
+
+    apkeys : list
+        A list of FITS header keys that describe the flux measurement apertures
+        used by the TESS pipeline. The default is `LCAPERTUREKEYS` above.
+
+    normalize : bool
+        If True, then the light curve's SAP_FLUX and PDCSAP_FLUX measurements
+        will be normalized to 1.0 by dividing out the median flux for the
+        component light curve.
+
+    appendto : lcdict or None
+        If appendto is an `lcdict`, will append measurements of this `lcdict` to
+        that `lcdict`. This is used for consolidating light curves for the same
+        object across different files (sectors/cameras/CCDs?). The appending
+        does not care about the time order. To consolidate light curves in time
+        order, use `consolidate_tess_fitslc` below.
+
+    filterqualityflags : bool
+        If True, will remove any measurements that have non-zero quality flags
+        present. This usually indicates an issue with the instrument or
+        spacecraft.
+
+    nanfilter : {'sap','pdc','sap,pdc'} or None
+        Indicates the flux measurement type(s) to apply the filtering to.
+
+    timestoignore : list of tuples or None
+        This is of the form:
+
+        [(time1_start, time1_end), (time2_start, time2_end), ...]
+
+        and indicates the start and end times to mask out of the final
+        lcdict. Use this to remove anything that wasn't caught by the quality
+        flags.
+
+    Returns
+    -------
+
+    lcdict
+        Returns an `lcdict` (this is useable by most astrobase functions for LC
+        processing).
 
     '''
 
@@ -720,19 +808,72 @@ def consolidate_tess_fitslc(lclist,
                             apkeys=LCAPERTUREKEYS):
     '''This consolidates a list of LCs for a single TIC object.
 
-    lclist is either a list of actual light curve files or a string that is
-    valid for glob.glob to search for and generate a light curve list based on
-    the file glob. This is useful for consolidating LC FITS files across
-    different TESS sectors for a single TIC ID using a glob like
-    '*<TICID>*_lc.fits'.
-
-    If normalize == True, then each component light curve's SAP_FLUX, SAP_BKG,
-    and PDCSAP_FLUX measurements will be normalized to 1.0 by dividing out the
-    median flux measurement for the component light curve. Their errors will
-    also be normalized in the same way.
-
     NOTE: if light curve time arrays contain nans, these and their associated
     measurements will be sorted to the end of the final combined arrays.
+
+    Parameters
+    ----------
+
+    lclist : list of str, or str
+        `lclist` is either a list of actual light curve files or a string that
+        is valid for glob.glob to search for and generate a light curve list
+        based on the file glob. This is useful for consolidating LC FITS files
+        across different TESS sectors for a single TIC ID using a glob like
+        '*<TICID>*_lc.fits'.
+
+    normalize : bool
+        If True, then the light curve's SAP_FLUX and PDCSAP_FLUX measurements
+        will be normalized to 1.0 by dividing out the median flux for the
+        component light curve.
+
+    filterqualityflags : bool
+        If True, will remove any measurements that have non-zero quality flags
+        present. This usually indicates an issue with the instrument or
+        spacecraft.
+
+    nanfilter : {'sap','pdc','sap,pdc'} or None
+        Indicates the flux measurement type(s) to apply the filtering to.
+
+    timestoignore : list of tuples or None
+        This is of the form:
+
+        [(time1_start, time1_end), (time2_start, time2_end), ...]
+
+        and indicates the start and end times to mask out of the final
+        lcdict. Use this to remove anything that wasn't caught by the quality
+        flags.
+
+    headerkeys : list
+        A list of FITS header keys that will be extracted from the FITS light
+        curve file. These describe the observations. The default value for this
+        is given in `LCHEADERKEYS` above.
+
+    datakeys : list
+        A list of FITS column names that correspond to the auxiliary
+        measurements in the light curve. The default is `LCDATAKEYS` above.
+
+    sapkeys : list
+        A list of FITS column names that correspond to the SAP flux
+        measurements in the light curve. The default is `LCSAPKEYS` above.
+
+    pdckeys : list
+        A list of FITS column names that correspond to the PDC flux
+        measurements in the light curve. The default is `LCPDCKEYS` above.
+
+    topkeys : list
+        A list of FITS header keys that describe the object in the light
+        curve. The default is `LCTOPKEYS` above.
+
+    apkeys : list
+        A list of FITS header keys that describe the flux measurement apertures
+        used by the TESS pipeline. The default is `LCAPERTUREKEYS` above.
+
+    Returns
+    -------
+
+    lcdict
+        Returns an `lcdict` (this is useable by most astrobase functions for LC
+        processing).
 
     '''
 
@@ -862,7 +1003,24 @@ def consolidate_tess_fitslc(lclist,
 
 def tess_lcdict_to_pkl(lcdict,
                        outfile=None):
-    '''This simply writes the lcdict to a pickle.
+    '''This writes the `lcdict` to a Python pickle.
+
+    Parameters
+    ----------
+
+    lcdict : lcdict
+        This is the input `lcdict` to write to a pickle.
+
+    outfile : str or None
+        If this is None, the object's Kepler ID/EPIC ID will determined from the
+        `lcdict` and used to form the filename of the output pickle file. If
+        this is a `str`, the provided filename will be used.
+
+    Returns
+    -------
+
+    str
+        The absolute path to the written pickle file.
 
     '''
 
@@ -879,7 +1037,21 @@ def tess_lcdict_to_pkl(lcdict,
 
 
 def read_tess_pklc(picklefile):
-    '''This turns the pickled lightcurve back into an lcdict.
+    '''This turns the pickled lightcurve file back into an `lcdict`.
+
+    Parameters
+    ----------
+
+    picklefile : str
+        The path to a previously written Kepler LC picklefile generated by
+        `tess_lcdict_to_pkl` above.
+
+    Returns
+    -------
+
+    lcdict
+        Returns an `lcdict` (this is useable by most astrobase functions for LC
+        processing).
 
     '''
 
@@ -915,29 +1087,43 @@ def filter_tess_lcdict(lcdict,
                        nanfilter='sap,pdc,time',
                        timestoignore=None,
                        quiet=False):
-    '''
-    Filter a TESS light curve dict IN PLACE!
+    '''This filters the provided TESS `lcdict`, removing nans and bad
+    observations.
 
-    Args:
-        lcdict (dict): made by `astrotess.read_tess_fitslc`
+    By default, this function removes points in the TESS LC that have ANY
+    quality flags set.
 
-    Kwargs:
-        filterqualityflags (bool): if true, removes points in the TESS LC with
-        nonzero quality flags.
+    Parameters
+    ----------
 
-        nanfilter (str): remove points in the TESS LC that have non-finite
-        'sap,pdc,time' columns. Allowed strings: ('sap,pdc,time','pdc,time',
-        'sap,time').
+    lcdict : lcdict
+        An `lcdict` produced by `consolidate_tess_fitslc` or
+        `read_tess_fitslc`.
 
-        timestoignore (list): list of tuples containing start and end times to
-        mask:
-            [(time1_start, time1_end), (time2_start, time2_end), ...]
-        note that these are _closed_ intervals, not open intervals.
+    filterflags : bool
+        If True, will remove any measurements that have non-zero quality flags
+        present. This usually indicates an issue with the instrument or
+        spacecraft.
 
-        quiet (bool): whether to log information.
+    nanfilter : {'sap','pdc','sap,pdc'}
+        Indicates the flux measurement type(s) to apply the filtering to.
 
-    Returns:
-        lcdict (dict): filtered version of input dict.
+    timestoignore : list of tuples or None
+        This is of the form:
+
+        [(time1_start, time1_end), (time2_start, time2_end), ...]
+
+        and indicates the start and end times to mask out of the final
+        lcdict. Use this to remove anything that wasn't caught by the quality
+        flags.
+
+    Returns
+    -------
+
+    lcdict
+        Returns an `lcdict` (this is useable by most astrobase functions for LC
+        processing). The `lcdict` is filtered IN PLACE!
+
     '''
 
     cols = lcdict['columns']
