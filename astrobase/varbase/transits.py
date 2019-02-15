@@ -376,10 +376,10 @@ def given_lc_get_transit_tmids_tstarts_tends(
                                        perioddeltapercent=5)
     #  plot the BLS model.
     if blsfit_savpath:
-        lcfit._make_fit_plot(blsd['phases'], blsd['phasedmags'], None,
-                             blsd['blsmodel'], blsd['period'], blsd['epoch'],
-                             blsd['epoch'], blsfit_savpath,
-                             magsarefluxes=magsarefluxes)
+        lcfit.make_fit_plot(blsd['phases'], blsd['phasedmags'], None,
+                            blsd['blsmodel'], blsd['period'], blsd['epoch'],
+                            blsd['epoch'], blsfit_savpath,
+                            magsarefluxes=magsarefluxes)
 
     ingduration_guess = blsd['transitduration'] * 0.2  # a guesstimate.
     transitparams = [

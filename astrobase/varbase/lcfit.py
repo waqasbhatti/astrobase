@@ -149,26 +149,33 @@ def _get_phased_quantities(stimes, smags, serrs, period):
 ## PLOTTING UTILITIES ##
 ########################
 
-def _make_fit_plot(phase, pmags, perrs, fitmags,
-                   period, mintime, magseriesepoch,
-                   plotfit,
-                   magsarefluxes=False,
-                   wrap=False):
+def make_fit_plot(phase, pmags, perrs, fitmags,
+                  period, mintime, magseriesepoch,
+                  plotfit,
+                  magsarefluxes=False,
+                  wrap=False,
+                  model_over_lc=False):
 
     # set up the figure
     plt.close('all')
     plt.figure(figsize=(8,4.8))
 
+    if model_over_lc:
+        model_z = 100
+        lc_z = 0
+    else:
+        model_z = 0
+        lc_z = 100
+
+
     if not wrap:
 
-        # plot the fit LC below the actual LC so we can see if the LC points
-        # line up correctly with the model
-        plt.plot(phase, fitmags, linewidth=3.0, color='red')
+        plt.plot(phase, fitmags, linewidth=3.0, color='red',zorder=model_z)
         plt.plot(phase,pmags,
                  marker='o',
                  markersize=1.0,
                  linestyle='none',
-                 rasterized=True, color='k')
+                 rasterized=True, color='k',zorder=lc_z)
 
         # set the x axis ticks and label
         plt.gca().set_xticks(
@@ -179,13 +186,13 @@ def _make_fit_plot(phase, pmags, perrs, fitmags,
         plt.plot(np.concatenate([phase-1.0,phase]),
                  np.concatenate([fitmags,fitmags]),
                  linewidth=3.0,
-                 color='red')
+                 color='red',zorder=model_z)
         plt.plot(np.concatenate([phase-1.0,phase]),
                  np.concatenate([pmags,pmags]),
                  marker='o',
                  markersize=1.0,
                  linestyle='none',
-                 rasterized=True, color='k')
+                 rasterized=True, color='k',zorder=lc_z)
 
         plt.gca().set_xlim((-0.8,0.8))
         # set the x axis ticks and label
@@ -453,10 +460,10 @@ def fourier_fit_magseries(times, mags, errs, period,
             # make the fit plot if required
             if plotfit and isinstance(plotfit, str):
 
-                _make_fit_plot(phase, pmags, perrs, fitmags,
-                               period, mintime, mintime,
-                               plotfit,
-                               magsarefluxes=magsarefluxes)
+                make_fit_plot(phase, pmags, perrs, fitmags,
+                              period, mintime, mintime,
+                              plotfit,
+                              magsarefluxes=magsarefluxes)
 
                 returndict['fitplotfile'] = plotfit
 
@@ -639,10 +646,10 @@ def spline_fit_magseries(times, mags, errs, period,
     # make the fit plot if required
     if plotfit and isinstance(plotfit, str):
 
-        _make_fit_plot(phase, pmags, perrs, fitmags,
-                       period, mintime, magseriesepoch,
-                       plotfit,
-                       magsarefluxes=magsarefluxes)
+        make_fit_plot(phase, pmags, perrs, fitmags,
+                      period, mintime, magseriesepoch,
+                      plotfit,
+                      magsarefluxes=magsarefluxes)
 
         returndict['fitplotfile'] = plotfit
 
@@ -793,10 +800,10 @@ def savgol_fit_magseries(times, mags, errs, period,
     # make the fit plot if required
     if plotfit and isinstance(plotfit, str):
 
-        _make_fit_plot(phase, pmags, perrs, fitmags,
-                       period, mintime, magseriesepoch,
-                       plotfit,
-                       magsarefluxes=magsarefluxes)
+        make_fit_plot(phase, pmags, perrs, fitmags,
+                      period, mintime, magseriesepoch,
+                      plotfit,
+                      magsarefluxes=magsarefluxes)
 
         returndict['fitplotfile'] = plotfit
 
@@ -945,10 +952,10 @@ def legendre_fit_magseries(times, mags, errs, period,
     # make the fit plot if required
     if plotfit and isinstance(plotfit, str):
 
-        _make_fit_plot(phase, pmags, perrs, fitmags,
-                       period, mintime, magseriesepoch,
-                       plotfit,
-                       magsarefluxes=magsarefluxes)
+        make_fit_plot(phase, pmags, perrs, fitmags,
+                      period, mintime, magseriesepoch,
+                      plotfit,
+                      magsarefluxes=magsarefluxes)
 
         returndict['fitplotfile'] = plotfit
 
@@ -1184,10 +1191,10 @@ def traptransit_fit_magseries(times, mags, errs,
         # make the fit plot if required
         if plotfit and isinstance(plotfit, str):
 
-            _make_fit_plot(phase, pmags, perrs, fitmags,
-                           fperiod, ptimes.min(), fepoch,
-                           plotfit,
-                           magsarefluxes=magsarefluxes)
+            make_fit_plot(phase, pmags, perrs, fitmags,
+                          fperiod, ptimes.min(), fepoch,
+                          plotfit,
+                          magsarefluxes=magsarefluxes)
 
             returndict['fitplotfile'] = plotfit
 
@@ -1434,10 +1441,10 @@ def gaussianeb_fit_magseries(times, mags, errs,
         # make the fit plot if required
         if plotfit and isinstance(plotfit, str):
 
-            _make_fit_plot(phase, pmags, perrs, fitmags,
-                           fperiod, ptimes.min(), fepoch,
-                           plotfit,
-                           magsarefluxes=magsarefluxes)
+            make_fit_plot(phase, pmags, perrs, fitmags,
+                          fperiod, ptimes.min(), fepoch,
+                          plotfit,
+                          magsarefluxes=magsarefluxes)
 
             returndict['fitplotfile'] = plotfit
 
