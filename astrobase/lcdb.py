@@ -135,35 +135,33 @@ except Exception as e:
 
 
 class LCDB(object):
-    '''
-    This is an object serving as an interface to the postgres DB. It implements
-    the following methods:
+    '''This is an object serving as an interface to a PostgreSQL DB.
 
-    LCDB.open(database,
-              user,
-              password) -> open a new connection to postgres using the provided
-                           credentials
+    LCDB's main purpose is to avoid creating new postgres connections for each
+    query; these are relatively expensive. Instead, we get new cursors when
+    needed, and then pass these around as needed.
 
-    LCDB.cursor(handle,
-                dictcursor=<True/False>) -> return a postgres DB cursor with the
-                                            handle specified. if the handle does
-                                            not exist, a new one will be created
-                                            for the cursor. if dictcursor is
-                                            True, will return a cursor allowing
-                                            addressing columns as a dictionary
+    Attributes
+    ----------
 
-    LCDB.commit() -> commits any pending transactions to the DB
+    database : str
+        Name of the database to connect to.
 
-    LCDB.close_cursor(handle) -> closes cursor specified in handle
+    user : str
+        User name of the database server user.
 
-    LCDB.close_connection() -> close all cursors currently active, and then
-                               close the connection to the database
+    password : str
+        Password for the database server user.
 
-    LCDB's main purpose is to avoid creating new postgres connections throughout
-    the course of lcserver's work; these are relatively expensive. Instead, we
-    get new cursors when needed, and then pass these around as needed. The
-    connection also remains open for the whole lifetime of the lcserver's
-    runtime, keeping things simple.
+    host : str
+        Database hostname or IP address to connect to.
+
+    connection : psycopg2.Connection object
+        The underlying connection to the database.
+
+    cursors : dict of psycopg2.Cursor objects
+        The keys of this dict are random hash strings, the values of this dict
+        are the actual `Cursor` objects.
 
     '''
 
@@ -172,6 +170,29 @@ class LCDB(object):
                  user=None,
                  password=None,
                  host=None):
+        '''Constructor for this class.
+
+        Parameters
+        ----------
+
+        database : str
+            Name of the database to connect to.
+
+        user : str
+            User name of the database server user.
+
+        password : str
+            Password for the database server user.
+
+        host : str
+            Database hostname or IP address to connect to.
+
+        Returns
+        -------
+
+        `LCDB` object instance
+
+        '''
 
         self.connection = None
         self.user = None
@@ -185,11 +206,25 @@ class LCDB(object):
 
 
     def open(self, database, user, password, host):
-        '''
-        This just creates the database connection and stores it in
-        self.connection.
+        '''This opens a new database connection.
+
+        Parameters
+        ----------
+
+        database : str
+            Name of the database to connect to.
+
+        user : str
+            User name of the database server user.
+
+        password : str
+            Password for the database server user.
+
+        host : str
+            Database hostname or IP address to connect to.
 
         '''
+
         try:
 
             self.connection = pg.connect(user=user,
@@ -244,11 +279,23 @@ class LCDB(object):
 
 
     def cursor(self, handle, dictcursor=False):
-        '''
-        This gets or creates a DB cursor for the current DB connection.
+        '''This gets or creates a DB cursor for the current DB connection.
 
-        dictcursor = True -> use a cursor where each returned row can be
-                             addressed as a dictionary by column name
+        Parameters
+        ----------
+
+        handle : str
+            The name of the cursor to look up in the existing list or if it
+            doesn't exist, the name to be used for a new cursor to be returned.
+
+        dictcursor : bool
+            If True, returns a cursor where each returned row can be addressed
+            as a dictionary by column name.
+
+        Returns
+        -------
+
+        psycopg2.Cursor instance
 
         '''
 
@@ -272,8 +319,18 @@ class LCDB(object):
         This creates a DB cursor for the current DB connection using a
         randomly generated handle. Returns a tuple with cursor and handle.
 
-        dictcursor = True -> use a cursor where each returned row can be
-                             addressed as a dictionary by column name
+        Parameters
+        ----------
+
+        dictcursor : bool
+            If True, returns a cursor where each returned row can be addressed
+            as a dictionary by column name.
+
+        Returns
+        -------
+
+        tuple
+            The tuple is of the form (handle, psycopg2.Cursor instance).
 
         '''
 
@@ -317,7 +374,7 @@ class LCDB(object):
 
     def close_cursor(self, handle):
         '''
-        Closes the cursor specified and removes it from the self.cursors
+        Closes the cursor specified and removes it from the `self.cursors`
         dictionary.
 
         '''

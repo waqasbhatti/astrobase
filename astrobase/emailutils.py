@@ -89,16 +89,36 @@ def send_email(sender,
                content,
                email_recipient_list,
                email_address_list):
-    '''
-    This sends an email to addresses, informing them about events.
+    '''This sends an email to addresses, informing them about events.
 
-    email_recipient_list is of the form:
+    The email account settings are retrieved from the settings file as described
+    above.
 
-    ['Example Person', ...]
+    Parameters
+    ----------
 
-    email_address_list is of the form:
+    sender : str
+        The name of the sender to use in the email header.
 
-    ['exampleperson@example.com', ...]
+    subject : str
+        Subject of the email.
+
+    content : str
+        Content of the email.
+
+    email_recipient list : list of str
+        This is a list of email recipient names of the form:
+        ['Example Person 1', 'Example Person 1', ...]
+
+    email_recipient list : list of str
+        This is a list of email recipient addresses of the form:
+        ['example1@example.com', 'example2@example.org', ...]
+
+    Returns
+    -------
+
+    bool
+        True if email sending succeeded. False if email sending failed.
 
     '''
     msg_text = EMAIL_TEMPLATE.format(
@@ -150,6 +170,7 @@ def send_email(sender,
                 )
 
             except Exception as e:
+
                 print('script email sending failed with error: %s'
                       % e)
                 send_response = None

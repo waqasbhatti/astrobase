@@ -141,20 +141,49 @@ def precess_coordinates(ra, dec,
                         mu_ra=0.0,
                         mu_dec=0.0,
                         outscalar=False):
-    '''
-    Precesses target coordinates ra, dec from epoch_one to epoch_two, given the
-    jd of the observations, as well as the proper motion of the target mu_ra,
-    mu_dec. Adapted from hatpipe/source/vartools/converttime.c [coordprecess].
+    '''Precesses target coordinates `ra`, `dec` from `epoch_one` to `epoch_two`.
 
-    epoch_one, epoch_two = epochs (e.g. 1985.0, 2013.0, etc.)
+    This takes into account the jd of the observations, as well as the proper
+    motion of the target mu_ra, mu_dec. Adapted from J. D. Hartman's
+    VARTOOLS/converttime.c [coordprecess].
 
-    jd = Julian date (full JD, not reduced JD)
+    Parameters
+    ----------
 
-    ra = right ascension in decimal degrees
-    dec = declination in decimal degrees
+    ra, dec : float
+        The equatorial coordinates of the object at `epoch_one` to precess in
+        decimal degrees.
 
-    mu_ra = proper motion in RA (mas/yr)
-    mu_dec = proper motion in Dec (mas/yr)
+    epoch_one : float
+        Origin epoch to precess from to target epoch. This is a float, like:
+        1985.0, 2000.0, etc.
+
+    epoch_two : float
+        Target epoch to precess from origin epoch. This is a float, like:
+        2000.0, 2018.0, etc.
+
+    jd : float
+        The full Julian date to use along with the propermotions in `mu_ra`, and
+        `mu_dec` to handle proper motion along with the coordinate frame
+        precession. If one of `jd`, `mu_ra`, or `mu_dec` is missing, the proper
+        motion will not be used to calculate the final precessed coordinates.
+
+    mu_ra, mu_dec : float
+        The proper motion in mas/yr in right ascension and declination. If these
+        are provided along with `jd`, the total proper motion of the object will
+        be taken into account to calculate the final precessed coordinates.
+
+    outscalar : bool
+        If True, converts the output coordinates from one-element np.arrays to
+        scalars.
+
+    Returns
+    -------
+
+    precessed_ra, precessed_dec : float
+        A tuple of precessed equatorial coordinates in decimal degrees at
+        `epoch_two` taking into account proper motion if `jd`, `mu_ra`, and
+        `mu_dec` are provided.
 
     '''
 
@@ -229,58 +258,94 @@ def precess_coordinates(ra, dec,
         return np.degrees(raproc), np.degrees(decproc)
 
 
+
 ############################
 ## EPOCHS FOR EPHEMERIDES ##
 ############################
 
 def _single_true(iterable):
+    '''This returns True if only one True-ish element exists in `iterable`.
+
+    Parameters
+    ----------
+
+    iterable : iterable
+
+    Returns
+    -------
+
+    True if only one True-ish element exists in `iterable`. False otherwise.
+
+    '''
+
     # return True if exactly one true found
     iterator = iter(iterable)
-    has_true = any(iterator) # consume from "i" until first true or it's exhuasted
-    has_another_true = any(iterator) # carry on consuming until another true value / exhausted
+
+    # consume from "i" until first true or it's exhausted
+    has_true = any(iterator)
+
+    # carry on consuming until another true value / exhausted
+    has_another_true = any(iterator)
+
     return has_true and not has_another_true
 
-def get_epochs_given_midtimes_and_period(t_mid, period, err_t_mid=None,
-                                         t0_fixed=None, t0_percentile=None,
-                                         verbose=False):
-    '''
-    t_mid = period*epoch + t0.
 
-    Default behavior if no kwargs are used is to define t0 as the median finite
-    time of the passed mid-time array.
 
-    Only one of err_t_mid, t0_fixed, should be passed.
+def get_epochs_given_midtimes_and_period(
+        t_mid,
+        period,
+        err_t_mid=None,
+        t0_fixed=None,
+        t0_percentile=None,
+        verbose=False
+):
 
-    args:
-        t_mid (np.array): array of transit mid-time measurements
+    '''This calculates the future epochs for a transit, given a period and a
+    starting epoch.
 
-        period (float): period used to calculate epochs, per the equation
-        above. for typical use cases, a period precise to ~1e-5 days is
-        sufficient to get correct epochs.
+    `t_mid = period*epoch + t0`.
 
-    kwargs:
-        err_t_mid (optional np.array of length t_mid): errors of the transit
-        mid-time measurements. If passed, the zero-point epoch is set equal to
-        the average of the transit times, weighted as 1/err_t_mid^2 . This
-        minimizes the covariance between the transit epoch and the period
-        (e.g., Gibson et al. 2013). For standard O-C analysis this is the best
-        method.
+    Default behavior if no kwargs are used is to define `t0` as the median
+    finite time of the passed `t_mid` array.
 
-        t0_fixed (optional float): if passed, use this t0. (Overrides all
-        others).
+    Only one of `err_t_mid` or `t0_fixed` should be passed.
 
-        t0_percentile (optional float): if passed, uses this percentile
-        of t_mid to define t0.
+    Parameters
+    ----------
 
-    return:
-        int_epoch, t0 (tuple): where int_epoch is an array of integer epochs
-        (float-type), of length equal to the number of *finite* mid-times
-        passed.
+    t_mid : np.array
+        A np.array of transit mid-time measurements
+
+    period : float
+        The period used to calculate epochs, per the equation above. For typical
+        use cases, a period precise to ~1e-5 days is sufficient to get correct
+        epochs.
+
+    err_t_mid : None or np.array
+        If provided, contains the errors of the transit mid-time
+        measurements. The zero-point epoch is then set equal to the average of
+        the transit times, weighted as `1/err_t_mid^2` . This minimizes the
+        covariance between the transit epoch and the period (e.g., Gibson et
+        al. 2013). For standard O-C analysis this is the best method.
+
+    t0_fixed : None or float:
+        If provided, use this t0 as the starting epoch. (Overrides all others).
+
+    t0_percentile : None or float
+        If provided, use this percentile of `t_mid` to define `t0`.
+
+    Returns
+    -------
+
+    tuple of the form (integer_epoch_array, t0)
+        `integer_epoch_array` is an array of integer epochs (float-type), of
+        length equal to the number of *finite* mid-times passed.
+
     '''
 
     kwargarr = np.array([isinstance(err_t_mid,np.ndarray),
-                       t0_fixed,
-                       t0_percentile])
+                         t0_fixed,
+                         t0_percentile])
     if not _single_true(kwargarr) and not np.all(~kwargarr.astype(bool)):
         raise AssertionError(
             'can have at most one of err_t_mid, t0_fixed, t0_percentile')
@@ -297,9 +362,9 @@ def get_epochs_given_midtimes_and_period(t_mid, period, err_t_mid=None,
         t0 = t0_options[np.argmin(np.abs(t0_options - t0_avg))]
     else:
         if not t0_percentile:
-            # if there are an odd number of times, take the median time as epoch=0.
-            # elif there are an even number of times, take the lower of the two
-            # middle times as epoch=0.
+            # if there are an odd number of times, take the median time as
+            # epoch=0.  elif there are an even number of times, take the lower
+            # of the two middle times as epoch=0.
             if N_midtimes % 2 == 1:
                 t0 = np.median(t_mid)
             else:
@@ -322,14 +387,24 @@ def get_epochs_given_midtimes_and_period(t_mid, period, err_t_mid=None,
 
 
 
-
 ###########################
 ## JULIAN DATE FUNCTIONS ##
 ###########################
 
 def unixtime_to_jd(unix_time):
-    '''
-    This converts UNIX time in seconds to a julian date in UTC (JD_UTC).
+    '''This converts UNIX time in seconds to a Julian date in UTC (JD_UTC).
+
+    Parameters
+    ----------
+
+    unix_time : float
+        A UNIX time in decimal seconds since the 1970 UNIX epoch.
+
+    Returns
+    -------
+
+    jd : float
+        The Julian date corresponding to the provided UNIX time.
 
     '''
 
@@ -340,17 +415,49 @@ def unixtime_to_jd(unix_time):
 
 
 def datetime_to_jd(dt):
-    '''
-    This converts a Python datetime object (naive, time in UT) to JD_UTC.
+    '''This converts a Python datetime object (naive, time in UT) to JD_UTC.
+
+    Parameters
+    ----------
+
+    dt : datetime
+        A naive Python `datetime` object (e.g. with no tz attribute) measured at
+        UTC.
+
+    Returns
+    -------
+
+    jd : float
+        The Julian date corresponding to the `datetime` object.
 
     '''
-
 
     jdutc = astime.Time(dt, format='datetime',scale='utc')
     return jdutc.jd
 
 
+
 def jd_to_datetime(jd, returniso=False):
+    '''This converts a UTC JD to a Python `datetime` object or ISO date string.
+
+    Parameters
+    ----------
+
+    jd : float
+        The Julian date measured at UTC.
+
+    returniso : bool
+        If False, returns a naive Python `datetime` object corresponding to
+        `jd`. If True, returns the ISO format string corresponding to the date
+        and time at UTC from `jd`.
+
+    Returns
+    -------
+
+    datetime or str
+        Depending on the value of `returniso`.
+
+    '''
 
     tt = astime.Time(jd, format='jd', scale='utc')
 
@@ -360,9 +467,10 @@ def jd_to_datetime(jd, returniso=False):
         return tt.datetime
 
 
+
 def jd_now():
     '''
-    Returns the JD at the current time.
+    Returns the Julian date at the current time.
 
     '''
     return astime.Time.now().jd
@@ -373,7 +481,17 @@ def jd_to_mjd(jd):
     '''
     Converts Julian Date to Modified Julian Date.
 
-    MJD = JD - 2400000.5
+    Parameters
+    ----------
+
+    jd : float
+        The Julian date measured at UTC.
+
+    Returns
+    -------
+
+    mjd : float
+        `mjd = jd - 2400000.5`
 
     '''
 
@@ -383,9 +501,19 @@ def jd_to_mjd(jd):
 
 def mjd_to_jd(mjd):
     '''
-    Converts Julian Date to Modified Julian Date.
+    Converts Modified Julian date to Julian Date.
 
-    JD = MJD + 2400000.5
+    Parameters
+    ----------
+
+    mjd : float
+        The Modified Julian date measured at UTC.
+
+    Returns
+    -------
+
+    jd : float
+        `jd = mjd + 2400000.5`
 
     '''
 
@@ -397,13 +525,12 @@ def mjd_to_jd(mjd):
 ##################################
 
 def jd_corr(jd,
-            ra,
-            dec,
+            ra, dec,
             obslon=None,
             obslat=None,
             obsalt=None,
             jd_type='bjd'):
-    """Return BJD_TDB or HJD_TDB for input JD_UTC
+    '''Returns BJD_TDB or HJD_TDB for input JD_UTC.
 
     BJD_TDB = JD_UTC + JD_to_TDB_corr + romer_delay
 
@@ -420,11 +547,34 @@ def jd_corr(jd,
 
     1. precession of coordinates if the epoch is not 2000.0
     2. precession of coordinates if the target has a proper motion
-    3. location of the observatory on the earth (this adds 20 msec error)
-    4. Shapiro delay
-    5. Einstein delay
+    3. Shapiro delay
+    4. Einstein delay
 
-     """
+    Parameters
+    ----------
+
+    jd : float or array-like
+        The Julian date(s) measured at UTC.
+
+    ra, dec : float
+        The equatorial coordinates of the object in decimal degrees.
+
+    obslon, obslat, obsalt : float or None
+        The longitude, latitude of the observatory in decimal degrees and
+        altitude of the observatory in meters. If these are not provided, the
+        corrected JD will be calculated with respect to the center of the Earth.
+
+    jd_type : {'bjd','hjd'}
+        Conversion type to perform, either to Baryocentric Julian Date ('bjd')
+        or to Heliocenter Julian Date ('hjd').
+
+    Returns
+    -------
+
+    float or np.array
+        The converted BJD or HJD.
+
+    '''
 
     if not HAVEKERNEL:
         LOGERROR('no JPL kernel available, can\'t continue!')
