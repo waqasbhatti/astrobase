@@ -5,7 +5,7 @@
 lcmath.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2015
 
 Contains various useful tools for calculating various things related to
-lightcurves (like phasing, sigma-clipping, etc.)
+lightcurves (like phasing, sigma-clipping, finding and filling gaps, etc.)
 
 '''
 
@@ -57,20 +57,33 @@ from scipy.signal import savgol_filter
 ############################
 
 def find_lc_timegroups(lctimes, mingap=4.0):
-    '''
-    This finds the gaps in the lightcurve, so we can figure out which times are
-    for consecutive observations and which represent gaps between
-    seasons.
+    '''Finds gaps in the provided time-series and indexes them into groups.
 
-    lctimes is assumed to be in some form of JD.
+    This finds the gaps in the provided `lctimes` array, so we can figure out
+    which times are for consecutive observations and which represent gaps
+    between seasons or observing eras.
 
-    min_gap defines how much the difference between consecutive measurements is
-    allowed to be to consider them as parts of different timegroups. By default
-    it is set to 4.0 days.
+    Parameters
+    ----------
 
-    Returns number of groups and Python slice objects for each group like so:
+    lctimes : array-like
+        This contains the times to analyze for gaps; assumed to be some form of
+        Julian date.
 
-    (ngroups, [slice(start_ind_1, end_ind_1), ...])
+    mingap : float
+        This defines how much the difference between consecutive measurements is
+        allowed to be to consider them as parts of different timegroups. By
+        default it is set to 4.0 days.
+
+    Returns
+    -------
+
+    tuple
+        A tuple of the form: (ngroups, [slice(start_ind_1, end_ind_1), ...])
+        This contains the number of groups as the first element, and a list
+        of Python `slice` objects for each time-group found. These can be used
+        directly to index into the array of times to quickly get measurements
+        associated with each group.
 
     '''
 
@@ -102,13 +115,14 @@ def find_lc_timegroups(lctimes, mingap=4.0):
     return len(group_indices), group_indices
 
 
+
 def normalize_magseries(times,
                         mags,
                         mingap=4.0,
                         normto='globalmedian',
                         magsarefluxes=False,
                         debugmode=False):
-    '''This normalizes the mag series to the value specified by normto.
+    '''This normalizes the magnitude time-series to a specified value.
 
     This is used to normalize time series measurements that may have large time
     gaps and vertical offsets in mag/flux measurement between these
@@ -117,23 +131,44 @@ def normalize_magseries(times,
     NOTE: this works in-place! The mags array will be replaced with normalized
     mags when this function finishes.
 
-    The normto kwarg is one of the following strings:
+    Parameters
+    ----------
 
-    'globalmedian' -> norms each mag to the global median of the LC column
-    'zero'         -> norms each mag to zero
+    times, mags : array-like
+        The times (assumed to be some form of JD) and mags (or flux)
+        measurements to be normalized.
 
-    or a float indicating the canonical magnitude/flux to normalize to.
+    mingap : float
+        This defines how much the difference between consecutive measurements is
+        allowed to be to consider them as parts of different timegroups. By
+        default it is set to 4.0 days.
 
-    If magsarefluxes = True:
+    normto : {'globalmedian', 'zero'} or a float
+        'globalmedian' -> norms each mag to the global median of the LC column
+        'zero'         -> norms each mag to zero
+        a float        -> norms each mag to this specified float value.
 
-      If normto='zero', then the median flux is divided from each observation's
-      flux value to yield normalized fluxes with 1.0 as the global median.
+    magsarefluxes : bool
+        Indicates if the input `mags` array is actually an array of flux
+        measurements instead of magnitude measurements. If this is set to True,
+        then:
+        - if `normto` is 'zero', then the median flux is divided from each
+          observation's flux value to yield normalized fluxes with 1.0 as the
+          global median.
+        - if `normto` is 'globalmedian', then the global median flux value
+          across the entire time series is multiplied with each measurement.
+        - if `norm` is set to a `float`, then this number is multiplied with the
+          flux value for each measurement.
 
-      If normto='globalmedian', then the global median flux value across the
-      entire time series is multiplied with each measurement.
+    debugmode : bool
+        If this is True, will print out verbose info on each timegroup found.
 
-      If normto=<some float number>, then this number is multiplied with the
-      flux value for each measurement.
+    Returns
+    -------
+
+    times, normalized_mags : np.arrays
+        Normalized magnitude values after normalization. If normalization fails
+        for some reason, `times` and `normalized_mags` will both be None.
 
     '''
 
@@ -207,45 +242,68 @@ def sigclip_magseries(times, mags, errs,
                       niterations=None,
                       meanormedian='median',
                       magsarefluxes=False):
-    '''
-    Select the finite times, magnitudes (or fluxes), and errors from the
-    passed values, and apply symmetric or asymmetric sigma clipping to them.
-    Returns sigma-clipped times, mags, and errs.
+    '''Sigma-clips a magnitude or flux time-series.
 
-    Args:
-        times (np.array): ...
+    Selects the finite times, magnitudes (or fluxes), and errors from the passed
+    values, and apply symmetric or asymmetric sigma clipping to them.
 
-        mags (np.array): numpy array to sigma-clip. Does not assume all values
-        are finite. Does not assume anything about whether they're
-        positive/negative.
+    Parameters
+    ----------
 
-        errs (np.array): ...
+    times, mags, errs : np.array
+        The magnitude or flux time-series arrays to sigma-clip. This doesn't
+        assume all values are finite or if they're positive/negative. All of
+        these arrays will have their non-finite elements removed, and then will
+        be sigma-clipped based on the arguments to this function.
 
-        iterative (bool): True if you want iterative sigma-clipping. If
-        niterations is not set and this is True, sigma-clipping is iterated
+        `errs` is optional. Set it to None if you don't have values for these. A
+        'faked' `errs` array will be generated if necessary, which can be
+        ignored in the output as well.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    iterative : bool
+        If this is set to True, will perform iterative sigma-clipping. If
+        `niterations` is not set and this is True, sigma-clipping is iterated
         until no more points are removed.
 
-        niterations (int): maximum number of iterations to perform for
-        sigma-clipping. If None, the iterative arg takes precedence, and
-        iterative=True will sigma-clip until no more points are removed.
-        If niterations is not None and iterative is False, niterations takes
-        precedence and iteration will occur.
+    niterations : int
+        The maximum number of iterations to perform for sigma-clipping. If None,
+        the `iterative` arg takes precedence, and `iterative=True` will
+        sigma-clip until no more points are removed.  If `niterations` is not
+        None and `iterative` is False, `niterations` takes precedence and
+        iteration will occur for the specified number of iterations.
 
-        meanormedian (string): either 'mean' for sigma-clipping based on the
-        mean value, or 'median' for sigma-clipping based on the median value.
-        Default is 'median'.
+    meanormedian : {'mean', 'median'}
+        Use 'mean' for sigma-clipping based on the mean value, or 'median' for
+        sigma-clipping based on the median value.  Default is 'median'.
 
-        magsarefluxes (bool): True if your "mags" are in fact fluxes, i.e. if
-        "dimming" corresponds to your "mags" getting smaller.
+    magsareflux : bool
+        True if your "mags" are in fact fluxes, i.e. if "fainter" corresponds to
+        `mags` getting smaller.
 
-        sigclip (float or list): If float, apply symmetric sigma clipping. If
-        list, e.g., [10., 3.], will sigclip out greater than 10-sigma dimmings
-        and greater than 3-sigma brightenings. Here the meaning of "dimming"
-        and "brightening" is set by *physics* (not the magnitude system), which
-        is why the `magsarefluxes` kwarg must be correctly set.
+    Returns
+    -------
 
-    Returns:
-        stimes, smags, serrs: (sigmaclipped values of each).
+    tuple : (stimes, smags, serrs)
+        The sigma-clipped and nan-stripped time-series.
+
     '''
 
     returnerrs = True
@@ -532,36 +590,68 @@ def sigclip_magseries_with_extparams(times, mags, errs, extparams,
                                      sigclip=None,
                                      iterative=False,
                                      magsarefluxes=False):
-    '''Select the finite times, magnitudes (or fluxes), and errors from the passed
-    values, and apply symmetric or asymmetric sigma clipping to them.  Returns
-    sigma-clipped times, mags, and errs. Uses the same indices to filter out the
-    values of all arrays in the extparams list.
+    '''Sigma-clips a magnitude or flux time-series and associated measurement
+    arrays.
 
-    Args:
-        times (np.array): ...
+    Selects the finite times, magnitudes (or fluxes), and errors from the passed
+    values, and apply symmetric or asymmetric sigma clipping to them.  Uses the
+    same array indices as these values to filter out the values of all arrays in
+    the `extparams` list. This can be useful for simultaneously sigma-clipping a
+    magnitude/flux time-series along with their associated values of external
+    parameters, such as telescope hour angle, zenith distance, temperature, moon
+    phase, etc.
 
-        mags (np.array): numpy array to sigma-clip. Does not assume all values
-        are finite. Does not assume anything about whether they're
-        positive/negative.
+    Parameters
+    ----------
 
-        errs (np.array): ...
+    times, mags, errs : np.array
+        The magnitude or flux time-series arrays to sigma-clip. This doesn't
+        assume all values are finite or if they're positive/negative. All of
+        these arrays will have their non-finite elements removed, and then will
+        be sigma-clipped based on the arguments to this function.
 
-        extparams (list of np.arrays): external parameters to also filter using
-        the same indices as used for sigma-clipping.
+        `errs` is optional. Set it to None if you don't have values for these. A
+        'faked' `errs` array will be generated if necessary, which can be
+        ignored in the output as well.
 
-        iterative (bool): True if you want iterative sigma-clipping.
+    extparams : list of np.array
+        This is a list of all external parameter arrays to simultaneously filter
+        along with the magnitude/flux time-series. All of these arrays should
+        have the same length as the `times`, `mags`, and `errs` arrays.
 
-        magsarefluxes (bool): True if your "mags" are in fact fluxes, i.e. if
-        "dimming" corresponds to your "mags" getting smaller.
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
 
-        sigclip (float or list): If float, apply symmetric sigma clipping. If
-        list, e.g., [10., 3.], will sigclip out greater than 10-sigma dimmings
-        and greater than 3-sigma brightenings. Here the meaning of "dimming"
-        and "brightening" is set by *physics* (not the magnitude system), which
-        is why the `magsarefluxes` kwarg must be correctly set.
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
 
-    Returns:
-        stimes, smags, serrs: (sigmaclipped values of each).
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    iterative : bool
+        If this is set to True, will perform iterative sigma-clipping. If
+        `niterations` is not set and this is True, sigma-clipping is iterated
+        until no more points are removed.
+
+    magsareflux : bool
+        True if your "mags" are in fact fluxes, i.e. if "fainter" corresponds to
+        `mags` getting smaller.
+
+    Returns
+    -------
+
+    tuple : (stimes, smags, serrs, sextparams)
+        The sigma-clipped and nan-stripped time-series in `stimes`, `smags`,
+        `serrs` and the associated values of the `extparams` in `sextparams`.
 
     '''
 
@@ -742,11 +832,50 @@ def sigclip_magseries_with_extparams(times, mags, errs, extparams,
 #################
 
 def phase_magseries(times, mags, period, epoch, wrap=True, sort=True):
-    '''
+    '''Phases a magnitude/flux time-series using a given period and epoch.
+
+    `phase = (times - epoch)/period - floor((times - epoch)/period)`
+
+    Parameters
+    ----------
+
+    times, mags : np.array
+        The magnitude/flux time-series values to phase using the provided
+        `period` and `epoch`. Non-fiinite values will be removed.
+
+    period : float
+        The period to use to phase the time-series.
+
+    epoch : float
+        The epoch to phase the time-series. This is usually the time-of-minimum
+        or time-of-maximum of some periodic light curve
+        phenomenon. Alternatively, one can use the minimum time value in
+        `times`.
+
+    wrap : bool
+        If this is True, the returned phased time-series will be wrapped around
+        phase 0.0, which is useful for plotting purposes. The arrays returned
+        will have twice the number of input elements because of this wrapping.
+
+    sort : bool
+        If this is True, the returned phased time-series will be sorted in
+        increasing phase order.
+
     This phases the given magnitude timeseries using the given period and
     epoch. If wrap is True, wraps the result around 0.0 (and returns an array
     that has twice the number of the original elements). If sort is True,
     returns the magnitude timeseries in phase sorted order.
+
+    Returns
+    -------
+
+    dict
+        A dict of the following form is returned:
+
+        {'phase': the phase values,
+         'mags': the mags/flux values at each phase,
+         'period': the input `period` used to phase the time-series,
+         'epoch': the input `epoch` used to phase the time-series}
 
     '''
 
@@ -783,11 +912,52 @@ def phase_magseries(times, mags, period, epoch, wrap=True, sort=True):
 
 def phase_magseries_with_errs(times, mags, errs, period, epoch,
                               wrap=True, sort=True):
-    '''
+    '''Phases a magnitude/flux time-series using a given period and epoch.
+
+    `phase = (times - epoch)/period - floor((times - epoch)/period)`
+
+    Parameters
+    ----------
+
+    times, mags, errs : np.array
+        The magnitude/flux time-series values and associated measurement errors
+        to phase using the provided `period` and `epoch`. Non-fiinite values
+        will be removed.
+
+    period : float
+        The period to use to phase the time-series.
+
+    epoch : float
+        The epoch to phase the time-series. This is usually the time-of-minimum
+        or time-of-maximum of some periodic light curve
+        phenomenon. Alternatively, one can use the minimum time value in
+        `times`.
+
+    wrap : bool
+        If this is True, the returned phased time-series will be wrapped around
+        phase 0.0, which is useful for plotting purposes. The arrays returned
+        will have twice the number of input elements because of this wrapping.
+
+    sort : bool
+        If this is True, the returned phased time-series will be sorted in
+        increasing phase order.
+
     This phases the given magnitude timeseries using the given period and
     epoch. If wrap is True, wraps the result around 0.0 (and returns an array
     that has twice the number of the original elements). If sort is True,
     returns the magnitude timeseries in phase sorted order.
+
+    Returns
+    -------
+
+    dict
+        A dict of the following form is returned:
+
+        {'phase': the phase values,
+         'mags': the mags/flux values at each phase,
+         'errs': the err values at each phase,
+         'period': the input `period` used to phase the time-series,
+         'epoch': the input `epoch` used to phase the time-series}
 
     '''
 
@@ -833,25 +1003,39 @@ def phase_magseries_with_errs(times, mags, errs, period, epoch,
 def time_bin_magseries(times, mags,
                        binsize=540.0,
                        minbinelems=7):
-    '''
-    Bins the given mag timeseries in time using the binsize given.
+    '''Bins the given mag/flux time-series in time using the bin size given.
 
-    Args:
+    Parameters
+    ----------
 
-        times, mags (np.ndarray). Times have units of days.
+    times, mags : np.array
+        The magnitude/flux time-series to bin in time. Non-finite elements will
+        be removed from these arrays. At least 10 elements in each array are
+        required for this function to operate.
 
-    Kwargs:
+    binsize : float
+        The bin size to use to group together measurements closer than this
+        amount in time. This is in seconds.
 
-        binsize (float): in seconds.
+    minbinelems : int
+        The minimum number of elements required per bin to include it in the
+        output.
 
-        minbinelems (int): the minimum number of elements per bin.
+    Returns
+    -------
 
-    Returns:
+    dict
+        A dict of the following form is returned:
 
-        bin_dict (dict): has the following keys:
+        {'jdbin_indices': a list of the index arrays into the nan-filtered
+                          input arrays per each bin,
+         'jdbins': list of bin boundaries for each bin,
+         'nbins': the number of bins generated,
+         'binnedtimes': the time values associated with each time bin;
+                        this is the median of the times in each bin,
+         'binnedmags': the mag/flux values associated with each time bin;
+                       this is the median of the mags/fluxes in each bin}
 
-            ['jdbins_indices', 'jdbins', 'nbins', 'binnedtimes',
-            'binsize', 'binnedmags'])
     '''
 
     # check if the input arrays are ok
@@ -924,11 +1108,40 @@ def time_bin_magseries(times, mags,
 def time_bin_magseries_with_errs(times, mags, errs,
                                  binsize=540.0,
                                  minbinelems=7):
-    '''This bins the given mag timeseries in time using the binsize given.
+    '''Bins the given mag/flux time-series in time using the bin size given.
 
-    binsize is in seconds.
+    Parameters
+    ----------
 
-    minbinelems is the number of minimum elements in a bin.
+    times, mags, errs : np.array
+        The magnitude/flux time-series and associated measurement errors to bin
+        in time. Non-finite elements will be removed from these arrays. At least
+        10 elements in each array are required for this function to operate.
+
+    binsize : float
+        The bin size to use to group together measurements closer than this
+        amount in time. This is in seconds.
+
+    minbinelems : int
+        The minimum number of elements required per bin to include it in the
+        output.
+
+    Returns
+    -------
+
+    dict
+        A dict of the following form is returned:
+
+        {'jdbin_indices': a list of the index arrays into the nan-filtered
+                          input arrays per each bin,
+         'jdbins': list of bin boundaries for each bin,
+         'nbins': the number of bins generated,
+         'binnedtimes': the time values associated with each time bin;
+                        this is the median of the times in each bin,
+         'binnedmags': the mag/flux values associated with each time bin;
+                       this is the median of the mags/fluxes in each bin,
+         'binnederrs': the err values associated with each time bin;
+                       this is the median of the errs in each bin}
 
     '''
 
@@ -936,7 +1149,7 @@ def time_bin_magseries_with_errs(times, mags, errs,
     if not(times.shape and mags.shape and errs.shape and
            len(times) > 9 and len(mags) > 9):
 
-        LOGERROR("input time/mag arrays don't have enough elements")
+        LOGERROR("input time/mag/err arrays don't have enough elements")
         return
 
     # find all the finite values of the magnitudes and times
@@ -1012,11 +1225,38 @@ def time_bin_magseries_with_errs(times, mags, errs,
 def phase_bin_magseries(phases, mags,
                         binsize=0.005,
                         minbinelems=7):
-    '''
-    This bins a magnitude timeseries in phase using the binsize (in phase)
-    provided.
+    '''Bins a phased magnitude/flux time-series using the bin size provided.
 
-    minbinelems is the minimum number of elements in each bin.
+    Parameters
+    ----------
+
+    phases, mags : np.array
+        The phased magnitude/flux time-series to bin in phase. Non-finite
+        elements will be removed from these arrays. At least 10 elements in each
+        array are required for this function to operate.
+
+    binsize : float
+        The bin size to use to group together measurements closer than this
+        amount in phase. This is in units of phase.
+
+    minbinelems : int
+        The minimum number of elements required per bin to include it in the
+        output.
+
+    Returns
+    -------
+
+    dict
+        A dict of the following form is returned:
+
+        {'phasebin_indices': a list of the index arrays into the nan-filtered
+                             input arrays per each bin,
+         'phasebins': list of bin boundaries for each bin,
+         'nbins': the number of bins generated,
+         'binnedphases': the phase values associated with each phase bin;
+                        this is the median of the phase value in each bin,
+         'binnedmags': the mag/flux values associated with each phase bin;
+                       this is the median of the mags/fluxes in each bin}
 
     '''
 
@@ -1083,7 +1323,6 @@ def phase_bin_magseries(phases, mags,
                   for x in binned_finite_phaseseries_indices])
     )
 
-
     return collected_binned_mags
 
 
@@ -1091,11 +1330,40 @@ def phase_bin_magseries(phases, mags,
 def phase_bin_magseries_with_errs(phases, mags, errs,
                                   binsize=0.005,
                                   minbinelems=7):
-    '''
-    This bins a magnitude timeseries in phase using the binsize (in phase)
-    provided.
+    '''Bins a phased magnitude/flux time-series using the bin size provided.
 
-    minbinelems is the minimum number of elements in each bin.
+    Parameters
+    ----------
+
+    phases, mags, errs : np.array
+        The phased magnitude/flux time-series and associated errs to bin in
+        phase. Non-finite elements will be removed from these arrays. At least
+        10 elements in each array are required for this function to operate.
+
+    binsize : float
+        The bin size to use to group together measurements closer than this
+        amount in phase. This is in units of phase.
+
+    minbinelems : int
+        The minimum number of elements required per bin to include it in the
+        output.
+
+    Returns
+    -------
+
+    dict
+        A dict of the following form is returned:
+
+        {'phasebin_indices': a list of the index arrays into the nan-filtered
+                             input arrays per each bin,
+         'phasebins': list of bin boundaries for each bin,
+         'nbins': the number of bins generated,
+         'binnedphases': the phase values associated with each phase bin;
+                        this is the median of the phase value in each bin,
+         'binnedmags': the mag/flux values associated with each phase bin;
+                       this is the median of the mags/fluxes in each bin,
+         'binnederrs': the err values associated with each phase bin;
+                       this is the median of the errs in each bin}
 
     '''
 
@@ -1206,18 +1474,71 @@ def fill_magseries_gaps(times, mags, errs,
     followed by a boxcar filter, both with 11-point windows, with iterative 3σ
     clipping of outliers."
 
-    If fillgaps == 'noiselevel', fills the gaps with the noise level obtained
-    via the procedure above. If fillgaps == 'nan', fills the gaps with
-    np.nan. Otherwise, if fillgaps is a float, will use that value to fill the
-    gaps. The default is to fill the gaps with 0.0 (as in McQuillan+ 2014) to
-    "...prevent them contributing to the ACF".
+    Parameters
+    ----------
 
-    If forcetimebin is a float, this value will be used to generate the
-    interpolated time series, effectively binning the light curve to this
-    cadence.
+    times, mags, errs : np.array
+        The magnitude/flux time-series and associated measurement errors to
+        operate on. Non-finite elements will be removed from these arrays. At
+        least 10 elements in each array are required for this function to
+        operate.
 
-    NOTE: forcetimebin must be in the same units as times; e.g. if times are JD
-    then forcetimebin must be in days.
+    fillgaps : {'noiselevel', 'nan'} or float
+        If `fillgap='noiselevel'`, fills the gaps with the noise level obtained
+        via the procedure above. If `fillgaps='nan'`, fills the gaps with
+        `np.nan`. Otherwise, if `fillgaps` is a float, will use that value to
+        fill the gaps. The default is to fill the gaps with 0.0 (as in
+        McQuillan+ 2014) to "...prevent them contributing to the ACF".
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    magsareflux : bool
+        True if your "mags" are in fact fluxes, i.e. if "fainter" corresponds to
+        `mags` getting smaller.
+
+    filterwindow : int
+        The number of time-series points to include in the Savitsky-Golay filter
+        operation when smoothing the light curve. This should be an odd integer.
+
+    forcetimebin : float or None
+        If `forcetimebin` is a float, this value will be used to generate the
+        interpolated time series, effectively binning the light curve to this
+        cadence. If `forcetimebin` is None, the mode of the gaps (the forward
+        difference between successive time values in `times`) in the provided
+        light curve will be used as the effective cadence. NOTE: `forcetimebin`
+        must be in the same units as `times`, e.g. if times are JD then
+        `forcetimebin` must be in days as well
+
+    verbose : bool
+        If this is True, will indicate progress at various stages in the
+        operation.
+
+    Returns
+    -------
+
+    dict
+        A dict of the following form is returned:
+
+        {'itimes': the interpolated time values after gap-filling,
+         'imags': the interpolated mag/flux values after gap-filling,
+         'ierrs': the interpolated mag/flux values after gap-filling,
+         'cadence': the cadence of the output mag/flux time-series}
 
     '''
 
