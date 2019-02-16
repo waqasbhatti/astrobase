@@ -152,7 +152,7 @@ def s3_get_file(bucket,
         The full filename of the file to get from the bucket
 
     local_file : str
-        Path to where the downloaded file will be downloaded.
+        Path to where the downloaded file will be stored.
 
     altexts : None or list of str
         If not None, this is a list of alternate extensions to try for the file

@@ -152,6 +152,8 @@ def make_gce_instances():
     Use preemptible instances and startup/shutdown scripts to emulate AWS spot
     fleet behavior and run stuff at cheaper prices.
 
+    TODO: finish this
+
     """
 
 
@@ -159,6 +161,8 @@ def make_gce_instances():
 def delete_gce_instances():
     """
     This deletes GCE worker nodes.
+
+    TODO: finish this
 
     """
 
@@ -175,6 +179,45 @@ def gcs_get_file(bucketname,
                  service_account_json=None,
                  raiseonfail=False):
     """This gets a single file from a Google Cloud Storage bucket.
+
+    Parameters
+    ----------
+
+    bucketname : str
+        The name of the GCS bucket to download the file from.
+
+    filename : str
+        The full name of the file to download, including all prefixes.
+
+    local_file : str
+        Path to where the downloaded file will be stored.
+
+    altexts : None or list of str
+        If not None, this is a list of alternate extensions to try for the file
+        other than the one provided in `filename`. For example, to get anything
+        that's an .sqlite where .sqlite.gz is expected, use altexts=[''] to
+        strip the .gz.
+
+    client : google.cloud.storage.Client instance
+        The instance of the Client to use to perform the download operation. If
+        this is None, a new Client will be used. If this is None and
+        `service_account_json` points to a downloaded JSON file with GCS
+        credentials, a new Client with the provided credentials will be used. If
+        this is not None, the existing Client instance will be used.
+
+    service_account_json : str
+        Path to a downloaded GCS credentials JSON file.
+
+    raiseonfail : bool
+        If True, will re-raise whatever Exception caused the operation to fail
+        and break out immediately.
+
+    Returns
+    -------
+
+    str
+        Path to the downloaded filename or None if the download was
+        unsuccessful.
 
     """
 
@@ -233,6 +276,39 @@ def gcs_get_url(url,
 
     This uses the gs:// URL instead of a bucket name and key.
 
+    Parameters
+    ----------
+
+    url : str
+        GCS URL to download. This should begin with 'gs://'.
+
+    altexts : None or list of str
+        If not None, this is a list of alternate extensions to try for the file
+        other than the one provided in `filename`. For example, to get anything
+        that's an .sqlite where .sqlite.gz is expected, use altexts=[''] to
+        strip the .gz.
+
+    client : google.cloud.storage.Client instance
+        The instance of the Client to use to perform the download operation. If
+        this is None, a new Client will be used. If this is None and
+        `service_account_json` points to a downloaded JSON file with GCS
+        credentials, a new Client with the provided credentials will be used. If
+        this is not None, the existing Client instance will be used.
+
+    service_account_json : str
+        Path to a downloaded GCS credentials JSON file.
+
+    raiseonfail : bool
+        If True, will re-raise whatever Exception caused the operation to fail
+        and break out immediately.
+
+    Returns
+    -------
+
+    str
+        Path to the downloaded filename or None if the download was
+        unsuccessful.
+
     """
     bucket_item = url.replace('gs://','')
     bucket_item = bucket_item.split('/')
@@ -255,6 +331,36 @@ def gcs_put_file(local_file,
                  client=None,
                  raiseonfail=False):
     """This puts a single file into a Google Cloud Storage bucket.
+
+    Parameters
+    ----------
+
+    local_file : str
+        Path to the file to upload to GCS.
+
+    bucket : str
+        The GCS bucket to upload the file to.
+
+    service_account_json : str
+        Path to a downloaded GCS credentials JSON file.
+
+    client : google.cloud.storage.Client instance
+        The instance of the Client to use to perform the download operation. If
+        this is None, a new Client will be used. If this is None and
+        `service_account_json` points to a downloaded JSON file with GCS
+        credentials, a new Client with the provided credentials will be used. If
+        this is not None, the existing Client instance will be used.
+
+    raiseonfail : bool
+        If True, will re-raise whatever Exception caused the operation to fail
+        and break out immediately.
+
+    Returns
+    -------
+
+    str or None
+        If the file upload is successful, returns the gs:// URL of the uploaded
+        file. If it failed, will return None.
 
     """
 
@@ -295,6 +401,8 @@ def gps_create_topic():
     """
     This creates a Google Pub/Sub topic.
 
+    TODO: finish this
+
     """
 
 
@@ -302,6 +410,8 @@ def gps_create_topic():
 def gps_delete_topic():
     """
     This deletes a Google Pub/Sub topic.
+
+    TODO: finish this
 
     """
 
@@ -311,6 +421,8 @@ def gps_topic_pull():
     """
     This synchronously pulls a single message from a pubsub topic.
 
+    TODO: finish this
+
     """
 
 
@@ -318,5 +430,7 @@ def gps_topic_pull():
 def gps_topic_publish():
     """
     This publishes a JSON message to a topic.
+
+    TODO: finish this
 
     """
