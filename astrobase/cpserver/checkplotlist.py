@@ -165,10 +165,6 @@ import glob
 import json
 import argparse
 
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
 
 # suppress warnings
 import warnings
@@ -184,7 +180,9 @@ import numpy as np
 import multiprocessing as mp
 CPU_COUNT = mp.cpu_count()
 
-from astrobase.checkplot import _read_checkplot_picklefile
+from astrobase.checkplot.pkl_io import _read_checkplot_picklefile
+
+
 
 ######################
 ## HELPER FUNCTIONS ##

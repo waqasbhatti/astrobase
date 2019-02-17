@@ -1795,11 +1795,11 @@ def object_info(lcc_server, objectid, db_collection_id):
 
     `finderchart`: a base-64 encoded PNG image of the object's DSS2 RED finder
                    chart. To convert this to an actual PNG, try the function
-                   astrobase.checkplot._b64_to_file.
+                   astrobase.checkplot.pkl_io._b64_to_file.
 
     `magseries`: a base-64 encoded PNG image of the object's light curve. To
                  convert this to an actual PNG, try the function
-                 astrobase.checkplot._b64_to_file.
+                 astrobase.checkplot.pkl_io._b64_to_file.
 
     `pfmethods`: a list of period-finding methods applied to the object if
                  any. If this list is present, use the keys in it to get to the

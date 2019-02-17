@@ -103,28 +103,39 @@ from astrobase.astrokep import read_kepler_fitslc, read_kepler_pklc, \
 from astrobase.astrotess import read_tess_fitslc, read_tess_pklc, \
     filter_tess_lcdict
 
-from astrobase import periodbase, checkplot
 from astrobase.varclass import varfeatures, starfeatures, periodicfeatures
 from astrobase.lcmath import normalize_magseries, \
     time_bin_magseries_with_errs, sigclip_magseries
-from astrobase.periodbase.kbls import bls_snr
-from astrobase.plotbase import fits_finder_chart
-
-from astrobase.checkplot import _pkl_magseries_plot, \
-    _pkl_phased_magseries_plot, xmatch_external_catalogs, \
-    _read_checkplot_picklefile, _write_checkplot_picklefile
-
 from astrobase.magnitudes import jhk_to_sdssr
-
 from astrobase.varbase.trends import epd_magseries, smooth_magseries_savgol
 
+from astrobase.plotbase import fits_finder_chart
+
+import periodbase
+from astrobase.periodbase.kbls import bls_snr
+
+from astrobase.checkplot.pkl_io import (
+    _read_checkplot_picklefile,
+    _write_checkplot_picklefile,
+    _base64_to_file
+)
+from astrobase.checkplot.pkl_utils import (
+    _pkl_magseries_plot,
+    _pkl_phased_magseries_plot
+)
+from astrobase.checkplot.pkl_xmatch import xmatch_external_catalogs
+from astrobase.checkplot.pkl_postproc import update_checkplot_objectinfo
 from astrobase.cpserver.checkplotlist import checkplot_infokey_worker
+from astrobase.checkplot import checkplot_dict
+
+
 
 ############
 ## CONFIG ##
 ############
 
 NCPUS = mp.cpu_count()
+
 
 
 #############################################
@@ -4483,7 +4494,7 @@ def runcp(pfpickle,
             xtimes, xmags, xerrs = times, mags, errs
 
         # generate the checkplotdict
-        cpd = checkplot.checkplot_dict(
+        cpd = checkplot_dict(
             pflist,
             xtimes, xmags, xerrs,
             objectinfo=lcdict['objectinfo'],
@@ -4519,7 +4530,7 @@ def runcp(pfpickle,
             cpdupdated = cpd
 
         # write the update checkplot dict to disk
-        cpf = checkplot._write_checkplot_picklefile(
+        cpf = _write_checkplot_picklefile(
             cpdupdated,
             outfile=outfile,
             protocol=pickle.HIGHEST_PROTOCOL,
@@ -4803,7 +4814,7 @@ def xmatch_cplist_external_catalogs(cplist,
     cplist is a list of checkplot files to process.
 
     xmatchpkl is a pickle prepared with the
-    checkplot.load_xmatch_external_catalogs function.
+    checkplot.pkl_xmatch.load_xmatch_external_catalogs function.
 
     xmatchradiusarcsec is the match radius to use in arcseconds.
 
@@ -4848,12 +4859,12 @@ def xmatch_cplist_external_catalogs(cplist,
                              cpd['xmatch'][xmi]['distarcsec']))
 
                 if not resultstodir:
-                    outcpf = checkplot._write_checkplot_picklefile(cpd,
-                                                                   outfile=cpf)
+                    outcpf = _write_checkplot_picklefile(cpd,
+                                                         outfile=cpf)
                 else:
                     xcpf = os.path.join(resultstodir, os.path.basename(cpf))
-                    outcpf = checkplot._write_checkplot_picklefile(cpd,
-                                                                   outfile=xcpf)
+                    outcpf = _write_checkplot_picklefile(cpd,
+                                                         outfile=xcpf)
 
             status_dict[cpf] = outcpf
 
@@ -5145,7 +5156,7 @@ def add_cmd_to_checkplot(cpx, cmdpkl,
                     outpng = 'cmd-%s-%s-%s.%s.png' % (cpdict['objectid'],
                                                       c1,c2,ym)
 
-                checkplot._base64_to_file(cmdb64, outpng)
+                _base64_to_file(cmdb64, outpng)
 
         except Exception as e:
             LOGEXCEPTION('CMD for %s-%s/%s does not exist in %s, skipping...' %
@@ -5221,7 +5232,7 @@ def cp_objectinfo_worker(task):
 
     try:
 
-        newcpf = checkplot.update_checkplot_objectinfo(cpf, **cpkwargs)
+        newcpf = update_checkplot_objectinfo(cpf, **cpkwargs)
         return newcpf
 
     except Exception as e:

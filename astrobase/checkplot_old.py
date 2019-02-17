@@ -141,7 +141,6 @@ from .lcmath import phase_magseries, phase_bin_magseries, \
 from .varbase.lcfit import spline_fit_magseries, savgol_fit_magseries
 from .varclass.varfeatures import all_nonperiodic_features
 
-from .varclass import starfeatures
 from .varclass.starfeatures import coord_features, color_features, \
     color_classification, neighbor_gaia_features
 

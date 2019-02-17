@@ -119,6 +119,7 @@ setup(
     author_email='waqas.afzal.bhatti@gmail.com',
     license='MIT',
     packages=['astrobase',
+              'astrobase.checkplot',
               'astrobase.periodbase',
               'astrobase.varbase',
               'astrobase.varclass',
