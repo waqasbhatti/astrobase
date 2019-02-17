@@ -44,10 +44,10 @@ import os.path
 import sys
 try:
     import cPickle as pickle
-    from cStringIO import StringIO as strio
+    from cStringIO import StringIO as StrIO
 except Exception as e:
     import pickle
-    from io import BytesIO as strio
+    from io import BytesIO as StrIO
 import gzip
 import glob
 import shutil
@@ -5131,8 +5131,8 @@ def add_cmd_to_checkplot(cpx, cmdpkl,
             plt.title('%s - $%s$ CMD' % (cpdict['objectid'], thiscmd_title))
             plt.gca().invert_yaxis()
 
-            # now save the figure to strio and put it back in the checkplot
-            cmdpng = strio()
+            # now save the figure to StrIO and put it back in the checkplot
+            cmdpng = StrIO()
             plt.savefig(cmdpng, bbox_inches='tight',
                         pad_inches=0.0, format='png')
             cmdpng.seek(0)
