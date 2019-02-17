@@ -1,13 +1,16 @@
 {
-  "fileglob": "*-hatlc.sqlite*",
-  "timecols": ["rjd", "rjd"],
-  "magcols": ["aep_000", "atf_000"],
-  "errcols": ["aie_000", "aie_000"],
-  "magsarefluxes": false,
-  "lcreader_module": "astrobase.hatlc",
-  "lcreader_func": "read_and_filter_sqlitecurve",
-  "lcreader_kwargs": {"returnarrays": true, "raiseonfail": false},
-  "lcnorm_module": "astrobase.hatlc",
-  "lcnorm_func": "normalize_lcdict_byinst",
-  "lcnorm_kwargs": {"normto": "sdssr", "magcols": "all"}
+    "fileglob": "*-hatlc.sqlite*",
+    "timecols": ["rjd", "rjd"],
+    "magcols": ["aep_000", "atf_000"],
+    "errcols": ["aie_000", "aie_000"],
+    "magsarefluxes": false,
+    "lcreader_module": "astrobase.hatlc",
+    "lcreader_func": "read_and_filter_sqlitecurve",
+    "lcreader_kwargs": {"returnarrays": true, "raiseonfail": false},
+    "lcnorm_module": "astrobase.hatlc",
+    "lcnorm_func": "normalize_lcdict_byinst",
+    "lcnorm_kwargs": {
+        "normto": "sdssr",
+        "magcols": "aep_000,aep_001,aep_002,atf_000,atf_001,atf_002"
+    }
 }
