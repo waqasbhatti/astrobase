@@ -41,7 +41,7 @@ import numpy as np
 
 from astrobase.hatsurveys import hatlc
 from astrobase import periodbase, checkplot
-
+from astrobase.checkplot.pkl_io import _read_checkplot_picklefile
 
 ############
 ## CONFIG ##
@@ -205,7 +205,7 @@ def test_checkplot_pickle_read():
 
     assert os.path.exists(outpath)
 
-    cpd = checkplot._read_checkplot_picklefile(cpf)
+    cpd = _read_checkplot_picklefile(cpf)
 
     assert isinstance(cpd, dict)
 
@@ -255,7 +255,7 @@ def test_checkplot_pickle_update():
     assert os.path.exists(outpath)
 
     # test read back
-    cpd = checkplot._read_checkplot_picklefile(cpf)
+    cpd = _read_checkplot_picklefile(cpf)
 
     assert isinstance(cpd, dict)
 
@@ -274,7 +274,7 @@ def test_checkplot_pickle_update():
                        'update mechanism. this is only a test.')
     cpfupdated = checkplot.checkplot_pickle_update(cpf, cpd)
 
-    cpdupdated = checkplot._read_checkplot_picklefile(cpfupdated)
+    cpdupdated = _read_checkplot_picklefile(cpfupdated)
 
     assert cpdupdated['comments'] == cpd['comments']
 
@@ -312,7 +312,7 @@ def test_checkplot_pickle_topng():
     assert os.path.exists(outpath)
 
     # test read back
-    cpd = checkplot._read_checkplot_picklefile(cpf)
+    cpd = ._read_checkplot_picklefile(cpf)
 
     assert isinstance(cpd, dict)
 
@@ -331,7 +331,7 @@ def test_checkplot_pickle_topng():
                        'update mechanism. this is only a test.')
     cpfupdated = checkplot.checkplot_pickle_update(cpf, cpd)
 
-    cpdupdated = checkplot._read_checkplot_picklefile(cpfupdated)
+    cpdupdated = _read_checkplot_picklefile(cpfupdated)
 
     assert cpdupdated['comments'] == cpd['comments']
 
@@ -383,7 +383,7 @@ def test_checkplot_with_multiple_same_pfmethods():
     assert os.path.exists(cpf)
     assert os.path.abspath(cpf) == os.path.abspath(outpath)
 
-    cpd = checkplot._read_checkplot_picklefile(cpf)
+    cpd = _read_checkplot_picklefile(cpf)
     pfmethods = list(cpd['pfmethods'])
 
     assert len(pfmethods) == 4
