@@ -305,7 +305,7 @@ def get_lcformat(formatkey, use_lcformat_dir=None):
     formatkey : str
         The key used to refer to the LC format. This is part of the JSON file's
         name, e.g. the format key 'hat-csv' maps to the format JSON file:
-        'astrobase/data/lcformats/hat-csv.json'.
+        '<astrobase install path>/data/lcformats/hat-csv.json'.
 
     use_lcformat_dir : str or None
         If provided, must be the path to a directory that contains the
@@ -314,25 +314,25 @@ def get_lcformat(formatkey, use_lcformat_dir=None):
         `formatkey`:
 
         - first, in the directory specified in this kwarg,
-        - if not found there, in thehome directory: ~/.astrobase/lcformat-jsons
+        - if not found there, in the home directory: ~/.astrobase/lcformat-jsons
         - if not found there, in: <astrobase install path>/data/lcformats
 
 
     Returns
     -------
 
-    dict
-        A dict of the following form is returned:
+    tuple
+        A tuple of the following form is returned:
 
-        {'formatkey': the formatkey string,
-         'fileglob': the file glob of the associated LC files,
-         'readermodule': the imported Python module for reading LCs,
-         'readerfunc': the imported Python function for reading LCs,
-         'normmodule': the imported Python module for normalizing LCs,
-         'normfunc': the imported Python function for normalizing LCs,
-         'magsarefluxes': True if the measurements are fluxes not mags}
+        (fileglob       : the file glob of the associated LC files,
+         readerfunc_in  : the imported Python function for reading LCs,
+         timecols       : list of time col keys to get from the lcdict,
+         magcols        : list of mag col keys to get from the lcdict ,
+         errcols        : list of err col keys to get from the lcdict,
+         magsarefluxes  : True if the measurements are fluxes not mags,
+         normfunc_in    : the imported Python function for normalizing LCs)
 
-        All `astrobase.lcproc` functions can then use this dict to dynamically
+        All `astrobase.lcproc` functions can then use this tuple to dynamically
         import your LC reader and normalization functions to work with your LC
         format transparently.
 
