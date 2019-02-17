@@ -1,5 +1,5 @@
 {
-    "fileglob": "*_llc.fits",
+    "fileglob": "*_lc.fits",
     "timecols": ["time", "time"],
     "magcols": ["sap.sap_flux", "pdc.pdcsap_flux"],
     "errcols": ["sap.sap_flux_err", "pdc.pdcsap_flux_err"],
