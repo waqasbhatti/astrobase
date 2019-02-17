@@ -23,9 +23,9 @@ import logging
 import time as utime
 
 try:
-    from cStringIO import StringIO as strio
+    from cStringIO import StringIO as StrIO
 except Exception as e:
-    from io import BytesIO as strio
+    from io import BytesIO as StrIO
 
 import numpy as np
 from numpy import ndarray
@@ -84,13 +84,14 @@ from tornado import gen
 ###################
 
 from .. import lcmath
-from .. import checkplot
-from ..checkplot import checkplot_pickle_update, checkplot_pickle_to_png, \
-    _read_checkplot_picklefile, _write_checkplot_picklefile
 
-# import these for updating plots due to user input
-from ..checkplot import _pkl_finder_objectinfo, _pkl_periodogram, \
-    _pkl_magseries_plot, _pkl_phased_magseries_plot
+from ..checkplot.pkl_io import (
+    _read_checkplot_picklefile,
+    _write_checkplot_picklefile
+)
+from ..checkplot.pkl_utils import _pkl_periodogram, _pkl_phased_magseries_plot
+from ..checkplot.pkl_png import checkplot_pickle_to_png
+from ..checkplot.pkl import checkplot_pickle_update
 
 from ..varclass import varfeatures
 from ..varbase import lcfit
@@ -1047,7 +1048,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 if savetopng:
 
                     cpfpng = os.path.abspath(cpfpath.replace('.pkl','.png'))
-                    cpfpng = strio()
+                    cpfpng = StrIO()
                     pngdone = yield self.executor.submit(
                         checkplot_pickle_to_png,
                         cpfpath, cpfpng
@@ -2184,7 +2185,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                         filtermasks.append(
                                             ((wtimes -
                                               cptimes.min()) < filt_hi) &
-                                            ((wtimes  -
+                                            ((wtimes -
                                               cptimes.min()) > filt_lo)
                                         )
 
@@ -2573,7 +2574,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                         lctoolfunction = CPTOOLMAP[lctool]['func']
 
                         # send in a stringio object for the fitplot kwarg
-                        lctoolkwargs['plotfit'] = strio()
+                        lctoolkwargs['plotfit'] = StrIO()
 
                         funcresults = yield self.executor.submit(
                             lctoolfunction,
