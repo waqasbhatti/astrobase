@@ -94,53 +94,110 @@ from .services.skyview import get_stamp
 ## SIMPLE LIGHT CURVES ##
 #########################
 
-def plot_mag_series(times,
-                    mags,
-                    magsarefluxes=False,
-                    errs=None,
-                    out=None,
-                    sigclip=30.0,
-                    normto='globalmedian',
-                    normmingap=4.0,
-                    timebin=None,
-                    yrange=None,
-                    segmentmingap=100.0,
-                    plotdpi=100):
-    '''This plots a magnitude time series.
+def plot_magseries(times,
+                   mags,
+                   magsarefluxes=False,
+                   errs=None,
+                   out=None,
+                   sigclip=30.0,
+                   normto='globalmedian',
+                   normmingap=4.0,
+                   timebin=None,
+                   yrange=None,
+                   segmentmingap=100.0,
+                   plotdpi=100):
+    '''This plots a magnitude/flux time-series.
 
-    If magsarefluxes = False, then this function reverses the y-axis as is
-    customary for magnitudes. If magsarefluxes = True, then this isn't done.
+    Parameters
+    ----------
 
-    If outfile is none, then plots to matplotlib interactive window. If outfile
-    is a string denoting a filename, uses that to write a png/eps/pdf figure.
+    times, mags : np.array
+        The mag/flux time-series to plot as a function of time.
 
-    timebin is either a float indicating binsize in seconds, or None indicating
-    no time-binning is required.
+    magsarefluxes : bool
+        Indicates if the input `mags` array is actually an array of flux
+        measurements instead of magnitude measurements. If this is set to True,
+        then the plot y-axis will be set as appropriate for mag or fluxes. In
+        addition:
+        - if `normto` is 'zero', then the median flux is divided from each
+          observation's flux value to yield normalized fluxes with 1.0 as the
+          global median.
+        - if `normto` is 'globalmedian', then the global median flux value
+          across the entire time series is multiplied with each measurement.
+        - if `norm` is set to a `float`, then this number is multiplied with the
+          flux value for each measurement.
 
-    sigclip is either a single float or a list of two floats. in the first case,
-    the sigclip is applied symmetrically. in the second case, the first sigclip
-    in the list is applied to +ve magnitude deviations (fainter) and the second
-    sigclip in the list is appleid to -ve magnitude deviations (brighter).
+    errs : np.array or None
+        If this is provided, contains the measurement errors associated with
+        each measurement of flux/mag in time-series. Providing this kwarg will
+        add errbars to the output plot.
 
-    normto is either 'globalmedian', 'zero' or a float to normalize the mags
-    to. If it's False, no normalization will be done on the magnitude time
-    series. normmingap controls the minimum gap required to find possible
-    groupings in the light curve that may belong to a different instrument (so
-    may be displaced vertically)
+    out : str or StringIO/BytesIO object or None
+        - If `out` is a string, will save the plot to the specified file name.
+        - If `out` is a StringIO/BytesIO object, will save the plot to that file
+          handle. This can be useful to carry out additional operations on the
+          output binary stream, or convert it to base64 text for embedding in
+          HTML pages.
+        - If `out` is None, will save the plot to a file called
+          'magseries-plot.png' in the current working directory.
 
-    segmentmingap controls the minimum length of time (in days) required to
-    consider a timegroup in the light curve as a separate segment. This is
-    useful when the light curve consists of measurements taken over several
-    seasons, so there's lots of dead space in the plot that can be cut out to
-    zoom in on the interesting stuff. If segmentmingap is not None, the
-    magseries plot will be cut in this way.
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
 
-    plotdpi sets the DPI for PNG plots (default = 100).
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
 
-    out is one of:
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
 
-    - string name of a file to where the plot will be written
-    - StringIO/BytesIO object to where the plot will be written
+    normto : {'globalmedian', 'zero'} or a float
+        'globalmedian' -> norms each mag to the global median of the LC column
+        'zero'         -> norms each mag to zero
+        a float        -> norms each mag to this specified float value.
+
+    normmingap : float
+        This defines how much the difference between consecutive measurements is
+        allowed to be to consider them as parts of different timegroups. By
+        default it is set to 4.0 days.
+
+    timebin : float or None
+        The bin size to use to group together measurements closer than this
+        amount in time. This is in seconds. If this is None, no time-binning
+        will be performed.
+
+    yrange : list of two floats or None
+        This is used to provide a custom y-axis range to the plot. If None, will
+        automatically determine y-axis range.
+
+    segmentmingap : float or None
+        This controls the minimum length of time (in days) required to consider
+        a timegroup in the light curve as a separate segment. This is useful
+        when the light curve consists of measurements taken over several
+        seasons, so there's lots of dead space in the plot that can be cut out
+        to zoom in on the interesting stuff. If `segmentmingap` is not None, the
+        magseries plot will be cut in this way and the x-axis will show these
+        breaks.
+
+    plotdpi : int
+        Sets the resolution in DPI for PNG plots (default = 100).
+
+    Returns
+    -------
+
+    str or BytesIO/StringIO object
+        - If `out` is a str or None, the path to the generated plot file is
+          returned.
+        - If `out` is a StringIO/BytesIO object, will return the
+          StringIO/BytesIO object to which the plot was written.
 
     '''
 
@@ -379,110 +436,168 @@ def plot_mag_series(times,
         return os.path.abspath(outfile)
 
 
-def plot_magseries(times,
-                   mags,
-                   magsarefluxes=False,
-                   errs=None,
-                   out=None,
-                   sigclip=30.0,
-                   normto='globalmedian',
-                   normmingap=4.0,
-                   timebin=None,
-                   yrange=None,
-                   segmentmingap=100.0,
-                   plotdpi=100):
-    '''This wraps plot_mag_series.
-
-    '''
-
-    return plot_mag_series(times,
-                           mags,
-                           magsarefluxes=magsarefluxes,
-                           errs=errs,
-                           out=out,
-                           sigclip=sigclip,
-                           normto=normto,
-                           normmingap=normmingap,
-                           timebin=timebin,
-                           yrange=yrange,
-                           segmentmingap=100.0,
-                           plotdpi=plotdpi)
-
-
 
 #########################
 ## PHASED LIGHT CURVES ##
 #########################
 
-def plot_phased_mag_series(times,
-                           mags,
-                           period,
-                           magsarefluxes=False,
-                           errs=None,
-                           normto='globalmedian',
-                           normmingap=4.0,
-                           epoch='min',
-                           outfile=None,
-                           sigclip=30.0,
-                           phasewrap=True,
-                           phasesort=True,
-                           phasebin=None,
-                           plotphaselim=(-0.8,0.8),
-                           fitknotfrac=0.01,
-                           yrange=None,
-                           plotdpi=100,
-                           modelmags=None,
-                           modeltimes=None,
-                           modelerrs=None,
-                           xtimenotphase=False,
-                           xaxlabel='phase',
-                           yaxlabel=None):
-    '''This plots a phased magnitude time series using the period provided.
+def plot_phased_magseries(times,
+                          mags,
+                          period,
+                          epoch='min',
+                          fitknotfrac=0.01,
+                          errs=None,
+                          magsarefluxes=False,
+                          normto='globalmedian',
+                          normmingap=4.0,
+                          sigclip=30.0,
+                          phasewrap=True,
+                          phasesort=True,
+                          phasebin=None,
+                          plotphaselim=(-0.8,0.8),
+                          yrange=None,
+                          xtimenotphase=False,
+                          xaxlabel='phase',
+                          yaxlabel=None,
+                          modelmags=None,
+                          modeltimes=None,
+                          modelerrs=None,
+                          outfile=None,
+                          plotdpi=100):
+    '''Plots a phased magnitude/flux time-series using the period provided.
 
-    Args
-    ----
+    Parameters
+    ----------
 
-    times, mags:
-            ndarrays of time and magnitude time series values (flux
-            values if magsarefluxes = True)
+    times, mags : np.array
+        The mag/flux time-series to plot as a function of phase given `period`.
 
-    period:
-        the period to use to phase fold the time series.
+    period : float
+        The period to use to phase-fold the time-series. Should be the same unit
+        as `times` (usually in days)
 
-    errs (np.ndarray):
-        if None, does not show error bars (otherwise, it does).
-
-    epoch (float/None/str):
-        - if None, uses the min(times) as the epoch.
-        - if epoch is the string 'min', then fits a cubic spline to the
-          phased light curve using min(times), finds the magnitude minimum
-          from the fitted light curve, then uses the corresponding time value
-          as the epoch.
-        - if epoch is a float, then uses that directly to phase the light
+    epoch : 'min' or float or None
+        - If None, uses the `min(times)` as the epoch for phasing.
+        - If epoch is the string 'min', then fits a cubic spline to the phased
+          light curve using `min(times)` as the initial epoch, finds the
+          magnitude/flux minimum of this phased light curve fit, and finally
+          uses the that time value as the epoch. This is useful for plotting
+          planetary transits and eclipsing binary phased light curves so that
+          phase 0.0 corresponds to the mid-center time of primary eclipse (or
+          transit).
+        - If epoch is a float, then uses that directly to phase the light
           curve and as the epoch of the phased mag series plot.
 
-    modelmags, modeltimes, modelerrs (np.ndarray/None):
-        - if None, nothing happens.
-        - if np.ndarray, also overplots a model transit to the phased
-          lightcurve (e.g., fit using lcfit.mandelagol_fit_magseries).
+    fitknotfrac : float
+        If `epoch='min'`, this function will attempt to fit a cubic spline to
+        the phased light curve to find a time of light minimum as phase
+        0.0. This kwarg sets the number of knots to generate the spline as a
+        fraction of the total number of measurements in the input
+        time-series. By default, this is set so that 100 knots are used to
+        generate a spline for fitting the phased light curve consisting of 10000
+        measurements.
 
-    outfile (float/None/str):
-        - a string filename for the file where the plot will be written
-        - a StringIO/BytesIO object to where the plot will be written
-        - a matplotlib.axes.Axes object to where the plot will be written
-        - if None, plots to magseries-phased-plot.png in current dir
+    errs : np.array or None
+        If this is provided, contains the measurement errors associated with
+        each measurement of flux/mag in time-series. Providing this kwarg will
+        add errbars to the output plot.
 
-    plotdpi (int): sets the DPI for PNG plots.
+    magsarefluxes : bool
+        Indicates if the input `mags` array is actually an array of flux
+        measurements instead of magnitude measurements. If this is set to True,
+        then the plot y-axis will be set as appropriate for mag or fluxes.
 
-    xtimenotphase (bool):
-        if True, x axis gets units of time (multiplies phase by period).
+    normto : {'globalmedian', 'zero'} or a float
+        'globalmedian' -> norms each mag to the global median of the LC column
+        'zero'         -> norms each mag to zero
+        a float        -> norms each mag to this specified float value.
 
-    xaxlabel, yaxlabel (str): labels for x and y axes.
+    normmingap : float
+        This defines how much the difference between consecutive measurements is
+        allowed to be to consider them as parts of different timegroups. By
+        default it is set to 4.0 days.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    phasewrap : bool
+        If this is True, the phased time-series will be wrapped around phase
+        0.0.
+
+    phasesort : bool
+        If this is True, the phased time-series will be sorted in phase.
+
+    phasebin : float or None
+        If this is provided, indicates the bin size to use to group together
+        measurements closer than this amount in phase. This is in units of
+        phase. The binned phased light curve will be overplotted on top of the
+        phased light curve. Useful for when one has many measurement points and
+        needs to pick out a small trend in an otherwise noisy phased light
+        curve.
+
+    plotphaselim : sequence of two floats or None
+        The x-axis limits to use when making the phased light curve plot. By
+        default, this is (-0.8, 0.8), which places phase 0.0 at the center of
+        the plot and covers approximately two cycles in phase to make any trends
+        clear.
+
+    yrange : list of two floats or None
+        This is used to provide a custom y-axis range to the plot. If None, will
+        automatically determine y-axis range.
+
+    xtimenotphase : bool
+        If True, the x-axis gets units of time (multiplies phase by period).
+
+    xaxlabel : str
+        Sets the label for the x-axis.
+
+    yaxlabel : str or None
+        Sets the label for the y-axis. If this is None, the appropriate label
+        will be used based on the value of the `magsarefluxes` kwarg.
+
+    modeltimes, modelmags, modelerrs : np.array or None
+        If all of these are provided, then this function will overplot the
+        values of modeltimes and modelmags on top of the actual phased light
+        curve. This is useful for plotting variability models on top of the
+        light curve (e.g. plotting a Mandel-Agol transit model over the actual
+        phased light curve. These arrays will be phased using the already
+        provided period and epoch.
+
+    outfile : str or StringIO/BytesIO or matplotlib.axes.Axes or None
+        - a string filename for the file where the plot will be written.
+        - a StringIO/BytesIO object to where the plot will be written.
+        - a matplotlib.axes.Axes object to where the plot will be written.
+        - if None, plots to 'magseries-phased-plot.png' in current dir.
+
+    plotdpi : int
+        Sets the resolution in DPI for PNG plots (default = 100).
 
     Returns
     -------
 
-    as specified in the outfile kwarg.
+    str or StringIO/BytesIO or matplotlib.axes.Axes
+        - If `outfile` is a str or None, the path to the generated plot file is
+          returned.
+        - If `outfile` is a StringIO/BytesIO object, will return the
+          StringIO/BytesIO object to which the plot was written.
+        - If `outfile` is a matplotlib.axes.Axes object, will return the Axes
+          object with the plot elements added to it. One can then directly
+          include this Axes object in some other Figure.
 
     '''
 
@@ -733,55 +848,6 @@ def plot_phased_mag_series(times,
 
 
 
-def plot_phased_magseries(times,
-                          mags,
-                          period,
-                          magsarefluxes=False,
-                          errs=None,
-                          normto='globalmedian',
-                          normmingap=4.0,
-                          epoch='min',
-                          outfile=None,
-                          sigclip=30.0,
-                          phasewrap=True,
-                          phasesort=True,
-                          phasebin=None,
-                          plotphaselim=(-0.8,0.8),
-                          fitknotfrac=0.01,
-                          yrange=None,
-                          plotdpi=100,
-                          modelmags=None,
-                          modeltimes=None,
-                          modelerrs=None):
-    '''This wraps plot_phased_mag_series for consistent API with lcfit functions.
-
-    '''
-
-    return plot_phased_mag_series(
-        times,
-        mags,
-        period,
-        magsarefluxes=magsarefluxes,
-        errs=errs,
-        normto=normto,
-        normmingap=normmingap,
-        epoch=epoch,
-        outfile=outfile,
-        sigclip=sigclip,
-        phasewrap=phasewrap,
-        phasesort=phasesort,
-        phasebin=phasebin,
-        plotphaselim=plotphaselim,
-        fitknotfrac=fitknotfrac,
-        yrange=yrange,
-        plotdpi=plotdpi,
-        modelmags=modelmags,
-        modeltimes=modeltimes,
-        modelerrs=modelerrs
-    )
-
-
-
 ##########################
 ## PLOTTING FITS IMAGES ##
 ##########################
@@ -797,25 +863,82 @@ def skyview_stamp(ra, decl,
                   retry_failed=False,
                   savewcsheader=True,
                   verbose=False):
-    '''This is the internal version of the astroquery_skyview_stamp function.
+    '''This downloads a DSS FITS stamp centered on the coordinates specified.
 
-    Why this exists:
+    This wraps the function `astrobase.services.skyview.get_stamp`, which
+    downloads Digitized Sky Survey stamps in FITS format from the NASA SkyView
+    service:
 
-    - SkyView queries don't accept timeouts (should put in a PR for this)
-    - we can drop the dependency on astroquery (but add another on requests)
+    https://skyview.gsfc.nasa.gov/current/cgi/query.pl
 
-    flip = True will flip the image top to bottom.
+    Also adds some useful operations on top of the FITS file returned.
 
-    if convolvewith is an astropy.convolution kernel:
+    Parameters
+    ----------
 
-    http://docs.astropy.org/en/stable/convolution/kernels.html
+    ra, decl : float
+        The center coordinates for the stamp in decimal degrees.
 
-    this will return the stamp convolved with that kernel. This can be useful to
-    see effects of wide-field telescopes (like the HATNet and HATSouth lenses)
-    degrading the nominal 1 arcsec/px of DSS, causing blending of targets and
-    any variability.
+    survey : str
+        The survey name to get the stamp from. This is one of the
+        values in the 'SkyView Surveys' option boxes on the SkyView
+        webpage. Currently, we've only tested using 'DSS2 Red' as the value for
+        this kwarg, but the other ones should work in principle.
 
-    cachedir points to the astrobase stamp-cache directory.
+    flip : bool
+        Will flip the downloaded image top to bottom. This should usually be
+        True because matplotlib and FITS have different image coord origin
+        conventions. Alternatively, set this to False and use the
+        `origin='upper'` in any call to `matplotlib.pyplot.imshow` when plotting
+        this image.
+
+    convolvewith : astropy.convolution Kernel object or None
+        If `convolvewith` is an astropy.convolution Kernel object from:
+
+        http://docs.astropy.org/en/stable/convolution/kernels.html
+
+        then, this function will return the stamp convolved with that
+        kernel. This can be useful to see effects of wide-field telescopes (like
+        the HATNet and HATSouth lenses) degrading the nominal 1 arcsec/px of
+        DSS, causing blending of targets and any variability.
+
+    forcefetch : bool
+        If True, will disregard any existing cached copies of the stamp already
+        downloaded corresponding to the requested center coordinates and
+        redownload the FITS from the SkyView service.
+
+    cachedir : str
+        This is the path to the astrobase cache directory. All downloaded FITS
+        stamps are stored here as .fits.gz files so we can immediately respond
+        with the cached copy when a request is made for a coordinate center
+        that's already been downloaded.
+
+    timeout : float
+        Sets the timeout in seconds to wait for a response from the NASA SkyView
+        service.
+
+    retry_failed : bool
+        If the initial request to SkyView fails, and this is True, will retry
+        until it succeeds.
+
+    savewcsheader : bool
+        If this is True, also returns the WCS header of the downloaded FITS
+        stamp in addition to the FITS image itself. Useful for projecting object
+        coordinates onto image xy coordinates for visualization.
+
+    verbose : bool
+        If True, indicates progress.
+
+    Returns
+    -------
+
+    - If `savewcsheader=True`, returns a tuple:
+      (FITS stamp image as a numpy array, FITS header)
+
+    - If `savewcsheader=False`, returns only the FITS stamp image as numpy
+      array.
+
+    - If the stamp retrieval fails, returns None.
 
     '''
 
@@ -891,62 +1014,85 @@ def fits_finder_chart(
         grid=False,
         gridcolor='k'
 ):
-    '''This makes a finder chart from fitsfile with an optional object position
-    overlay.
+    '''This makes a finder chart for a given FITS with an optional object
+    position overlay.
 
-    Args
-    ----
+    Parameters
+    ----------
 
-    `fitsfile` is the FITS file to use to make the finder chart
+    fitsfile : str
+        `fitsfile` is the FITS file to use to make the finder chart.
 
-    `outfile` is the name of the output file. This can be a png or pdf or
-    whatever else matplotlib can write given a filename and extension.
+    outfile : str
+        `outfile` is the name of the output file. This can be a png or pdf or
+        whatever else matplotlib can write given a filename and extension.
 
-    If `wcsfrom` is None, the WCS to transform the RA/Dec to pixel x/y will be
-    taken from the FITS header of `fitsfile`. If this is not None, it must be a
-    FITS or similar file that contains a WCS header in its first extension.
+    fitsext : int
+        Sets the FITS extension in `fitsfile` to use to extract the image array
+        from.
 
-    `scale` sets the normalization for the FITS pixel values. This is an
-    astropy.visualization Interval object.
+    wcsfrom : str or None
+        If `wcsfrom` is None, the WCS to transform the RA/Dec to pixel x/y will
+        be taken from the FITS header of `fitsfile`. If this is not None, it
+        must be a FITS or similar file that contains a WCS header in its first
+        extension.
 
-    `stretch` sets the stretch function for mapping FITS pixel values to output
-    pixel values. This is an astropy.visualization Stretch object.
+    scale : astropy.visualization.Interval object
+        `scale` sets the normalization for the FITS pixel values. This is an
+        astropy.visualization Interval object.
+        See http://docs.astropy.org/en/stable/visualization/normalization.html
+        for details on `scale` and `stretch` objects.
 
-    See http://docs.astropy.org/en/stable/visualization/normalization.html for
-    details on `scale` and `stretch` objects.
+    stretch : astropy.visualization.Stretch object
+        `stretch` sets the stretch function for mapping FITS pixel values to
+        output pixel values. This is an astropy.visualization Stretch object.
+        See http://docs.astropy.org/en/stable/visualization/normalization.html
+        for details on `scale` and `stretch` objects.
 
-    `colormap` is a matplotlib color map object to use for the output image.
+    colormap : matplotlib Colormap object
+        `colormap` is a matplotlib color map object to use for the output image.
 
-    If `findersize` is None, the output image size will be set by the NAXIS1 and
-    NAXIS2 keywords in the input `fitsfile` FITS header. Otherwise, `findersize`
-    must be a tuple with the intended x and y size of the image in inches (all
-    output images will use a DPI = 100).
+    findersize : None or tuple of two ints
+        If `findersize` is None, the output image size will be set by the NAXIS1
+        and NAXIS2 keywords in the input `fitsfile` FITS header. Otherwise,
+        `findersize` must be a tuple with the intended x and y size of the image
+        in inches (all output images will use a DPI = 100).
 
-    `finder_coordlimits` sets x and y limits for the plot, effectively zooming
-    it in if these are smaller than the dimensions of the FITS image. This
-    should be a list of the form: [minra, maxra, mindecl, maxdecl] all in
-    decimal degrees.
+    finder_coordlimits : list of four floats or None
+        If not None, `finder_coordlimits` sets x and y limits for the plot,
+        effectively zooming it in if these are smaller than the dimensions of
+        the FITS image. This should be a list of the form: [minra, maxra,
+        mindecl, maxdecl] all in decimal degrees.
 
-    `overlay_ra` and `overlay_decl` are ndarrays containing the RA and Dec
-    values to overplot on the image as an overlay.
+    overlay_ra, overlay_decl : np.array or None
+        `overlay_ra` and `overlay_decl` are ndarrays containing the RA and Dec
+        values to overplot on the image as an overlay. If these are both None,
+        then no overlay will be plotted.
 
-    `overlay_pltopts` controls how the overlay points will be plotted. This a
-    dict with standard matplotlib marker, etc. kwargs.
+    overlay_pltopts : dict
+        `overlay_pltopts` controls how the overlay points will be plotted. This
+        a dict with standard matplotlib marker, etc. kwargs as key-val pairs,
+        e.g. 'markersize', 'markerfacecolor', etc. The default options make red
+        outline circles at the location of each object in the overlay.
 
-    `overlay_zoomcontain` controls if the finder chart will be zoomed to just
-    contain the overlayed points. Everything outside the footprint of these
-    points will be discarded.
+    overlay_zoomcontain : bool
+        `overlay_zoomcontain` controls if the finder chart will be zoomed to
+        just contain the overlayed points. Everything outside the footprint of
+        these points will be discarded.
 
-    `grid` sets if a grid will be made on the output image.
+    grid : bool
+        `grid` sets if a grid will be made on the output image.
 
-    `gridcolor` sets the color of the grid lines. This is a usual matplotib
-    color spec string.
-
+    gridcolor : str
+        `gridcolor` sets the color of the grid lines. This is a usual matplotib
+        color spec string.
 
     Returns
     -------
 
-    The filename of the generated output image if successful. None otherwise.
+    str or None
+        The filename of the generated output image if successful. None
+        otherwise.
 
     '''
 
@@ -1129,11 +1275,51 @@ METHODSHORTLABELS = {'gls':'Generalized L-S',
 
 def plot_periodbase_lsp(lspinfo, outfile=None, plotdpi=100):
 
-    '''Makes a plot of periodograms obtained from periodbase functions.
+    '''Makes a plot of periodograms obtained from `periodbase` functions.
 
-    If lspinfo is a dictionary, uses the information directly. If it's a
-    filename string ending with .pkl, then this assumes it's a periodbase LSP
-    pickle and loads the corresponding info from it.
+    This takes the output dict produced by any `astrobase.periodbase`
+    period-finder function or a pickle filename containing such a dict and makes
+    a periodogram plot.
+
+    Parameters
+    ----------
+
+    lspinfo : dict or str
+        If lspinfo is a dict, it must be a dict produced by an
+        `astrobase.periodbase` period-finder function or a dict from your own
+        period-finder function or routine that is of the form below with at
+        least these keys:
+
+        {'periods': np.array of all periods searched by the period-finder,
+         'lspvals': np.array of periodogram power value for each period,
+         'bestperiod': a float value that is the period with the highest peak
+                       in the periodogram, i.e. the most-likely actual period,
+         'method': a three-letter code naming the period-finder used; must be
+                   one of the keys in the `METHODSHORTLABELS` dict above,
+         'nbestperiods': a list of the periods corresponding to periodogram
+                         peaks (`nbestlspvals` below) to annotate on the
+                         periodogram plot so they can be called out visually,
+         'nbestlspvals': a list of the power values associated with periodogram
+                         peaks to annotate on the periodogram plot so they can
+                         be called out visually; should be the same length as
+                         `nbestperiods` above}
+
+        If lspinfo is a str, then it must be a path to a pickle file that
+        contains a dict of the form described above.
+
+    outfile : str or None
+        If this is a str, will write the periodogram plot to the file specified
+        by this string. If this is None, will write to a file called
+        'lsp-plot.png' in the current working directory.
+
+    plotdpi : int
+        Sets the resolution in DPI of the output periodogram plot PNG file.
+
+    Returns
+    -------
+
+    str
+        Absolute path to the periodogram plot file created.
 
     '''
 

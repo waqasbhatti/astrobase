@@ -299,7 +299,6 @@ def get_epochs_given_midtimes_and_period(
         t0_percentile=None,
         verbose=False
 ):
-
     '''This calculates the future epochs for a transit, given a period and a
     starting epoch.
 
