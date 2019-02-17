@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""lcproc_aws.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2018
+"""awsrun.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2018
 License: MIT - see the LICENSE file for the full text.
 
 This contains lcproc worker loops useful for AWS processing of light curves.
@@ -179,8 +179,9 @@ except ImportError:
         "AWS secret key config for this module."
     )
 
-from . import awsutils
-from . import lcproc
+from .. import awsutils
+from .periodsearch import runpf
+from .checkplotproc import runcp
 
 
 ####################################
@@ -627,7 +628,7 @@ def runcp_consumer_loop(
                         pf_pickle = None
 
                     # now runcp
-                    cpfs = lcproc.runcp(
+                    cpfs = runcp(
                         pf_pickle,
                         workdir,
                         workdir,
@@ -1169,7 +1170,7 @@ def runpf_consumer_loop(
                     runpf_args = (lc_filename, args[0])
 
                     # now runpf
-                    pfresult = lcproc.runpf(
+                    pfresult = runpf(
                         *runpf_args,
                         **kwargs
                     )
