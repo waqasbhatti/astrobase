@@ -1251,8 +1251,8 @@ PLOTYLABELS = {'gls':'Generalized Lomb-Scargle normalized power',
                'mav':r'Schwarzenberg-Czerny AoVMH $\Theta$',
                'bls':'Box Least-squared Search SR',
                'acf':'Autocorrelation Function',
-               'sls':'Lomb-Scargle normalized power',
-               'win':'Lomb-Scargle normalized power'}
+               'win':'Lomb-Scargle normalized power',
+               'ext':'External period-finder power'}
 
 METHODLABELS = {'gls':'Generalized Lomb-Scargle periodogram',
                 'pdm':'Stellingwerf phase-dispersion minimization',
@@ -1260,8 +1260,8 @@ METHODLABELS = {'gls':'Generalized Lomb-Scargle periodogram',
                 'mav':'Schwarzenberg-Czerny AoV multi-harmonic',
                 'bls':'Box Least-squared Search',
                 'acf':'McQuillan+ ACF Period Search',
-                'sls':'Lomb-Scargle periodogram (Scipy)',
-                'win':'Timeseries Sampling Lomb-Scargle periodogram'}
+                'win':'Timeseries Sampling Lomb-Scargle periodogram',
+                'ext':'External period-finder periodogram'}
 
 METHODSHORTLABELS = {'gls':'Generalized L-S',
                      'pdm':'Stellingwerf PDM',
@@ -1269,8 +1269,8 @@ METHODSHORTLABELS = {'gls':'Generalized L-S',
                      'mav':'Schwarzenberg-Czerny AoVMH',
                      'acf':'McQuillan+ ACF',
                      'bls':'BLS',
-                     'sls':'L-S (Scipy)',
-                     'win':'Sampling L-S'}
+                     'win':'Sampling L-S',
+                     'ext':'External period-finder'}
 
 
 def plot_periodbase_lsp(lspinfo, outfile=None, plotdpi=100):
@@ -1295,7 +1295,7 @@ def plot_periodbase_lsp(lspinfo, outfile=None, plotdpi=100):
          'bestperiod': a float value that is the period with the highest peak
                        in the periodogram, i.e. the most-likely actual period,
          'method': a three-letter code naming the period-finder used; must be
-                   one of the keys in the `METHODSHORTLABELS` dict above,
+                   one of the keys in the `METHODLABELS` dict above,
          'nbestperiods': a list of the periods corresponding to periodogram
                          peaks (`nbestlspvals` below) to annotate on the
                          periodogram plot so they can be called out visually,

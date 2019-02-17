@@ -163,7 +163,38 @@ def _make_periodogram(axes,
                       finderconvolve,
                       verbose=True,
                       findercachedir='~/.astrobase/stamp-cache'):
-    '''makes the periodogram, objectinfo, and finder tile.
+    '''Makes periodogram, objectinfo, and finder tile for `checkplot_png` and
+    `twolsp_checkplot_png`.
+
+    Parameters
+    ----------
+
+    axes : matplotlib.axes.Axes object
+        The Axes object which will contain the plot being made.
+
+    lspinfo : dict
+        Dict containing results from a period-finder in `astrobase.periodbase`
+        or a dict that corresponds to that format.
+
+    objectinfo : dict
+        Dict containing basic info about the object being processed.
+
+    findercmap : matplotlib Colormap object
+        The Colormap object to use for the finder chart image.
+
+    finderconvolve : astropy.convolution.Kernel object or None
+        If not None, the Kernel object to use for convolving the finder image.
+
+    verbose : bool
+        If True, indicates progress.
+
+    findercachedir : str
+        The directory where the FITS finder images are downloaded and cached.
+
+    Returns
+    -------
+
+    Does not return anything, works on the input Axes object directly.
 
     '''
 
@@ -391,7 +422,28 @@ def _make_magseries_plot(axes,
                          serrs,
                          magsarefluxes=False,
                          ms=2.0):
-    '''makes the magseries plot tile.
+    '''Makes the mag-series plot tile for `checkplot_png` and
+    `twolsp_checkplot_png`.
+
+    axes : matplotlib.axes.Axes object
+        The Axes object where the generated plot will go.
+
+    stimes, smags, serrs : np.array
+        The mag/flux time-series arrays along with associated errors. These
+        should all have been run through nan-stripping and sigma-clipping
+        beforehand.
+
+    magsarefluxes : bool
+        If True, indicates the input time-series is fluxes and not mags so the
+        plot y-axis direction and range can be set appropriately/
+
+    ms : float
+        The `markersize` kwarg to use when making the mag-series plot.
+
+    Returns
+    -------
+
+    Does not return anything, works on the input Axes object directly.
 
     '''
 
@@ -452,10 +504,97 @@ def _make_phased_magseries_plot(axes,
                                 verbose=True,
                                 phasems=2.0,
                                 phasebinms=4.0):
-    '''makes the phased magseries plot tile.
+    '''Makes the phased magseries plot tile for the `checkplot_png` and
+    `twolsp_checkplot_png` functions.
 
-    if xliminsetmode = True, then makes a zoomed-in plot with the provided
-    plotxlim as the main x limits, and the full plot as an inset.
+    Parameters
+    ----------
+
+    axes : matplotlib.axes.Axes object
+        The Axes object where the generated plot will be written.
+
+    periodind : int
+        The index of the current best period being processed in the lspinfo
+        dict.
+
+    stimes, smags, serrs : np.array
+        The mag/flux time-series arrays along with associated errors. These
+        should all have been run through nan-stripping and sigma-clipping
+        beforehand.
+
+    varperiod : float or None
+        The period to use for this phased light curve plot tile.
+
+    varepoch : 'min' or float or list of lists or None
+        The epoch to use for this phased light curve plot tile. If this is a
+        float, will use the provided value directly. If this is 'min', will
+        automatically figure out the time-of-minimum of the phased light
+        curve. If this is None, will use the mimimum value of `stimes` as the
+        epoch of the phased light curve plot. If this is a list of lists, will
+        use the provided value of `lspmethodind` to look up the current
+        period-finder method and the provided value of `periodind` to look up
+        the epoch associated with that method and the current period. This is
+        mostly only useful when `twolspmode` is True.
+
+    phasewrap : bool
+        If this is True, the phased time-series will be wrapped around
+        phase 0.0.
+
+    phasesort : bool
+        If True, will sort the phased light curve in order of increasing phase.
+
+    phasebin: float
+        The bin size to use to group together measurements closer than this
+        amount in phase. This is in units of phase. If this is a float, a
+        phase-binned version of the phased light curve will be overplotted on
+        top of the regular phased light curve.
+
+    minbinelems : int
+        The minimum number of elements required per bin to include it in the
+        output.
+
+    plotxlim : sequence of two floats or None
+        The x-range (min, max) of the phased light curve plot. If None, will be
+        determined automatically.
+
+    lspmethod : str
+        One of the three-letter keys corresponding to period-finder method names
+        in the `astrobase.plotbase.METHODSHORTLABELS` dict. Used to set the plot
+        title correctly.
+
+    lspmethodind : int
+        If `twolspmode` is set, this will be used to look up the correct epoch
+        associated with the current period-finder method and period.
+
+    xliminsetmode : bool
+        If this is True, the generated phased light curve plot will use the
+        values of `plotxlim` as the main plot x-axis limits (i.e. zoomed-in if
+        `plotxlim` is a range smaller than the full phase range), and will show
+        the full phased light curve plot as an smaller inset. Useful for
+        planetary transit light curves.
+
+    twolspmode : bool
+        If this is True, will use the `lspmethodind` and `periodind` to look up
+        the correct values of epoch, etc. in the provided `varepoch` list of
+        lists for plotting purposes.
+
+    magsarefluxes : bool
+        If True, indicates the input time-series is fluxes and not mags so the
+        plot y-axis direction and range can be set appropriately.
+
+    verbose : bool
+        If True, indicates progress.
+
+    phasems : float
+        The marker size to use for the main phased light curve plot symbols.
+
+    phasebinms : float
+        The marker size to use for the binned phased light curve plot symbols.
+
+    Returns
+    -------
+
+    Does not return anything, works on the input Axes object directly.
 
     '''
 
@@ -707,6 +846,7 @@ def checkplot_png(lspinfo,
                   times,
                   mags,
                   errs,
+                  varepoch='min',
                   magsarefluxes=False,
                   objectinfo=None,
                   findercmap='gray_r',
@@ -714,147 +854,204 @@ def checkplot_png(lspinfo,
                   findercachedir='~/.astrobase/stamp-cache',
                   normto='globalmedian',
                   normmingap=4.0,
-                  outfile=None,
                   sigclip=4.0,
-                  varepoch='min',
                   phasewrap=True,
                   phasesort=True,
                   phasebin=0.002,
                   minbinelems=7,
                   plotxlim=(-0.8,0.8),
                   xliminsetmode=False,
-                  plotdpi=100,
                   bestperiodhighlight=None,
+                  plotdpi=100,
+                  outfile=None,
                   verbose=True):
-    '''This makes a checkplot for an info dict from a period-finding routine.
+    '''This makes a checkplot PNG using the output from a period-finder routine.
 
     A checkplot is a 3 x 3 grid of plots like so:
 
-    [LSP plot + objectinfo] [     unphased LC     ] [ period 1 phased LC ]
-    [period 1 phased LC /2] [period 1 phased LC x2] [ period 2 phased LC ]
-    [ period 3 phased LC  ] [period 4 phased LC   ] [ period 5 phased LC ]
+    [periodogram + objectinfo] [     unphased LC     ] [ period 1 phased LC ]
+    [  period 1 phased LC /2 ] [period 1 phased LC x2] [ period 2 phased LC ]
+    [   period 3 phased LC   ] [period 4 phased LC   ] [ period 5 phased LC ]
 
-    This is used to sanity check the five best periods obtained from an LSP
-    function in periodbase.
+    This is used to sanity check the five best periods obtained from a
+    period-finder function in `astrobase.periodbase` or from your own
+    period-finder routines if their results can be turned into a dict with the
+    format shown below.
 
-    lspinfo is either a dict or a Python pickle filename containing a dict that
-    should look something like the dict below, containing the output from your
-    period search routine. The key 'lspvals' is the spectral power or SNR
-    obtained from Lomb-Scargle, PDM, AoV, or BLS. The keys 'nbestperiods' and
-    'nbestlspvals' contain the best five periods and their respective peaks
-    chosen by your period search routine (usually the highest SNR or highest
-    power peaks in the spectrum).
+    Parameters
+    ----------
 
-    {'bestperiod':7.7375425564838061,
-     'lspvals':array([ 0.00892461,  0.0091704 ,  0.00913682,...]),
-     'periods':array([ 8.      ,  7.999936,  7.999872, ...]),
-     'nbestperiods':[7.7375425564838061,
-                     7.6370856881010738,
-                     7.837604827964415,
-                     7.5367037472486667,
-                     7.9377048920074627],
-     'nbestlspvals':[0.071409790831114872,
-                     0.055157963469682415,
-                     0.055126754408175715,
-                     0.023441268126990749,
-                     0.023239128705778048],
-     'method':'gls'}
+    lspinfo : dict or str
+        If this is a dict, it must be a dict produced by an
+        `astrobase.periodbase` period-finder function or a dict from your own
+        period-finder function or routine that is of the form below with at
+        least these keys:
 
-    The 'method' key-val pair decides what kind of period finding method was
-    run. This is used to label the periodogram plot correctly. The following
-    values are recognized.
+        {'periods': np.array of all periods searched by the period-finder,
+         'lspvals': np.array of periodogram power value for each period,
+         'bestperiod': a float value that is the period with the highest peak
+                       in the periodogram, i.e. the most-likely actual period,
+         'method': a three-letter code naming the period-finder used; must be
+                   one of the keys in the `astrobase.periodbase.METHODLABELS`
+                   dict,
+         'nbestperiods': a list of the periods corresponding to periodogram
+                         peaks (`nbestlspvals` below) to annotate on the
+                         periodogram plot so they can be called out visually,
+         'nbestlspvals': a list of the power values associated with periodogram
+                         peaks to annotate on the periodogram plot so they can
+                         be called out visually; should be the same length as
+                         `nbestperiods` above}
 
-    'gls' -> generalized Lomb-Scargle (e.g., from periodbase.pgen_lsp)
-    'pdm' -> Stellingwerf PDM (e.g., from periodbase.stellingwerf_pdm)
-    'aov' -> Schwarzenberg-Czerny AoV (e.g., from periodbase.aov_periodfind)
-    'bls' -> Box Least-squared Search (e.g., from periodbase.bls_parallel_pfind)
-    'sls' -> Lomb-Scargle from Scipy (e.g., from periodbase.scipylsp_parallel)
+        `nbestperiods` and `nbestlspvals` must have at least 5 elements each,
+        e.g. describing the five 'best' (highest power) peaks in the
+        periodogram.
 
-    magsarefluxes = True means the values provided in the mags input array are
-    actually fluxes; this affects the sigma-clipping and plotting of light
-    curves.
+        If lspinfo is a str, then it must be a path to a pickle file (ending
+        with the extension '.pkl' or '.pkl.gz') that contains a dict of the form
+        described above.
 
-    If a dict is passed to objectinfo, this function will use it to figure out
-    where in the sky the checkplotted object is, and put the finding chart plus
-    some basic info into the checkplot. The objectinfo dict should look
-    something like those produced for HAT light curves using the reader
-    functions in the astrobase.hatlc module, e.g.:
+    times, mags, errs : np.array
+        The mag/flux time-series arrays to process along with associated errors.
 
-    {'bmag': 17.669,
-     'decl': -63.933598,
-     'hatid': 'HAT-786-0021445',
-     'objectid': 'HAT-786-0021445',
-     'hmag': 13.414,
-     'jmag': 14.086,
-     'kmag': 13.255,
-     'ndet': 10850,
-     'network': 'HS',
-     'pmdecl': -19.4,
-     'pmdecl_err': 5.1,
-     'pmra': 29.3,
-     'pmra_err': 4.1,
-     'ra': 23.172678,
-     'sdssg': 17.093,
-     'sdssi': 15.382,
-     'sdssr': 15.956,
-     'stations': 'HS02,HS04,HS06',
-     'twomassid': '01324144-6356009 ',
-     'ucac4id': '12566701',
-     'vmag': 16.368}
-
-    At a minimum, you must have the following fields: 'objectid', 'ra',
-    'decl'. If 'jmag', 'kmag', 'bmag', 'vmag', 'sdssr', and 'sdssi' are also
-    present, the following quantities will be calculated: B-V, J-K, and i-J. If
-    'pmra' and 'pmdecl' are present as well, the total proper motion and reduced
-    J magnitude proper motion will be calculated.
-
-    findercmap sets the matplotlib colormap of the downloaded finder chart:
-
-    http://matplotlib.org/examples/color/colormaps_reference.html
-
-    finderconvolve convolves the finder FITS image with the given
-    astropy.convolution kernel:
-
-    http://docs.astropy.org/en/stable/convolution/kernels.html
-
-    This can be useful to see effects of wide-field telescopes with large pixel
-    sizes (like HAT) on the blending of sources.
-
-    varepoch sets the time of minimum light finding strategy for the checkplot:
+    varepoch : 'min' or float or None or list of lists
+        This sets the time of minimum light finding strategy for the checkplot:
 
                                                the epoch used for all phased
-    if varepoch is None                     -> light curve plots will be
-                                               min(times)
+        If `varepoch` is None               -> light curve plots will be
+                                               `min(times)`.
 
-    if varepoch is a single string == 'min' -> automatic epoch finding for all
-                                               periods using light curve fits
+        If `varepoch='min'`                 -> automatic epoch finding for all
+                                               periods using light curve fits.
 
-    if varepoch is a single float           -> this epoch will be used for all
+        If varepoch is a single float       -> this epoch will be used for all
                                                phased light curve plots
 
-    if varepoch is a list of floats            each epoch will be applied to
-    with length == len(nbestperiods)        -> the phased light curve for each
-    from period-finder results                 period specifically
+        If varepoch is a list of floats        each epoch will be applied to
+        with length = `len(nbestperiods)+2` -> the phased light curve for each
+        from period-finder results             period specifically
 
-    NOTE: for checkplot_png, if you use a list for varepoch, it must be of
-    length len(lspinfo['nbestperiods']) + 2, because we insert half and twice
-    the period into the best periods list to make those phased LC plots.
+        If you use a list for varepoch, it must be of length
+        `len(lspinfo['nbestperiods']) + 2`, because we insert half and twice the
+        period into the best periods list to make those phased LC plots.
 
-    findercachedir is the directory where the downloaded stamp FITS files
-    go. Repeated calls to this function will then use the cached version of the
-    stamp if the finder coordinates don't change.
+    magsarefluxes : bool
+        If True, indicates the input time-series is fluxes and not mags so the
+        plot y-axis direction and range can be set appropriately/
 
-    bestperiodhighlight sets whether user wants a background on the phased light
-    curve from each periodogram type to distinguish them from others. this is an
-    HTML hex color specification. If this is None, no highlight will be added.
+    objectinfo : dict or None
+        If provided, this is a dict containing information on the object whose
+        light curve is being processed. This function will then be able to look
+        up and download a finder chart for this object and write that to the
+        output checkplot PNG image.The `objectinfo` dict must be of the form and
+        contain at least the keys described below:
 
-    xliminsetmode = True sets up the phased mag series plot to show a zoomed-in
-    portion (set by plotxlim) as the main plot and an inset version of the full
-    phased light curve from phase 0.0 to 1.0. This can be useful if searching
-    for small dips near phase 0.0 caused by planetary transits for example.
+        {'objectid': the name of the object,
+         'ra': the right ascension of the object in decimal degrees,
+         'decl': the declination of the object in decimal degrees,
+         'ndet': the number of observations of this object}
 
-    verbose = False turns off many of the informational messages. Useful for
-    when an external function is driving lots of checkplot calls.
+        You can also provide magnitudes and proper motions of the object using
+        the following keys and the appropriate values in the `objectinfo`
+        dict. These will be used to calculate colors, total and reduced proper
+        motion, etc. and display these in the output checkplot PNG.
+
+        - SDSS mag keys: 'sdssu', 'sdssg', 'sdssr', 'sdssi', 'sdssz'
+        - 2MASS mag keys: 'jmag', 'hmag', 'kmag'
+        - Cousins mag keys: 'bmag', 'vmag'
+        - GAIA specific keys: 'gmag', 'teff'
+        - proper motion keys: 'pmra', 'pmdecl'
+
+    findercmap : str or matplotlib.cm.ColorMap object
+        The Colormap object to use for the finder chart image.
+
+    finderconvolve : astropy.convolution.Kernel object or None
+        If not None, the Kernel object to use for convolving the finder image.
+
+    findercachedir : str
+        The directory where the FITS finder images are downloaded and cached.
+
+    normto : {'globalmedian', 'zero'} or a float
+        'globalmedian' -> norms each mag to the global median of the LC column
+        'zero'         -> norms each mag to zero
+        a float        -> norms each mag to this specified float value.
+
+    normmingap : float
+        This defines how much the difference between consecutive measurements is
+        allowed to be to consider them as parts of different timegroups. By
+        default it is set to 4.0 days.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    phasewrap : bool
+        If this is True, the phased time-series will be wrapped around phase
+        0.0.
+
+    phasesort : bool
+        If this is True, the phased time-series will be sorted in phase.
+
+    phasebin : float or None
+        If this is provided, indicates the bin size to use to group together
+        measurements closer than this amount in phase. This is in units of
+        phase. The binned phased light curve will be overplotted on top of the
+        phased light curve. Useful for when one has many measurement points and
+        needs to pick out a small trend in an otherwise noisy phased light
+        curve.
+
+    minbinelems : int
+        The minimum number of elements in each phase bin.
+
+    plotxlim : sequence of two floats or None
+        The x-axis limits to use when making the phased light curve plot. By
+        default, this is (-0.8, 0.8), which places phase 0.0 at the center of
+        the plot and covers approximately two cycles in phase to make any trends
+        clear.
+
+    xliminsetmode : bool
+        If this is True, the generated phased light curve plot will use the
+        values of `plotxlim` as the main plot x-axis limits (i.e. zoomed-in if
+        `plotxlim` is a range smaller than the full phase range), and will show
+        the full phased light curve plot as an smaller inset. Useful for
+        planetary transit light curves.
+
+    bestperiodhighlight : str or None
+        If not None, this is a str with a matplotlib color specification to use
+        as the background color to highlight the phased light curve plot of the
+        'best' period and epoch combination. If None, no highlight will be
+        applied.
+
+    outfile : str or None
+        The file name of the file to save the checkplot to. If this is None,
+        will write to a file called 'checkplot.png' in the current working
+        directory.
+
+    plotdpi : int
+        Sets the resolution in DPI for PNG plots (default = 100).
+
+    verbose : bool
+        If False, turns off many of the informational messages. Useful for
+        when an external function is driving lots of `checkplot_png` calls.
+
+    Returns
+    -------
+
+    str
+        The file path to the generated checkplot PNG file.
 
     '''
 
@@ -1028,6 +1225,7 @@ def twolsp_checkplot_png(lspinfo1,
                          times,
                          mags,
                          errs,
+                         varepoch='min',
                          magsarefluxes=False,
                          objectinfo=None,
                          findercmap='gray_r',
@@ -1035,28 +1233,27 @@ def twolsp_checkplot_png(lspinfo1,
                          findercachedir='~/.astrobase/stamp-cache',
                          normto='globalmedian',
                          normmingap=4.0,
-                         outfile=None,
                          sigclip=4.0,
-                         varepoch='min',
                          phasewrap=True,
                          phasesort=True,
                          phasebin=0.002,
                          minbinelems=7,
                          plotxlim=(-0.8,0.8),
-                         xliminsetmode=False,
-                         plotdpi=100,
-                         bestperiodhighlight=None,
-                         verbose=True,
+                         unphasedms=2.0,
                          phasems=2.0,
                          phasebinms=4.0,
-                         unphasedms=2.0):
+                         xliminsetmode=False,
+                         bestperiodhighlight=None,
+                         plotdpi=100,
+                         outfile=None,
+                         verbose=True):
     '''This makes a checkplot using results from two independent period-finders.
 
-    Adapted from Luke Bouma's implementation of the same. This makes a special
-    checkplot that uses two lspinfo dictionaries, from two independent
-    period-finding methods. For EBs, it's probably best to use Stellingwerf PDM
-    or Schwarzenberg-Czerny AoV as one of these, and the Box Least-squared
-    Search method as the other one.
+    Adapted from Luke Bouma's implementation of a similar function in his
+    work. This makes a special checkplot that uses two lspinfo dictionaries,
+    from two independent period-finding methods. For EBs, it's probably best to
+    use Stellingwerf PDM or Schwarzenberg-Czerny AoV as one of these, and the
+    Box Least-squared Search method as the other one.
 
     The checkplot layout in this case is:
 
@@ -1071,27 +1268,192 @@ def twolsp_checkplot_png(lspinfo1,
     pgram2 is the plot for the periodogram in the lspinfo2 dict
     pgram2 P1, P2, and P3 are the best three periods from lspinfo2
 
-    All other args and kwargs are the same as checkplot_png. Note that we take
-    the output file name from lspinfo1 if lspinfo1 is a string filename pointing
-    to a (gzipped) pickle containing the results dict from a period-finding
-    routine similar to those in periodbase.
+    Note that we take the output file name from lspinfo1 if lspinfo1 is a string
+    filename pointing to a (gzipped) pickle containing the results dict from a
+    period-finding routine similar to those in periodbase.
 
-    varepoch sets the time of minimum light finding strategy for the checkplot:
+    Parameters
+    ----------
+
+    lspinfo1, lspinfo2 : dict or str
+        If this is a dict, it must be a dict produced by an
+        `astrobase.periodbase` period-finder function or a dict from your own
+        period-finder function or routine that is of the form below with at
+        least these keys:
+
+        {'periods': np.array of all periods searched by the period-finder,
+         'lspvals': np.array of periodogram power value for each period,
+         'bestperiod': a float value that is the period with the highest peak
+                       in the periodogram, i.e. the most-likely actual period,
+         'method': a three-letter code naming the period-finder used; must be
+                   one of the keys in the `astrobase.periodbase.METHODLABELS`
+                   dict,
+         'nbestperiods': a list of the periods corresponding to periodogram
+                         peaks (`nbestlspvals` below) to annotate on the
+                         periodogram plot so they can be called out visually,
+         'nbestlspvals': a list of the power values associated with periodogram
+                         peaks to annotate on the periodogram plot so they can
+                         be called out visually; should be the same length as
+                         `nbestperiods` above}
+
+        `nbestperiods` and `nbestlspvals` must have at least 3 elements each,
+        e.g. describing the three 'best' (highest power) peaks in the
+        periodogram.
+
+        If lspinfo is a str, then it must be a path to a pickle file (ending
+        with the extension '.pkl' or '.pkl.gz') that contains a dict of the form
+        described above.
+
+    times, mags, errs : np.array
+        The mag/flux time-series arrays to process along with associated errors.
+
+    varepoch : 'min' or float or None or list of lists
+        This sets the time of minimum light finding strategy for the checkplot:
 
                                                the epoch used for all phased
-    if varepoch is None                     -> light curve plots will be
-                                               min(times)
+        If `varepoch` is None               -> light curve plots will be
+                                               `min(times)`.
 
-    if varepoch is a single string == 'min' -> automatic epoch finding for all
-                                               periods using light curve fits
+        If `varepoch='min'`                 -> automatic epoch finding for all
+                                               periods using light curve fits.
 
-    if varepoch is a single float           -> this epoch will be used for all
+        If varepoch is a single float       -> this epoch will be used for all
                                                phased light curve plots
 
-    if varepoch is a list of lists             each epoch will be applied each
-    of floats with length == 3              -> to the phased light curve for
-    (i.e. for each of the best 3 periods       each period from each
-     from the two period-finder results)       period-finder specifically
+        If varepoch is a list of floats        each epoch will be applied to
+        with length = `len(nbestperiods)` ->   the phased light curve for each
+        from period-finder results             period specifically
+
+        If you use a list for varepoch, it must be of length
+        `len(lspinfo['nbestperiods'])`.
+
+    magsarefluxes : bool
+        If True, indicates the input time-series is fluxes and not mags so the
+        plot y-axis direction and range can be set appropriately/
+
+    objectinfo : dict or None
+        If provided, this is a dict containing information on the object whose
+        light curve is being processed. This function will then be able to look
+        up and download a finder chart for this object and write that to the
+        output checkplot PNG image.The `objectinfo` dict must be of the form and
+        contain at least the keys described below:
+
+        {'objectid': the name of the object,
+         'ra': the right ascension of the object in decimal degrees,
+         'decl': the declination of the object in decimal degrees,
+         'ndet': the number of observations of this object}
+
+        You can also provide magnitudes and proper motions of the object using
+        the following keys and the appropriate values in the `objectinfo`
+        dict. These will be used to calculate colors, total and reduced proper
+        motion, etc. and display these in the output checkplot PNG.
+
+        - SDSS mag keys: 'sdssu', 'sdssg', 'sdssr', 'sdssi', 'sdssz'
+        - 2MASS mag keys: 'jmag', 'hmag', 'kmag'
+        - Cousins mag keys: 'bmag', 'vmag'
+        - GAIA specific keys: 'gmag', 'teff'
+        - proper motion keys: 'pmra', 'pmdecl'
+
+    findercmap : str or matplotlib.cm.ColorMap object
+        The Colormap object to use for the finder chart image.
+
+    finderconvolve : astropy.convolution.Kernel object or None
+        If not None, the Kernel object to use for convolving the finder image.
+
+    findercachedir : str
+        The directory where the FITS finder images are downloaded and cached.
+
+    normto : {'globalmedian', 'zero'} or a float
+        'globalmedian' -> norms each mag to the global median of the LC column
+        'zero'         -> norms each mag to zero
+        a float        -> norms each mag to this specified float value.
+
+    normmingap : float
+        This defines how much the difference between consecutive measurements is
+        allowed to be to consider them as parts of different timegroups. By
+        default it is set to 4.0 days.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    phasewrap : bool
+        If this is True, the phased time-series will be wrapped around phase
+        0.0.
+
+    phasesort : bool
+        If this is True, the phased time-series will be sorted in phase.
+
+    phasebin : float or None
+        If this is provided, indicates the bin size to use to group together
+        measurements closer than this amount in phase. This is in units of
+        phase. The binned phased light curve will be overplotted on top of the
+        phased light curve. Useful for when one has many measurement points and
+        needs to pick out a small trend in an otherwise noisy phased light
+        curve.
+
+    minbinelems : int
+        The minimum number of elements in each phase bin.
+
+    plotxlim : sequence of two floats or None
+        The x-axis limits to use when making the phased light curve plot. By
+        default, this is (-0.8, 0.8), which places phase 0.0 at the center of
+        the plot and covers approximately two cycles in phase to make any trends
+        clear.
+
+    unphasedms : float
+        The marker size to use for the main unphased light curve plot symbols.
+
+    phasems : float
+        The marker size to use for the main phased light curve plot symbols.
+
+    phasebinms : float
+        The marker size to use for the binned phased light curve plot symbols.
+
+    xliminsetmode : bool
+        If this is True, the generated phased light curve plot will use the
+        values of `plotxlim` as the main plot x-axis limits (i.e. zoomed-in if
+        `plotxlim` is a range smaller than the full phase range), and will show
+        the full phased light curve plot as an smaller inset. Useful for
+        planetary transit light curves.
+
+    bestperiodhighlight : str or None
+        If not None, this is a str with a matplotlib color specification to use
+        as the background color to highlight the phased light curve plot of the
+        'best' period and epoch combination. If None, no highlight will be
+        applied.
+
+    outfile : str or None
+        The file name of the file to save the checkplot to. If this is None,
+        will write to a file called 'checkplot.png' in the current working
+        directory.
+
+    plotdpi : int
+        Sets the resolution in DPI for PNG plots (default = 100).
+
+    verbose : bool
+        If False, turns off many of the informational messages. Useful for
+        when an external function is driving lots of `checkplot_png` calls.
+
+    Returns
+    -------
+
+    str
+        The file path to the generated checkplot PNG file.
 
     '''
 
@@ -1319,9 +1681,10 @@ def twolsp_checkplot_png(lspinfo1,
         return plotfpath
 
 
-#########################################
-## PICKLE CHECKPLOT UTILITY FUNCTIONS  ##
-#########################################
+
+########################################
+## PICKLE CHECKPLOT UTILITY FUNCTIONS ##
+########################################
 
 def _xyzdist_to_distarcsec(xyzdist):
     '''
@@ -1330,6 +1693,7 @@ def _xyzdist_to_distarcsec(xyzdist):
     '''
 
     return np.degrees(2.0*np.arcsin(xyzdist/2.0))*3600.0
+
 
 
 def _base64_to_file(b64str, outfpath, writetostrio=False):
