@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''lcformat.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
+'''catalogs.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
 
-This contains functions to import various light curve formats.
+This contains functions to generate light curve catalogs from collections of
+light curves.
 
 '''
 
@@ -103,6 +104,7 @@ FILTEROPS = {'eq':'==',
 ###################
 
 from astrobase.plotbase import fits_finder_chart
+from astrobase.cpserver.checkplotlist import checkplot_infokey_worker
 from astrobase.lcproc import LCFORM
 
 
@@ -974,3 +976,380 @@ def filter_lclist(listpickle,
         return filteredlcfnames, filteredobjectids, ext_matching_objects
     else:
         return filteredlcfnames, filteredobjectids
+
+
+
+############################################################
+## ADDING CHECKPLOT INFO BACK TO THE LIGHT CURVE CATALOGS ##
+############################################################
+
+def cpinfo_key_worker(task):
+    '''This wraps checkplotlist.checkplot_infokey_worker.
+
+    This is used to get the correct dtype for each element in retrieved results.
+
+    task[0] = cpfile
+    task[1] = keyspeclist (infokeys kwarg from add_cpinfo_to_lclist)
+
+    '''
+
+    cpfile, keyspeclist = task
+
+    keystoget = [x[0] for x in keyspeclist]
+    nonesubs = [x[-2] for x in keyspeclist]
+    nansubs = [x[-1] for x in keyspeclist]
+
+    # reform the keystoget into a list of lists
+    for i, k in enumerate(keystoget):
+
+        thisk = k.split('.')
+        if sys.version_info[:2] < (3,4):
+            thisk = [(int(x) if x.isdigit() else x) for x in thisk]
+        else:
+            thisk = [(int(x) if x.isdecimal() else x) for x in thisk]
+
+        keystoget[i] = thisk
+
+    # add in the objectid as well to match to the object catalog later
+    keystoget.insert(0,['objectid'])
+    nonesubs.insert(0, '')
+    nansubs.insert(0,'')
+
+    # get all the keys we need
+    vals = checkplot_infokey_worker((cpfile, keystoget))
+
+    # if they have some Nones, nans, etc., reform them as expected
+    for val, nonesub, nansub, valind in zip(vals, nonesubs,
+                                            nansubs, range(len(vals))):
+
+        if val is None:
+            outval = nonesub
+        elif isinstance(val, float) and not np.isfinite(val):
+            outval = nansub
+        elif isinstance(val, (list, tuple)):
+            outval = ', '.join(val)
+        else:
+            outval = val
+
+        vals[valind] = outval
+
+    return vals
+
+
+
+CPINFO_DEFAULTKEYS = [
+    # key, dtype, first level, overwrite=T|append=F, None sub, nan sub
+    ('comments',
+     np.unicode_, False, True, '', ''),
+    ('objectinfo.objecttags',
+     np.unicode_, True, True, '', ''),
+    ('objectinfo.twomassid',
+     np.unicode_, True, True, '', ''),
+    ('objectinfo.bmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.vmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.rmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.imag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.jmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.hmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.kmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.sdssu',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.sdssg',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.sdssr',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.sdssi',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.sdssz',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.dered_bmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.dered_vmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.dered_rmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.dered_imag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.dered_jmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.dered_hmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.dered_kmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.dered_sdssu',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.dered_sdssg',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.dered_sdssr',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.dered_sdssi',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.dered_sdssz',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.extinction_bmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.extinction_vmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.extinction_rmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.extinction_imag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.extinction_jmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.extinction_hmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.extinction_kmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.extinction_sdssu',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.extinction_sdssg',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.extinction_sdssr',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.extinction_sdssi',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.extinction_sdssz',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.color_classes',
+     np.unicode_, True, True, '', ''),
+    ('objectinfo.pmra',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.pmdecl',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.propermotion',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.rpmj',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.gl',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.gb',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.gaia_status',
+     np.unicode_, True, True, '', ''),
+    ('objectinfo.gaia_ids.0',
+     np.unicode_, True, True, '', ''),
+    ('objectinfo.gaiamag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.gaia_parallax',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.gaia_parallax_err',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.gaia_absmag',
+     np.float_, True, True, np.nan, np.nan),
+    ('objectinfo.simbad_best_mainid',
+     np.unicode_, True, True, '', ''),
+    ('objectinfo.simbad_best_objtype',
+     np.unicode_, True, True, '', ''),
+    ('objectinfo.simbad_best_allids',
+     np.unicode_, True, True, '', ''),
+    ('objectinfo.simbad_best_distarcsec',
+     np.float_, True, True, np.nan, np.nan),
+    #
+    # TIC info
+    #
+    ('objectinfo.ticid',
+     np.unicode_, True, True, '', ''),
+    ('objectinfo.tic_version',
+     np.unicode_, True, True, '', ''),
+    ('objectinfo.tessmag',
+     np.float_, True, True, np.nan, np.nan),
+    #
+    # variability info
+    #
+    ('varinfo.vartags',
+     np.unicode_, False, True, '', ''),
+    ('varinfo.varperiod',
+     np.float_, False, True, np.nan, np.nan),
+    ('varinfo.varepoch',
+     np.float_, False, True, np.nan, np.nan),
+    ('varinfo.varisperiodic',
+     np.int_, False, True, 0, 0),
+    ('varinfo.objectisvar',
+     np.int_, False, True, 0, 0),
+    ('varinfo.features.median',
+     np.float_, False, True, np.nan, np.nan),
+    ('varinfo.features.mad',
+     np.float_, False, True, np.nan, np.nan),
+    ('varinfo.features.stdev',
+     np.float_, False, True, np.nan, np.nan),
+    ('varinfo.features.mag_iqr',
+     np.float_, False, True, np.nan, np.nan),
+    ('varinfo.features.skew',
+     np.float_, False, True, np.nan, np.nan),
+    ('varinfo.features.kurtosis',
+     np.float_, False, True, np.nan, np.nan),
+    ('varinfo.features.stetsonj',
+     np.float_, False, True, np.nan, np.nan),
+    ('varinfo.features.stetsonk',
+     np.float_, False, True, np.nan, np.nan),
+    ('varinfo.features.eta_normal',
+     np.float_, False, True, np.nan, np.nan),
+    ('varinfo.features.linear_fit_slope',
+     np.float_, False, True, np.nan, np.nan),
+    ('varinfo.features.magnitude_ratio',
+     np.float_, False, True, np.nan, np.nan),
+    ('varinfo.features.beyond1std',
+     np.float_, False, True, np.nan, np.nan)
+]
+
+
+def add_cpinfo_to_lclist(
+        checkplots,  # list or a directory path
+        lclistpkl,
+        magcol,  # to indicate checkplot magcol
+        outfile,
+        checkplotglob='checkplot*.pkl*',
+        infokeys=CPINFO_DEFAULTKEYS,
+        nworkers=NCPUS
+):
+    '''This adds checkplot info to the light curve catalogs from make_lclist.
+
+    lclistpkl is the pickle made by make_lclist.
+
+    magcol is the LC magnitude column being used in the checkplots' feature
+    keys. This will be added as a prefix to the infokeys.
+
+    checkplots is either a list of checkplot pickles to process or a string
+    indicating a checkplot directory path to process.
+
+    outfile is the pickle filename to write the augmented lclist pickle to.
+
+    infokeys is a list of keys to extract from each checkplot.
+
+    '''
+
+    # get the checkplots from the directory if one is provided
+    if not isinstance(checkplots, list) and os.path.exists(checkplots):
+        checkplots = sorted(glob.glob(os.path.join(checkplots, checkplotglob)))
+
+    tasklist = [(cpf, infokeys) for cpf in checkplots]
+
+    with ProcessPoolExecutor(max_workers=nworkers) as executor:
+        resultfutures = executor.map(cpinfo_key_worker, tasklist)
+
+    results = [x for x in resultfutures]
+    executor.shutdown()
+
+    # now that we have all the checkplot info, we need to match to the
+    # objectlist in the lclist
+
+    # open the lclist
+    with open(lclistpkl,'rb') as infd:
+        objectcatalog = pickle.load(infd)
+
+    catalog_objectids = np.array(objectcatalog['objects']['objectid'])
+    checkplot_objectids = np.array([x[0] for x in results])
+
+    # add the extra key arrays in the lclist dict
+    extrainfokeys = []
+    actualkeys = []
+
+    # set up the extrainfokeys list
+    for keyspec in infokeys:
+
+        key, dtype, firstlevel, overwrite_append, nonesub, nansub = keyspec
+
+        if firstlevel:
+            eik = key
+        else:
+            eik = '%s.%s' % (magcol, key)
+
+        extrainfokeys.append(eik)
+
+        # now handle the output dicts and column list
+        eactual = eik.split('.')
+
+        # this handles dereferenced list indices
+        if not eactual[-1].isdigit():
+
+            if not firstlevel:
+                eactual = '.'.join([eactual[0], eactual[-1]])
+            else:
+                eactual = eactual[-1]
+
+        else:
+            elastkey = eactual[-2]
+
+            # for list columns, this converts stuff like errs -> err,
+            # and parallaxes -> parallax
+            if elastkey.endswith('es'):
+                elastkey = elastkey[:-2]
+            elif elastkey.endswith('s'):
+                elastkey = elastkey[:-1]
+
+            if not firstlevel:
+                eactual = '.'.join([eactual[0], elastkey])
+            else:
+                eactual = elastkey
+
+        actualkeys.append(eactual)
+
+        # add a new column only if required
+        if eactual not in objectcatalog['columns']:
+            objectcatalog['columns'].append(eactual)
+
+        # we'll overwrite earlier existing columns in any case
+        objectcatalog['objects'][eactual] = []
+
+
+    # now go through each objectid in the catalog and add the extra keys to
+    # their respective arrays
+    for catobj in tqdm(catalog_objectids):
+
+        cp_objind = np.where(checkplot_objectids == catobj)
+
+        if len(cp_objind[0]) > 0:
+
+            # get the info line for this checkplot
+            thiscpinfo = results[cp_objind[0][0]]
+
+            # the first element is the objectid which we remove
+            thiscpinfo = thiscpinfo[1:]
+
+            # update the object catalog entries for this object
+            for ekind, ek in enumerate(actualkeys):
+
+                # add the actual thing to the output list
+                objectcatalog['objects'][ek].append(
+                    thiscpinfo[ekind]
+                )
+
+        else:
+
+            # update the object catalog entries for this object
+            for ekind, ek in enumerate(actualkeys):
+
+                thiskeyspec = infokeys[ekind]
+                nonesub = thiskeyspec[-2]
+
+                objectcatalog['objects'][ek].append(
+                    nonesub
+                )
+
+    # now we should have all the new keys in the object catalog
+    # turn them into arrays
+    for ek in actualkeys:
+
+        objectcatalog['objects'][ek] = np.array(
+            objectcatalog['objects'][ek]
+        )
+
+    # add the magcol to the objectcatalog
+    if 'magcols' in objectcatalog:
+        if magcol not in objectcatalog['magcols']:
+            objectcatalog['magcols'].append(magcol)
+    else:
+        objectcatalog['magcols'] = [magcol]
+
+    # write back the new object catalog
+    with open(outfile, 'wb') as outfd:
+        pickle.dump(objectcatalog, outfd, protocol=pickle.HIGHEST_PROTOCOL)
+
+    return outfile
