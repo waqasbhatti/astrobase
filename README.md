@@ -50,7 +50,7 @@ for your purposes.
   filtering light curves, and fitting object centroids for eclipse analysis,
   etc.)
 
-- **[checkplot](astrobase/checkplot.py)**: contains functions to make
+- **[checkplot](astrobase/checkplot)**: contains functions to make
   checkplots: a grid of plots used to quickly decide if a period search for a
   possibly variable object was successful. Checkplots come in two forms:
 
