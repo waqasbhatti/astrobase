@@ -73,7 +73,6 @@ except Exception as e:
     TQDM = False
     pass
 
-
 # to turn a list of keys into a dict address
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
@@ -105,7 +104,7 @@ FILTEROPS = {'eq':'==',
 
 from astrobase.plotbase import fits_finder_chart
 from astrobase.cpserver.checkplotlist import checkplot_infokey_worker
-from astrobase.lcproc import LCFORM
+from astrobase.lcproc import get_lcformat
 
 
 
@@ -114,17 +113,48 @@ from astrobase.lcproc import LCFORM
 #####################################################
 
 def lclist_parallel_worker(task):
+    '''This is a parallel worker for makelclist.
+
+    Parameters
+    ----------
+
+    task : tuple
+        This is a tuple containing the following items:
+
+        task[0] = lcf
+        task[1] = columns
+        task[2] = lcformat
+        task[3] = lcformatdir
+        task[4] = lcndetkey
+
+    Returns
+    -------
+
+    dict or None
+        This contains all of the info for the object processed in this LC read
+        operation. If this fails, returns None
+
     '''
-    This is a parallel worker for makelclist.
 
-    task[0] = lcf
-    task[1] = columns
-    task[2] = readerfunc
-    task[3] = lcndetkey
+    lcf, columns, lcformat, lcformatdir, lcndetkey = task
 
-    '''
-
-    lcf, columns, readerfunc, lcndetkey = task
+    # get the bits needed for lcformat handling
+    # NOTE: we re-import things in this worker function because sometimes
+    # functions can't be pickled correctly for passing them to worker functions
+    # in a processing pool
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
+        return None
 
     # we store the full path of the light curve
     lcobjdict = {'lcfname':os.path.abspath(lcf)}
@@ -202,6 +232,7 @@ def make_lclist(basedir,
                 outfile,
                 use_list_of_filenames=None,
                 lcformat='hat-sql',
+                lcformatdir=None,
                 fileglob=None,
                 recursive=True,
                 columns=['objectid',
@@ -271,18 +302,26 @@ def make_lclist(basedir,
 
     '''
 
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR("can't figure out the light curve format")
-        return
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
+        return None
 
     if not fileglob:
-        fileglob = LCFORM[lcformat][0]
-
-    readerfunc = LCFORM[lcformat][1]
+        fileglob = dfileglob
 
     # this is to get the actual ndet
     # set to the magnitudes column
-    lcndetkey = LCFORM[lcformat][3]
+    lcndetkey = dmagcols
 
     if isinstance(use_list_of_filenames, list):
 
@@ -408,7 +447,8 @@ def make_lclist(basedir,
         # start collecting info
         LOGINFO('collecting light curve info...')
 
-        tasks = [(x, columns, readerfunc, lcndetkey) for x in matching]
+        tasks = [(x, columns, lcformat, lcformatdir, lcndetkey)
+                 for x in matching]
 
         with ProcessPoolExecutor(max_workers=nworkers) as executor:
             results = executor.map(lclist_parallel_worker, tasks)
@@ -1198,6 +1238,7 @@ CPINFO_DEFAULTKEYS = [
     ('varinfo.features.beyond1std',
      np.float_, False, True, np.nan, np.nan)
 ]
+
 
 
 def add_cpinfo_to_lclist(
