@@ -46,6 +46,11 @@ try:
 except Exception as e:
     import pickle
 import gzip
+import os.path
+import os
+import importlib
+import sys
+import json
 
 
 # to turn a list of keys into a dict address
@@ -56,23 +61,9 @@ def dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
 
 
-###################
-## LOCAL IMPORTS ##
-###################
-
-# LC reading functions
-from astrobase.hatsurveys.hatlc import read_and_filter_sqlitecurve, \
-    read_csvlc, normalize_lcdict_byinst
-from astrobase.hatsurveys.hplc import read_hatpi_textlc, read_hatpi_pklc
-from astrobase.astrokep import read_kepler_fitslc, read_kepler_pklc, \
-    filter_kepler_lcdict
-from astrobase.astrotess import read_tess_fitslc, read_tess_pklc, \
-    filter_tess_lcdict
-
-
-############################################
-## MAPS FOR LCFORMAT TO LCREADER FUNCTIONS ##
-#############################################
+#################################
+## PICKLE LC READING FUNCTIONS ##
+#################################
 
 def read_pklc(lcfile):
     '''
@@ -102,127 +93,53 @@ def read_pklc(lcfile):
 
 
 
-# This is the lcproc dictionary to store registered light curve formats and the
-# means to read and normalize light curve files associated with each format. The
-# format spec for a light curve format is a list with the elements outlined
-# below. To register a new light curve format, use the register_custom_lcformat
-# function below.
-LCFORM = {
-    'hat-sql':[
-        '*-hatlc.sqlite*',             # default fileglob
-        read_and_filter_sqlitecurve,   # function to read this LC
-        ['rjd','rjd'],                 # default timecols to use for period/var
-        ['aep_000','atf_000'],         # default magcols to use for period/var
-        ['aie_000','aie_000'],         # default errcols to use for period/var
-        False,                         # default magsarefluxes = False
-        normalize_lcdict_byinst,       # default special normalize function
-    ],
-    'hat-csv':[
-        '*-hatlc.csv*',
-        read_csvlc,
-        ['rjd','rjd'],
-        ['aep_000','atf_000'],
-        ['aie_000','aie_000'],
-        False,
-        normalize_lcdict_byinst,
-    ],
-    'hp-txt':[
-        'HAT-*tfalc.TF1*',
-        read_hatpi_textlc,
-        ['rjd','rjd'],
-        ['iep1','itf1'],
-        ['ire1','ire1'],
-        False,
-        None,
-    ],
-    'hp-pkl':[
-        '*-pklc.pkl*',
-        read_hatpi_pklc,
-        ['rjd','rjd'],
-        ['iep1','itf1'],
-        ['ire1','ire1'],
-        False,
-        None,
-    ],
-    'kep-fits':[
-        '*_llc.fits',
-        partial(read_kepler_fitslc,normalize=True),
-        ['time','time'],
-        ['sap.sap_flux','pdc.pdcsap_flux'],
-        ['sap.sap_flux_err','pdc.pdcsap_flux_err'],
-        True,
-        filter_kepler_lcdict,
-    ],
-    'kep-pkl':[
-        '-keplc.pkl',
-        read_kepler_pklc,
-        ['time','time'],
-        ['sap.sap_flux','pdc.pdcsap_flux'],
-        ['sap.sap_flux_err','pdc.pdcsap_flux_err'],
-        True,
-        filter_kepler_lcdict,
-    ],
-    'tess-fits':[
-        '*_lc.fits',
-        partial(read_tess_fitslc,normalize=True),
-        ['time','time'],
-        ['sap.sap_flux','pdc.pdcsap_flux'],
-        ['sap.sap_flux_err','pdc.pdcsap_flux_err'],
-        True,
-        filter_tess_lcdict,
-    ],
-    'tess-pkl':[
-        '-tesslc.pkl',
-        read_tess_pklc,
-        ['time','time'],
-        ['sap.sap_flux','pdc.pdcsap_flux'],
-        ['sap.sap_flux_err','pdc.pdcsap_flux_err'],
-        True,
-        filter_tess_lcdict,
-    ],
-    # binned light curve format
-    'binned-hat':[
-        '*binned*hat*.pkl',
-        read_pklc,
-        ['binned.aep_000.times','binned.atf_000.times'],
-        ['binned.aep_000.mags','binned.atf_000.mags'],
-        ['binned.aep_000.errs','binned.atf_000.errs'],
-        False,
-        None,
-    ],
-    'binned-hp':[
-        '*binned*hp*.pkl',
-        read_pklc,
-        ['binned.iep1.times','binned.itf1.times'],
-        ['binned.iep1.mags','binned.itf1.mags'],
-        ['binned.iep1.errs','binned.itf1.errs'],
-        False,
-        None,
-    ],
-    'binned-kep':[
-        '*binned*kep*.pkl',
-        read_pklc,
-        ['binned.sap_flux.times','binned.pdcsap_flux.times'],
-        ['binned.sap_flux.mags','binned.pdcsap_flux.mags'],
-        ['binned.sap_flux.errs','binned.pdcsap_flux.errs'],
-        True,
-        None,
-    ],
-}
+#################################
+## LIGHT CURVE FORMAT HANDLING ##
+#################################
+
+def check_extmodule(module, formatkey):
+    '''This just imports the module specified.
+
+    '''
+
+    try:
+
+        if os.path.exists(module):
+
+            sys.path.append(os.path.dirname(module))
+            importedok = importlib.import_module(
+                os.path.basename(module.replace('.py',''))
+            )
+
+        else:
+            importedok = importlib.import_module(module)
+
+    except Exception as e:
+
+        LOGEXCEPTION('could not import the module: %s for LC format: %s. '
+                     'check the file path or fully qualified module name?'
+                     % (module, formatkey))
+        importedok = False
+
+    return importedok
 
 
 
-def register_custom_lcformat(formatkey,
-                             fileglob,
-                             readerfunc,
-                             timecols,
-                             magcols,
-                             errcols,
-                             readerfunc_kwargs=None,
-                             specialnormfunc=None,
-                             normfunc_kwargs=None,
-                             magsarefluxes=False):
-    '''This adds a custom format LC to the dict above.
+def register_lcformat(formatkey,
+                      fileglob,
+                      timecols,
+                      magcols,
+                      errcols,
+                      readerfunc_module,
+                      readerfunc,
+                      readerfunc_kwargs=None,
+                      normfunc_module=None,
+                      normfunc=None,
+                      normfunc_kwargs=None,
+                      magsarefluxes=False,
+                      overwrite_existing=False,
+                      lcformat_dir='~/.astrobase/lcformat-jsons'):
+    '''This adds a new LC format to the astrobase LC format registry.
 
     Allows handling of custom format light curves for astrobase lcproc
     drivers. Once the format is successfully registered, light curves should
@@ -291,29 +208,281 @@ def register_custom_lcformat(formatkey,
 
     '''
 
-    #
-    # generate the partials
-    #
+    LOGINFO('adding %s to LC format registry...' % formatkey)
 
+    # search for the lcformat_dir and create it if it doesn't exist
+    lcformat_dpath = os.path.abspath(
+        os.path.expanduser(lcformat_dir)
+    )
+    if not os.path.exists(lcformat_dpath):
+        os.makedirs(lcformat_dpath)
+
+    lcformat_jsonpath = os.path.join(lcformat_dpath,'%.json' % formatkey)
+
+    if os.path.exists(lcformat_jsonpath) and not overwrite_existing:
+        LOGERROR('There is an existing lcformat JSON: %s '
+                 'for this formatkey: %s and '
+                 'overwrite_existing = False, skipping...'
+                 % (lcformat_jsonpath, formatkey))
+        return None
+
+    # see if we can import the reader module
+    readermodule = check_extmodule(readerfunc_module, formatkey)
+
+    if not readermodule:
+        LOGERROR("could not import the required "
+                 "module: %s to read %s light curves" %
+                 (readerfunc_module, formatkey))
+        return None
+
+    # then, get the function we need to read the light curve
+    try:
+        getattr(readermodule, readerfunc)
+        readerfunc_in = readerfunc
+    except AttributeError:
+        LOGEXCEPTION('Could not get the specified reader '
+                     'function: %s for lcformat: %s '
+                     'from module: %s'
+                     % (formatkey, readerfunc_module, readerfunc))
+        raise
+
+    # see if we can import the normalization module
+    if normfunc_module:
+        normmodule = check_extmodule(normfunc_module, formatkey)
+        if not normmodule:
+            LOGERROR("could not import the required "
+                     "module: %s to normalize %s light curves" %
+                     (normfunc_module, formatkey))
+            return None
+
+    else:
+        normmodule = None
+
+    # finally, get the function we need to normalize the light curve
+    if normfunc_module and normfunc:
+        try:
+            getattr(normmodule, normfunc)
+            normfunc_in = normfunc
+        except AttributeError:
+            LOGEXCEPTION('Could not get the specified norm '
+                         'function: %s for lcformat: %s '
+                         'from module: %s'
+                         % (formatkey, normfunc_module, normfunc))
+            raise
+
+    else:
+        normfunc_in = None
+
+
+    # if we made it to here, then everything's good. generate the JSON
+    # structure
+    formatdict = {'fileglob':fileglob,
+                  'timecols':timecols,
+                  'magcols':magcols,
+                  'errcols':errcols,
+                  'magsarefluxes':magsarefluxes,
+                  'lcreader_module':readermodule,
+                  'lcreader_func':readerfunc_in,
+                  'lcreader_kwargs':readerfunc_kwargs,
+                  'lcnorm_module':normmodule,
+                  'lcnorm_func':normfunc_in,
+                  'lcnorm_kwargs':normfunc_kwargs}
+
+    # write this to the lcformat directory
+    with open(lcformat_jsonpath,'w') as outfd:
+        json.dump(formatdict, outfd, indent=4)
+
+    return lcformat_jsonpath
+
+
+
+def get_lcformat(formatkey, use_lcformat_dir=None):
+    '''This loads an LC format description from a previously-saved JSON file.
+
+    Parameters
+    ----------
+
+    formatkey : str
+        The key used to refer to the LC format. This is part of the JSON file's
+        name, e.g. the format key 'hat-csv' maps to the format JSON file:
+        'astrobase/data/lcformats/hat-csv.json'.
+
+    use_lcformat_dir : str or None
+        If provided, must be the path to a directory that contains the
+        corresponding lcformat JSON file for `formatkey`. If this is None, this
+        function will look for lcformat JSON files corresponding to the given
+        `formatkey`:
+
+        - first, in the directory specified in this kwarg,
+        - if not found there, in thehome directory: ~/.astrobase/lcformat-jsons
+        - if not found there, in: <astrobase install path>/data/lcformats
+
+
+    Returns
+    -------
+
+    dict
+        A dict of the following form is returned:
+
+        {'formatkey': the formatkey string,
+         'fileglob': the file glob of the associated LC files,
+         'readermodule': the imported Python module for reading LCs,
+         'readerfunc': the imported Python function for reading LCs,
+         'normmodule': the imported Python module for normalizing LCs,
+         'normfunc': the imported Python function for normalizing LCs,
+         'magsarefluxes': True if the measurements are fluxes not mags}
+
+        All `astrobase.lcproc` functions can then use this dict to dynamically
+        import your LC reader and normalization functions to work with your LC
+        format transparently.
+
+    '''
+
+    if use_lcformat_dir:
+
+        # look for the lcformat JSON
+        lcformat_jsonpath = os.path.join(
+            use_lcformat_dir,
+            '%s.json' % formatkey
+        )
+
+        if not os.path.exists(lcformat_jsonpath):
+
+            lcformat_jsonpath = os.path.join(
+                os.path.expanduser('~/.astrobase/lcformat-jsons'),
+                '%s.json' % formatkey
+            )
+
+            if not os.path.exists(lcformat_jsonpath):
+
+                install_path = os.path.dirname(__file__)
+                install_path = os.path.abspath(
+                    os.path.join(install_path, '..', 'data')
+                )
+
+                lcformat_jsonpath = os.path.join(
+                    install_path,
+                    '%s.json' % formatkey
+                )
+
+                if not os.path.exists(lcformat_jsonpath):
+                    LOGERROR('could not find an lcformat JSON '
+                             'for formatkey: %s in any of: '
+                             'use_lcformat_dir, home directory, '
+                             'astrobase installed data directory'
+                             % formatkey)
+                    return None
+
+    else:
+
+        lcformat_jsonpath = os.path.join(
+            os.path.expanduser('~/.astrobase/lcformat-jsons'),
+            '%s.json' % formatkey
+        )
+
+        if not os.path.exists(lcformat_jsonpath):
+
+            install_path = os.path.dirname(__file__)
+            install_path = os.path.abspath(
+                os.path.join(install_path, '..', 'data')
+            )
+
+            lcformat_jsonpath = os.path.join(
+                install_path,
+                '%s.json' % formatkey
+            )
+
+            if not os.path.exists(lcformat_jsonpath):
+                LOGERROR('could not find an lcformat JSON '
+                         'for formatkey: %s in any of: '
+                         'use_lcformat_dir, home directory, '
+                         'astrobase installed data directory'
+                         % formatkey)
+                return None
+
+    # load the found lcformat JSON
+    with open(lcformat_jsonpath) as infd:
+        lcformatdict = json.load(infd)
+
+    readerfunc_module = lcformatdict['lcreader_module']
+    readerfunc = lcformatdict['lcreader_func']
+    readerfunc_kwargs = lcformatdict['readerfunc_kwargs']
+    normfunc_module = lcformatdict['lcnorm_module']
+    normfunc = lcformatdict['lcnorm_func']
+    normfunc_kwargs = lcformatdict['readerfunc_kwargs']
+
+    fileglob = lcformatdict['fileglob']
+    timecols = lcformatdict['timecols']
+    magcols = lcformatdict['magcols']
+    errcols = lcformatdict['errcols']
+    magsarefluxes = lcformatdict['magsarefluxes']
+
+    # import all the required bits
+    # see if we can import the reader module
+    readermodule = check_extmodule(readerfunc_module, formatkey)
+
+    if not readermodule:
+        LOGERROR("could not import the required "
+                 "module: %s to read %s light curves" %
+                 (readerfunc_module, formatkey))
+        return None
+
+    # then, get the function we need to read the light curve
+    try:
+        readerfunc_in = getattr(readermodule, readerfunc)
+    except AttributeError:
+        LOGEXCEPTION('Could not get the specified reader '
+                     'function: %s for lcformat: %s '
+                     'from module: %s'
+                     % (formatkey, readerfunc_module, readerfunc))
+        raise
+
+    # see if we can import the normalization module
+    if normfunc_module:
+        normmodule = check_extmodule(normfunc_module, formatkey)
+        if not normmodule:
+            LOGERROR("could not import the required "
+                     "module: %s to normalize %s light curves" %
+                     (normfunc_module, formatkey))
+            return None
+
+    else:
+        normmodule = None
+
+    # finally, get the function we need to normalize the light curve
+    if normfunc_module and normfunc:
+        try:
+            normfunc_in = getattr(normmodule, normfunc)
+        except AttributeError:
+            LOGEXCEPTION('Could not get the specified norm '
+                         'function: %s for lcformat: %s '
+                         'from module: %s'
+                         % (formatkey, normfunc_module, normfunc))
+            raise
+
+    else:
+        normfunc_in = None
+
+
+    # add in any optional kwargs that need to be there for readerfunc
     if isinstance(readerfunc_kwargs, dict):
-        lcrfunc = partial(readerfunc, **readerfunc_kwargs)
-    else:
-        lcrfunc = readerfunc
+        readerfunc_in = partial(readerfunc_in, **readerfunc_kwargs)
 
-    if specialnormfunc is not None and isinstance(normfunc_kwargs, dict):
-        lcnfunc = partial(specialnormfunc, **normfunc_kwargs)
-    else:
-        lcnfunc = specialnormfunc
+    # add in any optional kwargs that need to be there for normfunc
+    if normfunc_in is not None:
+        if isinstance(normfunc_kwargs, dict):
+            normfunc_in = partial(normfunc_in, **normfunc_kwargs)
 
-
-    globals()['LCFORM'][formatkey] = [
+    # assemble the return tuple
+    # this can be used directly by other lcproc functions
+    returntuple = (
         fileglob,
-        lcrfunc,
+        readerfunc_in,
         timecols,
         magcols,
         errcols,
         magsarefluxes,
-        lcnfunc
-    ]
+        normfunc_in,
+    )
 
-    LOGINFO('added %s to registry' % formatkey)
+    return returntuple
