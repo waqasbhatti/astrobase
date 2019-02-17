@@ -76,7 +76,7 @@ export AWS_DEFAULT_REGION=`curl --silent http://169.254.169.254/latest/dynamic/i
 export NCPUS=`lscpu -J | jq ".lscpu[3].data|tonumber"`
 
 # launch the processor loops
-for s in `seq $NCPUS`; do nohup /home/ec2-user/py3/bin/python3 -u -c "from astrobase import lcproc_aws as lcp; lcp.runcp_consumer_loop('https://queue-url','.','s3://path/to/lclist.pkl')" > runcp-$s-loop.out & done
+for s in `seq $NCPUS`; do nohup /home/ec2-user/py3/bin/python3 -u -c "from astrobase.lcproc import awsrun as lcp; lcp.runcp_consumer_loop('https://queue-url','.','s3://path/to/lclist.pkl')" > runcp-$s-loop.out & done
 EOF
 
 # run the script we just created as ec2-user
@@ -116,7 +116,7 @@ export AWS_DEFAULT_REGION=`curl --silent http://169.254.169.254/latest/dynamic/i
 export NCPUS=`lscpu -J | jq ".lscpu[3].data|tonumber"`
 
 # launch the processes
-nohup /home/ec2-user/py3/bin/python3 -u -c "from astrobase import lcproc_aws as lcp; lcp.runpf_consumer_loop('https://input-queue-url','.')" > runpf-loop.out &
+nohup /home/ec2-user/py3/bin/python3 -u -c "from astrobase.lcproc import awsrun as lcp; lcp.runpf_consumer_loop('https://input-queue-url','.')" > runpf-loop.out &
 EOF
 
 chown ec2-user /home/ec2-user/launch-runpf.sh
@@ -181,7 +181,7 @@ except ImportError:
 
 from .. import awsutils
 from .periodsearch import runpf
-from .checkplotproc import runcp
+from .checkplotgen import runcp
 
 
 ####################################

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''checkplotgen.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
+'''periodsearch.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
 
-This contains functions to generate checkplot pickles from a collection of light
-curves (optionally including period-finding results).
+This contains functions to run period-finding in a parallelized manner on large
+collections of light curves.
 
 '''
 
@@ -60,16 +60,37 @@ def dict_get(datadict, keylist):
 
 
 
+###################
+## LOCAL IMPORTS ##
+###################
+
+from astrobase import periodbase
+
+from astrobase.lcproc import LCFORM
+
+
+
 ############
 ## CONFIG ##
 ############
 
 NCPUS = mp.cpu_count()
 
+# used to figure out which period finder to run given a list of methods
+PFMETHODS = {'bls':periodbase.bls_parallel_pfind,
+             'gls':periodbase.pgen_lsp,
+             'aov':periodbase.aov_periodfind,
+             'mav':periodbase.aovhm_periodfind,
+             'pdm':periodbase.stellingwerf_pdm,
+             'acf':periodbase.macf_period_find,
+             'win':periodbase.specwindow_lsp}
 
-
-###################
-## LOCAL IMPORTS ##
-###################
-
-from astrobase.lcproc import LCFORM
+PFMETHOD_NAMES = {
+    'gls':'Generalized Lomb-Scargle periodogram',
+    'pdm':'Stellingwerf phase-dispersion minimization',
+    'aov':'Schwarzenberg-Czerny AoV',
+    'mav':'Schwarzenberg-Czerny AoV multi-harmonic',
+    'bls':'Box Least-squared Search',
+    'acf':'McQuillan+ ACF Period Search',
+    'win':'Timeseries Sampling Lomb-Scargle periodogram'
+}

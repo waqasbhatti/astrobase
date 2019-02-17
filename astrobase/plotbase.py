@@ -889,7 +889,7 @@ def skyview_stamp(ra, decl,
         Will flip the downloaded image top to bottom. This should usually be
         True because matplotlib and FITS have different image coord origin
         conventions. Alternatively, set this to False and use the
-        `origin='upper'` in any call to `matplotlib.pyplot.imshow` when plotting
+        `origin='lower'` in any call to `matplotlib.pyplot.imshow` when plotting
         this image.
 
     convolvewith : astropy.convolution Kernel object or None

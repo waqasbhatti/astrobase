@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''checkplotgen.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
+'''varfeatures.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
 
-This contains functions to generate checkplot pickles from a collection of light
-curves (optionally including period-finding results).
+This contains functions to generate variability features for large collections
+of light curves. Useful later for variable star classification.
 
 '''
 

@@ -111,7 +111,7 @@ from astrobase.varbase.trends import epd_magseries, smooth_magseries_savgol
 
 from astrobase.plotbase import fits_finder_chart
 
-import periodbase
+from astrobase import periodbase
 from astrobase.periodbase.kbls import bls_snr
 
 from astrobase.checkplot.pkl_io import (

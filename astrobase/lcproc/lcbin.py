@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''lcformat.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
+'''lcbin.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
 
-This contains functions to import various light curve formats.
+This contains parallelized functions to bin large numbers of light curves in
+time.
 
 '''
 
