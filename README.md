@@ -108,7 +108,7 @@ for your purposes.
   as phasing, normalization, binning (in time and phase), sigma-clipping,
   external parameter decorrelation (EPD), etc.
 
-- **[lcproc](astrobase/lcproc.py)**: driver functions for running an end-to-end
+- **[lcproc](astrobase/lcproc)**: driver functions for running an end-to-end
     pipeline including: (i) object selection from a collection of light curves
     by position, cross-matching to external catalogs, or light curve objectinfo
     keys, (ii) running variability feature calculation and detection, (iii)
