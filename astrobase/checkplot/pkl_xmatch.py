@@ -74,7 +74,29 @@ from .pkl_io import _write_checkplot_picklefile
 
 def _parse_xmatch_catalog_header(xc, xk):
     '''
-    This parses the header for a catalog file.
+    This parses the header for a catalog file and returns it as a file object.
+
+    Parameters
+    ----------
+
+    xc : str
+        The file name of an xmatch catalog prepared previously.
+
+    xk : list of str
+        This is a list of column names to extract from the xmatch catalog.
+
+    Returns
+    -------
+
+    tuple
+        The tuple returned is of the form:
+
+        (infd: the file object associated with the opened xmatch catalog file,
+         catdefdict: a dict describing the catalog column definitions,
+         catcolinds: column number indices of the catalog,
+         catcoldtypes: the numpy dtypes of the catalog columns,
+         catcolnames: the names of each catalog column,
+         catcolunits: the units associated with each catalog column)
 
     '''
 
@@ -134,45 +156,63 @@ def _parse_xmatch_catalog_header(xc, xk):
 
 
 def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
-    '''This loads the external xmatch catalogs into a dict for use here.
+    '''This loads the external xmatch catalogs into a dict for use in an xmatch.
 
-    xmatchto is a list of text files that contain each catalog.
+    Parameters
+    ----------
 
-    the text files must be 'CSVs' that use the '|' character as the separator
-    betwen columns. These files should all begin with a header in JSON format on
-    lines starting with the '#' character. this header will define the catalog
-    and contains the name of the catalog and the column definitions. Column
-    definitions must have the column name and the numpy dtype of the columns (in
-    the same format as that expected for the numpy.genfromtxt function). Any
-    line that does not begin with '#' is assumed to be part of the columns in
-    the catalog. An example is shown below.
+    xmatchto : list of str
+        This is a list of paths to all the catalog text files that will be
+        loaded.
 
-    # {"name":"NSVS catalog of variable stars",
-    #  "columns":[
-    #    {"key":"objectid", "dtype":"U20", "name":"Object ID", "unit": null},
-    #    {"key":"ra", "dtype":"f8", "name":"RA", "unit":"deg"},
-    #    {"key":"decl","dtype":"f8", "name": "Declination", "unit":"deg"},
-    #    {"key":"sdssr","dtype":"f8","name":"SDSS r", "unit":"mag"},
-    #    {"key":"vartype","dtype":"U20","name":"Variable type", "unit":null}
-    #  ],
-    #  "colra":"ra",
-    #  "coldec":"decl",
-    #  "description":"Contains variable stars from the NSVS catalog"}
-    objectid1 | 45.0  | -20.0 | 12.0 | detached EB
-    objectid2 | 145.0 | 23.0  | 10.0 | RRab
-    objectid3 | 12.0  | 11.0  | 14.0 | Cepheid
-    .
-    .
-    .
+        The text files must be 'CSVs' that use the '|' character as the
+        separator betwen columns. These files should all begin with a header in
+        JSON format on lines starting with the '#' character. this header will
+        define the catalog and contains the name of the catalog and the column
+        definitions. Column definitions must have the column name and the numpy
+        dtype of the columns (in the same format as that expected for the
+        numpy.genfromtxt function). Any line that does not begin with '#' is
+        assumed to be part of the columns in the catalog. An example is shown
+        below.
 
-    xmatchkeys is the list of lists of columns to get out of each xmatchto
-    catalog. this should be the same length as xmatchto and each element here
-    will apply to the respective file in xmatchto.
+        # {"name":"NSVS catalog of variable stars",
+        #  "columns":[
+        #   {"key":"objectid", "dtype":"U20", "name":"Object ID", "unit": null},
+        #   {"key":"ra", "dtype":"f8", "name":"RA", "unit":"deg"},
+        #   {"key":"decl","dtype":"f8", "name": "Declination", "unit":"deg"},
+        #   {"key":"sdssr","dtype":"f8","name":"SDSS r", "unit":"mag"},
+        #   {"key":"vartype","dtype":"U20","name":"Variable type", "unit":null}
+        #  ],
+        #  "colra":"ra",
+        #  "coldec":"decl",
+        #  "description":"Contains variable stars from the NSVS catalog"}
+        objectid1 | 45.0  | -20.0 | 12.0 | detached EB
+        objectid2 | 145.0 | 23.0  | 10.0 | RRab
+        objectid3 | 12.0  | 11.0  | 14.0 | Cepheid
+        .
+        .
+        .
 
-    if outfile is not None, set this to the name of the pickle to write the
-    collect xmatch catalogs to. this pickle can then be loaded transparently by
-    the checkplot_dict, checkplot_pickle functions to provide xmatch info the
-    _xmatch_external_catalog function below.
+    xmatchkeys : list of lists
+        This is the list of lists of column names (as str) to get out of each
+        `xmatchto` catalog. This should be the same length as `xmatchto` and
+        each element here will apply to the respective file in `xmatchto`.
+
+    outfile : str or None
+        If this is not None, set this to the name of the pickle to write the
+        collected xmatch catalogs to. this pickle can then be loaded
+        transparently by the `checkplot_dict`, `checkplot_pickle` functions to
+        provide xmatch info the `_xmatch_external_catalog` function below.
+
+        If this is None, will return the loaded xmatch catalogs directly. This
+        will be a huge dict, so make sure you have enough RAM.
+
+    Returns
+    -------
+
+    str or dict
+        Based on the `outfile` kwarg, will either return the path to a collected
+        xmatch pickle file or the collected xmatch dict.
 
     '''
 
@@ -265,41 +305,79 @@ def xmatch_external_catalogs(checkplotdict,
                              returndirect=False,
                              updatexmatch=True,
                              savepickle=None):
-    '''This matches the current object to the external match catalogs in
-    xmatchdict.
+    '''This matches the current object in the checkplotdict to all of the
+    external match catalogs specified.
 
-    checkplotdict is the usual checkplot dict. this must contain at least
-    'objectid', and in the 'objectinfo' subdict: 'ra', and 'decl'. an 'xmatch'
-    key will be added to this dict, with something like the following dict as
-    the value:
+    Parameters
+    ----------
 
-    {'xmatchradiusarcsec':xmatchradiusarcsec,
-     'catalog1':{'name':'Catalog of interesting things',
-                 'found':True,
-                 'distarcsec':0.7,
-                 'info':{'objectid':...,'ra':...,'decl':...,'desc':...}},
-     'catalog2':{'name':'Catalog of more interesting things',
-                 'found':False,
-                 'distarcsec':nan,
-                 'info':None},
-    .
-    .
-    .
-    ....}
+    checkplotdict : dict
 
-    xmatchinfo is the either a dict produced by load_xmatch_external_catalogs or
-    the pickle produced by the same function.
+        This is a checkplotdict, generated by either the `checkplot_dict`
+        function, or read in from a `_read_checkplot_picklefile` function. This
+        must have a structure somewhat like the following, where the indicated
+        keys below are required:
 
-    xmatchradiusarcsec is the xmatch radius in arcseconds.
+        {'objectid': the ID assigned to this object
+         'objectinfo': {'objectid': ID assigned to this object,
+                        'ra': the right ascension of the object in decimal deg,
+                        'decl': the declination of the object in decimal deg}}
 
-    NOTE: this modifies checkplotdict IN PLACE if returndirect is False. If it
-    is True, then just returns the xmatch results as a dict.
 
-    If updatexmatch is True, any previous 'xmatch' elements in the checkplotdict
-    will be added on to instead of being overwritten.
+    xmatchinfo : str or dict
+        This is either the xmatch dict produced by the function
+        `load_xmatch_external_catalogs` above, or the path to the xmatch info
+        pickle file produced by that function.
 
-    If savepickle is not None, it should be the name of a checkplot pickle file
-    to write the pickle back to.
+    xmatchradiusarcsec : float
+        This is the cross-matching radius to use in arcseconds.
+
+    returndirect : bool
+        If this is True, will only return the xmatch results as a dict. If this
+        False, will return the checkplotdict with the xmatch results added in as
+        a key-val pair.
+
+    updatexmatch : bool
+        This function will look for an existing 'xmatch' key in the input
+        checkplotdict indicating that an xmatch has been performed before. If
+        `updatexmatch` is set to True, the xmatch results will be added onto
+        (e.g. when xmatching to additional catalogs after the first run). If
+        this is set to False, the xmatch key-val pair will be completely
+        overwritten.
+
+    savepickle : str or None
+
+        If this is None, it must be a path to where the updated checkplotdict
+        will be written to as a new checkplot pickle. If this is False, only the
+        updated checkplotdict is returned.
+
+    Returns
+    -------
+
+    dict or str
+        If `savepickle` is False, this returns a checkplotdict, with the xmatch
+        results added in. An 'xmatch' key will be added to this dict, with
+        something like the following dict as the value:
+
+        {'xmatchradiusarcsec':xmatchradiusarcsec,
+         'catalog1':{'name':'Catalog of interesting things',
+                    'found':True,
+                    'distarcsec':0.7,
+                    'info':{'objectid':...,'ra':...,'decl':...,'desc':...}},
+         'catalog2':{'name':'Catalog of more interesting things',
+                     'found':False,
+                     'distarcsec':nan,
+                     'info':None},
+        .
+        .
+        .
+        ....}
+
+        This will contain the matches of the object in the input checkplotdict
+        to all of the catalogs provided in `xmatchinfo`.
+
+        If `savepickle` is True, will return the path to the saved checkplot
+        pickle file.
 
     '''
 
