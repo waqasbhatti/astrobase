@@ -217,7 +217,7 @@ def register_lcformat(formatkey,
     if not os.path.exists(lcformat_dpath):
         os.makedirs(lcformat_dpath)
 
-    lcformat_jsonpath = os.path.join(lcformat_dpath,'%.json' % formatkey)
+    lcformat_jsonpath = os.path.join(lcformat_dpath,'%s.json' % formatkey)
 
     if os.path.exists(lcformat_jsonpath) and not overwrite_existing:
         LOGERROR('There is an existing lcformat JSON: %s '
@@ -281,10 +281,10 @@ def register_lcformat(formatkey,
                   'magcols':magcols,
                   'errcols':errcols,
                   'magsarefluxes':magsarefluxes,
-                  'lcreader_module':readermodule,
+                  'lcreader_module':readerfunc_module,
                   'lcreader_func':readerfunc_in,
                   'lcreader_kwargs':readerfunc_kwargs,
-                  'lcnorm_module':normmodule,
+                  'lcnorm_module':normfunc_module,
                   'lcnorm_func':normfunc_in,
                   'lcnorm_kwargs':normfunc_kwargs}
 
