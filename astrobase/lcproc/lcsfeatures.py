@@ -172,9 +172,9 @@ def get_starfeatures(lcfile,
                                                        coordfeat)
 
         # finally, run the neighbor features
-        nbrfeat = starfeatures.neighbor_features(lcdict['objectinfo'],
-                                                 kdtree,
-                                                 neighbor_radius_arcsec)
+        nbrfeat = starfeatures.neighbor_gaia_features(lcdict['objectinfo'],
+                                                      kdtree,
+                                                      neighbor_radius_arcsec)
 
         # get the objectids of the neighbors found if any
         if nbrfeat['nbrindices'].size > 0:
