@@ -205,6 +205,8 @@ def _write_checkplot_picklefile(checkplotdict,
     protocol : int
         This sets the pickle file protocol to use when writing the pickle:
 
+        If None, will choose a protocol using the following rules:
+
         4 -> default in Python >= 3.4 - fast but incompatible with Python 2
         3 -> default in Python 3.0-3.3 - mildly fast
         2 -> default in Python 2 - very slow, but compatible with Python 2 and 3

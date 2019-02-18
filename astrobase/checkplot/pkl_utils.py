@@ -192,6 +192,11 @@ def _pkl_finder_objectinfo(
        If you have magnitude measurements in other bands, use the
        `custom_bandpasses` kwarg to pass these in.
 
+       If this is None, no object information will be incorporated into the
+       checkplot (kind of making it effectively useless for anything other than
+       glancing at the phased light curves at various 'best' periods from the
+       period-finder results).
+
     varinfo : dict or None
         If this is None, a blank dict of the form below will be added to the
         checkplotdict:
@@ -239,7 +244,7 @@ def _pkl_finder_objectinfo(
         allowed to be to consider them as parts of different timegroups. By
         default it is set to 4.0 days.
 
-    deredden_objects : bool
+    deredden_object : bool
         If this is True, will use the 2MASS DUST service to get extinction
         coefficients in various bands, and then try to deredden the magnitudes
         and colors of the object already present in the checkplot's objectinfo
@@ -309,11 +314,33 @@ def _pkl_finder_objectinfo(
     fast_mode : bool or float
         This runs the external catalog operations in a "fast" mode, with short
         timeouts and not trying to hit external catalogs that take a long time
-        to respond. See the docstring for
-        `checkplot.pkl_utils._pkl_finder_objectinfo` for details on how this
-        works. If this is True, will run in "fast" mode with default timeouts (5
-        seconds in most cases). If this is a float, will run in "fast" mode with
-        the provided timeout value in seconds.
+        to respond.
+
+        If this is set to True, the default settings for the external requests
+        will then become:
+
+        skyview_lookup = False
+        skyview_timeout = 10.0
+        skyview_retry_failed = False
+        dust_timeout = 10.0
+        gaia_submit_timeout = 7.0
+        gaia_max_timeout = 10.0
+        gaia_submit_tries = 2
+        complete_query_later = False
+        search_simbad = False
+
+        If this is a float, will run in "fast" mode with the provided timeout
+        value in seconds and the following settings:
+
+        skyview_lookup = True
+        skyview_timeout = fast_mode
+        skyview_retry_failed = False
+        dust_timeout = fast_mode
+        gaia_submit_timeout = 0.66*fast_mode
+        gaia_max_timeout = fast_mode
+        gaia_submit_tries = 2
+        complete_query_later = False
+        search_simbad = False
 
     complete_query_later : bool
         If this is True, saves the state of GAIA queries that are not yet
