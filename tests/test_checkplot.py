@@ -34,13 +34,14 @@ import os
 import os.path
 try:
     from urllib import urlretrieve
-except:
+except Exception as e:
     from urllib.request import urlretrieve
 from numpy.testing import assert_allclose, assert_almost_equal, assert_equal
 import numpy as np
 
 from astrobase.hatsurveys import hatlc
 from astrobase import periodbase, checkplot
+from astrobase.checkplot.pkl import checkplot_pickle_update
 from astrobase.checkplot.pkl_io import _read_checkplot_picklefile
 
 ############
@@ -272,7 +273,7 @@ def test_checkplot_pickle_update():
     # test update write to pickle
     cpd['comments'] = ('this is a test of the checkplot pickle '
                        'update mechanism. this is only a test.')
-    cpfupdated = checkplot.checkplot_pickle_update(cpf, cpd)
+    cpfupdated = checkplot_pickle_update(cpf, cpd)
 
     cpdupdated = _read_checkplot_picklefile(cpfupdated)
 
@@ -329,7 +330,7 @@ def test_checkplot_pickle_topng():
     # test update write to pickle
     cpd['comments'] = ('this is a test of the checkplot pickle '
                        'update mechanism. this is only a test.')
-    cpfupdated = checkplot.checkplot_pickle_update(cpf, cpd)
+    cpfupdated = checkplot_pickle_update(cpf, cpd)
 
     cpdupdated = _read_checkplot_picklefile(cpfupdated)
 
