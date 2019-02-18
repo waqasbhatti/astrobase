@@ -381,7 +381,7 @@ def _make_magseries_plot(axes,
 
     magsarefluxes : bool
         If True, indicates the input time-series is fluxes and not mags so the
-        plot y-axis direction and range can be set appropriately/
+        plot y-axis direction and range can be set appropriately.
 
     ms : float
         The `markersize` kwarg to use when making the mag-series plot.
@@ -496,8 +496,8 @@ def _make_phased_magseries_plot(axes,
         top of the regular phased light curve.
 
     minbinelems : int
-        The minimum number of elements required per bin to include it in the
-        output.
+        The minimum number of elements required per phase bin to include it in
+        the phased LC plot.
 
     plotxlim : sequence of two floats or None
         The x-range (min, max) of the phased light curve plot. If None, will be
@@ -882,7 +882,7 @@ def checkplot_png(lspinfo,
 
     magsarefluxes : bool
         If True, indicates the input time-series is fluxes and not mags so the
-        plot y-axis direction and range can be set appropriately/
+        plot y-axis direction and range can be set appropriately.
 
     objectinfo : dict or None
         If provided, this is a dict containing information on the object whose

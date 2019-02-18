@@ -92,8 +92,20 @@ from .. import magnitudes
 ########################################
 
 def _xyzdist_to_distarcsec(xyzdist):
-    '''
-    This just inverts the xyz unit vector distance -> angular distance relation.
+    '''This inverts the xyz unit vector distance -> angular distance relation.
+
+    Parameters
+    ----------
+
+    xyzdist : float or array-like
+        This is the distance in xyz vector space generated from a transform of
+        (RA,Dec) - > (x,y,z)
+
+    Returns
+    -------
+
+    dist_arcseconds : float or array-like
+        The distance in arcseconds.
 
     '''
 
@@ -101,28 +113,222 @@ def _xyzdist_to_distarcsec(xyzdist):
 
 
 
-def _pkl_finder_objectinfo(objectinfo,
-                           varinfo,
-                           findercmap,
-                           finderconvolve,
-                           sigclip,
-                           normto,
-                           normmingap,
-                           deredden_object=True,
-                           custom_bandpasses=None,
-                           lclistpkl=None,
-                           nbrradiusarcsec=30.0,
-                           maxnumneighbors=5,
-                           plotdpi=100,
-                           findercachedir='~/.astrobase/stamp-cache',
-                           verbose=True,
-                           gaia_submit_timeout=10.0,
-                           gaia_submit_tries=3,
-                           gaia_max_timeout=180.0,
-                           gaia_mirror=None,
-                           fast_mode=False,
-                           complete_query_later=True):
+def _pkl_finder_objectinfo(
+        objectinfo,
+        varinfo,
+        findercmap,
+        finderconvolve,
+        sigclip,
+        normto,
+        normmingap,
+        deredden_object=True,
+        custom_bandpasses=None,
+        lclistpkl=None,
+        nbrradiusarcsec=30.0,
+        maxnumneighbors=5,
+        plotdpi=100,
+        findercachedir='~/.astrobase/stamp-cache',
+        verbose=True,
+        gaia_submit_timeout=10.0,
+        gaia_submit_tries=3,
+        gaia_max_timeout=180.0,
+        gaia_mirror=None,
+        fast_mode=False,
+        complete_query_later=True
+):
     '''This returns the finder chart and object information as a dict.
+
+    Parameters
+    ----------
+
+    objectinfo : dict or None
+        If provided, this is a dict containing information on the object whose
+        light curve is being processed. This function will then be able to look
+        up and download a finder chart for this object and write that to the
+        output checkplotdict. External services such as GAIA, SIMBAD, TIC@MAST,
+        etc. will also be used to look up this object by its coordinates, and
+        will add in information available from those services.
+
+        The `objectinfo` dict must be of the form and contain at least the keys
+        described below:
+
+        {'objectid': the name of the object,
+         'ra': the right ascension of the object in decimal degrees,
+         'decl': the declination of the object in decimal degrees,
+         'ndet': the number of observations of this object}
+
+        You can also provide magnitudes and proper motions of the object using
+        the following keys and the appropriate values in the `objectinfo`
+        dict. These will be used to calculate colors, total and reduced proper
+        motion, etc. and display these in the output checkplot PNG.
+
+        'pmra' -> the proper motion in mas/yr in the right ascension direction,
+        'pmdecl' -> the proper motion in mas/yr in the declination direction,
+        'umag'  -> U mag		 -> colors: U-B, U-V, U-g
+        'bmag'  -> B mag		 -> colors: U-B, B-V
+        'vmag'  -> V mag		 -> colors: U-V, B-V, V-R, V-I, V-K
+        'rmag'  -> R mag		 -> colors: V-R, R-I
+        'imag'  -> I mag		 -> colors: g-I, V-I, R-I, B-I
+        'jmag'  -> 2MASS J mag	 -> colors: J-H, J-K, g-J, i-J
+        'hmag'  -> 2MASS H mag	 -> colors: J-H, H-K
+        'kmag'  -> 2MASS Ks mag	 -> colors: g-Ks, H-Ks, J-Ks, V-Ks
+        'sdssu' -> SDSS u mag	 -> colors: u-g, u-V
+        'sdssg' -> SDSS g mag	 -> colors: g-r, g-i, g-K, u-g, U-g, g-J
+        'sdssr' -> SDSS r mag	 -> colors: r-i, g-r
+        'sdssi' -> SDSS i mag	 -> colors: r-i, i-z, g-i, i-J, i-W1
+        'sdssz' -> SDSS z mag	 -> colors: i-z, z-W2, g-z
+        'ujmag' -> UKIRT J mag	 -> colors: J-H, H-K, J-K, g-J, i-J
+        'uhmag' -> UKIRT H mag	 -> colors: J-H, H-K
+        'ukmag' -> UKIRT K mag	 -> colors: g-K, H-K, J-K, V-K
+        'irac1' -> Spitzer IRAC1 mag -> colors: i-I1, I1-I2
+        'irac2' -> Spitzer IRAC2 mag -> colors: I1-I2, I2-I3
+        'irac3' -> Spitzer IRAC3 mag -> colors: I2-I3
+        'irac4' -> Spitzer IRAC4 mag -> colors: I3-I4
+        'wise1' -> WISE W1 mag	 -> colors: i-W1, W1-W2
+        'wise2' -> WISE W2 mag	 -> colors: W1-W2, W2-W3
+        'wise3' -> WISE W3 mag	 -> colors: W2-W3
+        'wise4' -> WISE W4 mag	 -> colors: W3-W4
+
+       If you have magnitude measurements in other bands, use the
+       `custom_bandpasses` kwarg to pass these in.
+
+    varinfo : dict or None
+        If this is None, a blank dict of the form below will be added to the
+        checkplotdict:
+
+        {'objectisvar': None -> variability flag (None indicates unset),
+         'vartags': CSV str containing variability type tags from review,
+         'varisperiodic': None -> periodic variability flag (None means unset),
+         'varperiod': the period associated with the periodic variability,
+         'varepoch': the epoch associated with the periodic variability}
+
+        If you provide a dict matching this format in this kwarg, this will be
+        passed unchanged to the output checkplotdict produced.
+
+    findercmap : str or matplotlib.cm.ColorMap object
+        The Colormap object to use for the finder chart image.
+
+    finderconvolve : astropy.convolution.Kernel object or None
+        If not None, the Kernel object to use for convolving the finder image.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    normto : {'globalmedian', 'zero'} or a float
+        'globalmedian' -> norms each mag to the global median of the LC column
+        'zero'         -> norms each mag to zero
+        a float        -> norms each mag to this specified float value.
+
+    normmingap : float
+        This defines how much the difference between consecutive measurements is
+        allowed to be to consider them as parts of different timegroups. By
+        default it is set to 4.0 days.
+
+    deredden_objects : bool
+        If this is True, will use the 2MASS DUST service to get extinction
+        coefficients in various bands, and then try to deredden the magnitudes
+        and colors of the object already present in the checkplot's objectinfo
+        dict.
+
+    custom_bandpasses : dict
+        This is a dict used to provide custom bandpass definitions for any
+        magnitude measurements in the objectinfo dict that are not automatically
+        recognized by the `varclass.starfeatures.color_features` function. See
+        its docstring for details on the required format.
+
+    lclistpkl : dict or str
+        If this is provided, must be a dict resulting from reading a catalog
+        produced by the `lcproc.catalogs.make_lclist` function or a str path
+        pointing to the pickle file produced by that function. This catalog is
+        used to find neighbors of the current object in the current light curve
+        collection. Looking at neighbors of the object within the radius
+        specified by `nbrradiusarcsec` is useful for light curves produced by
+        instruments that have a large pixel scale, so are susceptible to
+        blending of variability and potential confusion of neighbor variability
+        with that of the actual object being looked at. If this is None, no
+        neighbor lookups will be performed.
+
+    nbrradiusarcsec : float
+        The radius in arcseconds to use for a search conducted around the
+        coordinates of this object to look for any potential confusion and
+        blending of variability amplitude caused by their proximity.
+
+    maxnumneighbors : int
+        The maximum number of neighbors that will have their light curves and
+        magnitudes noted in this checkplot as potential blends with the target
+        object.
+
+    plotdpi : int
+        The resolution in DPI of the plots to generate in this function
+        (e.g. the finder chart, etc.)
+
+    findercachedir : str
+        The path to the astrobase cache directory for finder chart downloads
+        from the NASA SkyView service.
+
+    verbose : bool
+        If True, will indicate progress and warn about potential problems.
+
+    gaia_submit_timeout : float
+        Sets the timeout in seconds to use when submitting a request to look up
+        the object's information to the GAIA service. Note that if `fast_mode`
+        is set, this is ignored.
+
+    gaia_submit_tries : int
+        Sets the maximum number of times the GAIA services will be contacted to
+        obtain this object's information. If `fast_mode` is set, this is
+        ignored, and the services will be contacted only once (meaning that a
+        failure to respond will be silently ignored and no GAIA data will be
+        added to the checkplot's objectinfo dict).
+
+    gaia_max_timeout : float
+        Sets the timeout in seconds to use when waiting for the GAIA service to
+        respond to our request for the object's information. Note that if
+        `fast_mode` is set, this is ignored.
+
+    gaia_mirror : str
+        This sets the GAIA mirror to use. This is a key in the
+        `services.gaia.GAIA_URLS` dict which defines the URLs to hit for each
+        mirror.
+
+    fast_mode : bool or float
+        This runs the external catalog operations in a "fast" mode, with short
+        timeouts and not trying to hit external catalogs that take a long time
+        to respond. See the docstring for
+        `checkplot.pkl_utils._pkl_finder_objectinfo` for details on how this
+        works. If this is True, will run in "fast" mode with default timeouts (5
+        seconds in most cases). If this is a float, will run in "fast" mode with
+        the provided timeout value in seconds.
+
+    complete_query_later : bool
+        If this is True, saves the state of GAIA queries that are not yet
+        complete when `gaia_max_timeout` is reached while waiting for the GAIA
+        service to respond to our request. A later call for GAIA info on the
+        same object will attempt to pick up the results from the existing query
+        if it's completed. If `fast_mode` is True, this is ignored.
+
+    Returns
+    -------
+
+    dict
+        A checkplotdict is returned containing the objectinfo and varinfo dicts,
+        ready to use with the functions below to add in light curve plots,
+        phased LC plots, xmatch info, etc.
 
     '''
 
@@ -971,6 +1177,65 @@ def _pkl_periodogram(lspinfo,
                      override_pfmethod=None):
     '''This returns the periodogram plot PNG as base64, plus info as a dict.
 
+    Parameters
+    ----------
+
+    lspinfo : dict
+        This is an lspinfo dict containing results from a period-finding
+        function. If it's from an astrobase period-finding function in
+        periodbase, this will already be in the correct format. To use external
+        period-finder results with this function, the `lspinfo` dict must be of
+        the following form, with at least the keys listed below:
+
+        {'periods': np.array of all periods searched by the period-finder,
+         'lspvals': np.array of periodogram power value for each period,
+         'bestperiod': a float value that is the period with the highest peak
+                       in the periodogram, i.e. the most-likely actual period,
+         'method': a three-letter code naming the period-finder used; must be
+                   one of the keys in the `astrobase.periodbase.METHODLABELS`
+                   dict,
+         'nbestperiods': a list of the periods corresponding to periodogram
+                         peaks (`nbestlspvals` below) to annotate on the
+                         periodogram plot so they can be called out visually,
+         'nbestlspvals': a list of the power values associated with periodogram
+                         peaks to annotate on the periodogram plot so they can
+                         be called out visually; should be the same length as
+                         `nbestperiods` above}
+
+        `nbestperiods` and `nbestlspvals` must have at least 5 elements each,
+        e.g. describing the five 'best' (highest power) peaks in the
+        periodogram.
+
+    plotdpi : int
+        The resolution in DPI of the output periodogram plot to make.
+
+    override_pfmethod : str or None
+        This is used to set a custom label for this periodogram
+        method. Normally, this is taken from the 'method' key in the input
+        `lspinfo` dict, but if you want to override the output method name,
+        provide this as a string here. This can be useful if you have multiple
+        results you want to incorporate into a checkplotdict from a single
+        period-finder (e.g. if you ran BLS over several period ranges
+        separately).
+
+    Returns
+    -------
+
+    dict
+        Returns a dict that contains the following items:
+
+        {methodname: {'periods':the period array from lspinfo,
+                      'lspval': the periodogram power array from lspinfo,
+                      'bestperiod': the best period from lspinfo,
+                      'nbestperiods': the 'nbestperiods' list from lspinfo,
+                      'nbestlspvals': the 'nbestlspvals' list from lspinfo,
+                      'periodogram': base64 encoded string representation of
+                                     the periodogram plot}}
+
+        The dict is returned in this format so it can be directly incorporated
+        under the period-finder's label `methodname` in a checkplotdict, using
+        Python's dict `update()` method.
+
     '''
 
     # get the appropriate plot ylabel
@@ -1062,6 +1327,36 @@ def _pkl_magseries_plot(stimes, smags, serrs,
                         magsarefluxes=False):
     '''This returns the magseries plot PNG as base64, plus arrays as dict.
 
+    Parameters
+    ----------
+
+    stimes, smags, serrs : np.array
+        The mag/flux time-series arrays along with associated errors. These
+        should all have been run through nan-stripping and sigma-clipping
+        beforehand.
+
+    plotdpi : int
+        The resolution of the plot to make in DPI.
+
+    magsarefluxes : bool
+        If True, indicates the input time-series is fluxes and not mags so the
+        plot y-axis direction and range can be set appropriately.
+
+    Returns
+    -------
+
+    dict
+        A dict of the following form is returned:
+
+        {'magseries': {'plot': base64 encoded str representation of the
+                               magnitude/flux time-series plot,
+                       'times': the `stimes` array,
+                       'mags': the `smags` array,
+                       'errs': the 'serrs' array}}
+
+        The dict is returned in this format so it can be directly incorporated
+        in a checkplotdict, using Python's dict `update()` method.
+
     '''
 
     scaledplottime = stimes - npmin(stimes)
@@ -1134,60 +1429,178 @@ def _pkl_magseries_plot(stimes, smags, serrs,
 
 
 
-def _pkl_phased_magseries_plot(checkplotdict,
-                               lspmethod,
-                               periodind,
-                               stimes, smags, serrs,
-                               varperiod, varepoch,
-                               lspmethodind=0,
-                               phasewrap=True,
-                               phasesort=True,
-                               phasebin=0.002,
-                               minbinelems=7,
-                               plotxlim=(-0.8,0.8),
-                               plotdpi=100,
-                               bestperiodhighlight=None,
-                               xgridlines=None,
-                               xliminsetmode=False,
-                               magsarefluxes=False,
-                               directreturn=False,
-                               overplotfit=None,
-                               verbose=True,
-                               override_pfmethod=None):
+def _pkl_phased_magseries_plot(
+        checkplotdict,
+        lspmethod,
+        periodind,
+        stimes, smags, serrs,
+        varperiod, varepoch,
+        lspmethodind=0,
+        phasewrap=True,
+        phasesort=True,
+        phasebin=0.002,
+        minbinelems=7,
+        plotxlim=(-0.8,0.8),
+        plotdpi=100,
+        bestperiodhighlight=None,
+        xgridlines=None,
+        xliminsetmode=False,
+        magsarefluxes=False,
+        directreturn=False,
+        overplotfit=None,
+        verbose=True,
+        override_pfmethod=None
+):
     '''This returns the phased magseries plot PNG as base64 plus info as a dict.
 
-    checkplotdict is an existing checkplotdict to update. If it's None or
-    directreturn = True, then the generated dict result for this magseries plot
-    will be returned directly.
+    Parameters
+    ----------
 
-    lspmethod is a string indicating the type of period-finding algorithm that
-    produced the period. If this is not in METHODSHORTLABELS, it will be used
-    verbatim.
+    checkplotdict : dict
+        This is an existing checkplotdict to update. If it's None or
+        `directreturn` = True, then the generated dict result for this magseries
+        plot will be returned directly.
 
-    periodind is the index of the period.
+    lspmethod : str
+        lspmethod is a string indicating the type of period-finding algorithm
+        that produced the period. If this is not in
+        `astrobase.plotbase.METHODSHORTLABELS`, it will be used verbatim. In
+        most cases, this will come directly from the lspinfo dict produced by a
+        period-finder function.
 
-      If == 0  -> best period and bestperiodhighlight is applied if not None
-      If > 0   -> some other peak of the periodogram
-      If == -1 -> special mode w/ no periodogram labels and enabled highlight
+    periodind : int
+        This is the index of the current periodogram period being operated
+        on.
 
-    overplotfit is a result dict returned from one of the XXXX_fit_magseries
-    functions in astrobase.varbase.lcfit. If this is not None, then the fit will
-    be overplotted on the phased light curve plot.
+        If == 0 -> best period and `bestperiodhighlight` is applied if not None
+        If > 0   -> some other peak of the periodogram
+        If == -1 -> special mode w/ no periodogram labels and enabled highlight
 
-    overplotfit must have the following structure and at least the keys below if
-    not originally from one of these functions:
+    stimes, smags, serrs : np.array
+        The mag/flux time-series arrays along with associated errors. These
+        should all have been run through nan-stripping and sigma-clipping
+        beforehand.
 
-    {'fittype':<str: name of fit method>,
-     'fitchisq':<float: the chi-squared value of the fit>,
-     'fitredchisq':<float: the reduced chi-squared value of the fit>,
-     'fitinfo':{'fitmags':<ndarray: model mags or fluxes from fit function>},
-     'magseries':{'times':<ndarray: times at which the fitmags are evaluated>}}
+    varperiod : float or None
+        The period to use for this phased light curve plot tile.
 
-    fitmags and times should all be of the same size. overplotfit is copied over
-    to the checkplot dict for each specific phased LC plot to save all of this
-    information.
+    varepoch : 'min' or float or list of lists or None
+        The epoch to use for this phased light curve plot tile. If this is a
+        float, will use the provided value directly. If this is 'min', will
+        automatically figure out the time-of-minimum of the phased light
+        curve. If this is None, will use the mimimum value of `stimes` as the
+        epoch of the phased light curve plot. If this is a list of lists, will
+        use the provided value of `lspmethodind` to look up the current
+        period-finder method and the provided value of `periodind` to look up
+        the epoch associated with that method and the current period. This is
+        mostly only useful when `twolspmode` is True.
+
+    phasewrap : bool
+        If this is True, the phased time-series will be wrapped around
+        phase 0.0.
+
+    phasesort : bool
+        If True, will sort the phased light curve in order of increasing phase.
+
+    phasebin: float
+        The bin size to use to group together measurements closer than this
+        amount in phase. This is in units of phase. If this is a float, a
+        phase-binned version of the phased light curve will be overplotted on
+        top of the regular phased light curve.
+
+    minbinelems : int
+        The minimum number of elements required per phase bin to include it in
+        the phased LC plot.
+
+    plotxlim : sequence of two floats or None
+        The x-range (min, max) of the phased light curve plot. If None, will be
+        determined automatically.
+
+    plotdpi : int
+        The resolution of the output plot PNGs in dots per inch.
+
+    bestperiodhighlight : str or None
+        If not None, this is a str with a matplotlib color specification to use
+        as the background color to highlight the phased light curve plot of the
+        'best' period and epoch combination. If None, no highlight will be
+        applied.
+
+    xgridlines : list of floats or None
+        If this is provided, must be a list of floats corresponding to the phase
+        values where to draw vertical dashed lines as a means of highlighting
+        these.
+
+    xliminsetmode : bool
+        If this is True, the generated phased light curve plot will use the
+        values of `plotxlim` as the main plot x-axis limits (i.e. zoomed-in if
+        `plotxlim` is a range smaller than the full phase range), and will show
+        the full phased light curve plot as an smaller inset. Useful for
+        planetary transit light curves.
+
+    magsarefluxes : bool
+        If True, indicates the input time-series is fluxes and not mags so the
+        plot y-axis direction and range can be set appropriately.
+
+    directreturn : bool
+        If this set to True, will return only the dict corresponding to the
+        phased LC plot for the input `periodind` and `lspmethod` and not return
+        this result embedded in a checkplotdict.
+
+    overplotfit : dict
+
+        If this is provided, it must be a dict of the form returned by one of
+        the varbase.lcfit.fit_XXXXX_magseries functions. This can be used to
+        overplot a light curve model fit on top of the phased light curve plot
+        returned by this function. The `overplotfit` dict has the following
+        form, including at least the keys listed here:
+
+        {'fittype':<str: name of fit method>,
+        'fitchisq':<float: the chi-squared value of the fit>,
+        'fitredchisq':<float: the reduced chi-squared value of the fit>,
+        'fitinfo':{'fitmags':<array: model mags or fluxes from fit function>},
+        'magseries':{'times':<array: times at which the fitmags are evaluated>}}
+
+        `fitmags` and `times` should all be of the same size. The input
+        `overplotfit` dict is copied over to the checkplotdict for each specific
+        phased LC plot to save all of this information for use later.
+
+    verbose : bool
+        If True, will indicate progress and warn about problems.
+
+    override_pfmethod : str or None
+        This is used to set a custom label for the periodogram method. Normally,
+        this is taken from the 'method' key in the input `lspinfo` dict, but if
+        you want to override the output method name, provide this as a string
+        here. This can be useful if you have multiple results you want to
+        incorporate into a checkplotdict from a single period-finder (e.g. if
+        you ran BLS over several period ranges separately).
+
+    Returns
+    -------
+
+    dict
+        Returns a dict of the following form:
+
+        {lspmethod: {'plot': the phased LC plot as base64 str,
+                     'period': the period used for this phased LC,
+                     'epoch': the epoch used for this phased LC,
+                     'phase': phase value array,
+                     'phasedmags': mags/fluxes sorted in phase order,
+                     'binphase': array of binned phase values,
+                     'binphasedmags': mags/fluxes sorted in binphase order,
+                     'phasewrap': value of the input `phasewrap` kwarg,
+                     'phasesort': value of the input `phasesort` kwarg,
+                     'phasebin': value of the input `phasebin` kwarg,
+                     'minbinelems': value of the input `minbinelems` kwarg,
+                     'plotxlim': value of the input `plotxlim` kwarg,
+                     'lcfit': the provided `overplotfit` dict}}
+
+        The dict is in this form because we can use Python dicts' `update()`
+        method to update an existing checkplotdict. If `returndirect` is True,
+        only the inner dict is returned.
 
     '''
+
     # open the figure instance
     phasedseriesfig = plt.figure(figsize=(7.5,4.8),dpi=plotdpi)
 
