@@ -4,7 +4,7 @@
     "magcols": ["iep1", "itf1"],
     "errcols": ["ire1", "ire1"],
     "magsarefluxes": false,
-    "lcreader_module": "astrobase.hplc",
+    "lcreader_module": "astrobase.hatsurveys.hplc",
     "lcreader_func": "read_hatpi_pklc",
     "lcreader_kwargs": null,
     "lcnorm_module": null,

@@ -338,7 +338,7 @@ def get_lcformat(formatkey, use_lcformat_dir=None):
 
     '''
 
-    if use_lcformat_dir:
+    if isinstance(use_lcformat_dir, str):
 
         # look for the lcformat JSON
         lcformat_jsonpath = os.path.join(
@@ -357,7 +357,7 @@ def get_lcformat(formatkey, use_lcformat_dir=None):
 
                 install_path = os.path.dirname(__file__)
                 install_path = os.path.abspath(
-                    os.path.join(install_path, '..', 'data')
+                    os.path.join(install_path, '..', 'data','lcformats')
                 )
 
                 lcformat_jsonpath = os.path.join(
@@ -384,7 +384,7 @@ def get_lcformat(formatkey, use_lcformat_dir=None):
 
             install_path = os.path.dirname(__file__)
             install_path = os.path.abspath(
-                os.path.join(install_path, '..', 'data')
+                os.path.join(install_path, '..', 'data','lcformats')
             )
 
             lcformat_jsonpath = os.path.join(
@@ -406,10 +406,10 @@ def get_lcformat(formatkey, use_lcformat_dir=None):
 
     readerfunc_module = lcformatdict['lcreader_module']
     readerfunc = lcformatdict['lcreader_func']
-    readerfunc_kwargs = lcformatdict['readerfunc_kwargs']
+    readerfunc_kwargs = lcformatdict['lcreader_kwargs']
     normfunc_module = lcformatdict['lcnorm_module']
     normfunc = lcformatdict['lcnorm_func']
-    normfunc_kwargs = lcformatdict['readerfunc_kwargs']
+    normfunc_kwargs = lcformatdict['lcnorm_kwargs']
 
     fileglob = lcformatdict['fileglob']
     timecols = lcformatdict['timecols']
