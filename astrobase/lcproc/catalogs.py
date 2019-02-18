@@ -148,7 +148,7 @@ def lclist_parallel_worker(task):
         if formatinfo:
             (dfileglob, readerfunc,
              dtimecols, dmagcols, derrcols,
-             magarefluxes, normfunc) = formatinfo
+             magsarefluxes, normfunc) = formatinfo
         else:
             LOGERROR("can't figure out the light curve format")
             return None
@@ -308,7 +308,7 @@ def make_lclist(basedir,
         if formatinfo:
             (dfileglob, readerfunc,
              dtimecols, dmagcols, derrcols,
-             magarefluxes, normfunc) = formatinfo
+             magsarefluxes, normfunc) = formatinfo
         else:
             LOGERROR("can't figure out the light curve format")
             return None

@@ -79,8 +79,6 @@ NCPUS = mp.cpu_count()
 ## LOCAL IMPORTS ##
 ###################
 
-from astrobase.lcproc import LCFORM
-
 from astrobase.checkplot.pkl_io import (
     _read_checkplot_picklefile,
     _write_checkplot_picklefile,

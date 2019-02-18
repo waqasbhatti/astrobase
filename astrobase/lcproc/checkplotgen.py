@@ -87,7 +87,7 @@ from astrobase.checkplot.pkl_utils import (
 )
 from astrobase.checkplot.pkl import checkplot_dict
 
-from astrobase.lcproc import LCFORM
+from astrobase.lcproc import get_lcformat
 from astrobase.lcproc.periodsearch import PFMETHODS
 
 
@@ -103,6 +103,7 @@ def update_checkplotdict_nbrlcs(
         checkplotdict,
         timecol, magcol, errcol,
         lcformat='hat-sql',
+        lcformatdir=None,
         verbose=True,
 ):
 
@@ -113,8 +114,18 @@ def update_checkplotdict_nbrlcs(
 
     '''
 
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return checkplotdict
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return checkplotdict
 
     if not ('neighbors' in checkplotdict and
@@ -124,10 +135,6 @@ def update_checkplotdict_nbrlcs(
         LOGERROR('no neighbors for %s, not updating...' %
                  (checkplotdict['objectid']))
         return checkplotdict
-
-    # get the lcformat specific info
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
 
     # get our object's magkeys to compare to the neighbor
     objmagkeys = {}
@@ -377,6 +384,7 @@ def runcp(pfpickle,
           minobservations=99,
           sigclip=10.0,
           lcformat='hat-sql',
+          lcformatdir=None,
           timecols=None,
           magcols=None,
           errcols=None,
@@ -478,8 +486,18 @@ def runcp(pfpickle,
 
     '''
 
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (fileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return None
 
     if pfpickle is not None:
@@ -493,8 +511,6 @@ def runcp(pfpickle,
 
         infd.close()
 
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
 
     # override the default timecols, magcols, and errcols
     # using the ones provided to the function
@@ -797,6 +813,7 @@ def parallel_cp(pfpicklelist,
                 liststartindex=None,
                 maxobjects=None,
                 lcformat='hat-sql',
+                lcformatdir=None,
                 timecols=None,
                 magcols=None,
                 errcols=None,
@@ -843,6 +860,7 @@ def parallel_cp(pfpicklelist,
 
     tasklist = [(x, outdir, lcbasedir,
                  {'lcformat':lcformat,
+                  'lcformatdir':lcformatdir,
                   'lcfname':y,
                   'timecols':timecols,
                   'magcols':magcols,
@@ -896,6 +914,7 @@ def parallel_cp_pfdir(pfpickledir,
                       maxobjects=None,
                       pfpickleglob='periodfinding-*.pkl*',
                       lcformat='hat-sql',
+                      lcformatdir=None,
                       timecols=None,
                       magcols=None,
                       errcols=None,
@@ -932,6 +951,7 @@ def parallel_cp_pfdir(pfpickledir,
                        cprenorm=cprenorm,
                        maxobjects=maxobjects,
                        lcformat=lcformat,
+                       lcformatdir=lcformatdir,
                        timecols=timecols,
                        magcols=magcols,
                        errcols=errcols,
