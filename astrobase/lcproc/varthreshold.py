@@ -84,7 +84,7 @@ NCPUS = mp.cpu_count()
 ###################
 
 from astrobase.magnitudes import jhk_to_sdssr
-from astrobase.lcproc import LCFORM
+from astrobase.lcproc import get_lcformat
 
 
 
@@ -102,6 +102,7 @@ def variability_threshold(featuresdir,
                           magcols=None,
                           errcols=None,
                           lcformat='hat-sql',
+                          lcformatdir=None,
                           min_lcmad_stdev=5.0,
                           min_stetj_stdev=2.0,
                           min_iqr_stdev=2.0,
@@ -127,13 +128,19 @@ def variability_threshold(featuresdir,
     over from the variability recovery sims.
 
     '''
-
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return None
-
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
 
     # override the default timecols, magcols, and errcols
     # using the ones provided to the function
@@ -648,17 +655,26 @@ def plot_variability_thresholds(varthreshpkl,
                                 xmin_iqr_stdev=2.0,
                                 xmin_inveta_stdev=2.0,
                                 lcformat='hat-sql',
+                                lcformatdir=None,
                                 magcols=None):
     '''
     This makes plots for the variability threshold distributions.
 
     '''
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
-        return None
 
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
+        return None
 
     if magcols is None:
         magcols = dmagcols

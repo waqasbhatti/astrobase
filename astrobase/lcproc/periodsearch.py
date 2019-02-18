@@ -70,7 +70,7 @@ from astrobase.lcmath import normalize_magseries
 from astrobase import periodbase
 from astrobase.periodbase.kbls import bls_snr
 
-from astrobase.lcproc import LCFORM
+from astrobase.lcproc import get_lcformat
 
 
 
@@ -111,6 +111,7 @@ def runpf(lcfile,
           magcols=None,
           errcols=None,
           lcformat='hat-sql',
+          lcformatdir=None,
           pfmethods=('gls','pdm','mav','win'),
           pfkwargs=({},{},{},{}),
           sigclip=10.0,
@@ -142,12 +143,19 @@ def runpf(lcfile,
 
     '''
 
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return None
-
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
 
     # override the default timecols, magcols, and errcols
     # using the ones provided to the function
@@ -206,6 +214,7 @@ def runpf(lcfile,
                       'magcols':magcols,
                       'errcols':errcols,
                       'lcformat':lcformat,
+                      'lcformatdir':lcformatdir,
                       'pfmethods':pfmethods,
                       'pfkwargs':pfkwargs,
                       'sigclip':sigclip,
@@ -380,7 +389,7 @@ def runpf_worker(task):
 
     '''
 
-    (lcfile, outdir, timecols, magcols, errcols, lcformat,
+    (lcfile, outdir, timecols, magcols, errcols, lcformat, lcformatdir,
      pfmethods, pfkwargs, getblssnr, sigclip, nworkers, minobservations,
      excludeprocessed) = task
 
@@ -391,6 +400,7 @@ def runpf_worker(task):
                          magcols=magcols,
                          errcols=errcols,
                          lcformat=lcformat,
+                         lcformatdir=lcformatdir,
                          pfmethods=pfmethods,
                          pfkwargs=pfkwargs,
                          getblssnr=getblssnr,
@@ -411,6 +421,7 @@ def parallel_pf(lclist,
                 magcols=None,
                 errcols=None,
                 lcformat='hat-sql',
+                lcformatdir=None,
                 pfmethods=('gls','pdm','mav','win'),
                 pfkwargs=({},{},{},{}),
                 getblssnr=False,
@@ -467,7 +478,7 @@ def parallel_pf(lclist,
     elif (liststartindex is not None) and (listmaxobjects is not None):
         lclist = lclist[liststartindex:liststartindex+listmaxobjects]
 
-    tasklist = [(x, outdir, timecols, magcols, errcols, lcformat,
+    tasklist = [(x, outdir, timecols, magcols, errcols, lcformat, lcformatdir,
                  pfmethods, pfkwargs, getblssnr, sigclip, nperiodworkers,
                  minobservations,
                  excludeprocessed)
@@ -483,11 +494,13 @@ def parallel_pf(lclist,
 
 def parallel_pf_lcdir(lcdir,
                       outdir,
+                      fileglob=None,
                       recursive=True,
                       timecols=None,
                       magcols=None,
                       errcols=None,
                       lcformat='hat-sql',
+                      lcformatdir=None,
                       pfmethods=('gls','pdm','mav','win'),
                       pfkwargs=({},{},{},{}),
                       getblssnr=False,
@@ -503,11 +516,22 @@ def parallel_pf_lcdir(lcdir,
 
     '''
 
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return None
 
-    fileglob = LCFORM[lcformat][0]
+    if not fileglob:
+        fileglob = dfileglob
 
     # now find the files
     LOGINFO('searching for %s light curves in %s ...' % (lcformat, lcdir))
@@ -556,6 +580,7 @@ def parallel_pf_lcdir(lcdir,
                            magcols=magcols,
                            errcols=errcols,
                            lcformat=lcformat,
+                           lcformatdir=lcformatdir,
                            pfmethods=pfmethods,
                            pfkwargs=pfkwargs,
                            getblssnr=getblssnr,

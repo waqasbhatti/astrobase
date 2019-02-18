@@ -82,11 +82,10 @@ NCPUS = mp.cpu_count()
 ## LOCAL IMPORTS ##
 ###################
 
-
 from astrobase.lcmath import normalize_magseries
 from astrobase.varclass import varfeatures
 
-from astrobase.lcproc import LCFORM
+from astrobase.lcproc import get_lcformat
 
 
 
@@ -100,18 +99,26 @@ def get_varfeatures(lcfile,
                     magcols=None,
                     errcols=None,
                     mindet=1000,
-                    lcformat='hat-sql'):
+                    lcformat='hat-sql',
+                    lcformatdir=None):
     '''
     This runs varfeatures on a single LC file.
 
     '''
 
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return None
-
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
 
     # override the default timecols, magcols, and errcols
     # using the ones provided to the function
@@ -237,13 +244,15 @@ def varfeatures_worker(task):
     '''
 
     try:
-        lcfile, outdir, timecols, magcols, errcols, mindet, lcformat = task
+        (lcfile, outdir, timecols, magcols, errcols,
+         mindet, lcformat, lcformatdir) = task
         return get_varfeatures(lcfile, outdir,
                                timecols=timecols,
                                magcols=magcols,
                                errcols=errcols,
                                mindet=mindet,
-                               lcformat=lcformat)
+                               lcformat=lcformat,
+                               lcformatdir=lcformatdir)
 
     except Exception as e:
         return None
@@ -257,12 +266,14 @@ def serial_varfeatures(lclist,
                        errcols=None,
                        mindet=1000,
                        lcformat='hat-sql',
+                       lcformatdir=None,
                        nworkers=NCPUS):
 
     if maxobjects:
         lclist = lclist[:maxobjects]
 
-    tasks = [(x, outdir, timecols, magcols, errcols, mindet, lcformat)
+    tasks = [(x, outdir, timecols, magcols, errcols,
+              mindet, lcformat, lcformatdir)
              for x in lclist]
 
     for task in tqdm(tasks):
@@ -280,6 +291,7 @@ def parallel_varfeatures(lclist,
                          errcols=None,
                          mindet=1000,
                          lcformat='hat-sql',
+                         lcformatdir=None,
                          nworkers=NCPUS):
     '''
     This runs varfeatures in parallel for all light curves in lclist.
@@ -292,8 +304,8 @@ def parallel_varfeatures(lclist,
     if maxobjects:
         lclist = lclist[:maxobjects]
 
-    tasks = [(x, outdir, timecols, magcols, errcols, mindet, lcformat)
-             for x in lclist]
+    tasks = [(x, outdir, timecols, magcols, errcols, mindet,
+              lcformat, lcformatdir) for x in lclist]
 
     with ProcessPoolExecutor(max_workers=nworkers) as executor:
         resultfutures = executor.map(varfeatures_worker, tasks)
@@ -307,6 +319,7 @@ def parallel_varfeatures(lclist,
 
 def parallel_varfeatures_lcdir(lcdir,
                                outdir,
+                               fileglob=None,
                                maxobjects=None,
                                timecols=None,
                                magcols=None,
@@ -314,17 +327,29 @@ def parallel_varfeatures_lcdir(lcdir,
                                recursive=True,
                                mindet=1000,
                                lcformat='hat-sql',
+                               lcformatdir=None,
                                nworkers=NCPUS):
     '''
     This runs parallel variable feature extraction for a directory of LCs.
 
     '''
 
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return None
 
-    fileglob = LCFORM[lcformat][0]
+    if not fileglob:
+        fileglob = dfileglob
 
     # now find the files
     LOGINFO('searching for %s light curves in %s ...' % (lcformat, lcdir))
@@ -338,7 +363,8 @@ def parallel_varfeatures_lcdir(lcdir,
 
             matching = glob.glob(os.path.join(lcdir,
                                               '**',
-                                              fileglob),recursive=True)
+                                              fileglob),
+                                 recursive=True)
 
         # otherwise, use os.walk and glob
         else:
@@ -372,6 +398,7 @@ def parallel_varfeatures_lcdir(lcdir,
                                     errcols=errcols,
                                     mindet=mindet,
                                     lcformat=lcformat,
+                                    lcformatdir=lcformatdir,
                                     nworkers=nworkers)
 
     else:

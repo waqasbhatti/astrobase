@@ -84,7 +84,7 @@ NCPUS = mp.cpu_count()
 ###################
 
 from astrobase.varclass import starfeatures
-from astrobase.lcproc import LCFORM
+from astrobase.lcproc import get_lcformat
 
 
 
@@ -100,7 +100,8 @@ def get_starfeatures(lcfile,
                      neighbor_radius_arcsec,
                      deredden=True,
                      custom_bandpasses=None,
-                     lcformat='hat-sql'):
+                     lcformat='hat-sql',
+                     lcformatdir=None):
     '''This runs the functions from astrobase.varclass.starfeatures on a single
     light curve file.
 
@@ -126,12 +127,19 @@ def get_starfeatures(lcfile,
 
     '''
 
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return None
-
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
 
     try:
 
@@ -215,14 +223,15 @@ def starfeatures_worker(task):
     try:
         (lcfile, outdir, kdtree, objlist,
          lcflist, neighbor_radius_arcsec,
-         deredden, custom_bandpasses, lcformat) = task
+         deredden, custom_bandpasses, lcformat, lcformatdir) = task
 
         return get_starfeatures(lcfile, outdir,
                                 kdtree, objlist, lcflist,
                                 neighbor_radius_arcsec,
                                 deredden=deredden,
                                 custom_bandpasses=custom_bandpasses,
-                                lcformat=lcformat)
+                                lcformat=lcformat,
+                                lcformatdir=lcformatdir)
     except Exception as e:
         return None
 
@@ -235,6 +244,7 @@ def serial_starfeatures(lclist,
                         deredden=True,
                         custom_bandpasses=None,
                         lcformat='hat-sql',
+                        lcformatdir=None,
                         nworkers=NCPUS):
     '''This drives the starfeatures function for a collection of LCs.
 
@@ -267,7 +277,8 @@ def serial_starfeatures(lclist,
 
     tasks = [(x, outdir, kdt, objlist, objlcfl,
               neighbor_radius_arcsec,
-              deredden, custom_bandpasses, lcformat) for x in lclist]
+              deredden, custom_bandpasses,
+              lcformat, lcformatdir) for x in lclist]
 
     for task in tqdm(tasks):
         result = starfeatures_worker(task)
@@ -284,14 +295,25 @@ def parallel_starfeatures(lclist,
                           deredden=True,
                           custom_bandpasses=None,
                           lcformat='hat-sql',
+                          lcformatdir=None,
                           nworkers=NCPUS):
     '''
     This runs starfeatures in parallel for all light curves in lclist.
 
     '''
 
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return None
 
     # make sure to make the output directory if it doesn't exist
@@ -327,10 +349,12 @@ def parallel_starfeatures_lcdir(lcdir,
                                 outdir,
                                 lclistpickle,
                                 neighbor_radius_arcsec,
+                                fileglob=None,
                                 maxobjects=None,
                                 deredden=True,
                                 custom_bandpasses=None,
                                 lcformat='hat-sql',
+                                lcformatdir=None,
                                 nworkers=NCPUS,
                                 recursive=True):
     '''
@@ -338,11 +362,22 @@ def parallel_starfeatures_lcdir(lcdir,
 
     '''
 
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return None
 
-    fileglob = LCFORM[lcformat][0]
+    if not fileglob:
+        fileglob = dfileglob
 
     # now find the files
     LOGINFO('searching for %s light curves in %s ...' % (lcformat, lcdir))
@@ -390,6 +425,7 @@ def parallel_starfeatures_lcdir(lcdir,
                                      custom_bandpasses=custom_bandpasses,
                                      maxobjects=maxobjects,
                                      lcformat=lcformat,
+                                     lcformatdir=lcformatdir,
                                      nworkers=nworkers)
 
     else:

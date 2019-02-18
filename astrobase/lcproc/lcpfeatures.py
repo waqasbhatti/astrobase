@@ -85,8 +85,10 @@ NCPUS = mp.cpu_count()
 from astrobase.lcmath import normalize_magseries
 from astrobase.varclass import periodicfeatures
 
-from astrobase.lcproc import LCFORM
+from astrobase.lcproc import get_lcformat
 from astrobase.lcproc.periodsearch import PFMETHODS
+
+
 
 #######################
 ## PERIODIC FEATURES ##
@@ -110,8 +112,8 @@ def get_periodicfeatures(pfpickle,
                          magcols=None,
                          errcols=None,
                          lcformat='hat-sql',
+                         lcformatdir=None,
                          sigclip=10.0,
-                         magsarefluxes=False,
                          verbose=True,
                          raiseonfail=False):
     '''This gets all periodic features for the object.
@@ -123,12 +125,19 @@ def get_periodicfeatures(pfpickle,
 
     '''
 
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (fileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return None
-
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
 
     # open the pfpickle
     if pfpickle.endswith('.gz'):
@@ -475,8 +484,8 @@ def serial_periodicfeatures(pfpkl_list,
                             magcols=None,
                             errcols=None,
                             lcformat='hat-sql',
+                            lcformatdir=None,
                             sigclip=10.0,
-                            magsarefluxes=False,
                             verbose=False,
                             maxobjects=None,
                             nworkers=NCPUS):
@@ -484,8 +493,19 @@ def serial_periodicfeatures(pfpkl_list,
     pickles.
 
     '''
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (fileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return None
 
     # make sure to make the output directory if it doesn't exist
@@ -538,8 +558,8 @@ def serial_periodicfeatures(pfpkl_list,
               'magcols':magcols,
               'errcols':errcols,
               'lcformat':lcformat,
+              'lcformatdir':lcformatdir,
               'sigclip':sigclip,
-              'magsarefluxes':magsarefluxes,
               'verbose':verbose}
 
     tasks = [(x, lcbasedir, outdir, y, kwargs) for (x,y) in
@@ -570,8 +590,8 @@ def parallel_periodicfeatures(pfpkl_list,
                               magcols=None,
                               errcols=None,
                               lcformat='hat-sql',
+                              lcformatdir=None,
                               sigclip=10.0,
-                              magsarefluxes=False,
                               verbose=False,
                               maxobjects=None,
                               nworkers=NCPUS):
@@ -629,8 +649,8 @@ def parallel_periodicfeatures(pfpkl_list,
               'magcols':magcols,
               'errcols':errcols,
               'lcformat':lcformat,
+              'lcformatdir':lcformat,
               'sigclip':sigclip,
-              'magsarefluxes':magsarefluxes,
               'verbose':verbose}
 
     tasks = [(x, lcbasedir, outdir, y, kwargs) for (x,y) in
@@ -668,8 +688,8 @@ def parallel_periodicfeatures_lcdir(
         magcols=None,
         errcols=None,
         lcformat='hat-sql',
+        lcformatdir=None,
         sigclip=10.0,
-        magsarefluxes=False,
         verbose=False,
         maxobjects=None,
         nworkers=NCPUS,
@@ -680,8 +700,18 @@ def parallel_periodicfeatures_lcdir(
 
     '''
 
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return None
 
     fileglob = pfpkl_glob
@@ -741,8 +771,8 @@ def parallel_periodicfeatures_lcdir(
             magcols=magcols,
             errcols=errcols,
             lcformat=lcformat,
+            lcformatdir=lcformatdir,
             sigclip=sigclip,
-            magsarefluxes=magsarefluxes,
             verbose=verbose,
             maxobjects=maxobjects,
             nworkers=nworkers,

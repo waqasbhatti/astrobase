@@ -72,7 +72,7 @@ NCPUS = mp.cpu_count()
 ## LOCAL IMPORTS ##
 ###################
 
-from astrobase.lcproc import LCFORM
+from astrobase.lcproc import get_lcformat
 from astrobase.varbase.trends import epd_magseries, smooth_magseries_savgol
 
 
@@ -87,7 +87,7 @@ def apply_epd_magseries(lcfile,
                         errcol,
                         externalparams,
                         lcformat='hat-sql',
-                        magsarefluxes=False,
+                        lcformatdir=None,
                         epdsmooth_sigclip=3.0,
                         epdsmooth_windowsize=21,
                         epdsmooth_func=smooth_magseries_savgol,
@@ -125,10 +125,21 @@ def apply_epd_magseries(lcfile,
     A. Pal's thesis: https://arxiv.org/abs/0906.3486
 
     '''
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
+        return None
 
-    readerfunc = LCFORM[lcformat][1]
     lcdict = readerfunc(lcfile)
-
     if ((isinstance(lcdict, (tuple, list))) and
         isinstance(lcdict[0], dict)):
         lcdict = lcdict[0]
@@ -206,7 +217,7 @@ def parallel_epd_worker(task):
     task[3] = errcol
     task[4] = externalparams
     task[5] = lcformat
-    task[6] = magsarefluxes
+    task[6] = lcformatdir
     task[7] = epdsmooth_sigclip
     task[8] = epdsmooth_windowsize
     task[9] = epdsmooth_func
@@ -215,7 +226,7 @@ def parallel_epd_worker(task):
     '''
 
     (lcfile, timecol, magcol, errcol,
-     externalparams, lcformat, magsarefluxes,
+     externalparams, lcformat, lcformatdir, magsarefluxes,
      epdsmooth_sigclip, epdsmooth_windowsize,
      epdsmooth_func, epdsmooth_extraparams) = task
 
@@ -227,7 +238,7 @@ def parallel_epd_worker(task):
                                   errcol,
                                   externalparams,
                                   lcformat=lcformat,
-                                  magsarefluxes=magsarefluxes,
+                                  lcformatdir=lcformatdir,
                                   epdsmooth_sigclip=epdsmooth_sigclip,
                                   epdsmooth_windowsize=epdsmooth_windowsize,
                                   epdsmooth_func=epdsmooth_func,
@@ -252,6 +263,7 @@ def parallel_epd_lclist(lclist,
                         magcols=None,
                         errcols=None,
                         lcformat='hat-sql',
+                        lcformatdir=None,
                         magsarefluxes=False,
                         epdsmooth_sigclip=3.0,
                         epdsmooth_windowsize=21,
@@ -264,9 +276,19 @@ def parallel_epd_lclist(lclist,
 
     '''
 
-    # get the default time, mag, err cols if not provided
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (fileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
+        return None
 
     # override the default timecols, magcols, and errcols
     # using the ones provided to the function
@@ -282,8 +304,8 @@ def parallel_epd_lclist(lclist,
     # run by magcol
     for t, m, e in zip(timecols, magcols, errcols):
 
-        tasks = [(x, t, m, e, externalparams, lcformat,
-                  magsarefluxes, epdsmooth_sigclip, epdsmooth_windowsize,
+        tasks = [(x, t, m, e, externalparams, lcformat, lcformatdir,
+                  epdsmooth_sigclip, epdsmooth_windowsize,
                   epdsmooth_func, epdsmooth_extraparams) for
                  x in lclist]
 
@@ -306,6 +328,7 @@ def parallel_epd_lcdir(
         magcols=None,
         errcols=None,
         lcformat='hat-sql',
+        lcformatdir=None,
         magsarefluxes=False,
         epdsmooth_sigclip=3.0,
         epdsmooth_windowsize=21,
@@ -319,9 +342,19 @@ def parallel_epd_lcdir(
 
     '''
 
-    # get the default time, mag, err cols if not provided
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (fileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
+        return None
 
     # find all the files matching the lcglob in lcdir
     if lcfileglob is None:

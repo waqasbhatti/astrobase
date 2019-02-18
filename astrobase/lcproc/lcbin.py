@@ -72,7 +72,7 @@ NCPUS = mp.cpu_count()
 ## LOCAL IMPORTS ##
 ###################
 
-from astrobase.lcproc import LCFORM
+from astrobase.lcproc import get_lcformat
 from astrobase.lcmath import (
     normalize_magseries,
     time_bin_magseries_with_errs,
@@ -88,6 +88,7 @@ def timebinlc(lcfile,
               binsizesec,
               outdir=None,
               lcformat='hat-sql',
+              lcformatdir=None,
               timecols=None,
               magcols=None,
               errcols=None,
@@ -98,12 +99,19 @@ def timebinlc(lcfile,
 
     '''
 
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return None
-
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
 
     # override the default timecols, magcols, and errcols
     # using the ones provided to the function
@@ -200,7 +208,8 @@ def timebinlc_worker(task):
 
     task[0] = lcfile
     task[1] = binsizesec
-    task[3] = {'outdir','lcformat','timecols','magcols','errcols','minbinelems'}
+    task[3] = {'outdir','lcformat','lcformatdir',
+               'timecols','magcols','errcols','minbinelems'}
 
     '''
 
@@ -223,6 +232,7 @@ def parallel_timebin(lclist,
                      maxobjects=None,
                      outdir=None,
                      lcformat='hat-sql',
+                     lcformatdir=None,
                      timecols=None,
                      magcols=None,
                      errcols=None,
@@ -242,6 +252,7 @@ def parallel_timebin(lclist,
 
     tasks = [(x, binsizesec, {'outdir':outdir,
                               'lcformat':lcformat,
+                              'lcformatdir':lcformatdir,
                               'timecols':timecols,
                               'magcols':magcols,
                               'errcols':errcols,
@@ -263,6 +274,7 @@ def parallel_timebin_lcdir(lcdir,
                            maxobjects=None,
                            outdir=None,
                            lcformat='hat-sql',
+                           lcformatdir=None,
                            timecols=None,
                            magcols=None,
                            errcols=None,
@@ -273,14 +285,19 @@ def parallel_timebin_lcdir(lcdir,
     This bins all the light curves in lcdir using binsizesec.
 
     '''
-
-    # get the light curve glob associated with specified lcformat
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (fileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return None
-
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
 
     lclist = sorted(glob.glob(os.path.join(lcdir, fileglob)))
 

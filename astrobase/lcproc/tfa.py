@@ -90,8 +90,7 @@ from astrobase.lcmath import (
     sigclip_magseries
 )
 
-
-from astrobase.lcproc import LCFORM
+from astrobase.lcproc import get_lcformat
 
 
 
@@ -105,23 +104,33 @@ def collect_tfa_stats(task):
 
     task[0] = lcfile
     task[1] = lcformat
-    task[2] = timecols
-    task[3] = magcols
-    task[4] = errcols
-    task[5] = custom_bandpasses
+    task[2] = lcformatdir
+    task[3] = timecols
+    task[4] = magcols
+    task[5] = errcols
+    task[6] = custom_bandpasses
 
     '''
 
     try:
 
-        lcfile, lcformat, timecols, magcols, errcols, custom_bandpasses = task
+        (lcfile, lcformat, lcformatdir,
+         timecols, magcols, errcols,
+         custom_bandpasses) = task
 
-        if lcformat not in LCFORM or lcformat is None:
-            LOGERROR('unknown light curve format specified: %s' % lcformat)
+        try:
+            formatinfo = get_lcformat(lcformat,
+                                      use_lcformat_dir=lcformatdir)
+            if formatinfo:
+                (dfileglob, readerfunc,
+                 dtimecols, dmagcols, derrcols,
+                 magsarefluxes, normfunc) = formatinfo
+            else:
+                LOGERROR("can't figure out the light curve format")
+                return None
+        except Exception as e:
+            LOGEXCEPTION("can't figure out the light curve format")
             return None
-
-        (fileglob, readerfunc, dtimecols, dmagcols,
-         derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
 
         # override the default timecols, magcols, and errcols
         # using the ones provided to the function
@@ -187,6 +196,7 @@ def collect_tfa_stats(task):
                       'colorfeat':colorfeat,
                       'lcfpath':os.path.abspath(lcfile),
                       'lcformat':lcformat,
+                      'lcformatdir':lcformatdir,
                       'timecols':timecols,
                       'magcols':magcols,
                       'errcols':errcols}
@@ -255,27 +265,35 @@ def reform_templatelc_for_tfa(task):
 
     task[0] = lcfile
     task[1] = lcformat
-    task[2] = timecol
-    task[3] = magcol
-    task[4] = errcol
-    task[5] = timebase
-    task[6] = interpolate_type
-    task[7] = sigclip
+    task[2] = lcformatdir
+    task[3] = timecol
+    task[4] = magcol
+    task[5] = errcol
+    task[6] = timebase
+    task[7] = interpolate_type
+    task[8] = sigclip
 
     '''
 
     try:
 
-        (lcfile, lcformat,
+        (lcfile, lcformat, lcformatdir,
          tcol, mcol, ecol,
          timebase, interpolate_type, sigclip) = task
 
-        if lcformat not in LCFORM or lcformat is None:
-            LOGERROR('unknown light curve format specified: %s' % lcformat)
+        try:
+            formatinfo = get_lcformat(lcformat,
+                                      use_lcformat_dir=lcformatdir)
+            if formatinfo:
+                (dfileglob, readerfunc,
+                 dtimecols, dmagcols, derrcols,
+                 magsarefluxes, normfunc) = formatinfo
+            else:
+                LOGERROR("can't figure out the light curve format")
+                return None
+        except Exception as e:
+            LOGEXCEPTION("can't figure out the light curve format")
             return None
-
-        (fileglob, readerfunc, dtimecols, dmagcols,
-         derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
 
         # get the LC into a dict
         lcdict = readerfunc(lcfile)
@@ -377,6 +395,7 @@ def tfa_templates_lclist(
         template_sigclip=5.0,
         template_interpolate='nearest',
         lcformat='hat-sql',
+        lcformatdir=None,
         timecols=None,
         magcols=None,
         errcols=None,
@@ -467,9 +486,19 @@ def tfa_templates_lclist(
     dict, which can also be passed to that function.
 
     '''
-
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
+        return None
 
     # override the default timecols, magcols, and errcols
     # using the ones provided to the function
@@ -484,8 +513,9 @@ def tfa_templates_lclist(
             len(lclist))
 
     # first, we'll collect the light curve info
-    tasks = [(x, lcformat, timecols, magcols, errcols, custom_bandpasses) for x
-             in lclist]
+    tasks = [(x, lcformat, lcformat,
+              timecols, magcols, errcols,
+              custom_bandpasses) for x in lclist]
 
     pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
     results = pool.map(collect_tfa_stats, tasks)
@@ -755,7 +785,7 @@ def tfa_templates_lclist(
                 # reform all template LCs to this time base, normalize to
                 # zero, and sigclip as requested. this is a parallel op
                 # first, we'll collect the light curve info
-                tasks = [(x, lcformat,
+                tasks = [(x, lcformat, lcformatdir,
                           tcol, mcol, ecol,
                           timebase, template_interpolate,
                           template_sigclip) for x
@@ -850,6 +880,7 @@ def apply_tfa_magseries(lcfile,
                         templateinfo,
                         mintemplatedist_arcmin=1.0,
                         lcformat='hat-sql',
+                        lcformatdir=None,
                         interp='nearest',
                         sigclip=5.0):
     '''This applies the TFA correction to an LC given TFA template information.
@@ -881,14 +912,26 @@ def apply_tfa_magseries(lcfile,
 
     '''
 
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
+        return None
+
     # get the templateinfo from a pickle if necessary
     if isinstance(templateinfo,str) and os.path.exists(templateinfo):
         with open(templateinfo,'rb') as infd:
             templateinfo = pickle.load(infd)
 
-    readerfunc = LCFORM[lcformat][1]
     lcdict = readerfunc(lcfile)
-
     if ((isinstance(lcdict, (tuple, list))) and
         isinstance(lcdict[0], dict)):
         lcdict = lcdict[0]
@@ -933,6 +976,7 @@ def apply_tfa_magseries(lcfile,
     reformed_targetlc = reform_templatelc_for_tfa((
         lcfile,
         lcformat,
+        lcformatdir,
         timecol,
         magcol,
         errcol,
@@ -995,19 +1039,22 @@ def parallel_tfa_worker(task):
     task[3] = errcol
     task[4] = templateinfo
     task[5] = lcformat
+    task[6] = lcformatdir
     task[6] = interp
     task[7] = sigclip
 
     '''
 
     (lcfile, timecol, magcol, errcol,
-     templateinfo, lcformat, interp, sigclip) = task
+     templateinfo, lcformat, lcformatdir,
+     interp, sigclip) = task
 
     try:
 
         res = apply_tfa_magseries(lcfile, timecol, magcol, errcol,
                                   templateinfo,
                                   lcformat=lcformat,
+                                  lcformatdir=lcformatdir,
                                   interp=interp,
                                   sigclip=sigclip)
         if res:
@@ -1027,6 +1074,7 @@ def parallel_tfa_lclist(lclist,
                         magcols=None,
                         errcols=None,
                         lcformat='hat-sql',
+                        lcformatdir=None,
                         interp='nearest',
                         sigclip=5.0,
                         nworkers=NCPUS,
@@ -1061,9 +1109,19 @@ def parallel_tfa_lclist(lclist,
         with open(templateinfo,'rb') as infd:
             templateinfo = pickle.load(infd)
 
-    # get the default time, mag, err cols if not provided
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
+        return None
 
     # override the default timecols, magcols, and errcols
     # using the ones provided to the function
@@ -1080,7 +1138,9 @@ def parallel_tfa_lclist(lclist,
     # run by magcol
     for t, m, e in zip(timecols, magcols, errcols):
 
-        tasks = [(x, t, m, e, templateinfo, lcformat, interp, sigclip) for
+        tasks = [(x, t, m, e, templateinfo,
+                  lcformat, lcformatdir,
+                  interp, sigclip) for
                  x in lclist]
 
         pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
@@ -1101,6 +1161,7 @@ def parallel_tfa_lcdir(lcdir,
                        magcols=None,
                        errcols=None,
                        lcformat='hat-sql',
+                       lcformatdir=None,
                        interp='nearest',
                        sigclip=5.0,
                        nworkers=NCPUS,
@@ -1118,13 +1179,23 @@ def parallel_tfa_lcdir(lcdir,
         with open(templateinfo,'rb') as infd:
             templateinfo = pickle.load(infd)
 
-    # get the default time, mag, err cols if not provided
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
+        return None
 
     # find all the files matching the lcglob in lcdir
     if lcfileglob is None:
-        lcfileglob = fileglob
+        lcfileglob = dfileglob
 
     lclist = sorted(glob.glob(os.path.join(lcdir, lcfileglob)))
 
@@ -1135,6 +1206,7 @@ def parallel_tfa_lcdir(lcdir,
         magcols=magcols,
         errcols=errcols,
         lcformat=lcformat,
+        lcformatdir=None,
         interp=interp,
         sigclip=sigclip,
         nworkers=nworkers,
