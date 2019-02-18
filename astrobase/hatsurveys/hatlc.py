@@ -1458,7 +1458,13 @@ def normalize_lcdict(lcdict,
     ngroups, timegroups = find_lc_timegroups(np.array(times),
                                              mingap=mingap)
 
-    apertures = sorted(lcdict['lcapertures'].keys())
+    # HATLC V2 format
+    if 'lcapertures' in lcdict:
+        apertures = sorted(lcdict['lcapertures'].keys())
+    # LCC-CSV-V1 format HATLC
+    elif 'objectinfo' in lcdict and 'lcapertures' in lcdict['objectinfo']:
+        apertures = sorted(lcdict['objectinfo']['lcapertures'].keys())
+
 
     aimcols = [('aim_%s' % x) for x in apertures if ('aim_%s' % x) in lcdict]
     armcols = [('arm_%s' % x) for x in apertures if ('arm_%s' % x) in lcdict]
@@ -1630,7 +1636,12 @@ def normalize_lcdict_byinst(
     normkeys = np.unique(allkeys)
 
     # figure out the apertures
-    apertures = sorted(lcdict['lcapertures'].keys())
+    # HATLC V2 format
+    if 'lcapertures' in lcdict:
+        apertures = sorted(lcdict['lcapertures'].keys())
+    # LCC-CSV-V1 format HATLC
+    elif 'objectinfo' in lcdict and 'lcapertures' in lcdict['objectinfo']:
+        apertures = sorted(lcdict['objectinfo']['lcapertures'].keys())
 
     # put together the column names
     aimcols = [('aim_%s' % x) for x in apertures if ('aim_%s' % x) in lcdict]
