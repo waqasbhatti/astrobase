@@ -312,7 +312,7 @@ def test_checkplot_pickle_topng():
     assert os.path.exists(outpath)
 
     # test read back
-    cpd = ._read_checkplot_picklefile(cpf)
+    cpd = _read_checkplot_picklefile(cpf)
 
     assert isinstance(cpd, dict)
 
