@@ -451,7 +451,7 @@ def checkplot_dict(
 
         If `externalplots` is provided here, these paths will be stored in the
         output checkplotdict. The `checkplot.pkl_png.checkplot_pickle_to_png`
-        function can then will automatically retrieve these plot PNGs and put
+        function can then automatically retrieve these plot PNGs and put
         them into the exported checkplot PNG.
 
     findercmap : str or matplotlib.cm.ColorMap object
@@ -1232,7 +1232,7 @@ def checkplot_pickle(
 
         If `externalplots` is provided here, these paths will be stored in the
         output checkplotdict. The `checkplot.pkl_png.checkplot_pickle_to_png`
-        function can then will automatically retrieve these plot PNGs and put
+        function can then automatically retrieve these plot PNGs and put
         them into the exported checkplot PNG.
 
     findercmap : str or matplotlib.cm.ColorMap object

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''pkl_io.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
+'''pkl_png.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
 License: MIT.
 
 This contains utility functions that support the checkplot pickle to PNG export
@@ -72,15 +72,20 @@ from .pkl_io import _read_checkplot_picklefile, _base64_to_file
 ## MAIN FUNCTION ##
 ###################
 
-def checkplot_pickle_to_png(checkplotin,
-                            outfile,
-                            extrarows=None):
-    '''This reads the pickle provided, and writes out a PNG.
+def checkplot_pickle_to_png(
+        checkplotin,
+        outfile,
+        extrarows=None
+):
+    '''This reads the checkplot pickle or dict provided, and writes out a PNG.
 
-    checkplotin is either a checkplot dict produced by checkplot_pickle above or
-    a pickle file produced by the same function.
+    The output PNG contains most of the information in the input checkplot
+    pickle/dict, and can be used to quickly glance through the highlights
+    instead of having to review the checkplot with the `checkplotserver`
+    webapp. This is useful for exporting read-only views of finalized checkplots
+    from the `checkplotserver` as well, to share them with other people.
 
-    The PNG has 4 x N tiles, as below:
+    The PNG has 4 x N tiles:
 
     [    finder    ] [  objectinfo  ] [ varinfo/comments ] [ unphased LC  ]
     [ periodogram1 ] [ phased LC P1 ] [   phased LC P2   ] [ phased LC P3 ]
@@ -95,41 +100,63 @@ def checkplot_pickle_to_png(checkplotin,
     - phased LC P1,P2,P3: the phased lightcurves using the best 3 peaks in each
                           periodogram
 
-    outfile is the output PNG file to generate.
+    Parameters
+    ----------
 
-    extrarows is a list of 4-element tuples containing paths to PNG files that
-    will be added to the end of the rows generated from the checkplotin
-    pickle/dict. Each tuple represents a row in the final output PNG file. If
-    there are less than 4 elements per tuple, the missing elements will be
-    filled in with white-space. If there are more than 4 elements per tuple,
-    only the first four will be used.
+    checkplotin : dict or str
+        This is either a checkplotdict produced by
+        `checkplot.pkl.checkplot_dict` or a checkplot pickle file produced by
+        `checkplot.pkl.checkplot_pickle`.
 
-    The purpose of this kwarg is to incorporate periodograms and phased LC plots
-    (in the form of PNGs) generated from an external period-finding function or
-    program (like vartools) to allow for comparison with astrobase results.
+    outfile : str
+        The filename of the output PNG file to create.
 
-    Each external PNG will be resized to 750 x 480 pixels to fit into an output
-    image cell.
+    extrarows : list of tuples
+        This is a list of 4-element tuples containing paths to PNG files that
+        will be added to the end of the rows generated from the checkplotin
+        pickle/dict. Each tuple represents a row in the final output PNG
+        file. If there are less than 4 elements per tuple, the missing elements
+        will be filled in with white-space. If there are more than 4 elements
+        per tuple, only the first four will be used.
 
-    By convention, each 4-element tuple should contain:
+        The purpose of this kwarg is to incorporate periodograms and phased LC
+        plots (in the form of PNGs) generated from an external period-finding
+        function or program (like VARTOOLS) to allow for comparison with
+        astrobase results.
 
-    a periodiogram PNG
-    phased LC PNG with 1st best peak period from periodogram
-    phased LC PNG with 2nd best peak period from periodogram
-    phased LC PNG with 3rd best peak period from periodogram
+        NOTE: the PNG files specified in `extrarows` here will be added to those
+        already present in the input checkplotdict['externalplots'] if that is
+        None because you passed in a similar list of external plots to the
+        `checkplot.pkl.checkplot_pickle` function earlier. In this case,
+        `extrarows` can be used to add even more external plots if desired.
 
-    example of extrarows:
+        Each external plot PNG will be resized to 750 x 480 pixels to fit into
+        an output image cell.
 
-    extrarows = [('/path/to/external/bls-periodogram.png',
-                  '/path/to/external/bls-phasedlc-plot-bestpeak.png',
-                  '/path/to/external/bls-phasedlc-plot-peak2.png',
-                  '/path/to/external/bls-phasedlc-plot-peak3.png'),
-                 ('/path/to/external/pdm-periodogram.png',
-                  '/path/to/external/pdm-phasedlc-plot-bestpeak.png',
-                  '/path/to/external/pdm-phasedlc-plot-peak2.png',
-                  '/path/to/external/pdm-phasedlc-plot-peak3.png'),
-                  ...]
+        By convention, each 4-element tuple should contain:
 
+        - a periodiogram PNG
+        - phased LC PNG with 1st best peak period from periodogram
+        - phased LC PNG with 2nd best peak period from periodogram
+        - phased LC PNG with 3rd best peak period from periodogram
+
+        Example of extrarows:
+
+        [('/path/to/external/bls-periodogram.png',
+          '/path/to/external/bls-phasedlc-plot-bestpeak.png',
+          '/path/to/external/bls-phasedlc-plot-peak2.png',
+          '/path/to/external/bls-phasedlc-plot-peak3.png'),
+         ('/path/to/external/pdm-periodogram.png',
+          '/path/to/external/pdm-phasedlc-plot-bestpeak.png',
+          '/path/to/external/pdm-phasedlc-plot-peak2.png',
+          '/path/to/external/pdm-phasedlc-plot-peak3.png'),
+        ...]
+
+    Returns
+    -------
+
+    str
+        The absolute path to the generated checkplot PNG.
 
     '''
 
@@ -1105,7 +1132,60 @@ def cp2png(checkplotin, extrarows=None):
     '''
     This is just a shortened form of the function above for convenience.
 
-    This only handles pickle files.
+    This only handles pickle files as input.
+
+    Parameters
+    ----------
+
+    checkplotin : str
+        File name of a checkplot pickle file to convert to a PNG.
+
+    extrarows : list of tuples
+        This is a list of 4-element tuples containing paths to PNG files that
+        will be added to the end of the rows generated from the checkplotin
+        pickle/dict. Each tuple represents a row in the final output PNG
+        file. If there are less than 4 elements per tuple, the missing elements
+        will be filled in with white-space. If there are more than 4 elements
+        per tuple, only the first four will be used.
+
+        The purpose of this kwarg is to incorporate periodograms and phased LC
+        plots (in the form of PNGs) generated from an external period-finding
+        function or program (like VARTOOLS) to allow for comparison with
+        astrobase results.
+
+        NOTE: the PNG files specified in `extrarows` here will be added to those
+        already present in the input checkplotdict['externalplots'] if that is
+        None because you passed in a similar list of external plots to the
+        `checkplot.pkl.checkplot_pickle` function earlier. In this case,
+        `extrarows` can be used to add even more external plots if desired.
+
+        Each external plot PNG will be resized to 750 x 480 pixels to fit into
+        an output image cell.
+
+        By convention, each 4-element tuple should contain:
+
+        - a periodiogram PNG
+        - phased LC PNG with 1st best peak period from periodogram
+        - phased LC PNG with 2nd best peak period from periodogram
+        - phased LC PNG with 3rd best peak period from periodogram
+
+        Example of extrarows:
+
+        [('/path/to/external/bls-periodogram.png',
+          '/path/to/external/bls-phasedlc-plot-bestpeak.png',
+          '/path/to/external/bls-phasedlc-plot-peak2.png',
+          '/path/to/external/bls-phasedlc-plot-peak3.png'),
+         ('/path/to/external/pdm-periodogram.png',
+          '/path/to/external/pdm-phasedlc-plot-bestpeak.png',
+          '/path/to/external/pdm-phasedlc-plot-peak2.png',
+          '/path/to/external/pdm-phasedlc-plot-peak3.png'),
+        ...]
+
+    Returns
+    -------
+
+    str
+        The absolute path to the generated checkplot PNG.
 
     '''
 
