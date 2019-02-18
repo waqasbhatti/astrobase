@@ -125,7 +125,7 @@ def _make_periodogram(axes,
     objectinfo : dict
         Dict containing basic info about the object being processed.
 
-    findercmap : matplotlib Colormap object
+    findercmap : matplotlib Colormap object or str
         The Colormap object to use for the finder chart image.
 
     finderconvolve : astropy.convolution.Kernel object or None
