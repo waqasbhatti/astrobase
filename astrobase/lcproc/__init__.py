@@ -67,7 +67,19 @@ def dict_get(datadict, keylist):
 
 def read_pklc(lcfile):
     '''
-    This just reads a pickle.
+    This just reads a light curve pickle file.
+
+    Parameters
+    ----------
+
+    lcfile : str
+        The file name of the pickle to open.
+
+    Returns
+    -------
+
+    dict
+        This returns an lcdict.
 
     '''
 
@@ -98,7 +110,38 @@ def read_pklc(lcfile):
 #################################
 
 def check_extmodule(module, formatkey):
-    '''This just imports the module specified.
+    '''This imports the module specified.
+
+    Used to dynamically import Python modules that are needed to support LC
+    formats not natively supported by astrobase.
+
+    Parameters
+    ----------
+
+    module : str
+        This is either:
+
+        - a Python module import path, e.g. 'astrobase.lcproc.catalogs' or
+        - a path to a Python file, e.g. '/astrobase/hatsurveys/hatlc.py'
+
+        that contains the Python module that contains functions used to open
+        (and optionally normalize) a custom LC format that's not natively
+        supported by astrobase.
+
+    formatkey : str
+        A str used as the unique ID of this LC format for all lcproc functions
+        and can be used to look it up later and import the correct functions
+        needed to support it for lcproc operations. For example, we use
+        'kep-fits' as a the specifier for Kepler FITS light curves, which can be
+        read by the `astrobase.astrokep.read_kepler_fitslc` function as
+        specified by the `<astrobase install path>/data/lcformats/kep-fits.json`
+        LC format specification JSON.
+
+    Returns
+    -------
+
+    Python module
+        This returns a Python module if it's able to successfully import it.
 
     '''
 
@@ -144,67 +187,123 @@ def register_lcformat(formatkey,
     Allows handling of custom format light curves for astrobase lcproc
     drivers. Once the format is successfully registered, light curves should
     work transparently with all of the functions in this module, by simply
-    calling them with the formatkey in the lcformat keyword argument.
+    calling them with the `formatkey` in the `lcformat` keyword argument.
 
-    Args
-    ----
+    LC format specifications are generated as JSON files. astrobase comes with
+    several of these in `<astrobase install path>/data/lcformats`. LC formats
+    you add by using this function will have their specifiers written to the
+    `~/.astrobase/lcformat-jsons` directory in your home directory.
 
-    formatkey: <string>: what to use as the key for your light curve format
+    Parameters
+    ----------
 
+    formatkey : str
+        A str used as the unique ID of this LC format for all lcproc functions
+        and can be used to look it up later and import the correct functions
+        needed to support it for lcproc operations. For example, we use
+        'kep-fits' as a the specifier for Kepler FITS light curves, which can be
+        read by the `astrobase.astrokep.read_kepler_fitslc` function as
+        specified by the `<astrobase install path>/data/lcformats/kep-fits.json`
+        LC format specification JSON produced by `register_lcformat`.
 
-    fileglob: <string>: the default fileglob to use to search for light curve
-    files in this custom format. This is a string like
-    '*-whatever-???-*.*??-.lc'.
+    fileglob : str
+        The default UNIX fileglob to use to search for light curve files in this
+        LC format. This is a string like '*-whatever-???-*.*??-.lc'.
 
+    timecols, magcols, errcols : list of str
 
-    readerfunc: <function>: this is the function to use to read light curves in
-    the custom format. This should return a dictionary (the 'lcdict') with the
-    following signature (the keys listed below are required, but others are
-    allowed):
+        These are all lists of strings indicating which keys in the lcdict
+        produced by your `lcreader_func` that will be extracted and used by
+        lcproc functions for processing. The lists must all have the same
+        dimensions, e.g. if timecols = ['timecol1','timecol2'], then magcols
+        must be something like ['magcol1','magcol2'] and errcols must be
+        something like ['errcol1', 'errcol2']. This allows you to process
+        multiple apertures or multiple types of measurements in one go.
 
-    {'objectid':'<this object's name>',
-     'objectinfo':{'ra':<this object's right ascension>
-                   'decl':<this object's declination>},
-     ...time columns, mag columns, etc.}
+        Each element in these lists can be a simple key, e.g. 'time' (which
+        would correspond to lcdict['time']), or a composite key,
+        e.g. 'aperture1.times.rjd' (which would correspond to
+        lcdict['aperture1']['times']['rjd']). See the examples in the lcformat
+        specification JSON files in `<astrobase install path>/data/lcformats`.
 
+    readerfunc_module : str
+        This is either:
 
-    timecols, magcols, errcols: <list>: these are all lists of strings
-    indicating which keys in the lcdict to use for processing. The lists must
-    all have the same dimensions, e.g. if timecols = ['timecol1','timecol2'],
-    then magcols must be something like ['magcol1','magcol2'] and errcols must
-    be something like ['errcol1', 'errcol2']. This allows you to process
-    multiple apertures or multiple types of measurements in one go.
+        - a Python module import path, e.g. 'astrobase.lcproc.catalogs' or
+        - a path to a Python file, e.g. '/astrobase/hatsurveys/hatlc.py'
 
-    Each element in these lists can be a simple key, e.g. 'time' (which would
-    correspond to lcdict['time']), or a composite key,
-    e.g. 'aperture1.times.rjd' (which would correspond to
-    lcdict['aperture1']['times']['rjd']). See the LCFORM dict above for
-    examples.
+        that contains the Python module that contains functions used to open
+        (and optionally normalize) a custom LC format that's not natively
+        supported by astrobase.
 
+    readerfunc : str
+        This is the function name in `readerfunc_module` to use to read light
+        curves in the custom format. This MUST always return a dictionary (the
+        'lcdict') with the following signature (the keys listed below are
+        required, but others are allowed):
 
-    readerfunc_kwargs is a dictionary containing any kwargs to pass through to
-    the light curve reader function.
+        {'objectid': this object's identifier as a string,
+         'objectinfo':{'ra': this object's right ascension in decimal deg,
+                       'decl': this object's declination in decimal deg,
+                       'ndet': the number of observations in this LC,
+                       'objectid': the object ID repeated for legacy reasons},
+         ...other time columns, mag columns go in as their own keys}
 
+    normfunc_kwargs : dict or None
+        This is a dictionary containing any kwargs to pass through to
+        the light curve norm function.
 
-    specialnormfunc: <function>: if you intend to use a special normalization
-    function for your lightcurves, indicate it here. If None, the default
-    normalization method used by lcproc is to find gaps in the time-series,
-    normalize measurements grouped by these gaps to zero, then normalize the
-    entire magnitude time series to global time series median using the
-    astrobase.lcmath.normalize_magseries function. The function should take and
-    return an lcdict of the same form as that produced by readerfunc above. For
-    an example of a special normalization function, see normalize_lcdict_by_inst
-    in the astrobase.hatlc module.
+    normfunc_module : str or None
+        This is either:
 
+        - a Python module import path, e.g. 'astrobase.lcproc.catalogs' or
+        - a path to a Python file, e.g. '/astrobase/hatsurveys/hatlc.py'
+        - None, in which case we'll use default normalization
 
-    normfunc_kwargs is a dictionary containing any kwargs to pass through to
-    the special light curve normalization function.
+        that contains the Python module that contains functions used to
+        normalize a custom LC format that's not natively supported by astrobase.
 
+    normfunc : str or None
+        This is the function name in `normfunc_module` to use to normalize light
+        curves in the custom format. If None, the default normalization method
+        used by lcproc is to find gaps in the time-series, normalize
+        measurements grouped by these gaps to zero, then normalize the entire
+        magnitude time series to global time series median using the
+        `astrobase.lcmath.normalize_magseries` function.
 
-    magsarefluxes: <boolean>: if this is True, then all functions will treat the
-    magnitude columns as flux instead, so things like default normalization and
-    sigma-clipping will be done correctly. If this is False, magnitudes will be
-    treated as magnitudes.
+        If this is provided, the normalization function should take and return
+        an lcdict of the same form as that produced by `readerfunc` above. For
+        an example of a specific normalization function, see
+        `normalize_lcdict_by_inst` in the `astrobase.hatsurveys.hatlc` module.
+
+    normfunc_kwargs : dict or None
+        This is a dictionary containing any kwargs to pass through to
+        the light curve normalization function.
+
+    magsarefluxes : bool
+        If this is True, then all lcproc functions will treat the measurement
+        columns in the lcdict produced by your `readerfunc` as flux instead of
+        mags, so things like default normalization and sigma-clipping will be
+        done correctly. If this is False, magnitudes will be treated as
+        magnitudes.
+
+    overwrite_existing : bool
+        If this is True, this function will overwrite any existing LC format
+        specification JSON with the same name as that provided in the
+        `formatkey` arg. This can be used to update LC format specifications
+        while keeping the `formatkey` the same.
+
+    lcformat_dir : str
+        This specifies the directory where the the LC format specification JSON
+        produced by this function will be written. By default, this goes to the
+        `.astrobase/lcformat-jsons` directory in your home directory.
+
+    Returns
+    -------
+
+    str
+        Returns the file path to the generated LC format specification JSON
+        file.
 
     '''
 
@@ -316,7 +415,6 @@ def get_lcformat(formatkey, use_lcformat_dir=None):
         - first, in the directory specified in this kwarg,
         - if not found there, in the home directory: ~/.astrobase/lcformat-jsons
         - if not found there, in: <astrobase install path>/data/lcformats
-
 
     Returns
     -------
