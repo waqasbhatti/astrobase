@@ -94,8 +94,56 @@ def timebinlc(lcfile,
               errcols=None,
               minbinelems=7):
 
-    '''
-    This bins the given light curve file in time using binsizesec.
+    '''This bins the given light curve file in time using the specified bin size.
+
+    Parameters
+    ----------
+
+    lcfile : str
+        The file name to process.
+
+    binsizesec : float
+        The time bin-size in seconds.
+
+    outdir : str or None
+        If this is a str, the output LC will be written to `outdir`. If this is
+        None, the output LC will be written to the same directory as `lcfile`.
+
+    lcformat : str
+        This is the `formatkey` associated with your light curve format, which
+        you previously passed in to the `lcproc.register_lcformat`
+        function. This will be used to look up how to find and read the light
+        curve file.
+
+    lcformatdir : str or None
+        If this is provided, gives the path to a directory when you've stored
+        your lcformat description JSONs, other than the usual directories lcproc
+        knows to search for them in. Use this along with `lcformat` to specify
+        an LC format JSON file that's not currently registered with lcproc.
+
+    timecols,magcols,errcols : lists of str
+        The keys in the lcdict produced by your light curve reader function that
+        correspond to the times, mags/fluxes, and associated measurement errors
+        that will be used as inputs to the binning process. If these are None,
+        the default values for `timecols`, `magcols`, and `errcols` for your
+        light curve format will be used here.
+
+    minbinelems : int
+        The minimum number of time-bin elements required to accept a time-bin as
+        valid for the output binned light curve.
+
+    Returns
+    -------
+
+    str
+        The name of the output pickle file with the binned LC.
+
+        Writes the output binned light curve to a pickle that contains the
+        lcdict with an added `lcdict['binned'][magcol]` key, which contains the
+        binned times, mags/fluxes, and errs as
+        `lcdict['binned'][magcol]['times']`, `lcdict['binned'][magcol]['mags']`,
+        and `lcdict['epd'][magcol]['errs']` for each `magcol` provided in the
+        input or default `magcols` value for this light curve format.
 
     '''
 
@@ -206,10 +254,20 @@ def timebinlc_worker(task):
     '''
     This is a parallel worker for the function below.
 
-    task[0] = lcfile
-    task[1] = binsizesec
-    task[3] = {'outdir','lcformat','lcformatdir',
-               'timecols','magcols','errcols','minbinelems'}
+    Parameters
+    ----------
+
+    task : tuple
+        - task[0] = lcfile
+        - task[1] = binsizesec
+        - task[3] = {'outdir','lcformat','lcformatdir',
+                     'timecols','magcols','errcols','minbinelems'}
+
+    Returns
+    -------
+
+    str
+        The output pickle file with the binned LC if successful. None otherwise.
 
     '''
 
@@ -239,8 +297,59 @@ def parallel_timebin(lclist,
                      minbinelems=7,
                      nworkers=NCPUS,
                      maxworkertasks=1000):
-    '''
-    This bins all the light curves in lclist using binsizesec.
+    '''This time-bins all the LCs in the list using the specified bin size.
+
+    Parameters
+    ----------
+
+    lclist : list of str
+        The input LCs to process.
+
+    binsizesec : float
+        The time bin size to use in seconds.
+
+    maxobjects : int or None
+        If provided, LC processing will stop at `lclist[maxobjects]`.
+
+    outdir : str or None
+        The directory where output LCs will be written. If None, will write to
+        the same directory as the input LCs.
+
+    lcformat : str
+        This is the `formatkey` associated with your light curve format, which
+        you previously passed in to the `lcproc.register_lcformat`
+        function. This will be used to look up how to find and read the light
+        curve file.
+
+    lcformatdir : str or None
+        If this is provided, gives the path to a directory when you've stored
+        your lcformat description JSONs, other than the usual directories lcproc
+        knows to search for them in. Use this along with `lcformat` to specify
+        an LC format JSON file that's not currently registered with lcproc.
+
+    timecols,magcols,errcols : lists of str
+        The keys in the lcdict produced by your light curve reader function that
+        correspond to the times, mags/fluxes, and associated measurement errors
+        that will be used as inputs to the binning process. If these are None,
+        the default values for `timecols`, `magcols`, and `errcols` for your
+        light curve format will be used here.
+
+    minbinelems : int
+        The minimum number of time-bin elements required to accept a time-bin as
+        valid for the output binned light curve.
+
+    nworkers : int
+        Number of parallel workers to launch.
+
+    maxworkertasks : int
+        The maximum number of tasks a parallel worker will complete before being
+        replaced to guard against memory leaks.
+
+    Returns
+    -------
+
+    dict
+        The returned dict contains keys = input LCs, vals = output LCs.
 
     '''
 
@@ -282,7 +391,59 @@ def parallel_timebin_lcdir(lcdir,
                            nworkers=NCPUS,
                            maxworkertasks=1000):
     '''
-    This bins all the light curves in lcdir using binsizesec.
+    This time bins all the light curves in the specified directory.
+
+    Parameters
+    ----------
+
+    lcdir : list of str
+        Directory containing the input LCs to process.
+
+    binsizesec : float
+        The time bin size to use in seconds.
+
+    maxobjects : int or None
+        If provided, LC processing will stop at `lclist[maxobjects]`.
+
+    outdir : str or None
+        The directory where output LCs will be written. If None, will write to
+        the same directory as the input LCs.
+
+    lcformat : str
+        This is the `formatkey` associated with your light curve format, which
+        you previously passed in to the `lcproc.register_lcformat`
+        function. This will be used to look up how to find and read the light
+        curve file.
+
+    lcformatdir : str or None
+        If this is provided, gives the path to a directory when you've stored
+        your lcformat description JSONs, other than the usual directories lcproc
+        knows to search for them in. Use this along with `lcformat` to specify
+        an LC format JSON file that's not currently registered with lcproc.
+
+    timecols,magcols,errcols : lists of str
+        The keys in the lcdict produced by your light curve reader function that
+        correspond to the times, mags/fluxes, and associated measurement errors
+        that will be used as inputs to the binning process. If these are None,
+        the default values for `timecols`, `magcols`, and `errcols` for your
+        light curve format will be used here.
+
+    minbinelems : int
+        The minimum number of time-bin elements required to accept a time-bin as
+        valid for the output binned light curve.
+
+    nworkers : int
+        Number of parallel workers to launch.
+
+    maxworkertasks : int
+        The maximum number of tasks a parallel worker will complete before being
+        replaced to guard against memory leaks.
+
+    Returns
+    -------
+
+    dict
+        The returned dict contains keys = input LCs, vals = output LCs.
 
     '''
     try:

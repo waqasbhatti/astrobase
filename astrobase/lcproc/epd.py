@@ -392,7 +392,7 @@ def parallel_epd_lclist(lclist,
         This is the `formatkey` associated with your light curve format, which
         you previously passed in to the `lcproc.register_lcformat`
         function. This will be used to look up how to find and read the light
-        curves specified in `basedir` or `use_list_of_filenames`.
+        curve files.
 
     lcformatdir : str or None
         If this is provided, gives the path to a directory when you've stored
