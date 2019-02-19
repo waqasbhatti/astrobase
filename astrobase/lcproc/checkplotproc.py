@@ -98,22 +98,39 @@ def xmatch_cplist_external_catalogs(cplist,
                                     xmatchradiusarcsec=2.0,
                                     updateexisting=True,
                                     resultstodir=None):
-    '''This xmatches external catalogs to a collection of checkplots in cpdir.
+    '''This xmatches external catalogs to a collection of checkplots.
 
-    cplist is a list of checkplot files to process.
+    Parameters
+    ----------
 
-    xmatchpkl is a pickle prepared with the
-    checkplot.pkl_xmatch.load_xmatch_external_catalogs function.
+    cplist : list of str
+        This is the list of checkplot pickle files to process.
 
-    xmatchradiusarcsec is the match radius to use in arcseconds.
+    xmatchpkl : str
+        The filename of a pickle prepared beforehand with the
+        `checkplot.pkl_xmatch.load_xmatch_external_catalogs` function,
+        containing collected external catalogs to cross-match the objects in the
+        input `cplist` against.
 
-    updateexisting if True, will only update the xmatch dict in each checkplot
-    pickle. If False, will overwrite the xmatch dict with results from the
-    current run.
+    xmatchradiusarcsec : float
+        The match radius to use for the cross-match in arcseconds.
 
-    If resultstodir is not None, then it must be a directory to write the
-    resulting checkplots after xmatch is done to. This can be used to keep the
-    original checkplots in pristine condition for some reason.
+    updateexisting : bool
+        If this is True, will only update the `xmatch` dict in each checkplot
+        pickle with any new cross-matches to the external catalogs. If False,
+        will overwrite the `xmatch` dict with results from the current run.
+
+    resultstodir : str or None
+        If this is provided, then it must be a directory to write the resulting
+        checkplots to after xmatch is done. This can be used to keep the
+        original checkplots in pristine condition for some reason.
+
+    Returns
+    -------
+
+    dict
+        Returns a dict with keys = input checkplot pickle filenames and vals =
+        xmatch status dict for each checkplot pickle.
 
     '''
 
@@ -172,14 +189,42 @@ def xmatch_cpdir_external_catalogs(cpdir,
                                    xmatchradiusarcsec=2.0,
                                    updateexisting=True,
                                    resultstodir=None):
-    '''This xmatches external catalogs to all checkplots in cpdir.
+    '''This xmatches external catalogs to all checkplots in a directory.
 
-    All arguments are the same as for xmatch_cplist_external_catalogs, except
-    for:
+    Parameters
+    -----------
 
-    cpdir is the directory to search in for checkplots.
+    cpdir : str
+        This is the directory to search in for checkplots.
 
-    cpfileglob is the fileglob to use in searching for checkplots.
+    xmatchpkl : str
+        The filename of a pickle prepared beforehand with the
+        `checkplot.pkl_xmatch.load_xmatch_external_catalogs` function,
+        containing collected external catalogs to cross-match the objects in the
+        input `cplist` against.
+
+    cpfileglob : str
+        This is the UNIX fileglob to use in searching for checkplots.
+
+    xmatchradiusarcsec : float
+        The match radius to use for the cross-match in arcseconds.
+
+    updateexisting : bool
+        If this is True, will only update the `xmatch` dict in each checkplot
+        pickle with any new cross-matches to the external catalogs. If False,
+        will overwrite the `xmatch` dict with results from the current run.
+
+    resultstodir : str or None
+        If this is provided, then it must be a directory to write the resulting
+        checkplots to after xmatch is done. This can be used to keep the
+        original checkplots in pristine condition for some reason.
+
+    Returns
+    -------
+
+    dict
+        Returns a dict with keys = input checkplot pickle filenames and vals =
+        xmatch status dict for each checkplot pickle.
 
     '''
 
@@ -221,17 +266,58 @@ def colormagdiagram_cplist(cplist,
                            color_mag1=['gaiamag','sdssg'],
                            color_mag2=['kmag','kmag'],
                            yaxis_mag=['gaia_absmag','rpmj']):
-    '''This makes a CMD for all objects in cplist.
+    '''This makes color-mag diagrams for all checkplot pickles in the provided
+    list.
 
-    cplist is a list of checkplot pickles to process.
+    Can make an arbitrary number of CMDs given lists of x-axis colors and y-axis
+    mags to use.
 
-    color_mag1 and color_mag2 are lists of keys in each checkplot's objectinfo
-    dict to use for the color x-axes: color = color_mag1 - color_mag2
+    Parameters
+    ----------
 
-    yaxis_mag is a list of keys in each checkplot's objectinfo dict to use as
-    the (absolute) magnitude y axes.
+    cplist : list of str
+        This is the list of checkplot pickles to process.
+
+    outpkl : str
+        The filename of the output pickle that will contain the color-mag
+        information for all objects in the checkplots specified in `cplist`.
+
+    color_mag1 : list of str
+        This a list of the keys in each checkplot's `objectinfo` dict that will
+        be used as color_1 in the equation::
+
+                x-axis color = color_mag1 - color_mag2
+
+    color_mag2 : list of str
+        This a list of the keys in each checkplot's `objectinfo` dict that will
+        be used as color_2 in the equation::
+
+                x-axis color = color_mag1 - color_mag2
+
+    yaxis_mag : list of str
+        This is a list of the keys in each checkplot's `objectinfo` dict that
+        will be used as the (absolute) magnitude y-axis of the color-mag
+        diagrams.
+
+    Returns
+    -------
+
+    str
+        The path to the generated CMD pickle file for the collection of objects
+        in the input checkplot list.
+
+    Notes
+    -----
+
+    This can make many CMDs in one go. For example, the default kwargs for
+    `color_mag`, `color_mag2`, and `yaxis_mag` result in two CMDs generated and
+    written to the output pickle file:
+
+    - CMD1 -> gaiamag - kmag on the x-axis vs gaia_absmag on the y-axis
+    - CMD2 -> sdssg - kmag on the x-axis vs rpmj (J reduced PM) on the y-axis
 
     '''
+
     # first, we'll collect all of the info
     cplist_objectids = []
     cplist_mags = []
@@ -289,17 +375,65 @@ def colormagdiagram_cplist(cplist,
 
 
 
-def colormagdiagram_cpdir(cpdir,
-                          outpkl,
-                          cpfileglob='checkplot*.pkl*',
-                          color_mag1=['gaiamag','sdssg'],
-                          color_mag2=['kmag','kmag'],
-                          yaxis_mag=['gaia_absmag','rpmj']):
-    '''This makes a CMD for all objects in cpdir.
+def colormagdiagram_cpdir(
+        cpdir,
+        outpkl,
+        cpfileglob='checkplot*.pkl*',
+        color_mag1=['gaiamag','sdssg'],
+        color_mag2=['kmag','kmag'],
+        yaxis_mag=['gaia_absmag','rpmj']
+):
+    '''This makes CMDs for all checkplot pickles in the provided directory.
 
-    All params are the same as for colormagdiagram_cplist, except for:
+    Can make an arbitrary number of CMDs given lists of x-axis colors and y-axis
+    mags to use.
 
-    cpfileglob: the fileglob to use to find the checkplot pickles in cpdir.
+    Parameters
+    ----------
+
+    cpdir : list of str
+        This is the directory to get the list of input checkplot pickles from.
+
+    outpkl : str
+        The filename of the output pickle that will contain the color-mag
+        information for all objects in the checkplots specified in `cplist`.
+
+    cpfileglob : str
+        The UNIX fileglob to use to search for checkplot pickle files.
+
+    color_mag1 : list of str
+        This a list of the keys in each checkplot's `objectinfo` dict that will
+        be used as color_1 in the equation::
+
+                x-axis color = color_mag1 - color_mag2
+
+    color_mag2 : list of str
+        This a list of the keys in each checkplot's `objectinfo` dict that will
+        be used as color_2 in the equation::
+
+                x-axis color = color_mag1 - color_mag2
+
+    yaxis_mag : list of str
+        This is a list of the keys in each checkplot's `objectinfo` dict that
+        will be used as the (absolute) magnitude y-axis of the color-mag
+        diagrams.
+
+    Returns
+    -------
+
+    str
+        The path to the generated CMD pickle file for the collection of objects
+        in the input checkplot directory.
+
+    Notes
+    -----
+
+    This can make many CMDs in one go. For example, the default kwargs for
+    `color_mag`, `color_mag2`, and `yaxis_mag` result in two CMDs generated and
+    written to the output pickle file:
+
+    - CMD1 -> gaiamag - kmag on the x-axis vs gaia_absmag on the y-axis
+    - CMD2 -> sdssg - kmag on the x-axis vs rpmj (J reduced PM) on the y-axis
 
     '''
 
@@ -313,22 +447,49 @@ def colormagdiagram_cpdir(cpdir,
 
 
 
-def add_cmd_to_checkplot(cpx, cmdpkl,
-                         require_cmd_magcolor=True,
-                         save_cmd_pngs=False):
-    '''This adds CMD figures to the checkplot dict or pickle cpx.
+def add_cmd_to_checkplot(
+        cpx,
+        cmdpkl,
+        require_cmd_magcolor=True,
+        save_cmd_pngs=False
+):
+    '''This adds CMD figures to a checkplot dict or pickle.
 
-    Looks up the CMDs in the cmdpkl, adds the object in the checkplot as a
-    gold(-ish) star in the plot, and then saves the figure to a base64 encoded
-    PNG, which can then be read and used by the checkplotserver.
+    Looks up the CMDs in `cmdpkl`, adds the object from `cpx` as a gold(-ish)
+    star in the plot, and then saves the figure to a base64 encoded PNG, which
+    can then be read and used by the `checkplotserver`.
 
-    If require_cmd_magcolor is True, a plot will not be made if the color and
-    mag keys required by the CMD are not present or are nan in this checkplot's
-    objectinfo dict.
+    Parameters
+    ----------
 
-    If save_cmd_png = True, then will save the CMD plots made as PNGs to the
-    same directory as cpx. If cpx is a dict, will save them to the current
-    directory.
+    cpx : str or dict
+        This is the input checkplot pickle or dict to add the CMD to.
+
+    cmdpkl : str or dict
+        The CMD pickle generated by the `colormagdiagram_cplist` or
+        `colormagdiagram_cpdir` functions above, or the dict produced by reading
+        this pickle in.
+
+    require_cmd_magcolor : bool
+        If this is True, a CMD plot will not be made if the color and mag keys
+        required by the CMD are not present or are nan in this checkplot's
+        objectinfo dict.
+
+    save_cmd_png : bool
+        If this is True, then will save the CMD plots that were generated and
+        added back to the checkplotdict as PNGs to the same directory as
+        `cpx`. If `cpx` is a dict, will save them to the current working
+        directory.
+
+    Returns
+    -------
+
+    str or dict
+        If `cpx` was a str filename of checkplot pickle, this will return that
+        filename to indicate that the CMD was added to the file. If `cpx` was a
+        checkplotdict, this will return the checkplotdict with a new key called
+        'colormagdiagram' containing the base64 encoded PNG binary streams of
+        all CMDs generated.
 
     '''
 
@@ -470,8 +631,30 @@ def add_cmds_cplist(cplist, cmdpkl,
                     save_cmd_pngs=False):
     '''This adds CMDs for each object in cplist.
 
-    NOTE: If the object doesn't have the color and mag keys required in its
-    objectinfo dict for the CMD plot, it won't appear on the CMD.
+    Parameters
+    ----------
+
+    cplist : list of str
+        This is the input list of checkplot pickles to add the CMDs to.
+
+    cmdpkl : str
+        This is the filename of the CMD pickle created previously.
+
+    require_cmd_magcolor : bool
+        If this is True, a CMD plot will not be made if the color and mag keys
+        required by the CMD are not present or are nan in each checkplot's
+        objectinfo dict.
+
+    save_cmd_pngs : bool
+        If this is True, then will save the CMD plots that were generated and
+        added back to the checkplotdict as PNGs to the same directory as
+        `cpx`.
+
+    Returns
+    -------
+
+    Nothing.
+
 
     '''
 
@@ -487,15 +670,40 @@ def add_cmds_cplist(cplist, cmdpkl,
 
 
 
-def add_cmds_cpdir(cpdir, cmdpkl,
+def add_cmds_cpdir(cpdir,
+                   cmdpkl,
                    cpfileglob='checkplot*.pkl*',
                    require_cmd_magcolor=True,
                    save_cmd_pngs=False):
     '''This adds CMDs for each object in cpdir.
 
-    All params are the same as for add_cmds_cplist, except for:
+    Parameters
+    ----------
 
-    cpfileglob: the fileglob to use to find the checkplot pickles in cpdir.
+    cpdir : list of str
+        This is the directory to search for checkplot pickles.
+
+    cmdpkl : str
+        This is the filename of the CMD pickle created previously.
+
+    cpfileglob : str
+        The UNIX fileglob to use when searching for checkplot pickles to operate
+        on.
+
+    require_cmd_magcolor : bool
+        If this is True, a CMD plot will not be made if the color and mag keys
+        required by the CMD are not present or are nan in each checkplot's
+        objectinfo dict.
+
+    save_cmd_pngs : bool
+        If this is True, then will save the CMD plots that were generated and
+        added back to the checkplotdict as PNGs to the same directory as
+        `cpx`.
+
+    Returns
+    -------
+
+    Nothing.
 
     '''
 
@@ -508,12 +716,26 @@ def add_cmds_cpdir(cpdir, cmdpkl,
 
 
 
-def cp_objectinfo_worker(task):
-    '''
-    This is a parallel worker for parallel_update_cp_objectinfo.
+#######################################
+## UPDATING OBJECTINFO IN CHECKPLOTS ##
+#######################################
 
-    task[0] = checkplot pickle file
-    task[1] = kwargs
+def cp_objectinfo_worker(task):
+    '''This is a parallel worker for `parallel_update_cp_objectinfo`.
+
+    Parameters
+    ----------
+
+    task : tuple
+        - task[0] = checkplot pickle file
+        - task[1] = kwargs
+
+    Returns
+    -------
+
+    str
+        The name of the checkplot file that was updated. None if the update
+        fails for some reason.
 
     '''
 
@@ -530,28 +752,153 @@ def cp_objectinfo_worker(task):
 
 
 
-def parallel_update_objectinfo_cplist(cplist,
-                                      liststartindex=None,
-                                      maxobjects=None,
-                                      nworkers=NCPUS,
-                                      fast_mode=False,
-                                      findercmap='gray_r',
-                                      finderconvolve=None,
-                                      deredden_object=True,
-                                      custom_bandpasses=None,
-                                      gaia_submit_timeout=10.0,
-                                      gaia_submit_tries=3,
-                                      gaia_max_timeout=180.0,
-                                      gaia_mirror=None,
-                                      complete_query_later=True,
-                                      lclistpkl=None,
-                                      nbrradiusarcsec=60.0,
-                                      maxnumneighbors=5,
-                                      plotdpi=100,
-                                      findercachedir='~/.astrobase/stamp-cache',
-                                      verbose=True):
+def parallel_update_objectinfo_cplist(
+        cplist,
+        liststartindex=None,
+        maxobjects=None,
+        nworkers=NCPUS,
+        fast_mode=False,
+        findercmap='gray_r',
+        finderconvolve=None,
+        deredden_object=True,
+        custom_bandpasses=None,
+        gaia_submit_timeout=10.0,
+        gaia_submit_tries=3,
+        gaia_max_timeout=180.0,
+        gaia_mirror=None,
+        complete_query_later=True,
+        lclistpkl=None,
+        nbrradiusarcsec=60.0,
+        maxnumneighbors=5,
+        plotdpi=100,
+        findercachedir='~/.astrobase/stamp-cache',
+        verbose=True
+):
     '''
     This updates objectinfo for a list of checkplots.
+
+    Useful in cases where a previous round of GAIA/finderchart/external catalog
+    acquisition failed. This will preserve the following keys in the checkplots
+    if they exist:
+
+    comments
+    varinfo
+    objectinfo.objecttags
+
+    Parameters
+    ----------
+
+    cplist : list of str
+        A list of checkplot pickle file names to update.
+
+    liststartindex : int
+        The index of the input list to start working at.
+
+    maxobjects : int
+        The maximum number of objects to process in this run. Use this with
+        `liststartindex` to effectively distribute working on a large list of
+        input checkplot pickles over several sessions or machines.
+
+    nworkers : int
+        The number of parallel workers that will work on the checkplot
+        update process.
+
+    fast_mode : bool or float
+        This runs the external catalog operations in a "fast" mode, with short
+        timeouts and not trying to hit external catalogs that take a long time
+        to respond. See the docstring for
+        `checkplot.pkl_utils._pkl_finder_objectinfo` for details on how this
+        works. If this is True, will run in "fast" mode with default timeouts (5
+        seconds in most cases). If this is a float, will run in "fast" mode with
+        the provided timeout value in seconds.
+
+    findercmap : str or matplotlib.cm.Colormap object
+
+    findercmap : str or matplotlib.cm.ColorMap object
+        The Colormap object to use for the finder chart image.
+
+    finderconvolve : astropy.convolution.Kernel object or None
+        If not None, the Kernel object to use for convolving the finder image.
+
+    deredden_objects : bool
+        If this is True, will use the 2MASS DUST service to get extinction
+        coefficients in various bands, and then try to deredden the magnitudes
+        and colors of the object already present in the checkplot's objectinfo
+        dict.
+
+    custom_bandpasses : dict
+        This is a dict used to provide custom bandpass definitions for any
+        magnitude measurements in the objectinfo dict that are not automatically
+        recognized by the `varclass.starfeatures.color_features` function. See
+        its docstring for details on the required format.
+
+    gaia_submit_timeout : float
+        Sets the timeout in seconds to use when submitting a request to look up
+        the object's information to the GAIA service. Note that if `fast_mode`
+        is set, this is ignored.
+
+    gaia_submit_tries : int
+        Sets the maximum number of times the GAIA services will be contacted to
+        obtain this object's information. If `fast_mode` is set, this is
+        ignored, and the services will be contacted only once (meaning that a
+        failure to respond will be silently ignored and no GAIA data will be
+        added to the checkplot's objectinfo dict).
+
+    gaia_max_timeout : float
+        Sets the timeout in seconds to use when waiting for the GAIA service to
+        respond to our request for the object's information. Note that if
+        `fast_mode` is set, this is ignored.
+
+    gaia_mirror : str
+        This sets the GAIA mirror to use. This is a key in the
+        `services.gaia.GAIA_URLS` dict which defines the URLs to hit for each
+        mirror.
+
+    complete_query_later : bool
+        If this is True, saves the state of GAIA queries that are not yet
+        complete when `gaia_max_timeout` is reached while waiting for the GAIA
+        service to respond to our request. A later call for GAIA info on the
+        same object will attempt to pick up the results from the existing query
+        if it's completed. If `fast_mode` is True, this is ignored.
+
+    lclistpkl : dict or str
+        If this is provided, must be a dict resulting from reading a catalog
+        produced by the `lcproc.catalogs.make_lclist` function or a str path
+        pointing to the pickle file produced by that function. This catalog is
+        used to find neighbors of the current object in the current light curve
+        collection. Looking at neighbors of the object within the radius
+        specified by `nbrradiusarcsec` is useful for light curves produced by
+        instruments that have a large pixel scale, so are susceptible to
+        blending of variability and potential confusion of neighbor variability
+        with that of the actual object being looked at. If this is None, no
+        neighbor lookups will be performed.
+
+    nbrradiusarcsec : float
+        The radius in arcseconds to use for a search conducted around the
+        coordinates of this object to look for any potential confusion and
+        blending of variability amplitude caused by their proximity.
+
+    maxnumneighbors : int
+        The maximum number of neighbors that will have their light curves and
+        magnitudes noted in this checkplot as potential blends with the target
+        object.
+
+    plotdpi : int
+        The resolution in DPI of the plots to generate in this function
+        (e.g. the finder chart, etc.)
+
+    findercachedir : str
+        The path to the astrobase cache directory for finder chart downloads
+        from the NASA SkyView service.
+
+    verbose : bool
+        If True, will indicate progress and warn about potential problems.
+
+    Returns
+    -------
+
+    list of str
+        Paths to the updated checkplot pickle file.
 
     '''
 
@@ -624,6 +971,135 @@ def parallel_update_objectinfo_cpdir(cpdir,
                                      plotdpi=100,
                                      findercachedir='~/.astrobase/stamp-cache',
                                      verbose=True):
+    '''This updates the objectinfo for a directory of checkplot pickles.
+
+    Useful in cases where a previous round of GAIA/finderchart/external catalog
+    acquisition failed. This will preserve the following keys in the checkplots
+    if they exist:
+
+    comments
+    varinfo
+    objectinfo.objecttags
+
+    Parameters
+    ----------
+
+    cpdir : str
+        The directory to look for checkplot pickles in.
+
+    cpglob : str
+        The UNIX fileglob to use when searching for checkplot pickle files.
+
+    liststartindex : int
+        The index of the input list to start working at.
+
+    maxobjects : int
+        The maximum number of objects to process in this run. Use this with
+        `liststartindex` to effectively distribute working on a large list of
+        input checkplot pickles over several sessions or machines.
+
+    nworkers : int
+        The number of parallel workers that will work on the checkplot
+        update process.
+
+    fast_mode : bool or float
+        This runs the external catalog operations in a "fast" mode, with short
+        timeouts and not trying to hit external catalogs that take a long time
+        to respond. See the docstring for
+        `checkplot.pkl_utils._pkl_finder_objectinfo` for details on how this
+        works. If this is True, will run in "fast" mode with default timeouts (5
+        seconds in most cases). If this is a float, will run in "fast" mode with
+        the provided timeout value in seconds.
+
+    findercmap : str or matplotlib.cm.Colormap object
+
+    findercmap : str or matplotlib.cm.ColorMap object
+        The Colormap object to use for the finder chart image.
+
+    finderconvolve : astropy.convolution.Kernel object or None
+        If not None, the Kernel object to use for convolving the finder image.
+
+    deredden_objects : bool
+        If this is True, will use the 2MASS DUST service to get extinction
+        coefficients in various bands, and then try to deredden the magnitudes
+        and colors of the object already present in the checkplot's objectinfo
+        dict.
+
+    custom_bandpasses : dict
+        This is a dict used to provide custom bandpass definitions for any
+        magnitude measurements in the objectinfo dict that are not automatically
+        recognized by the `varclass.starfeatures.color_features` function. See
+        its docstring for details on the required format.
+
+    gaia_submit_timeout : float
+        Sets the timeout in seconds to use when submitting a request to look up
+        the object's information to the GAIA service. Note that if `fast_mode`
+        is set, this is ignored.
+
+    gaia_submit_tries : int
+        Sets the maximum number of times the GAIA services will be contacted to
+        obtain this object's information. If `fast_mode` is set, this is
+        ignored, and the services will be contacted only once (meaning that a
+        failure to respond will be silently ignored and no GAIA data will be
+        added to the checkplot's objectinfo dict).
+
+    gaia_max_timeout : float
+        Sets the timeout in seconds to use when waiting for the GAIA service to
+        respond to our request for the object's information. Note that if
+        `fast_mode` is set, this is ignored.
+
+    gaia_mirror : str
+        This sets the GAIA mirror to use. This is a key in the
+        `services.gaia.GAIA_URLS` dict which defines the URLs to hit for each
+        mirror.
+
+    complete_query_later : bool
+        If this is True, saves the state of GAIA queries that are not yet
+        complete when `gaia_max_timeout` is reached while waiting for the GAIA
+        service to respond to our request. A later call for GAIA info on the
+        same object will attempt to pick up the results from the existing query
+        if it's completed. If `fast_mode` is True, this is ignored.
+
+    lclistpkl : dict or str
+        If this is provided, must be a dict resulting from reading a catalog
+        produced by the `lcproc.catalogs.make_lclist` function or a str path
+        pointing to the pickle file produced by that function. This catalog is
+        used to find neighbors of the current object in the current light curve
+        collection. Looking at neighbors of the object within the radius
+        specified by `nbrradiusarcsec` is useful for light curves produced by
+        instruments that have a large pixel scale, so are susceptible to
+        blending of variability and potential confusion of neighbor variability
+        with that of the actual object being looked at. If this is None, no
+        neighbor lookups will be performed.
+
+    nbrradiusarcsec : float
+        The radius in arcseconds to use for a search conducted around the
+        coordinates of this object to look for any potential confusion and
+        blending of variability amplitude caused by their proximity.
+
+    maxnumneighbors : int
+        The maximum number of neighbors that will have their light curves and
+        magnitudes noted in this checkplot as potential blends with the target
+        object.
+
+    plotdpi : int
+        The resolution in DPI of the plots to generate in this function
+        (e.g. the finder chart, etc.)
+
+    findercachedir : str
+        The path to the astrobase cache directory for finder chart downloads
+        from the NASA SkyView service.
+
+    verbose : bool
+        If True, will indicate progress and warn about potential problems.
+
+    Returns
+    -------
+
+    list of str
+        Paths to the updated checkplot pickle file.
+
+    '''
 
     cplist = sorted(glob.glob(os.path.join(cpdir, cpglob)))
 
