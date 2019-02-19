@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# lcvfeatures.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
 
-'''lcvfeatures.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
-
+'''
 This contains functions to generate variability features for large collections
 of light curves. Useful later for variable star classification.
 

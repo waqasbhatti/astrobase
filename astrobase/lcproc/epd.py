@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# epd.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
 
-'''epd.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
-
+'''
 This contains functions to run External Parameter Decorrelation (EPD) on a large
 collection of light curves.
 

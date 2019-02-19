@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# lcmath.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2015
 
 '''
-lcmath.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2015
-
 Contains various useful tools for calculating various things related to
 lightcurves (like phasing, sigma-clipping, finding and filling gaps, etc.)
 

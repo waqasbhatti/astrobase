@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# emailutils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jun 2013
+# License: MIT. See LICENSE.txt for complete text.
 
-'''emailutils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jun 2013
-
-License: MIT. See LICENSE.txt for complete text.
-
+'''
 This is a small utility module to send email using an SMTP server that requires
 logins. The email settings are stored in a file called .emailsettings that
 should be located in the same directory as emailutils.py. This file should have

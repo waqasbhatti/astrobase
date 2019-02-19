@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# lcpfeatures.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
 
-'''lcpfeatures.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
-
+'''
 This contains functions to generate periodic light curve features for later
 variable star classification.
 

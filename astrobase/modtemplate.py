@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# {{ name }}.py - {{ author }} ({{ email }}) - {{ month }} {{ year }}
+# License: MIT - see the LICENSE file for the full text.
 
-'''{{ name }}.py - {{ author }} ({{ email }}) - {{ month }} {{ year }}
-License: MIT - see the LICENSE file for the full text.
+'''
+Module docstring goes here.
 
 '''
 

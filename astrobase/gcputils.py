@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# gcputils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2018
+# License: MIT - see the LICENSE file for the full text.
 
-"""gcputils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2018
-License: MIT - see the LICENSE file for the full text.
-
+"""
 This contains useful functions to set up Google Cloud Platform services for use
 with lcproc_gcp.py.
 

@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# plotbase.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2016
+# License: MIT.
 
 '''
-plotbase.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2016
-License: MIT.
-
 Contains various useful functions for plotting light curves and associated data.
 
 '''

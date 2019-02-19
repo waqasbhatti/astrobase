@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# catalogs.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
 
-'''catalogs.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
+'''
 
 This contains functions to generate light curve catalogs from collections of
 light curves.

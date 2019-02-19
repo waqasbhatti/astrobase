@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# timeutils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Sept 2013
 
 from __future__ import print_function
 
 '''
-timeutils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Sept 2013
-
 Contains various useful tools for dealing with time in astronomical contexts.
 
 '''

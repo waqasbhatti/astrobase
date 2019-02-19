@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# lcdb.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - 05/13
+# License: MIT - see LICENSE for the full text.
 
 '''
-lcdb.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - 05/13
-License: MIT - see LICENSE for the full text.
-
 Serves as a lightweight PostgreSQL DB interface for other modules in this
 project.
 

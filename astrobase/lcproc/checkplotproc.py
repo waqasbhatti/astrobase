@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-'''checkplotproc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
-
+# checkplotproc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
+'''
 This contains functions to post-process checkplot pickles generated from a
 collection of light curves beforehand (perhaps using `lcproc.checkplotgen`).
 

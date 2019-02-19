@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-'''starfeatures.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
-
+# starfeatures.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
+'''
 This contains functions to obtain various star magnitude and color features for
 large numbers of light curves. Useful later for variable star classification.
 

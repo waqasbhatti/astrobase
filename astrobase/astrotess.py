@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# astrotess.py - Luke Bouma (luke@astro.princeton.edu) - 09/2018
 
 '''
-astrotess.py - Luke Bouma (luke@astro.princeton.edu) - 09/2018
-
 Contains various tools for analyzing TESS light curves.
 '''
 

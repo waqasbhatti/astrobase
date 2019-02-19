@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# astrokep.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - 05/2016
 
-'''astrokep.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - 05/2016
-
+'''
 Contains various useful tools for analyzing Kepler light curves.
 
 '''

@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# lcformat.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
 
-'''lcformat.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
+'''
 
 This package contains functions that help drive large batch jobs processing HAT
 light curves.

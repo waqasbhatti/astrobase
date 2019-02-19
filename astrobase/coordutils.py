@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# coordutils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - 07/13
+# License: MIT - see LICENSE for the full text.
 
 '''
-coordutils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - 07/13
-License: MIT - see LICENSE for the full text.
-
 Contains various useful tools for coordinate conversion, etc.
 
 '''

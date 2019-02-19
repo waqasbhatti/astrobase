@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# tfa.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
 
-'''tfa.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
-
+'''
 This contains functions to run the Trend Filtering Algorithm (TFA) in a
 parallelized manner on large collections of light curves.
 

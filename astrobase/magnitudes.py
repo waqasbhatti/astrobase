@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# magnitudes.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Sept 2013
+# License: MIT - See LICENSE for full text.
 
-'''magnitudes.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Sept 2013
-License: MIT - See LICENSE for full text.
-
+'''
 Contains various useful functions for converting between magnitude systems.
 
 '''

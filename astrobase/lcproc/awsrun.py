@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# awsrun.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2018
+# License: MIT - see the LICENSE file for the full text.
 
-"""awsrun.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2018
-License: MIT - see the LICENSE file for the full text.
+"""
 
 This contains lcproc worker loops useful for AWS processing of light curves.
 

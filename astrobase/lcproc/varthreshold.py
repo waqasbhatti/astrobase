@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-'''varthreshold.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
-
+# varthreshold.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
+'''
 This contains functions to investigate where to set a threshold for
 several variability indices to distinguish between variable and non-variable
 stars.

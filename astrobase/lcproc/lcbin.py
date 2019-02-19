@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# lcbin.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
 
-'''lcbin.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
-
+'''
 This contains parallelized functions to bin large numbers of light curves in
 time.
 

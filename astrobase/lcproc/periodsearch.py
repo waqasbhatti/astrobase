@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# periodsearch.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
 
-'''periodsearch.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
-
+'''
 This contains functions to run period-finding in a parallelized manner on large
 collections of light curves.
 
