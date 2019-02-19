@@ -183,7 +183,6 @@ def checkplot_dict(
     ----------
 
     lspinfolist : list of dicts
-
         This is a list of dicts containing period-finder results ('lspinfo'
         dicts). These can be from any of the period-finder methods in
         astrobase.periodbase. To incorporate external period-finder results into
@@ -964,7 +963,6 @@ def checkplot_pickle(
     ----------
 
     lspinfolist : list of dicts
-
         This is a list of dicts containing period-finder results ('lspinfo'
         dicts). These can be from any of the period-finder methods in
         astrobase.periodbase. To incorporate external period-finder results into
