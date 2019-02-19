@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# skyview - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2017
+# License: MIT. See the LICENSE file for more details.
 
-'''skyview - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2017
-License: MIT. See the LICENSE file for more details.
-
+'''
 This gets cutout images from the Digitized Sky Survey using the NASA GSFC
 SkyView server.
 

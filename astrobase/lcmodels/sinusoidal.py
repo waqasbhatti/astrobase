@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# sinusoidal.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
 
-'''sinusoidal.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
-
+'''
 This contains models for sinusoidal light curves generated using Fourier
 expansion.
 '''

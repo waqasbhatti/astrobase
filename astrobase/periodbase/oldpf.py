@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# oldpf.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 
-'''oldpf.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
-
+'''
 This contains deprecated and incomplete period-finding tools from periodbase.py:
 
 - dworetsky period finder

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# spdm.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 
-'''spdm.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
-
+'''
 Contains the Stellingwerf (1978) phase-dispersion minimization period-search
 algorithm implementation for periodbase.
 

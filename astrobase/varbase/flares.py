@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# flares.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - May 2017
+# License: MIT. See the LICENSE file for the full text.
 
-'''flares.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - May 2017
-License: MIT. See the LICENSE file for the full text.
-
+'''
 Contains functions to deal with finding stellar flares in time series.
 
 '''

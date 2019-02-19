@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# mast - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2018
+# License: MIT. See the LICENSE file for more details.
 
-'''mast - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2018
-License: MIT. See the LICENSE file for more details.
-
+'''
 This interfaces with the MAST API. The main use for this (for now) is to fill in
 TIC information for checkplots.
 

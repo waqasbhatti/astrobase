@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# checkplotserver_handlers.py - Waqas Bhatti (wbhatti@astro.princeton.edu) -
+#                               Jan 2017
 
-'''checkplotserver_handlers.py - Waqas Bhatti (wbhatti@astro.princeton.edu) -
-                                 Jan 2017
-
+'''
 These are Tornado handlers for serving checkplots and operating on them.
 
 '''

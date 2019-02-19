@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# pkl_postproc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
+# License: MIT.
 
-'''pkl_postproc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
-License: MIT.
-
+'''
 This contains utility functions that support the checkplot pickle
 post-processing functionality.
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# trends.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2018
 
-'''trends.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2018
-
+'''
 Contains light curve trend-removal tools, such as external parameter
-decorrelation (EPD).
+decorrelation (EPD) and smoothing.
 
 '''
 

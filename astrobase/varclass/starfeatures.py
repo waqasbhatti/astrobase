@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# starfeatures - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2017
+# License: MIT. See the LICENSE file for more details.
 
-'''starfeatures - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2017
-License: MIT. See the LICENSE file for more details.
-
+'''
 This calculates various features related to the color/proper-motion of stars.
 
 All of the functions in this module require as input an 'objectinfo' dict with

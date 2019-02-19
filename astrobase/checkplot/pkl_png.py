@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# pkl_png.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
+# License: MIT.
 
-'''pkl_png.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
-License: MIT.
-
+'''
 This contains utility functions that support the checkplot pickle to PNG export
 functionality.
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# varbase.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2016
 
-'''varbase.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2016
-
+'''
 Contains functions to deal with light curve variability, fitting functions,
 masking signals, autocorrelation, etc.
 

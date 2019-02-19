@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# hplc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - May 2017
+# License: MIT. See LICENSE for full text.
 
-'''hplc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - May 2017
-License: MIT. See LICENSE for full text.
-
+'''
 This is mostly for internal use. Contains functions to read text light curves
 produced by the HATPI prototype system's image-subtraction photometry pipeline.
 

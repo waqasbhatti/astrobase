@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# lccs.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Aug 2018
+# License: MIT - see LICENSE for the full text.
+
 from __future__ import print_function
 
-'''lccs.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Aug 2018
-License: MIT - see LICENSE for the full text.
-
+'''
 This contains functions to search for objects and get light curves from a Light
 Curve Collection (LCC) server (https://github.com/waqasbhatti/lcc-server) using
 its HTTP API.

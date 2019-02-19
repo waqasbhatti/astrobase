@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# checkplot.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
+# License: MIT.
 
-'''checkplot.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
-License: MIT.
-
+'''
 The `checkplot_pickle` function takes, for a single object, an arbitrary number
 of results from independent period-finding functions (e.g. BLS, PDM, AoV, GLS,
 etc.) in periodbase, and generates a pickle file that contains object and

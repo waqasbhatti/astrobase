@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# k2hat.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - 07/15
+# License: MIT. See the LICENCE file for license text.
 
 '''
-k2hat.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - 07/15
-License: MIT. See the LICENCE file for license text.
-
 This contains functions for reading K2 CSV light-curves produced by the HAT
 Project into a Python dictionary. Requires numpy.
 

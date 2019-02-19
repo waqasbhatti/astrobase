@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# png.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
+# License: MIT - see the LICENSE file for the full text.
 
-'''png.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
-License: MIT - see the LICENSE file for the full text.
-
+'''
 This contains the implementation of checkplots that generate PNG files only.
 
 The `checkplot_png` function takes a single period-finding result and makes the

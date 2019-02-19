@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# macf.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
 
-'''macf.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
-
+'''
 This contains the ACF period-finding algorithm from McQuillan+ 2013a and
 McQuillan+ 2014.
 

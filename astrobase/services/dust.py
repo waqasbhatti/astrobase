@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# dust - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2017
+# License: MIT. See the LICENSE file for more details.
 
-'''dust - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2017
-License: MIT. See the LICENSE file for more details.
-
+'''
 This gets extinction tables from the the 2MASS DUST service at:
 
 http://irsa.ipac.caltech.edu/applications/DUST/

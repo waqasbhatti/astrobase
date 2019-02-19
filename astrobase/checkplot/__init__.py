@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# checkplot.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
+# License: MIT.
 
-'''checkplot.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
-License: MIT.
-
+'''
 Contains functions to make checkplots: quick views for determining periodic
 variability for light curves and sanity-checking results from period-finding
 functions (e.g., from periodbase).

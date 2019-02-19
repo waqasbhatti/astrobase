@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# transits.py - Luke Bouma (luke@astro.princeton.edu) - Oct 2018
+# License: MIT - see the LICENSE file for the full text.
 
-'''transits.py - Luke Bouma (luke@astro.princeton.edu) - Oct 2018
-License: MIT - see the LICENSE file for the full text.
-
+'''
 Contains tools for analyzing transits.
+
 '''
 
 #############

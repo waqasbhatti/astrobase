@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# simbad - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2017
+# License: MIT. See the LICENSE file for more details.
 
-'''simbad - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2017
-License: MIT. See the LICENSE file for more details.
-
+'''
 This queries the SIMBAD database using their TAP interface. The main use for
 this is to serve as a reverse name resolver (i.e. get all object names using a
 narrow cone-search).

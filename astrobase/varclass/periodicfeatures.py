@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# periodicfeatures - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
+# License: MIT. See the LICENSE file for more details.
 
-'''periodicfeatures - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
-License: MIT. See the LICENSE file for more details.
-
+'''
 This contains functions that calculate various light curve features using
 information about periods and fits to phased light curves.
 

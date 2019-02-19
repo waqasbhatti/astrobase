@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# transits.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
 
-'''transits.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
-
+'''
 This contains a trapezoid model for first order model of planetary transits
 light curves.
 

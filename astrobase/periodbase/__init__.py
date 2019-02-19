@@ -1,23 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# periodbase - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 
 '''
-periodbase - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
-
 Contains various useful tools for period finding.
 
-CURRENT:
-
-periodbase.spdm -> Stellingwerf (1978) phase-dispersion minimization
-periodbase.saov -> Schwarzenberg-Czerny (1989) analysis of variance
-periodbase.zgls -> Zechmeister & Kurster (2009) generalized Lomb-Scargle
-periodbase.kbls -> Kovacs et al. (2002) Box-Least-Squares search
-periodbase.macf -> McQuillan et al. (2013a, 2014) ACF period search
-periodbase.smav -> Schwarzenberg-Czerny (1996) multi-harmonic AoV period search
-
-TO BE IMPLEMENTED:
-
-periodbase.gcep -> Graham et al. (2013) conditional entropy period search
+- periodbase.spdm -> Stellingwerf (1978) phase-dispersion minimization
+- periodbase.saov -> Schwarzenberg-Czerny (1989) analysis of variance
+- periodbase.zgls -> Zechmeister & Kurster (2009) generalized Lomb-Scargle
+- periodbase.kbls -> Kovacs et al. (2002) Box-Least-Squares search
+- periodbase.abls -> Kovacs et al. (2002) BLS using Astropy's implementation
+- periodbase.macf -> McQuillan et al. (2013a, 2014) ACF period search
+- periodbase.smav -> Schwarzenberg-Czerny (1996) multi-harmonic AoV period search
 
 FIXME: add an iterative peak-removal and refit mode to all period-finders here.
 

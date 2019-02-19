@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# rfclass.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2017
+# License: MIT. See the LICENSE file for more details.
 
-'''rfclass.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2017
-License: MIT. See the LICENSE file for more details.
-
+'''
 Does variable classification using random forests. Two types of classification
 are supported:
 

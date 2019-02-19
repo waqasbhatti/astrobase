@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# zgls.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 
-'''zgls.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
-
+'''
 Contains the Zechmeister & Kurster (2002) Generalized Lomb-Scargle period-search
 algorithm implementation for periodbase.
 

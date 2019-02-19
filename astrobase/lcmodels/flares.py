@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# flares.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
 
-'''flares.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
-
+'''
 This contains a stellar flare model from Pitkin+ 2014.
 
 http://adsabs.harvard.edu/abs/2014MNRAS.445.2268P

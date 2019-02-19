@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# autocorr.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 
-'''autocorr.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
-
+'''
 Calculates the autocorrelation for magnitude time series.
 
 '''

@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# varbase/lcfit.py
+# Waqas Bhatti and Luke Bouma - Feb 2017
+# (wbhatti@astro.princeton.edu and luke@astro.princeton.edu)
 
-'''varbase/lcfit.py
-Waqas Bhatti and Luke Bouma - Feb 2017
-(wbhatti@astro.princeton.edu and luke@astro.princeton.edu)
-
-Fitting routines for light curves. Includes:
+'''Fitting routines for light curves. Includes:
 
 fourier_fit_magseries: fit an arbitrary order Fourier series to a
     magnitude/flux time series.

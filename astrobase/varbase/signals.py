@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# signals.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 
-'''signals.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
-
+'''
 Contains functions to deal with masking and removing periodic signals in light
 curves.
 

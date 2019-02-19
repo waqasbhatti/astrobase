@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# gaia - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2017
+# License: MIT. See the LICENSE file for more details.
 
-'''gaia - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2017
-License: MIT. See the LICENSE file for more details.
-
+'''
 This queries the GAIA catalog for object lists in specified areas of the
 sky. The main use of this module is to generate realistic spatial distributions
 of stars for variability recovery simulations in combination with colors and

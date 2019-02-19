@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-'''services - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
-License: MIT. See the LICENSE file for more details.
-
+# services - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
+# License: MIT. See the LICENSE file for more details.
+'''
 This contains various modules to query online data services. These are not
 exhaustive and are meant to support other astrobase modules.
 

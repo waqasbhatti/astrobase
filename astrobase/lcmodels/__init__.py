@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# lcmodels - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
+# License: MIT. See the LICENSE file for more details.
 
-'''lcmodels - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
-License: MIT. See the LICENSE file for more details.
-
+'''
 This contains various light curve models for variable stars. Useful for first
 order fits to distinguish between variable types, and for generating these
 variables' light curves for a recovery simulation.

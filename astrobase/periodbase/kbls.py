@@ -1,7 +1,8 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# kbls.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 
-'''kbls.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
-
+'''
 Contains the Kovacs, et al. (2002) Box-Least-squared-Search period-search
 algorithm implementation for periodbase.
 

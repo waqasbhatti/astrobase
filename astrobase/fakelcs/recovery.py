@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# recovery - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
+# License: MIT. See the LICENSE file for more details.
 
-'''recovery - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
-License: MIT. See the LICENSE file for more details.
-
-This is a companion module for fakelcgen.py. It runs LCs generated using
-functions in that module through variable star detection and classification to
-see how well they are recovered.
+'''This is a companion module for fakelcs/generation.py. It runs LCs generated
+using functions in that module through variable star detection and
+classification to see how well they are recovered.
 
 '''
 

@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# checkplotlist.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2016
+# License: MIT. See LICENSE for full text.
 
-'''checkplotlist.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2016
-License: MIT. See LICENSE for full text.
-
-DESCRIPTION
-===========
-
+'''
 This makes a checkplot file list for use with the checkplot-viewer.html or the
 checkplotserver.py webapps. Checkplots are quick-views of object info, finder
 charts, light curves, phased light curves, and periodograms used to examine

@@ -1,12 +1,11 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# abls.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 
-'''abls.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
-
+'''
 Contains the Kovacs, et al. (2002) Box-Least-squared-Search period-search
 algorithm implementation for periodbase. This uses the implementation in Astropy
 3.1, so requires that version.
-
-This will be used preferentially if we have Python >= 3.6 and Astropy >= 3.1.
 
 '''
 

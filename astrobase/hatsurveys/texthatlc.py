@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# texthatlc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2016
+# License: MIT - see LICENSE for the full text.
 
-'''texthatlc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2016
-License: MIT - see LICENSE for the full text.
-
+'''
 This contains functions to read the original text HAT light curves. Implemented
 by Luke Bouma (bouma.luke@gmail.com).
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# eclipses.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
 
-'''eclipses.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
-
+'''
 This contains a double gaussian model for first order modeling of eclipsing
 binaries.
 

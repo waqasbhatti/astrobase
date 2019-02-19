@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# checkplotserver.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Nov 2016
 
-'''checkplotserver.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Nov 2016
-
+'''
 This is the Tornado web-server for serving checkplots.
 
 '''
