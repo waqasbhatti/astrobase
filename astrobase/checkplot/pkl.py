@@ -207,7 +207,7 @@ def checkplot_dict(
         `nbestperiods` and `nbestlspvals` in each lspinfo dict must have at
         least as many elements as the `nperiodstouse` kwarg to this function.
 
-    times, mags, errs : np.arrays
+    times,mags,errs : np.arrays
         The magnitude/flux time-series to process for this checkplot along with
         their associated measurement errors.
 
@@ -217,30 +217,30 @@ def checkplot_dict(
         to respond.
 
         If this is set to True, the default settings for the external requests
-        will then become:
+        will then become::
 
-        skyview_lookup = False
-        skyview_timeout = 10.0
-        skyview_retry_failed = False
-        dust_timeout = 10.0
-        gaia_submit_timeout = 7.0
-        gaia_max_timeout = 10.0
-        gaia_submit_tries = 2
-        complete_query_later = False
-        search_simbad = False
+                skyview_lookup = False
+                skyview_timeout = 10.0
+                skyview_retry_failed = False
+                dust_timeout = 10.0
+                gaia_submit_timeout = 7.0
+                gaia_max_timeout = 10.0
+                gaia_submit_tries = 2
+                complete_query_later = False
+                search_simbad = False
 
         If this is a float, will run in "fast" mode with the provided timeout
-        value in seconds and the following settings:
+        value in seconds and the following settings::
 
-        skyview_lookup = True
-        skyview_timeout = fast_mode
-        skyview_retry_failed = False
-        dust_timeout = fast_mode
-        gaia_submit_timeout = 0.66*fast_mode
-        gaia_max_timeout = fast_mode
-        gaia_submit_tries = 2
-        complete_query_later = False
-        search_simbad = False
+                skyview_lookup = True
+                skyview_timeout = fast_mode
+                skyview_retry_failed = False
+                dust_timeout = fast_mode
+                gaia_submit_timeout = 0.66*fast_mode
+                gaia_max_timeout = fast_mode
+                gaia_submit_tries = 2
+                complete_query_later = False
+                search_simbad = False
 
     magsarefluxes : bool
         If True, indicates the input time-series is fluxes and not mags so the
@@ -273,32 +273,32 @@ def checkplot_dict(
         dict. These will be used to calculate colors, total and reduced proper
         motion, etc. and display these in the output checkplot PNG.
 
-        'pmra' -> the proper motion in mas/yr in the right ascension direction,
-        'pmdecl' -> the proper motion in mas/yr in the declination direction,
-        'umag'  -> U mag		 -> colors: U-B, U-V, U-g
-        'bmag'  -> B mag		 -> colors: U-B, B-V
-        'vmag'  -> V mag		 -> colors: U-V, B-V, V-R, V-I, V-K
-        'rmag'  -> R mag		 -> colors: V-R, R-I
-        'imag'  -> I mag		 -> colors: g-I, V-I, R-I, B-I
-        'jmag'  -> 2MASS J mag	 -> colors: J-H, J-K, g-J, i-J
-        'hmag'  -> 2MASS H mag	 -> colors: J-H, H-K
-        'kmag'  -> 2MASS Ks mag	 -> colors: g-Ks, H-Ks, J-Ks, V-Ks
-        'sdssu' -> SDSS u mag	 -> colors: u-g, u-V
-        'sdssg' -> SDSS g mag	 -> colors: g-r, g-i, g-K, u-g, U-g, g-J
-        'sdssr' -> SDSS r mag	 -> colors: r-i, g-r
-        'sdssi' -> SDSS i mag	 -> colors: r-i, i-z, g-i, i-J, i-W1
-        'sdssz' -> SDSS z mag	 -> colors: i-z, z-W2, g-z
-        'ujmag' -> UKIRT J mag	 -> colors: J-H, H-K, J-K, g-J, i-J
-        'uhmag' -> UKIRT H mag	 -> colors: J-H, H-K
-        'ukmag' -> UKIRT K mag	 -> colors: g-K, H-K, J-K, V-K
-        'irac1' -> Spitzer IRAC1 mag -> colors: i-I1, I1-I2
-        'irac2' -> Spitzer IRAC2 mag -> colors: I1-I2, I2-I3
-        'irac3' -> Spitzer IRAC3 mag -> colors: I2-I3
-        'irac4' -> Spitzer IRAC4 mag -> colors: I3-I4
-        'wise1' -> WISE W1 mag	 -> colors: i-W1, W1-W2
-        'wise2' -> WISE W2 mag	 -> colors: W1-W2, W2-W3
-        'wise3' -> WISE W3 mag	 -> colors: W2-W3
-        'wise4' -> WISE W4 mag	 -> colors: W3-W4
+        - 'pmra' -> the proper motion in mas/yr in right ascension direction,
+        - 'pmdecl' -> the proper motion in mas/yr in declination direction,
+        - 'umag'  -> U mag		 -> colors: U-B, U-V, U-g
+        - 'bmag'  -> B mag		 -> colors: U-B, B-V
+        - 'vmag'  -> V mag		 -> colors: U-V, B-V, V-R, V-I, V-K
+        - 'rmag'  -> R mag		 -> colors: V-R, R-I
+        - 'imag'  -> I mag		 -> colors: g-I, V-I, R-I, B-I
+        - 'jmag'  -> 2MASS J mag	 -> colors: J-H, J-K, g-J, i-J
+        - 'hmag'  -> 2MASS H mag	 -> colors: J-H, H-K
+        - 'kmag'  -> 2MASS Ks mag	 -> colors: g-Ks, H-Ks, J-Ks, V-Ks
+        - 'sdssu' -> SDSS u mag	 -> colors: u-g, u-V
+        - 'sdssg' -> SDSS g mag	 -> colors: g-r, g-i, g-K, u-g, U-g, g-J
+        - 'sdssr' -> SDSS r mag	 -> colors: r-i, g-r
+        - 'sdssi' -> SDSS i mag	 -> colors: r-i, i-z, g-i, i-J, i-W1
+        - 'sdssz' -> SDSS z mag	 -> colors: i-z, z-W2, g-z
+        - 'ujmag' -> UKIRT J mag	 -> colors: J-H, H-K, J-K, g-J, i-J
+        - 'uhmag' -> UKIRT H mag	 -> colors: J-H, H-K
+        - 'ukmag' -> UKIRT K mag	 -> colors: g-K, H-K, J-K, V-K
+        - 'irac1' -> Spitzer IRAC1 mag -> colors: i-I1, I1-I2
+        - 'irac2' -> Spitzer IRAC2 mag -> colors: I1-I2, I2-I3
+        - 'irac3' -> Spitzer IRAC3 mag -> colors: I2-I3
+        - 'irac4' -> Spitzer IRAC4 mag -> colors: I3-I4
+        - 'wise1' -> WISE W1 mag	 -> colors: i-W1, W1-W2
+        - 'wise2' -> WISE W2 mag	 -> colors: W1-W2, W2-W3
+        - 'wise3' -> WISE W3 mag	 -> colors: W2-W3
+        - 'wise4' -> WISE W4 mag	 -> colors: W3-W4
 
        If you have magnitude measurements in other bands, use the
        `custom_bandpasses` kwarg to pass these in.
@@ -337,6 +337,11 @@ def checkplot_dict(
         respond to our request for the object's information. Note that if
         `fast_mode` is set, this is ignored.
 
+    gaia_mirror : str or None
+        This sets the GAIA mirror to use. This is a key in the
+        `services.gaia.GAIA_URLS` dict which defines the URLs to hit for each
+        mirror.
+
     complete_query_later : bool
         If this is True, saves the state of GAIA queries that are not yet
         complete when `gaia_max_timeout` is reached while waiting for the GAIA
@@ -346,13 +351,13 @@ def checkplot_dict(
 
     varinfo : dict
         If this is None, a blank dict of the form below will be added to the
-        checkplotdict:
+        checkplotdict::
 
-        {'objectisvar': None -> variability flag (None indicates unset),
-         'vartags': CSV str containing variability type tags from review,
-         'varisperiodic': None -> periodic variability flag (None means unset),
-         'varperiod': the period associated with the periodic variability,
-         'varepoch': the epoch associated with the periodic variability}
+          {'objectisvar': None -> variability flag (None indicates unset),
+           'vartags': CSV str containing variability type tags from review,
+           'varisperiodic': None -> periodic variability flag (None -> unset),
+           'varperiod': the period associated with the periodic variability,
+           'varepoch': the epoch associated with the periodic variability}
 
         If you provide a dict matching this format in this kwarg, this will be
         passed unchanged to the output checkplotdict produced.
@@ -387,6 +392,14 @@ def checkplot_dict(
         magnitudes noted in this checkplot as potential blends with the target
         object.
 
+    xmatchinfo : str or dict
+        This is either the xmatch dict produced by the function
+        `load_xmatch_external_catalogs` above, or the path to the xmatch info
+        pickle file produced by that function.
+
+    xmatchradiusarcsec : float
+        This is the cross-matching radius to use in arcseconds.
+
     lcfitfunc : Python function or None
         If provided, this should be a Python function that is used to fit a
         model to the light curve. This fit is then overplotted for each phased
@@ -399,13 +412,13 @@ def checkplot_dict(
         knots for a spline function, the degree of a Legendre polynomial fit,
         etc., planet transit parameters) This function should return a Python
         dict with the following structure (similar to the functions in
-        `astrobase.varbase.lcfit`) and at least the keys below:
+        `astrobase.varbase.lcfit`) and at least the keys below::
 
-        {'fittype':<str: name of fit method>,
-         'fitchisq':<float: the chi-squared value of the fit>,
-         'fitredchisq':<float: the reduced chi-squared value of the fit>,
-         'fitinfo':{'fitmags':<ndarray: model mags/fluxes from fit function>},
-         'magseries':{'times':<ndarray: times at which fitmags are evaluated>}}
+          {'fittype':<str: name of fit method>,
+           'fitchisq':<float: the chi-squared value of the fit>,
+           'fitredchisq':<float: the reduced chi-squared value of the fit>,
+           'fitinfo':{'fitmags':<ndarray: model mags/fluxes from fit function>},
+           'magseries':{'times':<ndarray: times where fitmags are evaluated>}}
 
         Additional keys in the dict returned from this function can include
         `fitdict['fitinfo']['finalparams']` for the final model fit parameters
@@ -414,9 +427,11 @@ def checkplot_dict(
         the model fit, among others.
 
         In any case, the output dict of `lcfitfunc` will be copied to the output
-        checkplotdict as
-        `checkplotdict[lspmethod][periodind]['lcfit'][<fittype>]` for each
-        phased light curve.
+        checkplotdict as::
+
+          checkplotdict[lspmethod][periodind]['lcfit'][<fittype>]
+
+        for eachphased light curve.
 
     lcfitparams : dict
         A dict containing the LC fit parameters to use when calling the function
@@ -436,17 +451,17 @@ def checkplot_dict(
         into the output checkplot pickle or exported PNG to allow for comparison
         with astrobase results.
 
-        Example of externalplots:
+        Example of externalplots::
 
-        [('/path/to/external/bls-periodogram.png',
-          '/path/to/external/bls-phasedlc-plot-bestpeak.png',
-          '/path/to/external/bls-phasedlc-plot-peak2.png',
-          '/path/to/external/bls-phasedlc-plot-peak3.png'),
-         ('/path/to/external/pdm-periodogram.png',
-          '/path/to/external/pdm-phasedlc-plot-bestpeak.png',
-          '/path/to/external/pdm-phasedlc-plot-peak2.png',
-          '/path/to/external/pdm-phasedlc-plot-peak3.png'),
-         ...]
+                [('/path/to/external/bls-periodogram.png',
+                 '/path/to/external/bls-phasedlc-plot-bestpeak.png',
+                 '/path/to/external/bls-phasedlc-plot-peak2.png',
+                 '/path/to/external/bls-phasedlc-plot-peak3.png'),
+                 ('/path/to/external/pdm-periodogram.png',
+                 '/path/to/external/pdm-phasedlc-plot-bestpeak.png',
+                 '/path/to/external/pdm-phasedlc-plot-peak2.png',
+                 '/path/to/external/pdm-phasedlc-plot-peak3.png'),
+                 ...]
 
         If `externalplots` is provided here, these paths will be stored in the
         output checkplotdict. The `checkplot.pkl_png.checkplot_pickle_to_png`
@@ -464,9 +479,11 @@ def checkplot_dict(
         from the NASA SkyView service.
 
     normto : {'globalmedian', 'zero'} or a float
-        'globalmedian' -> norms each mag to the global median of the LC column
-        'zero'         -> norms each mag to zero
-        a float        -> norms each mag to this specified float value.
+        These are specified as below:
+
+        - 'globalmedian' -> norms each mag to the global median of the LC column
+        - 'zero'         -> norms each mag to zero
+        - a float        -> norms each mag to this specified float value.
 
     normmingap : float
         This defines how much the difference between consecutive measurements is
@@ -1117,6 +1134,11 @@ def checkplot_pickle(
         respond to our request for the object's information. Note that if
         `fast_mode` is set, this is ignored.
 
+    gaia_mirror : str or None
+        This sets the GAIA mirror to use. This is a key in the
+        `services.gaia.GAIA_URLS` dict which defines the URLs to hit for each
+        mirror.
+
     complete_query_later : bool
         If this is True, saves the state of GAIA queries that are not yet
         complete when `gaia_max_timeout` is reached while waiting for the GAIA
@@ -1166,6 +1188,14 @@ def checkplot_pickle(
         The maximum number of neighbors that will have their light curves and
         magnitudes noted in this checkplot as potential blends with the target
         object.
+
+    xmatchinfo : str or dict
+        This is either the xmatch dict produced by the function
+        `load_xmatch_external_catalogs` above, or the path to the xmatch info
+        pickle file produced by that function.
+
+    xmatchradiusarcsec : float
+        This is the cross-matching radius to use in arcseconds.
 
     lcfitfunc : Python function or None
         If provided, this should be a Python function that is used to fit a
