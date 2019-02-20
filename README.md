@@ -10,10 +10,12 @@ any time-series data that can be represented in this form. If you have flux time
 series measurements, most functions take a `magsarefluxes` keyword argument that
 makes them handle flux light curves correctly.
 
-Full documentation is still a work in progress (as soon as I figure out how
-Sphinx works), but the docstrings are fairly good and an [overview](#contents)
-is provided below, along with Jupyter notebooks that demonstrate some of the
-functionality in a [companion repository](https://github.com/waqasbhatti/astrobase-notebooks).
+Full documentation is still a work in progress, but the docstrings are fairly
+good for now. Read the Python module docs here: https://wbhatti.org/astrobase
+
+An [overview](#contents) of the package is provided below, along with Jupyter
+notebooks that demonstrate some of the functionality in a [companion
+repository](https://github.com/waqasbhatti/astrobase-notebooks).
 
 To install **[astrobase](https://pypi.python.org/pypi/astrobase)** from the
 Python Package Index (PyPI):
@@ -49,6 +51,11 @@ for your purposes.
   operations (converting fluxes to mags, decorrelation of light curves,
   filtering light curves, and fitting object centroids for eclipse analysis,
   etc.)
+
+- **[astrotess](astrobase/astrotess.py)**: contains functions for dealing with
+  TESS 2-minute cadence light curves from STScI MAST (reading the FITS files,
+  consolidating light curves for objects over sectors), and some basic
+  operations (converting fluxes to mags, filtering light curves, etc.)
 
 - **[checkplot](astrobase/checkplot)**: contains functions to make
   checkplots: a grid of plots used to quickly decide if a period search for a
@@ -221,13 +228,13 @@ Once that's done, install astrobase.
 
 ### Other installation methods
 
-Or if you want to install the optional dependencies as well:
+Install all the optional dependencies as well:
 
 ```bash
 (venv)$ pip install astrobase[all]
 ```
 
-Finally, if you want the latest version:
+Install the latest version (may be unstable at times):
 
 ```bash
 $ git clone https://github.com/waqasbhatti/astrobase
