@@ -531,7 +531,7 @@ def make_kdtree(ra, decl):
     Parameters
     ----------
 
-    ra, decl : array-like
+    ra,decl : array-like
         The right ascension and declination coordinate pairs in decimal degrees.
 
     Returns

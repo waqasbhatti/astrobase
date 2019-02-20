@@ -856,7 +856,7 @@ def checkplot_png(lspinfo,
         with the extension '.pkl' or '.pkl.gz') that contains a dict of the form
         described above.
 
-    times, mags, errs : np.array
+    times,mags,errs : np.array
         The mag/flux time-series arrays to process along with associated errors.
 
     varepoch : 'min' or float or None or list of lists
@@ -1250,7 +1250,7 @@ def twolsp_checkplot_png(lspinfo1,
         with the extension '.pkl' or '.pkl.gz') that contains a dict of the form
         described above.
 
-    times, mags, errs : np.array
+    times,mags,errs : np.array
         The mag/flux time-series arrays to process along with associated errors.
 
     varepoch : 'min' or float or None or list of lists

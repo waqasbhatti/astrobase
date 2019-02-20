@@ -149,7 +149,7 @@ def precess_coordinates(ra, dec,
     Parameters
     ----------
 
-    ra, dec : float
+    ra,dec : float
         The equatorial coordinates of the object at `epoch_one` to precess in
         decimal degrees.
 
@@ -554,7 +554,7 @@ def jd_corr(jd,
     jd : float or array-like
         The Julian date(s) measured at UTC.
 
-    ra, dec : float
+    ra,dec : float
         The equatorial coordinates of the object in decimal degrees.
 
     obslon, obslat, obsalt : float or None

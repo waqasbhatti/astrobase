@@ -110,7 +110,7 @@ def plot_magseries(times,
     Parameters
     ----------
 
-    times, mags : np.array
+    times,mags : np.array
         The mag/flux time-series to plot as a function of time.
 
     magsarefluxes : bool
@@ -468,7 +468,7 @@ def plot_phased_magseries(times,
     Parameters
     ----------
 
-    times, mags : np.array
+    times,mags : np.array
         The mag/flux time-series to plot as a function of phase given `period`.
 
     period : float
@@ -875,7 +875,7 @@ def skyview_stamp(ra, decl,
     Parameters
     ----------
 
-    ra, decl : float
+    ra,decl : float
         The center coordinates for the stamp in decimal degrees.
 
     survey : str

@@ -1004,7 +1004,7 @@ def checkplot_pickle(
         `nbestperiods` and `nbestlspvals` in each lspinfo dict must have at
         least as many elements as the `nperiodstouse` kwarg to this function.
 
-    times, mags, errs : np.arrays
+    times,mags,errs : np.arrays
         The magnitude/flux time-series to process for this checkplot along with
         their associated measurement errors.
 

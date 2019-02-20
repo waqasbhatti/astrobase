@@ -133,7 +133,7 @@ def normalize_magseries(times,
     Parameters
     ----------
 
-    times, mags : array-like
+    times,mags : array-like
         The times (assumed to be some form of JD) and mags (or flux)
         measurements to be normalized.
 
@@ -249,7 +249,7 @@ def sigclip_magseries(times, mags, errs,
     Parameters
     ----------
 
-    times, mags, errs : np.array
+    times,mags,errs : np.array
         The magnitude or flux time-series arrays to sigma-clip. This doesn't
         assume all values are finite or if they're positive/negative. All of
         these arrays will have their non-finite elements removed, and then will
@@ -603,7 +603,7 @@ def sigclip_magseries_with_extparams(times, mags, errs, extparams,
     Parameters
     ----------
 
-    times, mags, errs : np.array
+    times,mags,errs : np.array
         The magnitude or flux time-series arrays to sigma-clip. This doesn't
         assume all values are finite or if they're positive/negative. All of
         these arrays will have their non-finite elements removed, and then will
@@ -838,7 +838,7 @@ def phase_magseries(times, mags, period, epoch, wrap=True, sort=True):
     Parameters
     ----------
 
-    times, mags : np.array
+    times,mags : np.array
         The magnitude/flux time-series values to phase using the provided
         `period` and `epoch`. Non-fiinite values will be removed.
 
@@ -918,7 +918,7 @@ def phase_magseries_with_errs(times, mags, errs, period, epoch,
     Parameters
     ----------
 
-    times, mags, errs : np.array
+    times,mags,errs : np.array
         The magnitude/flux time-series values and associated measurement errors
         to phase using the provided `period` and `epoch`. Non-fiinite values
         will be removed.
@@ -1007,7 +1007,7 @@ def time_bin_magseries(times, mags,
     Parameters
     ----------
 
-    times, mags : np.array
+    times,mags : np.array
         The magnitude/flux time-series to bin in time. Non-finite elements will
         be removed from these arrays. At least 10 elements in each array are
         required for this function to operate.
@@ -1112,7 +1112,7 @@ def time_bin_magseries_with_errs(times, mags, errs,
     Parameters
     ----------
 
-    times, mags, errs : np.array
+    times,mags,errs : np.array
         The magnitude/flux time-series and associated measurement errors to bin
         in time. Non-finite elements will be removed from these arrays. At least
         10 elements in each array are required for this function to operate.
@@ -1476,7 +1476,7 @@ def fill_magseries_gaps(times, mags, errs,
     Parameters
     ----------
 
-    times, mags, errs : np.array
+    times,mags,errs : np.array
         The magnitude/flux time-series and associated measurement errors to
         operate on. Non-finite elements will be removed from these arrays. At
         least 10 elements in each array are required for this function to
