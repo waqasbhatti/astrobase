@@ -3,71 +3,24 @@
 # checkplotlist.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2016
 # License: MIT. See LICENSE for full text.
 
-'''
-This makes a checkplot file list for use with the checkplot-viewer.html or the
-checkplotserver.py webapps. Checkplots are quick-views of object info, finder
-charts, light curves, phased light curves, and periodograms used to examine
-their stellar variability. These are produced by several functions in the
-astrobase.checkplot module:
+'''This makes a checkplot file list for use with the `checkplot-viewer.html` or
+the `checkplotserver.py` webapps. Checkplots are quick-views of object info,
+finder charts, light curves, phased light curves, and periodograms used to
+examine their stellar variability.
 
-checkplot.checkplot_png: makes a checkplot PNG for a single period-finding
-                         method
+These are produced by several functions in the `astrobase.checkplot` module:
 
-checkplot.twolsp_checkplot_png: does the same for two independent period-finding
-                                methods
+- :py:func:`astrobase.checkplot.pkl.checkplot_pickle`: makes a checkplot pickle
+  file for any number of independent period-finding methods. Use
+  `checkplotserver.py` to view these pickle files.
 
-checkplot.checkplot_pickle: makes a checkplot .pkl.gz for any number of
-                            independent period-finding methods
+- :py:func:`astrobase.checkplot.png.checkplot_png`: makes a checkplot PNG for a
+  single period-finding method. Use `checkplot-viewer.html` to view these image
+  files.
 
-
-USAGE
-=====
-
-If you made checkplots in the PNG format (checkplot-*.png)
-----------------------------------------------------------
-
-Copy checkplot-viewer.html and checkplot-viewer.js to the
-base directory from where you intend to serve your checkplot images from. Then
-invoke this command from that directory:
-
-$ checkplotlist png subdir/containing/the/checkplots 'optional-glob*.png'
-
-This will generate a checkplot-filelist.json file containing the file paths to
-the checkplots.
-
-You can then run a temporary Python web server from this base directory to
-browse through all the checkplots:
-
-$ python -m SimpleHTTPServer # Python 2
-$ python3 -m http.server     # Python 3
-
-then browse to http://localhost:8000/checkplot-viewer.html.
-
-If this directory is already in a path served by a web server, then you can just
-browse to the checkplot-viewer.html file normally. Note that a file:/// URL
-provided to the browser won't necessarily work in some browsers (especially
-Google Chrome) because of security precautions.
-
-If you made checkplots in the pickle format (checkplot-*.pkl)
--------------------------------------------------------------
-
-Invoke this command from that directory like so:
-
-$ checkplotlist pkl subdir/containing/the/checkplots
-
-Then, from that directory, invoke the checkplotserver webapp (make sure the
-astrobase virtualenv is active, so the command below is in your path):
-
-$ checkplotserver [list of options, use --help to see these]
-
-The webapp will start up a Tornado web server running on your computer and
-listening on a local address (default: http://localhost:5225). This webapp will
-read the checkplot-filelist.json file to find the checkplots.
-
-Browse to http://localhost:5225 (or whatever port you set in checkplotserver
-options) to look through or update all your checkplots. Any changes will be
-written back to the checkplot .pkl files, making this method of browsing more
-suited to more serious variability searches on large numbers of checkplots.
+- :py:func:`astrobase.checkplot.png.twolsp_checkplot_png`: does the same for
+  two independent period-finding methods. Use `checkplot-viewer.html` to view
+  these image files.
 
 '''
 
@@ -186,8 +139,27 @@ from astrobase.checkplot.pkl_io import _read_checkplot_picklefile
 ######################
 
 def dict_get(datadict, keylist):
-    '''
-    This gets the requested key by walking the datadict.
+    '''This gets a requested dict key by walking the dict.
+
+    Parameters
+    ----------
+
+    datadict : dict
+        The dict to get the specified key from.
+
+    keylist : list of str
+        This is a list of keys to use to walk the dict and get to the key that
+        is provided as the last element in `keylist`. For example::
+
+            keylist = ['key1','key2','key3']
+
+        will walk `datadict` recursively to get to `datadict[key1][key2][key3]`.
+
+    Returns
+    -------
+
+    object
+        The dict value of the specified key address.
 
     '''
     return reduce(getitem, keylist, datadict)
@@ -195,8 +167,24 @@ def dict_get(datadict, keylist):
 
 
 def checkplot_infokey_worker(task):
-    '''
-    This gets the required keys from the requested file.
+    '''This gets the required keys from the requested file.
+
+    Parameters
+    ----------
+
+    task : tuple
+        Task is a two element tuple::
+
+        - task[0] is the dict to work on
+
+        - task[1] is a list of lists of str indicating all the key address to
+          extract items from the dict for
+
+    Returns
+    -------
+
+    list
+        This is a list of all of the items at the requested key addresses.
 
     '''
     cpf, keys = task
@@ -237,6 +225,50 @@ FILTEROPS = {
 ##########
 
 def main():
+    '''This is the main function of this script.
+
+    The current script args are shown below ::
+
+        Usage: checkplotlist [-h] [--search SEARCH] [--sortby SORTBY]
+                             [--filterby FILTERBY] [--splitout SPLITOUT]
+                             [--outprefix OUTPREFIX] [--maxkeyworkers MAXKEYWORKERS]
+                             {pkl,png} cpdir
+
+        This makes a checkplot file list for use with the checkplot-viewer.html
+        (for checkplot PNGs) or the checkplotserver.py (for checkplot pickles)
+        webapps.
+
+        positional arguments:
+          {pkl,png}             type of checkplot to search for: pkl -> checkplot
+                                pickles, png -> checkplot PNGs
+          cpdir                 directory containing the checkplots to process
+
+        optional arguments:
+          -h, --help            show this help message and exit
+          --search SEARCH       file glob prefix to use when searching for checkplots,
+                                default: '*checkplot*', (the extension is added
+                                automatically - .png or .pkl)
+          --sortby SORTBY       the sort key and order to use when sorting
+          --filterby FILTERBY   the filter key and condition to use when filtering.
+                                you can specify this multiple times to filter by
+                                several keys at once. all filters are joined with a
+                                logical AND operation in the order they're given.
+          --splitout SPLITOUT   if there are more than SPLITOUT objects in the target
+                                directory (default: 5000), checkplotlist will split
+                                the output JSON into multiple files. this helps keep
+                                the checkplotserver webapp responsive.
+          --outprefix OUTPREFIX
+                                a prefix string to use for the output JSON file(s).
+                                use this to separate out different sort orders or
+                                filter conditions, for example. if this isn't
+                                provided, but --sortby or --filterby are, will use
+                                those to figure out the output files' prefixes
+          --maxkeyworkers MAXKEYWORKERS
+                                the number of parallel workers that will be launched
+                                to retrieve checkplot key values used for sorting and
+                                filtering (default: 2)
+
+    '''
 
     ####################
     ## PARSE THE ARGS ##

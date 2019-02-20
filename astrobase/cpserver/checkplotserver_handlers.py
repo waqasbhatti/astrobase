@@ -40,8 +40,35 @@ from numpy import ndarray
 import json
 
 class FrontendEncoder(json.JSONEncoder):
+    '''This overrides Python's default JSONEncoder so we can serialize custom
+    objects.
+
+    '''
 
     def default(self, obj):
+        '''Overrides the default serializer for `JSONEncoder`.
+
+        This can serialize the following objects in addition to what
+        `JSONEncoder` can already do.
+
+        - `np.array`
+        - `bytes`
+        - `complex`
+        - `np.float64` and other `np.dtype` objects
+
+        Parameters
+        ----------
+
+        obj : object
+            A Python object to serialize to JSON.
+
+        Returns
+        -------
+
+        str
+            A JSON encoded representation of the input object.
+
+        '''
 
         if isinstance(obj, np.ndarray):
             return obj.tolist()
@@ -371,6 +398,7 @@ PFMETHODS = ['gls','pdm','acf','aov','mav','bls','win']
 
 
 class IndexHandler(tornado.web.RequestHandler):
+
     '''This handles the index page.
 
     This page shows the current project.
@@ -396,12 +424,8 @@ class IndexHandler(tornado.web.RequestHandler):
     def get(self):
         '''This handles GET requests to the index page.
 
-        TODO: fix this so it loads a modified version of the usual index.html
-        template for readonly mode. This should replace all of the text boxes
-        with readonly versions.
-
-        TODO: maybe also provide the correct baseurl from the checkplotserver
-        options dict, so the frontend JS can just read that off immediately.
+        TODO: provide the correct baseurl from the checkplotserver options dict,
+        so the frontend JS can just read that off immediately.
 
         '''
 
@@ -445,7 +469,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
     def initialize(self, currentdir, assetpath, cplist,
                    cplistfile, executor, readonly):
         '''
-        handles initial setup.
+        This handles initial setup of this `RequestHandler`.
 
         '''
 
@@ -459,7 +483,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
 
     @gen.coroutine
     def get(self, checkplotfname):
-        '''This handles GET requests.
+        '''This handles GET requests to serve a specific checkplot pickle.
 
         This is an AJAX endpoint; returns JSON that gets converted by the
         frontend into things to render.
@@ -1110,7 +1134,7 @@ class CheckplotListHandler(tornado.web.RequestHandler):
     def initialize(self, currentdir, assetpath, cplist,
                    cplistfile, executor, readonly):
         '''
-        handles initial setup.
+        This handles initial setup of the `RequestHandler`.
 
         '''
 
@@ -1125,7 +1149,9 @@ class CheckplotListHandler(tornado.web.RequestHandler):
 
     def get(self):
         '''
-        This handles GET requests. Used with AJAX from frontend.
+        This handles GET requests for the current checkplot-list.json file.
+
+        Used with AJAX from frontend.
 
         '''
 
@@ -1140,9 +1166,10 @@ class CheckplotListHandler(tornado.web.RequestHandler):
 
 
     def post(self):
-        '''
-        This handles POST requests. Saves the changes made by the user.
+        '''This handles POST requests.
 
+        Saves the changes made by the user on the frontend back to the current
+        checkplot-list.json file.
 
         '''
 
@@ -1221,7 +1248,7 @@ class LCToolHandler(tornado.web.RequestHandler):
     def initialize(self, currentdir, assetpath, cplist,
                    cplistfile, executor, readonly):
         '''
-        handles initial setup.
+        This handles initial setup of the `RequestHandler`.
 
         '''
 
@@ -1235,76 +1262,81 @@ class LCToolHandler(tornado.web.RequestHandler):
 
     @gen.coroutine
     def get(self, cpfile):
-        '''This handles a GET request.
+        '''This handles a GET request to run a specified LC tool.
 
-        The URI structure is:
+        Parameters
+        ----------
 
-        /tools/<cpfile>?[args]
+        cpfile : str
+            This is the checkplot file to run the tool on.
 
-        where args are:
+        Returns
+        -------
 
-        ?lctool=<lctool>&argkey1=argval1&argkey2=argval2&...
+        str
+            Returns a JSON response.
 
-        &forcereload=true <- if this is present, then reload values from
-        original checkplot.
+        Notes
+        -----
 
-        &objectid=<objectid>
+        The URI structure is::
 
-        lctool is one of the functions below
+            /tools/<cpfile>?[args]
 
-        PERIODSEARCH FUNCTIONS
-        ----------------------
+        where args are::
 
-        psearch-gls: run Lomb-Scargle with given params
-        psearch-bls: run BLS with given params
-        psearch-pdm: run phase dispersion minimization with given params
-        psearch-aov: run analysis-of-variance with given params
-        psearch-mav: run analysis-of-variance (multi-harm) with given params
-        psearch-acf: run ACF period search with given params
-        psearch-win: run spectral window function search with given params
+            ?lctool=<lctool>&argkey1=argval1&argkey2=argval2&...
 
-        arguments:
+            &forcereload=true <- if this is present, then reload values from
+            original checkplot.
 
-        startp=XX
-        endp=XX
-        magsarefluxes=True|False
-        autofreq=True|False
-        stepsize=XX
+            &objectid=<objectid>
 
+        `lctool` is one of the strings below
 
-        VARIABILITY FUNCTIONS
-        ---------------------
+        Period search functions::
 
-        var-varfeatures: gets the variability from the checkplot or recalculates
-                         if it's not present
+            psearch-gls: run Lomb-Scargle with given params
+            psearch-bls: run BLS with given params
+            psearch-pdm: run phase dispersion minimization with given params
+            psearch-aov: run analysis-of-variance with given params
+            psearch-mav: run analysis-of-variance (multi-harm) with given params
+            psearch-acf: run ACF period search with given params
+            psearch-win: run spectral window function search with given params
 
-        var-prewhiten: pre-whitens the light curve with a sinusoidal signal
+        Arguments recognized by all period-search functions are::
 
-        var-masksig: masks a given phase location with given width from the
-                     light curve
+            startp=XX
+            endp=XX
+            magsarefluxes=True|False
+            autofreq=True|False
+            stepsize=XX
 
+        Variability characterization functions::
 
-        LIGHT CURVE FUNCTIONS
-        ---------------------
+            var-varfeatures: gets the variability features from the checkplot or
+                             recalculates if they're not present
 
-        phasedlc-newplot: make phased LC with new provided period/epoch
-        lcfit-fourier: fit a Fourier function to the phased LC
-        lcfit-spline: fit a spline function to the phased LC
-        lcfit-legendre: fit a Legendre polynomial to the phased LC
-        lcfit-savgol: fit a Savitsky-Golay polynomial to the phased LC
+            var-prewhiten: pre-whitens the light curve with a sinusoidal signal
 
+            var-masksig: masks a given phase location with given width from the
+                         light curve
+
+        Light curve manipulation functions ::
+
+            phasedlc-newplot: make phased LC with new provided period/epoch
+            lcfit-fourier: fit a Fourier function to the phased LC
+            lcfit-spline: fit a spline function to the phased LC
+            lcfit-legendre: fit a Legendre polynomial to the phased LC
+            lcfit-savgol: fit a Savitsky-Golay polynomial to the phased LC
 
         FIXME: figure out how to cache the results of these functions
         temporarily and save them back to the checkplot after we click on save
         in the frontend.
 
-        look for a checkplot-blah-blah.pkl-cps-processing file in the same
+        TODO: look for a checkplot-blah-blah.pkl-cps-processing file in the same
         place as the usual pickle file. if this exists and is newer than the pkl
-        file, load it instead.
-
-        OR
-
-        have a checkplotdict['cpservertemp'] item.
+        file, load it instead. Or have a checkplotdict['cpservertemp'] item.
 
         '''
 
@@ -2977,6 +3009,8 @@ class LCToolHandler(tornado.web.RequestHandler):
     def post(self, cpfile):
         '''This handles a POST request.
 
+        TODO: implement this.
+
         This will save the results of the previous tool run to the checkplot
         file and the JSON filelist.
 
@@ -3021,11 +3055,15 @@ def _time_independent_equals(a, b):
 class StandaloneHandler(tornado.web.RequestHandler):
     '''This handles loading checkplots into JSON and sending that back.
 
+    This is a special handler used when `checkplotserver` is in 'stand-alone'
+    mode, i.e. only serving up checkplot pickles anywhere on disk as JSON when
+    requested.
+
     '''
 
     def initialize(self, executor, secret):
         '''
-        handles initial setup.
+        This handles initial setup of the `RequestHandler`.
 
         '''
 
@@ -3038,9 +3076,10 @@ class StandaloneHandler(tornado.web.RequestHandler):
     def get(self):
         '''This handles GET requests.
 
-        Returns the requested checkplot pickle information as JSON.
+        Returns the requested checkplot pickle's information as JSON.
 
-        Requires a key argument.
+        Requires a pre-shared secret `key` argument for the operation to
+        complete successfully. This is obtained from a command-line argument.
 
         '''
 

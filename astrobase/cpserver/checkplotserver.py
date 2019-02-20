@@ -2,8 +2,11 @@
 # -*- coding: utf-8 -*-
 # checkplotserver.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Nov 2016
 
-'''
-This is the Tornado web-server for serving checkplots.
+'''`checkplotserver` is a Tornado web-server for visualizing the information
+stored in checkplot pickles, editing them, and exporting information to a
+variable star classification pipeline.
+
+This is the main module used to launch the server.
 
 '''
 
@@ -26,7 +29,7 @@ import stat
 from concurrent.futures import ProcessPoolExecutor
 
 # setup signal trapping on SIGINT
-def recv_sigint(signum, stack):
+def _recv_sigint(signum, stack):
     '''
     handler function to receive and process a SIGINT
 
@@ -148,6 +151,80 @@ define('sharedsecret',
 ############
 
 def main():
+    '''
+    This launches the server. The current script args are shown below::
+
+      Usage: checkplotserver [OPTIONS]
+
+      Options:
+
+        --help                           show this help information
+
+      checkplotserver.py options:
+
+        --assetpath                      Sets the asset (server images, css, js, DB)
+                                         path for checkplotserver.
+                                         (default <astrobase install dir>
+                                          /astrobase/cpserver/cps-assets)
+        --baseurl                        Set the base URL of the checkplotserver.
+                                         This is useful when you're running
+                                         checkplotserver on a remote machine and are
+                                         reverse-proxying more than one instances of
+                                         it so you can access them using HTTP from
+                                         outside on different base URLs like
+                                         /cpserver1/, /cpserver2/, etc. If this is
+                                         set, all URLs will take the form
+                                         [baseurl]/..., instead of /... (default /)
+        --checkplotlist                  The path to the checkplot-filelist.json file
+                                         listing checkplots to load and serve. If
+                                         this is not provided, checkplotserver will
+                                         look for a checkplot-pickle-flist.json in
+                                         the directory that it was started in
+        --debugmode                      start up in debug mode if set to 1. (default
+                                         0)
+        --maxprocs                       Number of background processes to use for
+                                         saving/loading checkplot files and running
+                                         light curves tools (default 2)
+        --port                           Run on the given port. (default 5225)
+        --readonly                       Run the server in readonly mode. This is
+                                         useful for a public-facing instance of
+                                         checkplotserver where you just want to allow
+                                         collaborators to review objects but not edit
+                                         them. (default False)
+        --serve                          Bind to given address and serve content.
+                                         (default 127.0.0.1)
+        --sharedsecret                   a file containing a cryptographically secure
+                                         string that is used to authenticate requests
+                                         that come into the special standalone mode.
+        --standalone                     This starts the server in standalone mode.
+                                         (default 0)
+
+      tornado/log.py options:
+
+        --log-file-max-size              max size of log files before rollover
+                                         (default 100000000)
+        --log-file-num-backups           number of log files to keep (default 10)
+        --log-file-prefix=PATH           Path prefix for log files. Note that if you
+                                         are running multiple tornado processes,
+                                         log_file_prefix must be different for each
+                                         of them (e.g. include the port number)
+        --log-rotate-interval            The interval value of timed rotating
+                                         (default 1)
+        --log-rotate-mode                The mode of rotating files(time or size)
+                                         (default size)
+        --log-rotate-when                specify the type of TimedRotatingFileHandler
+                                         interval other options:('S', 'M', 'H', 'D',
+                                         'W0'-'W6') (default midnight)
+        --log-to-stderr                  Send log output to stderr (colorized if
+                                         possible). By default use stderr if
+                                         --log_file_prefix is not set and no other
+                                         logging is configured.
+        --logging=debug|info|warning|error|none
+                                         Set the Python log level. If 'none', tornado
+                                         won't touch the logging configuration.
+                                         (default info)
+
+    '''
     # parse the command line
     tornado.options.parse_command_line()
 
@@ -403,8 +480,8 @@ def main():
                 (options.serve, serverport, BASEURL))
 
     # register the signal callbacks
-    signal.signal(signal.SIGINT,recv_sigint)
-    signal.signal(signal.SIGTERM,recv_sigint)
+    signal.signal(signal.SIGINT,_recv_sigint)
+    signal.signal(signal.SIGTERM,_recv_sigint)
 
     # start the IOLoop and begin serving requests
     try:
