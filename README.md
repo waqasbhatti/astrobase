@@ -11,9 +11,9 @@ series measurements, most functions take a `magsarefluxes` keyword argument that
 makes them handle flux light curves correctly.
 
 Full documentation is still a work in progress, but the docstrings are fairly
-good for now. Read the Python module docs here: https://wbhatti.org/astrobase
-
-An [overview](#contents) of the package is provided below, along with Jupyter
+good for now. Read the Python module docs here:
+[https://wbhatti.org/astrobase](https://wbhatti.org/astrobase). An
+[overview](#contents) of the package is provided below, along with Jupyter
 notebooks that demonstrate some of the functionality in a [companion
 repository](https://github.com/waqasbhatti/astrobase-notebooks).
 
