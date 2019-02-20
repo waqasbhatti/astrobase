@@ -4,6 +4,8 @@
 # License: MIT - see the LICENSE file for the full text.
 
 '''
+This is a template module.
+
 Module docstring goes here.
 
 '''

@@ -4,6 +4,7 @@
 
 '''
 Contains various tools for analyzing TESS light curves.
+
 '''
 
 #############
@@ -61,9 +62,9 @@ def normalized_flux_to_mag(lcdict,
                                     'pdc.pdcsap_flux_err')):
     '''This converts the normalized fluxes in the TESS lcdicts to TESS mags.
 
-    Uses the object's TESS mag stored in lcdict['objectinfo']['tessmag']:
+    Uses the object's TESS mag stored in lcdict['objectinfo']['tessmag']::
 
-    mag - object_tess_mag = -2.5 log (flux/median_flux)
+        mag - object_tess_mag = -2.5 log (flux/median_flux)
 
     Parameters
     ----------
@@ -124,14 +125,14 @@ def get_time_flux_errs_from_Ames_lightcurve(infile,
     step.
 
     .. deprecated:: 0.3.20
-        This function will be removed in astrobase v0.3.22. Use the
+        This function will be removed in astrobase v0.4.0. Use the
         `read_tess_fitslc` and `consolidate_tess_fitslc` functions instead.
 
     Parameters
     ----------
 
     infile : str
-        The path to *.fits.gz TOI alert file, from Ames pipeline.
+        The path to `*.fits.gz` TOI alert file, from Ames pipeline.
 
     lctype : {'PDCSAP','SAP'}
         The type of light curve to extract from the FITS LC file.
@@ -153,7 +154,7 @@ def get_time_flux_errs_from_Ames_lightcurve(infile,
     warnings.warn(
         "Use the astrotess.read_tess_fitslc and "
         "astrotess.consolidate_tess_fitslc functions instead of this function. "
-        "This function will be removed in astrobase v0.3.22.",
+        "This function will be removed in astrobase v0.4.0.",
         FutureWarning
     )
 
@@ -402,9 +403,9 @@ def read_tess_fitslc(lcfits,
         Indicates the flux measurement type(s) to apply the filtering to.
 
     timestoignore : list of tuples or None
-        This is of the form:
+        This is of the form::
 
-        [(time1_start, time1_end), (time2_start, time2_end), ...]
+            [(time1_start, time1_end), (time2_start, time2_end), ...]
 
         and indicates the start and end times to mask out of the final
         lcdict. Use this to remove anything that wasn't caught by the quality
@@ -818,7 +819,7 @@ def consolidate_tess_fitslc(lclist,
         is valid for glob.glob to search for and generate a light curve list
         based on the file glob. This is useful for consolidating LC FITS files
         across different TESS sectors for a single TIC ID using a glob like
-        '*<TICID>*_lc.fits'.
+        `*<TICID>*_lc.fits`.
 
     normalize : bool
         If True, then the light curve's SAP_FLUX and PDCSAP_FLUX measurements
@@ -834,9 +835,9 @@ def consolidate_tess_fitslc(lclist,
         Indicates the flux measurement type(s) to apply the filtering to.
 
     timestoignore : list of tuples or None
-        This is of the form:
+        This is of the form::
 
-        [(time1_start, time1_end), (time2_start, time2_end), ...]
+            [(time1_start, time1_end), (time2_start, time2_end), ...]
 
         and indicates the start and end times to mask out of the final
         lcdict. Use this to remove anything that wasn't caught by the quality
@@ -1108,9 +1109,9 @@ def filter_tess_lcdict(lcdict,
         Indicates the flux measurement type(s) to apply the filtering to.
 
     timestoignore : list of tuples or None
-        This is of the form:
+        This is of the form::
 
-        [(time1_start, time1_end), (time2_start, time2_end), ...]
+            [(time1_start, time1_end), (time2_start, time2_end), ...]
 
         and indicates the start and end times to mask out of the final
         lcdict. Use this to remove anything that wasn't caught by the quality

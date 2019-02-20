@@ -78,11 +78,11 @@ def find_lc_timegroups(lctimes, mingap=4.0):
     -------
 
     tuple
-        A tuple of the form: (ngroups, [slice(start_ind_1, end_ind_1), ...])
-        This contains the number of groups as the first element, and a list
-        of Python `slice` objects for each time-group found. These can be used
-        directly to index into the array of times to quickly get measurements
-        associated with each group.
+        A tuple of the form: `(ngroups, [slice(start_ind_1, end_ind_1), ...])`
+        is returned.  This contains the number of groups as the first element,
+        and a list of Python `slice` objects for each time-group found. These
+        can be used directly to index into the array of times to quickly get
+        measurements associated with each group.
 
     '''
 
@@ -143,9 +143,11 @@ def normalize_magseries(times,
         default it is set to 4.0 days.
 
     normto : {'globalmedian', 'zero'} or a float
-        'globalmedian' -> norms each mag to the global median of the LC column
-        'zero'         -> norms each mag to zero
-        a float        -> norms each mag to this specified float value.
+        Specifies the normalization type::
+
+          'globalmedian' -> norms each mag to the global median of the LC column
+          'zero'         -> norms each mag to zero
+          a float        -> norms each mag to this specified float value.
 
     magsarefluxes : bool
         Indicates if the input `mags` array is actually an array of flux
@@ -165,7 +167,7 @@ def normalize_magseries(times,
     Returns
     -------
 
-    times, normalized_mags : np.arrays
+    times,normalized_mags : np.arrays
         Normalized magnitude values after normalization. If normalization fails
         for some reason, `times` and `normalized_mags` will both be None.
 
@@ -833,7 +835,9 @@ def sigclip_magseries_with_extparams(times, mags, errs, extparams,
 def phase_magseries(times, mags, period, epoch, wrap=True, sort=True):
     '''Phases a magnitude/flux time-series using a given period and epoch.
 
-    `phase = (times - epoch)/period - floor((times - epoch)/period)`
+    The equation used is::
+
+        phase = (times - epoch)/period - floor((times - epoch)/period)
 
     Parameters
     ----------
@@ -869,12 +873,12 @@ def phase_magseries(times, mags, period, epoch, wrap=True, sort=True):
     -------
 
     dict
-        A dict of the following form is returned:
+        A dict of the following form is returned::
 
-        {'phase': the phase values,
-         'mags': the mags/flux values at each phase,
-         'period': the input `period` used to phase the time-series,
-         'epoch': the input `epoch` used to phase the time-series}
+            {'phase': the phase values,
+             'mags': the mags/flux values at each phase,
+             'period': the input `period` used to phase the time-series,
+             'epoch': the input `epoch` used to phase the time-series}
 
     '''
 
@@ -913,7 +917,9 @@ def phase_magseries_with_errs(times, mags, errs, period, epoch,
                               wrap=True, sort=True):
     '''Phases a magnitude/flux time-series using a given period and epoch.
 
-    `phase = (times - epoch)/period - floor((times - epoch)/period)`
+    The equation used is::
+
+        phase = (times - epoch)/period - floor((times - epoch)/period)
 
     Parameters
     ----------
@@ -950,13 +956,13 @@ def phase_magseries_with_errs(times, mags, errs, period, epoch,
     -------
 
     dict
-        A dict of the following form is returned:
+        A dict of the following form is returned::
 
-        {'phase': the phase values,
-         'mags': the mags/flux values at each phase,
-         'errs': the err values at each phase,
-         'period': the input `period` used to phase the time-series,
-         'epoch': the input `epoch` used to phase the time-series}
+            {'phase': the phase values,
+             'mags': the mags/flux values at each phase,
+             'errs': the err values at each phase,
+             'period': the input `period` used to phase the time-series,
+             'epoch': the input `epoch` used to phase the time-series}
 
     '''
 
@@ -1024,16 +1030,16 @@ def time_bin_magseries(times, mags,
     -------
 
     dict
-        A dict of the following form is returned:
+        A dict of the following form is returned::
 
-        {'jdbin_indices': a list of the index arrays into the nan-filtered
-                          input arrays per each bin,
-         'jdbins': list of bin boundaries for each bin,
-         'nbins': the number of bins generated,
-         'binnedtimes': the time values associated with each time bin;
-                        this is the median of the times in each bin,
-         'binnedmags': the mag/flux values associated with each time bin;
-                       this is the median of the mags/fluxes in each bin}
+            {'jdbin_indices': a list of the index arrays into the nan-filtered
+                              input arrays per each bin,
+             'jdbins': list of bin boundaries for each bin,
+             'nbins': the number of bins generated,
+             'binnedtimes': the time values associated with each time bin;
+                            this is the median of the times in each bin,
+             'binnedmags': the mag/flux values associated with each time bin;
+                           this is the median of the mags/fluxes in each bin}
 
     '''
 
@@ -1129,18 +1135,18 @@ def time_bin_magseries_with_errs(times, mags, errs,
     -------
 
     dict
-        A dict of the following form is returned:
+        A dict of the following form is returned::
 
-        {'jdbin_indices': a list of the index arrays into the nan-filtered
-                          input arrays per each bin,
-         'jdbins': list of bin boundaries for each bin,
-         'nbins': the number of bins generated,
-         'binnedtimes': the time values associated with each time bin;
-                        this is the median of the times in each bin,
-         'binnedmags': the mag/flux values associated with each time bin;
-                       this is the median of the mags/fluxes in each bin,
-         'binnederrs': the err values associated with each time bin;
-                       this is the median of the errs in each bin}
+            {'jdbin_indices': a list of the index arrays into the nan-filtered
+                              input arrays per each bin,
+             'jdbins': list of bin boundaries for each bin,
+             'nbins': the number of bins generated,
+             'binnedtimes': the time values associated with each time bin;
+                            this is the median of the times in each bin,
+             'binnedmags': the mag/flux values associated with each time bin;
+                           this is the median of the mags/fluxes in each bin,
+             'binnederrs': the err values associated with each time bin;
+                           this is the median of the errs in each bin}
 
     '''
 
@@ -1246,16 +1252,16 @@ def phase_bin_magseries(phases, mags,
     -------
 
     dict
-        A dict of the following form is returned:
+        A dict of the following form is returned::
 
-        {'phasebin_indices': a list of the index arrays into the nan-filtered
-                             input arrays per each bin,
-         'phasebins': list of bin boundaries for each bin,
-         'nbins': the number of bins generated,
-         'binnedphases': the phase values associated with each phase bin;
-                        this is the median of the phase value in each bin,
-         'binnedmags': the mag/flux values associated with each phase bin;
-                       this is the median of the mags/fluxes in each bin}
+            {'phasebin_indices': a list of the index arrays into the
+                                 nan-filtered input arrays per each bin,
+             'phasebins': list of bin boundaries for each bin,
+             'nbins': the number of bins generated,
+             'binnedphases': the phase values associated with each phase bin;
+                            this is the median of the phase value in each bin,
+             'binnedmags': the mag/flux values associated with each phase bin;
+                           this is the median of the mags/fluxes in each bin}
 
     '''
 
@@ -1351,18 +1357,18 @@ def phase_bin_magseries_with_errs(phases, mags, errs,
     -------
 
     dict
-        A dict of the following form is returned:
+        A dict of the following form is returned::
 
-        {'phasebin_indices': a list of the index arrays into the nan-filtered
-                             input arrays per each bin,
-         'phasebins': list of bin boundaries for each bin,
-         'nbins': the number of bins generated,
-         'binnedphases': the phase values associated with each phase bin;
-                        this is the median of the phase value in each bin,
-         'binnedmags': the mag/flux values associated with each phase bin;
-                       this is the median of the mags/fluxes in each bin,
-         'binnederrs': the err values associated with each phase bin;
-                       this is the median of the errs in each bin}
+            {'phasebin_indices': a list of the index arrays into the
+                                 nan-filtered input arrays per each bin,
+             'phasebins': list of bin boundaries for each bin,
+             'nbins': the number of bins generated,
+             'binnedphases': the phase values associated with each phase bin;
+                            this is the median of the phase value in each bin,
+             'binnedmags': the mag/flux values associated with each phase bin;
+                           this is the median of the mags/fluxes in each bin,
+             'binnederrs': the err values associated with each phase bin;
+                           this is the median of the errs in each bin}
 
     '''
 
@@ -1532,12 +1538,12 @@ def fill_magseries_gaps(times, mags, errs,
     -------
 
     dict
-        A dict of the following form is returned:
+        A dict of the following form is returned::
 
-        {'itimes': the interpolated time values after gap-filling,
-         'imags': the interpolated mag/flux values after gap-filling,
-         'ierrs': the interpolated mag/flux values after gap-filling,
-         'cadence': the cadence of the output mag/flux time-series}
+            {'itimes': the interpolated time values after gap-filling,
+             'imags': the interpolated mag/flux values after gap-filling,
+             'ierrs': the interpolated mag/flux values after gap-filling,
+             'cadence': the cadence of the output mag/flux time-series}
 
     '''
 

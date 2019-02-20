@@ -143,7 +143,7 @@ def keplermag_to_sdssr(keplermag, kic_sdssg, kic_sdssr):
     keplermag : float or array-like
         The Kepler magnitude value(s) to convert to fluxes.
 
-    kic_sdssg, kic_sdssr : float or array-like
+    kic_sdssg,kic_sdssr : float or array-like
         The SDSS g and r magnitudes of the object(s) from the Kepler Input
         Catalog. The .llc.fits MAST light curve file for a Kepler object
         contains these values in the FITS extension 0 header.
@@ -255,9 +255,8 @@ def read_kepler_fitslc(
 
     This works on the light curves available at MAST:
 
-    -> kplr{kepid}-{somedatething}_llc.fits files from the Kepler mission
-
-    -> ktwo{epicid}-c{campaign}_llc.fits files from the K2 mission
+    - kplr{kepid}-{somedatething}_llc.fits files from the Kepler mission
+    - ktwo{epicid}-c{campaign}_llc.fits files from the K2 mission
 
     Parameters
     ----------
@@ -1200,11 +1199,11 @@ def _epd_function(coeffs, fluxes, xcc, ycc, bgv, bge):
     fluxes : array-like
         The flux measurement array being used.
 
-    xcc, ycc : array-like
+    xcc,ycc : array-like
         Arrays of the x and y coordinates associated with each measurement in
         `fluxes`.
 
-    bgv, bge : array-like
+    bgv,bge : array-like
         Arrays of the flux background value and the flux background error
         associated with each measurement in `fluxes`.
 
@@ -1243,11 +1242,11 @@ def _epd_residual(coeffs, fluxes, xcc, ycc, bgv, bge):
     fluxes : array-like
         The flux measurement array being used.
 
-    xcc, ycc : array-like
+    xcc,ycc : array-like
         Arrays of the x and y coordinates associated with each measurement in
         `fluxes`.
 
-    bgv, bge : array-like
+    bgv,bge : array-like
         Arrays of the flux background value and the flux background error
         associated with each measurement in `fluxes`.
 
@@ -1292,7 +1291,7 @@ def epd_kepler_lightcurve(lcdict,
         An `lcdict` produced by `consolidate_kepler_fitslc` or
         `read_kepler_fitslc`.
 
-    xcol, ycol : str
+    xcol,ycol : str
         Indicates the x and y coordinate column names to use from the Kepler LC
         in the EPD fit.
 
@@ -1313,15 +1312,15 @@ def epd_kepler_lightcurve(lcdict,
     writetodict : bool
         If writetodict is True, adds the following columns to the lcdict:
 
-        epd_time = time array
-        epd_sapflux = uncorrected flux before EPD
-        epd_epdsapflux = corrected flux after EPD
-        epd_epdsapcorr = EPD flux corrections
-        epd_bkg = background array
-        epd_bkg_err = background errors array
-        epd_xcc = xcoord array
-        epd_ycc = ycoord array
-        epd_quality = quality flag array
+            epd_time = time array
+            epd_sapflux = uncorrected flux before EPD
+            epd_epdsapflux = corrected flux after EPD
+            epd_epdsapcorr = EPD flux corrections
+            epd_bkg = background array
+            epd_bkg_err = background errors array
+            epd_xcc = xcoord array
+            epd_ycc = ycoord array
+            epd_quality = quality flag array
 
         and updates the 'columns' list in the lcdict as well.
 
@@ -1498,14 +1497,14 @@ def rfepd_kepler_lightcurve(
         An `lcdict` produced by `consolidate_kepler_fitslc` or
         `read_kepler_fitslc`.
 
-    xcol, ycol : str
+    xcol,ycol : str
         Indicates the x and y coordinate column names to use from the Kepler LC
         in the EPD fit.
 
     timestoignore : list of tuples
-        This is of the form:
+        This is of the form::
 
-        [(time1_start, time1_end), (time2_start, time2_end), ...]
+            [(time1_start, time1_end), (time2_start, time2_end), ...]
 
         and indicates the start and end times to mask out of the final
         lcdict. Use this to remove anything that wasn't caught by the quality
@@ -1517,17 +1516,17 @@ def rfepd_kepler_lightcurve(
         spacecraft.
 
     writetodict : bool
-        If writetodict is True, adds the following columns to the lcdict:
+        If writetodict is True, adds the following columns to the lcdict::
 
-        rfepd_time = time array
-        rfepd_sapflux = uncorrected flux before EPD
-        rfepd_epdsapflux = corrected flux after EPD
-        rfepd_epdsapcorr = EPD flux corrections
-        rfepd_bkg = background array
-        rfepd_bkg_err = background errors array
-        rfepd_xcc = xcoord array
-        rfepd_ycc = ycoord array
-        rfepd_quality = quality flag array
+            rfepd_time = time array
+            rfepd_sapflux = uncorrected flux before EPD
+            rfepd_epdsapflux = corrected flux after EPD
+            rfepd_epdsapcorr = EPD flux corrections
+            rfepd_bkg = background array
+            rfepd_bkg_err = background errors array
+            rfepd_xcc = xcoord array
+            rfepd_ycc = ycoord array
+            rfepd_quality = quality flag array
 
         and updates the 'columns' list in the lcdict as well.
 
@@ -1959,9 +1958,9 @@ def get_centroid_offsets(lcd, t_ing_egr, oot_buffer_time=0.1, sample_factor=3):
         that the `detrend_centroid` function has been run on this `lcdict`.
 
     t_ing_egr : list of tuples
-        This is of the form:
+        This is of the form::
 
-        [(ingress time of i^th transit, egress time of i^th transit)]
+            [(ingress time of i^th transit, egress time of i^th transit)]
 
         for i the transit number index in this quarter (starts at zero at the
         beginning of every quarter). Assumes units of BJD.
@@ -1979,16 +1978,16 @@ def get_centroid_offsets(lcd, t_ing_egr, oot_buffer_time=0.1, sample_factor=3):
 
     dict
         This is a dictionary keyed by transit number (i.e., the same index as
-        `t_ing_egr`), where each key contains the following value:
+        `t_ing_egr`), where each key contains the following value::
 
-        {'ctd_x_in_tra':ctd_x_in_tra,
-         'ctd_y_in_tra':ctd_y_in_tra,
-         'ctd_x_oot':ctd_x_oot,
-         'ctd_y_oot':ctd_y_oot,
-         'npts_in_tra':len(ctd_x_in_tra),
-         'npts_oot':len(ctd_x_oot),
-         'in_tra_times':in_tra_times,
-         'oot_times':oot_times}
+            {'ctd_x_in_tra':ctd_x_in_tra,
+             'ctd_y_in_tra':ctd_y_in_tra,
+             'ctd_x_oot':ctd_x_oot,
+             'ctd_y_oot':ctd_y_oot,
+             'npts_in_tra':len(ctd_x_in_tra),
+             'npts_oot':len(ctd_x_oot),
+             'in_tra_times':in_tra_times,
+             'oot_times':oot_times}
 
     '''
 

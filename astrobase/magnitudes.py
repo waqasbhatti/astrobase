@@ -107,10 +107,10 @@ def convert_constants(jmag, hmag, kmag,
     Parameters
     ----------
 
-    jmag, hmag, kmag : float
+    jmag,hmag,kmag : float
         2MASS J, H, Ks mags to use to convert.
 
-    cjhk, cjh, cjk, chk, cj, ch, ck : list
+    cjhk,cjh,cjk,chk,cj,ch,ck : lists
         Constants to use when converting.
 
     Returns
@@ -176,7 +176,7 @@ def jhk_to_bmag(jmag, hmag, kmag):
     Parameters
     ----------
 
-    jmag, hmag, kmag : float
+    jmag,hmag,kmag : float
         2MASS J, H, Ks mags of the object.
 
     Returns
@@ -187,20 +187,20 @@ def jhk_to_bmag(jmag, hmag, kmag):
 
     '''
 
-    return convert_constants(jmag, hmag, kmag,
+    return convert_constants(jmag,hmag,kmag,
                              BJHK,
                              BJH, BJK, BHK,
                              BJ, BH, BK)
 
 
 
-def jhk_to_vmag(jmag, hmag, kmag):
+def jhk_to_vmag(jmag,hmag,kmag):
     '''Converts given J, H, Ks mags to a V magnitude value.
 
     Parameters
     ----------
 
-    jmag, hmag, kmag : float
+    jmag,hmag,kmag : float
         2MASS J, H, Ks mags of the object.
 
     Returns
@@ -211,20 +211,20 @@ def jhk_to_vmag(jmag, hmag, kmag):
 
     '''
 
-    return convert_constants(jmag, hmag, kmag,
+    return convert_constants(jmag,hmag,kmag,
                              VJHK,
                              VJH, VJK, VHK,
                              VJ, VH, VK)
 
 
 
-def jhk_to_rmag(jmag, hmag, kmag):
+def jhk_to_rmag(jmag,hmag,kmag):
     '''Converts given J, H, Ks mags to an R magnitude value.
 
     Parameters
     ----------
 
-    jmag, hmag, kmag : float
+    jmag,hmag,kmag : float
         2MASS J, H, Ks mags of the object.
 
     Returns
@@ -235,20 +235,20 @@ def jhk_to_rmag(jmag, hmag, kmag):
 
     '''
 
-    return convert_constants(jmag, hmag, kmag,
+    return convert_constants(jmag,hmag,kmag,
                              RJHK,
                              RJH, RJK, RHK,
                              RJ, RH, RK)
 
 
 
-def jhk_to_imag(jmag, hmag, kmag):
+def jhk_to_imag(jmag,hmag,kmag):
     '''Converts given J, H, Ks mags to an I magnitude value.
 
     Parameters
     ----------
 
-    jmag, hmag, kmag : float
+    jmag,hmag,kmag : float
         2MASS J, H, Ks mags of the object.
 
     Returns
@@ -259,7 +259,7 @@ def jhk_to_imag(jmag, hmag, kmag):
 
     '''
 
-    return convert_constants(jmag, hmag, kmag,
+    return convert_constants(jmag,hmag,kmag,
                              IJHK,
                              IJH, IJK, IHK,
                              IJ, IH, IK)
@@ -269,13 +269,13 @@ def jhk_to_imag(jmag, hmag, kmag):
 # conversion from JHK to SDSS ugriz #
 #####################################
 
-def jhk_to_sdssu(jmag, hmag, kmag):
+def jhk_to_sdssu(jmag,hmag,kmag):
     '''Converts given J, H, Ks mags to an SDSS u magnitude value.
 
     Parameters
     ----------
 
-    jmag, hmag, kmag : float
+    jmag,hmag,kmag : float
         2MASS J, H, Ks mags of the object.
 
     Returns
@@ -286,20 +286,20 @@ def jhk_to_sdssu(jmag, hmag, kmag):
 
     '''
 
-    return convert_constants(jmag, hmag, kmag,
+    return convert_constants(jmag,hmag,kmag,
                              SDSSU_JHK,
                              SDSSU_JH, SDSSU_JK, SDSSU_HK,
                              SDSSU_J, SDSSU_H, SDSSU_K)
 
 
 
-def jhk_to_sdssg(jmag, hmag, kmag):
+def jhk_to_sdssg(jmag,hmag,kmag):
     '''Converts given J, H, Ks mags to an SDSS g magnitude value.
 
     Parameters
     ----------
 
-    jmag, hmag, kmag : float
+    jmag,hmag,kmag : float
         2MASS J, H, Ks mags of the object.
 
     Returns
@@ -310,20 +310,20 @@ def jhk_to_sdssg(jmag, hmag, kmag):
 
     '''
 
-    return convert_constants(jmag, hmag, kmag,
+    return convert_constants(jmag,hmag,kmag,
                              SDSSG_JHK,
                              SDSSG_JH, SDSSG_JK, SDSSG_HK,
                              SDSSG_J, SDSSG_H, SDSSG_K)
 
 
 
-def jhk_to_sdssr(jmag, hmag, kmag):
+def jhk_to_sdssr(jmag,hmag,kmag):
     '''Converts given J, H, Ks mags to an SDSS r magnitude value.
 
     Parameters
     ----------
 
-    jmag, hmag, kmag : float
+    jmag,hmag,kmag : float
         2MASS J, H, Ks mags of the object.
 
     Returns
@@ -334,20 +334,20 @@ def jhk_to_sdssr(jmag, hmag, kmag):
 
     '''
 
-    return convert_constants(jmag, hmag, kmag,
+    return convert_constants(jmag,hmag,kmag,
                              SDSSR_JHK,
                              SDSSR_JH, SDSSR_JK, SDSSR_HK,
                              SDSSR_J, SDSSR_H, SDSSR_K)
 
 
 
-def jhk_to_sdssi(jmag, hmag, kmag):
+def jhk_to_sdssi(jmag,hmag,kmag):
     '''Converts given J, H, Ks mags to an SDSS i magnitude value.
 
     Parameters
     ----------
 
-    jmag, hmag, kmag : float
+    jmag,hmag,kmag : float
         2MASS J, H, Ks mags of the object.
 
     Returns
@@ -358,20 +358,20 @@ def jhk_to_sdssi(jmag, hmag, kmag):
 
     '''
 
-    return convert_constants(jmag, hmag, kmag,
+    return convert_constants(jmag,hmag,kmag,
                              SDSSI_JHK,
                              SDSSI_JH, SDSSI_JK, SDSSI_HK,
                              SDSSI_J, SDSSI_H, SDSSI_K)
 
 
 
-def jhk_to_sdssz(jmag, hmag, kmag):
+def jhk_to_sdssz(jmag,hmag,kmag):
     '''Converts given J, H, Ks mags to an SDSS z magnitude value.
 
     Parameters
     ----------
 
-    jmag, hmag, kmag : float
+    jmag,hmag,kmag : float
         2MASS J, H, Ks mags of the object.
 
     Returns
@@ -382,7 +382,7 @@ def jhk_to_sdssz(jmag, hmag, kmag):
 
     '''
 
-    return convert_constants(jmag, hmag, kmag,
+    return convert_constants(jmag,hmag,kmag,
                              SDSSZ_JHK,
                              SDSSZ_JH, SDSSZ_JK, SDSSZ_HK,
                              SDSSZ_J, SDSSZ_H, SDSSZ_K)

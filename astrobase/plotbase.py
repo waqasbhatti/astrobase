@@ -118,6 +118,7 @@ def plot_magseries(times,
         measurements instead of magnitude measurements. If this is set to True,
         then the plot y-axis will be set as appropriate for mag or fluxes. In
         addition:
+
         - if `normto` is 'zero', then the median flux is divided from each
           observation's flux value to yield normalized fluxes with 1.0 as the
           global median.
@@ -132,6 +133,8 @@ def plot_magseries(times,
         add errbars to the output plot.
 
     out : str or StringIO/BytesIO object or None
+        Sets the output type and target:
+
         - If `out` is a string, will save the plot to the specified file name.
         - If `out` is a StringIO/BytesIO object, will save the plot to that file
           handle. This can be useful to carry out additional operations on the
@@ -159,9 +162,11 @@ def plot_magseries(times,
         the output.
 
     normto : {'globalmedian', 'zero'} or a float
-        'globalmedian' -> norms each mag to the global median of the LC column
-        'zero'         -> norms each mag to zero
-        a float        -> norms each mag to this specified float value.
+        Sets the normalization target::
+
+          'globalmedian' -> norms each mag to the global median of the LC column
+          'zero'         -> norms each mag to zero
+          a float        -> norms each mag to this specified float value.
 
     normmingap : float
         This defines how much the difference between consecutive measurements is
@@ -507,9 +512,11 @@ def plot_phased_magseries(times,
         then the plot y-axis will be set as appropriate for mag or fluxes.
 
     normto : {'globalmedian', 'zero'} or a float
-        'globalmedian' -> norms each mag to the global median of the LC column
-        'zero'         -> norms each mag to zero
-        a float        -> norms each mag to this specified float value.
+        Sets the normalization target::
+
+          'globalmedian' -> norms each mag to the global median of the LC column
+          'zero'         -> norms each mag to zero
+          a float        -> norms each mag to this specified float value.
 
     normmingap : float
         This defines how much the difference between consecutive measurements is
@@ -931,13 +938,12 @@ def skyview_stamp(ra, decl,
     Returns
     -------
 
-    - If `savewcsheader=True`, returns a tuple:
-      (FITS stamp image as a numpy array, FITS header)
-
-    - If `savewcsheader=False`, returns only the FITS stamp image as numpy
-      array.
-
-    - If the stamp retrieval fails, returns None.
+    tuple or array or None
+        - If `savewcsheader=True`, returns a tuple:
+          (FITS stamp image as a numpy array, FITS header)
+        - If `savewcsheader=False`, returns only the FITS stamp image as numpy
+          array.
+        - If the stamp retrieval fails, returns None.
 
     '''
 
@@ -1287,21 +1293,23 @@ def plot_periodbase_lsp(lspinfo, outfile=None, plotdpi=100):
         If lspinfo is a dict, it must be a dict produced by an
         `astrobase.periodbase` period-finder function or a dict from your own
         period-finder function or routine that is of the form below with at
-        least these keys:
+        least these keys::
 
-        {'periods': np.array of all periods searched by the period-finder,
-         'lspvals': np.array of periodogram power value for each period,
-         'bestperiod': a float value that is the period with the highest peak
-                       in the periodogram, i.e. the most-likely actual period,
-         'method': a three-letter code naming the period-finder used; must be
-                   one of the keys in the `METHODLABELS` dict above,
-         'nbestperiods': a list of the periods corresponding to periodogram
-                         peaks (`nbestlspvals` below) to annotate on the
-                         periodogram plot so they can be called out visually,
-         'nbestlspvals': a list of the power values associated with periodogram
-                         peaks to annotate on the periodogram plot so they can
-                         be called out visually; should be the same length as
-                         `nbestperiods` above}
+            {'periods': np.array of all periods searched by the period-finder,
+             'lspvals': np.array of periodogram power value for each period,
+             'bestperiod': a float value that is the period with the highest
+                           peak in the periodogram, i.e. the most-likely actual
+                           period,
+             'method': a three-letter code naming the period-finder used; must
+                       be one of the keys in the `METHODLABELS` dict above,
+             'nbestperiods': a list of the periods corresponding to periodogram
+                             peaks (`nbestlspvals` below) to annotate on the
+                             periodogram plot so they can be called out
+                             visually,
+             'nbestlspvals': a list of the power values associated with
+                             periodogram peaks to annotate on the periodogram
+                             plot so they can be called out visually; should be
+                             the same length as `nbestperiods` above}
 
         If lspinfo is a str, then it must be a path to a pickle file that
         contains a dict of the form described above.

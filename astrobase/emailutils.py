@@ -8,13 +8,13 @@ This is a small utility module to send email using an SMTP server that requires
 logins. The email settings are stored in a file called .emailsettings that
 should be located in the same directory as emailutils.py. This file should have
 permissions 600 (so only you can read/write to it), and should contain the
-following info in a single row, separated by the | character
+following info in a single row, separated by the | character::
 
-<email user>|<email password>|<email server>
+        <email user>|<email password>|<email server>
 
-Example:
+Example::
 
-exampleuser@email.com|correcthorsebatterystaple|mail.example.com
+        exampleuser@email.com|correcthorsebatterystaple|mail.example.com
 
 NOTE:
 
@@ -107,11 +107,11 @@ def send_email(sender,
 
     email_recipient list : list of str
         This is a list of email recipient names of the form:
-        ['Example Person 1', 'Example Person 1', ...]
+        `['Example Person 1', 'Example Person 1', ...]`
 
     email_recipient list : list of str
         This is a list of email recipient addresses of the form:
-        ['example1@example.com', 'example2@example.org', ...]
+        `['example1@example.com', 'example2@example.org', ...]`
 
     Returns
     -------

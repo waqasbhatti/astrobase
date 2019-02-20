@@ -97,9 +97,8 @@ def ec2_ssh(ip_address,
 
     paramiko.SSHClient
         This has all the usual `paramiko` functionality:
-
         - Use `SSHClient.exec_command(command, environment=None)` to exec a
-        shell command.
+          shell command.
         - Use `SSHClient.open_sftp()` to get a `SFTPClient` for the server. Then
           call SFTPClient.get() and .put() to copy files from and to the server.
 
@@ -538,22 +537,24 @@ def sqs_get_item(queue_url,
 
     The `queue_url` is composed of some internal SQS junk plus a
     `queue_name`. For our purposes (`lcproc_aws.py`), the queue name will be
-    something like:
+    something like::
 
-    lcproc_queue_<action> where action is one of:
+        lcproc_queue_<action>
 
-    runcp
-    runpf
+    where action is one of::
 
-    The item is always a JSON object:
+        runcp
+        runpf
 
-    {'target': S3 bucket address of the file to process,
-     'action': the action to perform on the file (e.g. 'runpf', 'runcp', etc.)
-     'args': the action's args as a tuple (not including filename, which will be
-             generated randomly as a temporary local file),
-     'kwargs': the action's kwargs as a dict,
-     'outbucket: S3 bucket to write the result to,
-     'outqueue': SQS queue to write the processed item's info to (optional)}
+    The item is always a JSON object::
+
+        {'target': S3 bucket address of the file to process,
+         'action': the action to perform on the file ('runpf', 'runcp', etc.)
+         'args': the action's args as a tuple (not including filename, which is
+                 generated randomly as a temporary local file),
+         'kwargs': the action's kwargs as a dict,
+         'outbucket: S3 bucket to write the result to,
+         'outqueue': SQS queue to write the processed item's info to (optional)}
 
     The action MUST match the <action> in the queue name for this item to be
     processed.
@@ -1047,9 +1048,6 @@ def make_spot_fleet_cluster(
 ):
     """This makes an EC2 spot-fleet cluster.
 
-    Parameters
-    ----------
-
     This requires a security group ID attached to a VPC config and subnet, a
     keypair generated beforehand, and an IAM role ARN for the instance. See:
 
@@ -1140,7 +1138,7 @@ def make_spot_fleet_cluster(
         If True, will re-raise whatever Exception caused the operation to fail
         and break out immediately.
 
-   Returns
+    Returns
     -------
 
     str or None

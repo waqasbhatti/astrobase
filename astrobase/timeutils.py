@@ -167,7 +167,7 @@ def precess_coordinates(ra, dec,
         precession. If one of `jd`, `mu_ra`, or `mu_dec` is missing, the proper
         motion will not be used to calculate the final precessed coordinates.
 
-    mu_ra, mu_dec : float
+    mu_ra,mu_dec : float
         The proper motion in mas/yr in right ascension and declination. If these
         are provided along with `jd`, the total proper motion of the object will
         be taken into account to calculate the final precessed coordinates.
@@ -335,9 +335,10 @@ def get_epochs_given_midtimes_and_period(
     Returns
     -------
 
-    tuple of the form (integer_epoch_array, t0)
-        `integer_epoch_array` is an array of integer epochs (float-type), of
-        length equal to the number of *finite* mid-times passed.
+    tuple
+        This is the of the form `(integer_epoch_array, t0)`.
+        `integer_epoch_array` is an array of integer epochs (float-type),
+        of length equal to the number of *finite* mid-times passed.
 
     '''
 
@@ -530,12 +531,14 @@ def jd_corr(jd,
             jd_type='bjd'):
     '''Returns BJD_TDB or HJD_TDB for input JD_UTC.
 
-    BJD_TDB = JD_UTC + JD_to_TDB_corr + romer_delay
+    The equation used is::
+
+        BJD_TDB = JD_UTC + JD_to_TDB_corr + romer_delay
 
     where:
 
-    JD_to_TDB_corr is the difference between UTC and TDB JDs
-    romer_delay is the delay caused by finite speed of light from Earth-Sun
+    - JD_to_TDB_corr is the difference between UTC and TDB JDs
+    - romer_delay is the delay caused by finite speed of light from Earth-Sun
 
     This is based on the code at:
 
@@ -557,7 +560,7 @@ def jd_corr(jd,
     ra,dec : float
         The equatorial coordinates of the object in decimal degrees.
 
-    obslon, obslat, obsalt : float or None
+    obslon,obslat,obsalt : float or None
         The longitude, latitude of the observatory in decimal degrees and
         altitude of the observatory in meters. If these are not provided, the
         corrected JD will be calculated with respect to the center of the Earth.

@@ -131,9 +131,9 @@ import matplotlib.pyplot as plt
 ###################
 
 # LC reading functions
-from ..hatlc import read_and_filter_sqlitecurve, read_csvlc, \
+from ..hatsurveys.hatlc import read_and_filter_sqlitecurve, read_csvlc, \
     normalize_lcdict_byinst
-from ..hplc import read_hatpi_textlc, read_hatpi_pklc
+from ..hatsurveys.hplc import read_hatpi_textlc, read_hatpi_pklc
 from ..astrokep import read_kepler_fitslc, read_kepler_pklc
 
 # light curve models
