@@ -104,7 +104,7 @@ from hashlib import md5, sha512
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
-def dict_get(datadict, keylist):
+def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
 
 import numpy as np
@@ -123,207 +123,15 @@ import scipy.interpolate as spi
 ## LOCAL IMPORTS ##
 ###################
 
-# LC reading functions
-from ..hatsurveys.hatlc import read_and_filter_sqlitecurve, read_csvlc, \
-    normalize_lcdict_byinst
-from ..hatsurveys.hplc import read_hatpi_textlc, read_hatpi_pklc
-from ..astrokep import read_kepler_fitslc, read_kepler_pklc
-
 # light curve models
 from ..lcmodels import transits, eclipses, flares, sinusoidal
 
 # magnitude conversion
 from ..magnitudes import jhk_to_sdssr
 
+# get the lcformat functions
+from ..lcproc import register_lcformat, get_lcformat, read_pklc
 
-#######################
-## LC FORMATS SET UP ##
-#######################
-
-def read_pklc(lcfile):
-    '''
-    This just reads a pickle into an lcdict.
-
-    '''
-
-    try:
-        with open(lcfile,'rb') as infd:
-            lcdict = pickle.load(infd)
-    except UnicodeDecodeError:
-        with open(lcfile,'rb') as infd:
-            lcdict = pickle.load(infd, encoding='latin1')
-
-    return lcdict
-
-
-# LC format -> [default fileglob,  function to read LC format]
-LCFORM = {
-    'hat-sql':[
-        '*-hatlc.sqlite*',           # default fileglob
-        read_and_filter_sqlitecurve,   # function to read this LC
-        ['rjd','rjd'],                 # default timecols to use for period/var
-        ['aep_000','atf_000'],         # default magcols to use for period/var
-        ['aie_000','aie_000'],         # default errcols to use for period/var
-        False,                         # default magsarefluxes = False
-        normalize_lcdict_byinst,       # default special normalize function
-    ],
-    'hat-csv':[
-        '*-hatlc.csv*',
-        read_csvlc,
-        ['rjd','rjd'],
-        ['aep_000','atf_000'],
-        ['aie_000','aie_000'],
-        False,
-        normalize_lcdict_byinst,
-    ],
-    'hp-txt':[
-        'HAT-*tfalc.TF1*',
-        read_hatpi_textlc,
-        ['rjd','rjd'],
-        ['iep1','itf1'],
-        ['ire1','ire1'],
-        False,
-        None,
-    ],
-    'hp-pkl':[
-        '*-pklc.pkl',
-        read_hatpi_pklc,
-        ['rjd','rjd'],
-        ['iep1','itf1'],
-        ['ire1','ire1'],
-        False,
-        None,
-    ],
-    'kep-fits':[
-        '*_llc.fits',
-        read_kepler_fitslc,
-        ['time','time'],
-        ['sap.sap_flux','pdc.pdc_sapflux'],
-        ['sap.sap_flux_err','pdc.pdc_sapflux_err'],
-        True,
-        None,
-    ],
-    'kep-pkl':[
-        '-keplc.pkl',
-        read_kepler_pklc,
-        ['time','time'],
-        ['sap.sap_flux','pdc.pdc_sapflux'],
-        ['sap.sap_flux_err','pdc.pdc_sapflux_err'],
-        True,
-        None,
-    ],
-    # binned light curve format
-    'binned-hat':[
-        '*binned-*hat*.pkl',
-        read_pklc,
-        ['binned.aep_000.times','binned.atf_000.times'],
-        ['binned.aep_000.mags','binned.atf_000.mags'],
-        ['binned.aep_000.errs','binned.atf_000.errs'],
-        False,
-        None,
-    ],
-    'binned-hp':[
-        '*binned-*hp*.pkl',
-        read_pklc,
-        ['binned.iep1.times','binned.itf1.times'],
-        ['binned.iep1.mags','binned.itf1.mags'],
-        ['binned.iep1.errs','binned.itf1.errs'],
-        False,
-        None,
-    ],
-    'binned-kep':[
-        '*binned-*kep*.pkl',
-        read_pklc,
-        ['binned.sap_flux.times','binned.pdc_sapflux.times'],
-        ['binned.sap_flux.mags','binned.pdc_sapflux.mags'],
-        ['binned.sap_flux.errs','binned.pdc_sapflux.errs'],
-        True,
-        None,
-    ],
-}
-
-
-
-def register_custom_lcformat(formatkey,
-                             fileglob,
-                             readerfunc,
-                             timecols,
-                             magcols,
-                             errcols,
-                             magsarefluxes=False,
-                             specialnormfunc=None):
-    '''This adds a custom format LC to the dict above.
-
-    Allows handling of custom format light curves that are input to the fake LC
-    generators below. Once the format is successfully registered, light curves
-    should work transparently with all of the functions below, by simply calling
-    them with the formatkey in the lcformat keyword argument where appropriate.
-
-    Args
-    ----
-
-    formatkey: <string>: what to use as the key for your light curve format
-
-
-    fileglob: <string>: the default fileglob to use to search for light curve
-    files in this custom format. This is a string like
-    '*-whatever-???-*.*??-.lc'.
-
-
-    readerfunc: <function>: this is the function to use to read light curves in
-    the custom format. This should return a dictionary (the 'lcdict') with the
-    following signature (the keys listed below are required, but others are
-    allowed):
-
-    {'objectid':'<this object's name>',
-     'objectinfo':{'ra':<this object's right ascension>
-                   'decl':<this object's declination>},
-     ...time columns, mag columns, etc.}
-
-
-    timecols, magcols, errcols: <list>: these are all lists of strings
-    indicating which keys in the lcdict to use for processing. The lists must
-    all have the same dimensions, e.g. if timecols = ['timecol1','timecol2'],
-    then magcols must be something like ['magcol1','magcol2'] and errcols must
-    be something like ['errcol1', 'errcol2']. This allows you to process
-    multiple apertures or multiple types of measurements in one go.
-
-    Each element in these lists can be a simple key, e.g. 'time' (which would
-    correspond to lcdict['time']), or a composite key,
-    e.g. 'aperture1.times.rjd' (which would correspond to
-    lcdict['aperture1']['times']['rjd']). See the LCFORM dict above for
-    examples.
-
-
-    magsarefluxes: <boolean>: if this is True, then all functions will treat the
-    magnitude columns as flux instead, so things like default normalization and
-    sigma-clipping will be done correctly. If this is False, magnitudes will be
-    treated as magnitudes.
-
-
-    specialnormfunc: <function>: if you intend to use a special normalization
-    function for your lightcurves, indicate it here. If None, the default
-    normalization method used by lcproc is to find gaps in the time-series,
-    normalize measurements grouped by these gaps to zero, then normalize the
-    entire magnitude time series to global time series median using the
-    astrobase.lcmath.normalize_magseries function. The function should take and
-    return an lcdict of the same form as that produced by readerfunc above. For
-    an example of a special normalization function, see normalize_lcdict_by_inst
-    in the astrobase.hatlc module.
-
-    '''
-
-    globals()['LCFORM'][formatkey] = [
-        fileglob,
-        readerfunc,
-        timecols,
-        magcols,
-        errcols,
-        magsarefluxes,
-        specialnormfunc
-    ]
-
-    LOGINFO('added %s to registry' % formatkey)
 
 
 #############################################
@@ -339,30 +147,61 @@ def generate_transit_lightcurve(
                     'transitduration':sps.uniform(loc=0.01,scale=0.29)},
         magsarefluxes=False,
 ):
-    '''This generates fake transit light curves.
+    '''This generates fake planet transit light curves.
 
-    times is an array of time values that will be used as the time base.
+    Parameters
+    ----------
 
-    mags and errs will have the model mags applied to them. If either is None,
-    np.full_like(times, 0.0) will used as a substitute.
+    times : np.array
+        This is an array of time values that will be used as the time base.
 
-    paramdists is a dict containing parameter distributions to use for the
-    transitparams, in order:
+    mags,errs : np.array
+        These arrays will have the model added to them. If either is
+        None, `np.full_like(times, 0.0)` will used as a substitute and the model
+        light curve will be centered around 0.0.
 
-    {'transitperiod', 'transitdepth', 'transitduration'}
+    paramdists : dict
+        This is a dict containing parameter distributions to use for the
+        model params, containing the following keys ::
 
-    These are all 'frozen' scipy.stats distribution objects, e.g.:
+            {'transitperiod', 'transitdepth', 'transitduration'}
 
-    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The values of these keys should all be 'frozen' scipy.stats distribution
+        objects, e.g.:
 
-    The transit epoch will be automatically chosen from a uniform distribution
-    between times.min() and times.max().
+        https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The variability epoch will be automatically chosen from a uniform
+        distribution between `times.min()` and `times.max()`.
 
-    The ingress duration will be automatically chosen from a uniform
-    distribution ranging from 0.05 to 0.5 of the transitduration.
+        The ingress duration will be automatically chosen from a uniform
+        distribution ranging from 0.05 to 0.5 of the transitduration.
 
-    The transitdepth will be flipped automatically as appropriate if
-    magsarefluxes=True.
+        The transitdepth will be flipped automatically as appropriate if
+        `magsarefluxes=True`.
+
+    magsarefluxes : bool
+        If the generated time series is meant to be a flux time-series, set this
+        to True to get the correct sign of variability amplitude.
+
+    Returns
+    -------
+
+    dict
+        A dict of the form below is returned::
+
+            {'vartype': 'planet',
+             'params': {'transitperiod': generated value of period,
+                        'transitepoch': generated value of epoch,
+                        'transitdepth': generated value of transit depth,
+                        'transitduration': generated value of transit duration,
+                        'ingressduration': generated value of transit ingress
+                                           duration},
+             'times': the model times,
+             'mags': the model mags,
+             'errs': the model errs,
+             'varperiod': the generated period of variability == 'transitperiod'
+             'varamplitude': the generated amplitude of
+                             variability == 'transitdepth'}
 
     '''
 
@@ -444,25 +283,56 @@ def generate_eb_lightcurve(
 ):
     '''This generates fake EB light curves.
 
-    times is an array of time values that will be used as the time base.
+    Parameters
+    ----------
 
-    mags and errs will have the model mags applied to them. If either is None,
-    np.full_like(times, 0.0) will used as a substitute.
+    times : np.array
+        This is an array of time values that will be used as the time base.
 
-    paramdists is a dict containing parameter distributions to use for the
-    transitparams, in order:
+    mags,errs : np.array
+        These arrays will have the model added to them. If either is
+        None, `np.full_like(times, 0.0)` will used as a substitute and the model
+        light curve will be centered around 0.0.
 
-    {'period', 'pdepth', 'pduration','depthratio', 'secphase'}
+    paramdists : dict
+        This is a dict containing parameter distributions to use for the
+        model params, containing the following keys ::
 
-    These are all 'frozen' scipy.stats distribution objects, e.g.:
+            {'period', 'pdepth', 'pduration', 'depthratio', 'secphase'}
 
-    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The values of these keys should all be 'frozen' scipy.stats distribution
+        objects, e.g.:
 
-    The EB epoch will be automatically chosen from a uniform distribution
-    between times.min() and times.max().
+        https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The variability epoch will be automatically chosen from a uniform
+        distribution between `times.min()` and `times.max()`.
 
-    The pdepth will be flipped automatically as appropriate if
-    magsarefluxes=True.
+        The `pdepth` will be flipped automatically as appropriate if
+        `magsarefluxes=True`.
+
+    magsarefluxes : bool
+        If the generated time series is meant to be a flux time-series, set this
+        to True to get the correct sign of variability amplitude.
+
+    Returns
+    -------
+
+    dict
+        A dict of the form below is returned::
+
+            {'vartype': 'EB',
+             'params': {'period': generated value of period,
+                        'epoch': generated value of epoch,
+                        'pdepth': generated value of priary eclipse depth,
+                        'pduration': generated value of prim eclipse duration,
+                        'depthratio': generated value of prim/sec eclipse
+                                      depth ratio},
+             'times': the model times,
+             'mags': the model mags,
+             'errs': the model errs,
+             'varperiod': the generated period of variability == 'period'
+             'varamplitude': the generated amplitude of
+                             variability == 'pdepth'}
 
     '''
 
@@ -547,25 +417,54 @@ def generate_flare_lightcurve(
 ):
     '''This generates fake flare light curves.
 
-    times is an array of time values that will be used as the time base.
+    Parameters
+    ----------
 
-    mags and errs will have the model mags applied to them. If either is None,
-    np.full_like(times, 0.0) will used as a substitute.
+    times : np.array
+        This is an array of time values that will be used as the time base.
 
-    paramdists is a dict containing parameter distributions to use for the
-    transitparams, in order:
+    mags,errs : np.array
+        These arrays will have the model added to them. If either is
+        None, `np.full_like(times, 0.0)` will used as a substitute and the model
+        light curve will be centered around 0.0.
 
-    {'amplitude', 'nflares', 'risestdev','decayconst'}
+    paramdists : dict
+        This is a dict containing parameter distributions to use for the
+        model params, containing the following keys ::
 
-    These are all 'frozen' scipy.stats distribution objects, e.g.:
+            {'amplitude', 'nflares', 'risestdev', 'decayconst'}
 
-    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The values of these keys should all be 'frozen' scipy.stats distribution
+        objects, e.g.:
 
-    The flare_peak_time for each flare will be generated automatically between
-    times.min() and times.max() using a uniform distribution.
+        https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The `flare_peak_time` for each flare will be generated automatically
+        between `times.min()` and `times.max()` using a uniform distribution.
 
-    The amplitude will be flipped automatically as appropriate if
-    magsarefluxes=True.
+        The `amplitude` will be flipped automatically as appropriate if
+        `magsarefluxes=True`.
+
+    magsarefluxes : bool
+        If the generated time series is meant to be a flux time-series, set this
+        to True to get the correct sign of variability amplitude.
+
+    Returns
+    -------
+
+    dict
+        A dict of the form below is returned::
+
+            {'vartype': 'flare',
+             'params': {'amplitude': generated value of flare amplitudes,
+                        'nflares': generated value of number of flares,
+                        'risestdev': generated value of stdev of rise time,
+                        'decayconst': generated value of decay constant,
+                        'peaktime': generated value of flare peak time},
+             'times': the model times,
+             'mags': the model mags,
+             'errs': the model errs,
+             'varamplitude': the generated amplitude of
+                             variability == 'amplitude'}
 
     '''
 
@@ -643,17 +542,6 @@ def generate_flare_lightcurve(
 
 
 
-## FOURIER PARAMS FOR SINUSOIDAL VARIABLES
-#
-# type        fourier           period [days]
-#             order    dist     limits         dist
-
-# RRab        8 to 10  uniform  0.45--0.80     uniform
-# RRc         3 to 6   uniform  0.10--0.40     uniform
-# HADS        7 to 9   uniform  0.04--0.10     uniform
-# rotator     2 to 5   uniform  0.80--120.0    uniform
-# LPV         2 to 5   uniform  250--500.0     uniform
-
 def generate_sinusoidal_lightcurve(
         times,
         mags=None,
@@ -668,28 +556,74 @@ def generate_sinusoidal_lightcurve(
 ):
     '''This generates fake sinusoidal light curves.
 
-    times is an array of time values that will be used as the time base.
+    This can be used for a variety of sinusoidal variables, e.g. RRab, RRc,
+    Cepheids, Miras, etc. The functions that generate these model LCs below
+    implement the following table::
 
-    mags and errs will have the model mags applied to them. If either is None,
-    np.full_like(times, 0.0) will used as a substitute.
+        ## FOURIER PARAMS FOR SINUSOIDAL VARIABLES
+        #
+        # type        fourier           period [days]
+        #             order    dist     limits         dist
 
-    paramdists is a dict containing parameter distributions to use for the
-    transitparams, in order:
+        # RRab        8 to 10  uniform  0.45--0.80     uniform
+        # RRc         3 to 6   uniform  0.10--0.40     uniform
+        # HADS        7 to 9   uniform  0.04--0.10     uniform
+        # rotator     2 to 5   uniform  0.80--120.0    uniform
+        # LPV         2 to 5   uniform  250--500.0     uniform
 
-    {'period', 'fourierorder', 'amplitude'}
+    FIXME: for better model LCs, figure out how scipy.signal.butter works and
+    low-pass filter using scipy.signal.filtfilt.
 
-    These are all 'frozen' scipy.stats distribution objects, e.g.:
+    Parameters
+    ----------
 
-    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+    times : np.array
+        This is an array of time values that will be used as the time base.
 
-    The minimum light curve epoch will be automatically chosen from a uniform
-    distribution between times.min() and times.max().
+    mags,errs : np.array
+        These arrays will have the model added to them. If either is
+        None, `np.full_like(times, 0.0)` will used as a substitute and the model
+        light curve will be centered around 0.0.
 
-    The amplitude will be flipped automatically as appropriate if
-    magsarefluxes=True.
+    paramdists : dict
+        This is a dict containing parameter distributions to use for the
+        model params, containing the following keys ::
 
-    FIXME: figure out how scipy.signal.butter works and low-pass filter using
-    scipy.signal.filtfilt.
+            {'period', 'fourierorder', 'amplitude', 'phioffset'}
+
+        The values of these keys should all be 'frozen' scipy.stats distribution
+        objects, e.g.:
+
+        https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The variability epoch will be automatically chosen from a uniform
+        distribution between `times.min()` and `times.max()`.
+
+        The `amplitude` will be flipped automatically as appropriate if
+        `magsarefluxes=True`.
+
+    magsarefluxes : bool
+        If the generated time series is meant to be a flux time-series, set this
+        to True to get the correct sign of variability amplitude.
+
+    Returns
+    -------
+
+    dict
+        A dict of the form below is returned::
+
+            {'vartype': 'sinusoidal',
+             'params': {'period': generated value of period,
+                        'epoch': generated value of epoch,
+                        'amplitude': generated value of amplitude,
+                        'fourierorder': generated value of fourier order,
+                        'fourieramps': generated values of fourier amplitudes,
+                        'fourierphases': generated values of fourier phases},
+             'times': the model times,
+             'mags': the model mags,
+             'errs': the model errs,
+             'varperiod': the generated period of variability == 'period'
+             'varamplitude': the generated amplitude of
+                             variability == 'amplitude'}
 
     '''
 
@@ -779,25 +713,56 @@ def generate_rrab_lightcurve(
 ):
     '''This generates fake RRab light curves.
 
-    times is an array of time values that will be used as the time base.
+    Parameters
+    ----------
 
-    mags and errs will have the model mags applied to them. If either is None,
-    np.full_like(times, 0.0) will used as a substitute.
+    times : np.array
+        This is an array of time values that will be used as the time base.
 
-    paramdists is a dict containing parameter distributions to use for the
-    transitparams, in order:
+    mags,errs : np.array
+        These arrays will have the model added to them. If either is
+        None, `np.full_like(times, 0.0)` will used as a substitute and the model
+        light curve will be centered around 0.0.
 
-    {'period', 'fourierorder', 'amplitude'}
+    paramdists : dict
+        This is a dict containing parameter distributions to use for the
+        model params, containing the following keys ::
 
-    These are all 'frozen' scipy.stats distribution objects, e.g.:
+            {'period', 'fourierorder', 'amplitude'}
 
-    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The values of these keys should all be 'frozen' scipy.stats distribution
+        objects, e.g.:
 
-    The minimum light curve epoch will be automatically chosen from a uniform
-    distribution between times.min() and times.max().
+        https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The variability epoch will be automatically chosen from a uniform
+        distribution between `times.min()` and `times.max()`.
 
-    The amplitude will be flipped automatically as appropriate if
-    magsarefluxes=True.
+        The `amplitude` will be flipped automatically as appropriate if
+        `magsarefluxes=True`.
+
+    magsarefluxes : bool
+        If the generated time series is meant to be a flux time-series, set this
+        to True to get the correct sign of variability amplitude.
+
+    Returns
+    -------
+
+    dict
+        A dict of the form below is returned::
+
+            {'vartype': 'RRab',
+             'params': {'period': generated value of period,
+                        'epoch': generated value of epoch,
+                        'amplitude': generated value of amplitude,
+                        'fourierorder': generated value of fourier order,
+                        'fourieramps': generated values of fourier amplitudes,
+                        'fourierphases': generated values of fourier phases},
+             'times': the model times,
+             'mags': the model mags,
+             'errs': the model errs,
+             'varperiod': the generated period of variability == 'period'
+             'varamplitude': the generated amplitude of
+                             variability == 'amplitude'}
 
     '''
 
@@ -825,25 +790,56 @@ def generate_rrc_lightcurve(
 ):
     '''This generates fake RRc light curves.
 
-    times is an array of time values that will be used as the time base.
+    Parameters
+    ----------
 
-    mags and errs will have the model mags applied to them. If either is None,
-    np.full_like(times, 0.0) will used as a substitute.
+    times : np.array
+        This is an array of time values that will be used as the time base.
 
-    paramdists is a dict containing parameter distributions to use for the
-    transitparams, in order:
+    mags,errs : np.array
+        These arrays will have the model added to them. If either is
+        None, `np.full_like(times, 0.0)` will used as a substitute and the model
+        light curve will be centered around 0.0.
 
-    {'period', 'fourierorder', 'amplitude'}
+    paramdists : dict
+        This is a dict containing parameter distributions to use for the
+        model params, containing the following keys ::
 
-    These are all 'frozen' scipy.stats distribution objects, e.g.:
+            {'period', 'fourierorder', 'amplitude'}
 
-    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The values of these keys should all be 'frozen' scipy.stats distribution
+        objects, e.g.:
 
-    The minimum light curve epoch will be automatically chosen from a uniform
-    distribution between times.min() and times.max().
+        https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The variability epoch will be automatically chosen from a uniform
+        distribution between `times.min()` and `times.max()`.
 
-    The amplitude will be flipped automatically as appropriate if
-    magsarefluxes=True.
+        The `amplitude` will be flipped automatically as appropriate if
+        `magsarefluxes=True`.
+
+    magsarefluxes : bool
+        If the generated time series is meant to be a flux time-series, set this
+        to True to get the correct sign of variability amplitude.
+
+    Returns
+    -------
+
+    dict
+        A dict of the form below is returned::
+
+            {'vartype': 'RRc',
+             'params': {'period': generated value of period,
+                        'epoch': generated value of epoch,
+                        'amplitude': generated value of amplitude,
+                        'fourierorder': generated value of fourier order,
+                        'fourieramps': generated values of fourier amplitudes,
+                        'fourierphases': generated values of fourier phases},
+             'times': the model times,
+             'mags': the model mags,
+             'errs': the model errs,
+             'varperiod': the generated period of variability == 'period'
+             'varamplitude': the generated amplitude of
+                             variability == 'amplitude'}
 
     '''
 
@@ -870,25 +866,56 @@ def generate_hads_lightcurve(
 ):
     '''This generates fake HADS light curves.
 
-    times is an array of time values that will be used as the time base.
+    Parameters
+    ----------
 
-    mags and errs will have the model mags applied to them. If either is None,
-    np.full_like(times, 0.0) will used as a substitute.
+    times : np.array
+        This is an array of time values that will be used as the time base.
 
-    paramdists is a dict containing parameter distributions to use for the
-    transitparams, in order:
+    mags,errs : np.array
+        These arrays will have the model added to them. If either is
+        None, `np.full_like(times, 0.0)` will used as a substitute and the model
+        light curve will be centered around 0.0.
 
-    {'period', 'fourierorder', 'amplitude'}
+    paramdists : dict
+        This is a dict containing parameter distributions to use for the
+        model params, containing the following keys ::
 
-    These are all 'frozen' scipy.stats distribution objects, e.g.:
+            {'period', 'fourierorder', 'amplitude'}
 
-    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The values of these keys should all be 'frozen' scipy.stats distribution
+        objects, e.g.:
 
-    The minimum light curve epoch will be automatically chosen from a uniform
-    distribution between times.min() and times.max().
+        https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The variability epoch will be automatically chosen from a uniform
+        distribution between `times.min()` and `times.max()`.
 
-    The amplitude will be flipped automatically as appropriate if
-    magsarefluxes=True.
+        The `amplitude` will be flipped automatically as appropriate if
+        `magsarefluxes=True`.
+
+    magsarefluxes : bool
+        If the generated time series is meant to be a flux time-series, set this
+        to True to get the correct sign of variability amplitude.
+
+    Returns
+    -------
+
+    dict
+        A dict of the form below is returned::
+
+            {'vartype': 'HADS',
+             'params': {'period': generated value of period,
+                        'epoch': generated value of epoch,
+                        'amplitude': generated value of amplitude,
+                        'fourierorder': generated value of fourier order,
+                        'fourieramps': generated values of fourier amplitudes,
+                        'fourierphases': generated values of fourier phases},
+             'times': the model times,
+             'mags': the model mags,
+             'errs': the model errs,
+             'varperiod': the generated period of variability == 'period'
+             'varamplitude': the generated amplitude of
+                             variability == 'amplitude'}
 
     '''
 
@@ -915,25 +942,56 @@ def generate_rotator_lightcurve(
 ):
     '''This generates fake rotator light curves.
 
-    times is an array of time values that will be used as the time base.
+    Parameters
+    ----------
 
-    mags and errs will have the model mags applied to them. If either is None,
-    np.full_like(times, 0.0) will used as a substitute.
+    times : np.array
+        This is an array of time values that will be used as the time base.
 
-    paramdists is a dict containing parameter distributions to use for the
-    transitparams, in order:
+    mags,errs : np.array
+        These arrays will have the model added to them. If either is
+        None, `np.full_like(times, 0.0)` will used as a substitute and the model
+        light curve will be centered around 0.0.
 
-    {'period', 'fourierorder', 'amplitude'}
+    paramdists : dict
+        This is a dict containing parameter distributions to use for the
+        model params, containing the following keys ::
 
-    These are all 'frozen' scipy.stats distribution objects, e.g.:
+            {'period', 'fourierorder', 'amplitude'}
 
-    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The values of these keys should all be 'frozen' scipy.stats distribution
+        objects, e.g.:
 
-    The minimum light curve epoch will be automatically chosen from a uniform
-    distribution between times.min() and times.max().
+        https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The variability epoch will be automatically chosen from a uniform
+        distribution between `times.min()` and `times.max()`.
 
-    The amplitude will be flipped automatically as appropriate if
-    magsarefluxes=True.
+        The `amplitude` will be flipped automatically as appropriate if
+        `magsarefluxes=True`.
+
+    magsarefluxes : bool
+        If the generated time series is meant to be a flux time-series, set this
+        to True to get the correct sign of variability amplitude.
+
+    Returns
+    -------
+
+    dict
+        A dict of the form below is returned::
+
+            {'vartype': 'rotator',
+             'params': {'period': generated value of period,
+                        'epoch': generated value of epoch,
+                        'amplitude': generated value of amplitude,
+                        'fourierorder': generated value of fourier order,
+                        'fourieramps': generated values of fourier amplitudes,
+                        'fourierphases': generated values of fourier phases},
+             'times': the model times,
+             'mags': the model mags,
+             'errs': the model errs,
+             'varperiod': the generated period of variability == 'period'
+             'varamplitude': the generated amplitude of
+                             variability == 'amplitude'}
 
     '''
 
@@ -958,27 +1016,58 @@ def generate_lpv_lightcurve(
         },
         magsarefluxes=False
 ):
-    '''This generates fake LPV light curves.
+    '''This generates fake long-period-variable (LPV) light curves.
 
-    times is an array of time values that will be used as the time base.
+    Parameters
+    ----------
 
-    mags and errs will have the model mags applied to them. If either is None,
-    np.full_like(times, 0.0) will used as a substitute.
+    times : np.array
+        This is an array of time values that will be used as the time base.
 
-    paramdists is a dict containing parameter distributions to use for the
-    transitparams, in order:
+    mags,errs : np.array
+        These arrays will have the model added to them. If either is
+        None, `np.full_like(times, 0.0)` will used as a substitute and the model
+        light curve will be centered around 0.0.
 
-    {'period', 'fourierorder', 'amplitude'}
+    paramdists : dict
+        This is a dict containing parameter distributions to use for the
+        model params, containing the following keys ::
 
-    These are all 'frozen' scipy.stats distribution objects, e.g.:
+            {'period', 'fourierorder', 'amplitude'}
 
-    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The values of these keys should all be 'frozen' scipy.stats distribution
+        objects, e.g.:
 
-    The minimum light curve epoch will be automatically chosen from a uniform
-    distribution between times.min() and times.max().
+        https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The variability epoch will be automatically chosen from a uniform
+        distribution between `times.min()` and `times.max()`.
 
-    The amplitude will be flipped automatically as appropriate if
-    magsarefluxes=True.
+        The `amplitude` will be flipped automatically as appropriate if
+        `magsarefluxes=True`.
+
+    magsarefluxes : bool
+        If the generated time series is meant to be a flux time-series, set this
+        to True to get the correct sign of variability amplitude.
+
+    Returns
+    -------
+
+    dict
+        A dict of the form below is returned::
+
+            {'vartype': 'LPV',
+             'params': {'period': generated value of period,
+                        'epoch': generated value of epoch,
+                        'amplitude': generated value of amplitude,
+                        'fourierorder': generated value of fourier order,
+                        'fourieramps': generated values of fourier amplitudes,
+                        'fourierphases': generated values of fourier phases},
+             'times': the model times,
+             'mags': the model mags,
+             'errs': the model errs,
+             'varperiod': the generated period of variability == 'period'
+             'varamplitude': the generated amplitude of
+                             variability == 'amplitude'}
 
     '''
 
@@ -1006,25 +1095,56 @@ def generate_cepheid_lightcurve(
 ):
     '''This generates fake Cepheid light curves.
 
-    times is an array of time values that will be used as the time base.
+    Parameters
+    ----------
 
-    mags and errs will have the model mags applied to them. If either is None,
-    np.full_like(times, 0.0) will used as a substitute.
+    times : np.array
+        This is an array of time values that will be used as the time base.
 
-    paramdists is a dict containing parameter distributions to use for the
-    transitparams, in order:
+    mags,errs : np.array
+        These arrays will have the model added to them. If either is
+        None, `np.full_like(times, 0.0)` will used as a substitute and the model
+        light curve will be centered around 0.0.
 
-    {'period', 'fourierorder', 'amplitude'}
+    paramdists : dict
+        This is a dict containing parameter distributions to use for the
+        model params, containing the following keys ::
 
-    These are all 'frozen' scipy.stats distribution objects, e.g.:
+            {'period', 'fourierorder', 'amplitude'}
 
-    https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The values of these keys should all be 'frozen' scipy.stats distribution
+        objects, e.g.:
 
-    The minimum light curve epoch will be automatically chosen from a uniform
-    distribution between times.min() and times.max().
+        https://docs.scipy.org/doc/scipy/reference/stats.html#continuous-distributions
+        The variability epoch will be automatically chosen from a uniform
+        distribution between `times.min()` and `times.max()`.
 
-    The amplitude will be flipped automatically as appropriate if
-    magsarefluxes=True.
+        The `amplitude` will be flipped automatically as appropriate if
+        `magsarefluxes=True`.
+
+    magsarefluxes : bool
+        If the generated time series is meant to be a flux time-series, set this
+        to True to get the correct sign of variability amplitude.
+
+    Returns
+    -------
+
+    dict
+        A dict of the form below is returned::
+
+            {'vartype': 'cepheid',
+             'params': {'period': generated value of period,
+                        'epoch': generated value of epoch,
+                        'amplitude': generated value of amplitude,
+                        'fourierorder': generated value of fourier order,
+                        'fourieramps': generated values of fourier amplitudes,
+                        'fourierphases': generated values of fourier phases},
+             'times': the model times,
+             'mags': the model mags,
+             'errs': the model errs,
+             'varperiod': the generated period of variability == 'period'
+             'varamplitude': the generated amplitude of
+                             variability == 'amplitude'}
 
     '''
 
@@ -1064,47 +1184,98 @@ def make_fakelc(lcfile,
                 randomizemags=True,
                 randomizecoords=False,
                 lcformat='hat-sql',
+                lcformatdir=None,
                 timecols=None,
                 magcols=None,
                 errcols=None):
-    '''This preprocesses the light curve and sets it up to be a sim light curve.
+    '''This preprocesses an input real LC and sets it up to be a fake LC.
 
-    Args
-    ----
+    Parameters
+    ----------
 
-    lcfile is the input light curve file to copy the time base from.
+    lcfile : str
+        This is an input light curve file that will be used to copy over the
+        time-base. This will be used to generate the time-base for fake light
+        curves to provide a realistic simulation of the observing window
+        function.
 
-    outdir is the directory to which the fake LC will be written.
+    outdir : str
+        The output directory where the the fake light curve will be written.
 
-    magrms is a dict containing the SDSS r mag-RMS (SDSS rmag-MAD preferably)
-    relations for all light curves that the input lcfile is from. This will be
-    used to generate the median mag and noise corresponding to the magnitude
-    chosen for this fake LC.
+    magrms : dict
+        This is a dict containing the SDSS r mag-RMS (SDSS rmag-MAD preferably)
+        relation based on all light curves that the input lcfile is from. This
+        will be used to generate the median mag and noise corresponding to the
+        magnitude chosen for this fake LC.
 
-    If randomizemags is True, then a random mag between the first and last
-    magbin in magrms will be chosen as the median mag for this light curve. This
-    choice will be weighted by the mag bin probability obtained from the magrms
-    kwarg. Otherwise, the median mag will be taken from the input lcfile's
-    lcdict['objectinfo']['sdssr'] key or a transformed SDSS r mag generated from
-    the input lcfile's lcdict['objectinfo']['jmag'], ['hmag'], and ['kmag']
-    keys. The magrms relation for each magcol will be used to generate Gaussian
-    noise at the correct level for the magbin this light curve's median mag
-    falls into.
+    randomizemags : bool
+        If this is True, then a random mag between the first and last magbin in
+        magrms will be chosen as the median mag for this light curve. This
+        choice will be weighted by the mag bin probability obtained from the
+        magrms kwarg. Otherwise, the median mag will be taken from the input
+        lcfile's lcdict['objectinfo']['sdssr'] key or a transformed SDSS r mag
+        generated from the input lcfile's lcdict['objectinfo']['jmag'],
+        ['hmag'], and ['kmag'] keys. The magrms relation for each magcol will be
+        used to generate Gaussian noise at the correct level for the magbin this
+        light curve's median mag falls into.
 
-    If randomizecoords is True, will randomize the RA, DEC of the object.
+    randomizecoords : bool
+        If this is True, will randomize the RA, DEC of the output fake object
+        and not copy over the RA/DEC from the real input object.
 
-    lcformat is one of the entries in the LCFORMATS dict. This is used to set
-    the light curve reader function for lcfile, and the time, mag, err cols to
-    use by default if timecols, magcols, or errcols are None.
+    lcformat : str
+        This is the `formatkey` associated with your input real light curve
+        format, which you previously passed in to the `lcproc.register_lcformat`
+        function. This will be used to look up how to find and read the light
+        curve specified in `lcfile`.
+
+    lcformatdir : str or None
+        If this is provided, gives the path to a directory when you've stored
+        your lcformat description JSONs, other than the usual directories lcproc
+        knows to search for them in. Use this along with `lcformat` to specify
+        an LC format JSON file that's not currently registered with lcproc.
+
+    timecols : list of str or None
+        The timecol keys to use from the input lcdict in generating the fake
+        light curve. Fake LCs will be generated for each each
+        timecol/magcol/errcol combination in the input light curve.
+
+    magcols : list of str or None
+        The magcol keys to use from the input lcdict in generating the fake
+        light curve. Fake LCs will be generated for each each
+        timecol/magcol/errcol combination in the input light curve.
+
+    errcols : list of str or None
+        The errcol keys to use from the input lcdict in generating the fake
+        light curve. Fake LCs will be generated for each each
+        timecol/magcol/errcol combination in the input light curve.
+
+    Returns
+    -------
+
+    tuple
+        A tuple of the following form is returned::
+
+            (fakelc_fpath,
+             fakelc_lcdict['columns'],
+             fakelc_lcdict['objectinfo'],
+             fakelc_lcdict['moments'])
 
     '''
 
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (fileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return None
-
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
 
     # override the default timecols, magcols, and errcols
     # using the ones provided to the function
@@ -1248,7 +1419,7 @@ def make_fakelc(lcfile,
             tcolget = [tcol]
 
         if tcol not in fakelcdict:
-            fakelcdict[tcol] = dict_get(lcdict, tcolget)
+            fakelcdict[tcol] = _dict_get(lcdict, tcolget)
             fakelcdict['columns'].append(tcol)
 
             # update the ndet with the first time column's size. it's possible
@@ -1269,7 +1440,7 @@ def make_fakelc(lcfile,
         # put the mcol in only once
         if mcol not in fakelcdict:
 
-            measuredmags = dict_get(lcdict, mcolget)
+            measuredmags = _dict_get(lcdict, mcolget)
             measuredmags = measuredmags[np.isfinite(measuredmags)]
 
             # if we're randomizing, get the mags from the interpolated mag-RMS
@@ -1343,7 +1514,7 @@ def make_fakelc(lcfile,
 
             # the magnitude column is set to all zeros initially. this will be
             # filled in by the add_fakelc_variability function below
-            fakelcdict[mcol] = np.full_like(dict_get(lcdict, mcolget), 0.0)
+            fakelcdict[mcol] = np.full_like(_dict_get(lcdict, mcolget), 0.0)
             fakelcdict['columns'].append(mcol)
 
 
@@ -1357,7 +1528,7 @@ def make_fakelc(lcfile,
 
         if ecol not in fakelcdict:
 
-            measurederrs = dict_get(lcdict, ecolget)
+            measurederrs = _dict_get(lcdict, ecolget)
             measurederrs = measurederrs[np.isfinite(measurederrs)]
 
             # if we're randomizing, get the errs from the interpolated mag-RMS
@@ -1426,7 +1597,7 @@ def make_fakelc(lcfile,
 
             # the errors column is set to all zeros initially. this will be
             # filled in by the add_fakelc_variability function below.
-            fakelcdict[ecol] = np.full_like(dict_get(lcdict, ecolget), 0.0)
+            fakelcdict[ecol] = np.full_like(_dict_get(lcdict, ecolget), 0.0)
             fakelcdict['columns'].append(ecol)
 
 
@@ -1461,13 +1632,30 @@ def make_fakelc(lcfile,
 
 def collection_worker(task):
     '''
-    This wraps process_fakelc for collect_and_index_fakelcs below.
+    This wraps `process_fakelc` for `make_fakelc_collection` below.
 
-    task[0] = lcfile
-    task[1] = outdir
-    task[2] = magrms
-    task[3] = {'lcformat', 'timecols', 'magcols', 'errcols', 'randomizeinfo'}
+    Parameters
+    ----------
 
+    task : tuple
+        This is of the form::
+
+            task[0] = lcfile
+            task[1] = outdir
+            task[2] = magrms
+            task[3] = dict with keys: {'lcformat', 'timecols', 'magcols',
+                                       'errcols', 'randomizeinfo'}
+
+    Returns
+    -------
+
+    tuple
+        This returns a tuple of the form::
+
+            (fakelc_fpath,
+             fakelc_lcdict['columns'],
+             fakelc_lcdict['objectinfo'],
+             fakelc_lcdict['moments'])
     '''
 
     lcfile, outdir, kwargs = task
@@ -1498,93 +1686,139 @@ def make_fakelc_collection(lclist,
                            maxvars=2000,
                            randomizemags=True,
                            randomizecoords=False,
-                           vartypes=['EB','RRab','RRc','cepheid',
+                           vartypes=('EB','RRab','RRc','cepheid',
                                      'rotator','flare','HADS',
-                                     'planet','LPV'],
+                                     'planet','LPV'),
                            lcformat='hat-sql',
+                           lcformatdir=None,
                            timecols=None,
                            magcols=None,
                            errcols=None):
 
     '''This prepares light curves for the recovery sim.
 
-    Collects light curves from lclist using a uniform sampling among
-    them. Copies them to the simbasedir, zeroes out their mags and errs but
-    keeps their time bases, also keeps their rms and median mags for later
+    Collects light curves from `lclist` using a uniform sampling among
+    them. Copies them to the `simbasedir`, zeroes out their mags and errs but
+    keeps their time bases, also keeps their RMS and median mags for later
     use. Calculates the mag-rms relation for the entire collection and writes
-    that to the simbasedir as well.
+    that to the `simbasedir` as well.
 
     The purpose of this function is to copy over the time base and mag-rms
     relation of an existing light curve collection to use it as the basis for a
     variability recovery simulation.
 
-    This returns a pickle written to the simbasedir that contains all the
+    This returns a pickle written to the `simbasedir` that contains all the
     information for the chosen ensemble of fake light curves and writes all
-    generated light curves to the <simbasedir>/lightcurves directory. Run the
-    add_variability_to_fakelc_collection function after this function to add
+    generated light curves to the `simbasedir/lightcurves` directory. Run the
+    `add_variability_to_fakelc_collection` function after this function to add
     variability of the specified type to these generated light curves.
 
-    Args
-    ----
+    Parameters
+    ----------
 
-    lclist is a list of existing project light curves. This can be generated
-    from lcproc.getlclist or similar.
+    lclist : list of str
+        This is a list of existing project light curves. This can be generated
+        from :py:func:`astrobase.lcproc.catalogs.make_lclist` or similar.
 
-    simbasedir is the directory to where the fake light curves and their
-    information will be copied to.
+    simbasedir : str
+        This is the directory to where the fake light curves and their
+        information will be copied to.
 
-    magrmsfrom is used to generate magnitudes and RMSes for the objects in the
-    output collection of fake light curves. This arg is either a string pointing
-    to an existing pickle file that must contain a dict or a dict variable that
-    MUST have the following key-vals at a minimum:
+    magrmsfrom : str or dict
+        This is used to generate magnitudes and RMSes for the objects in the
+        output collection of fake light curves. This arg is either a string
+        pointing to an existing pickle file that must contain a dict or a dict
+        variable that MUST have the following key-vals at a minimum::
 
-    {'<magcol1_name>': {
-          'binned_sdssr_median': list/array of median mags for each magbin
-          'binned_lcmad_median': list/array of LC MAD values per magbin
-     },
-     '<magcol2_name>': {
-          'binned_sdssr_median': list/array of median mags for each magbin
-          'binned_lcmad_median': list/array of LC MAD values per magbin
-     },
-     .
-     .
-     ...}
+            {'<magcol1_name>': {
+                  'binned_sdssr_median': array of median mags for each magbin
+                  'binned_lcmad_median': array of LC MAD values per magbin
+             },
+             '<magcol2_name>': {
+                  'binned_sdssr_median': array of median mags for each magbin
+                  'binned_lcmad_median': array of LC MAD values per magbin
+             },
+             .
+             .
+             ...}
 
-    where magcol1_name, etc. are the same as the magcols liste in the magcols
-    kwarg (or the default magcols for the specified lcformat). Examples of the
-    magrmsfrom dict (or pickle) required can be generated by the
-    astrobase.lcproc.variability_threshold function.
+        where `magcol1_name`, etc. are the same as the `magcols` listed in the
+        magcols kwarg (or the default magcols for the specified
+        lcformat). Examples of the magrmsfrom dict (or pickle) required can be
+        generated by the
+        :py:func:`astrobase.lcproc.varthreshold.variability_threshold` function.
 
+    magrms_interpolate,magrms_fillvalue : str
+        These are arguments that will be passed directly to the
+        scipy.interpolate.interp1d function to generate interpolating functions
+        for the mag-RMS relation. See:
 
-    magrms_interpolate and magrms_fillvalue will be passed to the
-    scipy.interpolate.interp1d function that generates interpolators for the
-    mag-RMS relation. See:
+        https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html
 
-https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.interp1d.html
+        for details.
 
-    for details.
+    maxlcs : int
+        This is the total number of light curves to choose from `lclist` and
+        generate as fake LCs.
 
+    maxvars : int
+        This is the total number of fake light curves that will be marked as
+        variable.
 
-    maxlcs is the total number of light curves to choose from lclist and
-    generate as fake LCs.
+    vartypes : list of str
+        This is a list of variable types to put into the collection. The
+        vartypes for each fake variable star will be chosen uniformly from this
+        list.
 
+    lcformat : str
+        This is the `formatkey` associated with your input real light curves'
+        format, which you previously passed in to the `lcproc.register_lcformat`
+        function. This will be used to look up how to find and read the light
+        curves specified in `lclist`.
 
-    maxvars is the total number of fake light curves that will be marked as
-    variable.
+    lcformatdir : str or None
+        If this is provided, gives the path to a directory when you've stored
+        your lcformat description JSONs, other than the usual directories lcproc
+        knows to search for them in. Use this along with `lcformat` to specify
+        an LC format JSON file that's not currently registered with lcproc.
 
+    timecols : list of str or None
+        The timecol keys to use from the input lcdict in generating the fake
+        light curve. Fake LCs will be generated for each each
+        timecol/magcol/errcol combination in the input light curves.
 
-    vartypes is a list of variable types to put into the collection. The
-    vartypes for each fake variable star will be chosen uniformly from this
-    list.
+    magcols : list of str or None
+        The magcol keys to use from the input lcdict in generating the fake
+        light curve. Fake LCs will be generated for each each
+        timecol/magcol/errcol combination in the input light curves.
+
+    errcols : list of str or None
+        The errcol keys to use from the input lcdict in generating the fake
+        light curve. Fake LCs will be generated for each each
+        timecol/magcol/errcol combination in the input light curves.
+
+    Returns
+    -------
+
+    str
+        Returns the string file name of a pickle containing all of the
+        information for the fake LC collection that has been generated.
 
     '''
 
-    if lcformat not in LCFORM or lcformat is None:
-        LOGERROR('unknown light curve format specified: %s' % lcformat)
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (fileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
         return None
-
-    (fileglob, readerfunc, dtimecols, dmagcols,
-     derrcols, magsarefluxes, normfunc) = LCFORM[lcformat]
 
     # override the default timecols, magcols, and errcols
     # using the ones provided to the function
@@ -1785,27 +2019,59 @@ def add_fakelc_variability(fakelcfile,
                            overwrite=False):
     '''This adds variability of the specified type to the fake LC.
 
-    The procedure is (for each magcol):
+    The procedure is (for each `magcol`):
 
     - read the fakelcfile, get the stored moments and vartype info
 
     - add the periodic variability specified in vartype and varparamdists. if
-     vartype == None, then do nothing in this step. If override_vartype is not
-     None, override stored vartype with specified vartype. If
-     override_varparamdists is not None, override with specified
-     varparamdists. NOTE: the varparamdists must make sense for the vartype,
-     otherwise, weird stuff will happen.
+      `vartype == None`, then do nothing in this step. If `override_vartype` is
+      not None, override stored vartype with specified vartype. If
+      `override_varparamdists` provided, override with specified
+      `varparamdists`. NOTE: the varparamdists must make sense for the vartype,
+      otherwise, weird stuff will happen.
 
-    - add the median mag level stored in fakelcfile to the time series
+    - add the median mag level stored in `fakelcfile` to the time series
 
-    - add gaussian noise to the light curve as specified in fakelcfile
+    - add Gaussian noise to the light curve as specified in `fakelcfile`
 
-    - add a varinfo key and dict to the lcdict with varperiod, varepoch,
-      varparams
+    - add a varinfo key and dict to the lcdict with `varperiod`, `varepoch`,
+      `varparams`
 
-    - write back to pickle
+    - write back to fake LC pickle
 
-    - return the varinfo dict to the caller
+    - return the `varinfo` dict to the caller
+
+    Parameters
+    ----------
+
+    fakelcfile : str
+        The name of the fake LC file to process.
+
+    vartype : str
+        The type of variability to add to this fake LC file.
+
+    override_paramdists : dict
+        A parameter distribution dict as in the `generate_XX_lightcurve`
+        functions above. If provided, will override the distribution stored in
+        the input fake LC file itself.
+
+    magsarefluxes : bool
+        Sets if the variability amplitude is in fluxes and not magnitudes.
+
+    overwite : bool
+        This overwrites the input fake LC file with a new variable LC even if
+        it's been processed before.
+
+    Returns
+    -------
+
+    dict
+        A dict of the following form is returned::
+
+            {'objectid':lcdict['objectid'],
+             'lcfname':fakelcfile,
+             'actual_vartype':vartype,
+             'actual_varparams':lcdict['actual_varparams']}
 
     '''
 
@@ -1944,32 +2210,47 @@ def add_fakelc_variability(fakelcfile,
 def add_variability_to_fakelc_collection(simbasedir,
                                          override_paramdists=None,
                                          overwrite_existingvar=False):
-    '''This adds variability and noise to all fakelcs in simbasedir.
+    '''This adds variability and noise to all fake LCs in `simbasedir`.
 
-    If an object is marked as variable in the fakelcs-info.pkl file in
-    simbasedir, a variable signal will be added to its light curve based on its
-    selected type, default period and amplitude distribution, the appropriate
-    params, etc. the epochs for each variable object will be chosen uniformly
-    from its time-range (and may not necessarily fall on a actual observed
-    time). Nonvariable objects will only have noise added as determined by their
-    params, but no variable signal will be added.
+    If an object is marked as variable in the `fakelcs-info`.pkl file in
+    `simbasedir`, a variable signal will be added to its light curve based on
+    its selected type, default period and amplitude distribution, the
+    appropriate params, etc. the epochs for each variable object will be chosen
+    uniformly from its time-range (and may not necessarily fall on a actual
+    observed time). Nonvariable objects will only have noise added as determined
+    by their params, but no variable signal will be added.
 
-    override_paramdists is a dict like so:
+    Parameters
+    ----------
 
-    {'<vartype1>': {'<param1>: scipy.stats distribution or npr.randint function,
-                    .
-                    .
-                    .
-                    '<paramN>: scipy.stats distribution or npr.randint function}
+    simbasedir : str
+        The directory containing the fake LCs to process.
 
-    for any vartype in VARTYPE_LCGEN_MAP. These are used to override the default
-    parameter distributions for each variable type.
+    override_paramdists : dict
+        This can be used to override the stored variable parameters in each fake
+        LC. It should be a dict of the following form::
 
-    If overwrite_existingvar is True, then
+            {'<vartype1>': {'<param1>: a scipy.stats distribution function or
+                                       the np.random.randint function,
+                            .
+                            .
+                            .
+                            '<paramN>: a scipy.stats distribution function
+                                       or the np.random.randint function}
 
-    This will get back the varinfo from the add_fakelc_variability function and
-    writes that info back to the simbasedir/fakelcs-info.pkl file for each
-    object.
+        for any vartype in VARTYPE_LCGEN_MAP. These are used to override the
+        default parameter distributions for each variable type.
+
+    overwrite_existinvar : bool
+        If this is True, then will overwrite any existing variability in the
+        input fake LCs in `simbasedir`.
+
+    Returns
+    -------
+
+    dict
+        This returns a dict containing the fake LC filenames as keys and
+        variability info for each as values.
 
     '''
 
