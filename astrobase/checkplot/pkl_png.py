@@ -85,28 +85,29 @@ def checkplot_pickle_to_png(
     webapp. This is useful for exporting read-only views of finalized checkplots
     from the `checkplotserver` as well, to share them with other people.
 
-    The PNG has 4 x N tiles:
+    The PNG has 4 x N tiles::
 
-    [    finder    ] [  objectinfo  ] [ varinfo/comments ] [ unphased LC  ]
-    [ periodogram1 ] [ phased LC P1 ] [   phased LC P2   ] [ phased LC P3 ]
-    [ periodogram2 ] [ phased LC P1 ] [   phased LC P2   ] [ phased LC P3 ]
-                                     .
-                                     .
-    [ periodogramN ] [ phased LC P1 ] [ phased LC P2 ] [ phased LC P3 ]
+        [    finder    ] [  objectinfo  ] [ varinfo/comments ] [ unphased LC  ]
+        [ periodogram1 ] [ phased LC P1 ] [   phased LC P2   ] [ phased LC P3 ]
+        [ periodogram2 ] [ phased LC P1 ] [   phased LC P2   ] [ phased LC P3 ]
+                                         .
+                                         .
+        [ periodogramN ] [ phased LC P1 ] [ phased LC P2 ] [ phased LC P3 ]
 
     for N independent period-finding methods producing:
 
     - periodogram1,2,3...N: the periodograms from each method
+
     - phased LC P1,P2,P3: the phased lightcurves using the best 3 peaks in each
-                          periodogram
+      periodogram
 
     Parameters
     ----------
 
     checkplotin : dict or str
         This is either a checkplotdict produced by
-        `checkplot.pkl.checkplot_dict` or a checkplot pickle file produced by
-        `checkplot.pkl.checkplot_pickle`.
+        :py:func:`astrobase.checkplot.pkl.checkplot_dict` or a checkplot pickle
+        file produced by :py:func:`astrobase.checkplot.pkl.checkplot_pickle`.
 
     outfile : str
         The filename of the output PNG file to create.
@@ -127,8 +128,9 @@ def checkplot_pickle_to_png(
         NOTE: the PNG files specified in `extrarows` here will be added to those
         already present in the input checkplotdict['externalplots'] if that is
         None because you passed in a similar list of external plots to the
-        `checkplot.pkl.checkplot_pickle` function earlier. In this case,
-        `extrarows` can be used to add even more external plots if desired.
+        :py:func:`astrobase.checkplot.pkl.checkplot_pickle` function earlier. In
+        this case, `extrarows` can be used to add even more external plots if
+        desired.
 
         Each external plot PNG will be resized to 750 x 480 pixels to fit into
         an output image cell.
@@ -140,17 +142,17 @@ def checkplot_pickle_to_png(
         - phased LC PNG with 2nd best peak period from periodogram
         - phased LC PNG with 3rd best peak period from periodogram
 
-        Example of extrarows:
+        Example of extrarows::
 
-        [('/path/to/external/bls-periodogram.png',
-          '/path/to/external/bls-phasedlc-plot-bestpeak.png',
-          '/path/to/external/bls-phasedlc-plot-peak2.png',
-          '/path/to/external/bls-phasedlc-plot-peak3.png'),
-         ('/path/to/external/pdm-periodogram.png',
-          '/path/to/external/pdm-phasedlc-plot-bestpeak.png',
-          '/path/to/external/pdm-phasedlc-plot-peak2.png',
-          '/path/to/external/pdm-phasedlc-plot-peak3.png'),
-        ...]
+            [('/path/to/external/bls-periodogram.png',
+              '/path/to/external/bls-phasedlc-plot-bestpeak.png',
+              '/path/to/external/bls-phasedlc-plot-peak2.png',
+              '/path/to/external/bls-phasedlc-plot-peak3.png'),
+             ('/path/to/external/pdm-periodogram.png',
+              '/path/to/external/pdm-phasedlc-plot-bestpeak.png',
+              '/path/to/external/pdm-phasedlc-plot-peak2.png',
+              '/path/to/external/pdm-phasedlc-plot-peak3.png'),
+            ...]
 
     Returns
     -------
@@ -1129,8 +1131,7 @@ def checkplot_pickle_to_png(
 
 
 def cp2png(checkplotin, extrarows=None):
-    '''
-    This is just a shortened form of the function above for convenience.
+    '''This is just a shortened form of the function above for convenience.
 
     This only handles pickle files as input.
 
@@ -1154,10 +1155,11 @@ def cp2png(checkplotin, extrarows=None):
         astrobase results.
 
         NOTE: the PNG files specified in `extrarows` here will be added to those
-        already present in the input checkplotdict['externalplots'] if that is
+        already present in the input `checkplotdict['externalplots']` if that is
         None because you passed in a similar list of external plots to the
-        `checkplot.pkl.checkplot_pickle` function earlier. In this case,
-        `extrarows` can be used to add even more external plots if desired.
+        :py:func:`astrobase.checkplot.pkl.checkplot_pickle` function earlier. In
+        this case, `extrarows` can be used to add even more external plots if
+        desired.
 
         Each external plot PNG will be resized to 750 x 480 pixels to fit into
         an output image cell.
@@ -1169,17 +1171,17 @@ def cp2png(checkplotin, extrarows=None):
         - phased LC PNG with 2nd best peak period from periodogram
         - phased LC PNG with 3rd best peak period from periodogram
 
-        Example of extrarows:
+        Example of extrarows::
 
-        [('/path/to/external/bls-periodogram.png',
-          '/path/to/external/bls-phasedlc-plot-bestpeak.png',
-          '/path/to/external/bls-phasedlc-plot-peak2.png',
-          '/path/to/external/bls-phasedlc-plot-peak3.png'),
-         ('/path/to/external/pdm-periodogram.png',
-          '/path/to/external/pdm-phasedlc-plot-bestpeak.png',
-          '/path/to/external/pdm-phasedlc-plot-peak2.png',
-          '/path/to/external/pdm-phasedlc-plot-peak3.png'),
-        ...]
+            [('/path/to/external/bls-periodogram.png',
+              '/path/to/external/bls-phasedlc-plot-bestpeak.png',
+              '/path/to/external/bls-phasedlc-plot-peak2.png',
+              '/path/to/external/bls-phasedlc-plot-peak3.png'),
+             ('/path/to/external/pdm-periodogram.png',
+              '/path/to/external/pdm-phasedlc-plot-bestpeak.png',
+              '/path/to/external/pdm-phasedlc-plot-peak2.png',
+              '/path/to/external/pdm-phasedlc-plot-peak3.png'),
+            ...]
 
     Returns
     -------

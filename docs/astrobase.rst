@@ -6,22 +6,6 @@ astrobase package
     :undoc-members:
     :show-inheritance:
 
-Subpackages
------------
-
-.. toctree::
-
-    astrobase.checkplot
-    astrobase.cpserver
-    astrobase.fakelcs
-    astrobase.hatsurveys
-    astrobase.lcmodels
-    astrobase.lcproc
-    astrobase.periodbase
-    astrobase.services
-    astrobase.varbase
-    astrobase.varclass
-
 Submodules
 ----------
 
@@ -40,3 +24,18 @@ Submodules
    astrobase.plotbase
    astrobase.timeutils
 
+Subpackages
+-----------
+
+.. toctree::
+
+    astrobase.checkplot
+    astrobase.cpserver
+    astrobase.fakelcs
+    astrobase.hatsurveys
+    astrobase.lcmodels
+    astrobase.lcproc
+    astrobase.periodbase
+    astrobase.services
+    astrobase.varbase
+    astrobase.varclass

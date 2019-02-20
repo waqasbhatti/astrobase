@@ -81,9 +81,10 @@ from .lcmath import sigclip_magseries, find_lc_timegroups
 def keplerflux_to_keplermag(keplerflux, f12=1.74e5):
     '''This converts the Kepler flux in electrons/sec to Kepler magnitude.
 
-    kepler mag/flux relation:
-    - fkep = (10.0**(-0.4*(kepmag - 12.0)))*f12
-    - f12 = 1.74e5 # electrons/sec
+    The kepler mag/flux relation is::
+
+        fkep = (10.0**(-0.4*(kepmag - 12.0)))*f12
+        f12 = 1.74e5 # electrons/sec
 
     Parameters
     ----------
@@ -255,8 +256,8 @@ def read_kepler_fitslc(
 
     This works on the light curves available at MAST:
 
-    - kplr{kepid}-{somedatething}_llc.fits files from the Kepler mission
-    - ktwo{epicid}-c{campaign}_llc.fits files from the K2 mission
+    - `kplr{kepid}-{somedatething}_llc.fits` files from the Kepler mission
+    - `ktwo{epicid}-c{campaign}_llc.fits` files from the K2 mission
 
     Parameters
     ----------
@@ -1080,9 +1081,9 @@ def filter_kepler_lcdict(lcdict,
         Indicates the flux measurement type(s) to apply the filtering to.
 
     timestoignore : list of tuples or None
-        This is of the form:
+        This is of the form::
 
-        [(time1_start, time1_end), (time2_start, time2_end), ...]
+            [(time1_start, time1_end), (time2_start, time2_end), ...]
 
         and indicates the start and end times to mask out of the final
         lcdict. Use this to remove anything that wasn't caught by the quality
@@ -1311,7 +1312,7 @@ def epd_kepler_lightcurve(lcdict,
         spacecraft.
 
     writetodict : bool
-        If writetodict is True, adds the following columns to the lcdict:
+        If writetodict is True, adds the following columns to the lcdict::
 
             epd_time = time array
             epd_sapflux = uncorrected flux before EPD
@@ -1732,7 +1733,7 @@ def detrend_centroid(lcd, detrend='legendre', sigclip=None, mingap=0.5):
     -------
 
     tuple
-        This is of the form (lcd, errflag), where:
+        This is of the form `(lcd, errflag)`, where:
 
         `lcd` : an `lcdict` with the new key `lcd['centroids']`, containing the
         detrended times, (centroid_x, centroid_y) values, and their errors.

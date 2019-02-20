@@ -80,11 +80,11 @@ def update_checkplot_objectinfo(cpf,
 
     Useful in cases where a previous round of GAIA/finderchart/external catalog
     acquisition failed. This will preserve the following keys in the checkplot
-    if they exist:
+    if they exist::
 
-    comments
-    varinfo
-    objectinfo.objecttags
+        comments
+        varinfo
+        objectinfo.objecttags
 
     Parameters
     ----------
@@ -96,12 +96,10 @@ def update_checkplot_objectinfo(cpf,
         This runs the external catalog operations in a "fast" mode, with short
         timeouts and not trying to hit external catalogs that take a long time
         to respond. See the docstring for
-        `checkplot.pkl_utils._pkl_finder_objectinfo` for details on how this
-        works. If this is True, will run in "fast" mode with default timeouts (5
-        seconds in most cases). If this is a float, will run in "fast" mode with
-        the provided timeout value in seconds.
-
-    findercmap : str or matplotlib.cm.Colormap object
+        :py:func:`astrobase.checkplot.pkl_utils._pkl_finder_objectinfo` for
+        details on how this works. If this is True, will run in "fast" mode with
+        default timeouts (5 seconds in most cases). If this is a float, will run
+        in "fast" mode with the provided timeout value in seconds.
 
     findercmap : str or matplotlib.cm.ColorMap object
         The Colormap object to use for the finder chart image.
@@ -140,8 +138,8 @@ def update_checkplot_objectinfo(cpf,
 
     gaia_mirror : str
         This sets the GAIA mirror to use. This is a key in the
-        `services.gaia.GAIA_URLS` dict which defines the URLs to hit for each
-        mirror.
+        :py:data:`astrobase.services.gaia.GAIA_URLS` dict which defines the URLs
+        to hit for each mirror.
 
     complete_query_later : bool
         If this is True, saves the state of GAIA queries that are not yet
@@ -479,10 +477,10 @@ def finalize_checkplot(cpx,
 
     all_lclistpkl : str or dict
         This is the path to the pickle or the dict created by
-        `lcproc.catalog.make_lclist` with no restrictions on the number of
-        observations (so ALL light curves in the collection). This is used to
-        make sure all neighbors of this object in the light curve collection
-        have had their proximity to this object noted.
+        :py:func:`astrobase.lcproc.catalogs.make_lclist` with no restrictions on
+        the number of observations (so ALL light curves in the collection). This
+        is used to make sure all neighbors of this object in the light curve
+        collection have had their proximity to this object noted.
 
     objfits : str or None
         If this is not None, should be a file path to a FITS file containing a

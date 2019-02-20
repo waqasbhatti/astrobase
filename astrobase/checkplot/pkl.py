@@ -255,20 +255,21 @@ def checkplot_dict(
         this checkplot.
 
     objectinfo : dict or None
-        If provided, this is a dict containing information on the object whose
-        light curve is being processed. This function will then be able to look
-        up and download a finder chart for this object and write that to the
-        output checkplotdict. External services such as GAIA, SIMBAD, TIC@MAST,
-        etc. will also be used to look up this object by its coordinates, and
-        will add in information available from those services.
+        This is a dict containing information on the object whose light
+        curve is being processed. This function will then be able to
+        look up and download a finder chart for this object and write
+        that to the output checkplotdict. External services such as
+        GAIA, SIMBAD, TIC, etc. will also be used to look up this object
+        by its coordinates, and will add in information available from
+        those services.
 
-        The `objectinfo` dict must be of the form and contain at least the keys
-        described below:
+        This dict must be of the form and contain at least the keys described
+        below::
 
-        {'objectid': the name of the object,
-         'ra': the right ascension of the object in decimal degrees,
-         'decl': the declination of the object in decimal degrees,
-         'ndet': the number of observations of this object}
+            {'objectid': the name of the object,
+             'ra': the right ascension of the object in decimal degrees,
+             'decl': the declination of the object in decimal degrees,
+             'ndet': the number of observations of this object}
 
         You can also provide magnitudes and proper motions of the object using
         the following keys and the appropriate values in the `objectinfo`
@@ -302,13 +303,13 @@ def checkplot_dict(
             'wise3' -> WISE W3 mag	 -> colors: W2-W3
             'wise4' -> WISE W4 mag	 -> colors: W3-W4
 
-       If you have magnitude measurements in other bands, use the
-       `custom_bandpasses` kwarg to pass these in.
+        If you have magnitude measurements in other bands, use the
+        `custom_bandpasses` kwarg to pass these in.
 
-       If this is None, no object information will be incorporated into the
-       checkplot (kind of making it effectively useless for anything other than
-       glancing at the phased light curves at various 'best' periods from the
-       period-finder results).
+        If this is None, no object information will be incorporated into the
+        checkplot (kind of making it effectively useless for anything other than
+        glancing at the phased light curves at various 'best' periods from the
+        period-finder results).
 
     deredden_object : bool
         If this is True, will use the 2MASS DUST service to get extinction
@@ -319,8 +320,7 @@ def checkplot_dict(
     custom_bandpasses : dict
         This is a dict used to provide custom bandpass definitions for any
         magnitude measurements in the objectinfo dict that are not automatically
-        recognized by the `varclass.starfeatures.color_features` function. See
-        its docstring for details on the required format.
+        recognized by :py:func:`astrobase.varclass.starfeatures.color_features`.
 
     gaia_submit_timeout : float
         Sets the timeout in seconds to use when submitting a request to look up
@@ -482,7 +482,6 @@ def checkplot_dict(
 
     normto : {'globalmedian', 'zero'} or a float
         These are specified as below:
-
         - 'globalmedian' -> norms each mag to the global median of the LC column
         - 'zero'         -> norms each mag to zero
         - a float        -> norms each mag to this specified float value.
@@ -1101,13 +1100,13 @@ def checkplot_pickle(
             'wise3' -> WISE W3 mag	 -> colors: W2-W3
             'wise4' -> WISE W4 mag	 -> colors: W3-W4
 
-       If you have magnitude measurements in other bands, use the
-       `custom_bandpasses` kwarg to pass these in.
+        If you have magnitude measurements in other bands, use the
+        `custom_bandpasses` kwarg to pass these in.
 
-       If this is None, no object information will be incorporated into the
-       checkplot (kind of making it effectively useless for anything other than
-       glancing at the phased light curves at various 'best' periods from the
-       period-finder results).
+        If this is None, no object information will be incorporated into the
+        checkplot (kind of making it effectively useless for anything other than
+        glancing at the phased light curves at various 'best' periods from the
+        period-finder results).
 
     deredden_object : bool
         If this is True, will use the 2MASS DUST service to get extinction
@@ -1118,8 +1117,7 @@ def checkplot_pickle(
     custom_bandpasses : dict
         This is a dict used to provide custom bandpass definitions for any
         magnitude measurements in the objectinfo dict that are not automatically
-        recognized by the `varclass.starfeatures.color_features` function. See
-        its docstring for details on the required format.
+        recognized by :py:func:`astrobase.varclass.starfeatures.color_features`.
 
     gaia_submit_timeout : float
         Sets the timeout in seconds to use when submitting a request to look up
@@ -1248,9 +1246,7 @@ def checkplot_pickle(
 
         This can be used to incorporate external period-finding method results
         into the output checkplot pickle or exported PNG to allow for comparison
-        with astrobase results.
-
-        Example of externalplots::
+        with astrobase results. Example of `externalplots`::
 
             [('/path/to/external/bls-periodogram.png',
               '/path/to/external/bls-phasedlc-plot-bestpeak.png',

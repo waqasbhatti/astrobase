@@ -3,8 +3,6 @@
 # lccs.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Aug 2018
 # License: MIT - see LICENSE for the full text.
 
-from __future__ import print_function
-
 '''
 This contains functions to search for objects and get light curves from a Light
 Curve Collection (LCC) server (https://github.com/waqasbhatti/lcc-server) using
@@ -19,33 +17,29 @@ home page. To do this, use the import_apikey function in this module.
 SERVICES SUPPORTED
 ------------------
 
-This currently supports the following LCC server functions:
+This currently supports the following LCC server functions::
 
-- conesearch   -> cone_search(lcc_server_url, center_ra, center_decl, ...)
-
-- ftsquery     -> fulltext_search(lcc_server_url, searchterm, sesame=False, ...)
-
-- columnsearch -> column_search(lcc_server_url, filters, ...)
-
-- xmatch       -> xmatch_search(lcc_server_url, file_to_upload, ...)
+    conesearch   : cone_search(lcc_server_url, center_ra, center_decl, ...)
+    ftsquery     : fulltext_search(lcc_server_url, searchtxt, sesame=False, ...)
+    columnsearch : column_search(lcc_server_url, filters, ...)
+    xmatch       : xmatch_search(lcc_server_url, file_to_upload, ...
 
 The functions above will download the data products (data table CSVs, light
 curve ZIP files) of the search results automatically, or in case the query takes
 too long, will return within a configurable timeout. The query information is
-cached to ~/.astrobase/lccs, and can be used to download data products for
+cached to `~/.astrobase/lccs`, and can be used to download data products for
 long-running queries later.
 
-The functions below support various auxiliary LCC services:
+The functions below support various auxiliary LCC services::
 
-- get-dataset  -> get_dataset(lcc_server_url, dataset_id)
-
-- objectinfo   -> object_info(lcc_server_url, objectid, collection, ...)
-
-- dataset-list -> list_recent_datasets(lcc_server_url, nrecent=25, ...)
-
-- collections  -> list_lc_collections(lcc_server_url)
+    get-dataset  : get_dataset(lcc_server_url, dataset_id)
+    objectinfo   : object_info(lcc_server_url, objectid, collection, ...)
+    dataset-list : list_recent_datasets(lcc_server_url, nrecent=25, ...)
+    collections  : list_lc_collections(lcc_server_url)
 
 '''
+
+from __future__ import print_function
 
 # put this in here because lccs can be used as a standalone module
 __version__ = '0.3.20'
@@ -143,15 +137,15 @@ except Exception as e:
 
 def check_existing_apikey(lcc_server):
     '''This validates if an API key for lcc_server is available in
-    ~/.astrobase/lccs.
+    `~/.astrobase/lccs`.
 
     API keys are stored using the following file scheme:
 
-    ~/.astrobase/lccs/apikey-domain.of.lccserver.org
+    `~/.astrobase/lccs/apikey-domain.of.lccserver.org`
 
     e.g. for the HAT LCC server at https://data.hatsurveys.org:
 
-    ~/.astrobase/lccs/apikey-https-data.hatsurveys.org
+   `~/.astrobase/lccs/apikey-https-data.hatsurveys.org`
 
     '''
 
@@ -329,7 +323,7 @@ def submit_get_searchquery(url, params, apikey=None):
     handles results that time out.
 
     url is the URL to hit for getting the results. This will probably be
-    something like https://lcc.server.org/api/xyz.
+    something like `https://lcc.server.org/api/xyz`.
 
     params is a dict of args to generate a query string for the API.
 

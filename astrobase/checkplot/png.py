@@ -813,11 +813,11 @@ def checkplot_png(lspinfo,
                   verbose=True):
     '''This makes a checkplot PNG using the output from a period-finder routine.
 
-    A checkplot is a 3 x 3 grid of plots like so:
+    A checkplot is a 3 x 3 grid of plots like so::
 
-    [periodogram + objectinfo] [     unphased LC     ] [ period 1 phased LC ]
-    [  period 1 phased LC /2 ] [period 1 phased LC x2] [ period 2 phased LC ]
-    [   period 3 phased LC   ] [period 4 phased LC   ] [ period 5 phased LC ]
+        [periodogram + objectinfo] [     unphased LC     ] [period 1 phased LC]
+        [  period 1 phased LC /2 ] [period 1 phased LC x2] [period 2 phased LC]
+        [   period 3 phased LC   ] [period 4 phased LC   ] [period 5 phased LC]
 
     This is used to sanity check the five best periods obtained from a
     period-finder function in `astrobase.periodbase` or from your own
@@ -831,22 +831,24 @@ def checkplot_png(lspinfo,
         If this is a dict, it must be a dict produced by an
         `astrobase.periodbase` period-finder function or a dict from your own
         period-finder function or routine that is of the form below with at
-        least these keys:
+        least these keys::
 
-        {'periods': np.array of all periods searched by the period-finder,
-         'lspvals': np.array of periodogram power value for each period,
-         'bestperiod': a float value that is the period with the highest peak
-                       in the periodogram, i.e. the most-likely actual period,
-         'method': a three-letter code naming the period-finder used; must be
-                   one of the keys in the `astrobase.periodbase.METHODLABELS`
-                   dict,
-         'nbestperiods': a list of the periods corresponding to periodogram
-                         peaks (`nbestlspvals` below) to annotate on the
-                         periodogram plot so they can be called out visually,
-         'nbestlspvals': a list of the power values associated with periodogram
-                         peaks to annotate on the periodogram plot so they can
-                         be called out visually; should be the same length as
-                         `nbestperiods` above}
+            {'periods': np.array of all periods searched by the period-finder,
+             'lspvals': np.array of periodogram power value for each period,
+             'bestperiod': a float value that is the period with the highest
+                           peak in the periodogram, i.e. the most-likely actual
+                           period,
+             'method': a three-letter code naming the period-finder used; must
+                       be one of the keys in the
+                       `astrobase.periodbase.METHODLABELS` dict,
+             'nbestperiods': a list of the periods corresponding to periodogram
+                             peaks (`nbestlspvals` below) to annotate on the
+                             periodogram plot so they can be called out
+                             visually,
+             'nbestlspvals': a list of the power values associated with
+                             periodogram peaks to annotate on the periodogram
+                             plot so they can be called out visually; should be
+                             the same length as `nbestperiods` above}
 
         `nbestperiods` and `nbestlspvals` must have at least 5 elements each,
         e.g. describing the five 'best' (highest power) peaks in the
@@ -860,21 +862,21 @@ def checkplot_png(lspinfo,
         The mag/flux time-series arrays to process along with associated errors.
 
     varepoch : 'min' or float or None or list of lists
-        This sets the time of minimum light finding strategy for the checkplot:
+        This sets the time of minimum light finding strategy for the checkplot::
 
-                                               the epoch used for all phased
-        If `varepoch` is None               -> light curve plots will be
-                                               `min(times)`.
+                                                   the epoch used for all phased
+            If `varepoch` is None               -> light curve plots will be
+                                                   `min(times)`.
 
-        If `varepoch='min'`                 -> automatic epoch finding for all
-                                               periods using light curve fits.
+            If `varepoch='min'`                 -> automatic epoch finding for all
+                                                   periods using light curve fits.
 
-        If varepoch is a single float       -> this epoch will be used for all
-                                               phased light curve plots
+            If varepoch is a single float       -> this epoch will be used for all
+                                                   phased light curve plots
 
-        If varepoch is a list of floats        each epoch will be applied to
-        with length = `len(nbestperiods)+2` -> the phased light curve for each
-        from period-finder results             period specifically
+            If varepoch is a list of floats        each epoch will be applied to
+            with length = `len(nbestperiods)+2` -> the phased light curve for each
+            from period-finder results             period specifically
 
         If you use a list for varepoch, it must be of length
         `len(lspinfo['nbestperiods']) + 2`, because we insert half and twice the
@@ -889,12 +891,12 @@ def checkplot_png(lspinfo,
         light curve is being processed. This function will then be able to look
         up and download a finder chart for this object and write that to the
         output checkplot PNG image.The `objectinfo` dict must be of the form and
-        contain at least the keys described below:
+        contain at least the keys described below::
 
-        {'objectid': the name of the object,
-         'ra': the right ascension of the object in decimal degrees,
-         'decl': the declination of the object in decimal degrees,
-         'ndet': the number of observations of this object}
+            {'objectid': the name of the object,
+             'ra': the right ascension of the object in decimal degrees,
+             'decl': the declination of the object in decimal degrees,
+             'ndet': the number of observations of this object}
 
         You can also provide magnitudes and proper motions of the object using
         the following keys and the appropriate values in the `objectinfo`
@@ -917,9 +919,11 @@ def checkplot_png(lspinfo,
         The directory where the FITS finder images are downloaded and cached.
 
     normto : {'globalmedian', 'zero'} or a float
-        'globalmedian' -> norms each mag to the global median of the LC column
-        'zero'         -> norms each mag to zero
-        a float        -> norms each mag to this specified float value.
+        This sets the normalization target::
+
+            'globalmedian' -> norms each mag to global median of the LC column
+            'zero'         -> norms each mag to zero
+            a float        -> norms each mag to this specified float value.
 
     normmingap : float
         This defines how much the difference between consecutive measurements is
@@ -1201,18 +1205,18 @@ def twolsp_checkplot_png(lspinfo1,
     use Stellingwerf PDM or Schwarzenberg-Czerny AoV as one of these, and the
     Box Least-squared Search method as the other one.
 
-    The checkplot layout in this case is:
+    The checkplot layout in this case is::
 
-    [ pgram1 + objectinfo ] [        pgram2       ] [     unphased LC     ]
-    [ pgram1 P1 phased LC ] [ pgram1 P2 phased LC ] [ pgram1 P3 phased LC ]
-    [ pgram2 P1 phased LC ] [ pgram2 P2 phased LC ] [ pgram2 P3 phased LC ]
+        [ pgram1 + objectinfo ] [        pgram2       ] [     unphased LC     ]
+        [ pgram1 P1 phased LC ] [ pgram1 P2 phased LC ] [ pgram1 P3 phased LC ]
+        [ pgram2 P1 phased LC ] [ pgram2 P2 phased LC ] [ pgram2 P3 phased LC ]
 
     where:
 
-    pgram1 is the plot for the periodogram in the lspinfo1 dict
-    pgram1 P1, P2, and P3 are the best three periods from lspinfo1
-    pgram2 is the plot for the periodogram in the lspinfo2 dict
-    pgram2 P1, P2, and P3 are the best three periods from lspinfo2
+    - pgram1 is the plot for the periodogram in the lspinfo1 dict
+    - pgram1 P1, P2, and P3 are the best three periods from lspinfo1
+    - pgram2 is the plot for the periodogram in the lspinfo2 dict
+    - pgram2 P1, P2, and P3 are the best three periods from lspinfo2
 
     Note that we take the output file name from lspinfo1 if lspinfo1 is a string
     filename pointing to a (gzipped) pickle containing the results dict from a
@@ -1221,26 +1225,28 @@ def twolsp_checkplot_png(lspinfo1,
     Parameters
     ----------
 
-    lspinfo1, lspinfo2 : dict or str
+    lspinfo1,lspinfo2 : dict or str
         If this is a dict, it must be a dict produced by an
         `astrobase.periodbase` period-finder function or a dict from your own
         period-finder function or routine that is of the form below with at
-        least these keys:
+        least these keys::
 
-        {'periods': np.array of all periods searched by the period-finder,
-         'lspvals': np.array of periodogram power value for each period,
-         'bestperiod': a float value that is the period with the highest peak
-                       in the periodogram, i.e. the most-likely actual period,
-         'method': a three-letter code naming the period-finder used; must be
-                   one of the keys in the `astrobase.periodbase.METHODLABELS`
-                   dict,
-         'nbestperiods': a list of the periods corresponding to periodogram
-                         peaks (`nbestlspvals` below) to annotate on the
-                         periodogram plot so they can be called out visually,
-         'nbestlspvals': a list of the power values associated with periodogram
-                         peaks to annotate on the periodogram plot so they can
-                         be called out visually; should be the same length as
-                         `nbestperiods` above}
+            {'periods': np.array of all periods searched by the period-finder,
+             'lspvals': np.array of periodogram power value for each period,
+             'bestperiod': a float value that is the period with the highest
+                           peak in the periodogram, i.e. the most-likely actual
+                           period,
+             'method': a three-letter code naming the period-finder used; must
+                       be one of the keys in the
+                       `astrobase.periodbase.METHODLABELS` dict,
+             'nbestperiods': a list of the periods corresponding to periodogram
+                             peaks (`nbestlspvals` below) to annotate on the
+                             periodogram plot so they can be called out
+                             visually,
+             'nbestlspvals': a list of the power values associated with
+                             periodogram peaks to annotate on the periodogram
+                             plot so they can be called out visually; should be
+                             the same length as `nbestperiods` above}
 
         `nbestperiods` and `nbestlspvals` must have at least 3 elements each,
         e.g. describing the three 'best' (highest power) peaks in the
@@ -1254,21 +1260,21 @@ def twolsp_checkplot_png(lspinfo1,
         The mag/flux time-series arrays to process along with associated errors.
 
     varepoch : 'min' or float or None or list of lists
-        This sets the time of minimum light finding strategy for the checkplot:
+        This sets the time of minimum light finding strategy for the checkplot::
 
-                                               the epoch used for all phased
-        If `varepoch` is None               -> light curve plots will be
-                                               `min(times)`.
+                                                   the epoch used for all phased
+            If `varepoch` is None               -> light curve plots will be
+                                                   `min(times)`.
 
-        If `varepoch='min'`                 -> automatic epoch finding for all
-                                               periods using light curve fits.
+            If `varepoch='min'`                 -> automatic epoch finding for all
+                                                   periods using light curve fits.
 
-        If varepoch is a single float       -> this epoch will be used for all
-                                               phased light curve plots
+            If varepoch is a single float       -> this epoch will be used for all
+                                                   phased light curve plots
 
-        If varepoch is a list of floats        each epoch will be applied to
-        with length = `len(nbestperiods)` ->   the phased light curve for each
-        from period-finder results             period specifically
+            If varepoch is a list of floats        each epoch will be applied to
+            with length = `len(nbestperiods)` ->   the phased light curve for each
+            from period-finder results             period specifically
 
         If you use a list for varepoch, it must be of length
         `len(lspinfo['nbestperiods'])`.
@@ -1282,12 +1288,12 @@ def twolsp_checkplot_png(lspinfo1,
         light curve is being processed. This function will then be able to look
         up and download a finder chart for this object and write that to the
         output checkplot PNG image.The `objectinfo` dict must be of the form and
-        contain at least the keys described below:
+        contain at least the keys described below::
 
-        {'objectid': the name of the object,
-         'ra': the right ascension of the object in decimal degrees,
-         'decl': the declination of the object in decimal degrees,
-         'ndet': the number of observations of this object}
+            {'objectid': the name of the object,
+             'ra': the right ascension of the object in decimal degrees,
+             'decl': the declination of the object in decimal degrees,
+             'ndet': the number of observations of this object}
 
         You can also provide magnitudes and proper motions of the object using
         the following keys and the appropriate values in the `objectinfo`
@@ -1310,9 +1316,11 @@ def twolsp_checkplot_png(lspinfo1,
         The directory where the FITS finder images are downloaded and cached.
 
     normto : {'globalmedian', 'zero'} or a float
-        'globalmedian' -> norms each mag to the global median of the LC column
-        'zero'         -> norms each mag to zero
-        a float        -> norms each mag to this specified float value.
+        This sets the LC normalization target::
+
+            'globalmedian' -> norms each mag to global median of the LC column
+            'zero'         -> norms each mag to zero
+            a float        -> norms each mag to this specified float value.
 
     normmingap : float
         This defines how much the difference between consecutive measurements is

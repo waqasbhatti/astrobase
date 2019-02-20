@@ -78,7 +78,6 @@ def _base64_to_file(b64str, outfpath, writetostrio=False):
         can open these files correctly.
 
     writetostrio : bool
-
         If this is True, will return a StringIO object with the binary stream
         decoded from the base64-encoded input string `b64str`. This can be
         useful to embed these into other files without having to write them to
@@ -207,9 +206,9 @@ def _write_checkplot_picklefile(checkplotdict,
 
         If None, will choose a protocol using the following rules:
 
-        4 -> default in Python >= 3.4 - fast but incompatible with Python 2
-        3 -> default in Python 3.0-3.3 - mildly fast
-        2 -> default in Python 2 - very slow, but compatible with Python 2 and 3
+        - 4 -> default in Python >= 3.4 - fast but incompatible with Python 2
+        - 3 -> default in Python 3.0-3.3 - mildly fast
+        - 2 -> default in Python 2 - very slow, but compatible with Python 2/3
 
         The default protocol kwarg is None, this will make an automatic choice
         for pickle protocol that's best suited for the version of Python in

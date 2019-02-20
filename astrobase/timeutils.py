@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 # timeutils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Sept 2013
 
-from __future__ import print_function
-
 '''
 Contains various useful tools for dealing with time in astronomical contexts.
 
 '''
+
+from __future__ import print_function
 
 #############
 ## LOGGING ##
@@ -273,7 +273,8 @@ def _single_true(iterable):
     Returns
     -------
 
-    True if only one True-ish element exists in `iterable`. False otherwise.
+    bool
+        True if only one True-ish element exists in `iterable`. False otherwise.
 
     '''
 
@@ -299,9 +300,11 @@ def get_epochs_given_midtimes_and_period(
         verbose=False
 ):
     '''This calculates the future epochs for a transit, given a period and a
-    starting epoch.
+    starting epoch
 
-    `t_mid = period*epoch + t0`.
+    The equation used is::
+
+        t_mid = period*epoch + t0
 
     Default behavior if no kwargs are used is to define `t0` as the median
     finite time of the passed `t_mid` array.
@@ -469,7 +472,13 @@ def jd_to_datetime(jd, returniso=False):
 
 def jd_now():
     '''
-    Returns the Julian date at the current time.
+    Gets the Julian date at the current time.
+
+    Returns
+    -------
+
+    float
+        The current Julian date in days.
 
     '''
     return astime.Time.now().jd

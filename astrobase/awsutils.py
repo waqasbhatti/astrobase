@@ -97,8 +97,10 @@ def ec2_ssh(ip_address,
 
     paramiko.SSHClient
         This has all the usual `paramiko` functionality:
+
         - Use `SSHClient.exec_command(command, environment=None)` to exec a
           shell command.
+
         - Use `SSHClient.open_sftp()` to get a `SFTPClient` for the server. Then
           call SFTPClient.get() and .put() to copy files from and to the server.
 
@@ -143,6 +145,9 @@ def s3_get_file(bucket,
                 raiseonfail=False):
 
     """This gets a file from an S3 bucket.
+
+    Parameters
+    ----------
 
     bucket : str
         The AWS S3 bucket name.
@@ -393,8 +398,10 @@ def sqs_create_queue(queue_name, options=None, client=None):
     -------
 
     dict
-        {'url': SQS URL of the queue,
-         'name': name of the queue}
+        This returns a dict of the form::
+
+            {'url': SQS URL of the queue,
+             'name': name of the queue}
 
     """
 

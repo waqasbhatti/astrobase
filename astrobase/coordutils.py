@@ -37,8 +37,9 @@ def angle_wrap(angle, radians=False):
     Returns
     -------
 
-    Wrapped angle. If radians is True: input is assumed to be in radians, output
-    is also in radians.
+    float
+        Wrapped angle. If radians is True: input is assumed to be in radians,
+        output is also in radians.
 
     '''
 

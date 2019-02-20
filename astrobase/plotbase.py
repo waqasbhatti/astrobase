@@ -198,6 +198,8 @@ def plot_magseries(times,
     -------
 
     str or BytesIO/StringIO object
+        Returns based on the input:
+
         - If `out` is a str or None, the path to the generated plot file is
           returned.
         - If `out` is a StringIO/BytesIO object, will return the
@@ -481,7 +483,10 @@ def plot_phased_magseries(times,
         as `times` (usually in days)
 
     epoch : 'min' or float or None
+        This indicates how to get the epoch to use for phasing the light curve:
+
         - If None, uses the `min(times)` as the epoch for phasing.
+
         - If epoch is the string 'min', then fits a cubic spline to the phased
           light curve using `min(times)` as the initial epoch, finds the
           magnitude/flux minimum of this phased light curve fit, and finally
@@ -489,6 +494,7 @@ def plot_phased_magseries(times,
           planetary transits and eclipsing binary phased light curves so that
           phase 0.0 corresponds to the mid-center time of primary eclipse (or
           transit).
+
         - If epoch is a float, then uses that directly to phase the light
           curve and as the epoch of the phased mag series plot.
 
@@ -597,6 +603,8 @@ def plot_phased_magseries(times,
     -------
 
     str or StringIO/BytesIO or matplotlib.axes.Axes
+        This returns based on the input:
+
         - If `outfile` is a str or None, the path to the generated plot file is
           returned.
         - If `outfile` is a StringIO/BytesIO object, will return the
@@ -939,6 +947,8 @@ def skyview_stamp(ra, decl,
     -------
 
     tuple or array or None
+        This returns based on the value of `savewcsheader`:
+
         - If `savewcsheader=True`, returns a tuple:
           (FITS stamp image as a numpy array, FITS header)
         - If `savewcsheader=False`, returns only the FITS stamp image as numpy

@@ -153,11 +153,14 @@ def normalize_magseries(times,
         Indicates if the input `mags` array is actually an array of flux
         measurements instead of magnitude measurements. If this is set to True,
         then:
+
         - if `normto` is 'zero', then the median flux is divided from each
           observation's flux value to yield normalized fluxes with 1.0 as the
           global median.
+
         - if `normto` is 'globalmedian', then the global median flux value
           across the entire time series is multiplied with each measurement.
+
         - if `norm` is set to a `float`, then this number is multiplied with the
           flux value for each measurement.
 
@@ -839,6 +842,11 @@ def phase_magseries(times, mags, period, epoch, wrap=True, sort=True):
 
         phase = (times - epoch)/period - floor((times - epoch)/period)
 
+    This phases the given magnitude timeseries using the given period and
+    epoch. If wrap is True, wraps the result around 0.0 (and returns an array
+    that has twice the number of the original elements). If sort is True,
+    returns the magnitude timeseries in phase sorted order.
+
     Parameters
     ----------
 
@@ -863,11 +871,6 @@ def phase_magseries(times, mags, period, epoch, wrap=True, sort=True):
     sort : bool
         If this is True, the returned phased time-series will be sorted in
         increasing phase order.
-
-    This phases the given magnitude timeseries using the given period and
-    epoch. If wrap is True, wraps the result around 0.0 (and returns an array
-    that has twice the number of the original elements). If sort is True,
-    returns the magnitude timeseries in phase sorted order.
 
     Returns
     -------
@@ -921,6 +924,11 @@ def phase_magseries_with_errs(times, mags, errs, period, epoch,
 
         phase = (times - epoch)/period - floor((times - epoch)/period)
 
+    This phases the given magnitude timeseries using the given period and
+    epoch. If wrap is True, wraps the result around 0.0 (and returns an array
+    that has twice the number of the original elements). If sort is True,
+    returns the magnitude timeseries in phase sorted order.
+
     Parameters
     ----------
 
@@ -946,11 +954,6 @@ def phase_magseries_with_errs(times, mags, errs, period, epoch,
     sort : bool
         If this is True, the returned phased time-series will be sorted in
         increasing phase order.
-
-    This phases the given magnitude timeseries using the given period and
-    epoch. If wrap is True, wraps the result around 0.0 (and returns an array
-    that has twice the number of the original elements). If sort is True,
-    returns the magnitude timeseries in phase sorted order.
 
     Returns
     -------
@@ -1469,15 +1472,15 @@ def fill_magseries_gaps(times, mags, errs,
 
     From McQuillan+ 2013a (https://doi.org/10.1093/mnras/stt536):
 
-    "The ACF calculation requires the light curves to be regularly sampled and
-    normalized to zero. We divided the flux in each quarter by its median and
-    subtracted unity. Gaps in the light curve longer than the Kepler long
-    cadence were filled using linear interpolation with added white Gaussian
-    noise. This noise level was estimated using the variance of the residuals
-    following subtraction of a smoothed version of the flux. To smooth the flux,
-    we applied an iterative non-linear filter which consists of a median filter
-    followed by a boxcar filter, both with 11-point windows, with iterative 3σ
-    clipping of outliers."
+        "The ACF calculation requires the light curves to be regularly sampled
+        and normalized to zero. We divided the flux in each quarter by its
+        median and subtracted unity. Gaps in the light curve longer than the
+        Kepler long cadence were filled using linear interpolation with added
+        white Gaussian noise. This noise level was estimated using the variance
+        of the residuals following subtraction of a smoothed version of the
+        flux. To smooth the flux, we applied an iterative non-linear filter
+        which consists of a median filter followed by a boxcar filter, both with
+        11-point windows, with iterative 3σ clipping of outliers."
 
     Parameters
     ----------

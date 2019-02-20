@@ -441,10 +441,10 @@ def absolute_gaia_magnitude(gaia_mag,
     '''Calculates the GAIA absolute magnitude for object (or array of objects).
 
     Given a G mag and the parallax measured by GAIA, gets the absolute mag using
-    the usual equation:
+    the usual equation::
 
-    G - M_G = 5 x log10(d_pc) - 5
-    M_G = 5 - 5log10(d_pc) + G
+        G - M_G = 5 x log10(d_pc) - 5
+        M_G = 5 - 5log10(d_pc) + G
 
     Parameters
     ----------
@@ -467,9 +467,9 @@ def absolute_gaia_magnitude(gaia_mag,
     float or array-like
         The absolute magnitude M_G of the object(s).
 
-    If both `_err` input kwargs are provided, will return a tuple of the form:
+    If both `_err` input kwargs are provided, will return a tuple of the form::
 
-    (M_G float or array-like, M_G_err float or array-like)
+        (M_G float or array-like, M_G_err float or array-like)
 
     '''
 
