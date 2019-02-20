@@ -1356,7 +1356,7 @@ def _pkl_magseries_plot(stimes, smags, serrs,
     Parameters
     ----------
 
-    stimes, smags, serrs : np.array
+    stimes,smags,serrs : np.array
         The mag/flux time-series arrays along with associated errors. These
         should all have been run through nan-stripping and sigma-clipping
         beforehand.
@@ -1502,7 +1502,7 @@ def _pkl_phased_magseries_plot(
         If > 0   -> some other peak of the periodogram
         If == -1 -> special mode w/ no periodogram labels and enabled highlight
 
-    stimes, smags, serrs : np.array
+    stimes,smags,serrs : np.array
         The mag/flux time-series arrays along with associated errors. These
         should all have been run through nan-stripping and sigma-clipping
         beforehand.

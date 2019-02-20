@@ -569,7 +569,7 @@ def plot_phased_magseries(times,
         Sets the label for the y-axis. If this is None, the appropriate label
         will be used based on the value of the `magsarefluxes` kwarg.
 
-    modeltimes, modelmags, modelerrs : np.array or None
+    modeltimes,modelmags,modelerrs : np.array or None
         If all of these are provided, then this function will overplot the
         values of modeltimes and modelmags on top of the actual phased light
         curve. This is useful for plotting variability models on top of the

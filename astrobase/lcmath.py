@@ -1229,7 +1229,7 @@ def phase_bin_magseries(phases, mags,
     Parameters
     ----------
 
-    phases, mags : np.array
+    phases,mags : np.array
         The phased magnitude/flux time-series to bin in phase. Non-finite
         elements will be removed from these arrays. At least 10 elements in each
         array are required for this function to operate.
@@ -1334,7 +1334,7 @@ def phase_bin_magseries_with_errs(phases, mags, errs,
     Parameters
     ----------
 
-    phases, mags, errs : np.array
+    phases,mags,errs : np.array
         The phased magnitude/flux time-series and associated errs to bin in
         phase. Non-finite elements will be removed from these arrays. At least
         10 elements in each array are required for this function to operate.

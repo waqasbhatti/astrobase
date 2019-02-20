@@ -374,7 +374,7 @@ def _make_magseries_plot(axes,
     axes : matplotlib.axes.Axes object
         The Axes object where the generated plot will go.
 
-    stimes, smags, serrs : np.array
+    stimes,smags,serrs : np.array
         The mag/flux time-series arrays along with associated errors. These
         should all have been run through nan-stripping and sigma-clipping
         beforehand.
@@ -463,7 +463,7 @@ def _make_phased_magseries_plot(axes,
         The index of the current best period being processed in the lspinfo
         dict.
 
-    stimes, smags, serrs : np.array
+    stimes,smags,serrs : np.array
         The mag/flux time-series arrays along with associated errors. These
         should all have been run through nan-stripping and sigma-clipping
         beforehand.
