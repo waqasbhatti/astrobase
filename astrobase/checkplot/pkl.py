@@ -14,7 +14,7 @@ arbitrary number of 'best periods'.
 Checkplot pickles are intended for use with an external checkplot viewer: the
 Tornado webapp `astrobase.cpserver.checkplotserver.py`, but you can also use the
 `checkplot.pkl_png.checkplot_pickle_to_png` function to render checkplot pickles
-to PNGs that will look something like:
+to PNGs that will look something like::
 
     [    finder    ] [  objectinfo  ] [ variableinfo ] [ unphased LC  ]
     [ periodogram1 ] [ phased LC P1 ] [ phased LC P2 ] [ phased LC P3 ]
@@ -23,11 +23,11 @@ to PNGs that will look something like:
                                      .
     [ periodogramN ] [ phased LC P1 ] [ phased LC P2 ] [ phased LC P3 ]
 
-    for N independent period-finding methods producing:
+for N independent period-finding methods producing:
 
-    - periodogram1,2,3...N: the periodograms from each method
-    - phased LC P1,P2,P3: the phased lightcurves using the best 3 peaks in each
-                          periodogram
+- periodogram1,2,3...N: the periodograms from each method
+- phased LC P1,P2,P3: the phased lightcurves using the best 3 peaks in each
+  periodogram
 
 '''
 
@@ -187,22 +187,24 @@ def checkplot_dict(
         dicts). These can be from any of the period-finder methods in
         astrobase.periodbase. To incorporate external period-finder results into
         checkplots, these dicts must be of the form below, including at least
-        the keys indicated here:
+        the keys indicated here::
 
-        {'periods': np.array of all periods searched by the period-finder,
-         'lspvals': np.array of periodogram power value for each period,
-         'bestperiod': a float value that is the period with the highest peak
-                       in the periodogram, i.e. the most-likely actual period,
-         'method': a three-letter code naming the period-finder used; must be
-                   one of the keys in the `astrobase.periodbase.METHODLABELS`
-                   dict,
-         'nbestperiods': a list of the periods corresponding to periodogram
-                         peaks (`nbestlspvals` below) to annotate on the
-                         periodogram plot so they can be called out visually,
-         'nbestlspvals': a list of the power values associated with periodogram
-                         peaks to annotate on the periodogram plot so they can
-                         be called out visually; should be the same length as
-                         `nbestperiods` above}
+            {'periods': np.array of all periods searched by the period-finder,
+             'lspvals': np.array of periodogram power value for each period,
+             'bestperiod': a float value that is the period with the highest
+                           peak in the periodogram, i.e. the most-likely actual
+                           period,
+             'method': a three-letter code naming the period-finder used; must
+                       be one of the keys in the
+                       `astrobase.periodbase.METHODLABELS` dict,
+             'nbestperiods': a list of the periods corresponding to periodogram
+                             peaks (`nbestlspvals` below) to annotate on the
+                             periodogram plot so they can be called out
+                             visually,
+             'nbestlspvals': a list of the power values associated with
+                             periodogram peaks to annotate on the periodogram
+                             plot so they can be called out visually; should be
+                             the same length as `nbestperiods` above}
 
         `nbestperiods` and `nbestlspvals` in each lspinfo dict must have at
         least as many elements as the `nperiodstouse` kwarg to this function.
@@ -271,34 +273,34 @@ def checkplot_dict(
         You can also provide magnitudes and proper motions of the object using
         the following keys and the appropriate values in the `objectinfo`
         dict. These will be used to calculate colors, total and reduced proper
-        motion, etc. and display these in the output checkplot PNG.
+        motion, etc. and display these in the output checkplot PNG::
 
-        - 'pmra' -> the proper motion in mas/yr in right ascension direction,
-        - 'pmdecl' -> the proper motion in mas/yr in declination direction,
-        - 'umag'  -> U mag		 -> colors: U-B, U-V, U-g
-        - 'bmag'  -> B mag		 -> colors: U-B, B-V
-        - 'vmag'  -> V mag		 -> colors: U-V, B-V, V-R, V-I, V-K
-        - 'rmag'  -> R mag		 -> colors: V-R, R-I
-        - 'imag'  -> I mag		 -> colors: g-I, V-I, R-I, B-I
-        - 'jmag'  -> 2MASS J mag	 -> colors: J-H, J-K, g-J, i-J
-        - 'hmag'  -> 2MASS H mag	 -> colors: J-H, H-K
-        - 'kmag'  -> 2MASS Ks mag	 -> colors: g-Ks, H-Ks, J-Ks, V-Ks
-        - 'sdssu' -> SDSS u mag	 -> colors: u-g, u-V
-        - 'sdssg' -> SDSS g mag	 -> colors: g-r, g-i, g-K, u-g, U-g, g-J
-        - 'sdssr' -> SDSS r mag	 -> colors: r-i, g-r
-        - 'sdssi' -> SDSS i mag	 -> colors: r-i, i-z, g-i, i-J, i-W1
-        - 'sdssz' -> SDSS z mag	 -> colors: i-z, z-W2, g-z
-        - 'ujmag' -> UKIRT J mag	 -> colors: J-H, H-K, J-K, g-J, i-J
-        - 'uhmag' -> UKIRT H mag	 -> colors: J-H, H-K
-        - 'ukmag' -> UKIRT K mag	 -> colors: g-K, H-K, J-K, V-K
-        - 'irac1' -> Spitzer IRAC1 mag -> colors: i-I1, I1-I2
-        - 'irac2' -> Spitzer IRAC2 mag -> colors: I1-I2, I2-I3
-        - 'irac3' -> Spitzer IRAC3 mag -> colors: I2-I3
-        - 'irac4' -> Spitzer IRAC4 mag -> colors: I3-I4
-        - 'wise1' -> WISE W1 mag	 -> colors: i-W1, W1-W2
-        - 'wise2' -> WISE W2 mag	 -> colors: W1-W2, W2-W3
-        - 'wise3' -> WISE W3 mag	 -> colors: W2-W3
-        - 'wise4' -> WISE W4 mag	 -> colors: W3-W4
+            'pmra'   -> the proper motion in mas/yr in right ascension,
+            'pmdecl' -> the proper motion in mas/yr in declination,
+            'umag'  -> U mag		 -> colors: U-B, U-V, U-g
+            'bmag'  -> B mag		 -> colors: U-B, B-V
+            'vmag'  -> V mag		 -> colors: U-V, B-V, V-R, V-I, V-K
+            'rmag'  -> R mag		 -> colors: V-R, R-I
+            'imag'  -> I mag		 -> colors: g-I, V-I, R-I, B-I
+            'jmag'  -> 2MASS J mag	 -> colors: J-H, J-K, g-J, i-J
+            'hmag'  -> 2MASS H mag	 -> colors: J-H, H-K
+            'kmag'  -> 2MASS Ks mag	 -> colors: g-Ks, H-Ks, J-Ks, V-Ks
+            'sdssu' -> SDSS u mag	 -> colors: u-g, u-V
+            'sdssg' -> SDSS g mag	 -> colors: g-r, g-i, g-K, u-g, U-g, g-J
+            'sdssr' -> SDSS r mag	 -> colors: r-i, g-r
+            'sdssi' -> SDSS i mag	 -> colors: r-i, i-z, g-i, i-J, i-W1
+            'sdssz' -> SDSS z mag	 -> colors: i-z, z-W2, g-z
+            'ujmag' -> UKIRT J mag	 -> colors: J-H, H-K, J-K, g-J, i-J
+            'uhmag' -> UKIRT H mag	 -> colors: J-H, H-K
+            'ukmag' -> UKIRT K mag	 -> colors: g-K, H-K, J-K, V-K
+            'irac1' -> Spitzer IRAC1 mag -> colors: i-I1, I1-I2
+            'irac2' -> Spitzer IRAC2 mag -> colors: I1-I2, I2-I3
+            'irac3' -> Spitzer IRAC3 mag -> colors: I2-I3
+            'irac4' -> Spitzer IRAC4 mag -> colors: I3-I4
+            'wise1' -> WISE W1 mag	 -> colors: i-W1, W1-W2
+            'wise2' -> WISE W2 mag	 -> colors: W1-W2, W2-W3
+            'wise3' -> WISE W3 mag	 -> colors: W2-W3
+            'wise4' -> WISE W4 mag	 -> colors: W3-W4
 
        If you have magnitude measurements in other bands, use the
        `custom_bandpasses` kwarg to pass these in.
@@ -353,11 +355,11 @@ def checkplot_dict(
         If this is None, a blank dict of the form below will be added to the
         checkplotdict::
 
-          {'objectisvar': None -> variability flag (None indicates unset),
-           'vartags': CSV str containing variability type tags from review,
-           'varisperiodic': None -> periodic variability flag (None -> unset),
-           'varperiod': the period associated with the periodic variability,
-           'varepoch': the epoch associated with the periodic variability}
+            {'objectisvar': None -> variability flag (None indicates unset),
+             'vartags': CSV str containing variability type tags from review,
+             'varisperiodic': None -> periodic variability flag (None -> unset),
+             'varperiod': the period associated with the periodic variability,
+             'varepoch': the epoch associated with the periodic variability}
 
         If you provide a dict matching this format in this kwarg, this will be
         passed unchanged to the output checkplotdict produced.
@@ -406,7 +408,7 @@ def checkplot_dict(
         light curve in the checkplot. This function should have the following
         signature:
 
-        def lcfitfunc(times, mags, errs, period, **lcfitparams)
+        `def lcfitfunc(times, mags, errs, period, **lcfitparams)`
 
         where `lcfitparams` encapsulates all external parameters (i.e. number of
         knots for a spline function, the degree of a Legendre polynomial fit,
@@ -414,11 +416,11 @@ def checkplot_dict(
         dict with the following structure (similar to the functions in
         `astrobase.varbase.lcfit`) and at least the keys below::
 
-          {'fittype':<str: name of fit method>,
-           'fitchisq':<float: the chi-squared value of the fit>,
-           'fitredchisq':<float: the reduced chi-squared value of the fit>,
-           'fitinfo':{'fitmags':<ndarray: model mags/fluxes from fit function>},
-           'magseries':{'times':<ndarray: times where fitmags are evaluated>}}
+            {'fittype':<str: name of fit method>,
+             'fitchisq':<float: the chi-squared value of the fit>,
+             'fitredchisq':<float: the reduced chi-squared value of the fit>,
+             'fitinfo':{'fitmags':<ndarray: model mags/fluxes from fit func>},
+             'magseries':{'times':<ndarray: times where fitmags are evaluated>}}
 
         Additional keys in the dict returned from this function can include
         `fitdict['fitinfo']['finalparams']` for the final model fit parameters
@@ -429,9 +431,9 @@ def checkplot_dict(
         In any case, the output dict of `lcfitfunc` will be copied to the output
         checkplotdict as::
 
-          checkplotdict[lspmethod][periodind]['lcfit'][<fittype>]
+            checkplotdict[lspmethod][periodind]['lcfit'][<fittype>]
 
-        for eachphased light curve.
+        for each phased light curve.
 
     lcfitparams : dict
         A dict containing the LC fit parameters to use when calling the function
@@ -984,22 +986,24 @@ def checkplot_pickle(
         dicts). These can be from any of the period-finder methods in
         astrobase.periodbase. To incorporate external period-finder results into
         checkplots, these dicts must be of the form below, including at least
-        the keys indicated here:
+        the keys indicated here::
 
-        {'periods': np.array of all periods searched by the period-finder,
-         'lspvals': np.array of periodogram power value for each period,
-         'bestperiod': a float value that is the period with the highest peak
-                       in the periodogram, i.e. the most-likely actual period,
-         'method': a three-letter code naming the period-finder used; must be
-                   one of the keys in the `astrobase.periodbase.METHODLABELS`
-                   dict,
-         'nbestperiods': a list of the periods corresponding to periodogram
-                         peaks (`nbestlspvals` below) to annotate on the
-                         periodogram plot so they can be called out visually,
-         'nbestlspvals': a list of the power values associated with periodogram
-                         peaks to annotate on the periodogram plot so they can
-                         be called out visually; should be the same length as
-                         `nbestperiods` above}
+            {'periods': np.array of all periods searched by the period-finder,
+             'lspvals': np.array of periodogram power value for each period,
+             'bestperiod': a float value that is the period with the highest
+                           peak in the periodogram, i.e. the most-likely actual
+                           period,
+             'method': a three-letter code naming the period-finder used; must
+                       be one of the keys in the
+                       `astrobase.periodbase.METHODLABELS` dict,
+             'nbestperiods': a list of the periods corresponding to periodogram
+                             peaks (`nbestlspvals` below) to annotate on the
+                             periodogram plot so they can be called out
+                             visually,
+             'nbestlspvals': a list of the power values associated with
+                             periodogram peaks to annotate on the periodogram
+                             plot so they can be called out visually; should be
+                             the same length as `nbestperiods` above}
 
         `nbestperiods` and `nbestlspvals` in each lspinfo dict must have at
         least as many elements as the `nperiodstouse` kwarg to this function.
@@ -1014,30 +1018,30 @@ def checkplot_pickle(
         to respond.
 
         If this is set to True, the default settings for the external requests
-        will then become:
+        will then become::
 
-        skyview_lookup = False
-        skyview_timeout = 10.0
-        skyview_retry_failed = False
-        dust_timeout = 10.0
-        gaia_submit_timeout = 7.0
-        gaia_max_timeout = 10.0
-        gaia_submit_tries = 2
-        complete_query_later = False
-        search_simbad = False
+            skyview_lookup = False
+            skyview_timeout = 10.0
+            skyview_retry_failed = False
+            dust_timeout = 10.0
+            gaia_submit_timeout = 7.0
+            gaia_max_timeout = 10.0
+            gaia_submit_tries = 2
+            complete_query_later = False
+            search_simbad = False
 
         If this is a float, will run in "fast" mode with the provided timeout
-        value in seconds and the following settings:
+        value in seconds and the following settings::
 
-        skyview_lookup = True
-        skyview_timeout = fast_mode
-        skyview_retry_failed = False
-        dust_timeout = fast_mode
-        gaia_submit_timeout = 0.66*fast_mode
-        gaia_max_timeout = fast_mode
-        gaia_submit_tries = 2
-        complete_query_later = False
-        search_simbad = False
+            skyview_lookup = True
+            skyview_timeout = fast_mode
+            skyview_retry_failed = False
+            dust_timeout = fast_mode
+            gaia_submit_timeout = 0.66*fast_mode
+            gaia_max_timeout = fast_mode
+            gaia_submit_tries = 2
+            complete_query_later = False
+            search_simbad = False
 
     magsarefluxes : bool
         If True, indicates the input time-series is fluxes and not mags so the
@@ -1058,44 +1062,44 @@ def checkplot_pickle(
         will add in information available from those services.
 
         The `objectinfo` dict must be of the form and contain at least the keys
-        described below:
+        described below::
 
-        {'objectid': the name of the object,
-         'ra': the right ascension of the object in decimal degrees,
-         'decl': the declination of the object in decimal degrees,
-         'ndet': the number of observations of this object}
+            {'objectid': the name of the object,
+             'ra': the right ascension of the object in decimal degrees,
+             'decl': the declination of the object in decimal degrees,
+             'ndet': the number of observations of this object}
 
         You can also provide magnitudes and proper motions of the object using
         the following keys and the appropriate values in the `objectinfo`
         dict. These will be used to calculate colors, total and reduced proper
-        motion, etc. and display these in the output checkplot PNG.
+        motion, etc. and display these in the output checkplot PNG::
 
-        'pmra' -> the proper motion in mas/yr in the right ascension direction,
-        'pmdecl' -> the proper motion in mas/yr in the declination direction,
-        'umag'  -> U mag		 -> colors: U-B, U-V, U-g
-        'bmag'  -> B mag		 -> colors: U-B, B-V
-        'vmag'  -> V mag		 -> colors: U-V, B-V, V-R, V-I, V-K
-        'rmag'  -> R mag		 -> colors: V-R, R-I
-        'imag'  -> I mag		 -> colors: g-I, V-I, R-I, B-I
-        'jmag'  -> 2MASS J mag	 -> colors: J-H, J-K, g-J, i-J
-        'hmag'  -> 2MASS H mag	 -> colors: J-H, H-K
-        'kmag'  -> 2MASS Ks mag	 -> colors: g-Ks, H-Ks, J-Ks, V-Ks
-        'sdssu' -> SDSS u mag	 -> colors: u-g, u-V
-        'sdssg' -> SDSS g mag	 -> colors: g-r, g-i, g-K, u-g, U-g, g-J
-        'sdssr' -> SDSS r mag	 -> colors: r-i, g-r
-        'sdssi' -> SDSS i mag	 -> colors: r-i, i-z, g-i, i-J, i-W1
-        'sdssz' -> SDSS z mag	 -> colors: i-z, z-W2, g-z
-        'ujmag' -> UKIRT J mag	 -> colors: J-H, H-K, J-K, g-J, i-J
-        'uhmag' -> UKIRT H mag	 -> colors: J-H, H-K
-        'ukmag' -> UKIRT K mag	 -> colors: g-K, H-K, J-K, V-K
-        'irac1' -> Spitzer IRAC1 mag -> colors: i-I1, I1-I2
-        'irac2' -> Spitzer IRAC2 mag -> colors: I1-I2, I2-I3
-        'irac3' -> Spitzer IRAC3 mag -> colors: I2-I3
-        'irac4' -> Spitzer IRAC4 mag -> colors: I3-I4
-        'wise1' -> WISE W1 mag	 -> colors: i-W1, W1-W2
-        'wise2' -> WISE W2 mag	 -> colors: W1-W2, W2-W3
-        'wise3' -> WISE W3 mag	 -> colors: W2-W3
-        'wise4' -> WISE W4 mag	 -> colors: W3-W4
+            'pmra' -> the proper motion in mas/yr in right ascension,
+            'pmdecl' -> the proper motion in mas/yr in the declination,
+            'umag'  -> U mag		 -> colors: U-B, U-V, U-g
+            'bmag'  -> B mag		 -> colors: U-B, B-V
+            'vmag'  -> V mag		 -> colors: U-V, B-V, V-R, V-I, V-K
+            'rmag'  -> R mag		 -> colors: V-R, R-I
+            'imag'  -> I mag		 -> colors: g-I, V-I, R-I, B-I
+            'jmag'  -> 2MASS J mag	 -> colors: J-H, J-K, g-J, i-J
+            'hmag'  -> 2MASS H mag	 -> colors: J-H, H-K
+            'kmag'  -> 2MASS Ks mag	 -> colors: g-Ks, H-Ks, J-Ks, V-Ks
+            'sdssu' -> SDSS u mag	 -> colors: u-g, u-V
+            'sdssg' -> SDSS g mag	 -> colors: g-r, g-i, g-K, u-g, U-g, g-J
+            'sdssr' -> SDSS r mag	 -> colors: r-i, g-r
+            'sdssi' -> SDSS i mag	 -> colors: r-i, i-z, g-i, i-J, i-W1
+            'sdssz' -> SDSS z mag	 -> colors: i-z, z-W2, g-z
+            'ujmag' -> UKIRT J mag	 -> colors: J-H, H-K, J-K, g-J, i-J
+            'uhmag' -> UKIRT H mag	 -> colors: J-H, H-K
+            'ukmag' -> UKIRT K mag	 -> colors: g-K, H-K, J-K, V-K
+            'irac1' -> Spitzer IRAC1 mag -> colors: i-I1, I1-I2
+            'irac2' -> Spitzer IRAC2 mag -> colors: I1-I2, I2-I3
+            'irac3' -> Spitzer IRAC3 mag -> colors: I2-I3
+            'irac4' -> Spitzer IRAC4 mag -> colors: I3-I4
+            'wise1' -> WISE W1 mag	 -> colors: i-W1, W1-W2
+            'wise2' -> WISE W2 mag	 -> colors: W1-W2, W2-W3
+            'wise3' -> WISE W3 mag	 -> colors: W2-W3
+            'wise4' -> WISE W4 mag	 -> colors: W3-W4
 
        If you have magnitude measurements in other bands, use the
        `custom_bandpasses` kwarg to pass these in.
@@ -1148,13 +1152,13 @@ def checkplot_pickle(
 
     varinfo : dict
         If this is None, a blank dict of the form below will be added to the
-        checkplotdict:
+        checkplotdict::
 
-        {'objectisvar': None -> variability flag (None indicates unset),
-         'vartags': CSV str containing variability type tags from review,
-         'varisperiodic': None -> periodic variability flag (None means unset),
-         'varperiod': the period associated with the periodic variability,
-         'varepoch': the epoch associated with the periodic variability}
+            {'objectisvar': None -> variability flag (None indicates unset),
+             'vartags': CSV str containing variability type tags from review,
+             'varisperiodic': None -> periodic variability flag (None -> unset),
+             'varperiod': the period associated with the periodic variability,
+             'varepoch': the epoch associated with the periodic variability}
 
         If you provide a dict matching this format in this kwarg, this will be
         passed unchanged to the output checkplotdict produced.
@@ -1203,19 +1207,19 @@ def checkplot_pickle(
         light curve in the checkplot. This function should have the following
         signature:
 
-        def lcfitfunc(times, mags, errs, period, **lcfitparams)
+        `def lcfitfunc(times, mags, errs, period, **lcfitparams)`
 
         where `lcfitparams` encapsulates all external parameters (i.e. number of
         knots for a spline function, the degree of a Legendre polynomial fit,
         etc., planet transit parameters) This function should return a Python
         dict with the following structure (similar to the functions in
-        `astrobase.varbase.lcfit`) and at least the keys below:
+        `astrobase.varbase.lcfit`) and at least the keys below::
 
-        {'fittype':<str: name of fit method>,
-         'fitchisq':<float: the chi-squared value of the fit>,
-         'fitredchisq':<float: the reduced chi-squared value of the fit>,
-         'fitinfo':{'fitmags':<ndarray: model mags/fluxes from fit function>},
-         'magseries':{'times':<ndarray: times at which fitmags are evaluated>}}
+            {'fittype':<str: name of fit method>,
+             'fitchisq':<float: the chi-squared value of the fit>,
+             'fitredchisq':<float: the reduced chi-squared value of the fit>,
+             'fitinfo':{'fitmags':<ndarray: model mags/fluxes from fit func>},
+             'magseries':{'times':<ndarray: times where fitmags are evaluated>}}
 
         Additional keys in the dict returned from this function can include
         `fitdict['fitinfo']['finalparams']` for the final model fit parameters
@@ -1246,17 +1250,17 @@ def checkplot_pickle(
         into the output checkplot pickle or exported PNG to allow for comparison
         with astrobase results.
 
-        Example of externalplots:
+        Example of externalplots::
 
-        [('/path/to/external/bls-periodogram.png',
-          '/path/to/external/bls-phasedlc-plot-bestpeak.png',
-          '/path/to/external/bls-phasedlc-plot-peak2.png',
-          '/path/to/external/bls-phasedlc-plot-peak3.png'),
-         ('/path/to/external/pdm-periodogram.png',
-          '/path/to/external/pdm-phasedlc-plot-bestpeak.png',
-          '/path/to/external/pdm-phasedlc-plot-peak2.png',
-          '/path/to/external/pdm-phasedlc-plot-peak3.png'),
-         ...]
+            [('/path/to/external/bls-periodogram.png',
+              '/path/to/external/bls-phasedlc-plot-bestpeak.png',
+              '/path/to/external/bls-phasedlc-plot-peak2.png',
+              '/path/to/external/bls-phasedlc-plot-peak3.png'),
+             ('/path/to/external/pdm-periodogram.png',
+              '/path/to/external/pdm-phasedlc-plot-bestpeak.png',
+              '/path/to/external/pdm-phasedlc-plot-peak2.png',
+              '/path/to/external/pdm-phasedlc-plot-peak3.png'),
+             ...]
 
         If `externalplots` is provided here, these paths will be stored in the
         output checkplotdict. The `checkplot.pkl_png.checkplot_pickle_to_png`
@@ -1274,9 +1278,11 @@ def checkplot_pickle(
         from the NASA SkyView service.
 
     normto : {'globalmedian', 'zero'} or a float
-        'globalmedian' -> norms each mag to the global median of the LC column
-        'zero'         -> norms each mag to zero
-        a float        -> norms each mag to this specified float value.
+        This specifies the normalization target::
+
+            'globalmedian' -> norms each mag to global median of the LC column
+            'zero'         -> norms each mag to zero
+            a float        -> norms each mag to this specified float value.
 
     normmingap : float
         This defines how much the difference between consecutive measurements is
@@ -1564,9 +1570,9 @@ def checkplot_pickle_update(
 
         If None, will choose a protocol using the following rules:
 
-        4 -> default in Python >= 3.4 - fast but incompatible with Python 2
-        3 -> default in Python 3.0-3.3 - mildly fast
-        2 -> default in Python 2 - very slow, but compatible with Python 2 and 3
+        - 4 -> default in Python >= 3.4 - fast but incompatible with Python 2
+        - 3 -> default in Python 3.0-3.3 - mildly fast
+        - 2 -> default in Python 2 - very slow, but compatible with Python 2/3
 
         The default protocol kwarg is None, this will make an automatic choice
         for pickle protocol that's best suited for the version of Python in
