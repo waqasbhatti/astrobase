@@ -20,7 +20,6 @@ Submodules
    astrobase.lcdb
    astrobase.lcmath
    astrobase.magnitudes
-   astrobase.modtemplate
    astrobase.plotbase
    astrobase.timeutils
 

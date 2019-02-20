@@ -249,7 +249,7 @@ class LCDB(object):
     def open_default(self):
         '''
         This opens the database connection using the default database parameters
-        given in the lcserver.conf file.
+        given in the ~/.astrobase/astrobase.conf file.
 
         '''
 
