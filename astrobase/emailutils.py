@@ -3,12 +3,12 @@
 # emailutils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jun 2013
 # License: MIT. See LICENSE.txt for complete text.
 
-'''
-This is a small utility module to send email using an SMTP server that requires
-logins. The email settings are stored in a file called .emailsettings that
-should be located in the same directory as emailutils.py. This file should have
-permissions 600 (so only you can read/write to it), and should contain the
-following info in a single row, separated by the | character::
+'''This is a small utility module to send email using an SMTP server that
+requires logins. The email settings are stored in a file called .emailsettings
+that should be located in the ~/.astrobase/ directory in your home
+directory. This file should have permissions 0600 (so only you can read/write to
+it), and should contain the following info in a single row, separated by the |
+character::
 
         <email user>|<email password>|<email server>
 
@@ -16,10 +16,8 @@ Example::
 
         exampleuser@email.com|correcthorsebatterystaple|mail.example.com
 
-NOTE:
-
-This assumes the email server uses STARTTLS encryption and listens on SMTP port
-587. Most email servers support this.
+NOTE: This assumes the email server uses STARTTLS encryption and listens on SMTP
+port 587. Most email servers support this.
 
 '''
 
@@ -43,13 +41,13 @@ try:
 except Exception as e:
     import configparser as ConfigParser
 
-modpath = os.path.abspath(os.path.dirname(__file__))
-CONF_FILE = os.path.join(modpath,'astrobase.conf')
+CONF_FILE = os.path.abspath(os.path.expanduser('~/.astrobase/astrobase.conf'))
 CONF = ConfigParser.ConfigParser()
 CONF.read(CONF_FILE)
 
 # first, check if the .emailsettings file exists and has permissions 0600
-SETTINGSFILE = os.path.join(modpath, CONF.get('email','credentials'))
+SETTINGSFILE = os.path.join(os.path.expanduser('~/.astrobase'),
+                            CONF.get('email','credentials'))
 
 if os.path.exists(SETTINGSFILE):
 

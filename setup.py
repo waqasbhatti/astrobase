@@ -99,6 +99,19 @@ EXTRAS_REQUIRE = {
 ## RUN SETUP FOR ASTROBASE ##
 #############################
 
+# make the ~/.astrobase directory and copy over the astrobase.conf file to it.
+import os.path
+import os
+import shutil
+
+confpath = os.path.expanduser('~/.astrobase')
+if not os.path.exists(confpath):
+    os.makedirs(confpath)
+modpath = os.path.dirname(os.path.abspath(__file__))
+shutil.copy(os.path.join(modpath,'astrobase','astrobase.conf'),
+            confpath)
+
+# finally, run setup.
 setup(
     name='astrobase',
     version=__version__,

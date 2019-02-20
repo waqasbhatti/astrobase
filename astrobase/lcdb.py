@@ -74,11 +74,7 @@ except Exception as e:
 ############
 
 # parse the configuration file to get the default database credentials
-# NOTE:this is relative to the current module's path
-# get the current module's path
-
-modpath = os.path.abspath(os.path.dirname(__file__))
-CONF_FILE = os.path.join(modpath,'astrobase.conf')
+CONF_FILE = os.path.join(os.path.expanduser('~/.astrobase/astrobase.conf'))
 
 try:
 
@@ -90,7 +86,8 @@ try:
     LOGINFO('using database config in %s' % os.path.abspath(CONF_FILE))
 
     # database config
-    DBCREDENTIALS = os.path.join(modpath, CONF.get('lcdb','credentials'))
+    DBCREDENTIALS = os.path.join(os.path.expanduser('~/.astrobase'),
+                                 CONF.get('lcdb','credentials'))
 
     # see if this file exists, read it in and get credentials
     if os.path.exists(DBCREDENTIALS):
@@ -129,7 +126,7 @@ except Exception as e:
     LOGEXCEPTION("no configuration file "
                  "found for this module in %s, "
                  "the LCDB object's open_default() function won't work" %
-                 modpath)
+                 CONF_FILE)
     HAVECONF = False
 
 

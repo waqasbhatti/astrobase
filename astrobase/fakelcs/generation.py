@@ -3,8 +3,7 @@
 # generation - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2017
 # License: MIT. See the LICENSE file for more details.
 
-'''
-This generates light curves of variable stars using the astrobase.lcmodels
+'''This generates light curves of variable stars using the astrobase.lcmodels
 package, adds noise and observation sampling to them based on given parameters
 (or example light curves). See fakelcrecovery.py for functions that run a full
 recovery simulation.
@@ -50,16 +49,17 @@ brightness to the blendee's light curve. the blending fraction is multiplied
 into the light curve of the blender(s) and the resulting flux added to the
 blendee's light curve.
 
-given the FWHM of the instrument, figure out the overlap
+- given the FWHM of the instrument, figure out the overlap
 
-we need to calculate the pixel area for blendee and the sum of pixel areas
-covered by the blenders. this will require input kwargs for pixel size of the
-detector and FWHM of the star (this might need to be calculated based on the
-brightness of the star)
+- we need to calculate the pixel area for blendee and the sum of pixel areas
+  covered by the blenders. this will require input kwargs for pixel size of the
+  detector and FWHM of the star (this might need to be calculated based on the
+  brightness of the star)
 
 FIXME: add input from TRILEGAL produced .dat files for color and mag
 information. This will let us generate pulsating variables with their actual
 colors.
+
 '''
 
 #############
@@ -98,8 +98,6 @@ import os.path
 import pickle
 import shutil
 
-import multiprocessing as mp
-from concurrent.futures import ProcessPoolExecutor
 from hashlib import md5, sha512
 
 # to turn a list of keys into a dict address
@@ -119,11 +117,6 @@ npr.seed(RANDSEED)
 
 import scipy.stats as sps
 import scipy.interpolate as spi
-import scipy.signal as sig
-
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 
 
 ###################
@@ -149,7 +142,7 @@ from ..magnitudes import jhk_to_sdssr
 
 def read_pklc(lcfile):
     '''
-    This just reads a pickle.
+    This just reads a pickle into an lcdict.
 
     '''
 
