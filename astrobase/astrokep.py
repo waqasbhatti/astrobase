@@ -1274,12 +1274,13 @@ def epd_kepler_lightcurve(lcdict,
                           epdsmooth=5):
     '''This runs EPD on the Kepler light curve.
 
-    Following Huang et al. 2015, we fit and subtract the following EPD function:
+    Following Huang et al. 2015, we fit the following EPD function to a smoothed
+    light curve, and then subtract it to obtain EPD corrected magnitudes::
 
-    f = c0 +
-        c1*sin(2*pi*x) + c2*cos(2*pi*x) + c3*sin(2*pi*y) + c4*cos(2*pi*y) +
-        c5*sin(4*pi*x) + c6*cos(4*pi*x) + c7*sin(4*pi*y) + c8*cos(4*pi*y) +
-        c9*bgv + c10*bge
+        f = c0 +
+            c1*sin(2*pi*x) + c2*cos(2*pi*x) + c3*sin(2*pi*y) + c4*cos(2*pi*y) +
+            c5*sin(4*pi*x) + c6*cos(4*pi*x) + c7*sin(4*pi*y) + c8*cos(4*pi*y) +
+            c9*bgv + c10*bge
 
     By default, this function removes points in the Kepler LC that have ANY
     quality flags set.
@@ -1296,9 +1297,9 @@ def epd_kepler_lightcurve(lcdict,
         in the EPD fit.
 
     timestoignore : list of tuples
-        This is of the form:
+        This is of the form::
 
-        [(time1_start, time1_end), (time2_start, time2_end), ...]
+            [(time1_start, time1_end), (time2_start, time2_end), ...]
 
         and indicates the start and end times to mask out of the final
         lcdict. Use this to remove anything that wasn't caught by the quality
