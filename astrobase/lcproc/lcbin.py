@@ -258,10 +258,12 @@ def timebinlc_worker(task):
     ----------
 
     task : tuple
-        - task[0] = lcfile
-        - task[1] = binsizesec
-        - task[3] = {'outdir','lcformat','lcformatdir',
-                     'timecols','magcols','errcols','minbinelems'}
+        This is of the form::
+
+            task[0] = lcfile
+            task[1] = binsizesec
+            task[3] = {'outdir','lcformat','lcformatdir',
+                       'timecols','magcols','errcols','minbinelems'}
 
     Returns
     -------
