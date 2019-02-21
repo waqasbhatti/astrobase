@@ -5,7 +5,7 @@
     "errcols": ["binned.sap_flux.errs","binned.pdcsap_flux.errs"],
     "magsarefluxes": true,
     "lcreader_module": "astrobase.lcproc",
-    "lcreader_func": "read_pklc",
+    "lcreader_func": "_read_pklc",
     "lcreader_kwargs": null,
     "lcnorm_module": null,
     "lcnorm_func": null,

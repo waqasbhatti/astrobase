@@ -10,11 +10,14 @@ any time-series data that can be represented in this form. If you have flux time
 series measurements, most functions take a `magsarefluxes` keyword argument that
 makes them handle flux light curves correctly.
 
-Full documentation is still a work in progress. Read the current docs here:
-[https://wbhatti.org/astrobase](https://wbhatti.org/astrobase). An
-[overview](#contents) of the package is provided below, along with Jupyter
-notebooks that demonstrate some of the functionality in a [companion
-repository](https://github.com/waqasbhatti/astrobase-notebooks).
+Full documentation is still a work in progress:
+
+- Read the current docs here:
+  [https://wbhatti.org/astrobase](https://wbhatti.org/astrobase).
+- Jupyter notebooks that demonstrate some of the functionality are available in
+  the [astrobase-notebooks](https://github.com/waqasbhatti/astrobase-notebooks)
+  repository.
+- A [overview](#contents) of the modules and subpackages is provided below.
 
 To install **[astrobase](https://pypi.python.org/pypi/astrobase)** from the
 Python Package Index (PyPI):

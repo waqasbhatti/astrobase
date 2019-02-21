@@ -58,7 +58,7 @@ from tornado.escape import squeeze
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
-def dict_get(datadict, keylist):
+def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
 
 import numpy as np
@@ -260,10 +260,10 @@ def get_periodicfeatures(pfpickle,
                 tcolget = tcol.split('.')
             else:
                 tcolget = [tcol]
-            times = dict_get(lcdict, tcolget)
+            times = _dict_get(lcdict, tcolget)
 
             if nbrlcf:
-                nbrtimes = dict_get(nbrlcdict, tcolget)
+                nbrtimes = _dict_get(nbrlcdict, tcolget)
             else:
                 nbrtimes = None
 
@@ -273,10 +273,10 @@ def get_periodicfeatures(pfpickle,
             else:
                 mcolget = [mcol]
 
-            mags = dict_get(lcdict, mcolget)
+            mags = _dict_get(lcdict, mcolget)
 
             if nbrlcf:
-                nbrmags = dict_get(nbrlcdict, mcolget)
+                nbrmags = _dict_get(nbrlcdict, mcolget)
             else:
                 nbrmags = None
 
@@ -286,10 +286,10 @@ def get_periodicfeatures(pfpickle,
             else:
                 ecolget = [ecol]
 
-            errs = dict_get(lcdict, ecolget)
+            errs = _dict_get(lcdict, ecolget)
 
             if nbrlcf:
-                nbrerrs = dict_get(nbrlcdict, ecolget)
+                nbrerrs = _dict_get(nbrlcdict, ecolget)
             else:
                 nbrerrs = None
 

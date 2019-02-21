@@ -138,7 +138,7 @@ from astrobase.checkplot.pkl_io import _read_checkplot_picklefile
 ## HELPER FUNCTIONS ##
 ######################
 
-def dict_get(datadict, keylist):
+def _dict_get(datadict, keylist):
     '''This gets a requested dict key by walking the dict.
 
     Parameters
@@ -196,7 +196,7 @@ def checkplot_infokey_worker(task):
     for k in keys:
 
         try:
-            resultkeys.append(dict_get(cpd, k))
+            resultkeys.append(_dict_get(cpd, k))
         except Exception as e:
             resultkeys.append(np.nan)
 

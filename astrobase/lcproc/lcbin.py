@@ -55,7 +55,7 @@ from tornado.escape import squeeze
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
-def dict_get(datadict, keylist):
+def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
 
 
@@ -194,19 +194,19 @@ def timebinlc(lcfile,
             tcolget = tcol.split('.')
         else:
             tcolget = [tcol]
-        times = dict_get(lcdict, tcolget)
+        times = _dict_get(lcdict, tcolget)
 
         if '.' in mcol:
             mcolget = mcol.split('.')
         else:
             mcolget = [mcol]
-        mags = dict_get(lcdict, mcolget)
+        mags = _dict_get(lcdict, mcolget)
 
         if '.' in ecol:
             ecolget = ecol.split('.')
         else:
             ecolget = [ecol]
-        errs = dict_get(lcdict, ecolget)
+        errs = _dict_get(lcdict, ecolget)
 
         # normalize here if not using special normalization
         if normfunc is None:

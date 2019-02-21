@@ -57,7 +57,7 @@ from concurrent.futures import ProcessPoolExecutor
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
-def dict_get(datadict, keylist):
+def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
 
 import numpy as np

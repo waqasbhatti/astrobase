@@ -78,7 +78,7 @@ except Exception as e:
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
-def dict_get(datadict, keylist):
+def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
 
 
@@ -181,7 +181,7 @@ def lclist_parallel_worker(task):
                 getkey = [colkey]
 
             try:
-                thiscolval = dict_get(lcdict, getkey)
+                thiscolval = _dict_get(lcdict, getkey)
             except Exception as e:
                 LOGWARNING('column %s does not exist for %s' %
                            (colkey, lcf))
@@ -217,7 +217,7 @@ def lclist_parallel_worker(task):
             else:
                 getdk = [dk]
 
-            ndetcol = dict_get(lcdict, getdk)
+            ndetcol = _dict_get(lcdict, getdk)
             actualndets = ndetcol[np.isfinite(ndetcol)].size
             lcobjdict['%s.ndet' % getdk[-1]] = actualndets
 

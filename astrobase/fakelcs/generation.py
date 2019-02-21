@@ -130,7 +130,7 @@ from ..lcmodels import transits, eclipses, flares, sinusoidal
 from ..magnitudes import jhk_to_sdssr
 
 # get the lcformat functions
-from ..lcproc import register_lcformat, get_lcformat, read_pklc
+from ..lcproc import get_lcformat, _read_pklc
 
 
 
@@ -2076,7 +2076,7 @@ def add_fakelc_variability(fakelcfile,
     '''
 
     # read in the fakelcfile
-    lcdict = read_pklc(fakelcfile)
+    lcdict = _read_pklc(fakelcfile)
 
     # make sure to bail out if this light curve already has fake variability
     # added
@@ -2241,7 +2241,7 @@ def add_variability_to_fakelc_collection(simbasedir,
         for any vartype in VARTYPE_LCGEN_MAP. These are used to override the
         default parameter distributions for each variable type.
 
-    overwrite_existinvar : bool
+    overwrite_existingvar : bool
         If this is True, then will overwrite any existing variability in the
         input fake LCs in `simbasedir`.
 

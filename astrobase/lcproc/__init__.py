@@ -58,7 +58,7 @@ import json
 # from https://stackoverflow.com/a/14692747
 from functools import reduce, partial
 from operator import getitem
-def dict_get(datadict, keylist):
+def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
 
 
@@ -66,7 +66,7 @@ def dict_get(datadict, keylist):
 ## PICKLE LC READING FUNCTIONS ##
 #################################
 
-def read_pklc(lcfile):
+def _read_pklc(lcfile):
     '''
     This just reads a light curve pickle file.
 
@@ -110,7 +110,7 @@ def read_pklc(lcfile):
 ## LIGHT CURVE FORMAT HANDLING ##
 #################################
 
-def check_extmodule(module, formatkey):
+def _check_extmodule(module, formatkey):
     '''This imports the module specified.
 
     Used to dynamically import Python modules that are needed to support LC
@@ -327,7 +327,7 @@ def register_lcformat(formatkey,
         return None
 
     # see if we can import the reader module
-    readermodule = check_extmodule(readerfunc_module, formatkey)
+    readermodule = _check_extmodule(readerfunc_module, formatkey)
 
     if not readermodule:
         LOGERROR("could not import the required "
@@ -348,7 +348,7 @@ def register_lcformat(formatkey,
 
     # see if we can import the normalization module
     if normfunc_module:
-        normmodule = check_extmodule(normfunc_module, formatkey)
+        normmodule = _check_extmodule(normfunc_module, formatkey)
         if not normmodule:
             LOGERROR("could not import the required "
                      "module: %s to normalize %s light curves" %
@@ -518,7 +518,7 @@ def get_lcformat(formatkey, use_lcformat_dir=None):
 
     # import all the required bits
     # see if we can import the reader module
-    readermodule = check_extmodule(readerfunc_module, formatkey)
+    readermodule = _check_extmodule(readerfunc_module, formatkey)
 
     if not readermodule:
         LOGERROR("could not import the required "
@@ -538,7 +538,7 @@ def get_lcformat(formatkey, use_lcformat_dir=None):
 
     # see if we can import the normalization module
     if normfunc_module:
-        normmodule = check_extmodule(normfunc_module, formatkey)
+        normmodule = _check_extmodule(normfunc_module, formatkey)
         if not normmodule:
             LOGERROR("could not import the required "
                      "module: %s to normalize %s light curves" %

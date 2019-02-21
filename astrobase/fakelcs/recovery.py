@@ -56,7 +56,7 @@ from math import sqrt as msqrt
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
-def dict_get(datadict, keylist):
+def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
 
 import numpy as np
@@ -136,7 +136,7 @@ def get_varfeatures(simbasedir,
         lcproc.register_custom_lcformat(
             'fakelc',
             '*-fakelc.pkl',
-            lcproc.read_pklc,
+            lcproc._read_pklc,
             timecols,
             magcols,
             errcols,
@@ -250,7 +250,7 @@ def get_recovered_variables_for_magbin(simbasedir,
         lcproc.register_custom_lcformat(
             'fakelc',
             '*-fakelc.pkl',
-            lcproc.read_pklc,
+            lcproc._read_pklc,
             timecols,
             magcols,
             errcols,
@@ -1357,7 +1357,7 @@ def run_periodfinding(simbasedir,
         lcproc.register_custom_lcformat(
             'fakelc',
             '*-fakelc.pkl',
-            lcproc.read_pklc,
+            lcproc._read_pklc,
             timecols,
             magcols,
             errcols,
@@ -1504,7 +1504,7 @@ def periodicvar_recovery(fakepfpkl,
         return None
 
     # now, open the fakelc
-    fakelc = lcproc.read_pklc(lcfpath)
+    fakelc = lcproc._read_pklc(lcfpath)
 
     # get the actual_varparams, actual_varperiod, actual_varamplitude
     actual_varparams, actual_varperiod, actual_varamplitude, actual_vartype = (
