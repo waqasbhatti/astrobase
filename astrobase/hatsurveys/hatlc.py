@@ -416,7 +416,7 @@ SQLITE_ALLOWED_WORDS = ['and','between','in',
 
 # this is from Tornado's source (MIT License):
 # http://www.tornadoweb.org/en/stable/_modules/tornado/escape.html#squeeze
-def squeeze(value):
+def _squeeze(value):
     """Replace all sequences of whitespace chars with a single space."""
     return re.sub(r"[\x00-\x20]+", " ", value).strip()
 
@@ -426,7 +426,7 @@ def squeeze(value):
 ## SQLITECURVE COMPRESSIION FUNCTIONS ##
 ########################################
 
-def pycompress_sqlitecurve(sqlitecurve, force=False):
+def _pycompress_sqlitecurve(sqlitecurve, force=False):
     '''This just compresses the sqlitecurve. Should be independent of OS.
 
     '''
@@ -453,7 +453,7 @@ def pycompress_sqlitecurve(sqlitecurve, force=False):
         return None
 
 
-def pyuncompress_sqlitecurve(sqlitecurve, force=False):
+def _pyuncompress_sqlitecurve(sqlitecurve, force=False):
     '''This just uncompresses the sqlitecurve. Should be independent of OS.
 
     '''
@@ -479,7 +479,7 @@ def pyuncompress_sqlitecurve(sqlitecurve, force=False):
         return None
 
 
-def gzip_sqlitecurve(sqlitecurve, force=False):
+def _gzip_sqlitecurve(sqlitecurve, force=False):
     '''This just compresses the sqlitecurve in gzip format.
 
     FIXME: this doesn't work with gzip < 1.6 or non-GNU gzip (probably).
@@ -515,7 +515,7 @@ def gzip_sqlitecurve(sqlitecurve, force=False):
 
 
 
-def gunzip_sqlitecurve(sqlitecurve):
+def _gunzip_sqlitecurve(sqlitecurve):
     '''This just uncompresses the sqlitecurve in gzip format.
 
     FIXME: this doesn't work with gzip < 1.6 or non-GNU gzip (probably).
@@ -552,8 +552,8 @@ def gunzip_sqlitecurve(sqlitecurve):
 #         uncompress_sqlitecurve = pyuncompress_sqlitecurve
 # except:
 
-compress_sqlitecurve = pycompress_sqlitecurve
-uncompress_sqlitecurve = pyuncompress_sqlitecurve
+_compress_sqlitecurve = _pycompress_sqlitecurve
+_uncompress_sqlitecurve = _pyuncompress_sqlitecurve
 GZIPTEST = None
 
 
@@ -561,15 +561,15 @@ GZIPTEST = None
 ## READING SQLITECURVE FUNCTIONS ##
 ###################################
 
-def validate_sqlitecurve_filters(filterstring, lccolumns):
+def _validate_sqlitecurve_filters(filterstring, lccolumns):
     '''This validates the sqlitecurve filter string.
 
     This MUST be valid SQL but not contain any commands.
 
     '''
 
-    # first, lowercase, then squeeze to single spaces
-    stringelems = squeeze(filterstring).lower()
+    # first, lowercase, then _squeeze to single spaces
+    stringelems = _squeeze(filterstring).lower()
 
     # replace shady characters
     stringelems = filterstring.replace('(','')
@@ -578,7 +578,7 @@ def validate_sqlitecurve_filters(filterstring, lccolumns):
     stringelems = stringelems.replace("'",'"')
     stringelems = stringelems.replace('\n',' ')
     stringelems = stringelems.replace('\t',' ')
-    stringelems = squeeze(stringelems)
+    stringelems = _squeeze(stringelems)
 
     # split into words
     stringelems = stringelems.split(' ')
@@ -628,19 +628,50 @@ def read_and_filter_sqlitecurve(lcfile,
                                 returnarrays=True,
                                 forcerecompress=False,
                                 quiet=True):
-    '''This reads the sqlitecurve and optionally filters it.
+    '''This reads a HAT sqlitecurve and optionally filters it.
 
-    Returns columns requested in columns. If None, then returns all columns
-    present in the latest columnlist in the lightcurve.
+    Parameters
+    ----------
 
-    If sqlfilters is not None, it must be a list of text sql filters that apply
-    to the columns in the lightcurve.
+    lcfile : str
+        The path to the HAT sqlitecurve file.
 
-    This returns an lcdict with an added 'lcfiltersql' key that indicates what
-    the parsed SQL filter string was.
+    columns : list
+        A list of columns to extract from the ligh curve file. If None, then
+        returns all columns present in the latest `columnlist` in the light
+        curve.
 
-    If forcerecompress = True, will recompress the un-gzipped sqlitecurve even
-    if the gzipped form exists on disk already.
+    sqlfilters : list of str
+        If no None, it must be a list of text SQL filters that apply to the
+        columns in the lightcurve.
+
+    raiseonfail : bool
+        If this is True, an Exception when reading the LC will crash the
+        function instead of failing silently and returning None as the result.
+
+    returnarrays : bool
+        If this is True, the output lcdict contains columns as np.arrays instead
+        of lists. You generally want this to be True.
+
+    forcerecompress : bool
+        If True, the sqlitecurve will be recompressed even if a compressed
+        version of it is found. This usually happens when sqlitecurve opening is
+        interrupted by the OS for some reason, leaving behind a gzipped and
+        un-gzipped copy. By default, this function refuses to overwrite the
+        existing gzipped version so if the un-gzipped version is corrupt but
+        that one isn't, it can be safely recovered.
+
+    quiet : bool
+        If True, will not warn about any problems, even if the light curve
+        reading fails (the only clue then will be the return value of
+        None). Useful for batch processing of many many light curves.
+
+    Returns
+    -------
+
+    tuple : (lcdict, status_message)
+        A two-element tuple is returned, with the first element being the
+        lcdict.
 
     '''
 
@@ -649,7 +680,7 @@ def read_and_filter_sqlitecurve(lcfile,
 
         # if this file is a gzipped sqlite3 db, then gunzip it
         if '.gz' in lcfile[-4:]:
-            lcf = uncompress_sqlitecurve(lcfile)
+            lcf = _uncompress_sqlitecurve(lcfile)
         else:
             lcf = lcfile
 
@@ -702,7 +733,7 @@ def read_and_filter_sqlitecurve(lcfile,
         if not proceed:
             # recompress the lightcurve at the end
             if '.gz' in lcfile[-4:] and lcf:
-                compress_sqlitecurve(lcf, force=forcerecompress)
+                _compress_sqlitecurve(lcf, force=forcerecompress)
             LOGERROR('requested columns are invalid!')
             return None, "requested columns are invalid"
 
@@ -728,8 +759,8 @@ def read_and_filter_sqlitecurve(lcfile,
 
             # give the validator the sqlfilters string and a list of lccols in
             # the lightcurve
-            validatedfilters = validate_sqlitecurve_filters(sqlfilters,
-                                                            lccols.split(','))
+            validatedfilters = _validate_sqlitecurve_filters(sqlfilters,
+                                                             lccols.split(','))
             if validatedfilters is not None:
                 LOGINFO('filtering LC using: %s' % validatedfilters)
                 filtersok = True
@@ -796,7 +827,7 @@ def read_and_filter_sqlitecurve(lcfile,
 
         # recompress the lightcurve at the end
         if '.gz' in lcfile[-4:] and lcf:
-            compress_sqlitecurve(lcf, force=forcerecompress)
+            _compress_sqlitecurve(lcf, force=forcerecompress)
 
 
         # return ndarrays if that's set
@@ -814,7 +845,7 @@ def read_and_filter_sqlitecurve(lcfile,
 
         # recompress the lightcurve at the end
         if '.gz' in lcfile[-4:] and lcf:
-            compress_sqlitecurve(lcf, force=forcerecompress)
+            _compress_sqlitecurve(lcf, force=forcerecompress)
 
         if raiseonfail:
             raise
@@ -885,8 +916,29 @@ LIGHT CURVE COLUMNS
 
 
 def describe(lcdict, returndesc=False, offsetwith=None):
-    '''
-    This describes the light curve object and columns present.
+    '''This describes the light curve object and columns present.
+
+    Parameters
+    ----------
+
+    lcdict : dict
+        The input lcdict to parse for column and metadata info.
+
+    returndesc : bool
+        If True, returns the description string as an str instead of just
+        printing it to stdout.
+
+    offsetwith : str
+        This is a character to offset the output description lines by. This is
+        useful to add comment characters like '#' to the output description
+        lines.
+
+    Returns
+    -------
+
+    str or None
+        If returndesc is True, returns the description lines as a str, otherwise
+        returns nothing.
 
     '''
 
@@ -990,7 +1042,7 @@ def describe(lcdict, returndesc=False, offsetwith=None):
 ## READING CSV LIGHTCURVES HATLC V2 ##
 ######################################
 
-def smartcast(castee, caster, subval=None):
+def _smartcast(castee, caster, subval=None):
     '''
     This just tries to apply the caster function to castee.
 
@@ -1035,7 +1087,7 @@ METAKEYS = {'objectid':str,
 
 
 
-def parse_csv_header(header):
+def _parse_csv_header(header):
     '''
     This parses the CSV header from the CSV HAT sqlitecurve.
 
@@ -1074,7 +1126,7 @@ def parse_csv_header(header):
         for kvelem in elem:
             key, val = kvelem.split(' = ',1)
             metadict['objectinfo'][key.strip()] = (
-                smartcast(val, METAKEYS[key.strip()])
+                _smartcast(val, METAKEYS[key.strip()])
             )
 
     # the objectid belongs at the top level
@@ -1140,7 +1192,7 @@ def parse_csv_header(header):
 ## READING LC CSV FORMAT LCC V1 ##
 ##################################
 
-def parse_csv_header_lcc_csv_v1(headerlines):
+def _parse_csv_header_lcc_csv_v1(headerlines):
     '''
     This parses the header of the LCC CSV V1 LC format.
 
@@ -1167,8 +1219,21 @@ def parse_csv_header_lcc_csv_v1(headerlines):
 
 
 def read_lcc_csvlc(lcfile):
-    '''
-    This reads a LCC CSVLC.
+    '''This reads a CSV LC produced by an `LCC-Server
+    <https://github.com/waqasbhatti/lcc-server>`_ instance.
+
+    Parameters
+    ----------
+
+    lcfile : str
+        The LC file to read.
+
+    Returns
+    -------
+
+    dict
+        Returns an lcdict that's readable by most astrobase functions for
+        further processing.
 
     '''
 
@@ -1190,7 +1255,7 @@ def read_lcc_csvlc(lcfile):
     headerlines = lctextlines[:lcstart+1]
     lclines = lctextlines[lcstart+1:]
 
-    metadata, columns, separator = parse_csv_header_lcc_csv_v1(headerlines)
+    metadata, columns, separator = _parse_csv_header_lcc_csv_v1(headerlines)
 
     # break out the objectid and objectinfo
     objectid = metadata['objectid']['val']
@@ -1237,7 +1302,24 @@ def read_lcc_csvlc(lcfile):
 
 def describe_lcc_csv(lcdict, returndesc=False):
     '''
-    This describes the LCC CSV format light curve.
+    This describes the LCC CSV format light curve file.
+
+    Parameters
+    ----------
+
+    lcdict : dict
+        The input lcdict to parse for column and metadata info.
+
+    returndesc : bool
+        If True, returns the description string as an str instead of just
+        printing it to stdout.
+
+    Returns
+    -------
+
+    str or None
+        If returndesc is True, returns the description lines as a str, otherwise
+        returns nothing.
 
     '''
 
@@ -1293,10 +1375,31 @@ def describe_lcc_csv(lcdict, returndesc=False):
 #####################################
 
 def read_csvlc(lcfile):
-    '''
-    This reads the HAT data server producd CSV light curve into a lcdict.
+    '''This reads a HAT data server or LCC-Server produced CSV light curve
+    into an lcdict.
 
-    lcfile is the HAT gzipped CSV LC (with a .hatlc.csv.gz extension)
+    This will automatically figure out the format of the file
+    provided. Currently, it can read:
+
+    - legacy HAT data server CSV LCs (e.g. from
+      https://hatsouth.org/planets/lightcurves.html) with an extension of the
+      form: `.hatlc.csv.gz`.
+    - all LCC-Server produced LCC-CSV-V1 LCs (e.g. from
+      https://data.hatsurveys.org) with an extension of the form: `-csvlc.gz`.
+
+
+    Parameters
+    ----------
+
+    lcfile : str
+        The light curve file to read.
+
+    Returns
+    -------
+
+    dict
+        Returns an lcdict that can be read and used by many astrobase processing
+        functions.
 
     '''
 
@@ -1329,7 +1432,7 @@ def read_csvlc(lcfile):
     lccolumns = [x for x in lccolumns if len(x) > 0]
 
     # initialize the lcdict and parse the CSV header
-    lcdict = parse_csv_header(lcheader)
+    lcdict = _parse_csv_header(lcheader)
 
     # tranpose the LC rows into columns
     lccolumns = [x.split(',') for x in lccolumns]
@@ -1341,12 +1444,12 @@ def read_csvlc(lcfile):
         if (col.split('_')[0] in LC_MAG_COLUMNS or
             col.split('_')[0] in LC_ERR_COLUMNS or
             col.split('_')[0] in LC_FLAG_COLUMNS):
-            lcdict[col] = np.array([smartcast(x,
-                                              COLUMNDEFS[col.split('_')[0]][2])
+            lcdict[col] = np.array([_smartcast(x,
+                                               COLUMNDEFS[col.split('_')[0]][2])
                                     for x in lccolumns[colind]])
 
         elif col in COLUMNDEFS:
-            lcdict[col] = np.array([smartcast(x,COLUMNDEFS[col][2])
+            lcdict[col] = np.array([_smartcast(x,COLUMNDEFS[col][2])
                                     for x in lccolumns[colind]])
 
         else:
@@ -1362,20 +1465,29 @@ def read_csvlc(lcfile):
 ##########################
 
 def find_lc_timegroups(lctimes, mingap=4.0):
-    '''
-    This finds the gaps in the lightcurve, so we can figure out which times are
-    for consecutive observations and which represent gaps between
-    seasons.
+    '''This finds the time gaps in the light curve, so we can figure out which
+    times are for consecutive observations and which represent gaps
+    between seasons.
 
-    lctimes is assumed to be in some form of JD.
+    Parameters
+    ----------
 
-    min_gap defines how much the difference between consecutive measurements is
-    allowed to be to consider them as parts of different timegroups. By default
-    it is set to 4.0 days.
+    lctimes : np.array
+        This is the input array of times, assumed to be in some form of JD.
 
-    Returns number of groups and Python slice objects for each group like so:
+    mingap : float
+        This defines how much the difference between consecutive measurements is
+        allowed to be to consider them as parts of different timegroups. By
+        default it is set to 4.0 days.
 
-    (ngroups, [slice(start_ind_1, end_ind_1), ...])
+    Returns
+    -------
+
+    tuple
+        A tuple of the form below is returned, containing the number of time
+        groups found and Python slice objects for each group::
+
+            (ngroups, [slice(start_ind_1, end_ind_1), ...])
 
     '''
 
@@ -1417,26 +1529,48 @@ def normalize_lcdict(lcdict,
                      normto='sdssr',
                      debugmode=False,
                      quiet=False):
-    '''This normalizes magcols in lcdict using timecol to find timegroups.
+    '''This normalizes magcols in `lcdict` using `timecol` to find timegroups.
 
-    Returns the lcdict with an added lcnormcols key indicating which columns
-    were normalized.
+    Parameters
+    ----------
 
-    the lcnormcols key:val is like so:
+    lcdict : dict
+        The input lcdict to process.
 
-    'lcnormcols': '{normalized magcols repr} - {mingap} - {globalmedianflag}'
+    timecol : str
+        The key in the lcdict that is to be used to extract the time column.
 
-    the normto kwarg is one of the following strings:
+    magcols : 'all' or list of str
+        If this is 'all', all of the columns in the lcdict that are indicated to
+        be magnitude measurement columns are normalized. If this is a list of
+        str, must contain the keys of the lcdict specifying which magnitude
+        columns will be normalized.
 
-    'globalmedian' -> norms each mag to the global median of the LC column
-    'zero'         -> norms each mag to zero
+    mingap : float
+        This defines how much the difference between consecutive measurements is
+        allowed to be to consider them as parts of different timegroups. By
+        default it is set to 4.0 days.
 
-    or one of:
+    normto : {'globalmedian', 'zero', 'jmag', 'hmag', 'kmag', 'bmag', 'vmag', 'sdssg', 'sdssr', 'sdssi'}
+        This indicates which column will be the normalization target. If this is
+        'globalmedian', the normalization will be to the global median of each
+        LC column. If this is 'zero', will normalize to 0.0 for each LC
+        column. Otherwise, will normalize to the value of one of the other keys
+        in the lcdict['objectinfo'][magkey], meaning the normalization will be
+        to some form of catalog magnitude.
 
-    'jmag', 'hmag', 'kmag', 'bmag', 'vmag', 'sdssg', 'sdssr', 'sdssi'
+    debugmode : bool
+        If True, will indicate progress as time-groups are found and processed.
 
-    each mag for each column will be normalized to the value of these keys in
-    the lcdict
+    quiet : bool
+        If True, will not emit any messages when processing.
+
+    Returns
+    -------
+
+    dict
+        Returns the lcdict with the magnitude measurements normalized as
+        specified. The normalization happens IN PLACE.
 
     '''
 
@@ -1599,14 +1733,51 @@ def normalize_lcdict_byinst(
     Use this to normalize a light curve containing a variety of:
 
     - HAT station IDs ('stf')
+    - camera IDs ('ccd')
     - filters ('flt')
     - observed field names ('fld')
     - HAT project IDs ('prj')
     - exposure times ('exp')
 
-    See the docstring for normalize_lcdict for more about the magcols and normto
-    kwargs. EXCEPTION: normalize_lcdict_instruments does not respect
-    normto='globalmedian'.
+    Parameters
+    ----------
+
+    lcdict : dict
+        The input lcdict to process.
+
+    magcols : 'all' or list of str
+        If this is 'all', all of the columns in the lcdict that are indicated to
+        be magnitude measurement columns are normalized. If this is a list of
+        str, must contain the keys of the lcdict specifying which magnitude
+        columns will be normalized.
+
+    normto : {'zero', 'jmag', 'hmag', 'kmag', 'bmag', 'vmag', 'sdssg', 'sdssr', 'sdssi'}
+        This indicates which column will be the normalization target. If this is
+        'zero', will normalize to 0.0 for each LC column. Otherwise, will
+        normalize to the value of one of the other keys in the
+        lcdict['objectinfo'][magkey], meaning the normalization will be to some
+        form of catalog magnitude.
+
+    normkeylist : list of str
+        These are the column keys to use to form the normalization
+        index. Measurements in the specified `magcols` with identical
+        normalization index values will be considered as part of a single
+        measurement 'era', and will be normalized to zero. Once all eras have
+        been normalized this way, the final light curve will be re-normalized as
+        specified in `normto`.
+
+    debugmode : bool
+        If True, will indicate progress as time-groups are found and processed.
+
+    quiet : bool
+        If True, will not emit any messages when processing.
+
+    Returns
+    -------
+
+    dict
+        Returns the lcdict with the magnitude measurements normalized as
+        specified. The normalization happens IN PLACE.
 
     '''
 
@@ -1759,6 +1930,19 @@ def main():
     '''
     This is called when we're executed from the commandline.
 
+    The current usage from the command-line is described below::
+
+        usage: hatlc [-h] [--describe] hatlcfile
+
+        read a HAT LC of any format and output to stdout
+
+        positional arguments:
+          hatlcfile   path to the light curve you want to read and pipe to stdout
+
+        optional arguments:
+          -h, --help  show this help message and exit
+          --describe  don't dump the columns, show only object info and LC metadata
+
     '''
 
     # handle SIGPIPE sent by less, head, et al.
@@ -1845,7 +2029,6 @@ def main():
 
         LOGERROR('unrecognized HATLC file: %s' % filetoread)
         sys.exit(1)
-
 
 
 

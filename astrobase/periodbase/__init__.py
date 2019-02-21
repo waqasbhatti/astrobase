@@ -62,21 +62,6 @@ LOGEXCEPTION = LOGGER.exception
 
 import numpy as np
 
-# import these to avoid lookup overhead
-from numpy import nan as npnan, sum as npsum, abs as npabs, \
-    roll as nproll, isfinite as npisfinite, std as npstd, \
-    sign as npsign, sqrt as npsqrt, median as npmedian, \
-    array as nparray, percentile as nppercentile, \
-    polyfit as nppolyfit, var as npvar, max as npmax, min as npmin, \
-    log10 as nplog10, arange as nparange, pi as MPI, floor as npfloor, \
-    argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
-    where as npwhere, linspace as nplinspace, \
-    zeros_like as npzeros_like, full_like as npfull_like, \
-    arctan as nparctan, nanargmax as npnanargmax, nanargmin as npnanargmin, \
-    empty as npempty, ceil as npceil, mean as npmean, \
-    digitize as npdigitize, unique as npunique, \
-    argmax as npargmax, argmin as npargmin
-
 
 
 ########################
@@ -103,6 +88,31 @@ def get_frequency_grid(times,
 
     http://docs.astropy.org/en/stable/_modules/astropy/stats/lombscargle/core.html#LombScargle.autofrequency
 
+    Parameters
+    ----------
+
+    times : np.array
+        The times to use to generate the frequency grid over.
+
+    samplesperpeak : int
+        The minimum sample coverage each frequency point in the grid will get.
+
+    nyquistfactor : int
+        The multiplier over the Nyquist rate to use.
+
+    minfreq,maxfreq : float or None
+        If not None, these will be the limits of the frequency grid generated.
+
+    returnf0dfnf : bool
+        If this is True, will return the values of `f0`, `df`, and `Nf`
+        generated for this grid.
+
+    Returns
+    -------
+
+    np.array
+        A grid of frequencies.
+
     '''
 
     baseline = times.max() - times.min()
@@ -116,15 +126,15 @@ def get_frequency_grid(times,
         f0 = 0.5 * df
 
     if maxfreq is not None:
-        Nf = int(npceil((maxfreq - f0) / df))
+        Nf = int(np.ceil((maxfreq - f0) / df))
     else:
         Nf = int(0.5 * samplesperpeak * nyquistfactor * nsamples)
 
 
     if returnf0dfnf:
-        return f0, df, Nf, f0 + df * nparange(Nf)
+        return f0, df, Nf, f0 + df * np.arange(Nf)
     else:
-        return f0 + df * nparange(Nf)
+        return f0 + df * np.arange(Nf)
 
 
 ####################################################
@@ -169,6 +179,29 @@ if apversion >= (3,1,0):
             'call the periodbase.use_astropy_bls() function.')
 
     def use_astropy_bls():
+        '''This function can be used to switch from the default astrobase BLS
+        implementation (kbls) to the Astropy version (abls).
+
+        If this is called, subsequent calls to the BLS periodbase functions will
+        use the Astropy versions instead::
+
+            from astrobase import periodbase
+
+            # initially points to periodbase.kbls.bls_serial_pfind
+            periodbase.bls_serial_pfind(...)
+
+            # initially points to periodbase.kbls.bls_parallel_pfind
+            periodbase.bls_parallel_pfind(...)
+
+            periodbase.use_astropy_bls()
+
+            # now points to periodbase.abls.bls_serial_pfind
+            periodbase.bls_serial_pfind(...)
+
+            # now points to periodbase.abls.bls_parallel_pfind
+            periodbase.bls_parallel_pfind(...)
+
+        '''
         from .abls import bls_serial_pfind, bls_parallel_pfind
         globals()['bls_serial_pfind'] = bls_serial_pfind
         globals()['bls_parallel_pfind'] = bls_parallel_pfind
@@ -180,7 +213,7 @@ if apversion >= (3,1,0):
 ## FUNCTIONS FOR TESTING SIGNIFICANCE OF PERIODOGRAM PEAKS ##
 #############################################################
 
-def bootstrap_falsealarmprob(lspdict,
+def bootstrap_falsealarmprob(lspinfo,
                              times,
                              mags,
                              errs,
@@ -191,9 +224,9 @@ def bootstrap_falsealarmprob(lspdict,
     '''Calculates the false alarm probabilities of periodogram peaks using
     bootstrap resampling of the magnitude time series.
 
-    The false alarm probability here is defined as:
+    The false alarm probability here is defined as::
 
-    (1.0 + sum(trialbestpeaks[i] > peak[j]))/(ntrialbestpeaks + 1)
+        (1.0 + sum(trialbestpeaks[i] > peak[j]))/(ntrialbestpeaks + 1)
 
     for each best periodogram peak j. The index i is for each bootstrap
     trial. This effectively gives us a significance for the peak. Smaller FAP
@@ -204,13 +237,10 @@ def bootstrap_falsealarmprob(lspdict,
     distribution of these trial best peaks is obtained after scrambling the mag
     values and rerunning the specified periodogram method for a bunch of trials.
 
-    The total number of trials is nbootstrap. This is set to 250 by default, but
-    should probably be around 1000 for realistic results.
-
-    lspdict is the output dict from a periodbase periodogram function and MUST
+    `lspinfo` is the output dict from a periodbase periodogram function and MUST
     contain a 'method' key that corresponds to one of the keys in the LSPMETHODS
     dict above. This will let this function know which periodogram function to
-    run to generate the bootstrap samples. The lspdict SHOULD also have a
+    run to generate the bootstrap samples. The lspinfo SHOULD also have a
     'kwargs' key that corresponds to the input keyword arguments for the
     periodogram function as it was run originally, to keep everything the same
     during the bootstrap runs. If this is missing, default values will be used.
@@ -220,19 +250,113 @@ def bootstrap_falsealarmprob(lspdict,
     time series because the samples are not iid. Look into moving block
     bootstrap.
 
+    Parameters
+    ----------
+
+    lspinfo : dict
+        A dict of period-finder results from one of the period-finders in
+        periodbase, or your own functions, provided it's of the form and
+        contains at least the keys listed below::
+
+            {'periods': np.array of all periods searched by the period-finder,
+             'lspvals': np.array of periodogram power value for each period,
+             'bestperiod': a float value that is the period with the highest
+                           peak in the periodogram, i.e. the most-likely actual
+                           period,
+             'method': a three-letter code naming the period-finder used; must
+                       be one of the keys in the
+                       `astrobase.periodbase.METHODLABELS` dict,
+             'nbestperiods': a list of the periods corresponding to periodogram
+                             peaks (`nbestlspvals` below) to annotate on the
+                             periodogram plot so they can be called out
+                             visually,
+             'nbestlspvals': a list of the power values associated with
+                             periodogram peaks to annotate on the periodogram
+                             plot so they can be called out visually; should be
+                             the same length as `nbestperiods` above,
+             'kwargs': dict of kwargs passed to your own period-finder function}
+
+        If you provide your own function's period-finder results, you should add
+        a corresponding key for it to the LSPMETHODS dict above so the bootstrap
+        function can use it correctly. Your period-finder function should take
+        `times`, `mags`, errs and any extra parameters as kwargs and return a
+        dict of the form described above. A small worked example::
+
+            from your_module import your_periodfinder_func
+            from astrobase import periodbase
+
+            periodbase.LSPMETHODS['your-finder'] = your_periodfinder_func
+
+            # run a period-finder session
+            your_pfresults = your_periodfinder_func(times, mags, errs,
+                                                    **extra_kwargs)
+
+            # run bootstrap to find FAP
+            falsealarm_info = periodbase.bootstrap_falsealarmprob(
+                your_pfresults,
+                times, mags, errs,
+                nbootstrap=250,
+                magsarefluxes=False,
+            )
+
+    times,mags,errs : np.arrays
+        The magnitude/flux time-series to process along with their associated
+        measurement errors.
+
+    nbootstrap : int
+        The total number of bootstrap trials to run. This is set to 250 by
+        default, but should probably be around 1000 for realistic results.
+
+    magsarefluxes : bool
+        If True, indicates the input time-series is fluxes and not mags.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    npeaks : int or None
+        The number of peaks from the list of 'nbestlspvals' in the period-finder
+        result dict to run the bootstrap for. If None, all of the peaks in this
+        list will have their FAP calculated.
+
+    Returns
+    -------
+
+    dict
+        Returns a dict of the form::
+
+            {'peaks':allpeaks,
+             'periods':allperiods,
+             'probabilities':allfaps,
+             'alltrialbestpeaks':alltrialbestpeaks}
+
     '''
 
     # figure out how many periods to work on
-    if (npeaks and (0 < npeaks < len(lspdict['nbestperiods']))):
+    if (npeaks and (0 < npeaks < len(lspinfo['nbestperiods']))):
         nperiods = npeaks
     else:
         LOGWARNING('npeaks not specified or invalid, '
                    'getting FAP for all %s periodogram peaks' %
-                   len(lspdict['nbestperiods']))
-        nperiods = len(lspdict['nbestperiods'])
+                   len(lspinfo['nbestperiods']))
+        nperiods = len(lspinfo['nbestperiods'])
 
-    nbestperiods = lspdict['nbestperiods'][:nperiods]
-    nbestpeaks = lspdict['nbestlspvals'][:nperiods]
+    nbestperiods = lspinfo['nbestperiods'][:nperiods]
+    nbestpeaks = lspinfo['nbestlspvals'][:nperiods]
 
     # get rid of nans first and sigclip
     stimes, smags, serrs = sigclip_magseries(times,
@@ -265,10 +389,10 @@ def bootstrap_falsealarmprob(lspdict,
                                            size=mags.size)
 
 
-                # get the kwargs dict out of the lspdict
-                if 'kwargs' in lspdict:
+                # get the kwargs dict out of the lspinfo
+                if 'kwargs' in lspinfo:
 
-                    kwargs = lspdict['kwargs']
+                    kwargs = lspinfo['kwargs']
 
                     # update the kwargs with some local stuff
                     kwargs.update({'magsarefluxes':magsarefluxes,
@@ -282,7 +406,7 @@ def bootstrap_falsealarmprob(lspdict,
 
                 # run the periodogram with scrambled mags and errs
                 # and the appropriate keyword arguments
-                lspres = LSPMETHODS[lspdict['method']](
+                lspres = LSPMETHODS[lspinfo['method']](
                     times, mags[tindex], errs[tindex],
                     **kwargs
                 )
@@ -293,7 +417,7 @@ def bootstrap_falsealarmprob(lspdict,
 
             # calculate the FAP for a trial peak j = FAP[j] =
             # (1.0 + sum(trialbestpeaks[i] > peak[j]))/(ntrialbestpeaks + 1)
-            if lspdict['method'] != 'pdm':
+            if lspinfo['method'] != 'pdm':
                 falsealarmprob = (
                     (1.0 + trialbestpeaks[trialbestpeaks > peak].size) /
                     (trialbestpeaks.size + 1.0)
@@ -337,18 +461,48 @@ def make_combined_periodogram(pflist, outfile, addmethods=False):
     and 1, with values lying closer to 1 being more significant. Periodograms
     that give the same best periods will have their peaks line up together.
 
-    Args
-    ----
+    Parameters
+    ----------
 
-    pflist is a list of result dicts from any of the period-finders in
-    periodbase.
+    pflist : list of dict
+        This is a list of result dicts from any of the period-finders in
+        periodbase. To use your own period-finders' results here, make sure the
+        result dict is of the form and has at least the keys below::
 
-    outfile is a file to write the output to. NOTE: EPS/PS won't work because we
-    use alpha to better distinguish between the various periodograms.
+            {'periods': np.array of all periods searched by the period-finder,
+             'lspvals': np.array of periodogram power value for each period,
+             'bestperiod': a float value that is the period with the highest
+                           peak in the periodogram, i.e. the most-likely actual
+                           period,
+             'method': a three-letter code naming the period-finder used; must
+                       be one of the keys in the
+                       `astrobase.periodbase.METHODLABELS` dict,
+             'nbestperiods': a list of the periods corresponding to periodogram
+                             peaks (`nbestlspvals` below) to annotate on the
+                             periodogram plot so they can be called out
+                             visually,
+             'nbestlspvals': a list of the power values associated with
+                             periodogram peaks to annotate on the periodogram
+                             plot so they can be called out visually; should be
+                             the same length as `nbestperiods` above,
+             'kwargs': dict of kwargs passed to your own period-finder function}
 
-    if addmethods = True, will add all of the normalized periodograms together,
-    then renormalize them to between 0 and 1. In this way, if all of the
-    period-finders agree on something, it'll stand out easily.
+    outfile : str
+        This is the output file to write the output to. NOTE: EPS/PS won't work
+        because we use alpha transparency to better distinguish between the
+        various periodograms.
+
+    addmethods : bool
+        If this is True, will add all of the normalized periodograms together,
+        then renormalize them to between 0 and 1. In this way, if all of the
+        period-finders agree on something, it'll stand out easily. FIXME:
+        implement this kwarg.
+
+    Returns
+    -------
+
+    str
+        The name of the generated plot file.
 
     '''
 

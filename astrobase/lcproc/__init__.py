@@ -241,14 +241,14 @@ def register_lcformat(formatkey,
         This is the function name in `readerfunc_module` to use to read light
         curves in the custom format. This MUST always return a dictionary (the
         'lcdict') with the following signature (the keys listed below are
-        required, but others are allowed):
+        required, but others are allowed)::
 
-        {'objectid': this object's identifier as a string,
-         'objectinfo':{'ra': this object's right ascension in decimal deg,
-                       'decl': this object's declination in decimal deg,
-                       'ndet': the number of observations in this LC,
-                       'objectid': the object ID repeated for legacy reasons},
-         ...other time columns, mag columns go in as their own keys}
+            {'objectid': this object's identifier as a string,
+             'objectinfo':{'ra': this object's right ascension in decimal deg,
+                           'decl': this object's declination in decimal deg,
+                           'ndet': the number of observations in this LC,
+                           'objectid': the object ID again for legacy reasons},
+             ...other time columns, mag columns go in as their own keys}
 
     normfunc_kwargs : dict or None
         This is a dictionary containing any kwargs to pass through to
@@ -421,15 +421,15 @@ def get_lcformat(formatkey, use_lcformat_dir=None):
     -------
 
     tuple
-        A tuple of the following form is returned:
+        A tuple of the following form is returned::
 
-        (fileglob       : the file glob of the associated LC files,
-         readerfunc_in  : the imported Python function for reading LCs,
-         timecols       : list of time col keys to get from the lcdict,
-         magcols        : list of mag col keys to get from the lcdict ,
-         errcols        : list of err col keys to get from the lcdict,
-         magsarefluxes  : True if the measurements are fluxes not mags,
-         normfunc_in    : the imported Python function for normalizing LCs)
+            (fileglob       : the file glob of the associated LC files,
+             readerfunc_in  : the imported Python function for reading LCs,
+             timecols       : list of time col keys to get from the lcdict,
+             magcols        : list of mag col keys to get from the lcdict ,
+             errcols        : list of err col keys to get from the lcdict,
+             magsarefluxes  : True if the measurements are fluxes not mags,
+             normfunc_in    : the imported Python function for normalizing LCs)
 
         All `astrobase.lcproc` functions can then use this tuple to dynamically
         import your LC reader and normalization functions to work with your LC
