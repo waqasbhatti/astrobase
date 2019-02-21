@@ -51,26 +51,39 @@ Install Astrobase from PyPI using `pip`::
 
 .. toctree::
    :maxdepth: 1
-   :caption: Specific light curve formats
+   :caption: Handling light curve formats
 
    astrobase.astrokep
    astrobase.astrotess
    astrobase.hatsurveys
+
+- :py:mod:`astrobase.astrokep`: contains functions for dealing with Kepler and
+  K2 Mission light curves from STScI MAST (reading the FITS files, consolidating
+  light curves for objects over quarters), and some basic operations (converting
+  fluxes to mags, decorrelation of light curves, filtering light curves, and
+  fitting object centroids for eclipse analysis, etc.)
+- :py:mod:`astrobase.astrotess`: contains functions for dealing with TESS
+  2-minute cadence light curves from STScI MAST (reading the FITS files,
+  consolidating light curves for objects over sectors), and some basic
+  operations (converting fluxes to mags, filtering light curves, etc.)
+- :py:mod:`astrobase.hatsurveys`: modules to read, filter, and normalize light
+  curves from various HAT surveys.
 
 
 .. toctree::
    :maxdepth: 1
    :caption: Period-finding algorithms
 
-   astrobase.periodbase
    Box-Least-Squares (Astropy) <astrobase.periodbase.abls>
    Box-Least-Squares (eebls.f) <astrobase.periodbase.kbls>
    Phase dispersion minimization <astrobase.periodbase.spdm>
    Analysis-of-Variance <astrobase.periodbase.saov>
    Analysis-of-Variance multi-harmonic <astrobase.periodbase.smav>
    Generalized Lomb-Scargle <astrobase.periodbase.zgls>
-   Auto-correlation period-finder <astrobase.periodbase.macf>
+   Auto-correlation <astrobase.periodbase.macf>
 
+This package contains parallelized implementations of several period-finding
+algorithms.
 
 .. toctree::
    :maxdepth: 1
@@ -82,6 +95,27 @@ Install Astrobase from PyPI using `pip`::
    astrobase.plotbase
    astrobase.lcproc
 
+- :py:mod:`astrobase.lcmath`: functions for light curve operations such as
+  phasing, normalization, binning (in time and phase), sigma-clipping, external
+  parameter decorrelation (EPD), etc.
+- :py:mod:`astrobase.lcmodels`: modules that contain simple models for several
+  variable star classes, including sinusoidal variables, eclipsing binaries, and
+  transiting planets. Useful for fitting these with the functions in the
+  :py:mod:`astrobase.varbase.lcfit` module.
+- :py:mod:`astrobase.varbase`: functions for calculating variability indices for
+  light curves, fitting and obtaining Fourier coefficients for use in
+  classifications, and other variability features.
+- :py:mod:`astrobase.plotbase`: functions to plot light curves, phased light
+  curves, periodograms, and download Digitized Sky Survey cutouts from the NASA
+  SkyView service.
+- :py:mod:`astrobase.lcproc`: driver functions for running an end-to-end
+  pipeline including: (i) object selection from a collection of light curves by
+  position, cross-matching to external catalogs, or light curve objectinfo
+  keys, (ii) running variability feature calculation and detection, (iii)
+  running period-finding, and (iv) object review using the checkplotserver
+  webapp for variability classification. This also contains an Amazon
+  AWS-enabled `lcproc` implementation.
+
 
 .. toctree::
    :maxdepth: 1
@@ -91,37 +125,6 @@ Install Astrobase from PyPI using `pip`::
    astrobase.cpserver
    astrobase.varclass
    astrobase.services
-
-
-Package overview
-----------------
-
-**Modules**
-
-- :py:mod:`astrobase.astrokep`: contains functions for dealing with Kepler and
-  K2 Mission light curves from STScI MAST (reading the FITS files, consolidating
-  light curves for objects over quarters), and some basic operations (converting
-  fluxes to mags, decorrelation of light curves, filtering light curves, and
-  fitting object centroids for eclipse analysis, etc.)
-- :py:mod:`astrobase.astrotess`: contains functions for dealing with TESS
-  2-minute cadence light curves from STScI MAST (reading the FITS files,
-  consolidating light curves for objects over sectors), and some basic
-  operations (converting fluxes to mags, filtering light curves, etc.)
-- :py:mod:`astrobase.coordutils`: functions for dealing with coordinates
-  (conversions, distances, proper motion).
-- :py:mod:`astrobase.lcmath`: functions for light curve operations such as
-  phasing, normalization, binning (in time and phase), sigma-clipping, external
-  parameter decorrelation (EPD), etc.
-- :py:mod:`astrobase.plotbase`: functions to plot light curves, phased light
-  curves, periodograms, and download Digitized Sky Survey cutouts from the NASA
-  SkyView service.
-- :py:mod:`astrobase.timeutils`: functions for converting from Julian dates to
-  Baryocentric Julian dates, and precessing coordinates between equinoxes and
-  due to proper motion; this will automatically download and save the JPL
-  ephemerides **de430.bsp** from JPL upon first import.
-
-
-**Subpackages**
 
 - :py:mod:`astrobase.checkplot`: contains functions to make checkplots: a grid
   of plots used to quickly decide if a period search for a possibly variable
@@ -149,34 +152,33 @@ Package overview
 - :py:mod:`astrobase.cpserver`: contains the implementation of the
   `checkplotserver` webapp to review, edit, and export information from
   checkplot pickles produced as part of a variable star classification effort
-  run on a large light curve collection. Also contains the more lightweight
+  run on a large light curve collection. Also contains the more light-weight
   `checkplot-viewer` webapp to glance through large numbers of checkplot PNGs.
-- :py:mod:`astrobase.fakelcs`: modules and functions to conduct an end-to-end
-  variable star recovery simulation.
-- :py:mod:`astrobase.hatsurveys`: modules to read, filter, and normalize light
-  curves from various HAT surveys.
-- :py:mod:`astrobase.lcmodels`: modules that contain simple models for several
-  variable star classes, including sinusoidal variables, eclipsing binaries, and
-  transiting planets. Useful for fitting these with the functions in the
-  :py:mod:`astrobase.varbase.lcfit` module.
-- :py:mod:`astrobase.lcproc`: driver functions for running an end-to-end
-  pipeline including: (i) object selection from a collection of light curves by
-  position, cross-matching to external catalogs, or light curve objectinfo
-  keys, (ii) running variability feature calculation and detection, (iii)
-  running period-finding, and (iv) object review using the checkplotserver
-  webapp for variability classification. This also contains an Amazon
-  AWS-enabled `lcproc` implementation.
-- :py:mod:`astrobase.periodbase`: parallelized functions (using
-  `multiprocessing.map`) to run fast period searches on light curves.
-- :py:mod:`astrobase.services`: modules and functions to query various
-  astronomical catalogs and data services, including GAIA, SIMBAD, TRILEGAL,
-  NASA SkyView, and 2MASS DUST.
-- :py:mod:`astrobase.varbase`: functions for calculating variability indices for
-  light curves, fitting and obtaining Fourier coefficients for use in
-  classifications, and other variability features.
 - :py:mod:`astrobase.varclass`: functions for calculating various variability,
   stellar color and motion, and neighbor proximity features, along with a Random
   Forest based classifier.
+- :py:mod:`astrobase.services`: modules and functions to query various
+  astronomical catalogs and data services, including GAIA, SIMBAD, TRILEGAL,
+  NASA SkyView, and 2MASS DUST.
+
+
+Other useful bits
+-----------------
+
+**Modules**
+
+- :py:mod:`astrobase.coordutils`: functions for dealing with coordinates
+  (conversions, distances, proper motion).
+- :py:mod:`astrobase.timeutils`: functions for converting from Julian dates to
+  Baryocentric Julian dates, and precessing coordinates between equinoxes and
+  due to proper motion; this will automatically download and save the JPL
+  ephemerides **de430.bsp** from JPL upon first import.
+
+
+**Subpackages**
+
+- :py:mod:`astrobase.fakelcs`: modules and functions to conduct an end-to-end
+  variable star recovery simulation.
 
 
 .. toctree::
