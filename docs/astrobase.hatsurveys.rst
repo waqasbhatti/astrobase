@@ -12,8 +12,4 @@ Submodules
 .. toctree::
 
    astrobase.hatsurveys.hatlc
-   astrobase.hatsurveys.hplc
    astrobase.hatsurveys.k2hat
-   astrobase.hatsurveys.oldhatlc
-   astrobase.hatsurveys.texthatlc
-

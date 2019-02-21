@@ -211,8 +211,7 @@ def register_lcformat(formatkey,
         The default UNIX fileglob to use to search for light curve files in this
         LC format. This is a string like '*-whatever-???-*.*??-.lc'.
 
-    timecols, magcols, errcols : list of str
-
+    timecols,magcols,errcols : list of str
         These are all lists of strings indicating which keys in the lcdict
         produced by your `lcreader_func` that will be extracted and used by
         lcproc functions for processing. The lists must all have the same

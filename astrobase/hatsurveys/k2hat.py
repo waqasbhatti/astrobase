@@ -7,11 +7,11 @@
 This contains functions for reading K2 CSV light-curves produced by the HAT
 Project into a Python dictionary. Requires numpy.
 
-The only external function here is:
+The only external function here is::
 
-read_csv_lightcurve(lcfile)
+    read_csv_lightcurve(lcfile)
 
-EXAMPLE:
+Example:
 
 Reading the best aperture LC for EPIC201183188 = UCAC4-428-055298 (see
 http://k2.hatsurveys.org to search for this object and download the light
@@ -401,7 +401,7 @@ COLUMNDEFS = {
 ## FUNCTIONS TO READ K2 HAT LCS ##
 ##################################
 
-def parse_csv_header(header):
+def _parse_csv_header(header):
     '''This parses a CSV header from a K2 CSV LC.
 
     Returns a dict that can be used to update an existing lcdict with the
@@ -495,6 +495,18 @@ def read_csv_lightcurve(lcfile):
     This reads in a K2 lightcurve in CSV format. Transparently reads gzipped
     files.
 
+    Parameters
+    ----------
+
+    lcfile : str
+        The light curve file to read.
+
+    Returns
+    -------
+
+    dict
+        Returns an lcdict.
+
     '''
 
     # read in the file first
@@ -515,7 +527,7 @@ def read_csv_lightcurve(lcfile):
     lccolumns = [x.split(',') for x in lccolumns if len(x) > 0]
 
     # initialize the lcdict and parse the CSV header
-    lcdict = parse_csv_header(lcheader)
+    lcdict = _parse_csv_header(lcheader)
 
     # tranpose the LC rows into columns
     lccolumns = list(zip(*lccolumns))
