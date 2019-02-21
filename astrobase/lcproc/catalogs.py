@@ -337,6 +337,7 @@ def make_lclist(basedir,
           e.g., 'objectid' will extract lcdict['objectid']
         - Keys at other levels can be specified by using a period to indicate
           the level:
+
           - e.g., 'objectinfo.ra' will extract lcdict['objectinfo']['ra']
           - e.g., 'objectinfo.varinfo.features.stetsonj' will extract
             lcdict['objectinfo']['varinfo']['features']['stetsonj']
@@ -1462,7 +1463,7 @@ def add_cpinfo_to_lclist(
     This is used to incorporate all the extra info checkplots can have for
     objects back into columns in the light curve catalog produced by
     `make_lclist`. Objects are matched between the checkplots and the light
-    curve catalog using their `objectid`s. This then allows one to search this
+    curve catalog using their `objectid`. This then allows one to search this
     'augmented' light curve catalog by these extra columns. The 'augmented'
     light curve catalog also forms the basis for search interface provided by
     the LCC-Server.
