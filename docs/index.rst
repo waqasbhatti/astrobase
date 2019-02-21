@@ -46,7 +46,7 @@ Install Astrobase from PyPI using `pip`::
   $ pip install numpy
 
   # install astrobase
-  $ pip install numpy
+  $ pip install astrobase
 
 
 .. toctree::
