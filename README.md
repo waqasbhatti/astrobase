@@ -12,8 +12,7 @@ makes them handle flux light curves correctly.
 
 Full documentation is still a work in progress:
 
-- Read the current docs here:
-  [https://wbhatti.org/astrobase](https://wbhatti.org/astrobase).
+- Read the docs: https://astrobase.readthedocs.io/en/latest/
 - Jupyter notebooks that demonstrate some of the functionality are available in
   the [astrobase-notebooks](https://github.com/waqasbhatti/astrobase-notebooks)
   repository.
@@ -196,7 +195,7 @@ For optional functionality, some additional packages are required:
 
 If you're using:
 
-- 64-bit Linux and Python 2.7, 3.4, 3.5, 3.6
+- 64-bit Linux and Python 2.7, 3.4, 3.5, 3.6, 3.7
 - 64-bit Mac OSX 10.12+ with Python 2.7 or 3.6
 - 64-bit Windows with Python 2.7 and 3.6
 
