@@ -32,7 +32,8 @@ Astrobase functions transparently.
 
 - Guides for specific tasks are available as Jupyter notebooks at Github:
   `astrobase-notebooks <https://github.com/waqasbhatti/astrobase-notebooks/>`_.
-- Automatically generated `API documentation`_ is available below.
+- The :doc:`full API documentation </modules>` generated automatically from
+  the docstrings by Sphinx is available.
 - The code for Astrobase is maintained at `Github
   <https://github.com/waqasbhatti/astrobase>`_.
 
@@ -46,6 +47,50 @@ Install Astrobase from PyPI using `pip`::
 
   # install astrobase
   $ pip install numpy
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Specific light curve formats
+
+   astrobase.astrokep
+   astrobase.astrotess
+   astrobase.hatsurveys
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Period-finding algorithms
+
+   astrobase.periodbase
+   Box-Least-Squares (Astropy) <astrobase.periodbase.abls>
+   Box-Least-Squares (eebls.f) <astrobase.periodbase.kbls>
+   Phase dispersion minimization <astrobase.periodbase.spdm>
+   Analysis-of-Variance <astrobase.periodbase.saov>
+   Analysis-of-Variance multi-harmonic <astrobase.periodbase.smav>
+   Generalized Lomb-Scargle <astrobase.periodbase.zgls>
+   Auto-correlation period-finder <astrobase.periodbase.macf>
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Light curve operations
+
+   astrobase.lcmath
+   astrobase.lcmodels
+   astrobase.varbase
+   astrobase.plotbase
+   astrobase.lcproc
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Variable star classification
+
+   astrobase.checkplot
+   astrobase.cpserver
+   astrobase.varclass
+   astrobase.services
 
 
 Package overview
@@ -134,11 +179,9 @@ Package overview
   Forest based classifier.
 
 
-API documentation
------------------
-
 .. toctree::
    :maxdepth: 4
+   :caption: Full API documentation
 
    modules
 
