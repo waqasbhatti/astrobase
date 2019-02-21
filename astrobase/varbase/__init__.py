@@ -2,15 +2,20 @@
 # -*- coding: utf-8 -*-
 # varbase.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2016
 
-'''
-Contains functions to deal with light curve variability, fitting functions,
+'''Contains functions to deal with light curve variability, fitting functions,
 masking signals, autocorrelation, etc.
 
-CURRENT SUBMODULES:
+- :py:mod:`astrobase.varbase.autocorr`: calculating the autocorrelation function
+  of light curves.
+- :py:mod:`astrobase.varbase.lcfit`: fitting Fourier series and splines to light
+  curves.
+- :py:mod:`astrobase.varbase.signals`: masking periodic signals, pre-whitening
+  light curves.
+- :py:mod:`astrobase.varbase.transits`: light curve tools specifically for
+  planetary transits.
 
-varbase.autocorr: calculating the autocorrelation function of light curves
-varbase.lcfit: fitting Fourier series and splines to light curves
-varbase.signals: masking periodic signals, pre-whitening light curves
+FIXME: finish up the :py:mod:`astrobase.varbase.flares` module to find flares in
+LCs.
 
 '''
 

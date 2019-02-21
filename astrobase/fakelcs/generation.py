@@ -1915,7 +1915,8 @@ def make_fakelc_collection(lclist,
               'lcformat':lcformat,
               'timecols':timecols,
               'magcols':magcols,
-              'errcols':errcols}
+              'errcols':errcols,
+              'magsarefluxes':magsarefluxes}
 
     fobjects, fpaths = [], []
     fras, fdecls, fndets = [], [], []

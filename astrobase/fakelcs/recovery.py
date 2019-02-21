@@ -47,8 +47,6 @@ import gzip
 import glob
 
 import multiprocessing as mp
-from concurrent.futures import ProcessPoolExecutor
-from hashlib import md5
 
 from math import sqrt as msqrt
 
@@ -64,17 +62,11 @@ import numpy.random as npr
 # seed the numpy random generator
 npr.seed(0xdecaff)
 
-import scipy.stats as sps
-import scipy.interpolate as spi
-
 import matplotlib
 matplotlib.use('Agg')
 matplotlib.rcParams['agg.path.chunksize'] = 10000
 
 import matplotlib.pyplot as plt
-import matplotlib.colors as mpc
-
-from tqdm import tqdm
 
 
 ###################
@@ -82,6 +74,7 @@ from tqdm import tqdm
 ###################
 
 from .. import lcproc
+from ..lcproc import lcvfeatures, varthreshold, periodsearch
 
 
 #######################
@@ -91,6 +84,18 @@ from .. import lcproc
 def read_fakelc(fakelcfile):
     '''
     This just reads a pickled fake LC.
+
+    Parameters
+    ----------
+
+    fakelcfile : str
+        The fake LC file to read.
+
+    Returns
+    -------
+
+    dict
+        This returns an lcdict.
 
     '''
 
@@ -112,8 +117,28 @@ def read_fakelc(fakelcfile):
 def get_varfeatures(simbasedir,
                     mindet=1000,
                     nworkers=None):
-    '''
-    This runs lcproc.parallel_varfeatures on light curves in simbasedir.
+    '''This runs `lcproc.lcvfeatures.parallel_varfeatures` on fake LCs in
+    `simbasedir`.
+
+    Parameters
+    ----------
+
+    simbasedir : str
+        The directory containing the fake LCs to process.
+
+    mindet : int
+        The minimum number of detections needed to accept an LC and process it.
+
+    nworkers : int or None
+        The number of parallel workers to use when extracting variability
+        features from the input light curves.
+
+    Returns
+    -------
+
+    str
+        The path to the `varfeatures` pickle created after running the
+        `lcproc.lcvfeatures.parallel_varfeatures` function.
 
     '''
 
@@ -129,27 +154,31 @@ def get_varfeatures(simbasedir,
     magcols = siminfo['magcols']
     errcols = siminfo['errcols']
 
+    # get the column defs for the fakelcs
+    timecols = siminfo['timecols']
+    magcols = siminfo['magcols']
+    errcols = siminfo['errcols']
+
     # register the fakelc pklc as a custom lcproc format
     # now we should be able to use all lcproc functions correctly
-    if 'fakelc' not in lcproc.LCFORM:
-
-        lcproc.register_custom_lcformat(
-            'fakelc',
-            '*-fakelc.pkl',
-            lcproc._read_pklc,
-            timecols,
-            magcols,
-            errcols,
-            magsarefluxes=False,
-            specialnormfunc=None
-        )
+    fakelc_formatkey = 'fake-%s' % siminfo['lcformat']
+    lcproc.register_lcformat(
+        fakelc_formatkey,
+        '*-fakelc.pkl',
+        timecols,
+        magcols,
+        errcols,
+        'astrobase.lcproc',
+        '_read_pklc',
+        magsarefluxes=siminfo['magsarefluxes']
+    )
 
     # now we can use lcproc.parallel_varfeatures directly
-    varinfo = lcproc.parallel_varfeatures(lcfpaths,
-                                          varfeaturedir,
-                                          lcformat='fakelc',
-                                          mindet=mindet,
-                                          nworkers=nworkers)
+    varinfo = lcvfeatures.parallel_varfeatures(lcfpaths,
+                                               varfeaturedir,
+                                               lcformat=fakelc_formatkey,
+                                               mindet=mindet,
+                                               nworkers=nworkers)
 
     with open(os.path.join(simbasedir,'fakelc-varfeatures.pkl'),'wb') as outfd:
         pickle.dump(varinfo, outfd, pickle.HIGHEST_PROTOCOL)
@@ -160,7 +189,24 @@ def get_varfeatures(simbasedir,
 
 def precision(ntp, nfp):
     '''
-    This calculates the precision.
+    This calculates precision.
+
+    https://en.wikipedia.org/wiki/Precision_and_recall
+
+    Parameters
+    ----------
+
+    ntp : int
+        The number of true positives.
+
+    nfp : int
+        The number of false positives.
+
+    Returns
+    -------
+
+    float
+        The precision calculated using `ntp/(ntp + nfp)`.
 
     '''
 
@@ -173,7 +219,24 @@ def precision(ntp, nfp):
 
 def recall(ntp, nfn):
     '''
-    This calculates the recall.
+    This calculates recall.
+
+    https://en.wikipedia.org/wiki/Precision_and_recall
+
+    Parameters
+    ----------
+
+    ntp : int
+        The number of true positives.
+
+    nfn : int
+        The number of false negatives.
+
+    Returns
+    -------
+
+    float
+        The precision calculated using `ntp/(ntp + nfn)`.
 
     '''
 
@@ -189,6 +252,27 @@ def matthews_correl_coeff(ntp, ntn, nfp, nfn):
     This calculates the Matthews correlation coefficent.
 
     https://en.wikipedia.org/wiki/Matthews_correlation_coefficient
+
+    Parameters
+    ----------
+
+    ntp : int
+        The number of true positives.
+
+    ntn : int
+        The number of true negatives
+
+    nfp : int
+        The number of false positives.
+
+    nfn : int
+        The number of false negatives.
+
+    Returns
+    -------
+
+    float
+        The Matthews correlation coefficient.
 
     '''
 
@@ -214,12 +298,44 @@ def get_recovered_variables_for_magbin(simbasedir,
                                        statsonly=True):
     '''This runs variability selection for the given magbinmedian.
 
-    magbinmedian is an item from the fakelcs-info.pkl's
-    fakelcinfo['magrms'][magcol] list for each magcol and designates which
-    magbin to get the recovery stats for.
+    To generate a full recovery matrix over all magnitude bins, run this
+    function for each magbin over the specified stetson_stdev_min and
+    inveta_stdev_min grid.
 
-    To generate a full recovery matrix, run this function for each magbin over
-    the specified stetson_stdev_min and inveta_stdev_min grid.
+    Parameters
+    ----------
+
+    simbasedir : str
+        The input directory of fake LCs.
+
+    magbinmedian : float
+        The magbin to run the variable recovery for. This is an item from the
+        dict from `simbasedir/fakelcs-info.pkl: `fakelcinfo['magrms'][magcol]`
+        list for each magcol and designates which magbin to get the recovery
+        stats for.
+
+    stetson_stdev_min : float
+        The minimum sigma above the trend in the Stetson J variability index
+        distribution for this magbin to use to consider objects as variable.
+
+    inveta_stdev_min : float
+        The minimum sigma above the trend in the 1/eta variability index
+        distribution for this magbin to use to consider objects as variable.
+
+    iqr_stdev_min : float
+        The minimum sigma above the trend in the IQR variability index
+        distribution for this magbin to use to consider objects as variable.
+
+    statsonly : bool
+        If this is True, only the final stats will be returned. If False, the
+        full arrays used to generate the stats will also be returned.
+
+    Returns
+    -------
+
+    dict
+        The returned dict contains statistics for this magbin and if requested,
+        the full arrays used to calculate the statistics.
 
     '''
 
@@ -228,41 +344,33 @@ def get_recovered_variables_for_magbin(simbasedir,
     with open(os.path.join(simbasedir, 'fakelcs-info.pkl'),'rb') as infd:
         siminfo = pickle.load(infd)
 
-    lcfpaths = siminfo['lcfpath']
     objectids = siminfo['objectid']
     varflags = siminfo['isvariable']
     sdssr = siminfo['sdssr']
-    ndet = siminfo['ndet']
 
     # get the column defs for the fakelcs
     timecols = siminfo['timecols']
     magcols = siminfo['magcols']
     errcols = siminfo['errcols']
 
-    # get the actual variables and non-variables
-    actualvars = objectids[varflags]
-    actualnotvars = objectids[~varflags]
-
     # register the fakelc pklc as a custom lcproc format
     # now we should be able to use all lcproc functions correctly
-    if 'fakelc' not in lcproc.LCFORM:
-
-        lcproc.register_custom_lcformat(
-            'fakelc',
-            '*-fakelc.pkl',
-            lcproc._read_pklc,
-            timecols,
-            magcols,
-            errcols,
-            magsarefluxes=False,
-            specialnormfunc=None
-        )
+    fakelc_formatkey = 'fake-%s' % siminfo['lcformat']
+    lcproc.register_lcformat(
+        fakelc_formatkey,
+        '*-fakelc.pkl',
+        timecols,
+        magcols,
+        errcols,
+        'astrobase.lcproc',
+        '_read_pklc',
+        magsarefluxes=siminfo['magsarefluxes']
+    )
 
     # make the output directory if it doesn't exit
     outdir = os.path.join(simbasedir, 'recvar-threshold-pkls')
     if not os.path.exists(outdir):
         os.mkdir(outdir)
-
 
     # run the variability search
     varfeaturedir = os.path.join(simbasedir, 'varfeatures')
@@ -272,13 +380,15 @@ def get_recovered_variables_for_magbin(simbasedir,
                                                              stetson_stdev_min,
                                                              inveta_stdev_min)
     )
-    varthresh = lcproc.variability_threshold(varfeaturedir,
-                                             varthreshinfof,
-                                             lcformat='fakelc',
-                                             min_stetj_stdev=stetson_stdev_min,
-                                             min_inveta_stdev=inveta_stdev_min,
-                                             min_iqr_stdev=iqr_stdev_min,
-                                             verbose=False)
+    varthresh = varthreshold.variability_threshold(
+        varfeaturedir,
+        varthreshinfof,
+        lcformat=fakelc_formatkey,
+        min_stetj_stdev=stetson_stdev_min,
+        min_inveta_stdev=inveta_stdev_min,
+        min_iqr_stdev=iqr_stdev_min,
+        verbose=False
+    )
 
     # get the magbins from the varthresh info
     magbins = varthresh['magbins']
@@ -315,6 +425,7 @@ def get_recovered_variables_for_magbin(simbasedir,
         'timecols':timecols,
         'magcols':magcols,
         'errcols':errcols,
+        'magsarefluxes':siminfo['magsarefluxes'],
         'stetj_min_stdev':stetson_stdev_min,
         'inveta_min_stdev':inveta_stdev_min,
         'iqr_min_stdev':iqr_stdev_min,
@@ -570,26 +681,16 @@ def magbin_varind_gridsearch_worker(task):
 
 
 def variable_index_gridsearch_magbin(simbasedir,
-                                     stetson_stdev_range=[1.0,20.0],
-                                     inveta_stdev_range=[1.0,20.0],
-                                     iqr_stdev_range=[1.0,20.0],
+                                     stetson_stdev_range=(1.0,20.0),
+                                     inveta_stdev_range=(1.0,20.0),
+                                     iqr_stdev_range=(1.0,20.0),
                                      ngridpoints=32,
                                      ngridworkers=None):
     '''This runs a variable index grid search per magbin.
 
-    Similar to variable_index_gridsearch above.
-
-    Gets the magbin medians from the fakelcinfo.pkl's
-    dict['magrms'][magcols[0]['binned_sdssr_median'] value.
-
-    Reads the fakelcs-info.pkl in simbasedir to get:
-
-    - the variable objects, their types, periods, epochs, and params
-    - the nonvariable objects
-
     For each magbin, this does a grid search using the stetson and inveta ranges
-    and tries to optimize the Matthews Correlation Coefficient (best value is
-    +1.0), indicating the best possible separation of variables
+    provided and tries to optimize the Matthews Correlation Coefficient (best
+    value is +1.0), indicating the best possible separation of variables
     vs. nonvariables. The thresholds on these two variable indexes that produce
     the largest coeff for the collection of fake LCs will probably be the ones
     that work best for actual variable classification on the real LCs.
@@ -600,7 +701,6 @@ def variable_index_gridsearch_magbin(simbasedir,
     negatives, false negatives. Then gets the precision and recall, confusion
     matrix, and the ROC curve for variable vs. nonvariable.
 
-
     Once we've identified the best thresholds to use, we can then calculate
     variable object numbers:
 
@@ -609,12 +709,50 @@ def variable_index_gridsearch_magbin(simbasedir,
     - as a function of number of detections
     - as a function of amplitude of variability
 
-    Writes everything back to simbasedir/fakevar-recovery.pkl. Use the plotting
-    function below to make plots for the results.
 
-    For the default number of grid-points and 25000 simulated light curves, this
-    takes about 3 days to run on a 40 (effective) core machine with 2 x Xeon
-    E5-2650v3 CPUs.
+    Writes everything back to `simbasedir/fakevar-recovery.pkl`. Use the
+    plotting function below to make plots for the results.
+
+    Parameters
+    ----------
+
+    simbasedir : str
+        The directory where the fake LCs are located.
+
+    stetson_stdev_range : sequence of 2 floats
+        The min and max values of the Stetson J variability index to generate a
+        grid over these to test for the values of this index that produce the
+        'best' recovery rate for the injected variable stars.
+
+    inveta_stdev_range : sequence of 2 floats
+        The min and max values of the 1/eta variability index to generate a
+        grid over these to test for the values of this index that produce the
+        'best' recovery rate for the injected variable stars.
+
+    iqr_stdev_range : sequence of 2 floats
+        The min and max values of the IQR variability index to generate a
+        grid over these to test for the values of this index that produce the
+        'best' recovery rate for the injected variable stars.
+
+    ngridpoints : int
+        The number of grid points for each variability index grid. Remember that
+        this function will be searching in 3D and will require lots of time to
+        run if ngridpoints is too large.
+
+        For the default number of grid points and 25000 simulated light curves,
+        this takes about 3 days to run on a 40 (effective) core machine with 2 x
+        Xeon E5-2650v3 CPUs.
+
+    ngridworkers : int or None
+        The number of parallel grid search workers that will be launched.
+
+    Returns
+    -------
+
+    dict
+        The returned dict contains a list of recovery stats for each magbin and
+        each grid point in the variability index grids that were used. This dict
+        can be passed to the plotting function below to plot the results.
 
     '''
 
@@ -695,8 +833,23 @@ def variable_index_gridsearch_magbin(simbasedir,
 
 
 def plot_varind_gridsearch_magbin_results(gridsearch_results):
-    '''
-    This plots the gridsearch results from variable_index_gridsearch_magbin.
+    '''This plots the gridsearch results from `variable_index_gridsearch_magbin`.
+
+    Parameters
+    ----------
+
+    gridsearch_results : dict
+        This is the dict produced by `variable_index_gridsearch_magbin` above.
+
+    Returns
+    -------
+
+    dict
+        The returned dict contains filenames of the recovery rate plots made for
+        each variability index. These include plots of the precision, recall,
+        and Matthews Correlation Coefficient over each magbin and a heatmap of
+        these values over the grid points of the variability index stdev values
+        arrays used.
 
     '''
 
@@ -1299,42 +1452,76 @@ ALIAS_TYPES = ['actual',
 
 
 def run_periodfinding(simbasedir,
-                      pfmethods=['gls','pdm','bls'],
-                      pfkwargs=[{},{},{'startp':1.0,'maxtransitduration':0.3}],
+                      pfmethods=('gls','pdm','bls'),
+                      pfkwargs=({},{},{'startp':1.0,'maxtransitduration':0.3}),
                       getblssnr=False,
                       sigclip=5.0,
                       nperiodworkers=10,
                       ncontrolworkers=4,
                       liststartindex=None,
                       listmaxobjects=None):
-    '''This runs periodfinding using several periodfinders on a collection of
-    fakelcs.
+    '''This runs periodfinding using several period-finders on a collection of
+    fake LCs.
 
-    Use pfmethods to specify which periodfinders to run. These must be in
-    lcproc.PFMETHODS.
-
-    Use pfkwargs to provide optional kwargs to the periodfinders.
-
-    If getblssnr is True, will run BLS SNR calculations for each object and
-    magcol. This takes a while to run, so it's disabled (False) by default.
-
-    sigclip sets the sigma-clip to use for the light curves before putting them
-    through each of the periodfinders.
-
-    nperiodworkers is the number of period-finder workers to launch.
-
-    ncontrolworkers is the number of controlling processes to launch.
-
-    liststartindex sets the index from where to start in the list of
-    fakelcs. listmaxobjects sets the maximum number of objects in the fakelc
-    list to run periodfinding for in this invocation. Together, these can be
-    used to distribute processing over several independent machines if the
-    number of light curves is very large.
-
-    As a rough benchmark, 25000 fakelcs with up to 50000 points per lc take
+    As a rough benchmark, 25000 fake LCs with 10000--50000 points per LC take
     about 26 days in total to run on an invocation of this function using
     GLS+PDM+BLS and 10 periodworkers and 4 controlworkers (so all 40 'cores') on
     a 2 x Xeon E5-2660v3 machine.
+
+    Parameters
+    ----------
+
+    pfmethods : sequence of str
+        This is used to specify which periodfinders to run. These must be in the
+        `lcproc.periodsearch.PFMETHODS` dict.
+
+    pfkwargs : sequence of dict
+        This is used to provide optional kwargs to the period-finders.
+
+    getblssnr : bool
+        If this is True, will run BLS SNR calculations for each object and
+        magcol. This takes a while to run, so it's disabled (False) by default.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    nperiodworkers : int
+        This is the number of parallel period-finding worker processes to use.
+
+    ncontrolworkers : int
+        This is the number of parallel period-finding control workers to
+        use. Each control worker will launch `nperiodworkers` worker processes.
+
+    liststartindex : int
+        The starting index of processing. This refers to the filename list
+        generated by running `glob.glob` on the fake LCs in `simbasedir`.
+
+    maxobjects : int
+        The maximum number of objects to process in this run. Use this with
+        `liststartindex` to effectively distribute working on a large list of
+        input light curves over several sessions or machines.
+
+    Returns
+    -------
+
+    str
+        The path to the output summary pickle produced by
+        `lcproc.periodsearch.parallel_pf`
 
     '''
 
@@ -1352,18 +1539,17 @@ def run_periodfinding(simbasedir,
 
     # register the fakelc pklc as a custom lcproc format
     # now we should be able to use all lcproc functions correctly
-    if 'fakelc' not in lcproc.LCFORM:
-
-        lcproc.register_custom_lcformat(
-            'fakelc',
-            '*-fakelc.pkl',
-            lcproc._read_pklc,
-            timecols,
-            magcols,
-            errcols,
-            magsarefluxes=False,
-            specialnormfunc=None
-        )
+    fakelc_formatkey = 'fake-%s' % siminfo['lcformat']
+    lcproc.register_lcformat(
+        fakelc_formatkey,
+        '*-fakelc.pkl',
+        timecols,
+        magcols,
+        errcols,
+        'astrobase.lcproc',
+        '_read_pklc',
+        magsarefluxes=siminfo['magsarefluxes']
+    )
 
     if liststartindex:
         lcfpaths = lcfpaths[liststartindex:]
@@ -1371,27 +1557,62 @@ def run_periodfinding(simbasedir,
     if listmaxobjects:
         lcfpaths = lcfpaths[:listmaxobjects]
 
-    pfinfo = lcproc.parallel_pf(lcfpaths,
-                                pfdir,
-                                lcformat='fakelc',
-                                pfmethods=pfmethods,
-                                pfkwargs=pfkwargs,
-                                getblssnr=getblssnr,
-                                sigclip=sigclip,
-                                nperiodworkers=nperiodworkers,
-                                ncontrolworkers=ncontrolworkers)
+    pfinfo = periodsearch.parallel_pf(lcfpaths,
+                                      pfdir,
+                                      lcformat=fakelc_formatkey,
+                                      pfmethods=pfmethods,
+                                      pfkwargs=pfkwargs,
+                                      getblssnr=getblssnr,
+                                      sigclip=sigclip,
+                                      nperiodworkers=nperiodworkers,
+                                       ncontrolworkers=ncontrolworkers)
 
     with open(os.path.join(simbasedir,
-                           'fakelc-periodfinding.pkl'),'wb') as outfd:
+                           'fakelc-periodsearch.pkl'),'wb') as outfd:
         pickle.dump(pfinfo, outfd, pickle.HIGHEST_PROTOCOL)
 
-    return os.path.join(simbasedir,'fakelc-periodfinding.pkl')
+    return os.path.join(simbasedir,'fakelc-periodsearch.pkl')
 
 
 
-def check_periodrec_alias(actualperiod, recoveredperiod, tolerance=1.0e-3):
+def check_periodrec_alias(actualperiod,
+                          recoveredperiod,
+                          tolerance=1.0e-3):
     '''This determines what kind of aliasing (if any) exists between
-    recoveredperiod and actualperiod.
+    `recoveredperiod` and `actualperiod`.
+
+    Parameters
+    ----------
+
+    actualperiod : float
+        The actual period of the object.
+
+    recoveredperiod : float
+        The recovered period of the object.
+
+    tolerance : float
+        The absolute difference required between the input periods to mark the
+        recovered period as close to the actual period.
+
+    Returns
+    -------
+
+    str
+        The type of alias determined for the input combination of periods. This
+        will be CSV string with values taken from the following list, based on
+        the types of alias found::
+
+            ['actual',
+             'twice',
+             'half',
+             'ratio_over_1plus',
+             'ratio_over_1minus',
+             'ratio_over_1plus_twice',
+             'ratio_over_1minus_twice',
+             'ratio_over_1plus_thrice',
+             'ratio_over_1minus_thrice',
+             'ratio_over_minus1',
+             'ratio_over_twice_minus1']
 
     '''
 
@@ -1442,7 +1663,7 @@ def check_periodrec_alias(actualperiod, recoveredperiod, tolerance=1.0e-3):
         alias_labels = np.array(ALIAS_TYPES)
 
         # check type of alias
-        closest_alias = np.isclose(recoveredperiod, aliases, rtol=tolerance)
+        closest_alias = np.isclose(recoveredperiod, aliases, atol=tolerance)
 
         if np.any(closest_alias):
 
@@ -1459,29 +1680,44 @@ def periodicvar_recovery(fakepfpkl,
                          simbasedir,
                          period_tolerance=1.0e-3):
 
-    '''Recovers the periodic variable status/info for the simulated pf pickle.
+    '''Recovers the periodic variable status/info for the simulated PF result.
 
-    fakepfpkl is a single periodfinding-<objectid>.pkl[.gz] file produced in the
-    <simbasedir>/periodfinding subdirectory after run_periodfinding above is
-    done.
+    - Uses simbasedir and the lcfbasename stored in fakepfpkl to figure out
+      where the LC for this object is.
+    - Gets the actual_varparams, actual_varperiod, actual_vartype,
+      actual_varamplitude elements from the LC.
+    - Figures out if the current objectid is a periodic variable (using
+      actual_vartype).
+    - If it is a periodic variable, gets the canonical period assigned to it.
+    - Checks if the period was recovered in any of the five best periods
+      reported by any of the period-finders, checks if the period recovered was
+      a harmonic of the period.
+    - Returns the objectid, actual period and vartype, recovered period, and
+      recovery status.
 
-    - uses simbasedir and the lcfbasename stored in fakepfpkl to figure out
-      where the LC for this object is
 
-    - gets the actual_varparams, actual_varperiod, actual_vartype,
-      actual_varamplitude elements from the LC
+    Parameters
+    ----------
 
-    - figures out if the current objectid is a periodic variable (using
-      actual_vartype)
+    fakepfpkl : str
+        This is a periodfinding-<objectid>.pkl[.gz] file produced in the
+        `simbasedir/periodfinding` subdirectory after `run_periodfinding` above
+        is done.
 
-    - if it is a periodic variable, gets the canonical period assigned to it
+    simbasedir : str
+        The base directory where all of the fake LCs and period-finding results
+        are.
 
-    - checks if the period was recovered in any of the five best periods
-      reported by any of the periodfinders, checks if the period recovered was a
-      harmonic of the period
+    period_tolerance : float
+        The maximum difference that this function will consider between an
+        actual period (or its aliases) and a recovered period to consider it as
+        as a 'recovered' period.
 
-    - returns the objectid, actual period and vartype, recovered period, and
-      recovery status
+    Returns
+    -------
+
+    dict
+        Returns a dict of period-recovery results.
 
     '''
 
@@ -1677,8 +1913,24 @@ def periodicvar_recovery(fakepfpkl,
 
 
 def periodrec_worker(task):
-    '''
-    This is a parallel worker for the function below.
+    '''This is a parallel worker for running period-recovery.
+
+    Parameters
+    ----------
+
+    task : tuple
+        This is used to pass args to the `periodicvar_recovery` function::
+
+            task[0] = period-finding result pickle to work on
+            task[1] = simbasedir
+            task[2] = period_tolerance
+
+    Returns
+    -------
+
+    dict
+        This is the dict produced by the `periodicvar_recovery` function for the
+        input period-finding result pickle.
 
     '''
 
@@ -1700,9 +1952,39 @@ def parallel_periodicvar_recovery(simbasedir,
                                   liststartind=None,
                                   listmaxobjects=None,
                                   nworkers=None):
-    '''
-    This is a parallel driver for periodicvar_recovery.
+    '''This is a parallel driver for `periodicvar_recovery`.
 
+    Parameters
+    ----------
+
+    simbasedir : str
+        The base directory where all of the fake LCs and period-finding results
+        are.
+
+    period_tolerance : float
+        The maximum difference that this function will consider between an
+        actual period (or its aliases) and a recovered period to consider it as
+        as a 'recovered' period.
+
+    liststartindex : int
+        The starting index of processing. This refers to the filename list
+        generated by running `glob.glob` on the period-finding result pickles in
+        `simbasedir/periodfinding`.
+
+    listmaxobjects : int
+        The maximum number of objects to process in this run. Use this with
+        `liststartindex` to effectively distribute working on a large list of
+        input period-finding result pickles over several sessions or machines.
+
+    nperiodworkers : int
+        This is the number of parallel period-finding worker processes to use.
+
+    Returns
+    -------
+
+    str
+        Returns the filename of the pickle produced containing all of the period
+        recovery results.
 
     '''
 
@@ -1783,62 +2065,102 @@ def parallel_periodicvar_recovery(simbasedir,
 
 
 
+PERIODREC_DEFAULT_MAGBINS = np.arange(8.0,16.25,0.25)
+PERIODREC_DEFAULT_PERIODBINS = np.arange(0.0,500.0,0.5)
+PERIODREC_DEFAULT_AMPBINS = np.arange(0.0,2.0,0.05)
+PERIODREC_DEFAULT_NDETBINS = np.arange(0.0,60000.0,1000.0)
+
 def plot_periodicvar_recovery_results(
         precvar_results,
         aliases_count_as_recovered=None,
-        magbins=np.arange(8.0,16.25,0.25),
-        periodbins=np.arange(0.0,500.0,0.5),
-        amplitudebins=np.arange(0.0,2.0,0.05),
-        ndetbins=np.arange(0.0,60000.0,1000.0),
+        magbins=None,
+        periodbins=None,
+        amplitudebins=None,
+        ndetbins=None,
         minbinsize=1,
         plotfile_ext='png',
 ):
     '''This plots the results of periodic var recovery.
 
-    precvar_results is either a dict returned by parallel_periodicvar_recovery
-    or the pickle created by that function.
-
-    aliases_count_as recovered is used to set which kinds of aliases this
-    function considers as 'recovered' objects. Normally, we require that
-    recovered objects have a recovery status of 'actual' to indicate the actual
-    period was recovered. To change this default behavior,
-    aliases_count_as_recovered can be set to a list of alias status strings that
-    should be considered as 'recovered' objects as well. Choose from the
-    following alias types:
-
-    'twice'                     recovered_p = 2.0*actual_p
-    'half'                      recovered_p = 0.5*actual_p
-    'ratio_over_1plus'          recovered_p = actual_p/(1.0+actual_p)
-    'ratio_over_1minus'         recovered_p = actual_p/(1.0-actual_p)
-    'ratio_over_1plus_twice'    recovered_p = actual_p/(1.0+2.0*actual_p)
-    'ratio_over_1minus_twice'   recovered_p = actual_p/(1.0-2.0*actual_p)
-    'ratio_over_1plus_thrice'   recovered_p = actual_p/(1.0+3.0*actual_p)
-    'ratio_over_1minus_thrice'  recovered_p = actual_p/(1.0-3.0*actual_p)
-    'ratio_over_minus1'         recovered_p = actual_p/(actual_p - 1.0)
-    'ratio_over_twice_minus1'   recovered_p = actual_p/(2.0*actual_p - 1.0)
-
-    or set aliases_count_as_recovered='all' to include all of the above in the
-    'recovered' periodic var list.
-
     This function makes plots for periodicvar recovered fraction as a function
     of:
 
-      - magbin
-      - periodbin
-      - amplitude of variability
-      - ndet
+    - magbin
+    - periodbin
+    - amplitude of variability
+    - ndet
 
     with plot lines broken down by:
 
-      - magcol
-      - periodfinder
-      - vartype
-      - recovery status
+    - magcol
+    - periodfinder
+    - vartype
+    - recovery status
 
-    The kwargs magbins, periodbins, amplitudebins, and ndetbins can be used to
-    set the bin lists as needed. The kwarg minbinsize controls how many elements
-    per bin are required to accept a bin in processing its recovery
-    characteristics for mags, periods, amplitudes, and ndets.
+    The kwargs `magbins`, `periodbins`, `amplitudebins`, and `ndetbins` can be
+    used to set the bin lists as needed. The kwarg `minbinsize` controls how
+    many elements per bin are required to accept a bin in processing its
+    recovery characteristics for mags, periods, amplitudes, and ndets.
+
+    Parameters
+    ----------
+
+    precvar_results : dict or str
+        This is either a dict returned by parallel_periodicvar_recovery or the
+        pickle created by that function.
+
+    aliases_count_as_recovered : list of str or 'all'
+        This is used to set which kinds of aliases this function considers as
+        'recovered' objects. Normally, we require that recovered objects have a
+        recovery status of 'actual' to indicate the actual period was
+        recovered. To change this default behavior, aliases_count_as_recovered
+        can be set to a list of alias status strings that should be considered
+        as 'recovered' objects as well. Choose from the following alias types::
+
+          'twice'                    recovered_p = 2.0*actual_p
+          'half'                     recovered_p = 0.5*actual_p
+          'ratio_over_1plus'         recovered_p = actual_p/(1.0+actual_p)
+          'ratio_over_1minus'        recovered_p = actual_p/(1.0-actual_p)
+          'ratio_over_1plus_twice'   recovered_p = actual_p/(1.0+2.0*actual_p)
+          'ratio_over_1minus_twice'  recovered_p = actual_p/(1.0-2.0*actual_p)
+          'ratio_over_1plus_thrice'  recovered_p = actual_p/(1.0+3.0*actual_p)
+          'ratio_over_1minus_thrice' recovered_p = actual_p/(1.0-3.0*actual_p)
+          'ratio_over_minus1'        recovered_p = actual_p/(actual_p - 1.0)
+          'ratio_over_twice_minus1'  recovered_p = actual_p/(2.0*actual_p - 1.0)
+
+        or set `aliases_count_as_recovered='all'` to include all of the above in
+        the 'recovered' periodic var list.
+
+    magbins : np.array
+        The magnitude bins to plot the recovery rate results over. If None, the
+        default mag bins will be used: `np.arange(8.0,16.25,0.25)`.
+
+    periodbins : np.array
+        The period bins to plot the recovery rate results over. If None, the
+        default period bins will be used: `np.arange(0.0,500.0,0.5)`.
+
+    amplitudebins : np.array
+        The variability amplitude bins to plot the recovery rate results
+        over. If None, the default amplitude bins will be used:
+        `np.arange(0.0,2.0,0.05)`.
+
+    ndetbins : np.array
+        The ndet bins to plot the recovery rate results over. If None, the
+        default ndet bins will be used: `np.arange(0.0,60000.0,1000.0)`.
+
+    minbinsize : int
+        The minimum number of objects per bin required to plot a bin and its
+        recovery fraction on the plot.
+
+    plotfile_ext : {'png','pdf'}
+        Sets the plot output files' extension.
+
+    Returns
+    -------
+
+    dict
+        A dict containing recovery fraction statistics and the paths to each of
+        the plots made.
 
     '''
 
@@ -1925,6 +2247,9 @@ def plot_periodicvar_recovery_results(
 
     magbinned_sdssr = []
     magbinned_periodicvars = []
+
+    if not magbins:
+        magbins = PERIODREC_DEFAULT_MAGBINS
     magbininds = np.digitize(np.ravel(periodicvar_sdssr), magbins)
 
     for mbinind, magi in zip(np.unique(magbininds),
@@ -1943,6 +2268,9 @@ def plot_periodicvar_recovery_results(
 
     periodbinned_periods = []
     periodbinned_periodicvars = []
+
+    if not periodbins:
+        periodbins = PERIODREC_DEFAULT_PERIODBINS
     periodbininds = np.digitize(np.ravel(periodicvar_periods), periodbins)
 
     for pbinind, peri in zip(np.unique(periodbininds),
@@ -1962,6 +2290,9 @@ def plot_periodicvar_recovery_results(
 
     amplitudebinned_amplitudes = []
     amplitudebinned_periodicvars = []
+
+    if not amplitudebins:
+        amplitudebins = PERIODREC_DEFAULT_AMPBINS
     amplitudebininds = np.digitize(np.ravel(np.abs(periodicvar_amplitudes)),
                                    amplitudebins)
 
@@ -1986,6 +2317,9 @@ def plot_periodicvar_recovery_results(
 
     ndetbinned_ndets = []
     ndetbinned_periodicvars = []
+
+    if not ndetbins:
+        ndetbins = PERIODREC_DEFAULT_NDETBINS
     ndetbininds = np.digitize(np.ravel(periodicvar_ndet), ndetbins)
 
     for nbinind, ndeti in zip(np.unique(ndetbininds),
@@ -2006,10 +2340,9 @@ def plot_periodicvar_recovery_results(
     # aliases_count_as_recovered kwarg
     recovered_status = ['actual']
 
-    if aliases_count_as_recovered and aliases_count_as_recovered != 'all':
+    if isinstance(aliases_count_as_recovered, list):
 
         for atype in aliases_count_as_recovered:
-
             if atype in ALIAS_TYPES:
                 recovered_status.append(atype)
             else:
