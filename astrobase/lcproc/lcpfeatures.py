@@ -118,6 +118,56 @@ def get_periodicfeatures(pfpickle,
                          raiseonfail=False):
     '''This gets all periodic features for the object.
 
+    The following periodic features are obtained currently:
+
+    - For all best periods from all periodogram methods in `pfpickle`,
+      calculates the number of these with peaks that are at least
+      `sampling_peak_multiplier` x time-sampling periodogram peak at the same
+      period. This indicates how likely the `pfpickle` periodogram peaks are to
+      being real as opposed to just being caused by time-sampling
+      window-function of the observations.
+
+    - For all best periods from all periodogram methods in `pfpickle`,
+      calculates the number of best periods which are consistent with a sidereal
+      day (1.0027379 and 0.9972696), likely indicating that they're not real.
+
+    - For all best periods from all periodogram methods in `pfpickle`,
+      calculates the number of cross-wise period differences for all of these
+      that fall below the `pdiff_threshold` value. If this is high, most of the
+      period-finders in `pfpickle` agree on their best period results, so it's
+      likely the periods found are real.
+
+    - The `R_ij` amplitude and `phi_ij` phase ratios for Fourier fit
+      amplitudes and phases.
+
+    - The reduced chi-sq values of fits to the phased light curves for each best
+      period from each periodogram using Fourier, EB, and planet transit fits.
+
+    - The reduced chi-sq values of fits to the phased light curves for each best
+      period x 2 from each periodogram using Fourier, EB, and planet transit
+      fits (to check specifically for EBs)
+
+    - The ratio of the MAD of the residuals after both kinds of fits above to
+      the unphased light curve MAD (to indicate if one of these models is a
+      better fit than one at all).
+
+    - For each phased light curve for each best period from each periodogram,
+      calculates the point-to-point scatter using the phased LC for the best
+      period itself, as well as that for best period x 2.
+
+    - For each phased light curve for each best period from each periodogram,
+      calculates the 1/eta variability index, the same for best period x 2, and
+      finally the ratio between the phased LC 1/eta variability index and
+      unphased LC 1/eta variability index.
+
+    -
+
+
+    Parameters
+    ----------
+
+
+
     If starfeatures is not None, it should be the filename of the
     starfeatures-<objectid>.pkl created by get_starfeatures for this
     object. This is used to get the neighbor's light curve and phase it with
