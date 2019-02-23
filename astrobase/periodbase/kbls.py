@@ -39,40 +39,27 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
+from math import fmod
 from multiprocessing import Pool, cpu_count
 
-from math import fmod
-
-import numpy as np
-
-# import these to avoid lookup overhead
-from numpy import nan as npnan, sum as npsum, abs as npabs, \
-    roll as nproll, isfinite as npisfinite, std as npstd, \
-    sign as npsign, sqrt as npsqrt, median as npmedian, \
-    array as nparray, percentile as nppercentile, \
-    polyfit as nppolyfit, var as npvar, max as npmax, min as npmin, \
-    log10 as nplog10, arange as nparange, pi as MPI, floor as npfloor, \
-    argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
-    where as npwhere, linspace as nplinspace, \
-    zeros_like as npzeros_like, full_like as npfull_like, \
-    arctan as nparctan, nanargmax as npnanargmax, nanargmin as npnanargmin, \
-    empty as npempty, ceil as npceil, mean as npmean, \
-    digitize as npdigitize, unique as npunique, \
-    argmax as npargmax, argmin as npargmin
-
+from numpy import (
+    nan as npnan, arange as nparange, ones as npones, array as nparray,
+    isfinite as npisfinite, argmax as npargmax, floor as npfloor,
+    linspace as nplinspace, digitize as npdigitize, where as npwhere,
+    abs as npabs, min as npmin, full_like as npfull_like, median as npmedian,
+    std as npstd, sqrt as npsqrt, ceil as npceil, argsort as npargsort,
+    concatenate as npconcatenate, ndarray as npndarray
+)
 
 ###################
 ## LOCAL IMPORTS ##
 ###################
 
-from ..lcmath import phase_magseries, sigclip_magseries, \
-    time_bin_magseries, phase_bin_magseries, \
-    phase_magseries_with_errs, phase_bin_magseries_with_errs
+from ..lcmath import sigclip_magseries, phase_magseries_with_errs
+from ..varbase.lcfit import savgol_fit_magseries, traptransit_fit_magseries
 
 from pyeebls import eebls
 
-from ..varbase.lcfit import spline_fit_magseries, savgol_fit_magseries, \
-    traptransit_fit_magseries
 
 
 ############
@@ -94,13 +81,53 @@ def _bls_runner(times,
                 nbins,
                 minduration,
                 maxduration):
-    '''
-    This runs the bls.eebls function using the given inputs.
+    '''This runs the pyeebls.eebls function using the given inputs.
+
+    Parameters
+    ----------
+
+    times,mags : np.array
+        The input magnitude time-series to search for transits.
+
+    nfreq : int
+        The number of frequencies to use when searching for transits.
+
+    freqmin : float
+        The minimum frequency of the period-search -> max period that will be
+        used for the search.
+
+    stepsize : float
+        The step-size in frequency to use to generate a frequency-grid.
+
+    nbins : int
+        The number of phase bins to use.
+
+    minduration : float
+        The minimum fractional transit duration that will be considered.
+
+    maxduration : float
+        The maximum fractional transit duration that will be considered.
+
+    Returns
+    -------
+
+    dict
+        Returns a dict of the form::
+
+            {
+                'power':           the periodogram power array,
+                'bestperiod':      the best period found,
+                'bestpower':       the highest peak of the periodogram power,
+                'transdepth':      transit depth found by eebls.f,
+                'transduration':   transit duration found by eebls.f,
+                'transingressbin': transit ingress bin found by eebls.f,
+                'transegressbin':  transit egress bin found by eebls.f,
+            }
 
     '''
 
-    workarr_u = np.ones(times.size)
-    workarr_v = np.ones(times.size)
+    workarr_u = npones(times.size)
+    workarr_v = npones(times.size)
 
     blsresult = eebls(times, mags,
                       workarr_u, workarr_v,
@@ -117,18 +144,40 @@ def _bls_runner(times,
 
 
 
-def parallel_bls_worker(task):
+def _parallel_bls_worker(task):
     '''
-    This wraps _bls_runner for the parallel function below.
+    This wraps the BLS function for the parallel driver below.
 
-    task[0] = times
-    task[1] = mags
-    task[2] = nfreq
-    task[3] = freqmin
-    task[4] = stepsize
-    task[5] = nbins
-    task[6] = minduration
-    task[7] = maxduration
+    Parameters
+    ----------
+
+    tasks : tuple
+        This is of the form::
+
+            task[0] = times
+            task[1] = mags
+            task[2] = nfreq
+            task[3] = freqmin
+            task[4] = stepsize
+            task[5] = nbins
+            task[6] = minduration
+            task[7] = maxduration
+
+    Returns
+    -------
+
+    dict
+        Returns a dict of the form::
+
+            {
+                'power':           the periodogram power array,
+                'bestperiod':      the best period found,
+                'bestpower':       the highest peak of the periodogram power,
+                'transdepth':      transit depth found by eebls.f,
+                'transduration':   transit duration found by eebls.f,
+                'transingressbin': transit ingress bin found by eebls.f,
+                'transegressbin':  transit egress bin found by eebls.f,
+            }
 
     '''
 
@@ -141,7 +190,7 @@ def parallel_bls_worker(task):
         LOGEXCEPTION('BLS failed for task %s' % repr(task[2:]))
 
         return {
-            'power':np.array([npnan for x in range(task[2])]),
+            'power':nparray([npnan for x in range(task[2])]),
             'bestperiod':npnan,
             'bestpower':npnan,
             'transdepth':npnan,
@@ -173,6 +222,104 @@ def bls_serial_pfind(times, mags, errs,
     because BLS in Fortran is fairly fast). If nfreq > 5e5, this will take a
     while.
 
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The magnitude/flux time-series to search for transits.
+
+    magsarefluxes : bool
+        If the input measurement values in `mags` and `errs` are in fluxes, set
+        this to True.
+
+    startp,endp : float
+        The minimum and maximum periods to consider for the transit search.
+
+    stepsize : float
+        The step-size in frequency to use when constructing a frequency grid for
+        the period search.
+
+    mintransitduration,maxtransitduration : float
+        The minimum and maximum transitdurations (in units of phase) to consider
+        for the transit search.
+
+    nphasebins : int
+        The number of phase bins to use in the period search.
+
+    autofreq : bool
+        If this is True, the values of `stepsize` and `nphasebins` will be
+        ignored, and these, along with a frequency-grid, will be determined
+        based on the following relations::
+
+            nphasebins = int(ceil(2.0/mintransitduration))
+            if nphasebins > 3000:
+                nphasebins = 3000
+
+            stepsize = 0.25*mintransitduration/(times.max()-times.min())
+
+            minfreq = 1.0/endp
+            maxfreq = 1.0/startp
+            nfreq = int(ceil((maxfreq - minfreq)/stepsize))
+
+    periodepsilon : float
+        The fractional difference between successive values of 'best' periods
+        when sorting by periodogram power to consider them as separate periods
+        (as opposed to part of the same periodogram peak). This is used to avoid
+        broad peaks in the periodogram and make sure the 'best' periods returned
+        are all actually independent.
+
+    nbestpeaks : int
+        The number of 'best' peaks to return from the periodogram results,
+        starting from the global maximum of the periodogram peak values.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    verbose : bool
+        If this is True, will indicate progress and details about the frequency
+        grid used for the period search.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict, referred to as an `lspinfo` dict in other
+        astrobase functions that operate on periodogram results. This is a
+        standardized format across all astrobase period-finders, and is of the
+        form below::
+
+            {'bestperiod': the best period value in the periodogram,
+             'bestlspval': the periodogram peak associated with the best period,
+             'nbestpeaks': the input value of nbestpeaks,
+             'nbestlspvals': nbestpeaks-size list of best period peak values,
+             'nbestperiods': nbestpeaks-size list of best periods,
+             'lspvals': the full array of periodogram powers,
+             'frequencies': the full array of frequencies considered,
+             'periods': the full array of periods considered,
+             'blsresult': the result dict from the eebls.f wrapper function,
+             'stepsize': the actual stepsize used,
+             'nfreq': the actual nfreq used,
+             'nphasebins': the actual nphasebins used,
+             'mintransitduration': the input mintransitduration,
+             'maxtransitduration': the input maxtransitdurations,
+             'method':'bls' -> the name of the period-finder method,
+             'kwargs':{ dict of all of the input kwargs for record-keeping}}
+
     '''
 
     # get rid of nans first and sigclip
@@ -189,7 +336,7 @@ def bls_serial_pfind(times, mags, errs,
         if autofreq:
 
             # figure out the best number of phasebins to use
-            nphasebins = int(np.ceil(2.0/mintransitduration))
+            nphasebins = int(npceil(2.0/mintransitduration))
             if nphasebins > 3000:
                 nphasebins = 3000
 
@@ -199,7 +346,7 @@ def bls_serial_pfind(times, mags, errs,
             # now figure out the frequencies to use
             minfreq = 1.0/endp
             maxfreq = 1.0/startp
-            nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
+            nfreq = int(npceil((maxfreq - minfreq)/stepsize))
 
             # say what we're using
             if verbose:
@@ -216,7 +363,7 @@ def bls_serial_pfind(times, mags, errs,
 
             minfreq = 1.0/endp
             maxfreq = 1.0/startp
-            nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
+            nfreq = int(npceil((maxfreq - minfreq)/stepsize))
 
             # say what we're using
             if verbose:
@@ -316,7 +463,7 @@ def bls_serial_pfind(times, mags, errs,
                                   'sigclip':sigclip,
                                   'magsarefluxes':magsarefluxes}}
 
-            sortedlspind = np.argsort(finlsp)[::-1]
+            sortedlspind = npargsort(finlsp)[::-1]
             sortedlspperiods = finperiods[sortedlspind]
             sortedlspvals = finlsp[sortedlspind]
 
@@ -381,7 +528,8 @@ def bls_serial_pfind(times, mags, errs,
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
                           'sigclip':sigclip,
-                          'magsarefluxes':magsarefluxes}}
+                          'magsarefluxes':magsarefluxes}
+            }
 
             return resultdict
 
@@ -456,9 +604,9 @@ def bls_parallel_pfind(
         autofreq=True,  # figure out f0, nf, and df automatically
         nbestpeaks=5,
         periodepsilon=0.1,  # 0.1
-        nworkers=None,
         sigclip=10.0,
-        verbose=True
+        verbose=True,
+        nworkers=None,
 ):
     '''Runs the Box Least Squares Fitting Search for transit-shaped signals.
 
@@ -474,6 +622,108 @@ def bls_parallel_pfind(
     frequency space used by the parallel workers in this function. When in
     doubt, confirm results for this parallel implementation by comparing to
     those from the serial implementation above.
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The magnitude/flux time-series to search for transits.
+
+    magsarefluxes : bool
+        If the input measurement values in `mags` and `errs` are in fluxes, set
+        this to True.
+
+    startp,endp : float
+        The minimum and maximum periods to consider for the transit search.
+
+    stepsize : float
+        The step-size in frequency to use when constructing a frequency grid for
+        the period search.
+
+    mintransitduration,maxtransitduration : float
+        The minimum and maximum transitdurations (in units of phase) to consider
+        for the transit search.
+
+    nphasebins : int
+        The number of phase bins to use in the period search.
+
+    autofreq : bool
+        If this is True, the values of `stepsize` and `nphasebins` will be
+        ignored, and these, along with a frequency-grid, will be determined
+        based on the following relations::
+
+            nphasebins = int(ceil(2.0/mintransitduration))
+            if nphasebins > 3000:
+                nphasebins = 3000
+
+            stepsize = 0.25*mintransitduration/(times.max()-times.min())
+
+            minfreq = 1.0/endp
+            maxfreq = 1.0/startp
+            nfreq = int(ceil((maxfreq - minfreq)/stepsize))
+
+    periodepsilon : float
+        The fractional difference between successive values of 'best' periods
+        when sorting by periodogram power to consider them as separate periods
+        (as opposed to part of the same periodogram peak). This is used to avoid
+        broad peaks in the periodogram and make sure the 'best' periods returned
+        are all actually independent.
+
+    nbestpeaks : int
+        The number of 'best' peaks to return from the periodogram results,
+        starting from the global maximum of the periodogram peak values.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    verbose : bool
+        If this is True, will indicate progress and details about the frequency
+        grid used for the period search.
+
+    nworkers : int or None
+        The number of parallel workers to launch for period-search. If None,
+        nworkers = NCPUS.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict, referred to as an `lspinfo` dict in other
+        astrobase functions that operate on periodogram results. This is a
+        standardized format across all astrobase period-finders, and is of the
+        form below::
+
+            {'bestperiod': the best period value in the periodogram,
+             'bestlspval': the periodogram peak associated with the best period,
+             'nbestpeaks': the input value of nbestpeaks,
+             'nbestlspvals': nbestpeaks-size list of best period peak values,
+             'nbestperiods': nbestpeaks-size list of best periods,
+             'lspvals': the full array of periodogram powers,
+             'frequencies': the full array of frequencies considered,
+             'periods': the full array of periods considered,
+             'blsresult': list of result dicts from eebls.f wrapper functions,
+             'stepsize': the actual stepsize used,
+             'nfreq': the actual nfreq used,
+             'nphasebins': the actual nphasebins used,
+             'mintransitduration': the input mintransitduration,
+             'maxtransitduration': the input maxtransitdurations,
+             'method':'bls' -> the name of the period-finder method,
+             'kwargs':{ dict of all of the input kwargs for record-keeping}}
 
     '''
 
@@ -491,7 +741,7 @@ def bls_parallel_pfind(
         if autofreq:
 
             # figure out the best number of phasebins to use
-            nphasebins = int(np.ceil(2.0/mintransitduration))
+            nphasebins = int(npceil(2.0/mintransitduration))
             if nphasebins > 3000:
                 nphasebins = 3000
 
@@ -501,7 +751,7 @@ def bls_parallel_pfind(
             # now figure out the frequencies to use
             minfreq = 1.0/endp
             maxfreq = 1.0/startp
-            nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
+            nfreq = int(npceil((maxfreq - minfreq)/stepsize))
 
             # say what we're using
             if verbose:
@@ -518,7 +768,7 @@ def bls_parallel_pfind(
 
             minfreq = 1.0/endp
             maxfreq = 1.0/startp
-            nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
+            nfreq = int(npceil((maxfreq - minfreq)/stepsize))
 
             # say what we're using
             if verbose:
@@ -598,14 +848,14 @@ def bls_parallel_pfind(
 
         # start the pool
         pool = Pool(nworkers)
-        results = pool.map(parallel_bls_worker, tasks)
+        results = pool.map(_parallel_bls_worker, tasks)
 
         pool.close()
         pool.join()
         del pool
 
         # now concatenate the output lsp arrays
-        lsp = np.concatenate([x['power'] for x in results])
+        lsp = npconcatenate([x['power'] for x in results])
         periods = 1.0/frequencies
 
         # find the nbestpeaks for the periodogram: 1. sort the lsp array
@@ -648,7 +898,7 @@ def bls_parallel_pfind(
                               'sigclip':sigclip,
                               'magsarefluxes':magsarefluxes}}
 
-        sortedlspind = np.argsort(finlsp)[::-1]
+        sortedlspind = npargsort(finlsp)[::-1]
         sortedlspperiods = finperiods[sortedlspind]
         sortedlspvals = finlsp[sortedlspind]
 
@@ -776,7 +1026,7 @@ def _get_bls_stats(stimes,
             (stimes - stimes.min())/thisbestperiod -
             npfloor((stimes - stimes.min())/thisbestperiod)
         )
-        me_phases_sortind = np.argsort(me_phases)
+        me_phases_sortind = npargsort(me_phases)
         me_sorted_phases = me_phases[me_phases_sortind]
         me_sorted_times = stimes[me_phases_sortind]
 
@@ -785,7 +1035,7 @@ def _get_bls_stats(stimes,
 
         me_centertransit_ind = me_bininds == me_epochbin
         me_centertransit_phase = (
-            np.median(me_sorted_phases[me_centertransit_ind])
+            npmedian(me_sorted_phases[me_centertransit_ind])
         )
         me_centertransit_timeloc = npwhere(
             npabs(me_sorted_phases - me_centertransit_phase) ==
@@ -818,7 +1068,7 @@ def _get_bls_stats(stimes,
         thisminepoch = savfit['fitinfo']['fitepoch']
 
 
-    if isinstance(thisminepoch, np.ndarray):
+    if isinstance(thisminepoch, npndarray):
         if verbose:
             LOGWARNING('minimum epoch is actually an array:\n'
                        '%s\n'
@@ -859,14 +1109,14 @@ def _get_bls_stats(stimes,
             modelfit['magseries']['phase']
         )
         subtractedmags = actualmags - modelmags
-        subtractedrms = np.std(subtractedmags)
+        subtractedrms = npstd(subtractedmags)
         fit_period, fit_epoch, fit_depth, fit_duration, fit_ingress_dur = (
             fitparams
         )
 
         npts_in_transit = modelfit['fitinfo']['ntransitpoints']
         transit_snr = (
-            np.sqrt(npts_in_transit) * np.abs(fit_depth/subtractedrms)
+            npsqrt(npts_in_transit) * npabs(fit_depth/subtractedrms)
         )
 
         if verbose:
@@ -1019,7 +1269,6 @@ def bls_stats_singleperiod(times, mags, errs, period,
 
     verbose indicates whether this function should report its progress.
 
-    This returns a dict similar to bls_snr above.
 
     '''
 

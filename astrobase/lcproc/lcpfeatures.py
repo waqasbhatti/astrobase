@@ -94,31 +94,33 @@ from astrobase.lcproc.periodsearch import PFMETHODS
 ## PERIODIC FEATURES ##
 #######################
 
-def get_periodicfeatures(pfpickle,
-                         lcbasedir,
-                         outdir,
-                         fourierorder=5,
-                         # these are depth, duration, ingress duration
-                         transitparams=[-0.01,0.1,0.1],
-                         # these are depth, duration, depth ratio, secphase
-                         ebparams=[-0.2,0.3,0.7,0.5],
-                         pdiff_threshold=1.0e-4,
-                         sidereal_threshold=1.0e-4,
-                         sampling_peak_multiplier=5.0,
-                         sampling_startp=None,
-                         sampling_endp=None,
-                         starfeatures=None,
-                         timecols=None,
-                         magcols=None,
-                         errcols=None,
-                         lcformat='hat-sql',
-                         lcformatdir=None,
-                         sigclip=10.0,
-                         verbose=True,
-                         raiseonfail=False):
+def get_periodicfeatures(
+        pfpickle,
+        lcbasedir,
+        outdir,
+        fourierorder=5,
+        # these are depth, duration, ingress duration
+        transitparams=[-0.01,0.1,0.1],
+        # these are depth, duration, depth ratio, secphase
+        ebparams=[-0.2,0.3,0.7,0.5],
+        pdiff_threshold=1.0e-4,
+        sidereal_threshold=1.0e-4,
+        sampling_peak_multiplier=5.0,
+        sampling_startp=None,
+        sampling_endp=None,
+        starfeatures=None,
+        timecols=None,
+        magcols=None,
+        errcols=None,
+        lcformat='hat-sql',
+        lcformatdir=None,
+        sigclip=10.0,
+        verbose=True,
+        raiseonfail=False
+):
     '''This gets all periodic features for the object.
 
-    The following periodic features are obtained currently:
+    The following periodic features are obtained:
 
     - For all best periods from all periodogram methods in `pfpickle`,
       calculates the number of these with peaks that are at least
@@ -160,18 +162,90 @@ def get_periodicfeatures(pfpickle,
       finally the ratio between the phased LC 1/eta variability index and
       unphased LC 1/eta variability index.
 
-    -
-
 
     Parameters
     ----------
 
+    pfpickle : str
 
+    lcbasedir : str
 
-    If starfeatures is not None, it should be the filename of the
-    starfeatures-<objectid>.pkl created by get_starfeatures for this
-    object. This is used to get the neighbor's light curve and phase it with
-    this object's period to see if this object is blended.
+    outdir : str
+
+    fourierorder : int
+
+    transitparams : list of float
+
+    ebparams : list of float
+
+    pdiff_threshold : float or None
+
+    sidereal_threshold : float or None
+
+    sampling_peak_multiplier : float or None
+
+    sampling_startp : float or None
+
+    sampling_endp : float or None
+
+    starfeatures : str or None
+        If not None, this should be the filename of the
+        `starfeatures-<objectid>.pkl` created by
+        :py:func:`astrobase.lcproc.lcsfeatures.get_starfeatures` for this
+        object. This is used to get the neighbor's light curve and phase it with
+        this object's period to see if this object is blended.
+
+    timecols : list of str or None
+        The timecol keys to use from the lcdict in calculating the features.
+
+    magcols : list of str or None
+        The magcol keys to use from the lcdict in calculating the features.
+
+    errcols : list of str or None
+        The errcol keys to use from the lcdict in calculating the features.
+
+    lcformat : str
+        This is the `formatkey` associated with your light curve format, which
+        you previously passed in to the `lcproc.register_lcformat`
+        function. This will be used to look up how to find and read the light
+        curves specified in `basedir` or `use_list_of_filenames`.
+
+    lcformatdir : str or None
+        If this is provided, gives the path to a directory when you've stored
+        your lcformat description JSONs, other than the usual directories lcproc
+        knows to search for them in. Use this along with `lcformat` to specify
+        an LC format JSON file that's not currently registered with lcproc.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    verbose : bool
+        If True, will indicate progress while working.
+
+    raiseonfail : bool
+        If True, will raise an Exception if something goes wrong.
+
+    Returns
+    -------
+
+    str
+        Returns a filename for the output pickle containing all of the periodic
+        features for the input object's LC.
 
     '''
 

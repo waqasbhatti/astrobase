@@ -3,9 +3,8 @@
 # lccs.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Aug 2018
 # License: MIT - see LICENSE for the full text.
 
-'''
-This contains functions to search for objects and get light curves from a Light
-Curve Collection (LCC) server (https://github.com/waqasbhatti/lcc-server) using
+'''This contains functions to search for objects and get light curves from a
+Light Curve Collection server (https://github.com/waqasbhatti/lcc-server) using
 its HTTP API.
 
 The LCC-Server requires an API key to access most services. The service
@@ -14,10 +13,7 @@ first use (and upon API key expiry afterwards). If you sign up for an LCC-Server
 user account, you can import the API key generated for that account on the user
 home page. To do this, use the import_apikey function in this module.
 
-SERVICES SUPPORTED
-------------------
-
-This currently supports the following LCC server functions::
+This currently supports the following LCC-Server services::
 
     conesearch   : cone_search(lcc_server_url, center_ra, center_decl, ...)
     ftsquery     : fulltext_search(lcc_server_url, searchtxt, sesame=False, ...)
