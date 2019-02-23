@@ -44,37 +44,21 @@ from multiprocessing import Pool, cpu_count
 
 from math import fmod
 
-import numpy as np
+from numpy import (
+    nan as npnan, arange as nparange, array as nparray,
+    isfinite as npisfinite, argmax as npargmax, linspace as nplinspace,
+    ceil as npceil, argsort as npargsort, concatenate as npconcatenate
+)
 
-# import these to avoid lookup overhead
-from numpy import nan as npnan, sum as npsum, abs as npabs, \
-    roll as nproll, isfinite as npisfinite, std as npstd, \
-    sign as npsign, sqrt as npsqrt, median as npmedian, \
-    array as nparray, percentile as nppercentile, \
-    polyfit as nppolyfit, var as npvar, max as npmax, min as npmin, \
-    log10 as nplog10, arange as nparange, pi as MPI, floor as npfloor, \
-    argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
-    where as npwhere, linspace as nplinspace, \
-    zeros_like as npzeros_like, full_like as npfull_like, \
-    arctan as nparctan, nanargmax as npnanargmax, nanargmin as npnanargmin, \
-    empty as npempty, ceil as npceil, mean as npmean, \
-    digitize as npdigitize, unique as npunique, \
-    argmax as npargmax, argmin as npargmin
+from astropy.stats import BoxLeastSquares
+from astropy import units as u
 
 
 ###################
 ## LOCAL IMPORTS ##
 ###################
 
-from ..lcmath import phase_magseries, sigclip_magseries, \
-    time_bin_magseries, phase_bin_magseries, \
-    phase_magseries_with_errs, phase_bin_magseries_with_errs
-
-from astropy.stats import BoxLeastSquares
-from astropy import units as u
-
-from ..varbase.lcfit import savgol_fit_magseries, \
-    traptransit_fit_magseries
+from ..lcmath import sigclip_magseries
 
 
 ############
@@ -96,16 +80,154 @@ def bls_serial_pfind(times, mags, errs,
                      mintransitduration=0.01,  # minimum transit length in phase
                      maxtransitduration=0.4,   # maximum transit length in phase
                      ndurations=100,
+                     autofreq=True,  # figure out f0, nf, and df automatically
                      blsobjective='likelihood',
                      blsmethod='fast',
                      blsoversample=10,
-                     autofreq=True,  # figure out f0, nf, and df automatically
+                     blsmintransits=3,
+                     blsfreqfactor=10.0,
                      periodepsilon=0.1,
                      nbestpeaks=5,
                      sigclip=10.0,
                      verbose=True,
                      raiseonfail=False):
     '''Runs the Box Least Squares Fitting Search for transit-shaped signals.
+
+    Based on the version of BLS in Astropy 3.1:
+    `astropy.stats.BoxLeastSquares`. If you don't have Astropy 3.1, this module
+    will fail to import. Note that by default, this implementation of
+    `bls_serial_pfind` doesn't use the `.autoperiod()` function from
+    `BoxLeastSquares` but uses the same auto frequency-grid generation as the
+    functions in `periodbase.kbls`. If you want to use Astropy's implementation,
+    set the value of `autofreq` kwarg to 'astropy'.
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The magnitude/flux time-series to search for transits.
+
+    magsarefluxes : bool
+        If the input measurement values in `mags` and `errs` are in fluxes, set
+        this to True.
+
+    startp,endp : float
+        The minimum and maximum periods to consider for the transit search.
+
+    stepsize : float
+        The step-size in frequency to use when constructing a frequency grid for
+        the period search.
+
+    mintransitduration,maxtransitduration : float
+        The minimum and maximum transitdurations (in units of phase) to consider
+        for the transit search.
+
+    ndurations : int
+        The number of transit durations to use in the period-search.
+
+    autofreq : bool or str
+        If this is True, the values of `stepsize` and `nphasebins` will be
+        ignored, and these, along with a frequency-grid, will be determined
+        based on the following relations::
+
+            nphasebins = int(ceil(2.0/mintransitduration))
+            if nphasebins > 3000:
+                nphasebins = 3000
+
+            stepsize = 0.25*mintransitduration/(times.max()-times.min())
+
+            minfreq = 1.0/endp
+            maxfreq = 1.0/startp
+            nfreq = int(ceil((maxfreq - minfreq)/stepsize))
+
+        If this is False, you must set `startp`, `endp`, and `stepsize` as
+        appropriate.
+
+        If this is str == 'astropy', will use the
+        `astropy.stats.BoxLeastSquares.autoperiod()` function to calculate the
+        frequency grid instead of the kbls method.
+
+    blsobjective : {'likelihood','snr'}
+        Sets the type of objective to optimize in the `BoxLeastSquares.power()`
+        function.
+
+    blsmethod : {'fast','slow'}
+        Sets the type of method to use in the `BoxLeastSquares.power()`
+        function.
+
+    blsoversample : {'likelihood','snr'}
+        Sets the `oversample` kwarg for the `BoxLeastSquares.power()` function.
+
+    blsmintransits : int
+        Sets the `min_n_transits` kwarg for the `BoxLeastSquares.autperiod()`
+        function.
+
+    blsfreqfactor : float
+        Sets the `frequency_factor` kwarg for the `BoxLeastSquares.power()`
+        function.
+
+    periodepsilon : float
+        The fractional difference between successive values of 'best' periods
+        when sorting by periodogram power to consider them as separate periods
+        (as opposed to part of the same periodogram peak). This is used to avoid
+        broad peaks in the periodogram and make sure the 'best' periods returned
+        are all actually independent.
+
+    nbestpeaks : int
+        The number of 'best' peaks to return from the periodogram results,
+        starting from the global maximum of the periodogram peak values.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    verbose : bool
+        If this is True, will indicate progress and details about the frequency
+        grid used for the period search.
+
+    raiseonfail : bool
+        If True, raises an exception if something goes wrong. Otherwise, returns
+        None.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict, referred to as an `lspinfo` dict in other
+        astrobase functions that operate on periodogram results. This is a
+        standardized format across all astrobase period-finders, and is of the
+        form below::
+
+            {'bestperiod': the best period value in the periodogram,
+             'bestlspval': the periodogram peak associated with the best period,
+             'nbestpeaks': the input value of nbestpeaks,
+             'nbestlspvals': nbestpeaks-size list of best period peak values,
+             'nbestperiods': nbestpeaks-size list of best periods,
+             'lspvals': the full array of periodogram powers,
+             'frequencies': the full array of frequencies considered,
+             'periods': the full array of periods considered,
+             'blsresult': the result dict from the eebls.f wrapper function,
+             'stepsize': the actual stepsize used,
+             'nfreq': the actual nfreq used,
+             'durations': the durations array used,
+             'mintransitduration': the input mintransitduration,
+             'maxtransitduration': the input maxtransitdurations,
+             'method':'bls' -> the name of the period-finder method,
+             'kwargs':{ dict of all of the input kwargs for record-keeping}}
 
     '''
 
@@ -120,7 +242,7 @@ def bls_serial_pfind(times, mags, errs,
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
 
         # if we're setting up everything automatically
-        if autofreq:
+        if isinstance(autofreq, bool) and autofreq:
 
             # use heuristic to figure out best timestep
             stepsize = 0.25*mintransitduration/(stimes.max()-stimes.min())
@@ -128,7 +250,7 @@ def bls_serial_pfind(times, mags, errs,
             # now figure out the frequencies to use
             minfreq = 1.0/endp
             maxfreq = 1.0/startp
-            nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
+            nfreq = int(npceil((maxfreq - minfreq)/stepsize))
 
             # say what we're using
             if verbose:
@@ -141,11 +263,13 @@ def bls_serial_pfind(times, mags, errs,
                         (stepsize, ndurations,
                          mintransitduration, maxtransitduration))
 
-        else:
+            use_autoperiod = False
+
+        elif isinstance(autofreq, bool) and not autofreq:
 
             minfreq = 1.0/endp
             maxfreq = 1.0/startp
-            nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
+            nfreq = int(npceil((maxfreq - minfreq)/stepsize))
 
             # say what we're using
             if verbose:
@@ -158,15 +282,20 @@ def bls_serial_pfind(times, mags, errs,
                         (stepsize, ndurations,
                          mintransitduration, maxtransitduration))
 
+            use_autoperiod = False
 
-        if nfreq > 5.0e5:
+        elif isinstance(autofreq, str) and autofreq == 'astropy':
 
-            if verbose:
-                LOGWARNING('more than 5.0e5 frequencies to go through; '
-                           'this will take a while. '
-                           'you might want to use the '
-                           'periodbase.bls_parallel_pfind function instead')
+            use_autoperiod = True
+            minfreq = 1.0/endp
+            maxfreq = 1.0/startp
 
+        else:
+
+            LOGERROR("unknown autofreq kwarg encountered. can't continue...")
+            return None
+
+        # check the time-base vs. endp value
         if minfreq < (1.0/(stimes.max() - stimes.min())):
 
             if verbose:
@@ -183,14 +312,10 @@ def bls_serial_pfind(times, mags, errs,
         # run BLS
         try:
 
-            frequencies = minfreq + nparange(nfreq)*stepsize
-            periods = 1.0/frequencies
-
             # astropy's BLS requires durations in units of time
-            durations = np.linspace(mintransitduration*startp,
-                                    maxtransitduration*startp,
-                                    ndurations)
-
+            durations = nplinspace(mintransitduration*startp,
+                                   maxtransitduration*startp,
+                                   ndurations)
 
             # set up the correct units for the BLS model
             if magsarefluxes:
@@ -209,15 +334,57 @@ def bls_serial_pfind(times, mags, errs,
                     dy=serrs*u.mag
                 )
 
+            # use autoperiod if requested
+            if use_autoperiod:
+                periods = nparray(
+                    blsmodel.autoperiod(
+                        durations,
+                        minimum_period=startp,
+                        maximum_period=endp,
+                        minimum_n_transit=blsmintransits,
+                        frequency_factor=blsfreqfactor
+                    )
+                )
+                nfreq = periods.size
+
+                if verbose:
+                    LOGINFO(
+                        "autofreq = 'astropy', used .autoperiod() with "
+                        "minimum_n_transit = %s, freq_factor = %s "
+                        "to generate the frequency grid" %
+                        (blsmintransits, blsfreqfactor)
+                    )
+                    LOGINFO('stepsize = %.5f, nfreq = %s, minfreq = %.5f, '
+                            'maxfreq = %.5f, ndurations = %s' %
+                            (abs(1.0/periods[1] - 1.0/periods[0]),
+                             nfreq,
+                             1.0/periods.max(),
+                             1.0/periods.min(),
+                             durations.size))
+
+            # otherwise, use kbls method
+            else:
+                frequencies = minfreq + nparange(nfreq)*stepsize
+                periods = 1.0/frequencies
+
+            if nfreq > 5.0e5:
+                if verbose:
+                    LOGWARNING('more than 5.0e5 frequencies to go through; '
+                               'this will take a while. '
+                               'you might want to use the '
+                               'abls.bls_parallel_pfind function instead')
+
+            # run the periodogram
             blsresult = blsmodel.power(
-                periods,
-                durations,
+                periods*u.day,
+                durations*u.day,
                 objective=blsobjective,
                 method=blsmethod,
                 oversample=blsoversample
             )
 
-            lsp = np.array(blsresult.power)
+            # get the peak values
+            lsp = nparray(blsresult.power)
 
             # find the nbestpeaks for the periodogram: 1. sort the lsp array
             # by highest value first 2. go down the values until we find
@@ -260,13 +427,15 @@ def bls_serial_pfind(times, mags, errs,
                                   'blsobjective':blsobjective,
                                   'blsmethod':blsmethod,
                                   'blsoversample':blsoversample,
+                                  'blsntransits':blsmintransits,
+                                  'blsfreqfactor':blsfreqfactor,
                                   'autofreq':autofreq,
                                   'periodepsilon':periodepsilon,
                                   'nbestpeaks':nbestpeaks,
                                   'sigclip':sigclip,
                                   'magsarefluxes':magsarefluxes}}
 
-            sortedlspind = np.argsort(finlsp)[::-1]
+            sortedlspind = npargsort(finlsp)[::-1]
             sortedlspperiods = finperiods[sortedlspind]
             sortedlspvals = finlsp[sortedlspind]
 
@@ -336,6 +505,8 @@ def bls_serial_pfind(times, mags, errs,
                           'blsobjective':blsobjective,
                           'blsmethod':blsmethod,
                           'blsoversample':blsoversample,
+                          'blsntransits':blsmintransits,
+                          'blsfreqfactor':blsfreqfactor,
                           'autofreq':autofreq,
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
@@ -377,6 +548,8 @@ def bls_serial_pfind(times, mags, errs,
                               'blsobjective':blsobjective,
                               'blsmethod':blsmethod,
                               'blsoversample':blsoversample,
+                              'blsntransits':blsmintransits,
+                              'blsfreqfactor':blsfreqfactor,
                               'autofreq':autofreq,
                               'periodepsilon':periodepsilon,
                               'nbestpeaks':nbestpeaks,
@@ -413,6 +586,8 @@ def bls_serial_pfind(times, mags, errs,
                           'blsobjective':blsobjective,
                           'blsmethod':blsmethod,
                           'blsoversample':blsoversample,
+                          'blsntransits':blsmintransits,
+                          'blsfreqfactor':blsfreqfactor,
                           'autofreq':autofreq,
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
@@ -421,26 +596,28 @@ def bls_serial_pfind(times, mags, errs,
 
 
 
-def parallel_bls_worker(task):
+def _parallel_bls_worker(task):
     '''
     This wraps Astropy's BoxLeastSquares for use with bls_parallel_pfind below.
 
-        # task[0] = times
-        # task[1] = mags
-        # task[2] = errs
-        # task[3] = magsarefluxes
+    `task` is a tuple::
 
-        # task[4] = minfreq
-        # task[5] = nfreq
-        # task[6] = stepsize
+        task[0] = times
+        task[1] = mags
+        task[2] = errs
+        task[3] = magsarefluxes
 
-        # task[7] = ndurations
-        # task[8] = mintransitduration
-        # task[9] = maxtransitduration
+        task[4] = minfreq
+        task[5] = nfreq
+        task[6] = stepsize
 
-        # task[10] = blsobjective
-        # task[11] = blsmethod
-        # task[12] = blsoversample
+        task[7] = ndurations
+        task[8] = mintransitduration
+        task[9] = maxtransitduration
+
+        task[10] = blsobjective
+        task[11] = blsmethod
+        task[12] = blsoversample
 
     '''
 
@@ -459,9 +636,9 @@ def parallel_bls_worker(task):
         periods = 1.0/frequencies
 
         # astropy's BLS requires durations in units of time
-        durations = np.linspace(mintransitduration*periods.min(),
-                                maxtransitduration*periods.min(),
-                                ndurations)
+        durations = nplinspace(mintransitduration*periods.min(),
+                               maxtransitduration*periods.min(),
+                               ndurations)
 
         # set up the correct units for the BLS model
         if magsarefluxes:
@@ -481,8 +658,8 @@ def parallel_bls_worker(task):
             )
 
         blsresult = blsmodel.power(
-            periods,
-            durations,
+            periods*u.day,
+            durations*u.day,
             objective=blsobjective,
             method=blsmethod,
             oversample=blsoversample
@@ -492,7 +669,7 @@ def parallel_bls_worker(task):
             'blsresult': blsresult,
             'blsmodel': blsmodel,
             'durations': durations,
-            'power': np.array(blsresult.power)
+            'power': nparray(blsresult.power)
         }
 
     except Exception as e:
@@ -504,7 +681,7 @@ def parallel_bls_worker(task):
             'blsresult': None,
             'blsmodel': None,
             'durations': durations,
-            'power': np.array([npnan for x in range(nfreq)]),
+            'power': nparray([npnan for x in range(nfreq)]),
         }
 
 
@@ -518,20 +695,31 @@ def bls_parallel_pfind(
         mintransitduration=0.01,  # minimum transit length in phase
         maxtransitduration=0.4,   # maximum transit length in phase
         ndurations=100,
+        autofreq=True,  # figure out f0, nf, and df automatically
         blsobjective='likelihood',
         blsmethod='fast',
-        blsoversample=10,
-        autofreq=True,  # figure out f0, nf, and df automatically
+        blsoversample=5,
+        blsmintransits=3,
+        blsfreqfactor=10.0,
         nbestpeaks=5,
         periodepsilon=0.1,  # 0.1
-        nworkers=None,
         sigclip=10.0,
-        verbose=True
+        verbose=True,
+        nworkers=None,
 ):
     '''Runs the Box Least Squares Fitting Search for transit-shaped signals.
 
     Breaks up the full frequency space into chunks and passes them to parallel
     BLS workers.
+
+    Based on the version of BLS in Astropy 3.1:
+    `astropy.stats.BoxLeastSquares`. If you don't have Astropy 3.1, this module
+    will fail to import. Note that by default, this implementation of
+    `bls_parallel_pfind` doesn't use the `.autoperiod()` function from
+    `BoxLeastSquares` but uses the same auto frequency-grid generation as the
+    functions in `periodbase.kbls`. If you want to use Astropy's implementation,
+    set the value of `autofreq` kwarg to 'astropy'. The generated period array
+    will then be broken up into chunks and sent to the individual workers.
 
     NOTE: the combined BLS spectrum produced by this function is not identical
     to that produced by running BLS in one shot for the entire frequency
@@ -541,6 +729,134 @@ def bls_parallel_pfind(
     frequency space used by the parallel workers in this function. When in
     doubt, confirm results for this parallel implementation by comparing to
     those from the serial implementation above.
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The magnitude/flux time-series to search for transits.
+
+    magsarefluxes : bool
+        If the input measurement values in `mags` and `errs` are in fluxes, set
+        this to True.
+
+    startp,endp : float
+        The minimum and maximum periods to consider for the transit search.
+
+    stepsize : float
+        The step-size in frequency to use when constructing a frequency grid for
+        the period search.
+
+    mintransitduration,maxtransitduration : float
+        The minimum and maximum transitdurations (in units of phase) to consider
+        for the transit search.
+
+    ndurations : int
+        The number of transit durations to use in the period-search.
+
+    autofreq : bool or str
+        If this is True, the values of `stepsize` and `nphasebins` will be
+        ignored, and these, along with a frequency-grid, will be determined
+        based on the following relations::
+
+            nphasebins = int(ceil(2.0/mintransitduration))
+            if nphasebins > 3000:
+                nphasebins = 3000
+
+            stepsize = 0.25*mintransitduration/(times.max()-times.min())
+
+            minfreq = 1.0/endp
+            maxfreq = 1.0/startp
+            nfreq = int(ceil((maxfreq - minfreq)/stepsize))
+
+        If this is False, you must set `startp`, `endp`, and `stepsize` as
+        appropriate.
+
+        If this is str == 'astropy', will use the
+        `astropy.stats.BoxLeastSquares.autoperiod()` function to calculate the
+        frequency grid instead of the kbls method.
+
+    blsobjective : {'likelihood','snr'}
+        Sets the type of objective to optimize in the `BoxLeastSquares.power()`
+        function.
+
+    blsmethod : {'fast','slow'}
+        Sets the type of method to use in the `BoxLeastSquares.power()`
+        function.
+
+    blsoversample : {'likelihood','snr'}
+        Sets the `oversample` kwarg for the `BoxLeastSquares.power()` function.
+
+    blsmintransits : int
+        Sets the `min_n_transits` kwarg for the `BoxLeastSquares.autperiod()`
+        function.
+
+    blsfreqfactor : float
+        Sets the `frequency_factor` kwarg for the `BoxLeastSquares.power()`
+        function.
+
+    periodepsilon : float
+        The fractional difference between successive values of 'best' periods
+        when sorting by periodogram power to consider them as separate periods
+        (as opposed to part of the same periodogram peak). This is used to avoid
+        broad peaks in the periodogram and make sure the 'best' periods returned
+        are all actually independent.
+
+    nbestpeaks : int
+        The number of 'best' peaks to return from the periodogram results,
+        starting from the global maximum of the periodogram peak values.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    verbose : bool
+        If this is True, will indicate progress and details about the frequency
+        grid used for the period search.
+
+    nworkers : int or None
+        The number of parallel workers to launch for period-search. If None,
+        nworkers = NCPUS.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict, referred to as an `lspinfo` dict in other
+        astrobase functions that operate on periodogram results. This is a
+        standardized format across all astrobase period-finders, and is of the
+        form below::
+
+            {'bestperiod': the best period value in the periodogram,
+             'bestlspval': the periodogram peak associated with the best period,
+             'nbestpeaks': the input value of nbestpeaks,
+             'nbestlspvals': nbestpeaks-size list of best period peak values,
+             'nbestperiods': nbestpeaks-size list of best periods,
+             'lspvals': the full array of periodogram powers,
+             'frequencies': the full array of frequencies considered,
+             'periods': the full array of periods considered,
+             'blsresult': the result dict from the eebls.f wrapper function,
+             'stepsize': the actual stepsize used,
+             'nfreq': the actual nfreq used,
+             'durations': the durations array used,
+             'mintransitduration': the input mintransitduration,
+             'maxtransitduration': the input maxtransitdurations,
+             'method':'bls' -> the name of the period-finder method,
+             'kwargs':{ dict of all of the input kwargs for record-keeping}}
 
     '''
 
@@ -555,7 +871,7 @@ def bls_parallel_pfind(
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
 
         # if we're setting up everything automatically
-        if autofreq:
+        if isinstance(autofreq, bool) and autofreq:
 
             # use heuristic to figure out best timestep
             stepsize = 0.25*mintransitduration/(stimes.max()-stimes.min())
@@ -563,7 +879,7 @@ def bls_parallel_pfind(
             # now figure out the frequencies to use
             minfreq = 1.0/endp
             maxfreq = 1.0/startp
-            nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
+            nfreq = int(npceil((maxfreq - minfreq)/stepsize))
 
             # say what we're using
             if verbose:
@@ -576,11 +892,13 @@ def bls_parallel_pfind(
                         (stepsize, ndurations,
                          mintransitduration, maxtransitduration))
 
-        else:
+            use_autoperiod = False
+
+        elif isinstance(autofreq, bool) and not autofreq:
 
             minfreq = 1.0/endp
             maxfreq = 1.0/startp
-            nfreq = int(np.ceil((maxfreq - minfreq)/stepsize))
+            nfreq = int(npceil((maxfreq - minfreq)/stepsize))
 
             # say what we're using
             if verbose:
@@ -592,6 +910,19 @@ def bls_parallel_pfind(
                         'min transit duration: %s, max transit duration: %s' %
                         (stepsize, ndurations,
                          mintransitduration, maxtransitduration))
+
+            use_autoperiod = False
+
+        elif isinstance(autofreq, str) and autofreq == 'astropy':
+
+            use_autoperiod = True
+            minfreq = 1.0/endp
+            maxfreq = 1.0/startp
+
+        else:
+
+            LOGERROR("unknown autofreq kwarg encountered. can't continue...")
+            return None
 
         # check the minimum frequency
         if minfreq < (1.0/(stimes.max() - stimes.min())):
@@ -616,12 +947,71 @@ def bls_parallel_pfind(
             if verbose:
                 LOGINFO('using %s workers...' % nworkers)
 
-        # break up the tasks into chunks
-        frequencies = minfreq + nparange(nfreq)*stepsize
+        # check if autoperiod is True and get the correct period-grid
+        if use_autoperiod:
 
+            # astropy's BLS requires durations in units of time
+            durations = nplinspace(mintransitduration*startp,
+                                   maxtransitduration*startp,
+                                   ndurations)
+
+            # set up the correct units for the BLS model
+            if magsarefluxes:
+
+                blsmodel = BoxLeastSquares(
+                    stimes*u.day,
+                    smags*u.dimensionless_unscaled,
+                    dy=serrs*u.dimensionless_unscaled
+                )
+
+            else:
+
+                blsmodel = BoxLeastSquares(
+                    stimes*u.day,
+                    smags*u.mag,
+                    dy=serrs*u.mag
+                )
+
+            periods = nparray(
+                blsmodel.autoperiod(
+                    durations*u.day,
+                    minimum_period=startp,
+                    maximum_period=endp,
+                    minimum_n_transit=blsmintransits,
+                    frequency_factor=blsfreqfactor
+                )
+            )
+
+            frequencies = 1.0/periods
+            nfreq = frequencies.size
+
+            if verbose:
+                LOGINFO(
+                    "autofreq = 'astropy', used .autoperiod() with "
+                    "minimum_n_transit = %s, freq_factor = %s "
+                    "to generate the frequency grid" %
+                    (blsmintransits, blsfreqfactor)
+                )
+                LOGINFO('stepsize = %s, nfreq = %s, minfreq = %.5f, '
+                        'maxfreq = %.5f, ndurations = %s' %
+                        (abs(frequencies[1] - frequencies[0]),
+                         nfreq,
+                         1.0/periods.max(),
+                         1.0/periods.min(),
+                         durations.size))
+
+            del blsmodel
+            del durations
+
+        # otherwise, use kbls method
+        else:
+
+            frequencies = minfreq + nparange(nfreq)*stepsize
+
+
+        # break up the tasks into chunks
         csrem = int(fmod(nfreq, nworkers))
         csint = int(float(nfreq/nworkers))
-
         chunk_minfreqs, chunk_nfreqs = [], []
 
         for x in range(nworkers):
@@ -636,10 +1026,6 @@ def bls_parallel_pfind(
 
             chunk_minfreqs.append(this_minfreqs)
             chunk_nfreqs.append(this_nfreqs)
-
-        # chunk_minfreqs = [frequencies[x*chunksize] for x in range(nworkers)]
-        # chunk_nfreqs = [frequencies[x*chunksize:x*chunksize+chunksize].size
-        #                 for x in range(nworkers)]
 
 
         # populate the tasks list
@@ -679,14 +1065,14 @@ def bls_parallel_pfind(
 
         # start the pool
         pool = Pool(nworkers)
-        results = pool.map(parallel_bls_worker, tasks)
+        results = pool.map(_parallel_bls_worker, tasks)
 
         pool.close()
         pool.join()
         del pool
 
         # now concatenate the output lsp arrays
-        lsp = np.concatenate([x['power'] for x in results])
+        lsp = npconcatenate([x['power'] for x in results])
         periods = 1.0/frequencies
 
         # find the nbestpeaks for the periodogram: 1. sort the lsp array
@@ -736,7 +1122,7 @@ def bls_parallel_pfind(
                               'sigclip':sigclip,
                               'magsarefluxes':magsarefluxes}}
 
-        sortedlspind = np.argsort(finlsp)[::-1]
+        sortedlspind = npargsort(finlsp)[::-1]
         sortedlspperiods = finperiods[sortedlspind]
         sortedlspvals = finlsp[sortedlspind]
 
@@ -758,10 +1144,6 @@ def bls_parallel_pfind(
                 break
             perioddiff = abs(period - prevperiod)
             bestperiodsdiff = [abs(period - x) for x in nbestperiods]
-
-            # print('prevperiod = %s, thisperiod = %s, '
-            #       'perioddiff = %s, peakcount = %s' %
-            #       (prevperiod, period, perioddiff, peakcount))
 
             # this ensures that this period is different from the last
             # period and from all the other existing best periods by
@@ -867,6 +1249,11 @@ def bls_stats_singleperiod(times, mags, errs, period,
     '''This calculates the SNR, refit period, and time of center-transit for a
     single period.
 
+    The equation used is::
+
+        SNR = (transit model depth / RMS of LC with transit model subtracted)
+              * sqrt(number of points in transit)
+
     times, mags, errs are numpy arrays containing these values.
 
     period is the period for which the SNR, refit period, and refit epoch should
@@ -921,7 +1308,7 @@ def bls_stats_singleperiod(times, mags, errs, period,
                                   magsarefluxes=magsarefluxes,
                                   sigclip=None)
 
-        bestperiod_ind = np.argmax(blsres['blsresult'].power)
+        bestperiod_ind = npargmax(blsres['blsresult'].power)
         try:
             bestperiod = blsres['blsresult'].period[bestperiod_ind].to_value()
         except Exception as e:
@@ -995,8 +1382,10 @@ def bls_snr(blsdict,
     '''Calculates the signal to noise ratio for each best peak in the BLS
     periodogram.
 
-    SNR = transit model depth / RMS of light curve with transit model subtracted
-          * sqrt(number of points in transit)
+    The equation used is::
+
+        SNR = (transit model depth / RMS of LC with transit model subtracted)
+              * sqrt(number of points in transit)
 
     blsdict is the output of either bls_parallel_pfind or bls_serial_pfind.
 
