@@ -804,12 +804,12 @@ def bls_parallel_pfind(
             if verbose:
                 LOGINFO('using %s workers...' % nworkers)
 
-        # break up the tasks into chunks
+        # the frequencies array to be searched
         frequencies = minfreq + nparange(nfreq)*stepsize
 
+        # break up the tasks into chunks
         csrem = int(fmod(nfreq, nworkers))
         csint = int(float(nfreq/nworkers))
-
         chunk_minfreqs, chunk_nfreqs = [], []
 
         for x in range(nworkers):
@@ -824,10 +824,6 @@ def bls_parallel_pfind(
 
             chunk_minfreqs.append(this_minfreqs)
             chunk_nfreqs.append(this_nfreqs)
-
-        # chunk_minfreqs = [frequencies[x*chunksize] for x in range(nworkers)]
-        # chunk_nfreqs = [frequencies[x*chunksize:x*chunksize+chunksize].size
-        #                 for x in range(nworkers)]
 
 
         # populate the tasks list
@@ -917,10 +913,6 @@ def bls_parallel_pfind(
                 break
             perioddiff = abs(period - prevperiod)
             bestperiodsdiff = [abs(period - x) for x in nbestperiods]
-
-            # print('prevperiod = %s, thisperiod = %s, '
-            #       'perioddiff = %s, peakcount = %s' %
-            #       (prevperiod, period, perioddiff, peakcount))
 
             # this ensures that this period is different from the last
             # period and from all the other existing best periods by
@@ -1251,6 +1243,11 @@ def bls_stats_singleperiod(times, mags, errs, period,
                            verbose=True):
     '''This calculates the SNR, refit period, and time of center-transit for a
     single period.
+
+    The equation used is::
+
+        SNR = (transit model depth / RMS of LC with transit model subtracted)
+              * sqrt(number of points in transit)
 
     times, mags, errs are numpy arrays containing these values.
 
