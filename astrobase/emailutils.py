@@ -66,8 +66,8 @@ if os.path.exists(SETTINGSFILE):
                       'is insecure, not reading...'
                       % SETTINGSFILE)
 else:
-    raise IOError('the email settings file (%s does not exist!' % SETTINGSFILE)
-
+    print('the email settings file: %s does not exist!' % SETTINGSFILE)
+    EMAIL_USER, EMAIL_PASSWORD, EMAIL_SERVER = None, None, None
 
 EMAIL_TEMPLATE = '''\
 This is an automated notification from {sender} on {hostname}.
@@ -85,7 +85,10 @@ def send_email(sender,
                subject,
                content,
                email_recipient_list,
-               email_address_list):
+               email_address_list,
+               email_user=None,
+               email_pass=None,
+               email_server=None):
     '''This sends an email to addresses, informing them about events.
 
     The email account settings are retrieved from the settings file as described
@@ -111,6 +114,23 @@ def send_email(sender,
         This is a list of email recipient addresses of the form:
         `['example1@example.com', 'example2@example.org', ...]`
 
+    email_user : str
+        The username of the email server account that will send the emails. If
+        this is None, the value of EMAIL_USER from the
+        ~/.astrobase/.emailsettings file will be used. If that is None as well,
+        this function won't work.
+
+    email_pass : str
+        The password of the email server account that will send the emails. If
+        this is None, the value of EMAIL_PASS from the
+        ~/.astrobase/.emailsettings file will be used. If that is None as well,
+        this function won't work.
+
+    email_server : str
+        The address of the email server that will send the emails. If this is
+        None, the value of EMAIL_USER from the ~/.astrobase/.emailsettings file
+        will be used. If that is None as well, this function won't work.
+
     Returns
     -------
 
@@ -118,6 +138,21 @@ def send_email(sender,
         True if email sending succeeded. False if email sending failed.
 
     '''
+
+    if not email_user:
+        email_user = EMAIL_USER
+
+    if not email_pass:
+        email_pass = EMAIL_PASSWORD
+
+    if not email_server:
+        email_server = EMAIL_SERVER
+
+    if not email_server and email_user and email_pass:
+        raise ValueError("no email server address and "
+                         "credentials available, can't continue")
+
+
     msg_text = EMAIL_TEMPLATE.format(
         sender=sender,
         hostname=socket.gethostname(),
