@@ -1680,7 +1680,7 @@ def get_dataset(lcc_server,
     lcc_server is the base URL of the LCC server to talk to.
 
     dataset_id is the unique setid of the dataset you want to get. In the
-    results from the *_search functions above, this is the value of the
+    results from the `*_search` functions above, this is the value of the
     infodict['result']['setid'] key in the first item (the infodict) in the
     returned tuple.
 
