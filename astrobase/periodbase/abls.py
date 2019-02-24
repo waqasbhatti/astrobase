@@ -159,11 +159,11 @@ def bls_serial_pfind(times, mags, errs,
         Sets the `oversample` kwarg for the `BoxLeastSquares.power()` function.
 
     blsmintransits : int
-        Sets the `min_n_transits` kwarg for the `BoxLeastSquares.autperiod()`
+        Sets the `min_n_transits` kwarg for the `BoxLeastSquares.autoperiod()`
         function.
 
     blsfreqfactor : float
-        Sets the `frequency_factor` kwarg for the `BoxLeastSquares.power()`
+        Sets the `frequency_factor` kwarg for the `BoxLeastSquares.autperiod()`
         function.
 
     periodepsilon : float
@@ -788,11 +788,11 @@ def bls_parallel_pfind(
         Sets the `oversample` kwarg for the `BoxLeastSquares.power()` function.
 
     blsmintransits : int
-        Sets the `min_n_transits` kwarg for the `BoxLeastSquares.autperiod()`
+        Sets the `min_n_transits` kwarg for the `BoxLeastSquares.autoperiod()`
         function.
 
     blsfreqfactor : float
-        Sets the `frequency_factor` kwarg for the `BoxLeastSquares.power()`
+        Sets the `frequency_factor` kwarg for the `BoxLeastSquares.autoperiod()`
         function.
 
     periodepsilon : float

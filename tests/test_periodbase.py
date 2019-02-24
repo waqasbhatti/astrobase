@@ -212,4 +212,4 @@ def test_abls_parallel():
                                   ndurations=50)
 
     assert isinstance(bls, dict)
-    assert_allclose(bls['bestperiod'], EXPECTED_PERIOD)
+    assert_allclose(bls['bestperiod'], EXPECTED_PERIOD, atol=1.0e-4)
