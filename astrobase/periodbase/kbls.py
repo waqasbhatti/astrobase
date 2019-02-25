@@ -1288,7 +1288,6 @@ def bls_stats_singleperiod(times, mags, errs, period,
         the output.
 
     perioddeltapercent : float
-
         The fraction of the period provided to use to search around this
         value. This is a percentage. The period range searched will then be::
 
