@@ -1241,31 +1241,95 @@ def bls_stats_singleperiod(times, mags, errs, period,
                            maxtransitduration=0.4,
                            ingressdurationfraction=0.1,
                            verbose=True):
-    '''This calculates the SNR, refit period, and time of center-transit for a
-    single period.
+    '''This calculates the SNR, depth, duration, a refit period, and time of
+    center-transit for a single period.
 
-    The equation used is::
+    The equation used for SNR is::
 
         SNR = (transit model depth / RMS of LC with transit model subtracted)
               * sqrt(number of points in transit)
 
-    times, mags, errs are numpy arrays containing these values.
+    NOTE: you should set the kwargs `sigclip`, `nphasebins`,
+    `mintransitduration`, `maxtransitduration` to what you used for an initial
+    BLS run to detect transits in the input light curve to match those input
+    conditions.
 
-    period is the period for which the SNR, refit period, and refit epoch should
-    be calculated.
+    Parameters
+    ----------
 
-    sigclip is the amount of sigmaclip to apply to the magnitude time-series.
+    times,mags,errs : np.array
+        These contain the magnitude/flux time-series and any associated errors.
 
-    perioddeltapercent is used to set the search window around the specified
-    period, which will be used to rerun BLS to get the transit ingress and
-    egress bins.
+    period : float
+        The period to search around and refit the transits. This will be used to
+        calculate the start and end periods of a rerun of BLS to calculate the
+        stats.
 
-    nphasebins is the number of phase bins to use for the BLS process. This
-    should be equal to the value of nphasebins you used for your initial BLS run
-    to find the specified period.
+    magsarefluxes : bool
+        Set to True if the input measurements in `mags` are actually fluxes and
+        not magnitudes.
 
-    verbose indicates whether this function should report its progress.
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
 
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    perioddeltapercent : float
+
+        The fraction of the period provided to use to search around this
+        value. This is a percentage. The period range searched will then be::
+
+            [period - (perioddeltapercent/100.0)*period,
+             period + (perioddeltapercent/100.0)*period]
+
+    nphasebins : int
+        The number of phase bins to use in the BLS run.
+
+    mintransitduration : float
+        The minimum transit duration in phase to consider.
+
+    maxtransitduration : float
+        The maximum transit duration to consider.
+
+    ingressdurationfraction : float
+        The fraction of the transit duration to use to generate an initial value
+        of the transit ingress duration for the BLS model refit. This will be
+        fit by this function.
+
+    verbose : bool
+        If True, will indicate progress and any problems encountered.
+
+    Returns
+    -------
+
+    dict
+        A dict of the following form is returned::
+
+            {'period': the refit best period,
+             'epoch': the refit epoch (i.e. mid-transit time),
+             'snr':the SNR of the transit,
+             'transitdepth':the depth of the transit,
+             'transitduration':the duration of the transit,
+             'nphasebins':the input value of nphasebins,
+             'transingressbin':the phase bin containing transit ingress,
+             'transegressbin':the phase bin containing transit egress,
+             'blsmodel':the full BLS model used along with its parameters,
+             'subtractedmags':BLS model - phased light curve,
+             'phasedmags':the phase light curve,
+             'phases': the phase values}
 
     '''
 
@@ -1344,33 +1408,95 @@ def bls_snr(blsdict,
             ingressdurationfraction=0.1,
             verbose=True):
     '''Calculates the signal to noise ratio for each best peak in the BLS
-    periodogram.
+    periodogram, along with transit depth, duration, and refit period and epoch.
 
-    SNR = transit model depth / RMS of light curve with transit model subtracted
-          * sqrt(number of points in transit)
+    The following equation is used for SNR::
 
-    blsdict is the output of either bls_parallel_pfind or bls_serial_pfind.
+        SNR = (transit model depth / RMS of LC with transit model subtracted)
+              * sqrt(number of points in transit)
 
-    times, mags, errs are ndarrays containing the magnitude series.
+    Parameters
+    ----------
 
-    perioddeltapercent controls the period interval used by a bls_serial_pfind
-    run around each peak period to figure out the transit depth, duration, and
-    ingress/egress bins for eventual calculation of the SNR of the peak.
+    blsdict : dict
+        This is an lspinfo dict produced by either `bls_parallel_pfind` or
+        `bls_serial_pfind` in this module, or by your own BLS function. If you
+        provide results in a dict from an external BLS function, make sure this
+        matches the form below::
 
-    npeaks controls how many of the periods in blsdict['nbestperiods'] to find
-    the SNR for. If it's None, then this will calculate the SNR for all of
-    them. If it's an integer between 1 and len(blsdict['nbestperiods']), will
-    calculate for only the specified number of peak periods, starting from the
-    best period.
+            {'bestperiod': the best period value in the periodogram,
+             'bestlspval': the periodogram peak associated with the best period,
+             'nbestpeaks': the input value of nbestpeaks,
+             'nbestlspvals': nbestpeaks-size list of best period peak values,
+             'nbestperiods': nbestpeaks-size list of best periods,
+             'lspvals': the full array of periodogram powers,
+             'frequencies': the full array of frequencies considered,
+             'periods': the full array of periods considered,
+             'blsresult': list of result dicts from eebls.f wrapper functions,
+             'stepsize': the actual stepsize used,
+             'nfreq': the actual nfreq used,
+             'nphasebins': the actual nphasebins used,
+             'mintransitduration': the input mintransitduration,
+             'maxtransitduration': the input maxtransitdurations,
+             'method':'bls' -> the name of the period-finder method,
+             'kwargs':{ dict of all of the input kwargs for record-keeping}}
 
-    If assumeserialbls is True, will not rerun bls_serial_pfind to figure out
-    the transit depth, duration, and ingress/egress bins for eventual
-    calculation of the SNR of the peak. This is normally False because we assume
-    that the user will be using bls_parallel_pfind, which works on chunks of
-    frequency space so returns multiple values of transit depth, duration,
-    ingress/egress bin specific to those chunks. These may not be valid for the
-    global best peaks in the periodogram, so we need to rerun bls_serial_pfind
-    around each peak in blsdict['nbestperiods'] to get correct values for these.
+    times,mags,errs : np.array
+        These contain the magnitude/flux time-series and any associated errors.
+
+    assumeserialbls : bool
+        If this is True, this function will not rerun BLS around each best peak
+        in the input lspinfo dict to refit the periods and epochs. This is
+        usally required for `bls_parallel_pfind` so set this to False if you use
+        results from that function. The parallel method breaks up the frequency
+        space into chunks for speed, and the results may not exactly match those
+        from a regular BLS run.
+
+    magsarefluxes : bool
+        Set to True if the input measurements in `mags` are actually fluxes and
+        not magnitudes.
+
+    npeaks : int or None
+        This controls how many of the periods in `blsdict['nbestperiods']` to
+        find the SNR for. If it's None, then this will calculate the SNR for all
+        of them. If it's an integer between 1 and
+        `len(blsdict['nbestperiods'])`, will calculate for only the specified
+        number of peak periods, starting from the best period.
+
+    perioddeltapercent : float
+        The fraction of the period provided to use to search around this
+        value. This is a percentage. The period range searched will then be::
+
+            [period - (perioddeltapercent/100.0)*period,
+             period + (perioddeltapercent/100.0)*period]
+
+    ingressdurationfraction : float
+        The fraction of the transit duration to use to generate an initial value
+        of the transit ingress duration for the BLS model refit. This will be
+        fit by this function.
+
+    verbose : bool
+        If True, will indicate progress and any problems encountered.
+
+    Returns
+    -------
+
+    dict
+        A dict of the following form is returned::
+
+            {'npeaks: the number of periodogram peaks requested to get SNR for,
+             'period': list of refit best periods for each requested peak,
+             'epoch': list of refit epochs (i.e. mid-transit times),
+             'snr':list of SNRs of the transit for each requested peak,
+             'transitdepth':list of depths of the transits,
+             'transitduration':list of durations of the transits,
+             'nphasebins':the input value of nphasebins,
+             'transingressbin':the phase bin containing transit ingress,
+             'transegressbin':the phase bin containing transit egress,
+             'allblsmodels':the full BLS models used along with its parameters,
+             'allsubtractedmags':BLS models - phased light curves,
+             'allphasedmags':the phase light curves,
+             'allphases': the phase values}
 
     '''
 
