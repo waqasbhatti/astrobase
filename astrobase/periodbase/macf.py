@@ -39,24 +39,11 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
-from multiprocessing import Pool, cpu_count
-
-import numpy as np
-
-# import these to avoid lookup overhead
-from numpy import nan as npnan, sum as npsum, abs as npabs, \
-    roll as nproll, isfinite as npisfinite, std as npstd, \
-    sign as npsign, sqrt as npsqrt, median as npmedian, \
-    array as nparray, percentile as nppercentile, \
-    polyfit as nppolyfit, var as npvar, max as npmax, min as npmin, \
-    log10 as nplog10, arange as nparange, pi as MPI, floor as npfloor, \
-    argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
-    where as npwhere, linspace as nplinspace, \
-    zeros_like as npzeros_like, full_like as npfull_like, \
-    arctan as nparctan, nanargmax as npnanargmax, nanargmin as npnanargmin, \
-    empty as npempty, ceil as npceil, mean as npmean, \
-    digitize as npdigitize, unique as npunique, \
-    argmax as npargmax, argmin as npargmin
+from numpy import (
+    nan as npnan, arange as nparange, array as nparray,
+    isfinite as npisfinite, sqrt as npsqrt, concatenate as npconcatenate,
+    zeros as npzeros, int64 as npint64, all as npall, polyfit as nppolyfit
+)
 
 from scipy.signal import argrelmax, argrelmin, savgol_filter
 from astropy.convolution import convolve, Gaussian1DKernel
@@ -66,17 +53,7 @@ from astropy.convolution import convolve, Gaussian1DKernel
 ## LOCAL IMPORTS ##
 ###################
 
-from ..lcmath import phase_magseries, sigclip_magseries, time_bin_magseries, \
-    phase_bin_magseries, fill_magseries_gaps
-
 from ..varbase.autocorr import autocorr_magseries
-
-
-############
-## CONFIG ##
-############
-
-NCPUS = cpu_count()
 
 
 
@@ -131,16 +108,16 @@ def _get_acf_peakheights(lags, acf, npeaks=20, searchinterval=1):
     minacfs = acf[mininds]
     minlags = lags[mininds]
 
-    relpeakheights = np.zeros(npeaks)
-    relpeaklags = np.zeros(npeaks,dtype=np.int64)
-    peakindices = np.zeros(npeaks,dtype=np.int64)
+    relpeakheights = npzeros(npeaks)
+    relpeaklags = npzeros(npeaks,dtype=npint64)
+    peakindices = npzeros(npeaks,dtype=npint64)
 
     for peakind, mxi in enumerate(maxinds[:npeaks]):
 
         # check if there are no mins to the left
         # throw away this peak because it's probably spurious
         # (FIXME: is this OK?)
-        if np.all(mxi < mininds):
+        if npall(mxi < mininds):
             continue
 
         leftminind = mininds[mininds < mxi][-1]  # the last index to the left
@@ -175,7 +152,7 @@ def _get_acf_peakheights(lags, acf, npeaks=20, searchinterval=1):
             'bestpeakindex':bestpeakindex}
 
 
-def plot_acf_results(acfp, outfile, maxlags=5000, yrange=[-0.4,0.4]):
+def plot_acf_results(acfp, outfile, maxlags=5000, yrange=(-0.4,0.4)):
     '''
     This plots the unsmoothed/smoothed ACF vs lag.
 
@@ -246,7 +223,7 @@ def macf_period_find(
         maxacfpeaks=10,
         smoothacf=21,  # set for Kepler-type LCs, see details below
         smoothfunc=_smooth_acf_savgol,
-        smoothfunckwargs={},
+        smoothfunckwargs=None,
         magsarefluxes=False,
         sigclip=3.0,
         verbose=True,
@@ -262,13 +239,13 @@ def macf_period_find(
     Args
     ----
 
-    times, mags, errs are np.arrays.
+    times, mags, errs are nparrays.
 
     fillgaps is what to use to fill in gaps in the time series. If this is
     'noiselevel', will smooth the light curve using a point window size of
     filterwindow (this should be an odd integer), subtract the smoothed LC from
     the actual LC and estimate the RMS. This RMS will be used to fill in the
-    gaps. Other useful values here are 0.0, and np.nan.
+    gaps. Other useful values here are 0.0, and npnan.
 
     forcetimebin is used to force a particular cadence in the light curve other
     than the automatically determined cadence. This effectively rebins the light
@@ -353,9 +330,12 @@ def macf_period_find(
     # smooth the ACF if requested
     if smoothacf and isinstance(smoothacf, int) and smoothacf > 0:
 
-        sfkwargs = smoothfunckwargs.copy()
+        if smoothfunckwargs is None:
+            sfkwargs = {'windowsize':smoothacf}
+        else:
+            sfkwargs = smoothfunckwargs.copy()
+            sfkwargs.update({'windowsize':smoothacf})
 
-        sfkwargs.update({'windowsize':smoothacf})
         xacf = smoothfunc(acfres['acf'], **sfkwargs)
 
     else:
@@ -374,28 +354,28 @@ def macf_period_find(
 
         # get the fit best lag from a linear fit to the peak index vs time(peak
         # lag) function as in McQillian+ (2014)
-        fity = np.concatenate((
+        fity = npconcatenate((
             [0.0, peakres['bestlag']],
             peakres['relpeaklags'][peakres['relpeaklags'] > peakres['bestlag']]
         ))
         fity = fity*acfres['cadence']
-        fitx = np.arange(fity.size)
+        fitx = nparange(fity.size)
 
-        fitcoeffs, fitcovar = np.polyfit(fitx, fity, 1, cov=True)
+        fitcoeffs, fitcovar = nppolyfit(fitx, fity, 1, cov=True)
 
         # fit best period is the gradient of fit
         fitbestperiod = fitcoeffs[0]
-        bestperiodrms = np.sqrt(fitcovar[0,0])  # from the covariance matrix
+        bestperiodrms = npsqrt(fitcovar[0,0])  # from the covariance matrix
 
     except Exception as e:
 
         LOGWARNING('linear fit to time at each peak lag '
                    'value vs. peak number failed, '
                    'naively calculated ACF period may not be accurate')
-        fitcoeffs = np.array([np.nan, np.nan])
-        fitcovar = np.array([[np.nan, np.nan], [np.nan, np.nan]])
-        fitbestperiod = np.nan
-        bestperiodrms = np.nan
+        fitcoeffs = nparray([npnan, npnan])
+        fitcovar = nparray([[npnan, npnan], [npnan, npnan]])
+        fitbestperiod = npnan
+        bestperiodrms = npnan
         raise
 
     # calculate the naive best period using delta_tau = lag * cadence
@@ -406,7 +386,7 @@ def macf_period_find(
                    'naively calculated bestperiod is = %.5f' %
                    (fitbestperiod, naivebestperiod))
 
-    if np.isfinite(fitbestperiod):
+    if npisfinite(fitbestperiod):
         bestperiod = fitbestperiod
     else:
         bestperiod = naivebestperiod
@@ -416,7 +396,7 @@ def macf_period_find(
             'bestlspval':bestlspval,
             'nbestpeaks':maxacfpeaks,
             # for compliance with the common pfmethod API
-            'nbestperiods':np.concatenate([
+            'nbestperiods':npconcatenate([
                 [fitbestperiod],
                 peakres['relpeaklags'][1:maxacfpeaks]*acfres['cadence']
             ]),
