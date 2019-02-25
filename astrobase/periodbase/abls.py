@@ -101,6 +101,10 @@ def bls_serial_pfind(times, mags, errs,
     functions in `periodbase.kbls`. If you want to use Astropy's implementation,
     set the value of `autofreq` kwarg to 'astropy'.
 
+    The dict returned from this function contains a `blsmodel` key, which is the
+    generated model from Astropy's BLS. Use the `.compute_stats()` method to
+    calculate the required stats like SNR, depth, duration, etc.
+
     Parameters
     ----------
 
@@ -730,6 +734,13 @@ def bls_parallel_pfind(
     doubt, confirm results for this parallel implementation by comparing to
     those from the serial implementation above.
 
+    In particular, when you want to get reliable estimates of the SNR, transit
+    depth, duration, etc. that Astropy's BLS gives you, rerun `bls_serial_pfind`
+    with `startp`, and `endp` close to the best period you want to characterize
+    the transit at. The dict returned from that function contains a `blsmodel`
+    key, which is the generated model from Astropy's BLS. Use the
+    `.compute_stats()` method to calculate the required stats.
+
     Parameters
     ----------
 
@@ -1232,189 +1243,3 @@ def bls_parallel_pfind(
                           'nbestpeaks':nbestpeaks,
                           'sigclip':sigclip,
                           'magsarefluxes':magsarefluxes}}
-
-
-
-def bls_stats_singleperiod(times, mags, errs, period,
-                           magsarefluxes=False,
-                           sigclip=10.0,
-                           perioddeltapercent=10,
-                           ndurations=100,
-                           mintransitduration=0.01,
-                           maxtransitduration=0.4,
-                           blsobjective='likelihood',
-                           blsmethod='fast',
-                           blsoversample=10,
-                           verbose=True):
-    '''This calculates the SNR, refit period, and time of center-transit for a
-    single period.
-
-    The equation used is::
-
-        SNR = (transit model depth / RMS of LC with transit model subtracted)
-              * sqrt(number of points in transit)
-
-    times, mags, errs are numpy arrays containing these values.
-
-    period is the period for which the SNR, refit period, and refit epoch should
-    be calculated.
-
-    sigclip is the amount of sigmaclip to apply to the magnitude time-series.
-
-    perioddeltapercent is used to set the search window around the specified
-    period, which will be used to rerun BLS to get the transit ingress and
-    egress bins.
-
-    nphasebins is the number of phase bins to use for the BLS process. This
-    should be equal to the value of nphasebins you used for your initial BLS run
-    to find the specified period.
-
-    verbose indicates whether this function should report its progress.
-
-    This returns a dict similar to bls_snr above.
-
-    '''
-
-    # get rid of nans first and sigclip
-    stimes, smags, serrs = sigclip_magseries(times,
-                                             mags,
-                                             errs,
-                                             magsarefluxes=magsarefluxes,
-                                             sigclip=sigclip)
-
-
-    # make sure there are enough points to calculate a spectrum
-    if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
-
-        # get the period interval
-        startp = period - perioddeltapercent*period/100.0
-
-        if startp < 0:
-            startp = period
-
-        endp = period + perioddeltapercent*period/100.0
-
-        # rerun BLS in serial mode around the specified period to get the
-        # transit depth, duration, ingress and egress bins
-        blsres = bls_serial_pfind(stimes,
-                                  smags,
-                                  serrs,
-                                  verbose=verbose,
-                                  startp=startp,
-                                  endp=endp,
-                                  ndurations=ndurations,
-                                  mintransitduration=mintransitduration,
-                                  maxtransitduration=maxtransitduration,
-                                  magsarefluxes=magsarefluxes,
-                                  sigclip=None)
-
-        bestperiod_ind = npargmax(blsres['blsresult'].power)
-        try:
-            bestperiod = blsres['blsresult'].period[bestperiod_ind].to_value()
-        except Exception as e:
-            bestperiod = blsres['blsresult'].period[bestperiod_ind]
-
-        try:
-            bestperiod_epoch = (
-                blsres['blsresult'].transit_time[bestperiod_ind].to_value()
-            )
-        except Exception as e:
-            bestperiod_epoch = (
-                blsres['blsresult'].transit_time[bestperiod_ind]
-            )
-
-        try:
-            bestperiod_duration = (
-                blsres['blsresult'].duration[bestperiod_ind].to_value()
-            )
-        except Exception as e:
-            bestperiod_duration = (
-                blsres['blsresult'].duration[bestperiod_ind]
-            )
-
-        # this is the fractional transit duration (q) as is conventional
-        # duration of transit (L) = q * best_period
-        bestperiod_q = bestperiod_duration/bestperiod
-
-        try:
-            bestperiod_snr = (
-                blsres['blsresult'].depth_snr[bestperiod_ind].to_value()
-            )
-        except Exception as e:
-            bestperiod_snr = (
-                blsres['blsresult'].depth_snr[bestperiod_ind]
-            )
-
-        # get stats for the best period
-        bls_stats = blsres['blsmodel'].compute_stats(
-            bestperiod,
-            bestperiod_duration,
-            bestperiod_epoch
-        )
-
-        return {'period':bestperiod,
-                'epoch':None,  # FIXME: figure this out
-                'transitdepth':bls_stats['depth'][0],
-                'transitduration':bestperiod_q,
-                'snr':bestperiod_snr,
-                'stats':bls_stats,
-                'blsresult':blsres['blsresult']}
-
-    # if there aren't enough points in the mag series, bail out
-    else:
-
-        LOGERROR('not enough good detections for these '
-                 'times and mags, skipping...')
-        return None
-
-
-
-def bls_snr(blsdict,
-            times,
-            mags,
-            errs,
-            magsarefluxes=False,
-            sigclip=10.0,
-            perioddeltapercent=10,
-            npeaks=None,
-            assumeserialbls=False,
-            verbose=True):
-    '''Calculates the signal to noise ratio for each best peak in the BLS
-    periodogram.
-
-    The equation used is::
-
-        SNR = (transit model depth / RMS of LC with transit model subtracted)
-              * sqrt(number of points in transit)
-
-    blsdict is the output of either bls_parallel_pfind or bls_serial_pfind.
-
-    times, mags, errs are ndarrays containing the magnitude series.
-
-    perioddeltapercent controls the period interval used by a bls_serial_pfind
-    run around each peak period to figure out the transit depth, duration, and
-    ingress/egress bins for eventual calculation of the SNR of the peak.
-
-    npeaks controls how many of the periods in blsdict['nbestperiods'] to find
-    the SNR for. If it's None, then this will calculate the SNR for all of
-    them. If it's an integer between 1 and len(blsdict['nbestperiods']), will
-    calculate for only the specified number of peak periods, starting from the
-    best period.
-
-    If assumeserialbls is True, will not rerun bls_serial_pfind to figure out
-    the transit depth, duration, and ingress/egress bins for eventual
-    calculation of the SNR of the peak. This is normally False because we assume
-    that the user will be using bls_parallel_pfind, which works on chunks of
-    frequency space so returns multiple values of transit depth, duration,
-    ingress/egress bin specific to those chunks. These may not be valid for the
-    global best peaks in the periodogram, so we need to rerun bls_serial_pfind
-    around each peak in blsdict['nbestperiods'] to get correct values for these.
-
-    '''
-
-    # get rid of nans first and sigclip
-    stimes, smags, serrs = sigclip_magseries(times,
-                                             mags,
-                                             errs,
-                                             magsarefluxes=magsarefluxes,
-                                             sigclip=sigclip)
