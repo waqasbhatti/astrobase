@@ -6,30 +6,32 @@
 
 '''Fitting routines for light curves. Includes:
 
-fourier_fit_magseries: fit an arbitrary order Fourier series to a
-    magnitude/flux time series.
+- :py:func:`astrobase.varbase.lcfit.fourier_fit_magseries`: fit an arbitrary
+  order Fourier series to a magnitude/flux time series.
 
-spline_fit_magseries: fit a univariate cubic spline to a
-    magnitude/flux time series with a specified spline knot fraction.
+- :py:func:`astrobase.varbase.lcfit.spline_fit_magseries`: fit a univariate
+  cubic spline to a magnitude/flux time series with a specified spline knot
+  fraction.
 
-savgol_fit_magseries: apply a Savitzky-Golay smoothing filter to a
-    magnitude/flux time series, returning the resulting smoothed function
-    as a "fit".
+- :py:func:`astrobase.varbase.lcfit.savgol_fit_magseries`: apply a
+  Savitzky-Golay smoothing filter to a magnitude/flux time series, returning the
+  resulting smoothed function as a "fit".
 
-legendre_fit_magseries: fit a Legendre function of the specified order
-    to the magnitude/flux time series.
+- :py:func:`astrobase.varbase.lcfit.legendre_fit_magseries`: fit a Legendre
+  function of the specified order to the magnitude/flux time series.
 
-traptransit_fit_magseries: fit a trapezoid-shaped transit signal to
-    the magnitude/flux time series
+- :py:func:`astrobase.varbase.lcfit.traptransit_fit_magseries`: fit a
+  trapezoid-shaped transit signal to the magnitude/flux time series
 
-gaussianeb_fit_magseries: fit a double inverted gaussian eclipsing
-    binary model to the magnitude/flux time series
+- :py:func:`astrobase.varbase.lcfit.gaussianeb_fit_magseries`: fit a double
+  inverted gaussian eclipsing binary model to the magnitude/flux time series
 
-mandelagol_fit_magseries: fit a Mandel & Agol 2002 model to the flux
-    time series.
+- :py:func:`astrobase.varbase.lcfit.mandelagol_fit_magseries`: fit a Mandel &
+  Agol (2002) planet transit model to the flux time series.
 
-mandelagol_and_line_fit_magseries: fit a Mandel & Agol 2002 model, + a
-    local line to the flux time series.
+- :py:func:`astrobase.varbase.lcfit.mandelagol_and_line_fit_magseries`: fit a
+  Mandel & Agol 2002 model, + a local line to the flux time series.
+
 '''
 
 #############
@@ -66,22 +68,18 @@ LOGEXCEPTION = LOGGER.exception
 import os
 
 import numpy as np
-from numpy import nan as npnan, sum as npsum, abs as npabs, \
-    roll as nproll, isfinite as npisfinite, std as npstd, \
-    sign as npsign, sqrt as npsqrt, median as npmedian, \
-    array as nparray, percentile as nppercentile, \
-    polyfit as nppolyfit, var as npvar, max as npmax, min as npmin, \
-    log10 as nplog10, arange as nparange, pi as MPI, floor as npfloor, \
-    argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
-    where as npwhere, linspace as nplinspace, \
-    zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
-    correlate as npcorrelate, nonzero as npnonzero, diag as npdiag, \
-    diff as npdiff, concatenate as npconcatenate
+from numpy import (
+    nan as npnan, sum as npsum, sqrt as npsqrt, median as npmedian,
+    array as nparray, max as npmax, min as npmin, pi as pi_value,
+    floor as npfloor, argsort as npargsort, cos as npcos, where as npwhere,
+    linspace as nplinspace, full_like as npfull_like, nonzero as npnonzero,
+    diag as npdiag, diff as npdiff, concatenate as npconcatenate
+)
 
 from scipy.optimize import leastsq as spleastsq, minimize as spminimize
 from scipy.interpolate import LSQUnivariateSpline
 from scipy.signal import savgol_filter
-from numpy.polynomial.legendre import Legendre, legval
+from numpy.polynomial.legendre import Legendre
 
 import matplotlib
 matplotlib.use('Agg')
@@ -111,15 +109,35 @@ from ..lcmodels import eclipses, transits
 ########################################
 
 def _get_phased_quantities(stimes, smags, serrs, period):
-    '''
-    Given finite and sigma-clipped times, magnitudes, and errors (i.e. the
-    output of lcfit.get_finite_and_sigclipped_data), along with the period at
-    which to phase-fold the data, perform the phase-folding and return:
-        1) phase: phase-sorted values of phase at each of stimes
-        2) pmags: phase-sorted magnitudes at each phase
-        3) perrs: phase-sorted errors
-        4) ptimes: phase-sorted times
-        5) mintime: earliest time in stimes.
+    '''Does phase-folding for the mag/flux time-series given a period.
+
+    Given finite and sigma-clipped times, magnitudes, and errors, along with the
+    period at which to phase-fold the data, perform the phase-folding and
+    return the phase-folded values.
+
+    Parameters
+    ----------
+
+    stimes,smags,serrs : np.array
+        The sigma-clipped and finite input mag/flux time-series arrays to
+        operate on.
+
+    period : float
+        The period to phase the mag/flux time-series at. stimes.min() is used as
+        the epoch value to fold the times-series around.
+
+    Returns
+    -------
+
+    (phase, pmags, perrs, ptimes, mintime) : tuple
+        The tuple returned contains the following items:
+
+        - `phase`: phase-sorted values of phase at each of stimes
+        - `pmags`: phase-sorted magnitudes at each phase
+        - `perrs`: phase-sorted errors
+        - `ptimes`: phase-sorted times
+        - `mintime`: earliest time in stimes.
+
     '''
 
     # phase the mag series using the given period and faintest mag time
@@ -154,6 +172,49 @@ def make_fit_plot(phase, pmags, perrs, fitmags,
                   magsarefluxes=False,
                   wrap=False,
                   model_over_lc=False):
+    '''This makes a plot of the LC model fit.
+
+    Parameters
+    ----------
+
+    phase,pmags,perrs : np.array
+        The actual mag/flux time-series.
+
+    fitmags : np.array
+        The model fit time-series.
+
+    period : float
+        The period at which the phased LC was generated.
+
+    mintime : float
+        The minimum time value.
+
+    magseriesepoch : float
+        The value of time around which the phased LC was folded.
+
+    plotfit : str
+        The name of a file to write the plot to.
+
+    magsarefluxes : bool
+        Set this to True if the values in `pmags` and `fitmags` are actually
+        fluxes.
+
+    wrap : bool
+        If True, will wrap the phased LC around 0.0 to make some phased LCs
+        easier to look at.
+
+    model_over_lc : bool
+        Usually, this function will plot the actual LC over the model LC. Set
+        this to True to plot the model over the actual LC; this is most useful
+        when you have a very dense light curve and want to be able to see how it
+        follows the model.
+
+    Returns
+    -------
+
+    Nothing.
+
+    '''
 
     # set up the figure
     plt.close('all')
@@ -245,7 +306,7 @@ def _fourier_func(fourierparams, phase, mags):
     f_pha = fourierparams[order:]
 
     # calculate all the individual terms of the series
-    f_orders = [f_amp[x]*npcos(2.0*MPI*x*phase + f_pha[x])
+    f_orders = [f_amp[x]*npcos(2.0*pi_value*x*phase + f_pha[x])
                 for x in range(order)]
 
     # this is the zeroth order coefficient - a constant equal to median mag
@@ -822,7 +883,7 @@ def legendre_fit_magseries(times, mags, errs, period,
 
     '''
     Fit an arbitrary-order Legendre series, via least squares, to the
-    magnitude/flux time series. This is a series of the form:
+    magnitude/flux time series. This is a series of the form::
 
         p(x) = c_0*L_0(x) + c_1*L_1(x) + c_2*L_2(x) + ... + c_n*L_n(x)
 
@@ -1632,7 +1693,7 @@ def _log_likelihood_transit_plus_line(theta, params, model, t, data_flux,
 
     try:
         poly_order0
-    except:
+    except Exception as e:
         poly_order0 = 0
     else:
         pass
