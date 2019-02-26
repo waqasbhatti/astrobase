@@ -11,8 +11,10 @@ http://irsa.ipac.caltech.edu/applications/DUST/
 If you use this, please cite the SF11 and SFD98 papers and acknowledge the use
 of 2MASS/IPAC services.
 
-http://www.adsabs.harvard.edu/abs/1998ApJ...500..525S
-http://www.adsabs.harvard.edu/abs/2011ApJ...737..103S
+- http://www.adsabs.harvard.edu/abs/1998ApJ...500..525S
+- http://www.adsabs.harvard.edu/abs/2011ApJ...737..103S
+
+Also see:
 
 http://irsa.ipac.caltech.edu/applications/DUST/docs/background.html
 
@@ -92,25 +94,52 @@ def extinction_query(lon, lat,
                      timeout=10.0,
                      jitter=5.0):
     '''This queries the 2MASS DUST service to find the extinction parameters
-    for the given lon, lat.
+    for the given `lon`, `lat`.
 
-    lon, lat are decimal right ascension and declination if coordtype ==
-    'equatorial'. lon, lat are decimal Galactic longitude and latitude if
-    coordtype == 'galactic'.
+    Parameters
+    ----------
 
-    sizedeg is the width of the image returned by the DUST service. This can
-    usually be left as-is if you're interested in the extinction only.
+    lon,lat: float
+        These are decimal right ascension and declination if `coordtype =
+        'equatorial'`. These are are decimal Galactic longitude and latitude if
+        `coordtype = 'galactic'`.
 
-    If forcefetch is True, the query will be retried even if cached results for
-    it exist.
+    coordtype : {'equatorial','galactic'}
+        Sets the type of coordinates passed in as `lon`, `lat`.
 
-    cachedir points to the directory where results will be downloaded.
+    sizedeg : float
+        This is the width of the image returned by the DUST service. This can
+        usually be left as-is if you're interested in the extinction only.
 
-    timeout sets the amount of time in seconds to wait for the service to
-    respond to our request.
+    forcefetch : bool
+        If this is True, the query will be retried even if cached results for
+        it exist.
 
-    Use jitter to control the scale of the random wait in seconds before
-    starting the query.
+    cachedir : str
+        This points to the directory where results will be downloaded.
+
+    verbose : bool
+        If True, will indicate progress and warn of any issues.
+
+    timeout : float
+        This sets the amount of time in seconds to wait for the service to
+        respond to our request.
+
+    jitter : float
+        This is used to control the scale of the random wait in seconds before
+        starting the query. Useful in parallelized situations.
+
+    Returns
+    -------
+
+    dict
+        A dict of the following form is returned::
+
+            {'Amag':{dict of extinction A_v values for several mag systems},
+             'table': array containing the full extinction table,
+             'tablefile': the path to the full extinction table file on disk,
+             'provenance': 'cached' or 'new download',
+             'request': string repr of the request made to 2MASS DUST}
 
     '''
 

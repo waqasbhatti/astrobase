@@ -521,15 +521,37 @@ MASSESRADII_4_5GYR = {
 def massradius(age, planetdist, coremass,
                mass='massjupiter',
                radius='radiusjupiter'):
-    '''
-    This function gets the Fortney mass-radius relation for planets.
+    '''This function gets the Fortney mass-radius relation for planets.
 
-    age should be one of: 0.3, 1.0, 4.5 [in Gyr]
-    planetdist should be one of: 0.02, 0.045, 0.1, 1.0, 9.5 [in AU]
-    coremass should be one of: 0, 10, 25, 50, 100 [in Mearth]
+    Parameters
+    ----------
 
-    mass is units, one of: 'massjupiter' or 'massearth'
-    radius is units: only 'radiusjupiter' for now
+    age : float
+        This should be one of: 0.3, 1.0, 4.5 [in Gyr].
+
+    planetdist : float
+        This should be one of: 0.02, 0.045, 0.1, 1.0, 9.5 [in AU]
+
+    coremass : int
+        This should be one of: 0, 10, 25, 50, 100 [in Mearth]
+
+    mass : {'massjupiter','massearth'}
+        Sets the mass units.
+
+    radius : str
+        Sets the radius units. Only 'radiusjupiter' is used for now.
+
+    Returns
+    -------
+
+    dict
+        A dict of the following form is returned::
+
+            {'mass': an array containing the masses to plot),
+             'radius': an array containing the radii to plot}
+
+        These can be passed to a plotting routine to make mass-radius plot for
+        the specified age, planet-star distance, and core-mass.
 
     '''
 
