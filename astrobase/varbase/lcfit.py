@@ -2047,7 +2047,9 @@ def mandelagol_and_line_fit_magseries(
     skipsampling=False,
     overwriteexistingsamples=False,
     mcmcprogressbar=False,
-    timeoffset=0):
+    timeoffset=0,
+    scatterxdata=None,
+    scatteryaxes=None):
     '''
     The model fit by this function is: a Mandel & Agol (2002) transit, PLUS a
     line.  You can fit and fix whatever parameters you want.
@@ -2128,6 +2130,14 @@ def mandelagol_and_line_fit_magseries(
 
         timeoffset (float): if input times are offset by some constant, and you
         want saved pickles to fix that.
+
+        scatterxdata (np.ndarray or None): to overplot x,y scatter points on
+        the output model/data lightcurve (e.g., to highligth bad data, or to
+        indicate an ephemeris), this can take a np.ndarray with the same units
+        as times.
+
+        scatteryaxes (np.ndarray or None): the y-values for scatterxdata, in
+        units of fraction of an axis.
 
     returns:
 
@@ -2400,6 +2410,18 @@ def mandelagol_and_line_fit_magseries(
             stimes, smags-fitmags, c='k', alpha=0.9,
             rasterized=True, s=10, linewidths=0
         )
+
+        if scatterxdata and scatteryaxes:
+            import matplotlib.transforms as transforms
+            for a in [a0, a1]:
+                transform = transforms.blended_transform_factory(
+                    a.transData, a.transAxes
+                )
+                a.scatter(scatterxdata, scatteryaxes, c='r', alpha=0.9,
+                          zorder=2, s=10, rasterized=True, linewidths=0,
+                          marker="^", transform=transform)
+
+
         a1.set_xlabel('time-t0 [days]')
         a0.set_ylabel('relative flux')
         a1.set_ylabel('residual')
