@@ -40,31 +40,20 @@ LOGEXCEPTION = LOGGER.exception
 #############
 
 from multiprocessing import Pool, cpu_count
-import numpy as np
 
-# import these to avoid lookup overhead
-from numpy import nan as npnan, sum as npsum, abs as npabs, \
-    roll as nproll, isfinite as npisfinite, std as npstd, \
-    sign as npsign, sqrt as npsqrt, median as npmedian, \
-    array as nparray, percentile as nppercentile, \
-    polyfit as nppolyfit, var as npvar, max as npmax, min as npmin, \
-    log10 as nplog10, arange as nparange, pi as MPI, floor as npfloor, \
-    argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
-    where as npwhere, linspace as nplinspace, \
-    zeros_like as npzeros_like, full_like as npfull_like, \
-    arctan as nparctan, nanargmax as npnanargmax, nanargmin as npnanargmin, \
-    empty as npempty, ceil as npceil, mean as npmean, \
-    digitize as npdigitize, unique as npunique, \
-    argmax as npargmax, argmin as npargmin
+from numpy import (
+    nan as npnan, arange as nparange, array as nparray, isfinite as npisfinite,
+    digitize as npdigitize, median as npmedian, std as npstd,
+    argsort as npargsort, unique as npunique, sum as npsum, var as npvar,
+    argmin as npargmin
+)
 
 
 ###################
 ## LOCAL IMPORTS ##
 ###################
 
-from ..lcmath import phase_magseries, sigclip_magseries, time_bin_magseries, \
-    phase_bin_magseries
-
+from ..lcmath import phase_magseries, sigclip_magseries
 from . import get_frequency_grid
 
 
@@ -84,6 +73,29 @@ def stellingwerf_pdm_theta(times, mags, errs, frequency,
     '''
     This calculates the Stellingwerf PDM theta value at a test frequency.
 
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The input time-series and associated errors.
+
+    frequency : float
+        The test frequency to calculate the theta statistic at.
+
+    binsize : float
+        The phase bin size to use.
+
+    minbin : int
+        The minimum number of items in a phase bin to consider in the
+        calculation of the statistic.
+
+    Returns
+    -------
+
+    theta_pdm : float
+        The value of the theta statistic at the specified `frequency`.
+
+
     '''
 
     period = 1.0/frequency
@@ -98,8 +110,7 @@ def stellingwerf_pdm_theta(times, mags, errs, frequency,
 
     phases = phased['phase']
     pmags = phased['mags']
-    bins = np.arange(0.0, 1.0, binsize)
-    nbins = bins.size
+    bins = nparange(0.0, 1.0, binsize)
 
     binnedphaseinds = npdigitize(phases, bins)
 
@@ -110,7 +121,6 @@ def stellingwerf_pdm_theta(times, mags, errs, frequency,
     for x in npunique(binnedphaseinds):
 
         thisbin_inds = binnedphaseinds == x
-        thisbin_phases = phases[thisbin_inds]
         thisbin_mags = pmags[thisbin_inds]
 
         if thisbin_mags.size > minbin:
@@ -132,16 +142,29 @@ def stellingwerf_pdm_theta(times, mags, errs, frequency,
 
 
 
-def stellingwerf_pdm_worker(task):
+def _stellingwerf_pdm_worker(task):
     '''
     This is a parallel worker for the function below.
 
-    task[0] = times
-    task[1] = mags
-    task[2] = errs
-    task[3] = frequency
-    task[4] = binsize
-    task[5] = minbin
+    Parameters
+    ----------
+
+    task : tuple
+        This is of the form below::
+
+            task[0] = times
+            task[1] = mags
+            task[2] = errs
+            task[3] = frequency
+            task[4] = binsize
+            task[5] = minbin
+
+    Returns
+    -------
+
+    theta_pdm : float
+        The theta value at the specified frequency. nan if the calculation
+        fails.
 
     '''
 
@@ -164,11 +187,11 @@ def stellingwerf_pdm(times,
                      mags,
                      errs,
                      magsarefluxes=False,
-                     autofreq=True,
                      startp=None,
                      endp=None,
-                     normalize=False,
                      stepsize=1.0e-4,
+                     autofreq=True,
+                     normalize=False,
                      phasebinsize=0.05,
                      mindetperbin=9,
                      nbestpeaks=5,
@@ -176,7 +199,102 @@ def stellingwerf_pdm(times,
                      sigclip=10.0,
                      nworkers=None,
                      verbose=True):
-    '''This runs a parallel Stellingwerf PDM period search.
+
+    '''This runs a parallelized Stellingwerf phase-dispersion minimization (PDM)
+    period search.
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The mag/flux time-series with associated measurement errors to run the
+        period-finding on.
+
+    magsarefluxes : bool
+        If the input measurement values in `mags` and `errs` are in fluxes, set
+        this to True.
+
+    startp,endp : float or None
+        The minimum and maximum periods to consider for the transit search.
+
+    stepsize : float
+        The step-size in frequency to use when constructing a frequency grid for
+        the period search.
+
+    autofreq : bool
+        If this is True, the value of `stepsize` will be ignored and the
+        :py:func:`astrobase.periodbase.get_frequency_grid` function will be used
+        to generate a frequency grid based on `startp`, and `endp`. If these are
+        None as well, `startp` will be set to 0.1 and `endp` will be set to
+        `times.max() - times.min()`.
+
+    normalize : bool
+        This sets if the input time-series is normalized to 0.0 and rescaled
+        such that its variance = 1.0. This is the recommended procedure by
+        Schwarzenberg-Czerny 1996.
+
+    phasebinsize : float
+        The bin size in phase to use when calculating the PDM theta statistic at
+        a test frequency.
+
+    mindetperbin : int
+        The minimum number of elements in a phase bin to consider it valid when
+        calculating the PDM theta statistic at a test frequency.
+
+    nbestpeaks : int
+        The number of 'best' peaks to return from the periodogram results,
+        starting from the global maximum of the periodogram peak values.
+
+    periodepsilon : float
+        The fractional difference between successive values of 'best' periods
+        when sorting by periodogram power to consider them as separate periods
+        (as opposed to part of the same periodogram peak). This is used to avoid
+        broad peaks in the periodogram and make sure the 'best' periods returned
+        are all actually independent.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    nworkers : int
+        The number of parallel workers to use when calculating the periodogram.
+
+    verbose : bool
+        If this is True, will indicate progress and details about the frequency
+        grid used for the period search.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict, referred to as an `lspinfo` dict in other
+        astrobase functions that operate on periodogram results. This is a
+        standardized format across all astrobase period-finders, and is of the
+        form below::
+
+            {'bestperiod': the best period value in the periodogram,
+             'bestlspval': the periodogram peak associated with the best period,
+             'nbestpeaks': the input value of nbestpeaks,
+             'nbestlspvals': nbestpeaks-size list of best period peak values,
+             'nbestperiods': nbestpeaks-size list of best periods,
+             'lspvals': the full array of periodogram powers,
+             'periods': the full array of periods considered,
+             'method':'pdm' -> the name of the period-finder method,
+             'kwargs':{ dict of all of the input kwargs for record-keeping}}
 
     '''
 
@@ -205,7 +323,7 @@ def stellingwerf_pdm(times,
 
         # if we're not using autofreq, then use the provided frequencies
         if not autofreq:
-            frequencies = np.arange(startf, endf, stepsize)
+            frequencies = nparange(startf, endf, stepsize)
             if verbose:
                 LOGINFO(
                     'using %s frequency points, start P = %.3f, end P = %.3f' %
@@ -243,7 +361,7 @@ def stellingwerf_pdm(times,
         tasks = [(stimes, nmags, serrs, x, phasebinsize, mindetperbin)
                  for x in frequencies]
 
-        lsp = pool.map(stellingwerf_pdm_worker, tasks)
+        lsp = pool.map(_stellingwerf_pdm_worker, tasks)
 
         pool.close()
         pool.join()
@@ -290,11 +408,9 @@ def stellingwerf_pdm(times,
                               'nbestpeaks':nbestpeaks,
                               'sigclip':sigclip}}
 
-        sortedlspind = np.argsort(finlsp)
+        sortedlspind = npargsort(finlsp)
         sortedlspperiods = finperiods[sortedlspind]
         sortedlspvals = finlsp[sortedlspind]
-
-        prevbestlspval = sortedlspvals[0]
 
         # now get the nbestpeaks
         nbestperiods, nbestlspvals, peakcount = (

@@ -40,31 +40,20 @@ LOGEXCEPTION = LOGGER.exception
 #############
 
 from multiprocessing import Pool, cpu_count
-import numpy as np
 
-# import these to avoid lookup overhead
-from numpy import nan as npnan, sum as npsum, abs as npabs, \
-    roll as nproll, isfinite as npisfinite, std as npstd, \
-    sign as npsign, sqrt as npsqrt, median as npmedian, \
-    array as nparray, percentile as nppercentile, \
-    polyfit as nppolyfit, var as npvar, max as npmax, min as npmin, \
-    log10 as nplog10, arange as nparange, pi as MPI, floor as npfloor, \
-    argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
-    where as npwhere, linspace as nplinspace, \
-    zeros_like as npzeros_like, full_like as npfull_like, \
-    arctan as nparctan, nanargmax as npnanargmax, nanargmin as npnanargmin, \
-    empty as npempty, ceil as npceil, mean as npmean, \
-    digitize as npdigitize, unique as npunique, \
-    argmax as npargmax, argmin as npargmin, zeros as npzeros, nanmax as npnanmax
+from numpy import (
+    nan as npnan, arange as nparange, array as nparray, isfinite as npisfinite,
+    argmax as npargmax, argsort as npargsort, sum as npsum, cos as npcos,
+    sin as npsin, pi as pi_value, nonzero as npnonzero, nanmax as npnanmax,
+    arctan as nparctan,
+)
 
 
 ###################
 ## LOCAL IMPORTS ##
 ###################
 
-from ..lcmath import phase_magseries, sigclip_magseries, time_bin_magseries, \
-    phase_bin_magseries
-
+from ..lcmath import sigclip_magseries
 from . import get_frequency_grid
 
 
@@ -82,26 +71,43 @@ NCPUS = cpu_count()
 def generalized_lsp_value(times, mags, errs, omega):
     '''Generalized LSP value for a single omega.
 
-    P(w) = (1/YY) * (YC*YC/CC + YS*YS/SS)
+    The relations used are::
 
-    where: YC, YS, CC, and SS are all calculated at T
+        P(w) = (1/YY) * (YC*YC/CC + YS*YS/SS)
 
-    and where: tan 2omegaT = 2*CS/(CC - SS)
+        where: YC, YS, CC, and SS are all calculated at T
 
-    and where:
+        and where: tan 2omegaT = 2*CS/(CC - SS)
 
-    Y = sum( w_i*y_i )
-    C = sum( w_i*cos(wT_i) )
-    S = sum( w_i*sin(wT_i) )
+        and where:
 
-    YY = sum( w_i*y_i*y_i ) - Y*Y
-    YC = sum( w_i*y_i*cos(wT_i) ) - Y*C
-    YS = sum( w_i*y_i*sin(wT_i) ) - Y*S
+        Y = sum( w_i*y_i )
+        C = sum( w_i*cos(wT_i) )
+        S = sum( w_i*sin(wT_i) )
 
-    CpC = sum( w_i*cos(w_T_i)*cos(w_T_i) )
-    CC = CpC - C*C
-    SS = (1 - CpC) - S*S
-    CS = sum( w_i*cos(w_T_i)*sin(w_T_i) ) - C*S
+        YY = sum( w_i*y_i*y_i ) - Y*Y
+        YC = sum( w_i*y_i*cos(wT_i) ) - Y*C
+        YS = sum( w_i*y_i*sin(wT_i) ) - Y*S
+
+        CpC = sum( w_i*cos(w_T_i)*cos(w_T_i) )
+        CC = CpC - C*C
+        SS = (1 - CpC) - S*S
+        CS = sum( w_i*cos(w_T_i)*sin(w_T_i) ) - C*S
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The time-series to calculate the periodogram value for.
+
+    omega : float
+        The frequency to calculate the periodogram value at.
+
+    Returns
+    -------
+
+    periodogramvalue : float
+        The normalized periodogram at the specified test frequency `omega`.
 
     '''
 
@@ -156,24 +162,41 @@ def generalized_lsp_value_notau(times, mags, errs, omega):
     '''
     This is the simplified version not using tau.
 
-    W = sum (1.0/(errs*errs) )
-    w_i = (1/W)*(1/(errs*errs))
+    The relations used are::
 
-    Y = sum( w_i*y_i )
-    C = sum( w_i*cos(wt_i) )
-    S = sum( w_i*sin(wt_i) )
+        W = sum (1.0/(errs*errs) )
+        w_i = (1/W)*(1/(errs*errs))
 
-    YY = sum( w_i*y_i*y_i ) - Y*Y
-    YC = sum( w_i*y_i*cos(wt_i) ) - Y*C
-    YS = sum( w_i*y_i*sin(wt_i) ) - Y*S
+        Y = sum( w_i*y_i )
+        C = sum( w_i*cos(wt_i) )
+        S = sum( w_i*sin(wt_i) )
 
-    CpC = sum( w_i*cos(w_t_i)*cos(w_t_i) )
-    CC = CpC - C*C
-    SS = (1 - CpC) - S*S
-    CS = sum( w_i*cos(w_t_i)*sin(w_t_i) ) - C*S
+        YY = sum( w_i*y_i*y_i ) - Y*Y
+        YC = sum( w_i*y_i*cos(wt_i) ) - Y*C
+        YS = sum( w_i*y_i*sin(wt_i) ) - Y*S
 
-    D(omega) = CC*SS - CS*CS
-    P(omega) = (SS*YC*YC + CC*YS*YS - 2.0*CS*YC*YS)/(YY*D)
+        CpC = sum( w_i*cos(w_t_i)*cos(w_t_i) )
+        CC = CpC - C*C
+        SS = (1 - CpC) - S*S
+        CS = sum( w_i*cos(w_t_i)*sin(w_t_i) ) - C*S
+
+        D(omega) = CC*SS - CS*CS
+        P(omega) = (SS*YC*YC + CC*YS*YS - 2.0*CS*YC*YS)/(YY*D)
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The time-series to calculate the periodogram value for.
+
+    omega : float
+        The frequency to calculate the periodogram value at.
+
+    Returns
+    -------
+
+    periodogramvalue : float
+        The normalized periodogram at the specified test frequency `omega`.
 
     '''
 
@@ -222,9 +245,29 @@ def generalized_lsp_value_notau(times, mags, errs, omega):
 
 
 def specwindow_lsp_value(times, mags, errs, omega):
-    '''
-    This calculates the peak associated with the spectral window function
+    '''This calculates the peak associated with the spectral window function
     for times and at the specified omega.
+
+    NOTE: this is classical Lomb-Scargle, not the Generalized
+    Lomb-Scargle. `mags` and `errs` are silently ignored since we're calculating
+    the periodogram of the observing window function. These are kept to present
+    a consistent external API so the `pgen_lsp` function below can call this
+    transparently.
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The time-series to calculate the periodogram value for.
+
+    omega : float
+        The frequency to calculate the periodogram value at.
+
+    Returns
+    -------
+
+    periodogramvalue : float
+        The normalized periodogram at the specified test frequency `omega`.
 
     '''
 
@@ -256,7 +299,7 @@ def specwindow_lsp_value(times, mags, errs, omega):
 ## GENERALIZED LOMB-SCARGLE ##
 ##############################
 
-def glsp_worker(task):
+def _glsp_worker(task):
     '''This is a worker to wrap the generalized Lomb-Scargle single-frequency
     function.
 
@@ -269,7 +312,7 @@ def glsp_worker(task):
 
 
 
-def glsp_worker_specwindow(task):
+def _glsp_worker_specwindow(task):
     '''This is a worker to wrap the generalized Lomb-Scargle single-frequency
     function.
 
@@ -282,7 +325,7 @@ def glsp_worker_specwindow(task):
 
 
 
-def glsp_worker_notau(task):
+def _glsp_worker_notau(task):
     '''This is a worker to wrap the generalized Lomb-Scargle single-freq func.
 
     This version doesn't use tau.
@@ -303,22 +346,110 @@ def pgen_lsp(
         magsarefluxes=False,
         startp=None,
         endp=None,
+        stepsize=1.0e-4,
         autofreq=True,
         nbestpeaks=5,
         periodepsilon=0.1,
-        stepsize=1.0e-4,
+        sigclip=10.0,
         nworkers=None,
         workchunksize=None,
-        sigclip=10.0,
-        glspfunc=glsp_worker,
+        glspfunc=_glsp_worker,
         verbose=True
 ):
-    '''This calculates the generalized LSP given times, mags, errors.
+    '''This calculates the generalized Lomb-Scargle periodogram.
 
-    Uses the algorithm from Zechmeister and Kurster (2009). By default, this
-    calculates a frequency grid to use automatically, based on the autofrequency
-    function from astropy.stats.lombscargle. If startp and endp are provided,
-    will generate a frequency grid based on these instead.
+    Uses the algorithm from Zechmeister and Kurster (2009).
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The mag/flux time-series with associated measurement errors to run the
+        period-finding on.
+
+    magsarefluxes : bool
+        If the input measurement values in `mags` and `errs` are in fluxes, set
+        this to True.
+
+    startp,endp : float or None
+        The minimum and maximum periods to consider for the transit search.
+
+    stepsize : float
+        The step-size in frequency to use when constructing a frequency grid for
+        the period search.
+
+    autofreq : bool
+        If this is True, the value of `stepsize` will be ignored and the
+        :py:func:`astrobase.periodbase.get_frequency_grid` function will be used
+        to generate a frequency grid based on `startp`, and `endp`. If these are
+        None as well, `startp` will be set to 0.1 and `endp` will be set to
+        `times.max() - times.min()`.
+
+    nbestpeaks : int
+        The number of 'best' peaks to return from the periodogram results,
+        starting from the global maximum of the periodogram peak values.
+
+    periodepsilon : float
+        The fractional difference between successive values of 'best' periods
+        when sorting by periodogram power to consider them as separate periods
+        (as opposed to part of the same periodogram peak). This is used to avoid
+        broad peaks in the periodogram and make sure the 'best' periods returned
+        are all actually independent.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    nworkers : int
+        The number of parallel workers to use when calculating the periodogram.
+
+    workchunksize : None or int
+        If this is an int, will use chunks of the given size to break up the
+        work for the parallel workers. If None, the chunk size is set to 1.
+
+    glspfunc : Python function
+        The worker function to use to calculate the periodogram. This can be
+        used to make this function calculate the time-series sampling window
+        function instead of the time-series measurements' GLS periodogram by
+        passing in `_glsp_worker_specwindow` instead of the default
+        `_glsp_worker` function.
+
+    verbose : bool
+        If this is True, will indicate progress and details about the frequency
+        grid used for the period search.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict, referred to as an `lspinfo` dict in other
+        astrobase functions that operate on periodogram results. This is a
+        standardized format across all astrobase period-finders, and is of the
+        form below::
+
+            {'bestperiod': the best period value in the periodogram,
+             'bestlspval': the periodogram peak associated with the best period,
+             'nbestpeaks': the input value of nbestpeaks,
+             'nbestlspvals': nbestpeaks-size list of best period peak values,
+             'nbestperiods': nbestpeaks-size list of best periods,
+             'lspvals': the full array of periodogram powers,
+             'periods': the full array of periods considered,
+             'method':'gls' -> the name of the period-finder method,
+             'kwargs':{ dict of all of the input kwargs for record-keeping}}
 
     '''
 
@@ -330,7 +461,7 @@ def pgen_lsp(
                                              sigclip=sigclip)
 
     # get rid of zero errs
-    nzind = np.nonzero(serrs)
+    nzind = npnonzero(serrs)
     stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
 
 
@@ -352,7 +483,7 @@ def pgen_lsp(
 
         # if we're not using autofreq, then use the provided frequencies
         if not autofreq:
-            omegas = 2*np.pi*np.arange(startf, endf, stepsize)
+            omegas = 2*pi_value*nparange(startf, endf, stepsize)
             if verbose:
                 LOGINFO(
                     'using %s frequency points, start P = %.3f, end P = %.3f' %
@@ -363,7 +494,7 @@ def pgen_lsp(
             freqs = get_frequency_grid(stimes,
                                        minfreq=startf,
                                        maxfreq=endf)
-            omegas = 2*np.pi*freqs
+            omegas = 2*pi_value*freqs
             if verbose:
                 LOGINFO(
                     'using autofreq with %s frequency points, '
@@ -389,8 +520,8 @@ def pgen_lsp(
         pool.join()
         del pool
 
-        lsp = np.array(lsp)
-        periods = 2.0*np.pi/omegas
+        lsp = nparray(lsp)
+        periods = 2.0*pi_value/omegas
 
         # find the nbestpeaks for the periodogram: 1. sort the lsp array by
         # highest value first 2. go down the values until we find five
@@ -428,11 +559,9 @@ def pgen_lsp(
                               'nbestpeaks':nbestpeaks,
                               'sigclip':sigclip}}
 
-        sortedlspind = np.argsort(finlsp)[::-1]
+        sortedlspind = npargsort(finlsp)[::-1]
         sortedlspperiods = finperiods[sortedlspind]
         sortedlspvals = finlsp[sortedlspind]
-
-        prevbestlspval = sortedlspvals[0]
 
         # now get the nbestpeaks
         nbestperiods, nbestlspvals, peakcount = (
@@ -513,17 +642,106 @@ def specwindow_lsp(
         magsarefluxes=False,
         startp=None,
         endp=None,
+        stepsize=1.0e-4,
         autofreq=True,
         nbestpeaks=5,
         periodepsilon=0.1,
-        stepsize=1.0e-4,
-        nworkers=None,
         sigclip=10.0,
-        glspfunc=glsp_worker_specwindow,
+        nworkers=None,
+        glspfunc=_glsp_worker_specwindow,
         verbose=True
 ):
-    '''
-    This calculates the spectral window function.
+    '''This calculates the spectral window function.
+
+    Wraps the `pgen_lsp` function above to use the specific worker for
+    calculating the window-function.
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The mag/flux time-series with associated measurement errors to run the
+        period-finding on.
+
+    magsarefluxes : bool
+        If the input measurement values in `mags` and `errs` are in fluxes, set
+        this to True.
+
+    startp,endp : float or None
+        The minimum and maximum periods to consider for the transit search.
+
+    stepsize : float
+        The step-size in frequency to use when constructing a frequency grid for
+        the period search.
+
+    autofreq : bool
+        If this is True, the value of `stepsize` will be ignored and the
+        :py:func:`astrobase.periodbase.get_frequency_grid` function will be used
+        to generate a frequency grid based on `startp`, and `endp`. If these are
+        None as well, `startp` will be set to 0.1 and `endp` will be set to
+        `times.max() - times.min()`.
+
+    nbestpeaks : int
+        The number of 'best' peaks to return from the periodogram results,
+        starting from the global maximum of the periodogram peak values.
+
+    periodepsilon : float
+        The fractional difference between successive values of 'best' periods
+        when sorting by periodogram power to consider them as separate periods
+        (as opposed to part of the same periodogram peak). This is used to avoid
+        broad peaks in the periodogram and make sure the 'best' periods returned
+        are all actually independent.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    nworkers : int
+        The number of parallel workers to use when calculating the periodogram.
+
+    glspfunc : Python function
+        The worker function to use to calculate the periodogram. This is used to
+        used to make the `pgen_lsp` function calculate the time-series sampling
+        window function instead of the time-series measurements' GLS periodogram
+        by passing in `_glsp_worker_specwindow` instead of the default
+        `_glsp_worker` function.
+
+    verbose : bool
+        If this is True, will indicate progress and details about the frequency
+        grid used for the period search.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict, referred to as an `lspinfo` dict in other
+        astrobase functions that operate on periodogram results. This is a
+        standardized format across all astrobase period-finders, and is of the
+        form below::
+
+            {'bestperiod': the best period value in the periodogram,
+             'bestlspval': the periodogram peak associated with the best period,
+             'nbestpeaks': the input value of nbestpeaks,
+             'nbestlspvals': nbestpeaks-size list of best period peak values,
+             'nbestperiods': nbestpeaks-size list of best periods,
+             'lspvals': the full array of periodogram powers,
+             'periods': the full array of periods considered,
+             'method':'win' -> the name of the period-finder method,
+             'kwargs':{ dict of all of the input kwargs for record-keeping}}
 
     '''
 
@@ -541,7 +759,7 @@ def specwindow_lsp(
         stepsize=stepsize,
         nworkers=nworkers,
         sigclip=sigclip,
-        glspfunc=glsp_worker_specwindow,
+        glspfunc=glspfunc,
         verbose=verbose
     )
 
@@ -553,7 +771,7 @@ def specwindow_lsp(
         # renormalize the periodogram to between 0 and 1 like the usual GLS.
         lspmax = npnanmax(lspres['lspvals'])
 
-        if np.isfinite(lspmax):
+        if npisfinite(lspmax):
 
             lspres['lspvals'] = lspres['lspvals']/lspmax
             lspres['nbestlspvals'] = [

@@ -41,31 +41,20 @@ LOGEXCEPTION = LOGGER.exception
 #############
 
 from multiprocessing import Pool, cpu_count
-import numpy as np
 
-# import these to avoid lookup overhead
-from numpy import nan as npnan, sum as npsum, abs as npabs, \
-    roll as nproll, isfinite as npisfinite, std as npstd, \
-    sign as npsign, sqrt as npsqrt, median as npmedian, \
-    array as nparray, percentile as nppercentile, \
-    polyfit as nppolyfit, var as npvar, max as npmax, min as npmin, \
-    log10 as nplog10, arange as nparange, pi as MPI, floor as npfloor, \
-    argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
-    where as npwhere, linspace as nplinspace, \
-    zeros_like as npzeros_like, full_like as npfull_like, \
-    arctan as nparctan, nanargmax as npnanargmax, nanargmin as npnanargmin, \
-    empty as npempty, ceil as npceil, mean as npmean, \
-    digitize as npdigitize, unique as npunique, \
-    argmax as npargmax, argmin as npargmin
+from numpy import (
+    nan as npnan, arange as nparange, array as nparray, isfinite as npisfinite,
+    argmax as npargmax, median as npmedian, std as npstd, argsort as npargsort,
+    sum as npsum, cos as npcos, sin as npsin, vdot as npvdot, pi as pi_value,
+    max as npmax, abs as npabs
+)
 
 
 ###################
 ## LOCAL IMPORTS ##
 ###################
 
-from ..lcmath import phase_magseries_with_errs, sigclip_magseries, \
-    time_bin_magseries, phase_bin_magseries
-
+from ..lcmath import phase_magseries_with_errs, sigclip_magseries
 from . import get_frequency_grid
 
 
@@ -76,39 +65,57 @@ from . import get_frequency_grid
 NCPUS = cpu_count()
 
 
-###################################################################
+####################################################################
 ## MULTIHARMONIC ANALYSIS of VARIANCE (Schwarzenberg-Czerny 1996) ##
-###################################################################
+####################################################################
 
 
 def aovhm_theta(times, mags, errs, frequency,
                 nharmonics, magvariance):
-    '''This calculates the harmonic AoV theta for a frequency.
+    '''This calculates the harmonic AoV theta statistic for a frequency.
 
-    Schwarzenberg-Czerny 1996 equation 11:
+    This is a mostly faithful translation of the inner loop in `aovper.f90`. See
+    the following for details:
 
-    theta_prefactor = (K - 2N - 1)/(2N)
-    theta_top = sum(c_n*c_n) (from n=0 to n=2N)
-    theta_bot = variance(timeseries) - sum(c_n*c_n) (from n=0 to n=2N)
+    - http://users.camk.edu.pl/alex/
+    - Schwarzenberg-Czerny (`1996
+      <http://iopscience.iop.org/article/10.1086/309985/meta>`_)
 
-    theta = theta_prefactor * (theta_top/theta_bot)
+    Schwarzenberg-Czerny (1996) equation 11::
 
-    N = number of harmonics (nharmonics)
-    K = length of time series (times.size)
+        theta_prefactor = (K - 2N - 1)/(2N)
+        theta_top = sum(c_n*c_n) (from n=0 to n=2N)
+        theta_bot = variance(timeseries) - sum(c_n*c_n) (from n=0 to n=2N)
 
-    times, mags, errs should all be free of nans/infs and be normalized to zero.
+        theta = theta_prefactor * (theta_top/theta_bot)
 
-    nharmonics is the number of harmonics to calculate up to. The recommended
-    range is 4 to 8.
+        N = number of harmonics (nharmonics)
+        K = length of time series (times.size)
 
-    magvariance is the (weighted by errors) variance of the magnitude time
-    series.
+    Parameters
+    ----------
 
-    This is a mostly faithful translation of the inner loop in aovper.f90.
+    times,mags,errs : np.array
+        The input time-series to calculate the test statistic for. These should
+        all be of nans/infs and be normalized to zero.
 
-    See http://users.camk.edu.pl/alex/ and Schwarzenberg-Czerny (1996).
+    frequency : float
+        The test frequency to calculate the statistic for.
 
-    http://iopscience.iop.org/article/10.1086/309985/meta
+    nharmonics : int
+        The number of harmonics to calculate up to.The recommended range is 4 to
+        8.
+
+    magvariance : float
+        This is the (weighted by errors) variance of the magnitude time
+        series. We provide it as a pre-calculated value here so we don't have to
+        re-calculate it for every worker.
+
+    Returns
+    -------
+
+    aov_harmonic_theta : float
+        THe value of the harmonic AoV theta for the specified test `frequency`.
 
     '''
 
@@ -132,16 +139,16 @@ def aovhm_theta(times, mags, errs, frequency,
     pweights = 1.0/perrs
 
     # multiply by 2.0*PI (for omega*time)
-    phase = phase * 2.0 * MPI
+    phase = phase * 2.0 * pi_value
 
     # this is the z complex vector
-    z = np.cos(phase) + 1.0j*np.sin(phase)
+    z = npcos(phase) + 1.0j*npsin(phase)
 
     # multiply phase with N
     phase = nharmonics * phase
 
     # this is the psi complex vector
-    psi = pmags * pweights * (np.cos(phase) + 1j*np.sin(phase))
+    psi = pmags * pweights * (npcos(phase) + 1j*npsin(phase))
 
     # this is the initial value of z^n
     zn = 1.0 + 0.0j
@@ -156,24 +163,24 @@ def aovhm_theta(times, mags, errs, frequency,
     for _ in range(two_nharmonics):
 
         # this is <phi, phi>
-        phi_dot_phi = np.sum(phi * phi.conjugate())
+        phi_dot_phi = npsum(phi * phi.conjugate())
 
         # this is the alpha_n numerator
-        alpha = np.sum(pweights * z * phi)
+        alpha = npsum(pweights * z * phi)
 
-        # this is <phi, psi>. make sure to use np.vdot and NOT np.dot to get
+        # this is <phi, psi>. make sure to use npvdot and NOT npdot to get
         # complex conjugate of first vector as expected for complex vectors
-        phi_dot_psi = np.vdot(phi, psi)
+        phi_dot_psi = npvdot(phi, psi)
 
         # make sure phi_dot_phi is not zero
-        phi_dot_phi = np.max([phi_dot_phi, 10.0e-9])
+        phi_dot_phi = npmax([phi_dot_phi, 10.0e-9])
 
         # this is the expression for alpha_n
         alpha = alpha / phi_dot_phi
 
         # update theta_aov for this harmonic
         theta_aov = (theta_aov +
-                     np.abs(phi_dot_psi) * np.abs(phi_dot_psi) / phi_dot_phi)
+                     npabs(phi_dot_psi) * npabs(phi_dot_psi) / phi_dot_phi)
 
         # use the recurrence relation to find the next phi
         phi = phi * z - alpha * zn * phi.conjugate()
@@ -185,23 +192,36 @@ def aovhm_theta(times, mags, errs, frequency,
     # done with all harmonics, calculate the theta_aov for this freq
     # the max below makes sure that magvariance - theta_aov > zero
     theta_aov = ( (ndet - two_nharmonics - 1.0) * theta_aov /
-                  (two_nharmonics * np.max([magvariance - theta_aov,
-                                            1.0e-9])) )
+                  (two_nharmonics * npmax([magvariance - theta_aov,
+                                           1.0e-9])) )
 
     return theta_aov
 
 
 
-def aovhm_theta_worker(task):
+def _aovhm_theta_worker(task):
     '''
     This is a parallel worker for the function below.
 
-    task[0] = times
-    task[1] = mags
-    task[2] = errs
-    task[3] = frequency
-    task[4] = nharmonics
-    task[5] = magvariance
+    Parameters
+    ----------
+
+    tasks : tuple
+        This is of the form below::
+
+            task[0] = times
+            task[1] = mags
+            task[2] = errs
+            task[3] = frequency
+            task[4] = nharmonics
+            task[5] = magvariance
+
+    Returns
+    -------
+
+    harmonic_aov_theta : float
+        The value of the harmonic AoV statistic for the test frequency used.
+        If something goes wrong with the calculation, nan is returned.
 
     '''
 
@@ -223,22 +243,112 @@ def aovhm_theta_worker(task):
 def aovhm_periodfind(times,
                      mags,
                      errs,
-                     nharmonics=6,
                      magsarefluxes=False,
-                     autofreq=True,
                      startp=None,
                      endp=None,
-                     normalize=True,
                      stepsize=1.0e-4,
+                     autofreq=True,
+                     normalize=True,
+                     nharmonics=6,
                      nbestpeaks=5,
                      periodepsilon=0.1,
                      sigclip=10.0,
                      nworkers=None,
                      verbose=True):
-    '''This runs a parallel AoV period search.
+    '''This runs a parallelized harmonic Analysis-of-Variance (AoV) period
+    search.
 
     NOTE: normalize = True here as recommended by Schwarzenberg-Czerny 1996,
-    i.e. mags will be normalized to zero and rescaled so their variance = 1.0
+    i.e. mags will be normalized to zero and rescaled so their variance = 1.0.
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The mag/flux time-series with associated measurement errors to run the
+        period-finding on.
+
+    magsarefluxes : bool
+        If the input measurement values in `mags` and `errs` are in fluxes, set
+        this to True.
+
+    startp,endp : float or None
+        The minimum and maximum periods to consider for the transit search.
+
+    stepsize : float
+        The step-size in frequency to use when constructing a frequency grid for
+        the period search.
+
+    autofreq : bool
+        If this is True, the value of `stepsize` will be ignored and the
+        :py:func:`astrobase.periodbase.get_frequency_grid` function will be used
+        to generate a frequency grid based on `startp`, and `endp`. If these are
+        None as well, `startp` will be set to 0.1 and `endp` will be set to
+        `times.max() - times.min()`.
+
+    normalize : bool
+        This sets if the input time-series is normalized to 0.0 and rescaled
+        such that its variance = 1.0. This is the recommended procedure by
+        Schwarzenberg-Czerny 1996.
+
+    nharmonics : int
+        The number of harmonics to use when calculating the AoV theta value at a
+        test frequency. This should be between 4 and 8 in most cases.
+
+    nbestpeaks : int
+        The number of 'best' peaks to return from the periodogram results,
+        starting from the global maximum of the periodogram peak values.
+
+    periodepsilon : float
+        The fractional difference between successive values of 'best' periods
+        when sorting by periodogram power to consider them as separate periods
+        (as opposed to part of the same periodogram peak). This is used to avoid
+        broad peaks in the periodogram and make sure the 'best' periods returned
+        are all actually independent.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    nworkers : int
+        The number of parallel workers to use when calculating the periodogram.
+
+    verbose : bool
+        If this is True, will indicate progress and details about the frequency
+        grid used for the period search.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict, referred to as an `lspinfo` dict in other
+        astrobase functions that operate on periodogram results. This is a
+        standardized format across all astrobase period-finders, and is of the
+        form below::
+
+            {'bestperiod': the best period value in the periodogram,
+             'bestlspval': the periodogram peak associated with the best period,
+             'nbestpeaks': the input value of nbestpeaks,
+             'nbestlspvals': nbestpeaks-size list of best period peak values,
+             'nbestperiods': nbestpeaks-size list of best periods,
+             'lspvals': the full array of periodogram powers,
+             'periods': the full array of periods considered,
+             'method':'mav' -> the name of the period-finder method,
+             'kwargs':{ dict of all of the input kwargs for record-keeping}}
 
     '''
 
@@ -267,7 +377,7 @@ def aovhm_periodfind(times,
 
         # if we're not using autofreq, then use the provided frequencies
         if not autofreq:
-            frequencies = np.arange(startf, endf, stepsize)
+            frequencies = nparange(startf, endf, stepsize)
             if verbose:
                 LOGINFO(
                     'using %s frequency points, start P = %.3f, end P = %.3f' %
@@ -311,7 +421,7 @@ def aovhm_periodfind(times,
         tasks = [(stimes, nmags, serrs, x, nharmonics, magvariance)
                  for x in frequencies]
 
-        lsp = pool.map(aovhm_theta_worker, tasks)
+        lsp = pool.map(_aovhm_theta_worker, tasks)
 
         pool.close()
         pool.join()
@@ -356,11 +466,10 @@ def aovhm_periodfind(times,
                               'nbestpeaks':nbestpeaks,
                               'sigclip':sigclip}}
 
-        sortedlspind = np.argsort(finlsp)[::-1]
+        sortedlspind = npargsort(finlsp)[::-1]
         sortedlspperiods = finperiods[sortedlspind]
         sortedlspvals = finlsp[sortedlspind]
 
-        prevbestlspval = sortedlspvals[0]
         # now get the nbestpeaks
         nbestperiods, nbestlspvals, peakcount = (
             [finperiods[bestperiodind]],

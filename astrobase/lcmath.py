@@ -305,7 +305,7 @@ def sigclip_magseries(times, mags, errs,
     Returns
     -------
 
-    tuple : (stimes, smags, serrs)
+    (stimes, smags, serrs) : tuple
         The sigma-clipped and nan-stripped time-series.
 
     '''
@@ -653,7 +653,7 @@ def sigclip_magseries_with_extparams(times, mags, errs, extparams,
     Returns
     -------
 
-    tuple : (stimes, smags, serrs, sextparams)
+    (stimes, smags, serrs) : tuple
         The sigma-clipped and nan-stripped time-series in `stimes`, `smags`,
         `serrs` and the associated values of the `extparams` in `sextparams`.
 
