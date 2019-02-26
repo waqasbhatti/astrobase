@@ -125,7 +125,7 @@ def get_time_flux_errs_from_Ames_lightcurve(infile,
     step.
 
     .. deprecated:: 0.3.20
-        This function will be removed in astrobase v0.4.0. Use the
+        This function will be removed in astrobase v0.4.2. Use the
         `read_tess_fitslc` and `consolidate_tess_fitslc` functions instead.
 
     Parameters
@@ -154,7 +154,7 @@ def get_time_flux_errs_from_Ames_lightcurve(infile,
     warnings.warn(
         "Use the astrotess.read_tess_fitslc and "
         "astrotess.consolidate_tess_fitslc functions instead of this function. "
-        "This function will be removed in astrobase v0.4.0.",
+        "This function will be removed in astrobase v0.4.2.",
         FutureWarning
     )
 

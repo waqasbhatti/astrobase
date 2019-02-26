@@ -49,9 +49,7 @@ except Exception as e:
     import pickle
 
 import numpy as np
-from numpy import nan as npnan, median as npmedian, \
-    isfinite as npisfinite, min as npmin, max as npmax, abs as npabs, \
-    ravel as npravel
+from numpy import min as npmin, max as npmax
 
 # FIXME: enforce no display for now
 import matplotlib
@@ -66,14 +64,17 @@ import astropy.convolution as aconv
 
 from astropy.io import fits as pyfits
 from astropy.wcs import WCS
-from astropy.visualization import MinMaxInterval, ZScaleInterval, \
-    ImageNormalize, LinearStretch
+from astropy.visualization import (
+    ZScaleInterval,
+    ImageNormalize,
+    LinearStretch
+)
 
 try:
     import cStringIO
-    from cStringIO import StringIO as strio
+    from cStringIO import StringIO as Strio
 except Exception as e:
-    from io import BytesIO as strio
+    from io import BytesIO as Strio
 
 
 ###################
@@ -404,15 +405,15 @@ def plot_magseries(times,
     # check if the output filename is actually an instance of StringIO
     if sys.version_info[:2] < (3,0):
 
-        is_strio = isinstance(out, cStringIO.InputType)
+        is_Strio = isinstance(out, cStringIO.InputType)
 
     else:
 
-        is_strio = isinstance(out, strio)
+        is_Strio = isinstance(out, Strio)
 
 
     # write the plot out to a file if requested
-    if out and not is_strio:
+    if out and not is_Strio:
 
         if out.endswith('.png'):
             plt.savefig(out,bbox_inches='tight',dpi=plotdpi)
@@ -421,7 +422,7 @@ def plot_magseries(times,
         plt.close()
         return os.path.abspath(out)
 
-    elif out and is_strio:
+    elif out and is_Strio:
 
         plt.savefig(out, bbox_inches='tight', dpi=plotdpi, format='png')
         return out
@@ -697,7 +698,7 @@ def plot_phased_magseries(times,
             binploterrs = None
 
     # phase the model light curve
-    modelplotphase, modelplotmags, modelploterrs = None, None, None
+    modelplotphase, modelplotmags = None, None
 
     if ( isinstance(modelerrs,np.ndarray) and
          isinstance(modeltimes,np.ndarray) and
@@ -709,7 +710,6 @@ def plot_phased_magseries(times,
                                                   sort=phasesort)
         modelplotphase = modelphasedlc['phase']
         modelplotmags = modelphasedlc['mags']
-        modelploterrs = modelphasedlc['errs']
 
     # note that we never will phase-bin the model (no point).
     elif ( not isinstance(modelerrs,np.ndarray) and
@@ -818,15 +818,15 @@ def plot_phased_magseries(times,
     # check if the output filename is actually an instance of StringIO
     if sys.version_info[:2] < (3,0):
 
-        is_strio = isinstance(outfile, cStringIO.InputType)
+        is_Strio = isinstance(outfile, cStringIO.InputType)
 
     else:
 
-        is_strio = isinstance(outfile, strio)
+        is_Strio = isinstance(outfile, Strio)
 
     # make the figure
     if (outfile and
-        not is_strio and
+        not is_Strio and
         not isinstance(outfile, matplotlib.axes.Axes)):
 
         if outfile.endswith('.png'):
@@ -836,7 +836,7 @@ def plot_phased_magseries(times,
         plt.close()
         return period, epoch, os.path.abspath(outfile)
 
-    elif outfile and is_strio:
+    elif outfile and is_Strio:
 
         fig.savefig(outfile, bbox_inches='tight', dpi=plotdpi, format='png')
         return outfile
@@ -879,9 +879,9 @@ def skyview_stamp(ra, decl,
                   verbose=False):
     '''This downloads a DSS FITS stamp centered on the coordinates specified.
 
-    This wraps the function `astrobase.services.skyview.get_stamp`, which
-    downloads Digitized Sky Survey stamps in FITS format from the NASA SkyView
-    service:
+    This wraps the function :py:func:`astrobase.services.skyview.get_stamp`,
+    which downloads Digitized Sky Survey stamps in FITS format from the NASA
+    SkyView service:
 
     https://skyview.gsfc.nasa.gov/current/cgi/query.pl
 
@@ -898,6 +898,9 @@ def skyview_stamp(ra, decl,
         values in the 'SkyView Surveys' option boxes on the SkyView
         webpage. Currently, we've only tested using 'DSS2 Red' as the value for
         this kwarg, but the other ones should work in principle.
+
+    scaling : str
+        This is the pixel value scaling function to use.
 
     flip : bool
         Will flip the downloaded image top to bottom. This should usually be

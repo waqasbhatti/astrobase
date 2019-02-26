@@ -3,23 +3,24 @@
 # tic - Luke Bouma (luke@astro.princeton.edu) - Sep 2018
 # License: MIT. See the LICENSE file for more details.
 
-'''
-NOTE: The services.mast.tic_conesearch and services.mast_tic_xmatch functions
-are preferred over using functions in this module. This module will be
-deprecated in astrobase v0.3.22.
+'''This interacts with the TESS Input Catalog (TIC) hosted on MAST.  The code
+was almost entirely pilfered from the tutorial at:
 
-This interacts with the TESS Input Catalog (TIC) hosted on MAST.  The code was
-almost entirely pilfered from the tutorial at
-    https://mast.stsci.edu/api/v0/MastApiTutorial.html
+https://mast.stsci.edu/api/v0/MastApiTutorial.html
 
 If you use this, please cite the TIC paper (Stassun et al 2018).
 
 For further documentation, see:
-    https://mast.stsci.edu/api/v0/MastApiTutorial.html
-and
-    https://mast.stsci.edu/api/v0/pyex.html
-and
-    https://mast.stsci.edu/api/v0/_t_i_cfields.html
+
+- https://mast.stsci.edu/api/v0/MastApiTutorial.html
+- https://mast.stsci.edu/api/v0/pyex.html
+- https://mast.stsci.edu/api/v0/_t_i_cfields.html
+
+.. deprecated:: 0.3.20
+   This function will be removed in astrobase v0.4.2. The
+   :py:func:`astrobase.services.mast.tic_conesearch` and
+   :py:func:`astrobase.services.mast.tic_xmatch` functions are preferred over
+   using functions in this module.
 
 '''
 
@@ -29,9 +30,9 @@ and
 
 import warnings
 warnings.warn(
-    "The services.mast.tic_conesearch and services.mast_tic_xmatch "
+    "The services.mast.tic_conesearch and services.mast.tic_xmatch "
     "functions are preferred over using functions in this module. "
-    "This module will be removed in astrobase v0.3.22.",
+    "This module will be removed in astrobase v0.4.2.",
     FutureWarning
 )
 
@@ -87,7 +88,7 @@ except ImportError:
 ## MAST QUERIES ##
 ###################
 
-def mast_query(request):
+def _mast_query(request):
 
     server = 'mast.stsci.edu'
 
@@ -124,11 +125,26 @@ def mast_query(request):
 
 
 def tic_single_object_crossmatch(ra, dec, radius):
-    '''
-    ra, dec, radius: all in decimal degrees
+    '''This does a cross-match against the TIC catalog on MAST.
 
-    speed tests: about 10 crossmatches per second.
-        (-> 3 hours for 10^5 objects to crossmatch).
+    Speed tests: about 10 crossmatches per second. (-> 3 hours for 10^5 objects
+    to crossmatch).
+
+    Parameters
+    ----------
+
+    ra,dec : np.array
+        The coordinates to cross match against, all in decimal degrees.
+
+    radius : float
+        The cross-match radius to use, in decimal degrees.
+
+    Returns
+    -------
+
+    dict
+        Returns the match results JSON from MAST loaded into a dict.
+
     '''
     for val in ra,dec,radius:
         if not isinstance(val, float):
@@ -149,7 +165,7 @@ def tic_single_object_crossmatch(ra, dec, radius):
                "format":"json",
                'removecache':True}
 
-    headers,out_string = mast_query(request)
+    headers,out_string = _mast_query(request)
 
     out_data = json.loads(out_string)
 

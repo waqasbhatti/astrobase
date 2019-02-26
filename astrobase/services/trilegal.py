@@ -62,6 +62,7 @@ import hashlib
 import time
 import re
 from datetime import datetime
+import copy
 
 import numpy as np
 
@@ -505,50 +506,88 @@ def query_galcoords(gal_lon,
                     maxtimeout=700.0):
     '''This queries the TRILEGAL model form, downloads results, and parses them.
 
-    gal_lon and gal_lat are galactic longitude and latitude in degrees.
+    Parameters
+    ----------
 
-    filtersystem is a key in the TRILEGAL_FILTER_SYSTEMS dict. Use the function
-    trilegal.list_trilegal_filtersystems() to see a nicely formatted table with
-    the key and description for each of these.
+    gal_lon,gal_lat : float
+        These are the center galactic longitude and latitude in degrees.
 
-    field_deg2 is the area of the simulated field in degrees.
+    filtersystem : str
+        This is a key in the TRILEGAL_FILTER_SYSTEMS dict. Use the function
+        :py:func:`astrobase.services.trilegal.list_trilegal_filtersystems` to
+        see a nicely formatted table with the key and description for each of
+        these.
 
-    If usebinaries is True, binaries will be present in the model results.
+    field_deg2 : float
+        The area of the simulated field in square degrees.
 
-    extinction_sigma is the applied std dev around the Av_extinction value for
-    the galactic coordinates requested.
+    usebinaries : bool
+        If this is True, binaries will be present in the model results.
 
-    magnitude_limit is the limiting magnitude of the simulation in the
-    maglim_filtercol-th band of the filter system chosen.
+    extinction_sigma : float
+        This is the applied std dev around the `Av_extinction` value for the
+        galactic coordinates requested.
 
-    trilegal_version is the version of the TRILEGAL form to use. This can
-    usually left as-is.
+    magnitude_limit : float
+        This is the limiting magnitude of the simulation in the
+        `maglim_filtercol` band index of the filter system chosen.
 
-    extraparams is a dict that can be used to override parameters of the model
-    other than the basic ones used for input to this function. All parameters
-    are listed in TRILEGAL_DEFAULT_PARAMS. See:
+    maglim_filtercol : int
+        The index in the filter system list of the magnitude limiting band.
 
-    http://stev.oapd.inaf.it/cgi-bin/trilegal
+    trilegal_version : float
+        This is the the version of the TRILEGAL form to use. This can usually be
+        left as-is.
 
-    for explanations of these parameters.
+    extraparams : dict or None
+        This is a dict that can be used to override parameters of the model
+        other than the basic ones used for input to this function. All
+        parameters are listed in `TRILEGAL_DEFAULT_PARAMS` above. See:
 
-    If forcefetch is True, the query will be retried even if cached results for
-    it exist.
+        http://stev.oapd.inaf.it/cgi-bin/trilegal
 
-    cachedir points to the directory where results will be downloaded.
+        for explanations of these parameters.
 
-    timeout sets the amount of time in seconds to wait for the service to
-    respond to our initial form submission.
+    forcefetch : bool
+        If this is True, the query will be retried even if cached results for
+        it exist.
 
-    refresh sets the amount of time in seconds to wait before checking if the
-    result file is available. If the results file isn't available after refresh
-    seconds have elapsed, the function will wait for refresh continuously, until
-    maxtimeout is reached or the results file becomes available.
+    cachedir : str
+        This points to the directory where results will be downloaded.
+
+    verbose : bool
+        If True, will indicate progress and warn of any issues.
+
+    timeout : float
+        This sets the amount of time in seconds to wait for the service to
+        respond to our initial request.
+
+    refresh : float
+        This sets the amount of time in seconds to wait before checking if the
+        result file is available. If the results file isn't available after
+        `refresh` seconds have elapsed, the function will wait for `refresh`
+        seconds continuously, until `maxtimeout` is reached or the results file
+        becomes available.
+
+    maxtimeout : float
+        The maximum amount of time in seconds to wait for a result to become
+        available after submitting our query request.
+
+    Returns
+    -------
+
+    dict
+        This returns a dict of the form::
+
+            {'params':the input param dict used,
+             'extraparams':any extra params used,
+             'provenance':'cached' or 'new download',
+             'tablefile':the path on disk to the downloaded model text file}
 
     '''
 
     # these are the default parameters
-    inputparams = TRILEGAL_INPUT_PARAMS.copy()
+    inputparams = copy.deepcopy(TRILEGAL_INPUT_PARAMS)
 
     # update them with the input params
     inputparams['binary_kind'] = '1' if usebinaries else '0'
@@ -600,7 +639,7 @@ def query_galcoords(gal_lon,
         return None
 
     # override the complete form param dict now with our params
-    trilegal_params = TRILEGAL_DEFAULT_PARAMS.copy()
+    trilegal_params = copy.deepcopy(TRILEGAL_DEFAULT_PARAMS)
     trilegal_params.update(inputparams)
 
     # override the final params with any extraparams
@@ -782,8 +821,86 @@ def query_radecl(ra,
                  timeout=60.0,
                  refresh=150.0,
                  maxtimeout=700.0):
-    '''
-    This runs the TRILEGAL query for decimal equatorial coordinates.
+    '''This runs the TRILEGAL query for decimal equatorial coordinates.
+
+    Parameters
+    ----------
+
+    ra,decl : float
+        These are the center equatorial coordinates in decimal degrees
+
+    filtersystem : str
+        This is a key in the TRILEGAL_FILTER_SYSTEMS dict. Use the function
+        :py:func:`astrobase.services.trilegal.list_trilegal_filtersystems` to
+        see a nicely formatted table with the key and description for each of
+        these.
+
+    field_deg2 : float
+        The area of the simulated field in square degrees. This is in the
+        Galactic coordinate system.
+
+    usebinaries : bool
+        If this is True, binaries will be present in the model results.
+
+    extinction_sigma : float
+        This is the applied std dev around the `Av_extinction` value for the
+        galactic coordinates requested.
+
+    magnitude_limit : float
+        This is the limiting magnitude of the simulation in the
+        `maglim_filtercol` band index of the filter system chosen.
+
+    maglim_filtercol : int
+        The index in the filter system list of the magnitude limiting band.
+
+    trilegal_version : float
+        This is the the version of the TRILEGAL form to use. This can usually be
+        left as-is.
+
+    extraparams : dict or None
+        This is a dict that can be used to override parameters of the model
+        other than the basic ones used for input to this function. All
+        parameters are listed in `TRILEGAL_DEFAULT_PARAMS` above. See:
+
+        http://stev.oapd.inaf.it/cgi-bin/trilegal
+
+        for explanations of these parameters.
+
+    forcefetch : bool
+        If this is True, the query will be retried even if cached results for
+        it exist.
+
+    cachedir : str
+        This points to the directory where results will be downloaded.
+
+    verbose : bool
+        If True, will indicate progress and warn of any issues.
+
+    timeout : float
+        This sets the amount of time in seconds to wait for the service to
+        respond to our initial request.
+
+    refresh : float
+        This sets the amount of time in seconds to wait before checking if the
+        result file is available. If the results file isn't available after
+        `refresh` seconds have elapsed, the function will wait for `refresh`
+        seconds continuously, until `maxtimeout` is reached or the results file
+        becomes available.
+
+    maxtimeout : float
+        The maximum amount of time in seconds to wait for a result to become
+        available after submitting our query request.
+
+    Returns
+    -------
+
+    dict
+        This returns a dict of the form::
+
+            {'params':the input param dict used,
+             'extraparams':any extra params used,
+             'provenance':'cached' or 'new download',
+             'tablefile':the path on disk to the downloaded model text file}
 
     '''
 
@@ -815,6 +932,18 @@ def query_radecl(ra,
 def read_model_table(modelfile):
     '''
     This reads a downloaded TRILEGAL model file.
+
+    Parameters
+    ----------
+
+    modelfile : str
+        Path to the downloaded model file to read.
+
+    Returns
+    -------
+
+    np.recarray
+        Returns the model table as a Numpy record array.
 
     '''
 

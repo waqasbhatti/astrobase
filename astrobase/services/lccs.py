@@ -132,16 +132,15 @@ except Exception as e:
 ####################
 
 def check_existing_apikey(lcc_server):
-    '''This validates if an API key for lcc_server is available in
-    `~/.astrobase/lccs`.
+    '''This validates if an API key for the specified LCC-Server is available.
 
-    API keys are stored using the following file scheme:
+    API keys are stored using the following file scheme::
 
-    `~/.astrobase/lccs/apikey-domain.of.lccserver.org`
+        ~/.astrobase/lccs/apikey-domain.of.lccserver.org
 
-    e.g. for the HAT LCC server at https://data.hatsurveys.org:
+    e.g. for the HAT LCC-Server at https://data.hatsurveys.org::
 
-   `~/.astrobase/lccs/apikey-https-data.hatsurveys.org`
+        ~/.astrobase/lccs/apikey-https-data.hatsurveys.org
 
     Parameters
     ----------
@@ -207,7 +206,7 @@ def check_existing_apikey(lcc_server):
 
             return False, None, None
     else:
-        LOGWARNING('No LCC server API key '
+        LOGWARNING('No LCC-Server API key '
                    'found in: {apikeyfile}'.format(apikeyfile=APIKEYFILE))
 
         return False, None, None
@@ -259,7 +258,7 @@ def get_new_apikey(lcc_server):
 
     else:
 
-        LOGERROR('could not fetch the API key from LCC server at: %s' %
+        LOGERROR('could not fetch the API key from LCC-Server at: %s' %
                  lcc_server)
         LOGERROR('the HTTP status code was: %s' % resp.status_code)
         return None
@@ -360,7 +359,7 @@ def import_apikey(lcc_server, apikey_text_json):
 ##############################
 
 def submit_post_searchquery(url, data, apikey):
-    '''This submits a POST query to an LCC server search API endpoint.
+    '''This submits a POST query to an LCC-Server search API endpoint.
 
     Handles streaming of the results, and returns the final JSON stream. Also
     handles results that time out.
@@ -414,7 +413,7 @@ def submit_post_searchquery(url, data, apikey):
     else:
         headers = {}
 
-    LOGINFO('submitting search query to LCC server API URL: %s' % url)
+    LOGINFO('submitting search query to LCC-Server API URL: %s' % url)
 
     try:
 
@@ -744,7 +743,7 @@ def cone_search(lcc_server,
     ----------
 
     lcc_server : str
-        This is the base URL of the LCC server to talk to.  (e.g. for HAT, use:
+        This is the base URL of the LCC-Server to talk to.  (e.g. for HAT, use:
         https://data.hatsurveys.org)
 
     center_ra,center_decl : float
@@ -794,8 +793,8 @@ def cone_search(lcc_server,
 
     filters : str or None
         This is an SQL-like string to use to filter on database columns in the
-        LCC server's collections. To see the columns available for a search,
-        visit the Collections tab in the LCC server's browser UI. The filter
+        LCC-Server's collections. To see the columns available for a search,
+        visit the Collections tab in the LCC-Server's browser UI. The filter
         operators allowed are::
 
             lt      -> less than
@@ -1004,13 +1003,13 @@ def fulltext_search(lcc_server,
     ----------
 
     lcc_server : str
-        This is the base URL of the LCC server to talk to.  (e.g. for HAT, use:
+        This is the base URL of the LCC-Server to talk to.  (e.g. for HAT, use:
         https://data.hatsurveys.org)
 
     searchterm : str
-        This is the term to look for in a full-text search of the LCC server's
+        This is the term to look for in a full-text search of the LCC-Server's
         collections. This can be an object name, tag, description, etc., as
-        noted in the LCC server's full-text search tab in its browser UI. To
+        noted in the LCC-Server's full-text search tab in its browser UI. To
         search for an exact match to a string (like an object name), you can add
         double quotes around the string, e.g. searchitem = '"exact match to me
         needed"'.
@@ -1058,8 +1057,8 @@ def fulltext_search(lcc_server,
 
     filters : str or None
         This is an SQL-like string to use to filter on database columns in the
-        LCC server's collections. To see the columns available for a search,
-        visit the Collections tab in the LCC server's browser UI. The filter
+        LCC-Server's collections. To see the columns available for a search,
+        visit the Collections tab in the LCC-Server's browser UI. The filter
         operators allowed are::
 
             lt      -> less than
@@ -1263,13 +1262,13 @@ def column_search(lcc_server,
     ----------
 
     lcc_server : str
-        This is the base URL of the LCC server to talk to.  (e.g. for HAT, use:
+        This is the base URL of the LCC-Server to talk to.  (e.g. for HAT, use:
         https://data.hatsurveys.org)
 
     filters : str or None
         This is an SQL-like string to use to filter on database columns in the
-        LCC server's collections. To see the columns available for a search,
-        visit the Collections tab in the LCC server's browser UI. The filter
+        LCC-Server's collections. To see the columns available for a search,
+        visit the Collections tab in the LCC-Server's browser UI. The filter
         operators allowed are::
 
             lt      -> less than
@@ -1506,12 +1505,12 @@ def xmatch_search(lcc_server,
     ----------
 
     lcc_server : str
-        This is the base URL of the LCC server to talk to.  (e.g. for HAT, use:
+        This is the base URL of the LCC-Server to talk to.  (e.g. for HAT, use:
         https://data.hatsurveys.org)
 
     file_to_upload : str
         This is the path to a text file containing objectid, RA, declination
-        rows for the objects to cross-match against the LCC server
+        rows for the objects to cross-match against the LCC-Server
         collections. This should follow the format of the following example::
 
             # example object and coordinate list
@@ -1529,7 +1528,7 @@ def xmatch_search(lcc_server,
 
     xmatch_dist_arcsec : float
         This is the maximum distance in arcseconds to consider when
-        cross-matching objects in the uploaded file to the LCC server's
+        cross-matching objects in the uploaded file to the LCC-Server's
         collections. The maximum allowed distance is 30 arcseconds. Multiple
         matches to an uploaded object are possible and will be returned in order
         of increasing distance grouped by input `objectid`.
@@ -1566,8 +1565,8 @@ def xmatch_search(lcc_server,
 
     filters : str or None
         This is an SQL-like string to use to filter on database columns in the
-        LCC server's collections. To see the columns available for a search,
-        visit the Collections tab in the LCC server's browser UI. The filter
+        LCC-Server's collections. To see the columns available for a search,
+        visit the Collections tab in the LCC-Server's browser UI. The filter
         operators allowed are::
 
             lt      -> less than
@@ -1787,7 +1786,7 @@ def get_dataset(lcc_server,
     ----------
 
     lcc_server : str
-        This is the base URL of the LCC server to talk to.
+        This is the base URL of the LCC-Server to talk to.
 
     dataset_id : str
         This is the unique setid of the dataset you want to get. In the results
@@ -1856,7 +1855,7 @@ def get_dataset(lcc_server,
 
 
 def object_info(lcc_server, objectid, db_collection_id):
-    '''This gets information on a single object from the LCC server.
+    '''This gets information on a single object from the LCC-Server.
 
     Returns a dict with all of the available information on an object, including
     finding charts, comments, object type and variability tags, and
@@ -1880,15 +1879,15 @@ def object_info(lcc_server, objectid, db_collection_id):
     ----------
 
     lcc_server : str
-        This is the base URL of the LCC server to talk to.
+        This is the base URL of the LCC-Server to talk to.
 
     objectid : str
         This is the unique database ID of the object to retrieve info for. This
-        is always returned as the `db_oid` column in LCC server search results.
+        is always returned as the `db_oid` column in LCC-Server search results.
 
     db_collection_id : str
         This is the collection ID which will be searched for the object. This is
-        always returned as the `collection` column in LCC server search results.
+        always returned as the `collection` column in LCC-Server search results.
 
     Returns
     -------
@@ -1897,34 +1896,34 @@ def object_info(lcc_server, objectid, db_collection_id):
         A dict containing the object info is returned. Some important items in
         the result dict:
 
-       - `objectinfo`: all object magnitude, color, GAIA cross-match, and object
-         type information available for this object
+        - `objectinfo`: all object magnitude, color, GAIA cross-match, and
+          object type information available for this object
 
-       - `objectcomments`: comments on the object's variability if available
+        - `objectcomments`: comments on the object's variability if available
 
-       - `varinfo`: variability comments, variability features, type tags,
-         period and epoch information if available
+        - `varinfo`: variability comments, variability features, type tags,
+          period and epoch information if available
 
-       - `neighbors`: information on the neighboring objects of this object in
-         its parent light curve collection
+        - `neighbors`: information on the neighboring objects of this object in
+          its parent light curve collection
 
-       - `xmatch`: information on any cross-matches to external catalogs
-         (e.g. KIC, EPIC, TIC, APOGEE, etc.)
+        - `xmatch`: information on any cross-matches to external catalogs
+          (e.g. KIC, EPIC, TIC, APOGEE, etc.)
 
-       - `finderchart`: a base-64 encoded PNG image of the object's DSS2 RED
+        - `finderchart`: a base-64 encoded PNG image of the object's DSS2 RED
           finder chart. To convert this to an actual PNG, try the function:
           `astrobase.checkplot.pkl_io._b64_to_file`.
 
-       - `magseries`: a base-64 encoded PNG image of the object's light
-         curve. To convert this to an actual PNG, try the function:
-         `astrobase.checkplot.pkl_io._b64_to_file`.
+        - `magseries`: a base-64 encoded PNG image of the object's light
+          curve. To convert this to an actual PNG, try the function:
+          `astrobase.checkplot.pkl_io._b64_to_file`.
 
-       - `pfmethods`: a list of period-finding methods applied to the object if
-         any. If this list is present, use the keys in it to get to the actual
-         period-finding results for each method. These will contain base-64
-         encoded PNGs of the periodogram and phased light curves using the best
-         three peaks in the periodogram, as well as period and epoch
-         information.
+        - `pfmethods`: a list of period-finding methods applied to the object if
+          any. If this list is present, use the keys in it to get to the actual
+          period-finding results for each method. These will contain base-64
+          encoded PNGs of the periodogram and phased light curves using the best
+          three peaks in the periodogram, as well as period and epoch
+          information.
 
     '''
 
@@ -1988,7 +1987,7 @@ def object_info(lcc_server, objectid, db_collection_id):
 
 
 def list_recent_datasets(lcc_server, nrecent=25):
-    '''This lists recent publicly visible datasets available on the LCC server.
+    '''This lists recent publicly visible datasets available on the LCC-Server.
 
     If you have an LCC-Server API key present in `~/.astrobase/lccs/` that is
     associated with an LCC-Server user account, datasets that belong to this
@@ -1998,7 +1997,7 @@ def list_recent_datasets(lcc_server, nrecent=25):
     ----------
 
     lcc_server : str
-        This is the base URL of the LCC server to talk to.
+        This is the base URL of the LCC-Server to talk to.
 
     nrecent : int
         This indicates how many recent public datasets you want to list. This is
@@ -2057,7 +2056,7 @@ def list_recent_datasets(lcc_server, nrecent=25):
 
 
 def list_lc_collections(lcc_server):
-    '''This lists all light curve collections made available on the LCC server.
+    '''This lists all light curve collections made available on the LCC-Server.
 
     If you have an LCC-Server API key present in `~/.astrobase/lccs/` that is
     associated with an LCC-Server user account, light curve collections visible

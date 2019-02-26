@@ -47,6 +47,7 @@ import hashlib
 import re
 import random
 import time
+import copy
 
 # to do the queries
 import requests
@@ -101,20 +102,66 @@ def get_stamp(ra, decl,
               jitter=5.0):
     '''This gets a FITS cutout from the NASA GSFC SkyView service.
 
-    ra, decl are decimal equatorial coordinates for the cutout center.
+    This downloads stamps in FITS format from the NASA SkyView service:
 
-    survey is the name of the survey to get the stamp for. This is 'DSS2 Red' by
-    default.
+    https://skyview.gsfc.nasa.gov/current/cgi/query.pl
 
-    scaling is the type of pixel value scaling to apply to the cutout. This is
-    'Linear' by default.
 
-    sizepix is the size of the cutout in pixels.
+    Parameters
+    ----------
 
-    cachedir points to the astrobase stamp-cache directory.
+    ra,decl : float
+        These are decimal equatorial coordinates for the cutout center.
 
-    timeout is the amount of time in seconds to wait for a response from the
-    service.
+    survey : str
+        The survey name to get the stamp from. This is one of the
+        values in the 'SkyView Surveys' option boxes on the SkyView
+        webpage. Currently, we've only tested using 'DSS2 Red' as the value for
+        this kwarg, but the other ones should work in principle.
+
+    scaling : str
+        This is the pixel value scaling function to use.
+
+    sizepix : int
+        The width and height of the cutout are specified by this value.
+
+    forcefetch : bool
+        If True, will disregard any existing cached copies of the stamp already
+        downloaded corresponding to the requested center coordinates and
+        redownload the FITS from the SkyView service.
+
+    cachedir : str
+        This is the path to the astrobase cache directory. All downloaded FITS
+        stamps are stored here as .fits.gz files so we can immediately respond
+        with the cached copy when a request is made for a coordinate center
+        that's already been downloaded.
+
+    timeout : float
+        Sets the timeout in seconds to wait for a response from the NASA SkyView
+        service.
+
+    retry_failed : bool
+        If the initial request to SkyView fails, and this is True, will retry
+        until it succeeds.
+
+    verbose : bool
+        If True, indicates progress.
+
+    jitter : float
+        This is used to control the scale of the random wait in seconds before
+        starting the query. Useful in parallelized situations.
+
+    Returns
+    -------
+
+    dict
+        A dict of the following form is returned::
+
+            {
+                'params':{input ra, decl and kwargs used},
+                'provenance':'cached' or 'new download',
+                'fitsfile':FITS file to which the cutout was saved on disk
+            }
 
     '''
 
@@ -122,7 +169,7 @@ def get_stamp(ra, decl,
     formposition = ['%.4f, %.4f' % (ra, decl)]
     formscaling = [scaling]
 
-    formparams = SKYVIEW_PARAMS.copy()
+    formparams = copy.deepcopy(SKYVIEW_PARAMS)
     formparams['Position'] = formposition
     formparams['survey'][0] = survey
     formparams['scaling'] = formscaling

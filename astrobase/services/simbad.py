@@ -113,30 +113,77 @@ def tap_query(querystr,
               maxtimeout=90.0,
               maxtries=3,
               complete_query_later=False,
-              jitter=5):
-    '''This queries the SIMBAD TAP service using the ADQL querystr.
+              jitter=5.0):
+    '''This queries the SIMBAD TAP service using the ADQL query string provided.
 
-    querystr is an ADQL query. See: http://www.ivoa.net/documents/ADQL/2.0 for
-    the specification and http://gea.esac.esa.int/archive-help/adql/index.html
-    for SIMBAD-specific additions.
+    Parameters
+    ----------
 
-    simbad_mirror is a string key from the SIMBAD_URLS dict above. If set, the
-    specified mirror will be used. If unset, a random mirror will be used.
+    querystr : str
+        This is the ADQL query string. See:
+        http://www.ivoa.net/documents/ADQL/2.0 for the specification.
 
-    returnformat is one of 'csv', 'votable', or 'json'.
+    simbad_mirror : str
+        This is the key used to select a SIMBAD mirror from the
+        `SIMBAD_URLS` dict above. If set, the specified mirror will be used. If
+        None, a random mirror chosen from that dict will be used.
 
-    If forcefetch is True, the query will be retried even if cached results for
-    it exist.
+    returnformat : {'csv','votable','json'}
+        The returned file format to request from the GAIA catalog service.
 
-    cachedir points to the directory where results will be downloaded.
+    forcefetch : bool
+        If this is True, the query will be retried even if cached results for
+        it exist.
 
-    timeout sets the amount of time in seconds to wait for the service to
-    respond.
+    cachedir : str
+        This points to the directory where results will be downloaded.
 
-    refresh sets the amount of time in seconds to wait before checking if the
-    result file is available. If the results file isn't available after refresh
-    seconds have elapsed, the function will wait for refresh continuously, until
-    maxtimeout is reached or the results file becomes available.
+    verbose : bool
+        If True, will indicate progress and warn of any issues.
+
+    timeout : float
+        This sets the amount of time in seconds to wait for the service to
+        respond to our initial request.
+
+    refresh : float
+        This sets the amount of time in seconds to wait before checking if the
+        result file is available. If the results file isn't available after
+        `refresh` seconds have elapsed, the function will wait for `refresh`
+        seconds continuously, until `maxtimeout` is reached or the results file
+        becomes available.
+
+    maxtimeout : float
+        The maximum amount of time in seconds to wait for a result to become
+        available after submitting our query request.
+
+    maxtries : int
+        The maximum number of tries (across all mirrors tried) to make to either
+        submit the request or download the results, before giving up.
+
+    complete_query_later : bool
+        If set to True, a submitted query that does not return a result before
+        `maxtimeout` has passed will be cancelled but its input request
+        parameters and the result URL provided by the service will be saved. If
+        this function is then called later with these same input request
+        parameters, it will check if the query finally finished and a result is
+        available. If so, will download the results instead of submitting a new
+        query. If it's not done yet, will start waiting for results again. To
+        force launch a new query with the same request parameters, set the
+        `forcefetch` kwarg to True.
+
+    jitter : float
+        This is used to control the scale of the random wait in seconds before
+        starting the query. Useful in parallelized situations.
+
+    Returns
+    -------
+
+    dict
+        This returns a dict of the following form::
+
+            {'params':dict of the input params used for the query,
+             'provenance':'cache' or 'new download',
+             'result':path to the file on disk with the downloaded data table}
 
     '''
 
@@ -828,21 +875,72 @@ def objectnames_conesearch(racenter,
     coords. This is effectively a "reverse" name resolver (i.e. this does the
     opposite of SESAME).
 
-    Uses a conesearch around racenter, declcenter with radius in arcsec of
-    searchradiusarcsec.
+    Parameters
+    ----------
 
-    If forcefetch is True, the query will be retried even if cached results for
-    it exist.
+    racenter,declcenter : float
+        The cone-search center coordinates in decimal degrees
 
-    cachedir points to the directory where results will be downloaded.
+    searchradiusarcsec : float
+        The radius in arcseconds to search around the center coordinates.
 
-    timeout sets the amount of time in seconds to wait for the service to
-    respond.
+    simbad_mirror : str
+        This is the key used to select a SIMBAD mirror from the
+        `SIMBAD_URLS` dict above. If set, the specified mirror will be used. If
+        None, a random mirror chosen from that dict will be used.
 
-    refresh sets the amount of time in seconds to wait before checking if the
-    result file is available. If the results file isn't available after refresh
-    seconds have elapsed, the function will wait for refresh continuously, until
-    maxtimeout is reached or the results file becomes available.
+    returnformat : {'csv','votable','json'}
+        The returned file format to request from the GAIA catalog service.
+
+    forcefetch : bool
+        If this is True, the query will be retried even if cached results for
+        it exist.
+
+    cachedir : str
+        This points to the directory where results will be downloaded.
+
+    verbose : bool
+        If True, will indicate progress and warn of any issues.
+
+    timeout : float
+        This sets the amount of time in seconds to wait for the service to
+        respond to our initial request.
+
+    refresh : float
+        This sets the amount of time in seconds to wait before checking if the
+        result file is available. If the results file isn't available after
+        `refresh` seconds have elapsed, the function will wait for `refresh`
+        seconds continuously, until `maxtimeout` is reached or the results file
+        becomes available.
+
+    maxtimeout : float
+        The maximum amount of time in seconds to wait for a result to become
+        available after submitting our query request.
+
+    maxtries : int
+        The maximum number of tries (across all mirrors tried) to make to either
+        submit the request or download the results, before giving up.
+
+    complete_query_later : bool
+        If set to True, a submitted query that does not return a result before
+        `maxtimeout` has passed will be cancelled but its input request
+        parameters and the result URL provided by the service will be saved. If
+        this function is then called later with these same input request
+        parameters, it will check if the query finally finished and a result is
+        available. If so, will download the results instead of submitting a new
+        query. If it's not done yet, will start waiting for results again. To
+        force launch a new query with the same request parameters, set the
+        `forcefetch` kwarg to True.
+
+    Returns
+    -------
+
+    dict
+        This returns a dict of the following form::
+
+            {'params':dict of the input params used for the query,
+             'provenance':'cache' or 'new download',
+             'result':path to the file on disk with the downloaded data table}
 
     '''
 
