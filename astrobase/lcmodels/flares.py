@@ -11,18 +11,6 @@ http://adsabs.harvard.edu/abs/2014MNRAS.445.2268P
 
 import numpy as np
 
-from numpy import nan as npnan, sum as npsum, abs as npabs, \
-    roll as nproll, isfinite as npisfinite, std as npstd, \
-    sign as npsign, sqrt as npsqrt, median as npmedian, \
-    array as nparray, percentile as nppercentile, \
-    polyfit as nppolyfit, var as npvar, max as npmax, min as npmin, \
-    log10 as nplog10, arange as nparange, pi as MPI, floor as npfloor, \
-    argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
-    where as npwhere, linspace as nplinspace, \
-    zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
-    correlate as npcorrelate, nonzero as npnonzero, diag as npdiag
-
-
 ##################################
 ## MODEL AND RESIDUAL FUNCTIONS ##
 ##################################
@@ -30,43 +18,52 @@ from numpy import nan as npnan, sum as npsum, abs as npabs, \
 def flare_model(flareparams, times, mags, errs):
     '''This is a flare model function, similar to Kowalski+ 2011.
 
-    Model params
-    ------------
+    From the paper by Pitkin+ 2014:
+    http://adsabs.harvard.edu/abs/2014MNRAS.445.2268P
 
-    flareparams is a list:
-
-    [amplitude, flare_peak_time, rise_gaussian_stdev, decay_time_constant]
-
-    where:
-
-    amplitude: the maximum flare amplitude in mags or flux. If flux, then
-    amplitude should be positive. If mags, amplitude should be negative.
-
-    flare_peak_time: time at which the flare maximum happens
-
-    rise_gaussian_stdev: the stdev of the gaussian describing the rise of the
-                         flare
-
-    decay_time_constant: the time constant of the exponential fall of the flare
-
-
-    Other args
+    Parameters
     ----------
 
-    times: a numpy array of times
+    flareparams : list of float
+        This defines the flare model::
 
-    mags: a numpy array of magnitudes or fluxes. the flare will simply be added
-    to mags at the appropriate times
+            [amplitude,
+             flare_peak_time,
+             rise_gaussian_stdev,
+             decay_time_constant]
 
-    errs: a numpy array of measurement errors for each mag/flux measurement
+        where:
+
+        `amplitude`: the maximum flare amplitude in mags or flux. If flux, then
+        amplitude should be positive. If mags, amplitude should be negative.
+
+        `flare_peak_time`: time at which the flare maximum happens.
+
+        `rise_gaussian_stdev`: the stdev of the gaussian describing the rise of
+        the flare.
+
+        `decay_time_constant`: the time constant of the exponential fall of the
+        flare.
+
+    times,mags,errs : np.array
+        The input time-series of measurements and associated errors for which
+        the model will be generated. The times will be used to generate
+        model mags.
+
+    Returns
+    -------
+
+    (modelmags, times, mags, errs) : tuple
+        Returns the model mags evaluated at the input time values. Also returns
+        the input `times`, `mags`, and `errs`.
 
     '''
 
     (amplitude, flare_peak_time,
      rise_gaussian_stdev, decay_time_constant) = flareparams
 
-    zerolevel = npmedian(mags)
-    modelmags = npfull_like(times, zerolevel)
+    zerolevel = np.median(mags)
+    modelmags = np.full_like(times, zerolevel)
 
     # before peak gaussian rise...
     modelmags[times < flare_peak_time] = (
@@ -96,7 +93,43 @@ def flare_model(flareparams, times, mags, errs):
 
 def flare_model_residual(flareparams, times, mags, errs):
     '''
-    This just returns the residual between model mags and the actual mags.
+    This returns the residual between model mags and the actual mags.
+
+    Parameters
+    ----------
+
+    flareparams : list of float
+        This defines the flare model::
+
+            [amplitude,
+             flare_peak_time,
+             rise_gaussian_stdev,
+             decay_time_constant]
+
+        where:
+
+        `amplitude`: the maximum flare amplitude in mags or flux. If flux, then
+        amplitude should be positive. If mags, amplitude should be negative.
+
+        `flare_peak_time`: time at which the flare maximum happens.
+
+        `rise_gaussian_stdev`: the stdev of the gaussian describing the rise of
+        the flare.
+
+        `decay_time_constant`: the time constant of the exponential fall of the
+        flare.
+
+    times,mags,errs : np.array
+        The input time-series of measurements and associated errors for which
+        the model will be generated. The times will be used to generate
+        model mags.
+
+    Returns
+    -------
+
+    np.array
+        The residuals between the input `mags` and generated `modelmags`,
+        weighted by the measurement errors in `errs`.
 
     '''
 

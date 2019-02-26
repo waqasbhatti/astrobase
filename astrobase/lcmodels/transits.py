@@ -10,17 +10,6 @@ light curves.
 
 import numpy as np
 
-from numpy import nan as npnan, sum as npsum, abs as npabs, \
-    roll as nproll, isfinite as npisfinite, std as npstd, \
-    sign as npsign, sqrt as npsqrt, median as npmedian, \
-    array as nparray, percentile as nppercentile, \
-    polyfit as nppolyfit, var as npvar, max as npmax, min as npmin, \
-    log10 as nplog10, arange as nparange, pi as MPI, floor as npfloor, \
-    argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
-    where as npwhere, linspace as nplinspace, \
-    zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
-    correlate as npcorrelate, nonzero as npnonzero, diag as npdiag
-
 
 ##################################
 ## MODEL AND RESIDUAL FUNCTIONS ##
@@ -32,16 +21,36 @@ def trapezoid_transit_func(transitparams, times, mags, errs,
 
     Suitable for first order modeling of transit signals.
 
-    transitparams = [transitperiod (time),
-                     transitepoch (time),
-                     transitdepth (flux or mags),
-                     transitduration (phase),
-                     ingressduration (phase)]
+    Parameters
+    ----------
 
-    All of these will then have fitted values after the fit is done.
+    transitparams : list of float
+        This contains the transiting planet trapezoid model::
 
-    for magnitudes -> transitdepth should be < 0
-    for fluxes     -> transitdepth should be > 0
+            transitparams = [transitperiod (time),
+                             transitepoch (time),
+                             transitdepth (flux or mags),
+                             transitduration (phase),
+                             ingressduration (phase)]
+
+        All of these will then have fitted values after the fit is done.
+
+        - for magnitudes -> `transitdepth` should be < 0
+        - for fluxes     -> `transitdepth` should be > 0
+
+    times,mags,errs : np.array
+        The input time-series of measurements and associated errors for which
+        the transit model will be generated. The times will be used to generate
+        model mags, and the input `times`, `mags`, and `errs` will be resorted
+        by model phase and returned.
+
+    Returns
+    -------
+
+    (modelmags, phase, ptimes, pmags, perrs) : tuple
+        Returns the model mags and phase values. Also returns the input `times`,
+        `mags`, and `errs` sorted by the model's phase.
+
     '''
 
     (transitperiod,
@@ -52,16 +61,16 @@ def trapezoid_transit_func(transitparams, times, mags, errs,
 
     # generate the phases
     iphase = (times - transitepoch)/transitperiod
-    iphase = iphase - npfloor(iphase)
+    iphase = iphase - np.floor(iphase)
 
-    phasesortind = npargsort(iphase)
+    phasesortind = np.argsort(iphase)
     phase = iphase[phasesortind]
     ptimes = times[phasesortind]
     pmags = mags[phasesortind]
     perrs = errs[phasesortind]
 
-    zerolevel = npmedian(pmags)
-    modelmags = npfull_like(phase, zerolevel)
+    zerolevel = np.median(pmags)
+    modelmags = np.full_like(phase, zerolevel)
 
     halftransitduration = transitduration/2.0
     bottomlevel = zerolevel - transitdepth
@@ -104,6 +113,37 @@ def trapezoid_transit_func(transitparams, times, mags, errs,
 def trapezoid_transit_residual(transitparams, times, mags, errs):
     '''
     This returns the residual between the modelmags and the actual mags.
+
+    Parameters
+    ----------
+
+    transitparams : list of float
+        This contains the transiting planet trapezoid model::
+
+            transitparams = [transitperiod (time),
+                             transitepoch (time),
+                             transitdepth (flux or mags),
+                             transitduration (phase),
+                             ingressduration (phase)]
+
+        All of these will then have fitted values after the fit is done.
+
+        - for magnitudes -> `transitdepth` should be < 0
+        - for fluxes     -> `transitdepth` should be > 0
+
+    times,mags,errs : np.array
+        The input time-series of measurements and associated errors for which
+        the transit model will be generated. The times will be used to generate
+        model mags, and the input `times`, `mags`, and `errs` will be resorted
+        by model phase and returned.
+
+    Returns
+    -------
+
+    np.array
+        The residuals between the input `mags` and generated `modelmags`,
+        weighted by the measurement errors in `errs`.
+
 
     '''
 
