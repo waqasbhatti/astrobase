@@ -1,8 +1,3 @@
-.. Astrobase documentation master file, created by
-   sphinx-quickstart on Tue Feb 19 23:51:53 2019.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Astrobase
 =========
 
@@ -48,6 +43,9 @@ Install Astrobase from PyPI using `pip`::
   # install astrobase
   $ pip install astrobase
 
+
+Package contents
+================
 
 .. toctree::
    :maxdepth: 1
@@ -189,9 +187,10 @@ Other useful bits
 
 
 Installation
-------------
+============
 
-**Requirements**
+Requirements
+------------
 
 This package requires the following other packages:
 
@@ -220,11 +219,12 @@ For optional functionality, some additional packages from PyPI are required:
   `awscli`, as well as an AWS account.
 
 
-**Installing with pip**
+Installing with pip
+-------------------
 
 If you're using:
 
-- 64-bit Linux and Python 2.7, 3.4, 3.5, 3.6
+- 64-bit Linux and Python 2.7, 3.4, 3.5, 3.6, 3.7
 - 64-bit Mac OSX 10.12+ with Python 2.7 or 3.6
 - 64-bit Windows with Python 2.7 and 3.6
 
@@ -251,7 +251,8 @@ Once that's done, install astrobase::
   (venv)$ pip install astrobase
 
 
-**Other installation methods**
+Other installation methods
+--------------------------
 
 To Install all the optional dependencies as well::
 
@@ -268,10 +269,10 @@ To install the latest version (may be unstable at times)::
 
 
 Citing Astrobase
-----------------
+================
 
 `Released versions <https://github.com/waqasbhatti/astrobase/releases>`_ of
-**astrobase** are archived at `the Zenodo repository
+Astrobase are archived at `the Zenodo repository
 <https://doi.org/10.5281/zenodo.1011188>`_. Zenodo provides a DOI that can be
 cited for each specific version. The following `bibtex` entry for Astrobase
 v0.3.8 may be useful as a template. You can substitute in values of `month`,
@@ -331,14 +332,14 @@ papers as well.
 
 
 Changelog
----------
+=========
 
 Please see https://github.com/waqasbhatti/astrobase/blob/master/CHANGELOG.md for
 the latest changelog for tagged versions.
 
 
 License
--------
+=======
 
 Astrobase is provided under the MIT License. See the `LICENSE file
 <https://github.com/waqasbhatti/astrobase/blob/master/LICENSE>`_ for the full
@@ -346,7 +347,7 @@ text.
 
 
 Indices and tables
-------------------
+==================
 
 * :ref:`genindex`
 * :ref:`modindex`
