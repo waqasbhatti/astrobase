@@ -3,8 +3,8 @@ Astrobase
 
 Astrobase is a Python package for analyzing light curves and finding variable
 stars. It includes implementations of several period-finding algorithms, batch
-work drivers for working on large collections of light curves, as well as an
-interactive webapp useful for reviewing and classifying light curves by stellar
+work drivers for working on large collections of light curves, as well as a
+small web-app useful for reviewing and classifying light curves by stellar
 variability type. This package was spun out of a bunch of Python modules I wrote
 and maintain for my work with the `HAT Exoplanet Surveys
 <https://hatsurveys.org>`_. It's applicable to many other astronomical
