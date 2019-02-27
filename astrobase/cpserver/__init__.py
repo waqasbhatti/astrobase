@@ -6,7 +6,7 @@
 '''This package contains the implementation of the `checkplotserver` webapp to
 review large numbers of checkplot pickle files generated as part of a variable
 star classification pipeline. Also provided is a lightweight
-`checkplot-viewer.html' webapp to quickly glance through large numbers of
+`checkplot-viewer.html` webapp to quickly glance through large numbers of
 checkplot PNGs.
 
 If you made checkplot pickles (`checkplot-*.pkl`)
