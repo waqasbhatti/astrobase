@@ -45,14 +45,12 @@ import numpy.random as npr
 RANDSEED = 0xdecaff
 npr.seed(RANDSEED)
 
-from numpy import isfinite as npisfinite, median as npmedian, \
-    abs as npabs, pi as MPI
+from numpy import median as npmedian, abs as npabs, pi as pi_value
 from numpy.linalg import lstsq
 
 from scipy.optimize import leastsq
 from scipy.signal import medfilt, savgol_filter
 from scipy.ndimage.filters import median_filter
-import scipy.interpolate as spi
 from astropy.convolution import convolve, Gaussian1DKernel
 
 # for random forest EPD
@@ -65,29 +63,81 @@ from ..lcmath import sigclip_magseries_with_extparams
 #########################
 
 def smooth_magseries_ndimage_medfilt(mags, windowsize):
-    '''
-    This smooths the magseries with a median filter that reflects the array at
-    the boundary.
+    '''This smooths the magseries with a median filter that reflects the array
+    at the boundary.
+
     See https://docs.scipy.org/doc/scipy/reference/tutorial/ndimage.html for
     details.
+
+    Parameters
+    ----------
+
+    mags : np.array
+        The input mags/flux time-series to smooth.
+
+    windowsize : int
+        This is a odd integer containing the smoothing window size.
+
+    Returns
+    -------
+
+    np.array
+        The smoothed mag/flux time-series array.
+
     '''
     return median_filter(mags, size=windowsize, mode='reflect')
 
 
 def smooth_magseries_signal_medfilt(mags, windowsize):
-    '''
-    This smooths the magseries with a simple median filter.
+    '''This smooths the magseries with a simple median filter.
+
     This function pads with zeros near the boundary, see:
-        https://stackoverflow.com/questions/24585706/scipy-medfilt-wrong-result
+
+    https://stackoverflow.com/questions/24585706/scipy-medfilt-wrong-result
+
     Typically this is bad.
+
+    Parameters
+    ----------
+
+    mags : np.array
+        The input mags/flux time-series to smooth.
+
+    windowsize : int
+        This is a odd integer containing the smoothing window size.
+
+    Returns
+    -------
+
+    np.array
+        The smoothed mag/flux time-series array.
+
     '''
 
     return medfilt(mags, windowsize)
 
 
 def smooth_magseries_gaussfilt(mags, windowsize, windowfwhm=7):
-    '''
-    This smooths the magseries with a Gaussian kernel.
+    '''This smooths the magseries with a Gaussian kernel.
+
+    Parameters
+    ----------
+
+    mags : np.array
+        The input mags/flux time-series to smooth.
+
+    windowsize : int
+        This is a odd integer containing the smoothing window size.
+
+    windowfwhm : int
+        This is an odd integer containing the FWHM of the applied Gaussian
+        window function.
+
+    Returns
+    -------
+
+    np.array
+        The smoothed mag/flux time-series array.
 
     '''
 
@@ -97,8 +147,26 @@ def smooth_magseries_gaussfilt(mags, windowsize, windowfwhm=7):
 
 
 def smooth_magseries_savgol(mags, windowsize, polyorder=2):
-    '''
-    This smooths the magseries with a Savitsky-Golay filter.
+    '''This smooths the magseries with a Savitsky-Golay filter.
+
+    Parameters
+    ----------
+
+    mags : np.array
+        The input mags/flux time-series to smooth.
+
+    windowsize : int
+        This is a odd integer containing the smoothing window size.
+
+    polyorder : int
+        This is an integer containing the polynomial degree order to use when
+        generating the Savitsky-Golay filter.
+
+    Returns
+    -------
+
+    np.array
+        The smoothed mag/flux time-series array.
 
     '''
 
@@ -110,7 +178,7 @@ def smooth_magseries_savgol(mags, windowsize, polyorder=2):
 ## OLD EPD FUNCTIONS (USED FOR HATPI) ##
 ########################################
 
-def old_epd_diffmags(coeff, fsv, fdv, fkv, xcc, ycc, bgv, bge, mag):
+def _old_epd_diffmags(coeff, fsv, fdv, fkv, xcc, ycc, bgv, bge, mag):
     '''
     This calculates the difference in mags after EPD coefficients are
     calculated.
@@ -143,12 +211,12 @@ def old_epd_diffmags(coeff, fsv, fdv, fkv, xcc, ycc, bgv, bge, mag):
 
 
 
-def old_epd_magseries(times, mags, errs,
-                      fsv, fdv, fkv, xcc, ycc, bgv, bge,
-                      epdsmooth_windowsize=21,
-                      epdsmooth_sigclip=3.0,
-                      epdsmooth_func=smooth_magseries_signal_medfilt,
-                      epdsmooth_extraparams=None):
+def _old_epd_magseries(times, mags, errs,
+                       fsv, fdv, fkv, xcc, ycc, bgv, bge,
+                       epdsmooth_windowsize=21,
+                       epdsmooth_sigclip=3.0,
+                       epdsmooth_func=smooth_magseries_signal_medfilt,
+                       epdsmooth_extraparams=None):
     '''
     Detrends a magnitude series given in mag using accompanying values of S in
     fsv, D in fdv, K in fkv, x coords in xcc, y coords in ycc, background in
@@ -217,8 +285,8 @@ def old_epd_magseries(times, mags, errs,
 
         retdict = {'times':times,
                    'mags':(mags_median +
-                           old_epd_diffmags(coeffs, fsv, fdv,
-                                            fkv, xcc, ycc, bgv, bge, mags)),
+                           _old_epd_diffmags(coeffs, fsv, fdv,
+                                             fkv, xcc, ycc, bgv, bge, mags)),
                    'errs':errs,
                    'fitcoeffs':coeffs,
                    'residuals':residuals}
@@ -260,14 +328,14 @@ def _epd_function(coeffs, fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd):
             coeffs[7]*fsv*fdv +
             coeffs[8]*fsv*fkv +
             coeffs[9]*fdv*fkv +
-            coeffs[10]*np.sin(2*MPI*xcc) +
-            coeffs[11]*np.cos(2*MPI*xcc) +
-            coeffs[12]*np.sin(2*MPI*ycc) +
-            coeffs[13]*np.cos(2*MPI*ycc) +
-            coeffs[14]*np.sin(4*MPI*xcc) +
-            coeffs[15]*np.cos(4*MPI*xcc) +
-            coeffs[16]*np.sin(4*MPI*ycc) +
-            coeffs[17]*np.cos(4*MPI*ycc) +
+            coeffs[10]*np.sin(2*pi_value*xcc) +
+            coeffs[11]*np.cos(2*pi_value*xcc) +
+            coeffs[12]*np.sin(2*pi_value*ycc) +
+            coeffs[13]*np.cos(2*pi_value*ycc) +
+            coeffs[14]*np.sin(4*pi_value*xcc) +
+            coeffs[15]*np.cos(4*pi_value*xcc) +
+            coeffs[16]*np.sin(4*pi_value*ycc) +
+            coeffs[17]*np.cos(4*pi_value*ycc) +
             coeffs[18]*bgv +
             coeffs[19]*bge +
             coeffs[20]*iha +
@@ -296,29 +364,128 @@ def epd_magseries(times, mags, errs,
                   epdsmooth_extraparams=None):
     '''Detrends a magnitude series using External Parameter Decorrelation.
 
-    The HAT light-curve-specific external parameters are:
+    Requires a set of external parameters similar to those present in HAT light
+    curves. At the moment, the HAT light-curve-specific external parameters are:
 
-    S: the 'fsv' column,
-    D: the 'fdv' column,
-    K: the 'fkv' column,
-    x coords: the 'xcc' column,
-    y coords: the 'ycc' column,
-    background: the 'bgv' column,
-    background error: the 'bge' column
-    hour angle: the 'iha' column
-    zenith distance: the 'izd' column
+    - S: the 'fsv' column in light curves,
+    - D: the 'fdv' column in light curves,
+    - K: the 'fkv' column in light curves,
+    - x coords: the 'xcc' column in light curves,
+    - y coords: the 'ycc' column in light curves,
+    - background value: the 'bgv' column in light curves,
+    - background error: the 'bge' column in light curves,
+    - hour angle: the 'iha' column in light curves,
+    - zenith distance: the 'izd' column in light curves
 
-    epdsmooth_windowsize is the number of points to smooth over to generate a
-    smoothed light curve to train the regressor against.
+    S, D, and K are defined as follows:
 
-    epdsmooth_func sets the smoothing filter function to use. A Savitsky-Golay
-    filter is used to smooth the light curve by default.
+    - S -> measure of PSF sharpness (~1/sigma^2 sosmaller S = wider PSF)
+    - D -> measure of PSF ellipticity in xy direction
+    - K -> measure of PSF ellipticity in cross direction
 
-    epdsmooth_extraparams is a dict of any extra filter params to supply to the
-    smoothing function.
+    S, D, K are related to the PSF's variance and covariance, see eqn 30-33 in
+    A. Pal's thesis: https://arxiv.org/abs/0906.3486
 
     NOTE: The errs are completely ignored and returned unchanged (except for
     sigclip and finite filtering).
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The input mag/flux time-series to detrend.
+
+    fsv : np.array
+        Array containing the external parameter `S` of the same length as times.
+
+    fdv : np.array
+        Array containing the external parameter `D` of the same length as times.
+
+    fkv : np.array
+        Array containing the external parameter `K` of the same length as times.
+
+    xcc : np.array
+        Array containing the external parameter `x-coords` of the same length as
+        times.
+
+    ycc : np.array
+        Array containing the external parameter `y-coords` of the same length as
+        times.
+
+    bgv : np.array
+        Array containing the external parameter `background value` of the same
+        length as times.
+
+    bge : np.array
+        Array containing the external parameter `background error` of the same
+        length as times.
+
+    iha : np.array
+        Array containing the external parameter `hour angle` of the same length
+        as times.
+
+    izd : np.array
+        Array containing the external parameter `zenith distance` of the same
+        length as times.
+
+    magsarefluxes : bool
+        Set this to True if `mags` actually contains fluxes.
+
+    epdsmooth_sigclip : float or int or sequence of two floats/ints or None
+        This specifies how to sigma-clip the input LC before fitting the EPD
+        function to it.
+
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    epdsmooth_windowsize : int
+        This is the number of LC points to smooth over to generate a smoothed
+        light curve that will be used to fit the EPD function.
+
+    epdsmooth_func : Python function
+        This sets the smoothing filter function to use. A Savitsky-Golay filter
+        is used to smooth the light curve by default. The functions that can be
+        used with this kwarg are listed in `varbase.trends`. If you want to use
+        your own function, it MUST have the following signature::
+
+                def smoothfunc(mags_array, window_size, **extraparams)
+
+        and return a numpy array of the same size as `mags_array` with the
+        smoothed time-series. Any extra params can be provided using the
+        `extraparams` dict.
+
+    epdsmooth_extraparams : dict
+        This is a dict of any extra filter params to supply to the smoothing
+        function.
+
+    Returns
+    -------
+
+    dict
+        Returns a dict of the following form::
+
+            {'times':the input times after non-finite elems removed,
+             'mags':the EPD detrended mag values (the EPD mags),
+             'errs':the errs after non-finite elems removed,
+             'fitcoeffs':EPD fit coefficient values,
+             'fitinfo':the full tuple returned by scipy.leastsq,
+             'fitmags':the EPD fit function evaluated at times,
+             'mags_median': this is median of the EPD mags,
+             'mags_mad': this is the MAD of EPD mags}
 
     '''
 
@@ -409,35 +576,81 @@ def rfepd_magseries(times, mags, errs,
                     rf_extraparams={'criterion':'mse',
                                     'oob_score':False,
                                     'n_jobs':-1}):
-    '''This uses a RandomForestRegressor to de-correlate the given magseries.
+    '''This uses a `RandomForestRegressor` to de-correlate the given magseries.
 
-    times, mags, errs are ndarrays of time and magnitude values to filter.
+    Parameters
+    ----------
 
-    externalparam_arrs is a list of ndarrays of external parameters to
-    decorrelate against. These should all be the same size as times, mags, errs.
+    times,mags,errs : np.array
+        The input mag/flux time-series to run EPD on.
 
-    epdsmooth = True sets the training light curve to be a smoothed version of
-    the sigma-clipped light curve.
+    externalparam_arrs : list of np.arrays
+        This is a list of ndarrays of external parameters to decorrelate
+        against. These should all be the same size as `times`, `mags`, `errs`.
 
-    epdsmooth_windowsize is the number of points to smooth over to generate a
-    smoothed light curve to train the regressor against.
+    epdsmooth : bool
+        If True, sets the training LC for the RandomForestRegress to be a
+        smoothed version of the sigma-clipped light curve provided in `times`,
+        `mags`, `errs`.
 
-    epdsmooth_func sets the smoothing filter function to use. A Savitsky-Golay
-    filter is used to smooth the light curve by default.
+    epdsmooth_sigclip : float or int or sequence of two floats/ints or None
+        This specifies how to sigma-clip the input LC before fitting the EPD
+        function to it.
 
-    epdsmooth_extraparams is a dict of any extra filter params to supply to the
-    smoothing function.
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
 
-    rf_subsample is the fraction of the size of the mags array to use for
-    training the random forest regressor.
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
 
-    rf_ntrees is the number of trees to use for the RandomForestRegressor.
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
 
-    rf_extraparams is any extra params to provide to the RandomForestRegressor
-    instance as a dict.
+    epdsmooth_windowsize : int
+        This is the number of LC points to smooth over to generate a smoothed
+        light curve that will be used to fit the EPD function.
 
-    Returns a dict with decorrelated mags and the usual info from the
-    RandomForestRegressor: variable importances, etc.
+    epdsmooth_func : Python function
+        This sets the smoothing filter function to use. A Savitsky-Golay filter
+        is used to smooth the light curve by default. The functions that can be
+        used with this kwarg are listed in `varbase.trends`. If you want to use
+        your own function, it MUST have the following signature::
+
+                def smoothfunc(mags_array, window_size, **extraparams)
+
+        and return a numpy array of the same size as `mags_array` with the
+        smoothed time-series. Any extra params can be provided using the
+        `extraparams` dict.
+
+    epdsmooth_extraparams : dict
+        This is a dict of any extra filter params to supply to the smoothing
+        function.
+
+    rf_subsample : float
+        Defines the fraction of the size of the `mags` array to use for
+        training the random forest regressor.
+
+    rf_ntrees : int
+        This is the number of trees to use for the `RandomForestRegressor`.
+
+    rf_extraprams : dict
+        This is a dict of any extra kwargs to provide to the
+        `RandomForestRegressor` instance used.
+
+    Returns
+    -------
+
+    dict
+        Returns a dict with decorrelated mags and the usual info from the
+        `RandomForestRegressor`: variable importances, etc.
 
     '''
     # get finite times, mags, errs
@@ -469,7 +682,7 @@ def rfepd_magseries(times, mags, errs,
 
     else:
 
-         smoothedmags = smags
+        smoothedmags = smags
 
 
     # set up the regressor

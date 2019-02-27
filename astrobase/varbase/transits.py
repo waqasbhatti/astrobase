@@ -57,14 +57,37 @@ def transit_duration_range(period,
     and min/max stellar radius hints.
 
     One can get stellar radii from various places:
+
     - GAIA distances and luminosities
     - the TESS input catalog
     - isochrone fits
 
-    q ~ 0.076 x R**(2/3) x P**(-2/3)
+    The equation used is::
 
-    P = period in days
-    R = stellar radius in solar radii
+        q ~ 0.076 x R**(2/3) x P**(-2/3)
+
+        P = period in days
+        R = stellar radius in solar radii
+
+    Parameters
+    ----------
+
+    period : float
+        The orbital period of the transiting planet.
+
+    min_radius_hint,max_radius_hint : float
+        The minimum and maximum radii of the star the planet is orbiting around.
+
+    Returns
+    -------
+
+    (min_transit_duration, max_transit_duration) : tuple
+        The returned tuple contains the minimum and maximum transit durations
+        allowed for the orbital geometry of this planetary system. These can be
+        used with the BLS period-search functions in
+        :py:mod:`astrobase.periodbase.kbls` or
+        :py:mod:`astrobase.periodbase.abls` to refine the period-search to only
+        physically possible transit durations.
 
     '''
 
@@ -89,21 +112,22 @@ def get_snr_of_dip(times,
                    verbose=True,
                    transitdepth=None,
                    npoints_in_transit=None):
-    '''
-    Calculate the total SNR of a transit assuming gaussian uncertainties.
+    '''Calculate the total SNR of a transit assuming gaussian uncertainties.
+
     `modelmags` gets interpolated onto the cadence of `mags`. The noise is
     calculated as the 1-sigma std deviation of the residual (see below).
 
-    Following Carter et al. 2009,
+    Following Carter et al. 2009::
 
         Q = sqrt( Γ T ) * δ / σ
 
-    for Q the total SNR of the transit in the r->0 limit, where
-    r = Rp/Rstar,
-    T = transit duration,
-    δ = transit depth,
-    σ = RMS of the lightcurve in transit.
-    Γ = sampling rate
+    for Q the total SNR of the transit in the r->0 limit, where::
+
+        r = Rp/Rstar,
+        T = transit duration,
+        δ = transit depth,
+        σ = RMS of the lightcurve in transit.
+        Γ = sampling rate
 
     Thus Γ * T is roughly the number of points obtained during transit.
     (This doesn't correctly account for the SNR during ingress/egress, but this
@@ -112,35 +136,51 @@ def get_snr_of_dip(times,
     Note this is the same total SNR as described by e.g., Kovacs et al. 2002,
     their Equation 11.
 
-    Args:
+    NOTE: this only works with fluxes at the moment.
 
-        mags (np.ndarray): data fluxes (magnitudes not yet implemented).
+    Parameters
+    ----------
 
-        modelmags (np.ndarray): model fluxes. Assumed to be a BLS model, or a
-        trapezoidal model, or a Mandel-Agol model.
+    times,mags : np.array
+        The input flux time-series to process.
 
-    Kwargs:
+    modeltimes,modelmags : np.array
+        A transiting planet model, either from BLS, a trapezoid model, or a
+        Mandel-Agol model.
 
-        indsforrms (np.ndarray): boolean array of len(mags) used to select
-        points for the RMS measurement. If not passed, the RMS of the entire
-        passed timeseries is used as an approximation. Genearlly, it's best to
-        use out of transit points, so the RMS measurement is not
-        model-dependent.
+    atol_normalization : float
+        The absolute tolerance to which the median of the passed model fluxes
+        must be equal to 1.
 
-        magsarefluxes (bool): currently forced to be true.
+    indsforrms : np.array
+        A array of bools of `len(mags)` used to select points for the RMS
+        measurement. If not passed, the RMS of the entire passed timeseries is
+        used as an approximation. Genearlly, it's best to use out of transit
+        points, so the RMS measurement is not model-dependent.
 
-        atol_normalization (float): absolute tolerance to which the median of
-        the passed model fluxes must be equal to 1.
+    magsarefluxes : bool
+        Currently forced to be True because this function only works with
+        fluxes.
 
-        transitdepth (float): if transit depth is known can pass it. otherwise,
-        it is calculated assuming OOT flux is 1.
+    verbose : bool
+        If True, indicates progress and warns about problems.
 
-        npoints_in_transit (int): if known, can pass it, to override naive
-        guess.
+    transitdepth : float or None
+        If the transit depth is known, pass it in here. Otherwise, it is
+        calculated assuming OOT flux is 1.
 
-    Returns:
+    npoints_in_transits : int or None
+        If the number of points in transit is known, pass it in here. Otherwise,
+        the function will guess at this value.
 
-        snr, transit depth, and noise of residual lightcurve (tuple)
+    Returns
+    -------
+
+    (snr, transit_depth, noise) : tuple
+        The returned tuple contains the calculated SNR, transit depth, and noise
+        of the residual lightcurve calculated using the relation described
+        above.
+
     '''
 
     if magsarefluxes:
@@ -183,7 +223,7 @@ def get_snr_of_dip(times,
 
     def _get_npoints_in_transit(modelmags):
         # assumes median-normalized fluxes are input
-        if np.nanmedian(modelmags)==1:
+        if np.nanmedian(modelmags) == 1:
             return len(modelmags[(modelmags != 1)])
         else:
             raise NotImplementedError
@@ -206,29 +246,43 @@ def get_snr_of_dip(times,
 
 def estimate_achievable_tmid_precision(snr, t_ingress_min=10,
                                        t_duration_hr=2.14):
-    '''
-    Using Carter et al. 2009's estimate, calculate the theoretical optimal
+    '''Using Carter et al. 2009's estimate, calculate the theoretical optimal
     precision on mid-transit time measurement possible given a transit of a
     particular SNR.
 
-    sigma_tc = Q^{-1} * T * sqrt(θ/2)
+    The relation used is::
 
-    Q = SNR of the transit.
-    T = transit duration, which is 2.14 hours from discovery paper.
-    θ = τ/T = ratio of ingress to total duration
-            ~= (few minutes [guess]) / 2.14 hours
+        sigma_tc = Q^{-1} * T * sqrt(θ/2)
 
-    args:
+        Q = SNR of the transit.
+        T = transit duration, which is 2.14 hours from discovery paper.
+        θ = τ/T = ratio of ingress to total duration
+                ~= (few minutes [guess]) / 2.14 hours
 
-        snr (float): measured signal-to-noise of transit, e.g., from
-        `periodbase.get_snr_of_dip`
+    Parameters
+    ----------
 
-    kwargs:
+    snr : float
+        The measured signal-to-noise of the transit, e,g. from
+        :py:func:`astrobase.periodbase.kbls.bls_stats_singleperiod` or from
+        running the `.compute_stats()` method on an Astropy BoxLeastSquares
+        object.
 
-        t_ingress_min (float): ingress duration in minutes, t_I to t_II in Winn
-        (2010) nomenclature.
+    t_ingress_min : float
+        The ingress duration in minutes. This is t_I to t_II in Winn (2010)
+        nomenclature.
 
-        t_duration_hr (float): total transit duration in hours, t_I to t_IV.
+    t_duration_hr : float
+        The transit duration in hours. This is t_I to t_IV in Winn (2010)
+        nomenclature.
+
+    Returns
+    -------
+
+    float
+        Returns the precision achievable for transit-center time as calculated
+        from the relation above. This is in days.
+
     '''
 
     t_ingress = t_ingress_min*u.minute
@@ -255,34 +309,44 @@ def get_transit_times(
         trapd=None,
         nperiodint=1000
 ):
-    '''Given a BLS period, epoch, and transit ingress/egress points
-    (usually from kbls.bls_stats_singleperiod), return the times within
-    transit durations + extra_maskfrac of each transit.
+    '''Given a BLS period, epoch, and transit ingress/egress points (usually
+    from :py:func:`astrobase.periodbase.kbls.bls_stats_singleperiod`), return
+    the times within transit durations + `extra_maskfrac` of each transit.
 
-    Optionally, use the (more accurate) trapezoidal fit period and epoch, if
+    Optionally, can use the (more accurate) trapezoidal fit period and epoch, if
     it's passed.  Useful for inspecting individual transits, and masking them
     out if desired.
 
-    args:
+    Parameters
+    ----------
 
-        blsd (dict): dictionary returned by kbls.bls_stats_singleperiod
+    blsd : dict
+        This is the dict returned by
+        :py:func:`astrobase.periodbase.kbls.bls_stats_singleperiod`.
 
-        time (np.ndarray): vector of times
+    time : np.array
+        The times from the time-series of transit observations used to calculate
+        the initial period.
 
-        extra_maskfrac (float): separation from in-transit points you desire, in
-        units of the transit duration. extra_maskfrac = 0 if you just want
-        points inside transit.  (see below).
+    extra_maskfrac : float
+        This is the separation from in-transit points you desire, in units of
+        the transit duration. `extra_maskfrac = 0` if you just want points
+        inside transit (see below).
 
-    kwargs:
+    trapd : dict
+        This is a dict returned by
+        :py:func:`astrobase.varbase.lcfit.traptransit_fit_magseries` containing
+        the trapezoid transit model.
 
-        trapd (dict): dictionary returned by lcfit.traptransit_fit_magseries
+    nperiodint : int
+        This indicates how many periods backwards/forwards to try and identify
+        transits from the epochs reported in `blsd` or `trapd`.
 
-        nperiodint (int): how many periods back/forward to try and identify
-        transits from the epoch reported in blsd or trapd.
+    Returns
+    -------
 
-    returns:
-
-        tmids_obsd, t_starts, t_ends (tuple of np.ndarrays):
+    (tmids_obsd, t_starts, t_ends) : tuple of np.array
+        The returned items are::
 
             tmids_obsd (np.ndarray): best guess of transit midtimes in
             lightcurve. Has length number of transits in lightcurve.
@@ -341,26 +405,75 @@ def given_lc_get_transit_tmids_tstarts_tends(
         sigclip=None,
         extra_maskfrac=0.03
 ):
-    '''
-    args:
-        should be obvious
+    '''Gets the transit start, middle, and end times for transits in a given
+    time-series of observations.
 
-    kwargs:
+    Parameters
+    ----------
 
-        blsfit_savpath (str): path to plot the fit BLS model
+    time,flux,err_flux : np.array
+        The input flux time-series measurements and their associated measurement
+        errors
 
-        trapfit_savpath (str): path to plot the fit trapezoidal transit model
+    blsfit_savpath : str or None
+        If provided as a str, indicates the path of the fit plot to make for a
+        simple BLS model fit to the transit using the obtained period and epoch.
 
-        sigclip (None/int/list): if list, will be asymmetric
+    trapfit_savpath : str or None
+        If provided as a str, indicates the path of the fit plot to make for a
+        trapezoidal transit model fit to the transit using the obtained period
+        and epoch.
 
-        extra_maskfrac (float): t_starts = t_Is - N*tdur, t_ends = t_IVs +
-        N*tdur. Thus setting N=0.03 masks slightly more than the guessed
-        transit duration.
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
 
-    returns:
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
 
-        tmids_obsd, t_starts, t_ends (tuple of np.ndarrays): see
-        get_transit_times docstring.
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    magsarefluxes : bool
+        This is by default True for this function, since it works on fluxes only
+        at the moment.
+
+    nworkers : int
+        The number of parallel BLS period-finder workers to use.
+
+    extra_maskfrac : float
+        This is the separation (N) from in-transit points you desire, in units
+        of the transit duration. `extra_maskfrac = 0` if you just want points
+        inside transit, otherwise::
+
+            t_starts = t_Is - N*tdur, t_ends = t_IVs + N*tdur
+
+        Thus setting N=0.03 masks slightly more than the guessed transit
+        duration.
+
+    Returns
+    -------
+
+    (tmids_obsd, t_starts, t_ends) : tuple
+        The returned items are::
+
+            tmids_obsd (np.ndarray): best guess of transit midtimes in
+            lightcurve. Has length number of transits in lightcurve.
+
+            t_starts (np.ndarray): t_Is - extra_maskfrac*tdur, for t_Is transit
+            first contact point.
+
+            t_ends (np.ndarray): t_Is + extra_maskfrac*tdur, for t_Is transit
+            first contact point.
+
     '''
 
     # first, run BLS to get an initial epoch and period.
@@ -438,18 +551,83 @@ def _in_out_transit_plot(time, flux, intransit, ootransit, savpath):
 
 
 def given_lc_get_out_of_transit_points(
-    time, flux, err_flux, blsfit_savpath=None, trapfit_savpath=None,
-    in_out_transit_savpath=None, magsarefluxes=True, nworkers=1, sigclip=None,
-    extra_maskfrac=0.03
+        time, flux, err_flux,
+        blsfit_savpath=None,
+        trapfit_savpath=None,
+        in_out_transit_savpath=None,
+        sigclip=None,
+        magsarefluxes=True,
+        nworkers=1,
+        extra_maskfrac=0.03
 ):
-    '''
-    relevant during iterative masking of transits for multiple planet system
+    '''This gets the out-of-transit light curve points.
+
+    Relevant during iterative masking of transits for multiple planet system
     search.
 
-    returns:
+    Parameters
+    ----------
 
-        tuple of np.ndarrays:
-        time[out_of_transit], flux[out_of_transit], err_flux[out_of_transit]
+    time,flux,err_flux : np.array
+        The input flux time-series measurements and their associated measurement
+        errors
+
+    blsfit_savpath : str or None
+        If provided as a str, indicates the path of the fit plot to make for a
+        simple BLS model fit to the transit using the obtained period and epoch.
+
+    trapfit_savpath : str or None
+        If provided as a str, indicates the path of the fit plot to make for a
+        trapezoidal transit model fit to the transit using the obtained period
+        and epoch.
+
+    in_out_transit_savpath : str or None
+        If provided as a str, indicates the path of the plot file that will be
+        made for a plot showing the in-transit points and out-of-transit points
+        tagged separately.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    magsarefluxes : bool
+        This is by default True for this function, since it works on fluxes only
+        at the moment.
+
+    nworkers : int
+        The number of parallel BLS period-finder workers to use.
+
+    extra_maskfrac : float
+        This is the separation (N) from in-transit points you desire, in units
+        of the transit duration. `extra_maskfrac = 0` if you just want points
+        inside transit, otherwise::
+
+            t_starts = t_Is - N*tdur, t_ends = t_IVs + N*tdur
+
+        Thus setting N=0.03 masks slightly more than the guessed transit
+        duration.
+
+    Returns
+    -------
+
+    (times_oot, fluxes_oot, errs_oot) : tuple of np.array
+        The `times`, `flux`, `err_flux` values from the input at the time values
+        out-of-transit are returned.
+
     '''
 
     tmids_obsd, t_starts, t_ends = (

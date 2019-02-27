@@ -2614,6 +2614,14 @@ def mandelagol_and_line_fit_magseries(
     50 transits. You fix all the transit parameters except for the mid-time,
     and also fit for a line locally.
 
+    NOTE: this only works for flux time-series at the moment.
+
+    NOTE: Between the `fitparams`, `priorbounds`, and `fixedparams` dicts, you
+    must specify all of the planetary transit parameters required by BATMAN and
+    the parameters for the line fit: `['t0', 'rp', 'sma', 'incl', 'u', 'rp',
+    'ecc', 'omega', 'period', 'poly_order0', poly_order1']`, or the BATMAN model
+    will fail to initialize.
+
     Parameters
     ----------
 
