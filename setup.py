@@ -39,7 +39,7 @@ class PyTest(TestCommand):
 
 
 def readme():
-    with open('README.rst') as f:
+    with open('README.md') as f:
         return f.read()
 
 INSTALL_REQUIRES = [
@@ -118,6 +118,7 @@ setup(
     description=('Python modules and scripts '
                  'useful for variable star work in astronomy.'),
     long_description=readme(),
+    long_description_content_type="text/markdown",
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: MIT License',

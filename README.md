@@ -1,16 +1,18 @@
 [![DOI](https://zenodo.org/badge/75150575.svg)](https://zenodo.org/badge/latestdoi/75150575)
 
-This is a bunch of Python modules I wrote for my astronomy work with the HAT
-surveys, mostly focused on handling light curves and characterizing variable
-stars. Module functions that deal with light curves (e.g. in the modules
-`astrobase.lcmath`, `astrobase.periodbase`, `astrobase.varbase`,
-`astrobase.plotbase`, and `astrobase.checkplot`) usually just require three
-numpy ndarrays as input: `times`, `mags`, and `errs`, so they should work with
-any time-series data that can be represented in this form. If you have flux time
+Astrobase is a Python package for analyzing light curves and finding variable
+stars. It includes implementations of several period-finding algorithms, batch
+work drivers for working on large collections of light curves, as well as an
+small web-app useful for reviewing and classifying light curves by stellar
+variability type.
+
+Module functions in this package that deal with light curves (e.g. in the
+modules `astrobase.lcmath`, `astrobase.periodbase`, `astrobase.varbase`,
+`astrobase.plotbase`, and `astrobase.checkplot`) usually require three Numpy
+ndarrays as input: `times`, `mags`, and `errs`, so they should work with any
+time-series data that can be represented in this form. If you have flux time
 series measurements, most functions take a `magsarefluxes` keyword argument that
 makes them handle flux light curves correctly.
-
-Full documentation is still a work in progress:
 
 - Read the docs: https://astrobase.readthedocs.io/en/latest/
 - Jupyter notebooks that demonstrate some of the functionality are available in
@@ -46,21 +48,23 @@ Most of the modules with useful external functions live in here. The
 `astrobase.conf` file contains module-wide settings that may need to be tweaked
 for your purposes.
 
-- **[astrokep](astrobase/astrokep.py)**: contains functions for dealing with
-  Kepler and K2 Mission light curves from STScI MAST (reading the FITS files,
-  consolidating light curves for objects over quarters), and some basic
-  operations (converting fluxes to mags, decorrelation of light curves,
-  filtering light curves, and fitting object centroids for eclipse analysis,
-  etc.)
+- **[astrokep](https://astrobase.readthedocs.io/en/latest/astrobase.astrokep.html)**:
+  contains functions for dealing with Kepler and K2 Mission light curves from
+  STScI MAST (reading the FITS files, consolidating light curves for objects
+  over quarters), and some basic operations (converting fluxes to mags,
+  decorrelation of light curves, filtering light curves, and fitting object
+  centroids for eclipse analysis, etc.)
 
-- **[astrotess](astrobase/astrotess.py)**: contains functions for dealing with
-  TESS 2-minute cadence light curves from STScI MAST (reading the FITS files,
-  consolidating light curves for objects over sectors), and some basic
-  operations (converting fluxes to mags, filtering light curves, etc.)
+- **[astrotess](https://astrobase.readthedocs.io/en/latest/astrobase.astrotess.html)**:
+  contains functions for dealing with TESS 2-minute cadence light curves from
+  STScI MAST (reading the FITS files, consolidating light curves for objects
+  over sectors), and some basic operations (converting fluxes to mags, filtering
+  light curves, etc.)
 
-- **[checkplot](astrobase/checkplot)**: contains functions to make
-  checkplots: a grid of plots used to quickly decide if a period search for a
-  possibly variable object was successful. Checkplots come in two forms:
+- **[checkplot](https://astrobase.readthedocs.io/en/latest/astrobase.checkplot.html)**:
+  contains functions to make checkplots: a grid of plots used to quickly decide
+  if a period search for a possibly variable object was successful. Checkplots
+  come in two forms:
 
   Python pickles: If you want to interactively browse through large numbers of
   checkplots (e.g., as part of a large variable star classification project),
@@ -80,7 +84,7 @@ for your purposes.
   neighbor, cross-match, and color-mag diagram info to checkplots, and visualize
   these with the checkplotserver.
 
-  ![Checkplot Server](astrobase/data/checkplotserver.png?raw=true)
+  ![Checkplot Server](https://raw.githubusercontent.com/waqasbhatti/astrobase/master/astrobase/data/checkplotserver.png)
 
   PNG images: Alternatively, if you want to simply glance through lots of
   checkplots (e.g. for an initial look at a collection of light curves), there's
@@ -89,79 +93,80 @@ for your purposes.
   [lightcurve-work](https://nbviewer.jupyter.org/github/waqasbhatti/astrobase-notebooks/blob/master/lightcurve-work.ipynb)
   Jupyter notebook goes through an example of generating these checkplot PNGs
   for light curves. See the
-  [checkplot-viewer.js](astrobase/cpserver/checkplot-viewer.js) file for more
-  instructions and [checkplot-viewer.png](astrobase/data/checkplot-viewer.png)
+  [checkplot-viewer.js](https://github.com/waqasbhatti/astrobase/blob/master/astrobase/cpserver/checkplot-viewer.js) file for more
+  instructions and [checkplot-viewer.png](https://raw.githubusercontent.com/waqasbhatti/astrobase/master/astrobase/data/checkplot-viewer.png)
   for a screenshot.
 
-- **[coordutils](astrobase/coordutils.py)**: functions for dealing with
-  coordinates (conversions, distances, proper motion)
+- **[coordutils](https://astrobase.readthedocs.io/en/latest/astrobase.coordutils.html)**:
+  functions for dealing with coordinates (conversions, distances, proper motion)
 
-- **[emailutils](astrobase/emailutils.py)**: contains a simple emailer
-  function suitable for use in long-running scripts and the like; this uses the
-  provided credentials and server to send messages.
+- **[emailutils](https://astrobase.readthedocs.io/en/latest/astrobase.emailutils.html)**:
+  contains a simple emailer function suitable for use in long-running scripts
+  and the like; this uses the provided credentials and server to send messages.
 
-- **[fakelcs](astrobase/fakelcs)**: modules and functions to conduct an
-  end-to-end variable star recovery simulation.
+- **[fakelcs](https://astrobase.readthedocs.io/en/latest/astrobase.fakelcs.html)**:
+  modules and functions to conduct an end-to-end variable star recovery
+  simulation.
 
-- **[fortney2k7](astrobase/services/fortney2k7.py)**: giant planet models from
-  Fortney et al. 2007, ApJ, 2659, 1661 made importable as Python dicts.
+- **[hatsurveys](https://astrobase.readthedocs.io/en/latest/astrobase.hatsurveys.html)**:
+  modules to read, filter, and normalize light curves from various HAT surveys.
 
-- **[hatsurveys](astrobase/hatsurveys)**: modules to read, filter, and normalize
-  light curves from various HAT surveys.
+- **[lcdb](https://astrobase.readthedocs.io/en/latest/astrobase.lcdb.html)**: a
+  lightweight wrapper around the `psycopg2` library to talk to PostgreSQL
+  database servers.
 
-- **[lcdb](astrobase/lcdb.py)**: a lightweight wrapper around the
-  `psycopg2` library to talk to PostgreSQL database servers.
-
-- **[lcmath](astrobase/lcmath.py)**: functions for light curve operations such
+- **[lcmath](https://astrobase.readthedocs.io/en/latest/astrobase.lcmath.html)**: functions for light curve operations such
   as phasing, normalization, binning (in time and phase), sigma-clipping,
   external parameter decorrelation (EPD), etc.
 
-- **[lcproc](astrobase/lcproc)**: driver functions for running an end-to-end
+- **[lcproc](https://astrobase.readthedocs.io/en/latest/astrobase.lcproc.html)**: driver functions for running an end-to-end
     pipeline including: (i) object selection from a collection of light curves
     by position, cross-matching to external catalogs, or light curve objectinfo
     keys, (ii) running variability feature calculation and detection, (iii)
     running period-finding, and (iv) object review using the checkplotserver
     webapp for variability classification.
 
-- **[periodbase](astrobase/periodbase)**: parallelized functions (using
+- **[periodbase](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.html)**: parallelized functions (using
   `multiprocessing.map`) to run fast period searches on light curves, including:
   the generalized Lomb-Scargle algorithm from Zechmeister & Kurster
   ([2008](http://adsabs.harvard.edu/abs/2009A%26A...496..577Z);
-  **[periodbase.zgls](astrobase/periodbase/zgls.py)**), the phase dispersion
+  **[periodbase.zgls](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.zgls.html)**), the phase dispersion
   minimization algorithm from Stellingwerf
   ([1978](http://adsabs.harvard.edu/abs/1978ApJ...224..953S),
   [2011](http://adsabs.harvard.edu/abs/2011rrls.conf...47S);
-  **[periodbase.spdm](astrobase/periodbase/spdm.py)**), the AoV and
+  **[periodbase.spdm](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.spdm.html)**), the AoV and
   AoV-multiharmonic algorithms from Schwarzenberg-Czerny
   ([1989](http://adsabs.harvard.edu/abs/1989MNRAS.241..153S),
   [1996](http://adsabs.harvard.edu/abs/1996ApJ...460L.107S);
-  **[periodbase.saov](astrobase/periodbase/saov.py)**,
-  **[periodbase.smav](astrobase/periodbase/smav.py)**), the BLS algorithm from
+  **[periodbase.saov](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.saov.html)**,
+  **[periodbase.smav](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.smav.html)**), the BLS algorithm from
   Kovacs et al. ([2002](http://adsabs.harvard.edu/abs/2002A%26A...391..369K);
-  **[periodbase.kbls](astrobase/periodbase/kbls.py)**), and the ACF
+  **[periodbase.kbls](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.kbls.html)**
+  and **[periodbase.abls](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.abls.html)**), and the ACF
   period-finding algorithm from McQuillan et
   al. ([2013a](http://adsabs.harvard.edu/abs/2013MNRAS.432.1203M),
   [2014](http://adsabs.harvard.edu/abs/2014ApJS..211...24M);
-  **[periodbase.macf](astrobase/periodbase/macf.py)**).
+  **[periodbase.macf](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.macf.html)**).
 
-- **[plotbase](astrobase/plotbase.py)**: functions to plot light curves, phased
+- **[plotbase](https://astrobase.readthedocs.io/en/latest/astrobase.plotbase.html)**: functions to plot light curves, phased
   light curves, periodograms, and download Digitized Sky Survey cutouts from the
   NASA SkyView service.
 
-- **[services](astrobase/services)**: modules and functions to query various
+- **[services](https://astrobase.readthedocs.io/en/latest/astrobase.services.html)**: modules and functions to query various
   astronomical catalogs and data services, including GAIA, SIMBAD, TRILEGAL,
   NASA SkyView, and 2MASS DUST.
 
-- **[timeutils](astrobase/timeutils.py)**: functions for converting from
+- **[timeutils](https://astrobase.readthedocs.io/en/latest/astrobase.timeutils.html)**: functions for converting from
   Julian dates to Baryocentric Julian dates, and precessing coordinates between
   equinoxes and due to proper motion; this will automatically download and save
   the JPL ephemerides **de430.bsp** from JPL upon first import.
 
-- **[varbase](astrobase/varbase)**: functions for calculating variability
-  indices for light curves, fitting and obtaining Fourier coefficients for use
-  in classifications, and other variability features.
+- **[varbase](https://astrobase.readthedocs.io/en/latest/astrobase.varbase.html)**:
+  functions for calculating auto-correlation features, fitting light curves with
+  various models, masking and pre-whitening periodic signals in light curves,
+  and planet transit specific tools.
 
-- **[varclass](astrobase/varclass)**: functions for calculating various
+- **[varclass](https://astrobase.readthedocs.io/en/latest/astrobase.varclass.html)**: functions for calculating various
   variability, stellar color and motion, and neighbor proximity features, along
   with a Random Forest based classifier.
 
@@ -189,7 +194,7 @@ For optional functionality, some additional packages are required:
 - for `astrobase.lcdb` to work, you'll need `psycopg2-binary`.
 - for `varbase.lcfit.mandelagol_fit_magseries`, you'll need `batman-package`,
   `emcee`, `corner`, and `h5py`.
-- for `lcproc_aws.py`, you'll need `paramiko`, `boto3`, and `awscli`.
+- for `lcproc.awsrun`, you'll need `paramiko`, `boto3`, and `awscli`.
 
 ## Installing with pip
 

@@ -310,7 +310,9 @@ Astrobase (the DOI will always resolve to the latest version)::
 Also see this `AAS Journals note on citing repositories
 <https://github.com/AASJournals/Tutorials/blob/master/Repositories/CitingRepositories.md>`_.
 
-**Period-finder algorithms**
+
+Period-finder algorithms
+------------------------
 
 If you use any of the period-finder methods implemented by
 :py:mod:`astrobase.periodbase`, please also make sure to cite their respective

@@ -7,11 +7,14 @@ masking signals, autocorrelation, etc.
 
 - :py:mod:`astrobase.varbase.autocorr`: calculating the autocorrelation function
   of light curves.
-- :py:mod:`astrobase.varbase.lcfit`: fitting various models to phased light curves.
+- :py:mod:`astrobase.varbase.lcfit`: fitting various models to phased light
+  curves.
 - :py:mod:`astrobase.varbase.signals`: masking periodic signals, pre-whitening
   light curves.
 - :py:mod:`astrobase.varbase.transits`: light curve tools specifically for
   planetary transits.
+- :py:mod:`astrobase.varbase.trends`: tools for running External Parameter
+  Decorrelation (EPD) on light curves.
 
 FIXME: finish up the :py:mod:`astrobase.varbase.flares` module to find flares in
 LCs.
