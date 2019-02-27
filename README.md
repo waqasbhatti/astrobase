@@ -44,10 +44,6 @@ These are now located over at
 
 ## astrobase
 
-Most of the modules with useful external functions live in here. The
-`astrobase.conf` file contains module-wide settings that may need to be tweaked
-for your purposes.
-
 - **[astrokep](https://astrobase.readthedocs.io/en/latest/astrobase.astrokep.html)**:
   contains functions for dealing with Kepler and K2 Mission light curves from
   STScI MAST (reading the FITS files, consolidating light curves for objects
