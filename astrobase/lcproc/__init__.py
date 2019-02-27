@@ -16,8 +16,8 @@ submodules in this package can be used to process these LCs:
 
 - :py:mod:`astrobase.lcproc.catalogs`: contains functions that generate catalogs
   from collections of light curves, make KD-Trees for fast spatial matching, and
-  augment these catalogs from the rich object information containined in
-  checkplot pickles.
+  augment these catalogs from the rich object information contained in checkplot
+  pickles.
 
 - :py:mod:`astrobase.lcproc.checkplotgen`: contains functions that drive
   batch-jobs to make checkplot pickles for a large collection of light curves
@@ -34,8 +34,9 @@ submodules in this package can be used to process these LCs:
   for time-binning collections of light curves to a specified cadence.
 
 - :py:mod:`astrobase.lcproc.lcpfeatures`: contains functions that drive
-  batch-jobs to calculate features of phased light curves given periods are
-  available. These can be used later to do variable star classification.
+  batch-jobs to calculate features of phased light curves, if period-finding
+  results for these are available. These periodic light curve features can be
+  used later to do variable star classification.
 
 - :py:mod:`astrobase.lcproc.lcsfeatures`: contains functions that drive
   batch-jobs to calculate color, coordinate, and neighbor proximity features for
@@ -49,10 +50,11 @@ submodules in this package can be used to process these LCs:
 
 - :py:mod:`astrobase.lcproc.periodsearch`: contains functions that drive
   batch-jobs to run period-finding using any of the methods in
-  :py:mod:`astrobase.periodbase` on colelctions of light curves. These produce
+  :py:mod:`astrobase.periodbase` on collections of light curves. These produce
   period-finder result pickles that can be used transparently by the functions
   in :py:mod:`astrobase.lcproc.checkplotgen` and
-  :py:mod:`astrobase.lcproc.checkplotproc` to generate checkplot pickles.
+  :py:mod:`astrobase.lcproc.checkplotproc` to generate and update checkplot
+  pickles.
 
 - :py:mod:`astrobase.lcproc.tfa`: contains functions that drive the application
   of the Trend Filtering Algorithm (TFA) to large collections of light curves.
