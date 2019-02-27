@@ -3,31 +3,47 @@
 # starfeatures - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2017
 # License: MIT. See the LICENSE file for more details.
 
-'''
-This calculates various features related to the color/proper-motion of stars.
+'''This calculates various features related to the color/proper-motion of stars.
 
-All of the functions in this module require as input an 'objectinfo' dict with
-keys outlined below. This should usually be taken from a light curve file.
+All of the functions in this module require as input an 'objectinfo' dict. This
+should usually be taken from a light curve file read into an `lcdict`. The
+format and the minimum keys required are::
 
-{
-    'ra': right ascension in degrees. REQUIRED: all functions below,
-    'decl': declination in degrees. REQUIRED: all functions below,
-    'pmra': propermotion in RA in mas/yr. REQUIRED: coord_features,
-    'pmdecl': propermotion in DEC in mas/yr. REQUIRED: coord_features,
-    'umag': Cousins U mag. OPTIONAL: color_features,
-    'bmag': Cousins B mag. OPTIONAL: color_features,
-    'vmag': Cousins V mag. OPTIONAL: color_features,
-    'rmag': Cousins R mag. OPTIONAL: color_features,
-    'imag': Cousins I mag. OPTIONAL: color_features,
-    'jmag': 2MASS J mag. OPTIONAL: color_features,
-    'hmag': 2MASS H mag. OPTIONAL: color_features,
-    'kmag': 2MASS Ks mag. OPTIONAL: color_features,
-    'sdssu': SDSS u mag. OPTIONAL: color_features,
-    'sdssg': SDSS g mag. OPTIONAL: color_features,
-    'sdssr': SDSS r mag. OPTIONAL: color_features,
-    'sdssi': SDSS i mag. OPTIONAL: color_features,
-    'sdssz': SDSS z mag. OPTIONAL: color_features,
-}
+    {'objectid': the name of the object,
+     'ra': the right ascension of the object in decimal degrees,
+     'decl': the declination of the object in decimal degrees,
+     'ndet': the number of observations of this object}
+
+You can also provide magnitudes and proper motions of the object using the
+following keys and the appropriate values in the `objectinfo` dict. These will
+be used to calculate colors, total and reduced proper motion, etc.::
+
+    'pmra' -> the proper motion in mas/yr in right ascension,
+    'pmdecl' -> the proper motion in mas/yr in declination,
+    'umag'  -> U mag		 -> colors: U-B, U-V, U-g
+    'bmag'  -> B mag		 -> colors: U-B, B-V
+    'vmag'  -> V mag		 -> colors: U-V, B-V, V-R, V-I, V-K
+    'rmag'  -> R mag		 -> colors: V-R, R-I
+    'imag'  -> I mag		 -> colors: g-I, V-I, R-I, B-I
+    'jmag'  -> 2MASS J mag	 -> colors: J-H, J-K, g-J, i-J
+    'hmag'  -> 2MASS H mag	 -> colors: J-H, H-K
+    'kmag'  -> 2MASS Ks mag	 -> colors: g-Ks, H-Ks, J-Ks, V-Ks
+    'sdssu' -> SDSS u mag	 -> colors: u-g, u-V
+    'sdssg' -> SDSS g mag	 -> colors: g-r, g-i, g-K, u-g, U-g, g-J
+    'sdssr' -> SDSS r mag	 -> colors: r-i, g-r
+    'sdssi' -> SDSS i mag	 -> colors: r-i, i-z, g-i, i-J, i-W1
+    'sdssz' -> SDSS z mag	 -> colors: i-z, z-W2, g-z
+    'ujmag' -> UKIRT J mag	 -> colors: J-H, H-K, J-K, g-J, i-J
+    'uhmag' -> UKIRT H mag	 -> colors: J-H, H-K
+    'ukmag' -> UKIRT K mag	 -> colors: g-K, H-K, J-K, V-K
+    'irac1' -> Spitzer IRAC1 mag -> colors: i-I1, I1-I2
+    'irac2' -> Spitzer IRAC2 mag -> colors: I1-I2, I2-I3
+    'irac3' -> Spitzer IRAC3 mag -> colors: I2-I3
+    'irac4' -> Spitzer IRAC4 mag -> colors: I3-I4
+    'wise1' -> WISE W1 mag	 -> colors: i-W1, W1-W2
+    'wise2' -> WISE W2 mag	 -> colors: W1-W2, W2-W3
+    'wise3' -> WISE W3 mag	 -> colors: W2-W3
+    'wise4' -> WISE W4 mag	 -> colors: W3-W4
 
 '''
 
@@ -85,13 +101,30 @@ from ..services import dust, gaia, skyview, simbad
 
 def coord_features(objectinfo):
 
-    '''
-    Calculates object coordinates features, including:
+    '''Calculates object coordinates features, including:
 
     - galactic coordinates
     - total proper motion from pmra, pmdecl
     - reduced J proper motion from propermotion and Jmag
 
+    Parameters
+    ----------
+
+    objectinfo : dict
+        This is an objectinfo dict from a light curve file read into an
+        `lcdict`. The format and the minimum keys required are::
+
+            {'ra': the right ascension of the object in decimal degrees,
+             'decl': the declination of the object in decimal degrees,
+             'pmra': the proper motion in right ascension in mas/yr,
+             'pmdecl': the proper motion in declination in mas/yr,
+             'jmag': the 2MASS J mag of this object}
+
+    Returns
+    -------
+
+    dict
+        A dict containing the total proper motion
 
     '''
 
@@ -296,101 +329,121 @@ def color_features(in_objectinfo,
 
     http://irsa.ipac.caltech.edu/applications/DUST/docs/dustProgramInterface.html
 
-    `in_objectinfo` is a dict that contains the object's magnitudes and
-    positions. This requires at least 'ra', and 'decl' as keys in the
-    in_objectinfo dict which correspond to the right ascension and declination
-    of the object, and one or more of the following keys for object magnitudes:
+    Parameters
+    ----------
 
-    'umag'  -> U mag             -> colors: U-B, U-V, U-g
-    'bmag'  -> B mag             -> colors: U-B, B-V
-    'vmag'  -> V mag             -> colors: U-V, B-V, V-R, V-I, V-K
-    'rmag'  -> R mag             -> colors: V-R, R-I
-    'imag'  -> I mag             -> colors: g-I, V-I, R-I, B-I
-    'jmag'  -> 2MASS J mag       -> colors: J-H, J-K, g-J, i-J
-    'hmag'  -> 2MASS H mag       -> colors: J-H, H-K
-    'kmag'  -> 2MASS Ks mag      -> colors: g-Ks, H-Ks, J-Ks, V-Ks
-    'sdssu' -> SDSS u mag        -> colors: u-g, u-V
-    'sdssg' -> SDSS g mag        -> colors: g-r, g-i, g-K, u-g, U-g, g-J
-    'sdssr' -> SDSS r mag        -> colors: r-i, g-r
-    'sdssi' -> SDSS i mag        -> colors: r-i, i-z, g-i, i-J, i-W1
-    'sdssz' -> SDSS z mag        -> colors: i-z, z-W2, g-z
-    'ujmag' -> UKIRT J mag       -> colors: J-H, H-K, J-K, g-J, i-J
-    'uhmag' -> UKIRT H mag       -> colors: J-H, H-K
-    'ukmag' -> UKIRT K mag       -> colors: g-K, H-K, J-K, V-K
-    'irac1' -> Spitzer IRAC1 mag -> colors: i-I1, I1-I2
-    'irac2' -> Spitzer IRAC2 mag -> colors: I1-I2, I2-I3
-    'irac3' -> Spitzer IRAC3 mag -> colors: I2-I3
-    'irac4' -> Spitzer IRAC4 mag -> colors: I3-I4
-    'wise1' -> WISE W1 mag       -> colors: i-W1, W1-W2
-    'wise2' -> WISE W2 mag       -> colors: W1-W2, W2-W3
-    'wise3' -> WISE W3 mag       -> colors: W2-W3
-    'wise4' -> WISE W4 mag       -> colors: W3-W4
+    in_objectinfo : dict
+        This is a dict that contains the object's magnitudes and positions. This
+        requires at least 'ra', and 'decl' as keys which correspond to the right
+        ascension and declination of the object, and one or more of the
+        following keys for object magnitudes::
 
-    These are basically taken from the available reddening bandpasses from the
-    2MASS DUST service. If B, V, u, g, r, i, z aren't provided but 2MASS J, H,
-    Ks are all provided, the former will be calculated using the 2MASS JHKs ->
-    BVugriz conversion functions in astrobase.magnitudes.
+            'umag'  -> U mag             -> colors: U-B, U-V, U-g
+            'bmag'  -> B mag             -> colors: U-B, B-V
+            'vmag'  -> V mag             -> colors: U-V, B-V, V-R, V-I, V-K
+            'rmag'  -> R mag             -> colors: V-R, R-I
+            'imag'  -> I mag             -> colors: g-I, V-I, R-I, B-I
+            'jmag'  -> 2MASS J mag       -> colors: J-H, J-K, g-J, i-J
+            'hmag'  -> 2MASS H mag       -> colors: J-H, H-K
+            'kmag'  -> 2MASS Ks mag      -> colors: g-Ks, H-Ks, J-Ks, V-Ks
+            'sdssu' -> SDSS u mag        -> colors: u-g, u-V
+            'sdssg' -> SDSS g mag        -> colors: g-r, g-i, g-K, u-g, U-g, g-J
+            'sdssr' -> SDSS r mag        -> colors: r-i, g-r
+            'sdssi' -> SDSS i mag        -> colors: r-i, i-z, g-i, i-J, i-W1
+            'sdssz' -> SDSS z mag        -> colors: i-z, z-W2, g-z
+            'ujmag' -> UKIRT J mag       -> colors: J-H, H-K, J-K, g-J, i-J
+            'uhmag' -> UKIRT H mag       -> colors: J-H, H-K
+            'ukmag' -> UKIRT K mag       -> colors: g-K, H-K, J-K, V-K
+            'irac1' -> Spitzer IRAC1 mag -> colors: i-I1, I1-I2
+            'irac2' -> Spitzer IRAC2 mag -> colors: I1-I2, I2-I3
+            'irac3' -> Spitzer IRAC3 mag -> colors: I2-I3
+            'irac4' -> Spitzer IRAC4 mag -> colors: I3-I4
+            'wise1' -> WISE W1 mag       -> colors: i-W1, W1-W2
+            'wise2' -> WISE W2 mag       -> colors: W1-W2, W2-W3
+            'wise3' -> WISE W3 mag       -> colors: W2-W3
+            'wise4' -> WISE W4 mag       -> colors: W3-W4
 
-    `deredden` = True will make sure all colors use dereddened mags where
-    possible.
+        These are basically taken from the available reddening bandpasses from
+        the 2MASS DUST service. If B, V, u, g, r, i, z aren't provided but 2MASS
+        J, H, Ks are all provided, the former will be calculated using the 2MASS
+        JHKs -> BVugriz conversion functions in :py:mod:`astrobase.magnitudes`.
 
-    `custom_bandpasses` is a dict used to define any custom bandpasses in the
-    objectdict you want to make this function aware of and generate colors
-    for. Use the format below for this dict:
+    deredden : bool
+        If True, will make sure all colors use dereddened mags where possible.
 
-    {
-    '<bandpass_key_1>':{'dustkey':'<twomass_dust_key_1>',
-                        'label':'<band_label_1>'
-                        'colors':[['<bandkey1>-<bandkey2>','<BAND1> - <BAND2>'],
-                                  ['<bandkey3>-<bandkey4>','<BAND3> - <BAND4>']]},
-    .
-    ...
-    .
-    '<bandpass_key_N>':{'dustkey':'<twomass_dust_key_N>',
-                        'label':'<band_label_N>'
-                        'colors':[['<bandkey1>-<bandkey2>','<BAND1> - <BAND2>'],
-                                  ['<bandkey3>-<bandkey4>','<BAND3> - <BAND4>']]},
-    }
+    custom_bandpasses : dict
+        This is a dict used to define any custom bandpasses in the
+        `in_objectinfo` dict you want to make this function aware of and
+        generate colors for. Use the format below for this dict::
 
-    where:
+            {
+            '<bandpass_key_1>':{'dustkey':'<twomass_dust_key_1>',
+                                'label':'<band_label_1>'
+                                'colors':[['<bandkey1>-<bandkey2>',
+                                           '<BAND1> - <BAND2>'],
+                                          ['<bandkey3>-<bandkey4>',
+                                           '<BAND3> - <BAND4>']]},
+            .
+            ...
+            .
+            '<bandpass_key_N>':{'dustkey':'<twomass_dust_key_N>',
+                                'label':'<band_label_N>'
+                                'colors':[['<bandkey1>-<bandkey2>',
+                                           '<BAND1> - <BAND2>'],
+                                          ['<bandkey3>-<bandkey4>',
+                                           '<BAND3> - <BAND4>']]},
+            }
 
-    `bandpass_key` is a key to use to refer to this bandpass in the objectinfo
-    dict by checkplot_pickle, and subsequent operations by the checkplotserver,
-    e.g. 'sdssg' for SDSS g band
+        Where:
 
-    `twomass_dust_key` is the key to use in the 2MASS DUST result table for
-    reddening per band-pass. For example, given the following DUST result table
-    (using http://irsa.ipac.caltech.edu/applications/DUST/):
+        `bandpass_key` is a key to use to refer to this bandpass in the
+        `objectinfo` dict, e.g. 'sdssg' for SDSS g band
 
-    |Filter_name|LamEff |A_over_E_B_V_SandF|A_SandF|A_over_E_B_V_SFD|A_SFD|
-    |char       |float  |float             |float  |float           |float|
-    |           |microns|                  |mags   |                |mags |
-     CTIO U       0.3734              4.107   0.209            4.968 0.253
-     CTIO B       0.4309              3.641   0.186            4.325 0.221
-     CTIO V       0.5517              2.682   0.137            3.240 0.165
-    .
-    .
-    ...
+        `twomass_dust_key` is the key to use in the 2MASS DUST result table for
+        reddening per band-pass. For example, given the following DUST result
+        table (using http://irsa.ipac.caltech.edu/applications/DUST/)::
 
-    the twomass_dust_key for 'vmag' would be 'CTIO V'. If you want to skip DUST
-    lookup and want to pass in a specific reddening magnitude for your bandpass,
-    use a float for the value of twomass_dust_key. If you want to skip DUST
-    lookup entirely for this bandpass, use None for the value of
-    twomass_dust_key.
+            |Filter_name|LamEff |A_over_E_B_V_SandF|A_SandF|A_over_E_B_V_SFD|A_SFD|
+            |char       |float  |float             |float  |float           |float|
+            |           |microns|                  |mags   |                |mags |
+             CTIO U       0.3734              4.107   0.209            4.968 0.253
+             CTIO B       0.4309              3.641   0.186            4.325 0.221
+             CTIO V       0.5517              2.682   0.137            3.240 0.165
+            .
+            .
+            ...
 
-    `band_label` is the label to use for this bandpass, e.g. 'W1' for WISE-1
-    band, 'u' for SDSS u, etc.
+        The `twomass_dust_key` for 'vmag' would be 'CTIO V'. If you want to
+        skip DUST lookup and want to pass in a specific reddening magnitude
+        for your bandpass, use a float for the value of
+        `twomass_dust_key`. If you want to skip DUST lookup entirely for
+        this bandpass, use None for the value of `twomass_dust_key`.
 
-    the 'colors' list contains color definitions for all colors you want to
-    generate using this bandpass. this list contains elements of the form:
+        `band_label` is the label to use for this bandpass, e.g. 'W1' for
+        WISE-1 band, 'u' for SDSS u, etc.
 
-    ['<bandkey1>-<bandkey2>','<BAND1> - <BAND2>']
+        The 'colors' list contains color definitions for all colors you want
+        to generate using this bandpass. this list contains elements of the
+        form::
 
-    where the the first item is the bandpass keys making up this color, and the
-    second item is the label for this color to be used by the frontends
-    (i.e. checkplotserver and checkplot_pickle_to_png). An example:
+            ['<bandkey1>-<bandkey2>','<BAND1> - <BAND2>']
 
-    ['sdssu-sdssg','u - g']
+        where the the first item is the bandpass keys making up this color,
+        and the second item is the label for this color to be used by the
+        frontends. An example::
+
+            ['sdssu-sdssg','u - g']
+
+    dust_timeout : float
+        The timeout to use when contacting the 2MASS DUST web service.
+
+    Returns
+    -------
+
+    dict
+        An `objectinfo` dict with all of the generated colors, dereddened
+        magnitude,s dereddened colors, as specified in the input args is
+        returned.
 
     '''
 
@@ -672,6 +725,29 @@ def color_features(in_objectinfo,
 
 
 def mdwarf_subtype_from_sdsscolor(ri_color, iz_color):
+    '''This calculates the M-dwarf subtype given SDSS `r-i` and `i-z` colors.
+
+    Parameters
+    ----------
+
+    ri_color : float
+        The SDSS `r-i` color of the object.
+
+    iz_color : float
+        The SDSS `i-z` color of the object.
+
+    Returns
+    -------
+
+    (subtype, index1, index2) : tuple
+        `subtype`: if the star appears to be an M dwarf, will return an int
+        between 0 and 9 indicating its subtype, e.g. will return 4 for an M4
+        dwarf. If the object isn't an M dwarf, will return None
+
+        `index1`, `index2`: the M-dwarf color locus value and spread of this
+        object calculated from the `r-i` and `i-z` colors.
+
+    '''
 
     # calculate the spectral type index and the spectral type spread of the
     # object. sti is calculated by fitting a line to the locus in r-i and i-z
@@ -726,11 +802,12 @@ def mdwarf_subtype_from_sdsscolor(ri_color, iz_color):
 
 
 def color_classification(colorfeatures, pmfeatures):
-    '''This calculates rough classifications based on star colors from ugrizJHK.
+    '''This calculates rough star type classifications based on star colors
+    in the ugrizJHK bands.
 
-    Uses the output from color_features and coord_features. By default,
-    color_features will use dereddened colors, as are expected by most relations
-    here.
+    Uses the output from `color_features` and `coord_features`. By default,
+    `color_features` will use dereddened colors, as are expected by most
+    relations here.
 
     Based on the color cuts from:
 
@@ -740,6 +817,23 @@ def color_classification(colorfeatures, pmfeatures):
     - SDSS M-dwarf catalog (West+ 2008)
     - Helmi+ 2003
     - Bochanski+ 2014
+
+    Parameters
+    ----------
+
+    colorfeatures : dict
+        This is the dict produced by the `color_features` function.
+
+    pmfeatures : dict
+        This is the dict produced by the `coord_features` function.
+
+    Returns
+    -------
+
+    dict
+        A dict containing all of the possible classes this object can belong to
+        as a list in the `color_classes` key, and values of the various color
+        indices used to arrive to that conclusion as the other keys.
 
     '''
 
@@ -1028,25 +1122,87 @@ def neighbor_gaia_features(objectinfo,
                            gaia_mirror=None,
                            complete_query_later=True,
                            search_simbad=False):
-    '''Gets several neighbor and GAIA features:
+    '''Gets several neighbor, GAIA, and SIMBAD features:
 
-    from the given light curve catalog:
-    - distance to closest neighbor in arcsec
-    - total number of all neighbors within 2 x neighbor_radius_arcsec
+    From the KD-Tree in the given light curve catalog the object is in:
+    `lclist_kdtree`:
 
-    from the GAIA DR1 catalog:
     - distance to closest neighbor in arcsec
-    - total number of all neighbors within 2 x neighbor_radius_arcsec
+    - total number of all neighbors within 2 x `neighbor_radius_arcsec`
+
+    From the GAIA DR2 catalog:
+
+    - distance to closest neighbor in arcsec
+    - total number of all neighbors within 2 x `neighbor_radius_arcsec`
     - gets the parallax for the object and neighbors
-    - calculates the absolute GAIA mag and G-K color for use in CMDs
+    - calculates the absolute GAIA mag and `G-K` color for use in CMDs
     - gets the proper motion in RA/Dec if available
 
-    objectinfo is the objectinfo dict from an object light curve
+    From the SIMBAD catalog:
 
-    lclist_kdtree is a scipy.spatial.cKDTree object built on the cartesian xyz
-    coordinates from (ra, dec) of all objects in the same field as this
-    object. It is similar to that produced by lcproc.make_lclist, and is used to
-    carry out the spatial search required to find neighbors for this object.
+    - the name of the object
+    - the type of the object
+
+    Parameters
+    ----------
+
+    objectinfo : dict
+        This is the objectinfo dict from an object's light curve. This must
+        contain at least the following keys::
+
+            {'ra': the right ascension of the object,
+             'decl': the declination of the object}
+
+    lclist_kdtree : scipy.spatial.cKDTree object
+        This is a KD-Tree built on the Cartesian xyz coordinates from (ra, dec)
+        of all objects in the same field as this object. It is similar to that
+        produced by :py:func:`astrobase.lcproc.catalogs.make_lclist`, and is
+        used to carry out the spatial search required to find neighbors for this
+        object.
+
+    neighbor_radius_arcsec : float
+        The maximum radius in arcseconds around this object to search for
+        neighbors in both the light curve catalog and in the GAIA DR2 catalog.
+
+    gaia_matchdist_arcsec : float
+        The maximum distance in arcseconds to use for a GAIA cross-match to this
+        object.
+
+    verbose : bool
+        If True, indicates progress and warns of problems.
+
+    gaia_submit_timeout : float
+        Sets the timeout in seconds to use when submitting a request to look up
+        the object's information to the GAIA service. Note that if `fast_mode`
+        is set, this is ignored.
+
+    gaia_submit_tries : int
+        Sets the maximum number of times the GAIA services will be contacted to
+        obtain this object's information. If `fast_mode` is set, this is
+        ignored, and the services will be contacted only once (meaning that a
+        failure to respond will be silently ignored and no GAIA data will be
+        added to the checkplot's objectinfo dict).
+
+    gaia_max_timeout : float
+        Sets the timeout in seconds to use when waiting for the GAIA service to
+        respond to our request for the object's information. Note that if
+        `fast_mode` is set, this is ignored.
+
+    gaia_mirror : str
+        This sets the GAIA mirror to use. This is a key in the
+        `services.gaia.GAIA_URLS` dict which defines the URLs to hit for each
+        mirror.
+
+    search_simbad : bool
+        If this is True, searches for objects in SIMBAD at this object's
+        location and gets the object's SIMBAD main ID, type, and stellar
+        classification if available.
+
+    Returns
+    -------
+
+    dict
+        Returns a dict with neighbor, GAIA, and SIMBAD features.
 
     '''
 
@@ -1307,7 +1463,8 @@ def neighbor_gaia_features(objectinfo,
             # or this object is not covered by GAIA. return nothing
             else:
 
-                LOGERROR('no GAIA objects at this position or GAIA query failed')
+                LOGERROR('no GAIA objects at this '
+                         'position or GAIA query failed')
 
                 gaia_status = (
                     'failed: no GAIA objects at this '

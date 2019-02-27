@@ -3,19 +3,20 @@
 # rfclass.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Dec 2017
 # License: MIT. See the LICENSE file for more details.
 
-'''
-Does variable classification using random forests. Two types of classification
-are supported:
+'''Does variable classification using random forests. Two types of
+classification are supported:
 
 - Variable classification using non-periodic features: this is used to perform a
   binary classification between non-variable and variable. Uses the features in
-  varclass/features.py and varclass/starfeatures.py.
+  :py:mod:`astrobase.varclass.varfeatures` and
+  :py:mod:`astrobase.varclass.starfeatures`.
 
-- Periodic variable classification using periodic features: this is used to
-  perform multi-class classification for periodic variables using the features
-  in varclass/periodicfeatures.py and varclass/starfeatures.py. The classes
-  recognized are listed in PERIODIC_VARCLASSES below and were generated from
-  manual classification run on various HATNet, HATSouth and HATPI fields.
+- TODO: Periodic variable classification using periodic features: this is used
+  to perform multi-class classification for periodic variables using the
+  features in :py:mod:`astrobase.varclass.periodicfeatures` and
+  :py:mod:`astrobase.varclass.starfeatures`. The classes recognized are listed
+  in PERIODIC_VARCLASSES below and were generated from manual classification run
+  on various HATNet, HATSouth and HATPI fields.
 
 '''
 
@@ -81,9 +82,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV
 from sklearn.model_selection import train_test_split
 
-from operator import itemgetter
-from sklearn.metrics import r2_score, median_absolute_error, \
+from sklearn.metrics import (
     precision_score, recall_score, confusion_matrix, f1_score
+)
 
 import matplotlib
 matplotlib.use('Agg')
@@ -97,7 +98,7 @@ import matplotlib.pyplot as plt
 # Utility function to report best scores
 # modified from a snippet taken from:
 # http://scikit-learn.org/stable/auto_examples/model_selection/plot_randomized_search.html
-def gridsearch_report(results, n_top=3):
+def _gridsearch_report(results, n_top=3):
     for i in range(1, n_top + 1):
         candidates = np.flatnonzero(results['rank_test_score'] == i)
         for candidate in candidates:
@@ -143,7 +144,7 @@ NONPERIODIC_FEATURES_TO_COLLECT = [
 ## FEATURE COLLECTION ##
 ########################
 
-def collect_features(
+def collect_nonperiodic_features(
         featuresdir,
         magcol,
         outfile,
@@ -153,46 +154,68 @@ def collect_features(
         labeldict=None,
         labeltype='binary',
 ):
-    '''This collects variability features into arrays.
+    '''This collects variability features into arrays for use with the classifer.
 
-    featuresdir is the directory where all the varfeatures pickles are. Use
-    pklglob to specify the glob to search for. varfeatures pickles contain
-    objectids, a light curve magcol, and features as dict key-vals. The lcproc
-    module can be used to produce these.
+    Parameters
+    ----------
 
+    featuresdir : str
+        This is the directory where all the varfeatures pickles are. Use
+        `pklglob` to specify the glob to search for. The `varfeatures` pickles
+        contain objectids, a light curve magcol, and features as dict
+        key-vals. The :py:mod:`astrobase.lcproc.lcvfeatures` module can be used
+        to produce these.
 
-    magcol is the light curve magnitude col key to use when looking inside each
-    varfeatures pickle.
+    magcol : str
+        This is the key in each varfeatures pickle corresponding to the magcol
+        of the light curve the variability features were extracted from.
 
+    outfile : str
+        This is the filename of the output pickle that will be written
+        containing a dict of all the features extracted into np.arrays.
 
-    Each varfeature pickle can contain any combination of non-periodic, stellar,
-    and periodic features; these must have the same names as elements in the
-    list of strings provided in featurestouse.  This tries to get all the
-    features listed in NONPERIODIC_FEATURES_TO_COLLECT by default. If
-    featurestouse is not None, gets only the features listed in this kwarg
-    instead.
+    pklglob : str
+        This is the UNIX file glob to use to search for varfeatures pickle files
+        in `featuresdir`.
 
+    featurestouse : list of str
+        Each varfeatures pickle can contain any combination of non-periodic,
+        stellar, and periodic features; these must have the same names as
+        elements in the list of strings provided in `featurestouse`.  This tries
+        to get all the features listed in NONPERIODIC_FEATURES_TO_COLLECT by
+        default. If `featurestouse` is provided as a list, gets only the
+        features listed in this kwarg instead.
 
-    maxobjects controls how many pickles to process.
+    maxobjects : int or None
+        The controls how many pickles from the featuresdir to process. If None,
+        will process all varfeatures pickles.
 
+    labeldict : dict or None
+        If this is provided, it must be a dict with the following key:val list::
 
-    If labeldict is not None, it must be a dict with the following key:val
-    list:
+            '<objectid>':<label value>
 
-    '<objectid>':<label value>
+        for each objectid collected from the varfeatures pickles. This will turn
+        the collected information into a training set for classifiers.
 
-    for each objectid collected from the varfeatures pickles. This will turn the
-    collected information into a training set for classifiers.
+        Example: to carry out non-periodic variable feature collection of fake
+        LCS prepared by :py:mod:`astrobase.fakelcs.generation`, use the value
+        of the 'isvariable' dict elem from the `fakelcs-info.pkl` here, like
+        so::
 
-    Example: to carry out non-periodic variable feature collection of fake LCS
-    prepared by fakelcs.generation, use the value of the 'isvariable' dict elem
-    from fakelcs-info.pkl here, like so:
+            labeldict={x:y for x,y in zip(fakelcinfo['objectid'],
+                                          fakelcinfo['isvariable'])}
 
-    labeldict={x:y for x,y in zip(fakelcinfo['objectid'],
-                                  fakelcinfo['isvariable'])}
+    labeltype : {'binary', 'classes'}
+        This is either 'binary' or 'classes' for binary/multi-class
+        classification respectively.
 
-    labeltype is either 'binary' or 'classes' for binary/multi-class
-    classification respectively.
+    Returns
+    -------
+
+    dict
+        This returns a dict with all of the features collected into np.arrays,
+        ready to use as input to a scikit-learn classifier.
 
     '''
 
@@ -316,20 +339,59 @@ def train_rf_classifier(
     '''This gets the best RF classifier after running cross-validation.
 
     - splits the training set into test/train samples
-    - does KFold stratified cross-validation using RandomizedSearchCV
-    - gets the randomforest with the best performance after CV
+    - does `KFold` stratified cross-validation using `RandomizedSearchCV`
+    - gets the `RandomForestClassifier` with the best performance after CV
     - gets the confusion matrix for the test set
 
     Runs on the output dict from functions that produce dicts similar to that
-    produced by collect_features.
+    produced by `collect_nonperiodic_features` above.
 
-    By default, this is tuned for binary classification. Change the
-    crossval_scoring_metric to another metric (probably 'accuracy') for
-    multi-class classification, e.g. for periodic variable classification. See
-    the link below to specify the scoring parameter (this can either be a string
-    or an actual scorer object):
+    Parameters
+    ----------
 
-    http://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter
+    collected_features : dict or str
+        This is either the dict produced by a `collect_*_features` function or
+        the pickle produced by the same.
+
+    test_fraction : float
+        This sets the fraction of the input set that will be used as the
+        test set after training.
+
+    n_crossval_iterations : int
+        This sets the number of iterations to use when running the
+        cross-validation.
+
+    n_kfolds : int
+        This sets the number of K-folds to use on the data when doing a
+        test-train split.
+
+    crossval_scoring_metric : str
+        This is a string that describes how the cross-validation score is
+        calculated for each iteration. See the URL below for how to specify this
+        parameter:
+
+        http://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter
+        By default, this is tuned for binary classification and uses the F1
+        scoring metric. Change the `crossval_scoring_metric` to another metric
+        (probably 'accuracy') for multi-class classification, e.g. for periodic
+        variable classification.
+
+    classifier_to_pickle : str
+        If this is a string indicating the name of a pickle file to write, will
+        write the trained classifier to the pickle that can be later loaded and
+        used to classify data.
+
+    nworkers : int
+        This is the number of parallel workers to use in the
+        RandomForestClassifier. Set to -1 to use all CPUs on your machine.
+
+    Returns
+    -------
+
+    dict
+        A dict containing the trained classifier, cross-validation results, the
+        input data set, and all input kwargs used is returned, along with
+        cross-validation score metrics.
 
     '''
 
@@ -395,7 +457,7 @@ def train_rf_classifier(
                                         training_labels)
 
     # report on the classifiers' performance
-    gridsearch_report(cvsearch_classifiers.cv_results_)
+    _gridsearch_report(cvsearch_classifiers.cv_results_)
 
     # get the best classifier after CV is done
     bestclf = cvsearch_classifiers.best_estimator_
@@ -451,17 +513,36 @@ def apply_rf_classifier(classifier,
                         varfeaturesdir,
                         outpickle,
                         maxobjects=None):
-    '''This applys an RF classifier trained using train_rf_classifier
-    to pickles in varfeaturesdir.
+    '''This applys an RF classifier trained using `train_rf_classifier`
+    to varfeatures pickles in `varfeaturesdir`.
 
-    classifier is the output dict or pickle from get_rf_classifier. This will
-    contain a feature_names key that will be used to collect the features from
-    the varfeatures pickles in varfeaturesdir.
+    Parameters
+    ----------
 
-    varfeaturesdir is a directory where varfeatures pickles generated by
-    lcproc.parallel_varfeatures, etc. are located.
+    classifier : dict or str
+        This is the output dict or pickle created by `get_rf_classifier`. This
+        will contain a `features_name` key that will be used to collect the same
+        features used to train the classifier from the varfeatures pickles in
+        varfeaturesdir.
 
-    outpickle is the pickle of the result dict generated by this function.
+    varfeaturesdir : str
+        The directory containing the varfeatures pickles for objects that will
+        be classified by the trained `classifier`.
+
+    outpickle : str
+        This is a filename for the pickle that will be written containing the
+        result dict from this function.
+
+    maxobjects : int
+        This sets the number of objects to process in `varfeaturesdir`.
+
+    Returns
+    -------
+
+    dict
+        The classification results after running the trained `classifier` as
+        returned as a dict. This contains predicted labels and their prediction
+        probabilities.
 
     '''
 
@@ -485,7 +566,6 @@ def apply_rf_classifier(classifier,
     # get the feature labeltype, pklglob, and maxobjects from classifier's
     # collect_kwargs elem.
     featurestouse = clfdict['feature_names']
-    labeltype = clfdict['collect_kwargs']['labeltype']
     pklglob = clfdict['collect_kwargs']['pklglob']
     magcol = clfdict['magcol']
 
@@ -497,7 +577,7 @@ def apply_rf_classifier(classifier,
         'actual-collected-features.pkl'
     )
 
-    features = collect_features(
+    features = collect_nonperiodic_features(
         varfeaturesdir,
         magcol,
         featfile,
@@ -539,13 +619,35 @@ def apply_rf_classifier(classifier,
 def plot_training_results(classifier,
                           classlabels,
                           outfile):
-    '''
-    This plots the training results from the classifier run on the training set.
+    '''This plots the training results from the classifier run on the training
+    set.
 
     - plots the confusion matrix
+
     - plots the feature importances
+
     - FIXME: plot the learning curves too, see:
-             http://scikit-learn.org/stable/modules/learning_curve.html
+      http://scikit-learn.org/stable/modules/learning_curve.html
+
+    Parameters
+    ----------
+
+    classifier : dict or str
+        This is the output dict or pickle created by `get_rf_classifier`
+        containing the trained classifier.
+
+    classlabels : list of str
+        This contains all of the class labels for the current classification
+        problem.
+
+    outfile : str
+        This is the filename where the plots will be written.
+
+    Returns
+    -------
+
+    str
+        The path to the generated plot file.
 
     '''
 

@@ -58,8 +58,7 @@ from scipy.signal import savgol_filter
 ## LOCAL IMPORTS ##
 ###################
 
-from ..lcmath import sigclip_magseries, \
-    time_bin_magseries, time_bin_magseries_with_errs
+from ..lcmath import sigclip_magseries, time_bin_magseries_with_errs
 
 
 ##########################################
@@ -68,16 +67,29 @@ from ..lcmath import sigclip_magseries, \
 
 def stetson_jindex(ftimes, fmags, ferrs, weightbytimediff=False):
     '''This calculates the Stetson index for the magseries, based on consecutive
-    pairs of observations. Based on Nicole Loncke's work for her Planets and
-    Life certificate at Princeton.
+    pairs of observations.
 
-    This requires finite times, mags, and errs.
+    Based on Nicole Loncke's work for her Planets and Life certificate at
+    Princeton in 2014.
 
-    If weightbytimediff is True, the Stetson index for any pair of mags will be
-    reweighted by the difference in times between them using the scheme in
-    Fruth+ 2012 and Zhange+ 2003 (as seen in Sokolovsky+ 2017).
+    Parameters
+    ----------
 
-    w_i = exp(- (t_i+1 - t_i)/ delta_t )
+    ftimes,fmags,ferrs : np.array
+        The input mag/flux time-series with all non-finite elements removed.
+
+    weightbytimediff : bool
+        If this is True, the Stetson index for any pair of mags will be
+        reweighted by the difference in times between them using the scheme in
+        Fruth+ 2012 and Zhange+ 2003 (as seen in Sokolovsky+ 2017)::
+
+            w_i = exp(- (t_i+1 - t_i)/ delta_t )
+
+    Returns
+    -------
+
+    float
+        The calculated Stetson J variability index.
 
     '''
 
@@ -97,8 +109,6 @@ def stetson_jindex(ftimes, fmags, ferrs, weightbytimediff=False):
 
         if weightbytimediff:
 
-            time_i = ftimes
-            time_j = nproll(ftimes,1)
             difft = npdiff(ftimes)
             deltat = npmedian(difft)
 
@@ -123,10 +133,20 @@ def stetson_jindex(ftimes, fmags, ferrs, weightbytimediff=False):
 
 
 def stetson_kindex(fmags, ferrs):
-    '''
-    This calculates the Stetson K index (robust measure of the kurtosis).
+    '''This calculates the Stetson K index (a robust measure of the kurtosis).
 
-    Requires finite mags and errs.
+    Parameters
+    ----------
+
+    fmags,ferrs : np.array
+        The input mag/flux time-series to process. Must have no non-finite
+        elems.
+
+    Returns
+    -------
+
+    float
+        The Stetson K variability index.
 
     '''
 
@@ -163,6 +183,18 @@ def stetson_kindex(fmags, ferrs):
 def lightcurve_moments(ftimes, fmags, ferrs):
     '''This calculates the weighted mean, stdev, median, MAD, percentiles, skew,
     kurtosis, fraction of LC beyond 1-stdev, and IQR.
+
+    Parameters
+    ----------
+
+    ftimes,fmags,ferrs : np.array
+        The input mag/flux time-series with all non-finite elements removed.
+
+    Returns
+    -------
+
+    dict
+        A dict with all of the light curve moments calculated.
 
     '''
 
@@ -214,8 +246,24 @@ def lightcurve_moments(ftimes, fmags, ferrs):
 
 
 def lightcurve_flux_measures(ftimes, fmags, ferrs, magsarefluxes=False):
-    '''
-    This calculates percentiles of the flux.
+    '''This calculates percentiles and percentile ratios of the flux.
+
+    Parameters
+    ----------
+
+    ftimes,fmags,ferrs : np.array
+        The input mag/flux time-series with all non-finite elements removed.
+
+    magsarefluxes : bool
+        If the `fmags` array actually contains fluxes, will not convert `mags`
+        to fluxes before calculating the percentiles.
+
+    Returns
+    -------
+
+    dict
+        A dict with all of the light curve flux percentiles and percentile
+        ratios calculated.
 
     '''
 
@@ -297,8 +345,21 @@ def lightcurve_flux_measures(ftimes, fmags, ferrs, magsarefluxes=False):
 
 
 def lightcurve_ptp_measures(ftimes, fmags, ferrs):
-    '''
-    This calculates various point-to-point measures (eta in Kim+ 2014).
+    '''This calculates various point-to-point measures (`eta` in Kim+ 2014).
+
+    Parameters
+    ----------
+
+    ftimes,fmags,ferrs : np.array
+        The input mag/flux time-series with all non-finite elements removed.
+
+    Returns
+    -------
+
+    dict
+        A dict with values of the point-to-point measures, including the `eta`
+        variability index (often used as its inverse `inveta` to have the same
+        sense as increasing variability index -> more likely a variable star).
 
     '''
 
@@ -370,25 +431,40 @@ def nonperiodic_lightcurve_features(times, mags, errs, magsarefluxes=False):
     '''This calculates the following nonperiodic features of the light curve,
     listed in Richards, et al. 2011):
 
-    amplitude
-    beyond1std
-    flux_percentile_ratio_mid20
-    flux_percentile_ratio_mid35
-    flux_percentile_ratio_mid50
-    flux_percentile_ratio_mid65
-    flux_percentile_ratio_mid80
-    linear_trend
-    max_slope
-    median_absolute_deviation
-    median_buffer_range_percentage
-    pair_slope_trend
-    percent_amplitude
-    percent_difference_flux_percentile
-    skew
-    stdev
-    timelength
-    mintime
-    maxtime
+    - amplitude
+    - beyond1std
+    - flux_percentile_ratio_mid20
+    - flux_percentile_ratio_mid35
+    - flux_percentile_ratio_mid50
+    - flux_percentile_ratio_mid65
+    - flux_percentile_ratio_mid80
+    - linear_trend
+    - max_slope
+    - median_absolute_deviation
+    - median_buffer_range_percentage
+    - pair_slope_trend
+    - percent_amplitude
+    - percent_difference_flux_percentile
+    - skew
+    - stdev
+    - timelength
+    - mintime
+    - maxtime
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The input mag/flux time-series to process.
+
+    magsarefluxes : bool
+        If True, will treat values in `mags` as fluxes instead of magnitudes.
+
+    Returns
+    -------
+
+    dict
+        A dict containing all of the features listed above.
 
     '''
 
@@ -475,34 +551,79 @@ def gilliland_cdpp(times, mags, errs,
     '''This calculates the CDPP of a timeseries using the method in the paper:
 
     Gilliland, R. L., Chaplin, W. J., Dunham, E. W., et al. 2011, ApJS, 197, 6
-    http://adsabs.harvard.edu/abs/2011ApJS..197....6G
-
-    use magsarefluxes to indicate if the values in the mags array are actually
-    flux values.
+    (http://adsabs.harvard.edu/abs/2011ApJS..197....6G)
 
     The steps are:
 
-    - pass the time-series through a Savitsky-Golay filter
+    - pass the time-series through a Savitsky-Golay filter.
 
-      - we use scipy.signal.savgol_filter, **kwargs are passed to this
+      - we use `scipy.signal.savgol_filter`, `**kwargs` are passed to this.
 
-      - also see: http://scipy.github.io/old-wiki/pages/Cookbook/SavitzkyGolay
+      - also see: http://scipy.github.io/old-wiki/pages/Cookbook/SavitzkyGolay.
 
-      - the windowlength is the number of LC points to use (Kepler uses 2 days =
-        (1440 minutes/day / 30 minutes/LC point) x 2 days = 96 -> 97 LC points)
+      - the `windowlength` is the number of LC points to use (Kepler uses 2 days
+        = (1440 minutes/day / 30 minutes/LC point) x 2 days = 96 -> 97 LC
+        points).
 
-      - the polyorder is a quadratic by default
+      - the `polyorder` is a quadratic by default.
 
-    - subtract the smoothed time-series from the actual light curve
 
-    - sigma clip the remaining LC
+    - subtract the smoothed time-series from the actual light curve.
+
+    - sigma clip the remaining LC.
 
     - get the binned mag series by averaging over 6.5 hour bins, only retaining
-      bins with at least 7 points
+      bins with at least 7 points.
 
-    - the standard deviation of the binned averages is the CDPP
+    - the standard deviation of the binned averages is the CDPP.
 
-    - multiply this by 1.168 to correct for over-subtraction of white-noise
+    - multiply this by 1.168 to correct for over-subtraction of white-noise.
+
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The input mag/flux time-series to calculate CDPP for.
+
+    windowlength : int
+        The smoothing window size to use.
+
+    polyorder : int
+        The polynomial order to use in the Savitsky-Golay smoothing.
+
+    binsize : int
+        The bin size to use for binning the light curve.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    magsarefluxes : bool
+        If True, indicates the input time-series is fluxes and not mags.
+
+    kwargs : additional kwargs
+        These are passed directly to `scipy.signal.savgol_filter`.
+
+    Returns
+    -------
+
+    float
+        The calculated CDPP value.
 
     '''
 
@@ -526,17 +647,14 @@ def gilliland_cdpp(times, mags, errs,
     subtracted = fmags - smoothed
 
     # sigclip the subtracted light curve
-    stimes, smags, serrs = sigclip_magseries(ftimes, fmags, ferrs,
+    stimes, smags, serrs = sigclip_magseries(ftimes, subtracted, ferrs,
                                              magsarefluxes=magsarefluxes)
 
     # bin over 6.5 hour bins and throw away all bins with less than 7 elements
     binned = time_bin_magseries_with_errs(stimes, smags, serrs,
                                           binsize=binsize,
                                           minbinelems=7)
-
-    btimes, bmags, berrs = (binned['binnedtimes'],
-                            binned['binnedmags'],
-                            binned['binnederrs'])
+    bmags = binned['binnedmags']
 
     # stdev of bin mags x 1.168 -> CDPP
     cdpp = npstd(bmags) * 1.168
@@ -553,10 +671,32 @@ def gilliland_cdpp(times, mags, errs,
 def all_nonperiodic_features(times, mags, errs,
                              magsarefluxes=False,
                              stetson_weightbytimediff=True):
-    '''
-    This rolls up the functions above and returns a single dict.
+    '''This rolls up the feature functions above and returns a single dict.
 
-    NOTE: this doesn't calculate the CDPP; that's a separate function.
+    NOTE: this doesn't calculate the CDPP to save time since binning and
+    smoothing takes a while for dense light curves.
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The input mag/flux time-series to calculate CDPP for.
+
+    magsarefluxes : bool
+        If True, indicates `mags` is actually an array of flux values.
+
+    stetson_weightbytimediff : bool
+        If this is True, the Stetson index for any pair of mags will be
+        reweighted by the difference in times between them using the scheme in
+        Fruth+ 2012 and Zhange+ 2003 (as seen in Sokolovsky+ 2017)::
+
+            w_i = exp(- (t_i+1 - t_i)/ delta_t )
+
+    Returns
+    -------
+
+    dict
+        Returns a dict with all of the variability features.
 
     '''
 

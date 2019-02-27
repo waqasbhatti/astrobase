@@ -63,24 +63,89 @@ from .varfeatures import lightcurve_ptp_measures
 def lcfit_features(times, mags, errs, period,
                    fourierorder=5,
                    # these are depth, duration, ingress duration
-                   transitparams=[-0.01,0.1,0.1],
+                   transitparams=(-0.01,0.1,0.1),
                    # these are depth, duration, depth ratio, secphase
-                   ebparams=[-0.2,0.3,0.7,0.5],
+                   ebparams=(-0.2,0.3,0.7,0.5),
                    sigclip=10.0,
                    magsarefluxes=False,
                    fitfailure_means_featurenan=False,
                    verbose=True):
-    '''This calculates various features related to fitting models to light curves.
+    '''This calculates various features related to fitting models to light
+    curves.
 
-    - calculates R_ij and phi_ij ratios for Fourier fit amplitudes and phases
-    - calculates the redchisq for fourier, EB, and planet transit fits
-    - calculates the redchisq for fourier, EB, planet transit fits w/2 x period
+    This function:
 
-    For fitfailure_means_featurenan: if the planet, EB and EBx2 fits don't
-    return standard errors because the covariance matrix could not be generated,
-    then the fit is suspicious and the features calculated can't be trusted. If
-    fitfailure_means_featurenan is True, then the output features for these fits
-    will be set to nan.
+    - calculates `R_ij` and `phi_ij` ratios for Fourier fit amplitudes and
+      phases.
+
+    - calculates the reduced chi-sq for fourier, EB, and planet transit fits.
+
+    - calculates the reduced chi-sq for fourier, EB, planet transit fits w/2 x
+      period.
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The input mag/flux time-series to calculate periodic features for.
+
+    period : float
+        The period of variabiity to use to phase the light curve.
+
+    fourierorder : int
+        The Fourier order to use to generate sinusoidal function and fit that to
+        the phased light curve.
+
+    transitparams : list of floats
+        The transit depth, duration, and ingress duration to use to generate a
+        trapezoid planet transit model fit to the phased light curve. The period
+        used is the one provided in `period`, while the epoch is automatically
+        obtained from a spline fit to the phased light curve.
+
+    ebparams : list of floats
+        The primary eclipse depth, eclipse duration, the primary-secondary depth
+        ratio, and the phase of the secondary eclipse to use to generate an
+        eclipsing binary model fit to the phased light curve. The period used is
+        the one provided in `period`, while the epoch is automatically obtained
+        from a spline fit to the phased light curve.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    magsarefluxes : bool
+        Set this to True if the input measurements in `mags` are actually
+        fluxes.
+
+    fitfailure_means_featurenan : bool
+        If the planet, EB and EBx2 fits don't return standard errors because the
+        covariance matrix could not be generated, then the fit is suspicious and
+        the features calculated can't be trusted. If
+        `fitfailure_means_featurenan` is True, then the output features for
+        these fits will be set to nan.
+
+    verbose : bool
+        If True, will indicate progress while working.
+
+    Returns
+    -------
+
+    dict
+        A dict of all the features calculated is returned.
 
     '''
 
@@ -430,31 +495,87 @@ def periodogram_features(pgramlist, times, mags, errs,
                          verbose=True):
     '''This calculates various periodogram features (for each periodogram).
 
-    pgramlist is a list of dicts returned by any of the periodfinding methods in
-    astrobase.periodbase. This can also be obtained from the resulting pickle
-    from the lcproc.run_pf function. Might be a good idea to make pgramlist a
-    list of periodogram lists from all magnitude columns to test periodic
-    variability across all magnitude columns (e.g. period diffs between EPD and
-    TFA mags)
+    The following features are obtained:
 
-    times, mags, errs are from the object's light curve. These are used to
-    recalculat the sampling L-S periodogram if one is not present in
-    pgramlist. If it's present, these can all be set to None.
+    - For all best periods from all periodogram methods in `pgramlist`,
+      calculates the number of these with peaks that are at least
+      `sampling_peak_multiplier` x time-sampling periodogram peak at the same
+      period. This indicates how likely the `pgramlist` periodogram peaks are to
+      being real as opposed to just being caused by time-sampling
+      window-function of the observations.
 
-    sigclip is the sigclip to apply to the light curve.
+    - For all best periods from all periodogram methods in `pgramlist`,
+      calculates the number of best periods which are consistent with a sidereal
+      day (1.0027379 and 0.9972696), likely indicating that they're not real.
 
-    pdiff_threshold is the max diff between periods to consider them the same.
+    - For all best periods from all periodogram methods in `pgramlist`,
+      calculates the number of cross-wise period differences for all of these
+      that fall below the `pdiff_threshold` value. If this is high, most of the
+      period-finders in `pgramlist` agree on their best period results, so it's
+      likely the periods found are real.
 
-    sidereal_threshold is the max diff between any of the periods and the
-    sidereal day periods to consider them the same.
+    Parameters
+    ----------
 
-    sampling_peak_multipler is the minimum multiplicative factor of a period's
-    normalized periodogram peak over the sampling periodogram peak at the same
-    period required to accept the period as possibly real.
+    pgramlist : list of dicts
+        This is a list of dicts returned by any of the periodfinding methods in
+        :py:mod:`astrobase.periodbase`. This can also be obtained from the
+        resulting pickle from the :py:func:astrobase.lcproc.periodsearch.run_pf`
+        function. It's a good idea to make `pgramlist` a list of periodogram
+        lists from all magnitude columns in the input light curve to test
+        periodic variability across all magnitude columns (e.g. period diffs
+        between EPD and TFA mags)
 
-    sampling_startp and sampling_endp are provided if the pgramlist doesn't have
-    a spectral window LSP and this must be obtained from the times, mags, errs
-    directly by running periodbase.specwindow_lsp.
+    times,mags,errs : np.array
+        The input flux/mag time-series to use to calculate features. These are
+        used to recalculate the time-sampling L-S periodogram (using
+        :py:func:`astrobase.periodbase.zgls.specwindow_lsp`) if one is not
+        present in pgramlist. If it's present, these can all be set to None.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    pdiff_threshold : float
+        This is the max difference between periods to consider them the same.
+
+    sidereal_threshold : float
+        This is the max difference between any of the 'best' periods and the
+        sidereal day periods to consider them the same.
+
+    sampling_peak_multiplier : float
+        This is the minimum multiplicative factor of a 'best' period's
+        normalized periodogram peak over the sampling periodogram peak at the
+        same period required to accept the 'best' period as possibly real.
+
+    sampling_startp, sampling_endp : float
+        If the `pgramlist` doesn't have a time-sampling Lomb-Scargle
+        periodogram, it will be obtained automatically. Use these kwargs to
+        control the minimum and maximum period interval to be searched when
+        generating this periodogram.
+
+    verbose : bool
+        If True, will indicate progress and report errors.
+
+    Returns
+    -------
+
+    dict
+        Returns a dict with all of the periodogram features calculated.
 
     '''
     # run the sampling peak periodogram if necessary
@@ -705,10 +826,34 @@ def phasedlc_features(times,
                       nbrerrs=None):
     '''This calculates various phased LC features for the object.
 
-    If nbrtimes, nbrmags, and nbrerrs are all not None, they should
-    be ndarrays with times, mags, errs of this object's closest neighbor (close
-    within some small number x FWHM of telescope to check for blending) will
-    also calculate extra features based on neighbor phased LC.
+    Some of the features calculated here come from:
+
+    Kim, D.-W., Protopapas, P., Bailer-Jones, C. A. L., et al. 2014, Astronomy
+    and Astrophysics, 566, A43, and references therein (especially Richards, et
+    al. 2011).
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The input mag/flux time-series to calculate the phased LC features for.
+
+    period : float
+        The period used to phase the input mag/flux time-series.
+
+    nbrtimes,nbrmags,nbrerrs : np.array or None
+        If `nbrtimes`, `nbrmags`, and `nbrerrs` are all provided, they should be
+        ndarrays with `times`, `mags`, `errs` of this object's closest neighbor
+        (close within some small number x FWHM of telescope to check for
+        blending). This function will then also calculate extra features based
+        on the neighbor's phased LC using the `period` provided for the target
+        object.
+
+    Returns
+    -------
+
+    dict
+        Returns a dict with phased LC features.
 
     '''
     # get the finite values
