@@ -284,17 +284,32 @@ def make_fit_plot(phase, pmags, perrs, fitmags,
 #####################################################
 
 def _fourier_func(fourierparams, phase, mags):
-    '''
-    This returns a summed Fourier series generated using fourierparams.
+    '''This returns a summed Fourier cosine series.
 
-    fourierparams is a sequence like so:
+    Parameters
+    ----------
 
-    [ampl_1, ampl_2, ampl_3, ..., ampl_X,
-     pha_1, pha_2, pha_3, ..., pha_X]
+    fourierparams : list
+        This MUST be a list of the following form like so::
 
-    where X is the Fourier order.
+            [period,
+             epoch,
+             [amplitude_1, amplitude_2, amplitude_3, ..., amplitude_X],
+             [phase_1, phase_2, phase_3, ..., phase_X]]
 
-    mags and phase MUST NOT have any nans.
+        where X is the Fourier order.
+
+    phase,mags : np.array
+        The input phase and magnitude areas to use as the basis for the cosine
+        series. The phases are used directly to generate the values of the
+        function, while the mags array is used to generate the zeroth order
+        amplitude coefficient.
+
+    Returns
+    -------
+
+    np.array
+        The Fourier cosine series function evaluated over `phase`.
 
     '''
 
@@ -324,10 +339,10 @@ def _fourier_chisq(fourierparams,
                    phase,
                    mags,
                    errs):
-    '''
-    This is the chisq objective function to be minimized by scipy.minimize.
+    '''This is the chisq objective function to be minimized by `scipy.minimize`.
 
-    The parameters are the same as _fourier_func above.
+    The parameters are the same as `_fourier_func` above. `errs` is used to
+    calculate the chisq value.
 
     '''
 
@@ -342,9 +357,9 @@ def _fourier_residual(fourierparams,
                       phase,
                       mags):
     '''
-    This is the residual objective function to be minimized by scipy.leastsq.
+    This is the residual objective function to be minimized by `scipy.leastsq`.
 
-    The parameters are the same as _fourier_func above.
+    The parameters are the same as `_fourier_func` above.
 
     '''
 
@@ -363,41 +378,105 @@ def fourier_fit_magseries(times, mags, errs, period,
                           plotfit=False,
                           ignoreinitfail=True,
                           verbose=True):
-    '''This fits a Fourier series to a magnitude time series.
+    '''This fits a Fourier series to a mag/flux time series.
 
-    This uses an 8th-order Fourier series by default. This is good for light
-    curves with many thousands of observations (HAT light curves have ~10k
-    observations). Lower the order accordingly if you have fewer observations in
-    your light curves to avoid over-fitting.
+    Parameters
+    ----------
 
-    Set the Fourier order by using either the fourierorder kwarg OR the
-    fourierparams kwarg. If fourierorder is None, then fourierparams is a
-    list of the form for fourier order = N:
+    times,mags,errs : np.array
+        The input mag/flux time-series to fit a Fourier cosine series to.
 
-    [fourier_amp1, fourier_amp2, fourier_amp3,...,fourier_ampN,
-     fourier_phase1, fourier_phase2, fourier_phase3,...,fourier_phaseN]
+    period : float
+        The period to use for the Fourier fit.
 
-    If both/neither are specified, the default Fourier order of 3 will be used.
+    fourierorder : None or int
+        If this is an int, will be interpreted as the Fourier order of the
+        series to fit to the input mag/flux times-series. If this is None and
+        `fourierparams` is specified, `fourierparams` will be used directly to
+        generate the fit Fourier series. If `fourierparams` is also None, this
+        function will try to fit a Fourier cosine series of order 3 to the
+        mag/flux time-series.
 
-    Returns the Fourier fit parameters, the minimum chisq and reduced
-    chisq. Makes a plot for the fit to the mag series if plotfit is a string
-    containing a filename to write the plot to.
+    fourierparams : list of floats or None
+        If this is specified as a list of floats, it must be of the form below::
 
-    This folds the time series using the given period and at the first
-    observation. Can optionally sigma-clip observations.
+            [fourier_amp1, fourier_amp2, fourier_amp3,...,fourier_ampN,
+             fourier_phase1, fourier_phase2, fourier_phase3,...,fourier_phaseN]
 
-    NOTE: the returned value of 'fitepoch' in the 'fitinfo' dict returned by
-    this function is the time value of the first observation since this is where
-    the LC is folded for the fit procedure. To get the actual time of minimum
-    epoch as calculated by a spline fit to the phased LC, use the key
-    'actual_fitepoch' in the 'fitinfo' dict.
+        to specify a Fourier cosine series of order N. If this is None and
+        `fourierorder` is specified, the Fourier order specified there will be
+        used to construct the Fourier cosine series used to fit the input
+        mag/flux time-series. If both are None, this function will try to fit a
+        Fourier cosine series of order 3 to the input mag/flux time-series.
 
-    if ignoreinitfail is True, ignores the initial failure to find a set of
-    optimized Fourier parameters and proceeds to do a least-squares fit anyway.
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
 
-    magsarefluxes is a boolean value for setting the ylabel and ylimits of
-    plots for either magnitudes (False) or flux units (i.e. normalized to 1, in
-    which case magsarefluxes should be set to True).
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    magsarefluxes : bool
+        If True, will treat the input values of `mags` as fluxes for purposes of
+        plotting the fit and sig-clipping.
+
+    plotfit : str or False
+        If this is a string, this function will make a plot for the fit to the
+        mag/flux time-series and writes the plot to the path specified here.
+
+    ignoreinitfail : bool
+        If this is True, ignores the initial failure to find a set of optimized
+        Fourier parameters using the global optimization function and proceeds
+        to do a least-squares fit anyway.
+
+    verbose : bool
+        If True, will indicate progress and warn of any problems.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict containing the model fit parameters, the
+        minimized chi-sq value and the reduced chi-sq value. The form of this
+        dict is mostly standardized across all functions in this module::
+
+            {
+                'fittype':'fourier',
+                'fitinfo':{
+                    'finalparams': the list of final model fit params,
+                    'leastsqfit':the full tuple returned by scipy.leastsq,
+                    'fitmags': the model fit mags,
+                    'fitepoch': the epoch of minimum light for the fit,
+                    ... other fit function specific keys ...
+                },
+                'fitchisq': the minimized value of the fit's chi-sq,
+                'fitredchisq':the reduced chi-sq value,
+                'fitplotfile': the output fit plot if fitplot is not None,
+                'magseries':{
+                    'times':input times in phase order of the model,
+                    'phase':the phases of the model mags,
+                    'mags':input mags/fluxes in the phase order of the model,
+                    'errs':errs in the phase order of the model,
+                    'magsarefluxes':input value of magsarefluxes kwarg
+                }
+            }
+
+        NOTE: the returned value of 'fitepoch' in the 'fitinfo' dict returned by
+        this function is the time value of the first observation since this is
+        where the LC is folded for the fit procedure. To get the actual time of
+        minimum epoch as calculated by a spline fit to the phased LC, use the
+        key 'actual_fitepoch' in the 'fitinfo' dict.
 
     '''
 
@@ -603,19 +682,86 @@ def spline_fit_magseries(times, mags, errs, period,
     This fit may be better than the Fourier fit for sharply variable objects,
     like EBs, so can be used to distinguish them from other types of variables.
 
-    The knot fraction is the number of internal knots to use for the spline. A
-    value of 0.01 (or 1%) of the total number of non-nan observations appears to
-    work quite well, without over-fitting. maxknots controls the maximum number
-    of knots that will be allowed.
+    Parameters
+    ----------
 
-    magsarefluxes is a boolean value for setting the ylabel and ylimits of
-    plots for either magnitudes (False) or flux units (i.e. normalized to 1, in
-    which case magsarefluxes should be set to True).
+    times,mags,errs : np.array
+        The input mag/flux time-series to fit a spline to.
 
-    Returns the chisq of the fit, as well as the reduced chisq. FIXME: check
-    this equation below to see if it's right.
+    period : float
+        The period to use for the spline fit.
 
-    reduced_chisq = fit_chisq/(len(pmags) - len(knots) - 1)
+    knotfraction : float
+        The knot fraction is the number of internal knots to use for the
+        spline. A value of 0.01 (or 1%) of the total number of non-nan
+        observations appears to work quite well, without over-fitting. maxknots
+        controls the maximum number of knots that will be allowed.
+
+    maxknots : int
+        The maximum number of knots that will be used even if `knotfraction`
+        gives a value to use larger than `maxknots`. This helps dealing with
+        over-fitting to short time-scale variations.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    magsarefluxes : bool
+        If True, will treat the input values of `mags` as fluxes for purposes of
+        plotting the fit and sig-clipping.
+
+    plotfit : str or False
+        If this is a string, this function will make a plot for the fit to the
+        mag/flux time-series and writes the plot to the path specified here.
+
+    ignoreinitfail : bool
+        If this is True, ignores the initial failure to find a set of optimized
+        Fourier parameters using the global optimization function and proceeds
+        to do a least-squares fit anyway.
+
+    verbose : bool
+        If True, will indicate progress and warn of any problems.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict containing the model fit parameters, the
+        minimized chi-sq value and the reduced chi-sq value. The form of this
+        dict is mostly standardized across all functions in this module::
+
+            {
+                'fittype':'spline',
+                'fitinfo':{
+                    'nknots': the number of knots used for the fit
+                    'fitmags': the model fit mags,
+                    'fitepoch': the epoch of minimum light for the fit,
+                },
+                'fitchisq': the minimized value of the fit's chi-sq,
+                'fitredchisq':the reduced chi-sq value,
+                'fitplotfile': the output fit plot if fitplot is not None,
+                'magseries':{
+                    'times':input times in phase order of the model,
+                    'phase':the phases of the model mags,
+                    'mags':input mags/fluxes in the phase order of the model,
+                    'errs':errs in the phase order of the model,
+                    'magsarefluxes':input value of magsarefluxes kwarg
+                }
+            }
 
     '''
 
@@ -716,6 +862,7 @@ def spline_fit_magseries(times, mags, errs, period,
     return returndict
 
 
+
 #####################################################
 ## SAVITZKY-GOLAY FITTING TO MAGNITUDE TIME SERIES ##
 #####################################################
@@ -728,49 +875,115 @@ def savgol_fit_magseries(times, mags, errs, period,
                          magsarefluxes=False,
                          verbose=True):
 
-    '''
-    Fit a Savitzky-Golay filter to the magnitude/flux time series.
+    '''Fit a Savitzky-Golay filter to the magnitude/flux time series.
+
     SG fits successive sub-sets (windows) of adjacent data points with a
-    low-order polynomial via least squares. At each point (magnitude),
-    it returns the value of the polynomial at that magnitude's time.
-    This is made significantly cheaper than *actually* performing least squares
-    for each window through linear algebra tricks that are possible when
-    specifying the window size and polynomial order beforehand.
-    Numerical Recipes Ch 14.8 gives an overview, Eq. 14.8.6 is what Scipy has
-    implemented.
+    low-order polynomial via least squares. At each point (magnitude), it
+    returns the value of the polynomial at that magnitude's time.  This is made
+    significantly cheaper than *actually* performing least squares for each
+    window through linear algebra tricks that are possible when specifying the
+    window size and polynomial order beforehand.  Numerical Recipes Ch 14.8
+    gives an overview, Eq. 14.8.6 is what Scipy has implemented.
 
     The idea behind Savitzky-Golay is to preserve higher moments (>=2) of the
     input data series than would be done by a simple moving window average.
 
-    Note that the filter assumes evenly spaced data, which magnitude time
-    series are not. By *pretending* the data points are evenly spaced, we
-    introduce an additional noise source in the function values. This is a
-    relatively small noise source provided that the changes in the magnitude
-    values across the full width of the N=windowlength point window is <
-    sqrt(N/2) times the measurement noise on a single point.
+    Note that the filter assumes evenly spaced data, which magnitude time series
+    are not. By *pretending* the data points are evenly spaced, we introduce an
+    additional noise source in the function values. This is a relatively small
+    noise source provided that the changes in the magnitude values across the
+    full width of the N=windowlength point window is < sqrt(N/2) times the
+    measurement noise on a single point.
 
     TODO:
     - Find correct dof for reduced chi squared in savgol_fit_magseries
 
-    Args:
+    Parameters
+    ----------
 
-    windowlength (int): length of the filter window (the number of
-    coefficients). Must be either positive and odd, or None. (The window is
-    the number of points to the left, and to the right, of whatever point
-    is having a polynomial fit to it locally). Bigger windows at fixed
-    polynomial order risk lowering the amplitude of sharp features. If
-    None, this routine (arbitrarily) sets the windowlength for phased LCs
-    to be either the number of finite data points divided by 300, or
-    polydeg+3, whichever is bigger.
+    times,mags,errs : np.array
+        The input mag/flux time-series to fit the Savitsky-Golay model to.
 
-    polydeg (int): the order of the polynomial used to fit the samples.
-    Must be less than windowlength. "Higher-order filters do better at
-    preserving feature heights and widths, but do less smoothing on broader
-    features." (NumRec).
+    period : float
+        The period to use for the model fit.
 
-    magsarefluxes (bool): sets the ylabel and ylimits of plots for either
-    magnitudes (False) or flux units (i.e. normalized to 1, in which case
-    magsarefluxes should be set to True).
+    windowlength : None or int
+        The length of the filter window (the number of coefficients). Must be
+        either positive and odd, or None. (The window is the number of points to
+        the left, and to the right, of whatever point is having a polynomial fit
+        to it locally). Bigger windows at fixed polynomial order risk lowering
+        the amplitude of sharp features. If None, this routine (arbitrarily)
+        sets the `windowlength` for phased LCs to be either the number of finite
+        data points divided by 300, or polydeg+3, whichever is bigger.
+
+    polydeg : int
+        This is the order of the polynomial used to fit the samples.  Must be
+        less than `windowlength`. "Higher-order filters do better at preserving
+        feature heights and widths, but do less smoothing on broader features."
+        (Numerical Recipes).
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    magsarefluxes : bool
+        If True, will treat the input values of `mags` as fluxes for purposes of
+        plotting the fit and sig-clipping.
+
+    plotfit : str or False
+        If this is a string, this function will make a plot for the fit to the
+        mag/flux time-series and writes the plot to the path specified here.
+
+    ignoreinitfail : bool
+        If this is True, ignores the initial failure to find a set of optimized
+        Fourier parameters using the global optimization function and proceeds
+        to do a least-squares fit anyway.
+
+    verbose : bool
+        If True, will indicate progress and warn of any problems.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict containing the model fit parameters, the
+        minimized chi-sq value and the reduced chi-sq value. The form of this
+        dict is mostly standardized across all functions in this module::
+
+            {
+                'fittype':'savgol',
+                'fitinfo':{
+                    'windowlength': the window length used for the fit,
+                    'polydeg':the polynomial degree used for the fit,
+                    'fitmags': the model fit mags,
+                    'fitepoch': the epoch of minimum light for the fit,
+                },
+                'fitchisq': the minimized value of the fit's chi-sq,
+                'fitredchisq':the reduced chi-sq value,
+                'fitplotfile': the output fit plot if fitplot is not None,
+                'magseries':{
+                    'times':input times in phase order of the model,
+                    'phase':the phases of the model mags,
+                    'mags':input mags/fluxes in the phase order of the model,
+                    'errs':errs in the phase order of the model,
+                    'magsarefluxes':input value of magsarefluxes kwarg
+                }
+            }
+
     '''
     stimes, smags, serrs = sigclip_magseries(times, mags, errs,
                                              sigclip=sigclip,
@@ -881,54 +1094,94 @@ def legendre_fit_magseries(times, mags, errs, period,
                            magsarefluxes=False,
                            verbose=True):
 
-    '''
-    Fit an arbitrary-order Legendre series, via least squares, to the
-    magnitude/flux time series. This is a series of the form::
+    '''Fit an arbitrary-order Legendre series, via least squares, to the
+    magnitude/flux time series.
+
+    This is a series of the form::
 
         p(x) = c_0*L_0(x) + c_1*L_1(x) + c_2*L_2(x) + ... + c_n*L_n(x)
 
-    where L_i's are Legendre polynomials (also caleld "Legendre functions of
-    the first kind") and c_i's are the coefficients being fit.
-
-    Args:
-
-    legendredeg (int): n in the above equation. (I.e., if you give n=5, you
-    will get 6 coefficients). This number should be much less than the number
-    of data points you are fitting.
-
-    sigclip (float): number of standard deviations away from the mean of the
-    magnitude time-series from which to "clip" data points.
-
-    magsarefluxes (bool): sets the ylabel and ylimits of plots for either
-    magnitudes (False) or flux units (i.e. normalized to 1, in which case
-    magsarefluxes should be set to True).
-
-    Returns:
-
-    returndict:
-    {
-        'fittype':'legendre',
-        'fitinfo':{
-            'legendredeg':legendredeg,
-            'fitmags':fitmags,
-            'fitepoch':magseriesepoch
-        },
-        'fitchisq':fitchisq,
-        'fitredchisq':fitredchisq,
-        'fitplotfile':None,
-        'magseries':{
-            'times':ptimes,
-            'phase':phase,
-            'mags':pmags,
-            'errs':perrs,
-            'magsarefluxes':magsarefluxes},
-    }
-
-    where `fitmags` is the values of the fit function interpolated onto
-    magseries' `phase`.
+    where L_i's are Legendre polynomials (also called "Legendre functions of the
+    first kind") and c_i's are the coefficients being fit.
 
     This function is mainly just a wrapper to
-    numpy.polynomial.legendre.Legendre.fit.
+    `numpy.polynomial.legendre.Legendre.fit`.
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The input mag/flux time-series to fit a Legendre series polynomial to.
+
+    period : float
+        The period to use for the Legendre fit.
+
+    legendredeg : int
+        This is `n` in the equation above, e.g. if you give `n=5`, you will
+        get 6 coefficients. This number should be much less than the number of
+        data points you are fitting.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    magsarefluxes : bool
+        If True, will treat the input values of `mags` as fluxes for purposes of
+        plotting the fit and sig-clipping.
+
+    plotfit : str or False
+        If this is a string, this function will make a plot for the fit to the
+        mag/flux time-series and writes the plot to the path specified here.
+
+    ignoreinitfail : bool
+        If this is True, ignores the initial failure to find a set of optimized
+        Fourier parameters using the global optimization function and proceeds
+        to do a least-squares fit anyway.
+
+    verbose : bool
+        If True, will indicate progress and warn of any problems.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict containing the model fit parameters, the
+        minimized chi-sq value and the reduced chi-sq value. The form of this
+        dict is mostly standardized across all functions in this module::
+
+            {
+                'fittype':'legendre',
+                'fitinfo':{
+                    'legendredeg': the Legendre polynomial degree used,
+                    'fitmags': the model fit mags,
+                    'fitepoch': the epoch of minimum light for the fit,
+                },
+                'fitchisq': the minimized value of the fit's chi-sq,
+                'fitredchisq':the reduced chi-sq value,
+                'fitplotfile': the output fit plot if fitplot is not None,
+                'magseries':{
+                    'times':input times in phase order of the model,
+                    'phase':the phases of the model mags,
+                    'mags':input mags/fluxes in the phase order of the model,
+                    'errs':errs in the phase order of the model,
+                    'magsarefluxes':input value of magsarefluxes kwarg
+                }
+            }
+
 
     '''
     stimes, smags, serrs = sigclip_magseries(times, mags, errs,
@@ -1034,49 +1287,102 @@ def traptransit_fit_magseries(times, mags, errs,
                               verbose=True):
     '''This fits a trapezoid transit model to a magnitude time series.
 
-    args:
-        transitparams are initial guesses.
+    Parameters
+    ----------
 
-        transitparams = [transitperiod (time),
-                         transitepoch (time),
-                         transitdepth (flux or mags),
-                         transitduration (phase),
-                         ingressduration (phase)]
+    times,mags,errs : np.array
+        The input mag/flux time-series to fit a trapezoid planet-transit model
+        to.
 
-        for magnitudes -> transitdepth should be < 0
-        for fluxes     -> transitdepth should be > 0
+    period : float
+        The period to use for the model fit.
 
-        if transitepoch is None, this function will do an initial spline fit to
-        find an approximate minimum of the phased light curve using the given
+    transitparams : list of floats
+        These are initial parameters for the transit model fit. A list of the
+        following form is required::
+
+            transitparams = [transitperiod (time),
+                             transitepoch (time),
+                             transitdepth (flux or mags),
+                             transitduration (phase),
+                             ingressduration (phase)]
+
+        - for magnitudes -> `transitdepth` should be < 0
+        - for fluxes     -> `transitdepth` should be > 0
+
+        If `transitepoch` is None, this function will do an initial spline fit
+        to find an approximate minimum of the phased light curve using the given
         period.
 
-        the transitdepth provided is checked against the value of
-        magsarefluxes. if magsarefluxes = True, the transitdepth is forced to
-        be > 0; if magsarefluxes = False, the transitdepth is forced to be < 0.
+        The `transitdepth` provided is checked against the value of
+        `magsarefluxes`. if `magsarefluxes = True`, the `transitdepth` is forced
+        to be > 0; if `magsarefluxes` = False, the `transitdepth` is forced to
+        be < 0.
 
-    returns:
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
 
-        returndict =  {
-            'fittype':'traptransit',
-            'fitinfo':{
-                'initialparams':transitparams,
-                'finalparams':None,
-                'finalparamerrs':None,
-                'leastsqfit':leastsqfit,
-                'fitmags':None,
-                'fitepoch':None,
-            },
-            'fitchisq':npnan,
-            'fitredchisq':npnan,
-            'fitplotfile':None,
-            'magseries':{
-                'phase':None,
-                'times':None,
-                'mags':None,
-                'errs':None,
-                'magsarefluxes':magsarefluxes,
-            },
-        }
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    magsarefluxes : bool
+        If True, will treat the input values of `mags` as fluxes for purposes of
+        plotting the fit and sig-clipping.
+
+    plotfit : str or False
+        If this is a string, this function will make a plot for the fit to the
+        mag/flux time-series and writes the plot to the path specified here.
+
+    ignoreinitfail : bool
+        If this is True, ignores the initial failure to find a set of optimized
+        Fourier parameters using the global optimization function and proceeds
+        to do a least-squares fit anyway.
+
+    verbose : bool
+        If True, will indicate progress and warn of any problems.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict containing the model fit parameters, the
+        minimized chi-sq value and the reduced chi-sq value. The form of this
+        dict is mostly standardized across all functions in this module::
+
+            {
+                'fittype':'traptransit',
+                'fitinfo':{
+                    'initialparams':the initial transit params provided,
+                    'finalparams':the final model fit transit params ,
+                    'finalparamerrs':formal errors in the params,
+                    'leastsqfit':the full tuple returned by scipy.leastsq,
+                    'fitmags': the model fit mags,
+                    'fitepoch': the epoch of minimum light for the fit,
+                    'ntransitpoints': the number of LC points in transit phase
+                },
+                'fitchisq': the minimized value of the fit's chi-sq,
+                'fitredchisq':the reduced chi-sq value,
+                'fitplotfile': the output fit plot if fitplot is not None,
+                'magseries':{
+                    'times':input times in phase order of the model,
+                    'phase':the phases of the model mags,
+                    'mags':input mags/fluxes in the phase order of the model,
+                    'errs':errs in the phase order of the model,
+                    'magsarefluxes':input value of magsarefluxes kwarg
+                }
+            }
 
     '''
 
@@ -1305,35 +1611,113 @@ def gaussianeb_fit_magseries(times, mags, errs,
                              verbose=True):
     '''This fits a double inverted gaussian EB model to a magnitude time series.
 
-    ebparams = [period (time),
-                epoch (time),
-                pdepth (mags),
-                pduration (phase),
-                psdepthratio,
-                secondaryphase]
+    Parameters
+    ----------
 
-    period is the period in days
+    times,mags,errs : np.array
+        The input mag/flux time-series to fit the EB model to.
 
-    epoch is the time of minimum in JD
+    period : float
+        The period to use for EB fit.
 
-    pdepth is the depth of the primary eclipse
-    - for magnitudes -> ebdepth should be < 0
-    - for fluxes     -> ebdepth should be > 0
+    ebparams : list of float
+        This is a list containing the eclipsing binary parameters::
 
-    pduration is the length of the primary eclipse in phase
+            ebparams = [period (time),
+                        epoch (time),
+                        pdepth (mags),
+                        pduration (phase),
+                        psdepthratio,
+                        secondaryphase]
 
-    psdepthratio is the ratio of the secondary eclipse depth to that of the
-    primary eclipse.
+        `period` is the period in days.
 
-    secondaryphase is the phase at which the minimum of the secondary eclipse is
-    located. This effectively parameterizes eccentricity.
+        `epoch` is the time of primary minimum in JD.
 
-    if epoch is None, this function will do an initial spline fit to find an
-    approximate minimum of the phased light curve using the given period.
+        `pdepth` is the depth of the primary eclipse:
 
-    the pdepth provided is checked against the value of magsarefluxes. if
-    magsarefluxes = True, the ebdepth is forced to be > 0; if magsarefluxes
-    = False, the ebdepth is forced to be < 0.
+        - for magnitudes -> `pdepth` should be < 0
+        - for fluxes     -> `pdepth` should be > 0
+
+        `pduration` is the length of the primary eclipse in phase.
+
+        `psdepthratio` is the ratio of the secondary eclipse depth to that of
+        the primary eclipse.
+
+        `secondaryphase` is the phase at which the minimum of the secondary
+        eclipse is located. This effectively parameterizes eccentricity.
+
+        If `epoch` is None, this function will do an initial spline fit to find
+        an approximate minimum of the phased light curve using the given period.
+
+        The `pdepth` provided is checked against the value of
+        `magsarefluxes`. if `magsarefluxes = True`, the `ebdepth` is forced to
+        be > 0; if `magsarefluxes = False`, the `ebdepth` is forced to be < 0.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    magsarefluxes : bool
+        If True, will treat the input values of `mags` as fluxes for purposes of
+        plotting the fit and sig-clipping.
+
+    plotfit : str or False
+        If this is a string, this function will make a plot for the fit to the
+        mag/flux time-series and writes the plot to the path specified here.
+
+    ignoreinitfail : bool
+        If this is True, ignores the initial failure to find a set of optimized
+        Fourier parameters using the global optimization function and proceeds
+        to do a least-squares fit anyway.
+
+    verbose : bool
+        If True, will indicate progress and warn of any problems.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict containing the model fit parameters, the
+        minimized chi-sq value and the reduced chi-sq value. The form of this
+        dict is mostly standardized across all functions in this module::
+
+            {
+                'fittype':'gaussianeb',
+                'fitinfo':{
+                    'initialparams':the initial EB params provided,
+                    'finalparams':the final model fit EB params,
+                    'finalparamerrs':formal errors in the params,
+                    'leastsqfit':the full tuple returned by scipy.leastsq,
+                    'fitmags': the model fit mags,
+                    'fitepoch': the epoch of minimum light for the fit,
+                },
+                'fitchisq': the minimized value of the fit's chi-sq,
+                'fitredchisq':the reduced chi-sq value,
+                'fitplotfile': the output fit plot if fitplot is not None,
+                'magseries':{
+                    'times':input times in phase order of the model,
+                    'phase':the phases of the model mags,
+                    'mags':input mags/fluxes in the phase order of the model,
+                    'errs':errs in the phase order of the model,
+                    'magsarefluxes':input value of magsarefluxes kwarg
+                }
+            }
+
 
     '''
 
@@ -1546,9 +1930,15 @@ def gaussianeb_fit_magseries(times, mags, errs,
 ###########################################################
 
 def _get_value(quantitystr, fitparams, fixedparams):
-    """when you want to get the value of some parameter, but you're not sure if
-    it's being fit or if it is fixed. then:
-    period_value = _get_value('period', fitparams, fixedparams)"""
+    """This decides if a value is to be fit for or is fixed in a model fit.
+
+    When you want to get the value of some parameter, but you're not sure if
+    it's being fit or if it is fixed. then, e.g. for `period`::
+
+        period_value = _get_value('period', fitparams, fixedparams)
+
+    """
+
     # for Mandel-Agol fitting, sometimes we want to fix some parameters,
     # and fit others. this function allows that flexibility.
     fitparamskeys, fixedparamskeys = fitparams.keys(), fixedparams.keys()
@@ -1561,12 +1951,59 @@ def _get_value(quantitystr, fitparams, fixedparams):
 
 def _transit_model(times, t0, per, rp, a, inc, ecc, w, u, limb_dark,
                    exp_time_minutes=2, supersample_factor=7):
-    '''
-    Given parameters, return tuple of batman TransitParams and batman
-    TransitModel objects. Lightcurves can be quickly computed from these.
+    '''This returns a BATMAN planetary transit model.
 
-    supersample_factor: the number of supersampled time data pints to average
-    the lightcurve model over.
+    Parameters
+    ----------
+
+    times : np.array
+        The times at which the model will be evaluated.
+
+    t0 : float
+        The time of periastron for the transit.
+
+    per : float
+        The orbital period of the planet.
+
+    rp : float
+        The stellar radius of the planet's star (in Rsun).
+
+    a : float
+        The semi-major axis of the planet's orbit (in Rsun).
+
+    inc : float
+        The orbital inclination (in degrees).
+
+    ecc : float
+        The eccentricity of the orbit.
+
+    w : float
+        The longitude of periastron (in degrees).
+
+    u : list of floats
+        The limb darkening coefficients specific to the limb darkening model
+        used.
+
+    limb_dark : {"uniform", "linear", "quadratic", "square-root", "logarithmic", "exponential", "power2", "custom"}
+        The type of limb darkening model to use. See the full list here:
+
+        https://www.cfa.harvard.edu/~lkreidberg/batman/tutorial.html#limb-darkening-options
+
+    exp_time_minutes : float
+        The amount of time to 'smear' the transit LC points over to simulate a
+        long exposure time.
+
+    supersample_factor: int
+        The number of supersampled time data points to average the lightcurve
+        model over.
+
+    Returns
+    -------
+
+    (params, batman_model) : tuple
+        The returned tuple contains the params list and the generated
+        `batman.TransitModel` object.
+
     '''
     params = batman.TransitParams()  # object to store transit parameters
     params.t0 = t0                   # time of periastron
@@ -1574,10 +2011,10 @@ def _transit_model(times, t0, per, rp, a, inc, ecc, w, u, limb_dark,
     params.rp = rp                   # planet radius (in stellar radii)
     params.a = a                     # semi-major axis (in stellar radii)
     params.inc = inc                 # orbital inclination (in degrees)
-    params.ecc = ecc                 # longitude of periastron (in degrees)
-    params.w = w                     # linear limb darkening model.
+    params.ecc = ecc                 # the eccentricity of the orbit
+    params.w = w                     # longitude of periastron (in degrees)
     params.u = u                     # limb darkening coefficient list
-    params.limb_dark = limb_dark
+    params.limb_dark = limb_dark     # limb darkening model to use
 
     t = times
     m = batman.TransitModel(params, t, exp_time=exp_time_minutes/60./24.,
@@ -1744,53 +2181,69 @@ def log_posterior_transit_plus_line(theta, params, model, t, flux, err_flux,
 ## MANDEL & AGOL TRANSIT MODEL FIT TO MAG SERIES ##
 ###################################################
 
-def mandelagol_fit_magseries(times, mags, errs,
-                             fitparams,
-                             priorbounds,
-                             fixedparams,
-                             trueparams=None,
-                             sigclip=10.0,
-                             burninpercent=0.3,
-                             plotfit=False,
-                             plotcorner=False,
-                             samplesavpath=False,
-                             magsarefluxes=True,
-                             verbose=True,
-                             nworkers=4,
-                             n_walkers=50,
-                             n_mcmc_steps=400,
-                             eps=1e-4,
-                             skipsampling=False,
-                             overwriteexistingsamples=False,
-                             mcmcprogressbar=False):
-    '''
-    This fits a Mandel & Agol (2002) transit model to a magnitude time series.
-    You can fit and fix whatever parameters you want.
+def mandelagol_fit_magseries(
+        times, mags, errs,
+        fitparams,
+        priorbounds,
+        fixedparams,
+        trueparams=None,
+        burninpercent=0.3,
+        plotcorner=False,
+        samplesavpath=False,
+        n_walkers=50,
+        n_mcmc_steps=400,
+        eps=1e-4,
+        skipsampling=False,
+        overwriteexistingsamples=False,
+        mcmcprogressbar=False,
+        plotfit=False,
+        magsarefluxes=False,
+        sigclip=10.0,
+        verbose=True,
+        nworkers=4
+):
+    '''This fits a Mandel & Agol (2002) planetary transit model to a flux time
+    series. You can fit and fix whatever parameters you want.
 
-    It relies on Kreidberg (2015)'s BATMAN implementation for the transit
-    model, emcee to sample the posterior (Foreman-Mackey et al 2013), corner to
-    plot it, and h5py to save the samples. See e.g., Claret's work for good
-    guesses of star-appropriate limb-darkening parameters.
+    It relies on Kreidberg (2015)'s BATMAN implementation for the transit model,
+    emcee to sample the posterior (Foreman-Mackey et al 2013), `corner` to plot
+    it, and `h5py` to save the samples. See e.g., Claret's work for good guesses
+    of star-appropriate limb-darkening parameters.
 
-    args:
-        fitparams (dict): initial parameter guesses for MCMC, found e.g., by
+    NOTE: this only works for flux time-series at the moment.
+
+    NOTE: Between the `fitparams`, `priorbounds`, and `fixedparams` dicts, you
+    must specify all of the planetary transit parameters required by BATMAN:
+    `['t0', 'rp', 'sma', 'incl', 'u', 'rp', 'ecc', 'omega', 'period']`, or the
+    BATMAN model will fail to initialize.
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The input flux time-series to fit a Fourier cosine series to.
+
+    fitparams : dict
+        This is the initial parameter guesses for MCMC, found e.g., by
         BLS. The key string format must not be changed, but any parameter can be
         either "fit" or "fixed". If it is "fit", it must have a corresponding
-        prior. For example:
+        prior. For example::
 
             fitparams = {'t0':1325.9, 'rp':np.sqrt(fitd['transitdepth']),
-                         'sma':6.17, 'incl':85, 'u':[0.3, 0.2] }
+                         'sma':6.17, 'incl':85, 'u':[0.3, 0.2]}
 
-        where u is a list of the limb darkening parameters, Linear first, then
+        where 'u' is a list of the limb darkening parameters, Linear first, then
         quadratic. Quadratic limb darkening is the only form implemented.
 
-        priorbounds (dict): lower & upper bounds on uniform prior, e.g.,
+    priorbounds : dict
+        This sets the lower & upper bounds on uniform prior, e.g.::
 
             priorbounds = {'rp':(0.135, 0.145), 'u_linear':(0.3-1, 0.3+1),
-                    'u_quad':(0.2-1, 0.2+1), 't0':(np.min(time),
-                    np.max(time)), 'sma':(6,6.4), 'incl':(80,90) }
+                           'u_quad':(0.2-1, 0.2+1), 't0':(np.min(time),
+                           np.max(time)), 'sma':(6,6.4), 'incl':(80,90)}
 
-        fixedparams (dict): fixed parameters, e.g.,
+    fixedparams : dict
+        This sets which parameters are fixed, and their values. For example::
 
             fixedparams = {'ecc':0.,
                            'omega':90.,
@@ -1800,61 +2253,102 @@ def mandelagol_fit_magseries(times, mags, errs,
         `limb_dark` must be "quadratic".  It's "fixed", because once you
         choose your limb-darkening model, it's fixed.
 
-        Between these dicts, you must specify
-        ['t0','rp','sma','incl','u','rp','ecc', 'omega','period'], or the
-        BATMAN model will fail to initialize.
+    trueparams : list of floats
+        The true parameter values you're fitting for, if they're known (e.g., a
+        known planet, or fake data). Only for plotting purposes.
 
-    kwargs:
-        trueparams (list): true parameter values you're fitting for, if they're
-        known (e.g., a known planet, or fake data). Only for plotting purposes.
+    burninpercent : float
+        The percent of MCMC samples to discard as burn-in.
 
-        burninpercent (float): percent of samples to discard as burn-in.
+    plotcorner : str or False
+        If this is a str, points to the path of output corner plot that will be
+        generated for this MCMC run.
 
-        skipsampling (bool): if you've already collected samples, and you do
-        not want any more sampling (e.g., just make the plots), set this to be
-        True.
+    samplesavpath : str
+        This must be provided so `emcee` can save its MCMC samples to disk as
+        HDF5 files. This will set the path of the output HDF5file written.
 
-        overwriteexistingsamples (bool): if you've collected samples, but you
-        want to overwrite them, set this to True.  Usually, it should be False,
-        which appends samples to samplesavpath h5py file.
+    n_walkers : int
+        The number of MCMC walkers to use.
 
-        n_walkers (int): number of walkers
+    n_mcmc_steps : int
+        The number of MCMC steps to take.
 
-        n_mcmc_steps (int): number of MCMC steps
-
-        plotcorner (bool/str): path to a saved corner plot of the parameters
-        you fit.
-
-        samplesavpath (str): MANDATORY path to hdf5 file with MCMC samples,
-        e.g., '/foo/samples.h5'
-
-        magsarefluxes (bool): currently only implemented if True
-
-        eps (float): radius of n_walkers-dimensional Gaussian ball used to
+    eps : float
+        The radius of the `n_walkers-dimensional` Gaussian ball used to
         initialize the MCMC.
 
-        mcmcprogressbar (bool): whether to show the emcee progreess bar.
+    skipsampling : bool
+        If you've already collected MCMC samples, and you do not want any more
+        sampling (e.g., just make the plots), set this to be True.
 
-    returns:
+    overwriteexistingsamples : bool
+        If you've collected samples, but you want to overwrite them, set this to
+        True. Usually, it should be False, which appends samples to
+        `samplesavpath` HDF5 file.
 
-        returndict =  {
-            'fittype':'mandelagol',
-            'fitinfo':{
-                'initialparams':fitparams,
-                'fixedparams':fixedparams,
-                'finalparams':finalparams,
-                'finalparamerrs':stderrs,
-                'fitmags':fitmags,
-                'fitepoch':fepoch,
-            },
-            'fitplotfile':None,
-            'magseries':{
-                'times':stimes,
-                'mags':smags,
-                'errs':serrs,
-                'magsarefluxes':magsarefluxes,
-            },
-        }
+    mcmcprogressbar : bool
+        If True, will show a progress bar for the MCMC process.
+
+    plotfit: str or bool
+        If a str, indicates the path of the output fit plot file. If False, no
+        fit plot will be made.
+
+    magsarefluxes : bool
+        This indicates if the input measurements in `mags` are actually fluxes.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    verbose : bool
+        If True, will indicate MCMC progress.
+
+    nworkers : int
+        The number of parallel workers to launch for MCMC.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict containing the model fit parameters and
+        other fit information. The form of this dict is mostly standardized
+        across all functions in this module::
+
+            {
+                'fittype':'mandelagol',
+                'fitinfo':{
+                    'initialparams':the initial transit params provided,
+                    'fixedparams':the fixed transit params provided,
+                    'finalparams':the final model fit transit params,
+                    'finalparamerrs':formal errors in the params,
+                    'fitmags': the model fit mags,
+                    'fitepoch': the epoch of minimum light for the fit,
+                },
+                'fitplotfile': the output fit plot if fitplot is not None,
+                'magseries':{
+                    'times':input times in phase order of the model,
+                    'phase':the phases of the model mags,
+                    'mags':input mags/fluxes in the phase order of the model,
+                    'errs':errs in the phase order of the model,
+                    'magsarefluxes':input value of magsarefluxes kwarg
+                }
+            }
+
     '''
 
     from multiprocessing import Pool
@@ -1940,14 +2434,14 @@ def mandelagol_fit_magseries(times, mags, errs,
         if verbose and isfirstrun:
             LOGINFO(
                 'start {:s} MCMC with {:d} dims, {:d} steps, {:d} walkers,'.
-                format(fittype, n_dim, n_mcmc_steps, n_walkers)
-                +' {:d} threads'.format(nworkers)
+                format(fittype, n_dim, n_mcmc_steps, n_walkers) +
+                ' {:d} threads'.format(nworkers)
             )
         elif verbose and not isfirstrun:
             LOGINFO(
                 'continue {:s} with {:d} dims, {:d} steps, {:d} walkers, '.
-                format(fittype, n_dim, n_mcmc_steps, n_walkers)
-                +'{:d} threads'.format(nworkers)
+                format(fittype, n_dim, n_mcmc_steps, n_walkers) +
+                '{:d} threads'.format(nworkers)
             )
 
         import sys
@@ -1956,7 +2450,8 @@ def mandelagol_fit_magseries(times, mags, errs,
             with Pool(nworkers) as pool:
                 sampler = emcee.EnsembleSampler(
                     n_walkers, n_dim, log_posterior_transit,
-                    args=(init_params, init_m, stimes, smags, serrs, priorbounds),
+                    args=(init_params, init_m, stimes,
+                          smags, serrs, priorbounds),
                     pool=pool,
                     backend=backend
                 )
@@ -2013,7 +2508,7 @@ def mandelagol_fit_magseries(times, mags, errs,
     limb_dark = _get_value('limb_dark', medianparams, fixedparams)
     try:
         u = fixedparams['u']
-    except:
+    except Exception as e:
         u = [medianparams['u_linear'], medianparams['u_quad']]
 
     fit_params, fit_m = _transit_model(stimes, t0, per, rp, sma, incl, ecc,
@@ -2089,137 +2584,185 @@ def mandelagol_fit_magseries(times, mags, errs,
 
 
 def mandelagol_and_line_fit_magseries(
-    times, mags, errs,
-    fitparams,
-    priorbounds,
-    fixedparams,
-    trueparams=None,
-    sigclip=10.0,
-    burninpercent=0.3,
-    plotfit=False,
-    plotcorner=False,
-    samplesavpath=False,
-    magsarefluxes=True,
-    verbose=True,
-    nworkers=4,
-    n_walkers=50,
-    n_mcmc_steps=400,
-    eps=1e-4,
-    skipsampling=False,
-    overwriteexistingsamples=False,
-    mcmcprogressbar=False,
-    timeoffset=0,
-    scatterxdata=None,
-    scatteryaxes=None):
-    '''
-    The model fit by this function is: a Mandel & Agol (2002) transit, PLUS a
-    line.  You can fit and fix whatever parameters you want.
+        times, mags, errs,
+        fitparams,
+        priorbounds,
+        fixedparams,
+        trueparams=None,
+        burninpercent=0.3,
+        plotcorner=False,
+        timeoffset=0,
+        samplesavpath=False,
+        n_walkers=50,
+        n_mcmc_steps=400,
+        eps=1e-4,
+        skipsampling=False,
+        overwriteexistingsamples=False,
+        mcmcprogressbar=False,
+        plotfit=False,
+        scatterxdata=None,
+        scatteryaxes=None,
+        magsarefluxes=True,
+        sigclip=10.0,
+        verbose=True,
+        nworkers=4
+):
+    '''The model fit by this function is: a Mandel & Agol (2002) transit, PLUS a
+    line. You can fit and fix whatever parameters you want.
 
     A typical use case: you want to measure transit times of individual SNR >~
     50 transits. You fix all the transit parameters except for the mid-time,
     and also fit for a line locally.
 
-    args:
-        fitparams (dict): initial parameter guesses for MCMC, found e.g., by
-        BLS. The key string format must not be changed. Any parameter can be
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The input flux time-series to fit a Fourier cosine series to.
+
+    fitparams : dict
+        This is the initial parameter guesses for MCMC, found e.g., by
+        BLS. The key string format must not be changed, but any parameter can be
         either "fit" or "fixed". If it is "fit", it must have a corresponding
-        prior. For example:
+        prior. For example::
 
             fitparams = {'t0':1325.9,
                          'poly_order0':1,
                          'poly_order1':0.}
 
-        where u is a list of the limb darkening parameters, linear first, then
-        quadratic. Quadratic limb darkening is the only form implemented.
-        "poly_order0" corresponds to the intercept of the line, "poly_order1"
-        is the slope.
+        where `t0` is the time of transit-center for a reference transit.
+        `poly_order0` corresponds to the intercept of the line, `poly_order1` is
+        the slope.
 
-        priorbounds (dict): lower & upper bounds on uniform prior, e.g.,
+    priorbounds : dict
+        This sets the lower & upper bounds on uniform prior, e.g.::
 
             priorbounds = {'t0':(np.min(time), np.max(time)),
                             'poly_order0':(0.5,1.5),
                             'poly_order1':(-0.5,0.5) }
 
-        fixedparams (dict): fixed parameters, e.g.,
+    fixedparams : dict
+        This sets which parameters are fixed, and their values. For example::
 
             fixedparams = {'ecc':0.,
                            'omega':90.,
                            'limb_dark':'quadratic',
                            'period':fitd['period'],
                            'rp':np.sqrt(fitd['transitdepth']),
-                           'sma':6.17, 'incl':85, 'u':[0.3, 0.2]
-                           }
+                           'sma':6.17, 'incl':85, 'u':[0.3, 0.2]}
 
         `limb_dark` must be "quadratic".  It's "fixed", because once you
         choose your limb-darkening model, it's fixed.
 
-        Between these dicts, you must specify
-        ['t0','rp','sma','incl','u','rp','ecc', 'omega','period',
-        'poly_order0', 'poly_order1'], or the model will fail to initialize.
+    trueparams : list of floats
+        The true parameter values you're fitting for, if they're known (e.g., a
+        known planet, or fake data). Only for plotting purposes.
 
+    burninpercent : float
+        The percent of MCMC samples to discard as burn-in.
 
-    kwargs:
-        trueparams (list): true parameter values you're fitting for, if they're
-        known (e.g., a known planet, or fake data). Only for plotting purposes.
+    plotcorner : str or False
+        If this is a str, points to the path of output corner plot that will be
+        generated for this MCMC run.
 
-        burninpercent (float): percent of samples to discard as burn-in.
+    timeoffset : float
+        If input times are offset by some constant, and you want saved pickles
+        to fix that.
 
-        skipsampling (bool): if you've already collected samples, and you do
-        not want any more sampling (e.g., just make the plots), set this to be
-        True.
+    samplesavpath : str
+        This must be provided so `emcee` can save its MCMC samples to disk as
+        HDF5 files. This will set the path of the output HDF5file written.
 
-        overwriteexistingsamples (bool): if you've collected samples, but you
-        want to overwrite them, set this to True.  Usually, it should be False,
-        which appends samples to samplesavpath h5py file.
+    n_walkers : int
+        The number of MCMC walkers to use.
 
-        n_walkers (int): number of walkers
+    n_mcmc_steps : int
+        The number of MCMC steps to take.
 
-        n_mcmc_steps (int): number of MCMC steps
-
-        plotcorner (bool/str): path to a saved corner plot of the parameters
-        you fit.
-
-        samplesavpath (str): MANDATORY path to hdf5 file with MCMC samples,
-        e.g., '/foo/samples.h5'
-
-        magsarefluxes (bool): currently only implemented if True
-
-        eps (float): radius of n_walkers-dimensional Gaussian ball used to
+    eps : float
+        The radius of the `n_walkers-dimensional` Gaussian ball used to
         initialize the MCMC.
 
-        mcmcprogressbar (bool): whether to show the emcee progreess bar.
+    skipsampling : bool
+        If you've already collected MCMC samples, and you do not want any more
+        sampling (e.g., just make the plots), set this to be True.
 
-        timeoffset (float): if input times are offset by some constant, and you
-        want saved pickles to fix that.
+    overwriteexistingsamples : bool
+        If you've collected samples, but you want to overwrite them, set this to
+        True. Usually, it should be False, which appends samples to
+        `samplesavpath` HDF5 file.
 
-        scatterxdata (np.ndarray or None): to overplot x,y scatter points on
-        the output model/data lightcurve (e.g., to highligth bad data, or to
-        indicate an ephemeris), this can take a np.ndarray with the same units
-        as times.
+    mcmcprogressbar : bool
+        If True, will show a progress bar for the MCMC process.
 
-        scatteryaxes (np.ndarray or None): the y-values for scatterxdata, in
-        units of fraction of an axis.
+    plotfit: str or bool
+        If a str, indicates the path of the output fit plot file. If False, no
+        fit plot will be made.
 
-    returns:
+    scatterxdata : np.array or None
+        Use this to overplot x,y scatter points on the output model/data
+        lightcurve (e.g., to highlight bad data, or to indicate an ephemeris),
+        this can take a `np.ndarray` with the same units as `times`.
 
-        returndict =  {
-            'fittype':'mandelagol_and_line',
-            'fitinfo':{
-                'initialparams':fitparams,
-                'fixedparams':fixedparams,
-                'finalparams':finalparams,
-                'finalparamerrs':stderrs,
-                'fitmags':fitmags,
-                'fitepoch':fepoch,
-            },
-            'fitplotfile':None,
-            'magseries':{
-                'times':stimes,
-                'mags':smags,
-                'errs':serrs,
-                'magsarefluxes':magsarefluxes,
-            },
-        }
+    scatteryaxes : np.array or None
+        Use this to provide the y-values for scatterxdata, in units of fraction
+        of an axis.
+
+    magsarefluxes : bool
+        This indicates if the input measurements in `mags` are actually fluxes.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    verbose : bool
+        If True, will indicate MCMC progress.
+
+    nworkers : int
+        The number of parallel workers to launch for MCMC.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict containing the model fit parameters and
+        other fit information. The form of this dict is mostly standardized
+        across all functions in this module::
+
+            {
+                'fittype':'mandelagol_and_line',
+                'fitinfo':{
+                    'initialparams':the initial transit params provided,
+                    'fixedparams':the fixed transit params provided,
+                    'finalparams':the final model fit transit params,
+                    'finalparamerrs':formal errors in the params,
+                    'fitmags': the model fit mags,
+                    'fitepoch': the epoch of minimum light for the fit,
+                },
+                'fitplotfile': the output fit plot if fitplot is not None,
+                'magseries':{
+                    'times':input times in phase order of the model,
+                    'phase':the phases of the model mags,
+                    'mags':input mags/fluxes in the phase order of the model,
+                    'errs':errs in the phase order of the model,
+                    'magsarefluxes':input value of magsarefluxes kwarg
+                }
+            }
+
     '''
 
     from multiprocessing import Pool
@@ -2301,11 +2844,12 @@ def mandelagol_and_line_fit_magseries(
         # if this is the first run, then start from a gaussian ball, centered
         # on the maximum likelihood solution.  otherwise, resume from the
         # previous samples.
-        from scipy.optimize import minimize
-        nll = lambda *args: -_log_likelihood_transit_plus_line(*args)
+        def nll(*args):
+            return -_log_likelihood_transit_plus_line(*args)
+
         soln = spminimize(
             nll, theta, method='BFGS',
-            args= (init_params, init_m, stimes, smags, serrs, priorbounds)
+            args=(init_params, init_m, stimes, smags, serrs, priorbounds)
         )
         theta_ml = soln.x
         ml_poly_order0 = theta_ml[0]
@@ -2322,7 +2866,7 @@ def mandelagol_and_line_fit_magseries(
             ml_poly_order0 + ml_poly_order1*stimes
         )
 
-        initial_position_vec = [theta_ml+ eps*np.random.randn(n_dim)
+        initial_position_vec = [theta_ml + eps*np.random.randn(n_dim)
                                 for i in range(n_walkers)]
         starting_positions = initial_position_vec
         isfirstrun = True
@@ -2334,14 +2878,14 @@ def mandelagol_and_line_fit_magseries(
         if verbose and isfirstrun:
             LOGINFO(
                 'start {:s} MCMC with {:d} dims, {:d} steps, {:d} walkers,'.
-                format(fittype, n_dim, n_mcmc_steps, n_walkers)
-                +' {:d} threads'.format(nworkers)
+                format(fittype, n_dim, n_mcmc_steps, n_walkers) +
+                ' {:d} threads'.format(nworkers)
             )
         elif verbose and not isfirstrun:
             LOGINFO(
                 'continue {:s} with {:d} dims, {:d} steps, {:d} walkers, '.
-                format(fittype, n_dim, n_mcmc_steps, n_walkers)
-                +'{:d} threads'.format(nworkers)
+                format(fittype, n_dim, n_mcmc_steps, n_walkers) +
+                '{:d} threads'.format(nworkers)
             )
 
         with Pool(nworkers) as pool:
@@ -2393,7 +2937,7 @@ def mandelagol_and_line_fit_magseries(
     limb_dark = _get_value('limb_dark', medianparams, fixedparams)
     try:
         u = fixedparams['u']
-    except:
+    except Exception as e:
         u = [medianparams['u_linear'], medianparams['u_quad']]
 
     poly_order0 = _get_value('poly_order0', medianparams, fixedparams)
@@ -2447,8 +2991,8 @@ def mandelagol_and_line_fit_magseries(
 
         plt.close('all')
         f, (a0, a1) = plt.subplots(nrows=2, ncols=1, sharex=True,
-                                   figsize=(8,5), gridspec_kw=
-                                   {'height_ratios':[3, 1]})
+                                   figsize=(8,5),
+                                   gridspec_kw={'height_ratios':[3, 1]})
 
         a0.scatter(stimes, smags, c='k', alpha=0.9, label='data', zorder=1,
                    s=10, rasterized=True, linewidths=0)
