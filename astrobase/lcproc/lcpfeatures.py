@@ -100,9 +100,9 @@ def get_periodicfeatures(
         outdir,
         fourierorder=5,
         # these are depth, duration, ingress duration
-        transitparams=[-0.01,0.1,0.1],
+        transitparams=(-0.01,0.1,0.1),
         # these are depth, duration, depth ratio, secphase
-        ebparams=[-0.2,0.3,0.7,0.5],
+        ebparams=(-0.2,0.3,0.7,0.5),
         pdiff_threshold=1.0e-4,
         sidereal_threshold=1.0e-4,
         sampling_peak_multiplier=5.0,
@@ -120,73 +120,54 @@ def get_periodicfeatures(
 ):
     '''This gets all periodic features for the object.
 
-    The following periodic features are obtained:
-
-    - For all best periods from all periodogram methods in `pfpickle`,
-      calculates the number of these with peaks that are at least
-      `sampling_peak_multiplier` x time-sampling periodogram peak at the same
-      period. This indicates how likely the `pfpickle` periodogram peaks are to
-      being real as opposed to just being caused by time-sampling
-      window-function of the observations.
-
-    - For all best periods from all periodogram methods in `pfpickle`,
-      calculates the number of best periods which are consistent with a sidereal
-      day (1.0027379 and 0.9972696), likely indicating that they're not real.
-
-    - For all best periods from all periodogram methods in `pfpickle`,
-      calculates the number of cross-wise period differences for all of these
-      that fall below the `pdiff_threshold` value. If this is high, most of the
-      period-finders in `pfpickle` agree on their best period results, so it's
-      likely the periods found are real.
-
-    - The `R_ij` amplitude and `phi_ij` phase ratios for Fourier fit
-      amplitudes and phases.
-
-    - The reduced chi-sq values of fits to the phased light curves for each best
-      period from each periodogram using Fourier, EB, and planet transit fits.
-
-    - The reduced chi-sq values of fits to the phased light curves for each best
-      period x 2 from each periodogram using Fourier, EB, and planet transit
-      fits (to check specifically for EBs)
-
-    - The ratio of the MAD of the residuals after both kinds of fits above to
-      the unphased light curve MAD (to indicate if one of these models is a
-      better fit than one at all).
-
-    - For each phased light curve for each best period from each periodogram,
-      calculates the point-to-point scatter using the phased LC for the best
-      period itself, as well as that for best period x 2.
-
-    - For each phased light curve for each best period from each periodogram,
-      calculates the 1/eta variability index, the same for best period x 2, and
-      finally the ratio between the phased LC 1/eta variability index and
-      unphased LC 1/eta variability index.
-
-
     Parameters
     ----------
 
     pfpickle : str
+        The period-finding result pickle containing period-finder results to use
+        for the calculation of LC fit, periodogram, and phased LC features.
 
     lcbasedir : str
+        The base directory where the light curve for the current object is
+        located.
 
     outdir : str
+        The output directory where the results will be written.
 
     fourierorder : int
+        The Fourier order to use to generate sinusoidal function and fit that to
+        the phased light curve.
 
-    transitparams : list of float
+    transitparams : list of floats
+        The transit depth, duration, and ingress duration to use to generate a
+        trapezoid planet transit model fit to the phased light curve. The period
+        used is the one provided in `period`, while the epoch is automatically
+        obtained from a spline fit to the phased light curve.
 
-    ebparams : list of float
+    ebparams : list of floats
+        The primary eclipse depth, eclipse duration, the primary-secondary depth
+        ratio, and the phase of the secondary eclipse to use to generate an
+        eclipsing binary model fit to the phased light curve. The period used is
+        the one provided in `period`, while the epoch is automatically obtained
+        from a spline fit to the phased light curve.
 
-    pdiff_threshold : float or None
+    pdiff_threshold : float
+        This is the max difference between periods to consider them the same.
 
-    sidereal_threshold : float or None
+    sidereal_threshold : float
+        This is the max difference between any of the 'best' periods and the
+        sidereal day periods to consider them the same.
 
-    sampling_peak_multiplier : float or None
+    sampling_peak_multiplier : float
+        This is the minimum multiplicative factor of a 'best' period's
+        normalized periodogram peak over the sampling periodogram peak at the
+        same period required to accept the 'best' period as possibly real.
 
-    sampling_startp : float or None
-
-    sampling_endp : float or None
+    sampling_startp, sampling_endp : float
+        If the `pgramlist` doesn't have a time-sampling Lomb-Scargle
+        periodogram, it will be obtained automatically. Use these kwargs to
+        control the minimum and maximum period interval to be searched when
+        generating this periodogram.
 
     starfeatures : str or None
         If not None, this should be the filename of the
@@ -567,7 +548,7 @@ def get_periodicfeatures(
 
 
 
-def periodicfeatures_worker(task):
+def _periodicfeatures_worker(task):
     '''
     This is a parallel worker for the drivers below.
 
@@ -595,9 +576,9 @@ def serial_periodicfeatures(pfpkl_list,
                             starfeaturesdir=None,
                             fourierorder=5,
                             # these are depth, duration, ingress duration
-                            transitparams=[-0.01,0.1,0.1],
+                            transitparams=(-0.01,0.1,0.1),
                             # these are depth, duration, depth ratio, secphase
-                            ebparams=[-0.2,0.3,0.7,0.5],
+                            ebparams=(-0.2,0.3,0.7,0.5),
                             pdiff_threshold=1.0e-4,
                             sidereal_threshold=1.0e-4,
                             sampling_peak_multiplier=5.0,
@@ -611,10 +592,110 @@ def serial_periodicfeatures(pfpkl_list,
                             lcformatdir=None,
                             sigclip=10.0,
                             verbose=False,
-                            maxobjects=None,
-                            nworkers=NCPUS):
+                            maxobjects=None):
     '''This drives the periodicfeatures collection for a list of periodfinding
     pickles.
+
+    Parameters
+    ----------
+
+    pfpkl_list : list of str
+        The list of period-finding pickles to use.
+
+    lcbasedir : str
+        The base directory where the associated light curves are located.
+
+    outdir : str
+        The directory where the results will be written.
+
+    starfeaturesdir : str or None
+        The directory containing the `starfeatures-<objectid>.pkl` files for
+        each object to use calculate neighbor proximity light curve features.
+
+    fourierorder : int
+        The Fourier order to use to generate sinusoidal function and fit that to
+        the phased light curve.
+
+    transitparams : list of floats
+        The transit depth, duration, and ingress duration to use to generate a
+        trapezoid planet transit model fit to the phased light curve. The period
+        used is the one provided in `period`, while the epoch is automatically
+        obtained from a spline fit to the phased light curve.
+
+    ebparams : list of floats
+        The primary eclipse depth, eclipse duration, the primary-secondary depth
+        ratio, and the phase of the secondary eclipse to use to generate an
+        eclipsing binary model fit to the phased light curve. The period used is
+        the one provided in `period`, while the epoch is automatically obtained
+        from a spline fit to the phased light curve.
+
+    pdiff_threshold : float
+        This is the max difference between periods to consider them the same.
+
+    sidereal_threshold : float
+        This is the max difference between any of the 'best' periods and the
+        sidereal day periods to consider them the same.
+
+    sampling_peak_multiplier : float
+        This is the minimum multiplicative factor of a 'best' period's
+        normalized periodogram peak over the sampling periodogram peak at the
+        same period required to accept the 'best' period as possibly real.
+
+    sampling_startp, sampling_endp : float
+        If the `pgramlist` doesn't have a time-sampling Lomb-Scargle
+        periodogram, it will be obtained automatically. Use these kwargs to
+        control the minimum and maximum period interval to be searched when
+        generating this periodogram.
+
+    timecols : list of str or None
+        The timecol keys to use from the lcdict in calculating the features.
+
+    magcols : list of str or None
+        The magcol keys to use from the lcdict in calculating the features.
+
+    errcols : list of str or None
+        The errcol keys to use from the lcdict in calculating the features.
+
+    lcformat : str
+        This is the `formatkey` associated with your light curve format, which
+        you previously passed in to the `lcproc.register_lcformat`
+        function. This will be used to look up how to find and read the light
+        curves specified in `basedir` or `use_list_of_filenames`.
+
+    lcformatdir : str or None
+        If this is provided, gives the path to a directory when you've stored
+        your lcformat description JSONs, other than the usual directories lcproc
+        knows to search for them in. Use this along with `lcformat` to specify
+        an LC format JSON file that's not currently registered with lcproc.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    verbose : bool
+        If True, will indicate progress while working.
+
+    maxobjects : int
+        The total number of objects to process from `pfpkl_list`.
+
+    Returns
+    -------
+
+    Nothing.
 
     '''
 
@@ -692,7 +773,7 @@ def serial_periodicfeatures(pfpkl_list,
     LOGINFO('processing periodfinding pickles...')
 
     for task in tqdm(tasks):
-        periodicfeatures_worker(task)
+        _periodicfeatures_worker(task)
 
 
 
@@ -702,9 +783,9 @@ def parallel_periodicfeatures(pfpkl_list,
                               starfeaturesdir=None,
                               fourierorder=5,
                               # these are depth, duration, ingress duration
-                              transitparams=[-0.01,0.1,0.1],
+                              transitparams=(-0.01,0.1,0.1),
                               # these are depth, duration, depth ratio, secphase
-                              ebparams=[-0.2,0.3,0.7,0.5],
+                              ebparams=(-0.2,0.3,0.7,0.5),
                               pdiff_threshold=1.0e-4,
                               sidereal_threshold=1.0e-4,
                               sampling_peak_multiplier=5.0,
@@ -719,8 +800,115 @@ def parallel_periodicfeatures(pfpkl_list,
                               verbose=False,
                               maxobjects=None,
                               nworkers=NCPUS):
-    '''
-    This runs periodicfeatures in parallel for all periodfinding pickles.
+    '''This runs periodic feature generation in parallel for all periodfinding
+    pickles in the input list.
+
+    Parameters
+    ----------
+
+    pfpkl_list : list of str
+        The list of period-finding pickles to use.
+
+    lcbasedir : str
+        The base directory where the associated light curves are located.
+
+    outdir : str
+        The directory where the results will be written.
+
+    starfeaturesdir : str or None
+        The directory containing the `starfeatures-<objectid>.pkl` files for
+        each object to use calculate neighbor proximity light curve features.
+
+    fourierorder : int
+        The Fourier order to use to generate sinusoidal function and fit that to
+        the phased light curve.
+
+    transitparams : list of floats
+        The transit depth, duration, and ingress duration to use to generate a
+        trapezoid planet transit model fit to the phased light curve. The period
+        used is the one provided in `period`, while the epoch is automatically
+        obtained from a spline fit to the phased light curve.
+
+    ebparams : list of floats
+        The primary eclipse depth, eclipse duration, the primary-secondary depth
+        ratio, and the phase of the secondary eclipse to use to generate an
+        eclipsing binary model fit to the phased light curve. The period used is
+        the one provided in `period`, while the epoch is automatically obtained
+        from a spline fit to the phased light curve.
+
+    pdiff_threshold : float
+        This is the max difference between periods to consider them the same.
+
+    sidereal_threshold : float
+        This is the max difference between any of the 'best' periods and the
+        sidereal day periods to consider them the same.
+
+    sampling_peak_multiplier : float
+        This is the minimum multiplicative factor of a 'best' period's
+        normalized periodogram peak over the sampling periodogram peak at the
+        same period required to accept the 'best' period as possibly real.
+
+    sampling_startp, sampling_endp : float
+        If the `pgramlist` doesn't have a time-sampling Lomb-Scargle
+        periodogram, it will be obtained automatically. Use these kwargs to
+        control the minimum and maximum period interval to be searched when
+        generating this periodogram.
+
+    timecols : list of str or None
+        The timecol keys to use from the lcdict in calculating the features.
+
+    magcols : list of str or None
+        The magcol keys to use from the lcdict in calculating the features.
+
+    errcols : list of str or None
+        The errcol keys to use from the lcdict in calculating the features.
+
+    lcformat : str
+        This is the `formatkey` associated with your light curve format, which
+        you previously passed in to the `lcproc.register_lcformat`
+        function. This will be used to look up how to find and read the light
+        curves specified in `basedir` or `use_list_of_filenames`.
+
+    lcformatdir : str or None
+        If this is provided, gives the path to a directory when you've stored
+        your lcformat description JSONs, other than the usual directories lcproc
+        knows to search for them in. Use this along with `lcformat` to specify
+        an LC format JSON file that's not currently registered with lcproc.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    verbose : bool
+        If True, will indicate progress while working.
+
+    maxobjects : int
+        The total number of objects to process from `pfpkl_list`.
+
+    nworkers : int
+        The number of parallel workers to launch to process the input.
+
+    Returns
+    -------
+
+    dict
+        A dict containing key: val pairs of the input period-finder result and
+        the output periodic feature result pickles for each input pickle is
+        returned.
 
     '''
     # make sure to make the output directory if it doesn't exist
@@ -783,7 +971,7 @@ def parallel_periodicfeatures(pfpkl_list,
     LOGINFO('processing periodfinding pickles...')
 
     with ProcessPoolExecutor(max_workers=nworkers) as executor:
-        resultfutures = executor.map(periodicfeatures_worker, tasks)
+        resultfutures = executor.map(_periodicfeatures_worker, tasks)
 
     results = [x for x in resultfutures]
     resdict = {os.path.basename(x):y for (x,y) in zip(pfpkl_list, results)}
@@ -800,9 +988,9 @@ def parallel_periodicfeatures_lcdir(
         starfeaturesdir=None,
         fourierorder=5,
         # these are depth, duration, ingress duration
-        transitparams=[-0.01,0.1,0.1],
+        transitparams=(-0.01,0.1,0.1),
         # these are depth, duration, depth ratio, secphase
-        ebparams=[-0.2,0.3,0.7,0.5],
+        ebparams=(-0.2,0.3,0.7,0.5),
         pdiff_threshold=1.0e-4,
         sidereal_threshold=1.0e-4,
         sampling_peak_multiplier=5.0,
@@ -821,6 +1009,117 @@ def parallel_periodicfeatures_lcdir(
 ):
     '''This runs parallel periodicfeature extraction for a directory of
     periodfinding result pickles.
+
+    Parameters
+    ----------
+
+    pfpkl_dir : str
+        The directory containing the pickles to process.
+
+    lcbasedir : str
+        The directory where all of the associated light curve files are located.
+
+    outdir : str
+        The directory where all the output will be written.
+
+    pfpkl_glob : str
+        The UNIX file glob to use to search for period-finder result pickles in
+        `pfpkl_dir`.
+
+    starfeaturesdir : str or None
+        The directory containing the `starfeatures-<objectid>.pkl` files for
+        each object to use calculate neighbor proximity light curve features.
+
+    fourierorder : int
+        The Fourier order to use to generate sinusoidal function and fit that to
+        the phased light curve.
+
+    transitparams : list of floats
+        The transit depth, duration, and ingress duration to use to generate a
+        trapezoid planet transit model fit to the phased light curve. The period
+        used is the one provided in `period`, while the epoch is automatically
+        obtained from a spline fit to the phased light curve.
+
+    ebparams : list of floats
+        The primary eclipse depth, eclipse duration, the primary-secondary depth
+        ratio, and the phase of the secondary eclipse to use to generate an
+        eclipsing binary model fit to the phased light curve. The period used is
+        the one provided in `period`, while the epoch is automatically obtained
+        from a spline fit to the phased light curve.
+
+    pdiff_threshold : float
+        This is the max difference between periods to consider them the same.
+
+    sidereal_threshold : float
+        This is the max difference between any of the 'best' periods and the
+        sidereal day periods to consider them the same.
+
+    sampling_peak_multiplier : float
+        This is the minimum multiplicative factor of a 'best' period's
+        normalized periodogram peak over the sampling periodogram peak at the
+        same period required to accept the 'best' period as possibly real.
+
+    sampling_startp, sampling_endp : float
+        If the `pgramlist` doesn't have a time-sampling Lomb-Scargle
+        periodogram, it will be obtained automatically. Use these kwargs to
+        control the minimum and maximum period interval to be searched when
+        generating this periodogram.
+
+    timecols : list of str or None
+        The timecol keys to use from the lcdict in calculating the features.
+
+    magcols : list of str or None
+        The magcol keys to use from the lcdict in calculating the features.
+
+    errcols : list of str or None
+        The errcol keys to use from the lcdict in calculating the features.
+
+    lcformat : str
+        This is the `formatkey` associated with your light curve format, which
+        you previously passed in to the `lcproc.register_lcformat`
+        function. This will be used to look up how to find and read the light
+        curves specified in `basedir` or `use_list_of_filenames`.
+
+    lcformatdir : str or None
+        If this is provided, gives the path to a directory when you've stored
+        your lcformat description JSONs, other than the usual directories lcproc
+        knows to search for them in. Use this along with `lcformat` to specify
+        an LC format JSON file that's not currently registered with lcproc.
+
+    sigclip : float or int or sequence of two floats/ints or None
+        If a single float or int, a symmetric sigma-clip will be performed using
+        the number provided as the sigma-multiplier to cut out from the input
+        time-series.
+
+        If a list of two ints/floats is provided, the function will perform an
+        'asymmetric' sigma-clip. The first element in this list is the sigma
+        value to use for fainter flux/mag values; the second element in this
+        list is the sigma value to use for brighter flux/mag values. For
+        example, `sigclip=[10., 3.]`, will sigclip out greater than 10-sigma
+        dimmings and greater than 3-sigma brightenings. Here the meaning of
+        "dimming" and "brightening" is set by *physics* (not the magnitude
+        system), which is why the `magsarefluxes` kwarg must be correctly set.
+
+        If `sigclip` is None, no sigma-clipping will be performed, and the
+        time-series (with non-finite elems removed) will be passed through to
+        the output.
+
+    verbose : bool
+        If True, will indicate progress while working.
+
+    maxobjects : int
+        The total number of objects to process from `pfpkl_list`.
+
+    nworkers : int
+        The number of parallel workers to launch to process the input.
+
+    Returns
+    -------
+
+    dict
+        A dict containing key: val pairs of the input period-finder result and
+        the output periodic feature result pickles for each input pickle is
+        returned.
 
     '''
 

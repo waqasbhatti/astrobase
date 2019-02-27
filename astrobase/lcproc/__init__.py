@@ -2,12 +2,64 @@
 # -*- coding: utf-8 -*-
 # lcformat.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
 
-'''
+'''This package contains functions that help drive large batch-processing jobs
+for light curves.
 
-This package contains functions that help drive large batch jobs processing HAT
-light curves.
+This top level module contains functions to import custom light curve
+formats. Once you have your own LC format registered with `lcproc`, all of the
+submodules in this package can be used to process these LCs:
 
-This top level module contains functions to import various light curve formats.
+- :py:mod:`astrobase.lcproc.awsrun`: contains driver functions that run
+  batch-processing of light curve period-finding and checkplot making using
+  resources from Amazon AWS: EC2 for processing, S3 for storage, and SQS for
+  queuing work.
+
+- :py:mod:`astrobase.lcproc.catalogs`: contains functions that generate catalogs
+  from collections of light curves, make KD-Trees for fast spatial matching, and
+  augment these catalogs from the rich object information containined in
+  checkplot pickles.
+
+- :py:mod:`astrobase.lcproc.checkplotgen`: contains functions that drive
+  batch-jobs to make checkplot pickles for a large collection of light curves
+  (and optional period-finding results).
+
+- :py:mod:`astrobase.lcproc.checkplotproc`: contains functions that add extra
+  information to checkplot pickles, including color-magnitude diagrams, updating
+  neighbor light curves, and cross-matches to external catalogs.
+
+- :py:mod:`astrobase.lcproc.epd`: contains functions that drive batch-jobs for
+  External Parameter Decorrelation on collections of light curves.
+
+- :py:mod:`astrobase.lcproc.lcbin`: contains functions that drive batch-jobs
+  for time-binning collections of light curves to a specified cadence.
+
+- :py:mod:`astrobase.lcproc.lcpfeatures`: contains functions that drive
+  batch-jobs to calculate features of phased light curves given periods are
+  available. These can be used later to do variable star classification.
+
+- :py:mod:`astrobase.lcproc.lcsfeatures`: contains functions that drive
+  batch-jobs to calculate color, coordinate, and neighbor proximity features for
+  a collection of light curves. These can be used later to do variable star
+  classification.
+
+- :py:mod:`astrobase.lcproc.lcvfeatures`: contains functions that drive
+  batch-jobs to calculate non-periodic features of unphased light curves
+  (e.g. time-series moments and variability indices). These can be used later to
+  do variable star classification.
+
+- :py:mod:`astrobase.lcproc.periodsearch`: contains functions that drive
+  batch-jobs to run period-finding using any of the methods in
+  :py:mod:`astrobase.periodbase` on colelctions of light curves. These produce
+  period-finder result pickles that can be used transparently by the functions
+  in :py:mod:`astrobase.lcproc.checkplotgen` and
+  :py:mod:`astrobase.lcproc.checkplotproc` to generate checkplot pickles.
+
+- :py:mod:`astrobase.lcproc.tfa`: contains functions that drive the application
+  of the Trend Filtering Algorithm (TFA) to large collections of light curves.
+
+- :py:mod:`astrobase.lcproc.varthreshold`: contains functions that help decide
+  where to place thresholds on several variability indices for a collection of
+  light curves to maximize recovery of actual variable stars.
 
 '''
 

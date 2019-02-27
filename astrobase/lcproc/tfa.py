@@ -98,7 +98,7 @@ from astrobase.lcproc import get_lcformat
 ## LIGHT CURVE DETRENDING - TFA ##
 ##################################
 
-def collect_tfa_stats(task):
+def _collect_tfa_stats(task):
     '''
     This is a parallel worker to gather LC stats.
 
@@ -259,7 +259,7 @@ def collect_tfa_stats(task):
 
 
 
-def reform_templatelc_for_tfa(task):
+def _reform_templatelc_for_tfa(task):
     '''
     This is a parallel worker that reforms light curves for TFA.
 
@@ -404,76 +404,20 @@ def tfa_templates_lclist(
 ):
     '''This selects template objects for TFA.
 
-    lclist is a list of light curves to use as input to generate the template
-    set.
-
-    outfile is a pickle filename to which the TFA template list will be written
-    to.
-
-    target_template_frac is the fraction of total objects in lclist to use for
-    the number of templates.
-
-    max_target_frac_obs sets the number of templates to generate if the number
-    of observations for the light curves is smaller than the number of objects
-    in the collection. The number of templates will be set to this fraction of
-    the number of observations if this is the case.
-
-    min_template_number is the minimum number of templates to generate.
-
-    max_template_number is the maximum number of templates to generate. If
-    target_template_frac times the number of objects is greater than
-    max_template_number, only max_template_number templates will be used.
-
-    max_rms is the maximum light curve RMS for an object to consider it as a
-    possible template ensemble member.
-
-    max_mult_above_magmad is the maximum multiplier above the mag-RMS fit to
-    consider an object as variable and thus not part of the template ensemble.
-
-    max_mult_above_mageta is the maximum multiplier above the mag-eta (variable
-    index) fit to consider an object as variable and thus not part of the
-    template ensemble.
-
-    mag_bandpass sets the key in the light curve dict's objectinfo dict to use
-    as the canonical magnitude for the object and apply any magnitude limits to.
-
-    custom_bandpasses can be used to provide any custom band name keys to the
-    star feature collection function.
-
-    mag_bright_limit sets the brightest mag for a potential member of the TFA
-    template ensemble.
-
-    mag_faint_limit sets the faintest mag for a potential member of the TFA
-    template ensemble.
-
-    template_sigclip sets the sigma-clip to be applied to the template light
-    curves.
-
-    template_interpolate sets the kwarg to pass to scipy.interpolate.interp1d to
-    set the kind of interpolation to use when reforming light curves to the TFA
-    template timebase.
-
-    lcformat sets the key in LCFORM to use to read the light curves. Use the
-    lcproc.register_custom_lcformat function to register a custom light curve
-    format in the lcproc.LCFORM dict.
-
-    timecols, magcols, errcols are lists of lcdict keys to use to generate the
-    TFA template ensemble. These will be the light curve magnitude columns that
-    TFA will be ultimately applied to by apply_tfa_magseries below.
-
-    nworkers and maxworkertasks control the number of parallel workers and tasks
-    per worker used by this function to collect light curve information and to
-    reform light curves to the TFA template's timebase.
-
     Selection criteria for TFA template ensemble objects:
 
     - not variable: use a poly fit to the mag-MAD relation and eta-normal
       variability index to get nonvar objects
+
     - not more than 10% of the total number of objects in the field or
-      maxtfatemplates at most
+      `max_tfa_templates` at most
+
     - allow shuffling of the templates if the target ends up in them
+
     - nothing with less than the median number of observations in the field
+
     - sigma-clip the input time series observations
+
     - TODO: uniform sampling in tangent plane coordinates (we'll need ra and
       decl)
 
@@ -481,9 +425,109 @@ def tfa_templates_lclist(
     to as the template LC with the largest number of non-nan observations will
     be used. All template LCs will be renormed to zero.
 
-    This function returns a dict that can be passed directly to
-    apply_tfa_magseries below. It can optionally produce a pickle with the same
-    dict, which can also be passed to that function.
+    Parameters
+    ----------
+
+    lclist : list of str
+        This is a list of light curves to use as input to generate the template
+        set.
+
+    outfile : str or None
+        This is the pickle filename to which the TFA template list will be
+        written to. If None, a default file name will be used for this.
+
+    target_template_frac : float
+        This is the fraction of total objects in lclist to use for the number of
+        templates.
+
+    max_target_frac_obs : float
+        This sets the number of templates to generate if the number of
+        observations for the light curves is smaller than the number of objects
+        in the collection. The number of templates will be set to this fraction
+        of the number of observations if this is the case.
+
+    min_template_number : int
+        This is the minimum number of templates to generate.
+
+    max_template_number : int
+        This is the maximum number of templates to generate. If
+        `target_template_frac` times the number of objects is greater than
+        `max_template_number`, only `max_template_number` templates will be
+        used.
+
+    max_rms : float
+        This is the maximum light curve RMS for an object to consider it as a
+        possible template ensemble member.
+
+    max_mult_above_magmad : float
+        This is the maximum multiplier above the mag-RMS fit to consider an
+        object as variable and thus not part of the template ensemble.
+
+    max_mult_above_mageta : float
+        This is the maximum multiplier above the mag-eta (variable index) fit to
+        consider an object as variable and thus not part of the template
+        ensemble.
+
+    mag_bandpass : str
+        This sets the key in the light curve dict's objectinfo dict to use as
+        the canonical magnitude for the object and apply any magnitude limits
+        to.
+
+    custom_bandpasses : dict or None
+        This can be used to provide any custom band name keys to the star
+        feature collection function.
+
+    mag_bright_limit : float
+        This sets the brightest mag (in the `mag_bandpass` filter) for a
+        potential member of the TFA template ensemble.
+
+    mag_faint_limit : float
+        This sets the faintest mag (in the `mag_bandpass` filter) for a
+        potential member of the TFA template ensemble.
+
+    template_sigclip : float or sequence of floats or None
+        This sets the sigma-clip to be applied to the template light curves.
+
+    template_interpolate : str
+        This sets the kwarg to pass to `scipy.interpolate.interp1d` to set the
+        kind of interpolation to use when reforming light curves to the TFA
+        template timebase.
+
+    lcformat : str
+        This is the `formatkey` associated with your light curve format, which
+        you previously passed in to the `lcproc.register_lcformat`
+        function. This will be used to look up how to find and read the light
+        curves specified in `basedir` or `use_list_of_filenames`.
+
+    lcformatdir : str or None
+        If this is provided, gives the path to a directory when you've stored
+        your lcformat description JSONs, other than the usual directories lcproc
+        knows to search for them in. Use this along with `lcformat` to specify
+        an LC format JSON file that's not currently registered with lcproc.
+
+    timecols : list of str or None
+        The timecol keys to use from the lcdict in calculating the features.
+
+    magcols : list of str or None
+        The magcol keys to use from the lcdict in calculating the features.
+
+    errcols : list of str or None
+        The errcol keys to use from the lcdict in calculating the features.
+
+    nworkers : int
+        The number of parallel workers to launch.
+
+    maxworkertasks : int
+        The maximum number of tasks to run per worker before it is replaced by a
+        fresh one.
+
+    Returns
+    -------
+
+    dict
+        This function returns a dict that can be passed directly to
+        `apply_tfa_magseries` below. It can optionally produce a pickle with the
+        same dict, which can also be passed to that function.
 
     '''
     try:
@@ -518,7 +562,7 @@ def tfa_templates_lclist(
               custom_bandpasses) for x in lclist]
 
     pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
-    results = pool.map(collect_tfa_stats, tasks)
+    results = pool.map(_collect_tfa_stats, tasks)
     pool.close()
     pool.join()
 
@@ -792,7 +836,7 @@ def tfa_templates_lclist(
                          in templatelcf]
 
                 pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
-                results = pool.map(reform_templatelc_for_tfa, tasks)
+                results = pool.map(_reform_templatelc_for_tfa, tasks)
                 pool.close()
                 pool.join()
 
@@ -885,30 +929,54 @@ def apply_tfa_magseries(lcfile,
                         sigclip=5.0):
     '''This applies the TFA correction to an LC given TFA template information.
 
-    lcfile is the light curve file to apply the TFA correction to.
+    Parameters
+    ----------
 
-    timecol, magcol, errcol are the column keys in the lcdict for the LC file to
-    apply the TFA correction to.
+    lcfile : str
+        This is the light curve file to apply the TFA correction to.
 
-    templateinfo is either the dict produced by tfa_templates_lclist or the
-    pickle produced by the same function.
+    timecol,magcol,errcol : str
+        These are the column keys in the lcdict for the LC file to apply the TFA
+        correction to.
 
-    TODO: mintemplatedist_arcmin sets the minimum distance required from the
-    target object for objects in the TFA template ensemble. Objects closer than
-    this distance will be removed from the ensemble.
+    templateinfo : dict or str
+        This is either the dict produced by `tfa_templates_lclist` or the pickle
+        produced by the same function.
 
-    lcformat is the LCFORM dict key for the light curve format of lcfile.
+    mintemplatedist_arcmin : float
+        TODO: This sets the minimum distance required from the target object for
+        objects in the TFA template ensemble. Objects closer than this distance
+        will be removed from the ensemble.
 
-    interp is passed to scipy.interpolate.interp1d as the kind of interpolation
-    to use when reforming this light curve to the timebase of the TFA templates.
+    lcformat : str
+        This is the `formatkey` associated with your light curve format, which
+        you previously passed in to the `lcproc.register_lcformat`
+        function. This will be used to look up how to find and read the light
+        curves specified in `basedir` or `use_list_of_filenames`.
 
-    sigclip is the sigma clip to apply to this light curve before running TFA on
-    it.
+    lcformatdir : str or None
+        If this is provided, gives the path to a directory when you've stored
+        your lcformat description JSONs, other than the usual directories lcproc
+        knows to search for them in. Use this along with `lcformat` to specify
+        an LC format JSON file that's not currently registered with lcproc.
 
-    This returns the filename of the light curve file generated after TFA
-    applications. This is a pickle (that can be read by lcproc.read_pklc) in the
-    same directory as lcfile. The magcol will be encoded in the filename, so
-    each magcol in lcfile gets its own output file.
+    interp : str
+        This is passed to scipy.interpolate.interp1d as the kind of
+        interpolation to use when reforming this light curve to the timebase of
+        the TFA templates.
+
+    sigclip : float or sequence of two floats or None
+        This is the sigma clip to apply to this light curve before running TFA
+        on it.
+
+    Returns
+    -------
+
+    str
+        This returns the filename of the light curve file generated after TFA
+        applications. This is a pickle (that can be read by `lcproc.read_pklc`)
+        in the same directory as `lcfile`. The `magcol` will be encoded in the
+        filename, so each `magcol` in `lcfile` gets its own output file.
 
     '''
 
@@ -973,7 +1041,7 @@ def apply_tfa_magseries(lcfile,
 
     # use this to reform the target lc in the same manner as that for a TFA
     # template LC
-    reformed_targetlc = reform_templatelc_for_tfa((
+    reformed_targetlc = _reform_templatelc_for_tfa((
         lcfile,
         lcformat,
         lcformatdir,
@@ -1029,7 +1097,7 @@ def apply_tfa_magseries(lcfile,
 
 
 
-def parallel_tfa_worker(task):
+def _parallel_tfa_worker(task):
     '''
     This is a parallel worker for the function below.
 
@@ -1079,28 +1147,61 @@ def parallel_tfa_lclist(lclist,
                         sigclip=5.0,
                         nworkers=NCPUS,
                         maxworkertasks=1000):
-    '''This applies TFA in parallel to all LCs in lclist.
+    '''This applies TFA in parallel to all LCs in the given list of file names.
 
-    lclist is a list of light curve files to apply the TFA correction to.
+    Parameters
+    ----------
 
-    templateinfo is either the dict produced by tfa_templates_lclist or the
-    pickle produced by the same function.
+    lclist : str
+        This is a list of light curve files to apply TFA correction to.
 
-    timecols, magcols, errcols are lists of column keys in the lcdict for each
-    LC file to apply the TFA correction to. each magcol will get their own
-    output TFA light curve file. If these are None, then magcols used for the
-    TFA template will be re-used for TFA application.
+    templateinfo : dict or str
+        This is either the dict produced by `tfa_templates_lclist` or the pickle
+        produced by the same function.
 
-    lcformat is the LCFORM dict key for the light curve format of lcfile.
+    timecols : list of str or None
+        The timecol keys to use from the lcdict in applying TFA corrections.
 
-    interp is passed to scipy.interpolate.interp1d as the kind of interpolation
-    to use when reforming this light curve to the timebase of the TFA templates.
+    magcols : list of str or None
+        The magcol keys to use from the lcdict in applying TFA corrections.
 
-    sigclip is the sigma clip to apply to this light curve before running TFA on
-    it.
+    errcols : list of str or None
+        The errcol keys to use from the lcdict in applying TFA corrections.
 
-    nworkers and maxworkertasks set the number of parallel workers and max tasks
-    per worker used to run TFA in parallel.
+    lcformat : str
+        This is the `formatkey` associated with your light curve format, which
+        you previously passed in to the `lcproc.register_lcformat`
+        function. This will be used to look up how to find and read the light
+        curves specified in `basedir` or `use_list_of_filenames`.
+
+    lcformatdir : str or None
+        If this is provided, gives the path to a directory when you've stored
+        your lcformat description JSONs, other than the usual directories lcproc
+        knows to search for them in. Use this along with `lcformat` to specify
+        an LC format JSON file that's not currently registered with lcproc.
+
+    interp : str
+        This is passed to scipy.interpolate.interp1d as the kind of
+        interpolation to use when reforming the light curves to the timebase of
+        the TFA templates.
+
+    sigclip : float or sequence of two floats or None
+        This is the sigma clip to apply to the light curves before running TFA
+        on it.
+
+    nworkers : int
+        The number of parallel workers to launch
+
+    maxworkertasks : int
+        The maximum number of tasks per worker allowed before it's replaced by a
+        fresh one.
+
+    Returns
+    -------
+
+    dict
+        Contains the input file names and output TFA light curve filenames per
+        input file organized by each `magcol` in `magcols`.
 
     '''
 
@@ -1144,7 +1245,7 @@ def parallel_tfa_lclist(lclist,
                  x in lclist]
 
         pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
-        results = pool.map(parallel_tfa_worker, tasks)
+        results = pool.map(_parallel_tfa_worker, tasks)
         pool.close()
         pool.join()
 
@@ -1166,11 +1267,66 @@ def parallel_tfa_lcdir(lcdir,
                        sigclip=5.0,
                        nworkers=NCPUS,
                        maxworkertasks=1000):
-    '''This applies TFA in parallel to all LCs in lcdir.
+    '''This applies TFA in parallel to all LCs in a directory.
 
-    lcfileglob is the glob to use to find the target light curves in lcdir. If
-    this is None, the default fileglob provided in the LC format registration in
-    lcproc.LCFORM will be used instead.
+    Parameters
+    ----------
+
+    lcdir : str
+        This is the directory containing the light curve files to process..
+
+    templateinfo : dict or str
+        This is either the dict produced by `tfa_templates_lclist` or the pickle
+        produced by the same function.
+
+    lcfileglob : str or None
+        The UNIX file glob to use when searching for light curve files in
+        `lcdir`. If None, the default file glob associated with registered LC
+        format provided is used.
+
+    timecols : list of str or None
+        The timecol keys to use from the lcdict in applying TFA corrections.
+
+    magcols : list of str or None
+        The magcol keys to use from the lcdict in applying TFA corrections.
+
+    errcols : list of str or None
+        The errcol keys to use from the lcdict in applying TFA corrections.
+
+    lcformat : str
+        This is the `formatkey` associated with your light curve format, which
+        you previously passed in to the `lcproc.register_lcformat`
+        function. This will be used to look up how to find and read the light
+        curves specified in `basedir` or `use_list_of_filenames`.
+
+    lcformatdir : str or None
+        If this is provided, gives the path to a directory when you've stored
+        your lcformat description JSONs, other than the usual directories lcproc
+        knows to search for them in. Use this along with `lcformat` to specify
+        an LC format JSON file that's not currently registered with lcproc.
+
+    interp : str
+        This is passed to scipy.interpolate.interp1d as the kind of
+        interpolation to use when reforming the light curves to the timebase of
+        the TFA templates.
+
+    sigclip : float or sequence of two floats or None
+        This is the sigma clip to apply to the light curves before running TFA
+        on it.
+
+    nworkers : int
+        The number of parallel workers to launch
+
+    maxworkertasks : int
+        The maximum number of tasks per worker allowed before it's replaced by a
+        fresh one.
+
+    Returns
+    -------
+
+    dict
+        Contains the input file names and output TFA light curve filenames per
+        input file organized by each `magcol` in `magcols`.
 
     '''
 

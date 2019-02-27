@@ -115,16 +115,68 @@ def variability_threshold(featuresdir,
     better than one single cut through the entire magnitude range. Set the
     magnitude bins using the magbins kwarg.
 
-    outfile is a pickle file that will contain all the info.
-
-    min_lcmad_stdev, min_stetj_stdev, min_iqr_stdev, min_inveta_stdev are all
-    stdev multipliers to use for selecting variable objects. These are either
-    scalar floats to apply the same sigma cut for each magbin or np.ndarrays of
-    size = magbins.size - 1 to apply different sigma cuts for each magbin.
-
     FIXME: implement a voting classifier here. this will choose variables based
     on the thresholds in IQR, stetson, and inveta based on weighting carried
     over from the variability recovery sims.
+
+    Parameters
+    ----------
+
+    featuresdir : str
+        This is the directory containing variability feature pickles created by
+        :py:func:`astrobase.lcproc.lcpfeatures.parallel_varfeatures` or similar.
+
+    outfile : str
+        This is the output pickle file that will contain all the threshold
+        information.
+
+    magbins : np.array of floats
+        This sets the magnitude bins to use for calculating thresholds.
+
+    maxobjects : int or None
+        This is the number of objects to process. If None, all objects with
+        feature pickles in `featuresdir` will be processed.
+
+    timecols : list of str or None
+        The timecol keys to use from the lcdict in calculating the thresholds.
+
+    magcols : list of str or None
+        The magcol keys to use from the lcdict in calculating the thresholds.
+
+    errcols : list of str or None
+        The errcol keys to use from the lcdict in calculating the thresholds.
+
+    lcformat : str
+        This is the `formatkey` associated with your light curve format, which
+        you previously passed in to the `lcproc.register_lcformat`
+        function. This will be used to look up how to find and read the light
+        curves specified in `basedir` or `use_list_of_filenames`.
+
+    lcformatdir : str or None
+        If this is provided, gives the path to a directory when you've stored
+        your lcformat description JSONs, other than the usual directories lcproc
+        knows to search for them in. Use this along with `lcformat` to specify
+        an LC format JSON file that's not currently registered with lcproc.
+
+    min_lcmad_stdev,min_stetj_stdev,min_iqr_stdev,min_inveta_stdev : float or np.array
+        These are all the standard deviation multiplier for the distributions of
+        light curve standard deviation, Stetson J variability index, the light
+        curve interquartile range, and 1/eta variability index
+        respectively. These multipliers set the minimum values of these measures
+        to use for selecting variable stars. If provided as floats, the same
+        value will be used for all magbins. If provided as np.arrays of `size =
+        magbins.size - 1`, will be used to apply possibly different sigma cuts
+        for each magbin.
+
+    verbose : bool
+        If True, will report progress and warn about any problems.
+
+    Returns
+    -------
+
+    dict
+        Contains all of the variability threshold information along with indices
+        into the array of the object IDs chosen as variables.
 
     '''
     try:
@@ -656,8 +708,39 @@ def plot_variability_thresholds(varthreshpkl,
                                 lcformat='hat-sql',
                                 lcformatdir=None,
                                 magcols=None):
-    '''
-    This makes plots for the variability threshold distributions.
+    '''This makes plots for the variability threshold distributions.
+
+    Parameters
+    ----------
+
+    varthreshpkl : str
+        The pickle produced by the function above.
+
+    xmin_lcmad_stdev,xmin_stetj_stdev,xmin_iqr_stdev,xmin_inveta_stdev : float or np.array
+        Values of the threshold values to override the ones in the
+        `vartresholdpkl`. If provided, will plot the thresholds accordingly
+        instead of using the ones in the input pickle directly.
+
+    lcformat : str
+        This is the `formatkey` associated with your light curve format, which
+        you previously passed in to the `lcproc.register_lcformat`
+        function. This will be used to look up how to find and read the light
+        curves specified in `basedir` or `use_list_of_filenames`.
+
+    lcformatdir : str or None
+        If this is provided, gives the path to a directory when you've stored
+        your lcformat description JSONs, other than the usual directories lcproc
+        knows to search for them in. Use this along with `lcformat` to specify
+        an LC format JSON file that's not currently registered with lcproc.
+
+    magcols : list of str or None
+        The magcol keys to use from the lcdict.
+
+    Returns
+    -------
+
+    str
+        The file name of the threshold plot generated.
 
     '''
 

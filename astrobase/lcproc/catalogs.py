@@ -113,7 +113,7 @@ from astrobase.lcproc import get_lcformat
 ## FUNCTIONS TO GENERATE OBJECT CATALOGS (LCLISTS) ##
 #####################################################
 
-def lclist_parallel_worker(task):
+def _lclist_parallel_worker(task):
     '''This is a parallel worker for makelclist.
 
     Parameters
@@ -572,7 +572,7 @@ def make_lclist(basedir,
                  for x in matching]
 
         with ProcessPoolExecutor(max_workers=nworkers) as executor:
-            results = executor.map(lclist_parallel_worker, tasks)
+            results = executor.map(_lclist_parallel_worker, tasks)
 
         results = [x for x in results]
 
@@ -1219,7 +1219,7 @@ def filter_lclist(lc_catalog,
 ## ADDING CHECKPLOT INFO BACK TO THE LIGHT CURVE CATALOGS ##
 ############################################################
 
-def cpinfo_key_worker(task):
+def _cpinfo_key_worker(task):
     '''This wraps `checkplotlist.checkplot_infokey_worker`.
 
     This is used to get the correct dtype for each element in retrieved results.
@@ -1502,7 +1502,7 @@ def add_cpinfo_to_lclist(
     infokeys : list of tuples
 
         This is a list of keys to extract from the checkplot and some info on
-        how this extraction is to be done. Each key entry is a five element
+        how this extraction is to be done. Each key entry is a six-element
         tuple of the following form:
 
         - key name in the checkplot
@@ -1538,7 +1538,7 @@ def add_cpinfo_to_lclist(
     tasklist = [(cpf, infokeys) for cpf in checkplots]
 
     with ProcessPoolExecutor(max_workers=nworkers) as executor:
-        resultfutures = executor.map(cpinfo_key_worker, tasklist)
+        resultfutures = executor.map(_cpinfo_key_worker, tasklist)
 
     results = [x for x in resultfutures]
     executor.shutdown()
