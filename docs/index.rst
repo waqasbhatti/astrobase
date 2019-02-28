@@ -17,8 +17,8 @@ Most functions in this package that deal with light curves (e.g. in the modules
 :py:mod:`astrobase.checkplot`) usually require three Numpy ndarrays as input:
 `times`, `mags`, and `errs`, so they should work with any time-series data that
 can be represented in this form. If you have flux time series measurements, most
-functions take a `magsarefluxes` keyword argument that makes them handle flux
-light curves correctly.
+functions also take a `magsarefluxes` keyword argument that makes them handle
+flux light curves correctly.
 
 The :py:mod:`astrobase.lcproc` subpackage implements drivers for working on
 large collections of light curve files, and includes functions to register your

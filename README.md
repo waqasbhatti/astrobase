@@ -6,13 +6,11 @@ work drivers for working on large collections of light curves, and a small
 web-app useful for reviewing and classifying light curves by stellar variability
 type.
 
-Module functions in this package that deal with light curves (e.g. in the
-modules `astrobase.lcfit`, `astrobase.lcmath`, `astrobase.periodbase`,
-`astrobase.plotbase`, and `astrobase.checkplot`) usually require three Numpy
-ndarrays as input: `times`, `mags`, and `errs`, so they should work with any
-time-series data that can be represented in this form. If you have flux time
-series measurements, most functions take a `magsarefluxes` keyword argument that
-makes them handle flux light curves correctly.
+Most functions in this package that deal with light curves usually require three
+Numpy ndarrays as input: `times`, `mags`, and `errs`, so they should work with
+any time-series data that can be represented in this form. If you have flux time
+series measurements, most functions also take a `magsarefluxes` keyword argument
+that makes them handle flux light curves correctly.
 
 - Read the docs: https://astrobase.readthedocs.io/en/latest/
 - Jupyter notebooks that demonstrate some of the functionality are available in
@@ -28,21 +26,16 @@ $ pip install numpy # needed to set up Fortran wrappers
 $ pip install astrobase
 ```
 
-The package should work with Python >= 3.4 and Python 2.7. Using the newest
-Python 3 version available is recommended. See the [installation
-instructions](#installation) below for details.
+See the [installation instructions](#installation) below for details.
 
-Python 2.7: [![Python 2.7](https://ci.wbhatti.org/buildStatus/icon?job=astrobase)](https://ci.wbhatti.org/job/astrobase) Python 3.6: [![Python
+This package should work with Python >= 3.4 and Python 2.7. Using the newest
+Python 3 version available is recommended and support for Python 2.7 will be
+dropped at the end of [2019](https://pythonclock.org/).
+
+Python 3.6: [![Python
 3.6](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py3)](https://ci.wbhatti.org/job/astrobase-py3) Python 3.7: [![Python 3.7](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py37)](https://ci.wbhatti.org/job/astrobase-py37)
 
 # Contents
-
-## notebooks
-
-These are now located over at
-[astrobase-notebooks](https://github.com/waqasbhatti/astrobase-notebooks).
-
-## astrobase
 
 - **[astrokep](https://astrobase.readthedocs.io/en/latest/astrobase.astrokep.html)**:
   contains functions for dealing with Kepler and K2 Mission light curves from
