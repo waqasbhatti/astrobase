@@ -7,7 +7,7 @@ web-app useful for reviewing and classifying light curves by stellar variability
 type.
 
 Module functions in this package that deal with light curves (e.g. in the
-modules `astrobase.lcmath`, `astrobase.periodbase`, `astrobase.varbase`,
+modules `astrobase.lcfit`, `astrobase.lcmath`, `astrobase.periodbase`,
 `astrobase.plotbase`, and `astrobase.checkplot`) usually require three Numpy
 ndarrays as input: `times`, `mags`, and `errs`, so they should work with any
 time-series data that can be represented in this form. If you have flux time
@@ -96,10 +96,6 @@ These are now located over at
 - **[coordutils](https://astrobase.readthedocs.io/en/latest/astrobase.coordutils.html)**:
   functions for dealing with coordinates (conversions, distances, proper motion)
 
-- **[emailutils](https://astrobase.readthedocs.io/en/latest/astrobase.emailutils.html)**:
-  contains a simple emailer function suitable for use in long-running scripts
-  and the like; this uses the provided credentials and server to send messages.
-
 - **[fakelcs](https://astrobase.readthedocs.io/en/latest/astrobase.fakelcs.html)**:
   modules and functions to conduct an end-to-end variable star recovery
   simulation.
@@ -107,20 +103,27 @@ These are now located over at
 - **[hatsurveys](https://astrobase.readthedocs.io/en/latest/astrobase.hatsurveys.html)**:
   modules to read, filter, and normalize light curves from various HAT surveys.
 
-- **[lcdb](https://astrobase.readthedocs.io/en/latest/astrobase.lcdb.html)**: a
-  lightweight wrapper around the `psycopg2` library to talk to PostgreSQL
-  database servers.
+- **[lcfit](https://astrobase.readthedocs.io/en/latest/astrobase.lcfit.html)**:
+  functions for fitting light curve models to observations, including
+  sinusoidal, trapezoidal and full Mandel-Agol planet transits, eclipses, and
+  splines.
 
 - **[lcmath](https://astrobase.readthedocs.io/en/latest/astrobase.lcmath.html)**: functions for light curve operations such
   as phasing, normalization, binning (in time and phase), sigma-clipping,
   external parameter decorrelation (EPD), etc.
 
-- **[lcproc](https://astrobase.readthedocs.io/en/latest/astrobase.lcproc.html)**: driver functions for running an end-to-end
-    pipeline including: (i) object selection from a collection of light curves
-    by position, cross-matching to external catalogs, or light curve objectinfo
-    keys, (ii) running variability feature calculation and detection, (iii)
-    running period-finding, and (iv) object review using the checkplotserver
-    webapp for variability classification.
+- **[lcmodels](https://astrobase.readthedocs.io/en/latest/astrobase.lcmodels.html)**:
+  first order models for fast fitting (for the purposes of variable
+  classification) to various periodic variable types, including sinusoidal
+  variables, eclipsing binaries, transiting planets, and flares.
+
+- **[lcproc](https://astrobase.readthedocs.io/en/latest/astrobase.lcproc.html)**:
+    driver functions for running an end-to-end pipeline including: (i) object
+    selection from a collection of light curves by position, cross-matching to
+    external catalogs, or light curve objectinfo keys, (ii) running variability
+    feature calculation and detection, (iii) running period-finding, and (iv)
+    object review using the checkplotserver webapp for variability
+    classification.
 
 - **[periodbase](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.html)**: parallelized functions (using
   `multiprocessing.map`) to run fast period searches on light curves, including:
@@ -158,9 +161,8 @@ These are now located over at
   the JPL ephemerides **de430.bsp** from JPL upon first import.
 
 - **[varbase](https://astrobase.readthedocs.io/en/latest/astrobase.varbase.html)**:
-  functions for calculating auto-correlation features, fitting light curves with
-  various models, masking and pre-whitening periodic signals in light curves,
-  and planet transit specific tools.
+  functions for calculating auto-correlation features, masking and pre-whitening
+  periodic signals in light curves, and planet transit specific tools.
 
 - **[varclass](https://astrobase.readthedocs.io/en/latest/astrobase.varclass.html)**: functions for calculating various
   variability, stellar color and motion, and neighbor proximity features, along
@@ -188,7 +190,7 @@ This package requires the following other packages:
 For optional functionality, some additional packages are required:
 
 - for `astrobase.lcdb` to work, you'll need `psycopg2-binary`.
-- for `varbase.lcfit.mandelagol_fit_magseries`, you'll need `batman-package`,
+- for `lcfit.transits.mandelagol_fit_magseries`, you'll need `batman-package`,
   `emcee`, `corner`, and `h5py`.
 - for `lcproc.awsrun`, you'll need `paramiko`, `boto3`, and `awscli`.
 

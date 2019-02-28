@@ -12,8 +12,8 @@ time-series observations, and includes support for the light curves produced by
 Kepler and TESS in particular.
 
 Most functions in this package that deal with light curves (e.g. in the modules
-:py:mod:`astrobase.lcmath`, :py:mod:`astrobase.periodbase`,
-:py:mod:`astrobase.varbase`, :py:mod:`astrobase.plotbase`,
+:py:mod:`astrobase.lcfit`, :py:mod:`astrobase.lcmath`,
+:py:mod:`astrobase.periodbase`, :py:mod:`astrobase.plotbase`,
 :py:mod:`astrobase.checkplot`) usually require three Numpy ndarrays as input:
 `times`, `mags`, and `errs`, so they should work with any time-series data that
 can be represented in this form. If you have flux time series measurements, most
@@ -87,22 +87,26 @@ algorithms.
    :maxdepth: 1
    :caption: Light curve operations
 
+   astrobase.lcfit
    astrobase.lcmath
    astrobase.lcmodels
    astrobase.varbase
    astrobase.plotbase
    astrobase.lcproc
 
+- :py:mod:`astrobase.lcfit`: functions for fitting various light curve models to
+  observations, including sinusoidal, trapezoidal and full Mandel-Agol planet
+  transits, eclipses, and splines.
 - :py:mod:`astrobase.lcmath`: functions for light curve operations such as
   phasing, normalization, binning (in time and phase), sigma-clipping, external
   parameter decorrelation (EPD), etc.
 - :py:mod:`astrobase.lcmodels`: modules that contain simple models for several
   variable star classes, including sinusoidal variables, eclipsing binaries, and
   transiting planets. Useful for fitting these with the functions in the
-  :py:mod:`astrobase.varbase.lcfit` module.
-- :py:mod:`astrobase.varbase`: functions for calculating variability indices for
-  light curves, fitting and obtaining Fourier coefficients for use in
-  classifications, and other variability features.
+  :py:mod:`astrobase.lcfit` module.
+- :py:mod:`astrobase.varbase`: functions for dealing with periodic signals
+  including masking and pre-whitening them, ACF calculations, light curve
+  detrending, and specific tools for planetary transits.
 - :py:mod:`astrobase.plotbase`: functions to plot light curves, phased light
   curves, periodograms, and download Digitized Sky Survey cutouts from the NASA
   SkyView service.
@@ -211,8 +215,8 @@ For optional functionality, some additional packages from PyPI are required:
 
 - To use the :py:mod:`astrobase.lcdb` module, you'll need `psycopg2-binary` or
   `psycopg2`.
-- To use :py:func:`astrobase.varbase.lcfit.mandelagol_fit_magseries` for fitting
-  Mandel-Agol planetary transit models, you'll need `batman-package`,
+- To use :py:func:`astrobase.lcfit.transits.mandelagol_fit_magseries` for
+  fitting Mandel-Agol planetary transit models, you'll need `batman-package`,
   `emcee`, `corner`, and `h5py`.
 - To use the Amazon AWS enabled light curve work drivers in the
   :py:mod:`astrobase.lcproc.awsrun` module, you'll need `paramiko`, `boto3`, and
