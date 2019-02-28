@@ -162,6 +162,12 @@ Python 3.6: [![Python
   with a Random Forest based classifier.
 
 
+# Changelog
+
+Please see https://github.com/waqasbhatti/astrobase/blob/master/CHANGELOG.md for
+a list of changes applicable to tagged release versions.
+
+
 # Installation
 
 ## Requirements
