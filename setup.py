@@ -148,20 +148,3 @@ setup(
     include_package_data=True,
     zip_safe=False,
 )
-
-
-# make the ~/.astrobase directory and copy over the astrobase.conf file to it.
-import os.path
-import os
-import shutil
-
-# make the ~/.astrobase directory if it doesn't exist
-confpath = os.path.expanduser('~/.astrobase')
-if not os.path.exists(confpath):
-    os.makedirs(confpath)
-modpath = os.path.dirname(os.path.abspath(__file__))
-
-# copy over the astrobase.conf file to ~/.astrobase if it doesn't exist
-if not os.path.exists(os.path.join(confpath,'astrobase.conf')):
-    shutil.copy(os.path.join(modpath,'astrobase','astrobase.conf'),
-                confpath)

@@ -41,9 +41,35 @@ try:
 except Exception as e:
     import configparser as ConfigParser
 
+# parse the configuration file to get the default database credentials
 CONF_FILE = os.path.abspath(os.path.expanduser('~/.astrobase/astrobase.conf'))
+
+if not os.path.exists(CONF_FILE):
+    # make the ~/.astrobase directory and copy over the astrobase.conf file to
+    # it.
+    import shutil
+
+    # make the ~/.astrobase directory if it doesn't exist
+    confpath = os.path.expanduser('~/.astrobase')
+    if not os.path.exists(confpath):
+        os.makedirs(confpath)
+    modpath = os.path.dirname(os.path.abspath(__file__))
+
+    # copy over the astrobase.conf file to ~/.astrobase if it doesn't exist
+    if not os.path.exists(os.path.join(confpath,'astrobase.conf')):
+        shutil.copy(os.path.join(modpath,'astrobase','astrobase.conf'),
+                    confpath)
+
+
+CONF_FILE = os.path.abspath(
+    os.path.expanduser('~/.astrobase/astrobase.conf')
+)
 CONF = ConfigParser.ConfigParser()
 CONF.read(CONF_FILE)
+
+#
+# Now, check the conf file for email credentials
+#
 
 # first, check if the .emailsettings file exists and has permissions 0600
 SETTINGSFILE = os.path.join(os.path.expanduser('~/.astrobase'),
