@@ -414,7 +414,7 @@ def checkplot_dict(
         knots for a spline function, the degree of a Legendre polynomial fit,
         etc., planet transit parameters) This function should return a Python
         dict with the following structure (similar to the functions in
-        `astrobase.varbase.lcfit`) and at least the keys below::
+        `astrobase.lcfit`) and at least the keys below::
 
             {'fittype':<str: name of fit method>,
              'fitchisq':<float: the chi-squared value of the fit>,
@@ -1211,7 +1211,7 @@ def checkplot_pickle(
         knots for a spline function, the degree of a Legendre polynomial fit,
         etc., planet transit parameters) This function should return a Python
         dict with the following structure (similar to the functions in
-        `astrobase.varbase.lcfit`) and at least the keys below::
+        `astrobase.lcfit`) and at least the keys below::
 
             {'fittype':<str: name of fit method>,
              'fitchisq':<float: the chi-squared value of the fit>,

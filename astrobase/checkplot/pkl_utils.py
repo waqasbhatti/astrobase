@@ -73,13 +73,18 @@ from astropy.wcs import WCS
 ###################
 
 from ..lcmath import phase_magseries, phase_bin_magseries
-from ..varbase.lcfit import spline_fit_magseries, savgol_fit_magseries
+from ..lcfit.nonphysical import spline_fit_magseries, savgol_fit_magseries
 
-from ..varclass.starfeatures import coord_features, color_features, \
-    color_classification, neighbor_gaia_features
+from ..varclass.starfeatures import (
+    coord_features,
+    color_features,
+    color_classification,
+    neighbor_gaia_features
+)
 
-from ..plotbase import skyview_stamp, \
-    PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
+from ..plotbase import (
+    skyview_stamp, PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
+)
 
 from ..services.mast import tic_conesearch
 from .. import magnitudes
@@ -1578,9 +1583,8 @@ def _pkl_phased_magseries_plot(
         this result embedded in a checkplotdict.
 
     overplotfit : dict
-
         If this is provided, it must be a dict of the form returned by one of
-        the varbase.lcfit.fit_XXXXX_magseries functions. This can be used to
+        the astrobase.lcfit.fit_XXXXX_magseries functions. This can be used to
         overplot a light curve model fit on top of the phased light curve plot
         returned by this function. The `overplotfit` dict has the following
         form, including at least the keys listed here::

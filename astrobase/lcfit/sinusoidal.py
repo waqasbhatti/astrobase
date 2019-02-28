@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# varbase/lcfit.py
+# sinusoidal.py
 # Waqas Bhatti and Luke Bouma - Feb 2017
 # (wbhatti@astro.princeton.edu and luke@astro.princeton.edu)
 
 '''Light curve fitting routines for sinusoidal models:
 
-- :py:func:`astrobase.varbase.lcfit.fourier_fit_magseries`: fit an arbitrary
+- :py:func:`astrobase.lcfit.sinusoidal.fourier_fit_magseries`: fit an arbitrary
   order Fourier series to a magnitude/flux time series.
 
 '''

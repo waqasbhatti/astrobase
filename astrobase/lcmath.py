@@ -40,14 +40,14 @@ LOGEXCEPTION = LOGGER.exception
 #############
 
 import numpy as np
-from numpy import isfinite as npisfinite, median as npmedian, \
-    mean as npmean, abs as npabs, std as npstddev
+from numpy import (
+    isfinite as npisfinite, median as npmedian, mean as npmean,
+    abs as npabs, std as npstddev
+)
 
 from scipy.spatial import cKDTree
-
-import scipy.stats
-
 from scipy.signal import savgol_filter
+import scipy.stats
 
 
 

@@ -50,7 +50,7 @@ from scipy.signal import argrelmin, argrelmax
 ###################
 
 from .. import lcmath
-from ..varbase import lcfit
+from .. import lcfit
 from ..lcmodels import sinusoidal, eclipses, transits
 from ..periodbase.zgls import specwindow_lsp
 from .varfeatures import lightcurve_ptp_measures

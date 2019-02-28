@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# varbase/lcfit.py
+# eclipses.py
 # Waqas Bhatti and Luke Bouma - Feb 2017
 # (wbhatti@astro.princeton.edu and luke@astro.princeton.edu)
 
 '''Light curve fitting routines for eclipsing binaries:
 
-- :py:func:`astrobase.varbase.lcfit.gaussianeb_fit_magseries`: fit a double
+- :py:func:`astrobase.lcfit.eclipses.gaussianeb_fit_magseries`: fit a double
   inverted gaussian eclipsing binary model to the magnitude/flux time series
 
 '''

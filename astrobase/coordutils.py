@@ -8,7 +8,7 @@ Contains various useful tools for coordinate conversion, etc.
 
 '''
 
-from math import trunc, fabs, pi as PI
+from math import trunc, fabs, pi as pi_value
 
 import numpy as np
 
@@ -44,9 +44,9 @@ def angle_wrap(angle, radians=False):
     '''
 
     if radians:
-        wrapped = angle % (2.0*PI)
+        wrapped = angle % (2.0*pi_value)
         if wrapped < 0.0:
-            wrapped = 2.0*PI + wrapped
+            wrapped = 2.0*pi_value + wrapped
 
     else:
 

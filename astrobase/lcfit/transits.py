@@ -6,13 +6,13 @@
 
 '''Fitting routines for planetary transits:
 
-- :py:func:`astrobase.varbase.lcfit.traptransit_fit_magseries`: fit a
+- :py:func:`astrobase.lcfit.transits.traptransit_fit_magseries`: fit a
   trapezoid-shaped transit signal to the magnitude/flux time series
 
-- :py:func:`astrobase.varbase.lcfit.mandelagol_fit_magseries`: fit a Mandel &
+- :py:func:`astrobase.lcfit.transits.mandelagol_fit_magseries`: fit a Mandel &
   Agol (2002) planet transit model to the flux time series.
 
-- :py:func:`astrobase.varbase.lcfit.mandelagol_and_line_fit_magseries`: fit a
+- :py:func:`astrobase.lcfit.transits.mandelagol_and_line_fit_magseries`: fit a
   Mandel & Agol 2002 model, + a local line to the flux time series.
 
 '''

@@ -88,12 +88,15 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 ## LOCAL IMPORTS ##
 ###################
 
-from ..lcmath import phase_magseries, phase_bin_magseries, \
+from ..lcmath import (
+    phase_magseries, phase_bin_magseries,
     normalize_magseries, sigclip_magseries
-from ..varbase.lcfit import spline_fit_magseries, savgol_fit_magseries
+)
+from ..lcfit.nonphysical import spline_fit_magseries, savgol_fit_magseries
 
-from ..plotbase import skyview_stamp, \
-    PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
+from ..plotbase import (
+    skyview_stamp, PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
+)
 from ..coordutils import total_proper_motion, reduced_proper_motion
 
 

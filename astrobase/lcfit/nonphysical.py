@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# varbase/lcfit.py
+# nonphysical.py
 # Waqas Bhatti and Luke Bouma - Feb 2017
 # (wbhatti@astro.princeton.edu and luke@astro.princeton.edu)
 
 '''Light curve fitting routines for 'non-physical' models:
 
-- :py:func:`astrobase.varbase.lcfit.spline_fit_magseries`: fit a univariate
+- :py:func:`astrobase.lcfit.nonphysical.spline_fit_magseries`: fit a univariate
   cubic spline to a magnitude/flux time series with a specified spline knot
   fraction.
 
-- :py:func:`astrobase.varbase.lcfit.savgol_fit_magseries`: apply a
+- :py:func:`astrobase.lcfit.nonphysical.savgol_fit_magseries`: apply a
   Savitzky-Golay smoothing filter to a magnitude/flux time series, returning the
   resulting smoothed function as a "fit".
 
-- :py:func:`astrobase.varbase.lcfit.legendre_fit_magseries`: fit a Legendre
+- :py:func:`astrobase.lcfit.nonphysical.legendre_fit_magseries`: fit a Legendre
   function of the specified order to the magnitude/flux time series.
 
 '''

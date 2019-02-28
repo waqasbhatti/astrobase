@@ -43,7 +43,9 @@ import numpy as np
 from astropy import units as u
 
 from astrobase.periodbase import kbls
-from astrobase.varbase import lcfit
+
+from ..lcfit.transits import traptransit_fit_magseries
+from ..lcfit.utils import make_fit_plot
 
 
 #######################
@@ -335,7 +337,7 @@ def get_transit_times(
 
     trapd : dict
         This is a dict returned by
-        :py:func:`astrobase.varbase.lcfit.traptransit_fit_magseries` containing
+        :py:func:`astrobase.lcfit.transits.traptransit_fit_magseries` containing
         the trapezoid transit model.
 
     nperiodint : int
@@ -490,10 +492,10 @@ def given_lc_get_transit_tmids_tstarts_tends(
                                        perioddeltapercent=5)
     #  plot the BLS model.
     if blsfit_savpath:
-        lcfit.make_fit_plot(blsd['phases'], blsd['phasedmags'], None,
-                            blsd['blsmodel'], blsd['period'], blsd['epoch'],
-                            blsd['epoch'], blsfit_savpath,
-                            magsarefluxes=magsarefluxes)
+        make_fit_plot(blsd['phases'], blsd['phasedmags'], None,
+                      blsd['blsmodel'], blsd['period'], blsd['epoch'],
+                      blsd['epoch'], blsfit_savpath,
+                      magsarefluxes=magsarefluxes)
 
     ingduration_guess = blsd['transitduration'] * 0.2  # a guesstimate.
     transitparams = [
@@ -503,11 +505,11 @@ def given_lc_get_transit_tmids_tstarts_tends(
 
     # fit a trapezoidal transit model; plot the resulting phased LC.
     if trapfit_savpath:
-        trapd = lcfit.traptransit_fit_magseries(time, flux, err_flux,
-                                                transitparams,
-                                                magsarefluxes=magsarefluxes,
-                                                sigclip=sigclip,
-                                                plotfit=trapfit_savpath)
+        trapd = traptransit_fit_magseries(time, flux, err_flux,
+                                          transitparams,
+                                          magsarefluxes=magsarefluxes,
+                                          sigclip=sigclip,
+                                          plotfit=trapfit_savpath)
 
     # use the trapezoidal model's epoch as the guess to identify (roughly) in
     # and out of transit points

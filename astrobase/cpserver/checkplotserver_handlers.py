@@ -121,7 +121,7 @@ from ..checkplot.pkl_png import checkplot_pickle_to_png
 from ..checkplot.pkl import checkplot_pickle_update
 
 from ..varclass import varfeatures
-from ..varbase import lcfit
+from .. import lcfit
 from ..varbase import signals
 
 from ..periodbase import zgls

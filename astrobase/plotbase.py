@@ -86,7 +86,7 @@ from .lcmath import phase_magseries, phase_magseries_with_errs, \
     time_bin_magseries, time_bin_magseries_with_errs, sigclip_magseries, \
     normalize_magseries, find_lc_timegroups
 
-from .varbase.lcfit import spline_fit_magseries
+from .lcfit.nonphysical import spline_fit_magseries
 
 from .services.skyview import get_stamp
 

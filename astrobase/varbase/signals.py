@@ -58,7 +58,7 @@ import matplotlib.pyplot as plt
 ###################
 
 from ..periodbase.zgls import pgen_lsp
-from .lcfit import _fourier_func, fourier_fit_magseries
+from ..lcfit.sinusoidal import _fourier_func, fourier_fit_magseries
 from ..lcmath import sigclip_magseries, phase_magseries
 
 
@@ -95,7 +95,8 @@ def prewhiten_magseries(times, mags, errs,
 
         where `X` is the Fourier order. These are usually the output of a
         previous Fourier fit to the light curve (from
-        :py:func:`astrobase.varbase.lcfit.fourier_fit_magseries` for example).
+        :py:func:`astrobase.lcfit.sinusoidal.fourier_fit_magseries` for
+        example).
 
     sigclip : float or int or sequence of two floats/ints or None
         If a single float or int, a symmetric sigma-clip will be performed using
@@ -365,7 +366,7 @@ def gls_prewhiten(times, mags, errs,
 
         where `X` is the Fourier order. These are usually the output of a
         previous Fourier fit to the light curve (from
-        :py:func:`astrobase.varbase.lcfit.fourier_fit_magseries` for
+        :py:func:`astrobase.lcfit.sinusoidal.fourier_fit_magseries` for
         example). You MUST provide ONE of `fourierorder` and `initfparams`, but
         not both. If both are provided or both are None, a sinusoidal signal of
         Fourier order 3 will be used by default.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# varbase/lcfit.py
+# utils.py
 # Waqas Bhatti and Luke Bouma - Feb 2017
 # (wbhatti@astro.princeton.edu and luke@astro.princeton.edu)
 

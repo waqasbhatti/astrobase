@@ -55,11 +55,11 @@ from numpy import (
 ## LOCAL IMPORTS ##
 ###################
 
-from ..lcmath import sigclip_magseries, phase_magseries_with_errs
-from ..varbase.lcfit import savgol_fit_magseries, traptransit_fit_magseries
-
 from pyeebls import eebls
 
+from ..lcmath import sigclip_magseries, phase_magseries_with_errs
+from ..lcfit.nonphysical import savgol_fit_magseries
+from ..lcfit.transits import traptransit_fit_magseries
 
 
 ############
