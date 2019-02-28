@@ -13,14 +13,14 @@ import os
 import os.path
 try:
     from urllib import urlretrieve
-except:
+except Exception as e:
     from urllib.request import urlretrieve
 
 import numpy as np
 from numpy.testing import assert_allclose
 
 from astrobase.hatsurveys import hatlc
-from astrobase.varbase import lcfit
+from astrobase import lcfit
 
 
 ############

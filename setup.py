@@ -138,6 +138,7 @@ setup(
         'astrobase.cpserver',
         'astrobase.fakelcs',
         'astrobase.hatsurveys',
+        'astrobase.lcfit',
         'astrobase.lcmodels',
         'astrobase.lcproc',
         'astrobase.periodbase',
