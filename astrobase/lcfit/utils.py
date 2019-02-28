@@ -86,7 +86,7 @@ def get_phased_quantities(stimes, smags, serrs, period):
     # mintime = stimes[npwhere(smags == npmax(smags))]
 
     # phase the mag series using the given period and epoch = min(stimes)
-    mintime = np,min(stimes)
+    mintime = np.min(stimes)
 
     # calculate the unsorted phase, then sort it
     iphase = (stimes - mintime)/period - np.floor((stimes - mintime)/period)
