@@ -57,7 +57,7 @@ if not os.path.exists(CONF_FILE):
 
     # copy over the astrobase.conf file to ~/.astrobase if it doesn't exist
     if not os.path.exists(os.path.join(confpath,'astrobase.conf')):
-        shutil.copy(os.path.join(modpath,'astrobase','astrobase.conf'),
+        shutil.copy(os.path.join(modpath,'astrobase.conf'),
                     confpath)
 
 
