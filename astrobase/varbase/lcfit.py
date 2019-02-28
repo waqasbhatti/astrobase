@@ -41,6 +41,18 @@ Includes the following functions:
 
 '''
 
+#########################
+## DEPRECATION WARNING ##
+#########################
+
+import warnings
+warnings.warn(
+    "This module has been broken out into its own subpackage at the "
+    "top level of astrobase: astrobase.lcfit. This module is now just a "
+    "wrapper around that subpackage. It will be removed in astrobase 0.4.5.",
+    FutureWarning
+)
+
 #############
 ## LOGGING ##
 #############
