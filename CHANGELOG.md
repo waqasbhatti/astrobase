@@ -1,3 +1,73 @@
+# v0.4.0
+
+This is a new major release. Several modules have been moved around. Most public
+facing modules and functions now have full docstrings that auto-generate Sphinx
+documentation (https://astrobase.readthedocs.io).
+
+Work for the v0.4 series of releases will be tracked at:
+
+https://github.com/waqasbhatti/astrobase/projects/1
+
+## New stuff
+
+- New top-level `lcproc`, `checkplot`, and `lcfit` subpackages.
+- `services.mast`: now has a `tic_xmatch` function.
+- `lcfit.transits`: added new `mandelagol_and_line_fit_magseries` function (by
+  @lgbouma).
+- `timeutils`: added new `get_epochs_given_midtimes_and_period` function (by
+  @lgbouma).
+- New `periodbase.abls` module to use Astropy 3.1's BoxLeastSquares as the BLS
+  runner instead of the wrapped eebls.f used by
+  `periodbase.kbls`. `periodbase.kbls` remains the default implementation when
+  you do `from astrobase import periodbase`. You can call
+  `periodbase.use_astropy_bls()` immediately after importing `periodbase` to
+  switch the default BLS implementation to `periodbase.abls`.
+
+## Changes
+
+- `varbase.lcfit` has been moved to a new top-level subpackage called `lcfit`,
+  and is broken up into `lcfit.sinusoidal`, `lcfit.eclipses`,
+  `lcfit.nonphysical` and `lcfit.transits` submodules. The `varbase/lcfit.py`
+  module will be removed in Astrobase 0.4.5.
+- `lcproc.py` has been moved to a new top-level subpackage called `lcproc`, and
+  is broken up by specific functionality.
+- `checkplot.py` has been moved to a new top-level subpackage called
+  `checkplot`, and is broken up into `checkplot.pkl` for making checkplot
+  pickles, and `checkplot.png` for making checkplot PNGs.
+- `periodbase.kbls.bls_stats_singleperiod` and `periodbase.kbls.bls_snr` now do
+  a trapezoidal transit model fit to the prospective transit found by an initial
+  run of BLS and calculate the transit depth, duration, ingress duration, refit
+  period, and refit epoch that way.
+- `plotbase`: the function `plot_phased_mag_series` is now called
+  `plot_phased_magseries`.
+- `plotbase`: the function `plot_mag_series` is now called
+  `plot_magseries`.
+- `lcproc_aws.py` has been moved to `lcproc.awsrun`.
+- `lcproc` now uses JSON files stored in either `[astrobase install
+  path]/data/lcformats` or `~/.astrobase/lcformat-jsons` to register custom LC
+  formats. This is more flexible than the older approach of adding these to a
+  top-level dict in `lcproc.py`.
+- `lcfit.sinusoidal`: the `fourier_fit_magseries` function now returns
+  times.min() as the `epoch` value in its `fitinfo` dict (by
+  @joshuawallace). The actual time of minimum light is returned as
+  `actual_fitepoch` in the `fitinfo` dict.
+- `periodbase/oldpf.py` has been moved to `periodbase/_oldpf.py`. It will be
+  removed in Astrobase 0.4.2.
+- The `services.tic` module has been deprecated and will be removed in Astrobase
+  0.4.2.
+- The `astrotess.get_time_flux_errs_from_Ames_lightcurve` function has been
+  deprecated and will be removed in Astrobase 0.4.2. Use the
+  `astrotess.read_tess_fitslc` and `astrotess.filter_tess_lcdict` functions
+  instead.
+- We no longer run the Astrobase test suite on Python 2.7. Most things should
+  continue to function, but there are no guarantees. Python 2.7 support will end
+  in December 2019.
+
+## Fixes
+
+- Lots of bug fixes everywhere. See the commit history for details.
+
+
 # v0.3.20
 
 ## New stuff
