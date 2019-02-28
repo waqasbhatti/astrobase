@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/75150575.svg)](https://zenodo.org/badge/latestdoi/75150575)
+[![DOI](https://zenodo.org/badge/75150575.svg)](https://zenodo.org/badge/latestdoi/75150575) [![Documentation Status](https://readthedocs.org/projects/astrobase/badge/?version=latest)](https://astrobase.readthedocs.io/en/latest/?badge=latest)
 
 Astrobase is a Python package for analyzing light curves and finding variable
 stars. It includes implementations of several period-finding algorithms, batch
@@ -18,7 +18,7 @@ that makes them handle flux light curves correctly.
   repository.
 - A [overview](#contents) of the modules and subpackages is provided below.
 
-To install **[astrobase](https://pypi.python.org/pypi/astrobase)** from the
+To install **[astrobase](https://pypi.org/project/astrobase/)** from the
 Python Package Index (PyPI):
 
 ```bash
@@ -32,8 +32,7 @@ This package should work with Python >= 3.4 and Python 2.7. Using the newest
 Python 3 version available is recommended and support for Python 2.7 will be
 dropped at the end of [2019](https://pythonclock.org/).
 
-Python 3.6: [![Python
-3.6](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py3)](https://ci.wbhatti.org/job/astrobase-py3) Python 3.7: [![Python 3.7](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py37)](https://ci.wbhatti.org/job/astrobase-py37)
+Python 3.6: [![Python 3.6](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py3)](https://ci.wbhatti.org/job/astrobase-py3) Python 3.7: [![Python 3.7](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py37)](https://ci.wbhatti.org/job/astrobase-py37)
 
 # Contents
 
