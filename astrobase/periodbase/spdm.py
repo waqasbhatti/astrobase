@@ -437,7 +437,7 @@ def stellingwerf_pdm(times,
             # periodepsilon to make sure we jump to an entire different peak
             # in the periodogram
             if (perioddiff > (periodepsilon*prevperiod) and
-                all(x > (periodepsilon*prevperiod) for x in bestperiodsdiff)):
+                all(x > (periodepsilon*period) for x in bestperiodsdiff)):
                 nbestperiods.append(period)
                 nbestlspvals.append(lspval)
                 peakcount = peakcount + 1
