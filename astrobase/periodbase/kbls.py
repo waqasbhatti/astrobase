@@ -1536,7 +1536,7 @@ def bls_snr(blsdict,
         refitperiods = []
         refitepochs = []
 
-        for period in enumerate(nbestperiods):
+        for period in nbestperiods:
 
             # get the period interval
             startp = period - perioddeltapercent*period/100.0
