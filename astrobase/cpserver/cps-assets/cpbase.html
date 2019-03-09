@@ -5,7 +5,7 @@
 <!-- is loaded from CDNs. -->
 
 <!-- the base template below was taken from: -->
-<!-- https://v4-alpha.getbootstrap.com/getting-started/introduction/#starter-template -->
+<!-- https://getbootstrap.com/docs/4.3/getting-started/introduction/ -->
 
 <!DOCTYPE html>
 <html lang="en">
@@ -19,15 +19,9 @@
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet"
-          href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/css/bootstrap.min.css"
-          integrity="sha384-AysaV+vQoT3kOAXZkl02PThvDr8HYKPZhNT5h/CXfBThSRXQ6jW5DO2ekP5ViFdi"
+          href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
           crossorigin="anonymous">
-
-    <!-- <\!-- bokeh CSS -\-> -->
-    <!-- <link rel="stylesheet" -->
-    <!--       href="https://cdnjs.cloudflare.com/ajax/libs/bokeh/0.12.5/bokeh.min.css" -->
-    <!--       integrity="sha256-zsqDF3H1iz6WY3Gpff0mvScEY5EdkppaKQTk9DxOeHA=" -->
-    <!--       crossorigin="anonymous" /> -->
 
     <!-- our own stylesheet -->
     <link rel="stylesheet"
@@ -46,30 +40,15 @@
 
     <!-- Bootstrap JS. -->
     <script
-      src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"
-      integrity="sha384-3ceskX3iaEnIogmQchP8opvBy3Mi7Ce34nWjpBIwVTHfGYWQS9jwHDVRnpKKHJg7"
-      crossorigin="anonymous"></script>
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.3.7/js/tether.min.js"
-      integrity="sha384-XTs3FgkjiBgo8qjEjBk0tGmf3wPrWtA6coPfQDfFEY8AnYJwjalXCiosYRBIBZX8"
-      crossorigin="anonymous"></script>
-    <script
-      src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.5/js/bootstrap.min.js"
-      integrity="sha384-BLiI7JTZm+JWlgKa0M0kGRpJbF2J8q+qreVrKBC47e3K6BW78kGLrCkeRX6I9RoK"
-      crossorigin="anonymous"></script>
+        src="https://code.jquery.com/jquery-3.3.1.min.js"
+        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 
     <!-- math stuff -->
     <script src="http://cdnjs.cloudflare.com/ajax/libs/mathjs/3.8.1/math.min.js">
     </script>
-
-    <!-- <\!-- add bokeh for interactive plotting -\-> -->
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/bokeh/0.12.5/bokeh.min.js" -->
-    <!--         integrity="sha256-qQlCEkdRGla2Em+qyBlwf19MuAsfqsDbou1tN/eDGjs=" -->
-    <!--         crossorigin="anonymous"></script> -->
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/bokeh/0.12.5/bokeh-api.min.js" -->
-    <!--         integrity="sha256-yz7NkcsyhLQsxo6m3Z+3gTS3S+4WXzQ8V8r+8w+464g=" -->
-    <!--         crossorigin="anonymous"></script> -->
-
 
     {% block pagejs %}
 
