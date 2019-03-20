@@ -979,12 +979,12 @@ def probability_peak_exceeds_value(times, peakval):
 
 
 
-def analytical_false_alarm_probability(lspinfo,
-                                       times,
-                                       peakvals=None,
-                                       inplace=True):
+def analytic_false_alarm_probability(lspinfo,
+                                     times,
+                                     peakvals=None,
+                                     inplace=True):
 
-    '''This returns the analytical false alarm probabilities for periodogram
+    '''This returns the analytic false alarm probabilities for periodogram
     peak values.
 
     The calculation follows that on page 3 of Zechmeister & Kurster (2009)::
