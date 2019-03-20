@@ -900,3 +900,148 @@ def specwindow_lsp(
             lspres['bestlspval'] = lspres['bestlspval']/lspmax
 
     return lspres
+
+
+
+##########################################
+## FALSE ALARM PROBABILITY CALCULATIONS ##
+##########################################
+
+def independent_freq_count(frequencies, times):
+    '''This estimates M: the number of independent frequencies in the periodogram.
+
+    This follows the terminology on page 3 of Zechmeister & Kurster (2009)::
+
+        M = DELTA_f / delta_f
+
+    where::
+
+        DELTA_f = freq.max() - freq.min()
+        delta_f = 1.0/(times.max() - times.min())
+
+    Parameters
+    ----------
+
+    frequencies : np.array
+        The frequencies array used for the calculation of the GLS periodogram.
+
+    times : np.array
+        The array of input times used for the calculation of the GLS
+        periodogram.
+
+    Returns
+    -------
+
+    M : int
+        The number of independent frequencies.
+
+    '''
+
+    return frequencies.ptp()*times.ptp()
+
+
+
+def probability_peak_exceeds_value(times, peakval):
+    '''This calculates the probability that periodogram values exceed the given
+    peak value.
+
+    This is from page 3 of Zechmeister and Kurster (2009)::
+
+        Prob(p > p_best) = (1 − p_best)**((N−3)/2)
+
+    where::
+
+        p_best is the peak value in consideration
+        N is the number of times
+
+    Note that this is for the default normalization of the periodogram,
+    e.g. P_normalized = P(omega), such that P represents the sample variance
+    (see Table 1).
+
+    Parameters
+    ----------
+
+    lspvals : np.array
+        The periodogram power value array.
+
+    peakval : float
+        A single peak value to calculate the probability for.
+
+    Returns
+    -------
+
+    prob: float
+        The probability value.
+
+    '''
+
+    return (1.0 - peakval)**((times.size - 3.0)/2.0)
+
+
+
+def analytical_false_alarm_probability(lspinfo,
+                                       times,
+                                       peakvals=None,
+                                       inplace=True):
+
+    '''This returns the analytical false alarm probabilities for periodogram
+    peak values.
+
+    The calculation follows that on page 3 of Zechmeister & Kurster (2009)::
+
+        FAP = 1 − [1 − Prob(z > z0)]**M
+
+    where::
+
+        M is the number of independent frequencies
+        Prob(z > z0) is the probability of peak with value > z0
+        z0 is the peak value we're evaluating
+
+    Parameters
+    ----------
+
+    lspinfo : dict
+        The dict returned by the :py:func:`~astrobase.periodbase.zgls.pgen_lsp`
+        function.
+
+    times : np.array
+        The times for which the periodogram result in ``lspinfo`` was
+        calculated.
+
+    peakvals : sequence or None
+        The peak values for which to evaluate the false-alarm probability. If
+        None, will calculate this for each of the peak values in the
+        ``nbestpeaks`` key of the ``lspinfo`` dict.
+
+    inplace : bool
+        If True, puts the results of the FAP calculation into the ``lspinfo``
+        dict as a list available as ``lspinfo['falsealarmprob']``.
+
+    Returns
+    -------
+
+    list
+        The calculated false alarm probabilities for each of the peak values in
+        ``peakvals``.
+
+    '''
+
+    frequencies = 1.0/lspinfo['periods']
+
+    M = independent_freq_count(frequencies, times)
+
+    if peakvals is None:
+        peakvals = lspinfo['nbestlspvals']
+
+    prob_exceed_vals = [
+        probability_peak_exceeds_value(times, p) for p in peakvals
+    ]
+
+    false_alarm_probs = [
+        1.0 - (1.0 - prob_exc)**M for prob_exc in prob_exceed_vals
+    ]
+
+    if inplace:
+        lspinfo['falsealarmprob'] = false_alarm_probs
+
+    return false_alarm_probs
