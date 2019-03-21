@@ -907,7 +907,7 @@ def specwindow_lsp(
 ## FALSE ALARM PROBABILITY CALCULATIONS ##
 ##########################################
 
-def independent_freq_count(frequencies, times):
+def independent_freq_count(frequencies, times, conservative=True):
     '''This estimates M: the number of independent frequencies in the periodogram.
 
     This follows the terminology on page 3 of Zechmeister & Kurster (2009)::
@@ -929,6 +929,16 @@ def independent_freq_count(frequencies, times):
         The array of input times used for the calculation of the GLS
         periodogram.
 
+    conservative : bool
+        If True, will follow the prescription given in Schwarzenberg-Czerny
+        (2003):
+
+        http://adsabs.harvard.edu/abs/2003ASPC..292..383S
+
+        and estimate the number of independent frequences as::
+
+            min(N_obs, N_freq, DELTA_f/delta_f)
+
     Returns
     -------
 
@@ -937,7 +947,14 @@ def independent_freq_count(frequencies, times):
 
     '''
 
-    return frequencies.ptp()*times.ptp()
+    M = frequencies.ptp()*times.ptp()
+
+    if conservative:
+        M_eff = min([times.size, frequencies.size, M])
+    else:
+        M_eff = M
+
+    return M_eff
 
 
 
@@ -981,6 +998,7 @@ def probability_peak_exceeds_value(times, peakval):
 
 def analytic_false_alarm_probability(lspinfo,
                                      times,
+                                     conservative_Meff=True,
                                      peakvals=None,
                                      inplace=True):
 
@@ -1008,6 +1026,16 @@ def analytic_false_alarm_probability(lspinfo,
         The times for which the periodogram result in ``lspinfo`` was
         calculated.
 
+    conservative_Meff : bool
+        If True, will follow the prescription given in Schwarzenberg-Czerny
+        (2003):
+
+        http://adsabs.harvard.edu/abs/2003ASPC..292..383S
+
+        and estimate the effective number of independent frequences M_eff as::
+
+            min(N_obs, N_freq, DELTA_f/delta_f)
+
     peakvals : sequence or None
         The peak values for which to evaluate the false-alarm probability. If
         None, will calculate this for each of the peak values in the
@@ -1028,7 +1056,9 @@ def analytic_false_alarm_probability(lspinfo,
 
     frequencies = 1.0/lspinfo['periods']
 
-    M = independent_freq_count(frequencies, times)
+    M = independent_freq_count(frequencies,
+                               times,
+                               conservative=conservative_Meff)
 
     if peakvals is None:
         peakvals = lspinfo['nbestlspvals']
