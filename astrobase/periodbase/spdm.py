@@ -496,6 +496,8 @@ def analytic_false_alarm_probability(lspinfo,
     '''This returns the analytic false alarm probabilities for periodogram
     peak values.
 
+    FIXME: this doesn't actually work. Fix later.
+
     The calculation follows that on page 3 of Zechmeister & Kurster (2009)::
 
         FAP = 1 − [1 − Prob(z > z0)]**M
@@ -593,6 +595,8 @@ def analytic_false_alarm_probability(lspinfo,
         prob_exceeds_val = beta.cdf(prob_xval,
                                     (ndet-nphasebins)/2.0,
                                     (nphasebins-1.0)/2.0)
+        import ipdb; ipdb.set_trace()
+
         false_alarm_probs.append(1.0 - (1.0 - prob_exceeds_val)**M)
 
     if inplace:

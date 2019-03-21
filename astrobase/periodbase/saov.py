@@ -516,6 +516,8 @@ def analytic_false_alarm_probability(lspinfo,
     '''This returns the analytic false alarm probabilities for periodogram
     peak values.
 
+    FIXME: this doesn't actually work. Fix later.
+
     The calculation follows that on page 3 of Zechmeister & Kurster (2009)::
 
         FAP = 1 − [1 − Prob(z > z0)]**M
@@ -526,8 +528,8 @@ def analytic_false_alarm_probability(lspinfo,
         Prob(z > z0) is the probability of peak with value > z0
         z0 is the peak value we're evaluating
 
-    For PDM, the Prob(z > z0) is described by the F distribution, according
-    to:
+    For AoV and AoV-harmonic, the Prob(z > z0) is described by the F
+    distribution, according to:
 
     - Schwarzenberg-Czerny (1997;
       https://ui.adsabs.harvard.edu/#abs/1997ApJ...489..941S)
