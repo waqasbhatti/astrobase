@@ -488,8 +488,6 @@ def stellingwerf_pdm(times,
 
 
 
-
-
 def analytic_false_alarm_probability(lspinfo,
                                      times,
                                      conservative_nfreq_eff=True,
@@ -511,15 +509,15 @@ def analytic_false_alarm_probability(lspinfo,
     For PDM, the Prob(z > z0) is described by the beta distribution, according
     to:
 
-    - Schwarzenberg-Czerny (1997)
+    - Schwarzenberg-Czerny (1997;
       https://ui.adsabs.harvard.edu/#abs/1997ApJ...489..941S)
 
-    - Zalian, Chadid, and Stellingwerf (2013)
-      http://adsabs.harvard.edu/abs/2014MNRAS.440...68Z
+    - Zalian, Chadid, and Stellingwerf (2013;
+      http://adsabs.harvard.edu/abs/2014MNRAS.440...68Z)
 
     This is given by::
 
-        beta((N-B)/2, (B-1)/2; (N-B)/(B-1) * theta_pdm)
+        beta( (N-B)/2, (B-1)/2; ((N-B)/(B-1))*theta_pdm )
 
     Where::
 
@@ -538,8 +536,8 @@ def analytic_false_alarm_probability(lspinfo,
     ----------
 
     lspinfo : dict
-        The dict returned by the :py:func:`~astrobase.periodbase.zgls.pgen_lsp`
-        function.
+        The dict returned by the
+        :py:func:`~astrobase.periodbase.spdm.stellingwerf_pdm` function.
 
     times : np.array
         The times for which the periodogram result in ``lspinfo`` was

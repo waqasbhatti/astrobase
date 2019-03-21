@@ -53,7 +53,7 @@ from numpy import (
 ###################
 
 from ..lcmath import phase_magseries, sigclip_magseries
-from . import get_frequency_grid
+from . import get_frequency_grid, independent_freq_count
 
 
 ############
@@ -505,3 +505,114 @@ def aov_periodfind(times,
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
                           'sigclip':sigclip}}
+
+
+
+def analytic_false_alarm_probability(lspinfo,
+                                     times,
+                                     conservative_nfreq_eff=True,
+                                     peakvals=None,
+                                     inplace=True):
+    '''This returns the analytic false alarm probabilities for periodogram
+    peak values.
+
+    The calculation follows that on page 3 of Zechmeister & Kurster (2009)::
+
+        FAP = 1 − [1 − Prob(z > z0)]**M
+
+    where::
+
+        M is the number of independent frequencies
+        Prob(z > z0) is the probability of peak with value > z0
+        z0 is the peak value we're evaluating
+
+    For PDM, the Prob(z > z0) is described by the F distribution, according
+    to:
+
+    - Schwarzenberg-Czerny (1997;
+      https://ui.adsabs.harvard.edu/#abs/1997ApJ...489..941S)
+
+    This is given by::
+
+        F( (B-1), (N-B); theta_aov )
+
+    Where::
+
+        N = number of observations
+        B = number of phase bins
+
+    This translates to a scipy.stats call to the F distribution CDF::
+
+        x = theta_aov_best
+        prob_exceeds_val = scipy.stats.f.cdf(x, (B-1.0), (N-B))
+
+    Which we can then plug into the false alarm prob eqn above with the
+    calculation of M.
+
+    Parameters
+    ----------
+
+    lspinfo : dict
+        The dict returned by the
+        :py:func:`~astrobase.periodbase.spdm.aov_periodfind` function.
+
+    times : np.array
+        The times for which the periodogram result in ``lspinfo`` was
+        calculated.
+
+    conservative_nfreq_eff : bool
+        If True, will follow the prescription given in Schwarzenberg-Czerny
+        (2003):
+
+        http://adsabs.harvard.edu/abs/2003ASPC..292..383S
+
+        and estimate the effective number of independent frequences M_eff as::
+
+            min(N_obs, N_freq, DELTA_f/delta_f)
+
+    peakvals : sequence or None
+        The peak values for which to evaluate the false-alarm probability. If
+        None, will calculate this for each of the peak values in the
+        ``nbestpeaks`` key of the ``lspinfo`` dict.
+
+    inplace : bool
+        If True, puts the results of the FAP calculation into the ``lspinfo``
+        dict as a list available as ``lspinfo['falsealarmprob']``.
+
+    Returns
+    -------
+
+    list
+        The calculated false alarm probabilities for each of the peak values in
+        ``peakvals``.
+
+    '''
+
+    from scipy.stats import f
+
+    frequencies = 1.0/lspinfo['periods']
+
+    M = independent_freq_count(frequencies,
+                               times,
+                               conservative=conservative_nfreq_eff)
+
+    if peakvals is None:
+        peakvals = lspinfo['nbestlspvals']
+
+    nphasebins = nparange(0.0, 1.0, lspinfo['kwargs']['phasebinsize']).size
+    ndet = times.size
+
+    false_alarm_probs = []
+
+    for peakval in peakvals:
+
+        prob_xval = peakval
+        prob_exceeds_val = f.cdf(prob_xval,
+                                 nphasebins - 1.0,
+                                 ndet - nphasebins)
+        false_alarm_probs.append(1.0 - (1.0 - prob_exceeds_val)**M)
+
+    if inplace:
+        lspinfo['falsealarmprob'] = false_alarm_probs
+
+    return false_alarm_probs
