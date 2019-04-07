@@ -110,7 +110,7 @@ def mast_query(service,
 
     apiversion : str
         The API version of the MAST service to use. This sets the URL that this
-        funciton will call, using `apiversion` as key into the `MAST_URLS` dict
+        function will call, using `apiversion` as key into the `MAST_URLS` dict
         above.
 
     forcefetch : bool
@@ -376,7 +376,7 @@ def tic_conesearch(
 
     apiversion : str
         The API version of the MAST service to use. This sets the URL that this
-        funciton will call, using `apiversion` as key into the `MAST_URLS` dict
+        function will call, using `apiversion` as key into the `MAST_URLS` dict
         above.
 
     forcefetch : bool
@@ -477,7 +477,7 @@ def tic_xmatch(
 
     apiversion : str
         The API version of the MAST service to use. This sets the URL that this
-        funciton will call, using `apiversion` as key into the `MAST_URLS` dict
+        function will call, using `apiversion` as key into the `MAST_URLS` dict
         above.
 
     forcefetch : bool
@@ -585,7 +585,7 @@ def tic_objectsearch(
 
     apiversion : str
         The API version of the MAST service to use. This sets the URL that this
-        funciton will call, using `apiversion` as key into the `MAST_URLS` dict
+        function will call, using `apiversion` as key into the `MAST_URLS` dict
         above.
 
     forcefetch : bool
