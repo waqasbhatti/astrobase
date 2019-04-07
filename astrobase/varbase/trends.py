@@ -717,8 +717,8 @@ def epd_magseries_extparams(
 
     # sigclip the LC to pass into the smoothing for EPD fit
     stimes, smags, serrs, eparams = sigclip_magseries_with_extparams(
-        times, mags, errs,
-        externalparam_arrs,
+        times.copy(), mags.copy(), errs.copy(),
+        [x.copy() for x in externalparam_arrs],
         sigclip=epdsmooth_sigclip,
         magsarefluxes=magsarefluxes
     )
