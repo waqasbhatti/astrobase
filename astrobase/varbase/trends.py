@@ -356,18 +356,18 @@ def _epd_residual(coeffs, mags, fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd):
 
 
 
-def _weighted_epd_residual(coeffs, times, mags, errs,
-                           fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd):
+def _epd_residual2(coeffs,
+                   times, mags, errs,
+                   fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd):
     '''This is the residual function to minimize using
     scipy.optimize.least_squares.
 
-    This variant uses a weighted residual with the measurement errors serving as
-    the (inverse-)weights.
+    This variant is for :py:func:`.epd_magseries_extparams`.
 
     '''
 
     f = _epd_function(coeffs, fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd)
-    residual = (mags - f)/errs
+    residual = mags - f
     return residual
 
 
@@ -590,7 +590,7 @@ def epd_magseries_extparams(
         epdsmooth_windowsize=21,
         epdsmooth_func=smooth_magseries_savgol,
         epdsmooth_extraparams=None,
-        objective_func=_weighted_epd_residual,
+        objective_func=_epd_residual2,
         objective_kwargs=None,
         optimizer_func=least_squares,
         optimizer_kwargs=None,
@@ -759,7 +759,9 @@ def epd_magseries_extparams(
         fit_coeffs = fit_info.x
 
         epd_mags = np.median(fmags) + obj_func(fit_coeffs,
+                                               ftimes,
                                                fmags,
+                                               ferrs,
                                                *finalparam_arrs)
 
         retdict = {'times':ftimes,
