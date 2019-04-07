@@ -84,6 +84,7 @@ NCPUS = mp.cpu_count()
 ## LOCAL IMPORTS ##
 ###################
 
+from astrobase.coordutils import xieta_from_radecl
 from astrobase.varclass import starfeatures, varfeatures
 from astrobase.lcmath import (
     normalize_magseries,
@@ -568,6 +569,18 @@ def tfa_templates_lclist(
 
     # now, go through the light curves
 
+    # find the center RA and center DEC -> median of all LC RAs and DECs
+    all_ras = np.array([res['ra'] for res in results])
+    all_decls = np.array([res['decl'] for res in results])
+    center_ra = np.nanmedian(all_ras)
+    center_decl = np.nanmedian(all_decls)
+    all_coord_xi, all_coord_eta = xieta_from_radecl(
+        all_ras,
+        all_decls,
+        center_ra,
+        center_decl,
+    )
+
     outdict = {
         'timecols':[],
         'magcols':[],
@@ -586,7 +599,7 @@ def tfa_templates_lclist(
         # these are the containers for possible template collection LC info
         (lcmag, lcmad, lceta,
          lcndet, lcobj, lcfpaths,
-         lcra, lcdecl) = [], [], [], [], [], [], [], []
+         lcra, lcdecl, lc_cxi, lc_ceta) = [], [], [], [], [], [], [], [], [], []
 
         outdict['timecols'].append(tcol)
         outdict['magcols'].append(mcol)
@@ -600,14 +613,16 @@ def tfa_templates_lclist(
                                        'obj':[],
                                        'lcf':[],
                                        'ra':[],
-                                       'decl':[]}}
+                                       'decl':[],
+                                       'coord_xi':[],
+                                       'coord_eta':[]}}
 
         LOGINFO('magcol: %s, collecting prospective template LC info...' %
                 mcol)
 
 
         # collect the template LCs for this magcol
-        for result in results:
+        for resind, result in enumerate(results):
 
             # we'll only append objects that have all of these elements
             try:
@@ -620,6 +635,8 @@ def tfa_templates_lclist(
                 thislcf = result['lcfpath']
                 thisra = result['ra']
                 thisdecl = result['decl']
+                this_coord_xi = all_coord_xi[resind]
+                this_coord_eta = all_coord_eta[resind]
 
                 outdict[mcol]['collection']['mag'].append(thismag)
                 outdict[mcol]['collection']['mad'].append(thismad)
@@ -629,6 +646,8 @@ def tfa_templates_lclist(
                 outdict[mcol]['collection']['lcf'].append(thislcf)
                 outdict[mcol]['collection']['ra'].append(thisra)
                 outdict[mcol]['collection']['decl'].append(thisdecl)
+                outdict[mcol]['collection']['coord_xi'].append(this_coord_xi)
+                outdict[mcol]['collection']['coord_eta'].append(this_coord_eta)
 
                 # make sure the object lies in the mag limits and RMS limits we
                 # set before to try to accept it into the TFA ensemble
@@ -643,6 +662,8 @@ def tfa_templates_lclist(
                     lcfpaths.append(thislcf)
                     lcra.append(thisra)
                     lcdecl.append(thisdecl)
+                    lc_cxi.append(this_coord_xi)
+                    lc_ceta.append(this_coord_eta)
 
             except Exception as e:
                 pass
@@ -664,6 +685,8 @@ def tfa_templates_lclist(
             lcfpaths = np.array(lcfpaths)
             lcra = np.array(lcra)
             lcdecl = np.array(lcdecl)
+            lc_cxi = np.array(lc_cxi)
+            lc_ceta = np.array(lc_ceta)
 
             sortind = np.argsort(lcmag)
             lcmag = lcmag[sortind]
@@ -674,6 +697,8 @@ def tfa_templates_lclist(
             lcfpaths = lcfpaths[sortind]
             lcra = lcra[sortind]
             lcdecl = lcdecl[sortind]
+            lc_cxi = lc_cxi[sortind]
+            lc_ceta = lc_ceta[sortind]
 
             # 1. get the mag-MAD relation
 
@@ -722,6 +747,8 @@ def tfa_templates_lclist(
                 templatelcf = lcfpaths[templateind]
                 templatera = lcra[templateind]
                 templatedecl = lcdecl[templateind]
+                template_cxi = lc_cxi[templateind]
+                template_ceta = lc_ceta[templateind]
 
                 # now, check if we have no more than the required fraction of
                 # TFA templates
@@ -734,6 +761,11 @@ def tfa_templates_lclist(
                         (mcol, target_number_templates))
 
                 # FIXME: how do we select uniformly in xi-eta?
+                # 1. 2D histogram the data into binsize (nx, ny)
+                # 2. random uniform select from 0 to nx-1, 0 to ny-1
+                # 3. pick object from selected bin
+                # 4. continue until we have target_number_templates
+                # 5. make sure the same object isn't picked twice
 
                 # select random uniform objects from the template candidates
                 targetind = npr.choice(templateobj.size,
@@ -748,6 +780,8 @@ def tfa_templates_lclist(
                 templatelcf = templatelcf[targetind]
                 templatera = templatera[targetind]
                 templatedecl = templatedecl[targetind]
+                template_cxi = template_cxi[targetind]
+                template_ceta = template_ceta[targetind]
 
                 # get the max ndet so far to use that LC as the timebase
                 maxndetind = templatendet == templatendet.max()
@@ -805,6 +839,8 @@ def tfa_templates_lclist(
                     templatelcf = templatelcf[targetind]
                     templatera = templatera[targetind]
                     templatedecl = templatedecl[targetind]
+                    template_cxi = template_cxi[targetind]
+                    template_ceta = template_ceta[targetind]
 
                     # get the max ndet so far to use that LC as the timebase
                     maxndetind = templatendet == templatendet.max()
@@ -854,6 +890,8 @@ def tfa_templates_lclist(
                     'template_objects':templateobj,
                     'template_ra':templatera,
                     'template_decl':templatedecl,
+                    'template_coord_xi':template_cxi,
+                    'template_coord_eta':template_ceta,
                     'template_mag':templatemag,
                     'template_mad':templatemad,
                     'template_eta':templateeta,
