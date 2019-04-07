@@ -356,6 +356,22 @@ def _epd_residual(coeffs, mags, fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd):
 
 
 
+def _weighted_epd_residual(coeffs, times, mags, errs,
+                           fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd):
+    '''This is the residual function to minimize using
+    scipy.optimize.least_squares.
+
+    This variant uses a weighted residual with the measurement errors serving as
+    the (inverse-)weights.
+
+    '''
+
+    f = _epd_function(coeffs, fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd)
+    residual = (mags - f)/errs
+    return residual
+
+
+
 def epd_magseries(times, mags, errs,
                   fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd,
                   magsarefluxes=False,
@@ -574,7 +590,7 @@ def epd_magseries_extparams(
         epdsmooth_windowsize=21,
         epdsmooth_func=smooth_magseries_savgol,
         epdsmooth_extraparams=None,
-        objective_func=None,
+        objective_func=_weighted_epd_residual,
         objective_kwargs=None,
         optimizer_func=least_squares,
         optimizer_kwargs=None,
@@ -641,17 +657,20 @@ def epd_magseries_extparams(
         smoothed mag-series. This must have the following signature::
 
             def objective_func(fit_coeffs,
+                               times,
                                mags,
+                               errs,
                                *external_params,
                                **objective_kwargs)
 
-        where `mags` is an array of mags, `coeffs` is an array of EPD fit
-        coefficients, `external_params` is a tuple generated from the external
-        parameter arrays passed in, and `objective_kwargs` is a dict of any
-        optional kwargs to pass into the objective function.
+        where `times`, `mags`, `errs` are arrays of the sigma-clipped and
+        smoothed time-series, `fit_coeffs` is an array of EPD fit coefficients,
+        `external_params` is a tuple of the passed in external parameter arrays,
+        and `objective_kwargs` is a dict of any optional kwargs to pass into the
+        objective function.
 
         This should return the value of the residual based on evaluating the
-        model function.
+        model function (and any weights based on errs or times).
 
     objective_kwargs : dict or None
         A dict of kwargs to pass into the `objective_func` function.
@@ -731,7 +750,7 @@ def epd_magseries_extparams(
     fit_info = optimizer_func(
         obj_func,
         initial_coeffs,
-        args=(smoothedmags, *eparams),
+        args=(stimes, smoothedmags, serrs, *eparams),
         **optimizer_kwargs
     )
 
