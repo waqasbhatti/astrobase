@@ -888,7 +888,7 @@ def xieta_from_radecl(inra, indecl,
 
     aunn = np.zeros_like(uun)
     aunn[uun >= 1.0] = 0.0
-    aunn[uun < 1.0] = np.acos(uun)
+    aunn[uun < 1.0] = np.arccos(uun)
 
     xi, eta = np.zeros_like(aunn), np.zeros_like(aunn)
 
