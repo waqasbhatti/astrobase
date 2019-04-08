@@ -58,6 +58,7 @@ npr.seed(0xc0ffee)
 
 import scipy.interpolate as spi
 from scipy import linalg as spla
+from scipy.spatial import cKDTree
 
 import matplotlib
 matplotlib.use('Agg')
@@ -805,7 +806,7 @@ def tfa_templates_lclist(
                 # with overcorrections and will probably break TFA
                 if target_number_templates > timebasendet:
 
-                    LOGWARNING('the number of TFA templates (%s) is '
+                    LOGWARNING('The number of TFA templates (%s) is '
                                'larger than the number of observations '
                                'of the time base (%s). This will likely '
                                'overcorrect all light curves to a '
@@ -825,6 +826,13 @@ def tfa_templates_lclist(
                     LOGWARNING('magcol: %s, re-selecting %s TFA '
                                'templates randomly' %
                                (mcol, newmaxtemplates))
+
+                    # FIXME: how do we select uniformly in xi-eta?
+                    # 1. 2D histogram the data into binsize (nx, ny)
+                    # 2. random uniform select from 0 to nx-1, 0 to ny-1
+                    # 3. pick object from selected bin
+                    # 4. continue until we have target_number_templates
+                    # 5. make sure the same object isn't picked twice
 
                     # select random uniform objects from the template candidates
                     targetind = npr.choice(templateobj.size,
@@ -858,6 +866,10 @@ def tfa_templates_lclist(
 
                     # this is the timebase to use for all of the templates
                     timebase = _dict_get(timebaselcdict, tcolget)
+
+                #
+                # end of check for ntemplates > timebase ndet
+                #
 
                 LOGINFO('magcol: %s, reforming TFA template LCs to '
                         ' chosen timebase...' % mcol)
@@ -899,6 +911,12 @@ def tfa_templates_lclist(
                     'template_magseries':template_magseries,
                     'template_errseries':template_errseries
                 })
+
+                # make a KDTree on the xi and eta coords so we can remove items
+                # from the TFA ensemble that are too close to a target object
+                outdict[mcol]['template_xieta_kdtree'] = cKDTree(
+                    np.column_stack((template_cxi, template_ceta))
+                )
 
             # if we don't have enough, return nothing for this magcol
             else:
