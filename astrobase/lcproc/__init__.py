@@ -420,7 +420,7 @@ def register_lcformat(formatkey,
             LOGEXCEPTION('Could not get the specified norm '
                          'function: %s for lcformat: %s '
                          'from module: %s'
-                         % (formatkey, normfunc_module, normfunc))
+                         % (normfunc, formatkey, normfunc_module))
             raise
 
     else:

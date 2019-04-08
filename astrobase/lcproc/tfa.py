@@ -382,6 +382,7 @@ def _reform_templatelc_for_tfa(task):
 
 def tfa_templates_lclist(
         lclist,
+        lcinfo_pkl=None,
         outfile=None,
         target_template_frac=0.1,
         max_target_frac_obs=0.25,
@@ -433,6 +434,11 @@ def tfa_templates_lclist(
     lclist : list of str
         This is a list of light curves to use as input to generate the template
         set.
+
+    lcinfo_pkl : str or None
+        If provided, is a file path to a pickle file created by this function on
+        a previous run containing the LC information. This will be loaded
+        directly instead of having to re-run LC info collection.
 
     outfile : str or None
         This is the pickle filename to which the TFA template list will be
@@ -558,15 +564,59 @@ def tfa_templates_lclist(
     LOGINFO('collecting light curve information for %s in list...' %
             len(lclist))
 
-    # first, we'll collect the light curve info
-    tasks = [(x, lcformat, lcformat,
-              timecols, magcols, errcols,
-              custom_bandpasses) for x in lclist]
+    #
+    # check if we have cached results for this run
+    #
 
-    pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
-    results = pool.map(_collect_tfa_stats, tasks)
-    pool.close()
-    pool.join()
+    # case where we provide a cache info pkl directly
+    if lcinfo_pkl and os.path.exists(lcinfo_pkl):
+
+        with open(lcinfo_pkl,'rb') as infd:
+            results = pickle.load(infd)
+
+    # case where we don't have an info pickle or an outfile
+    elif ((not outfile) and
+          os.path.exists('tfa-collected-lcfinfo-%s.pkl' % lcformat)):
+
+        with open('tfa-collected-lcfinfo-%s.pkl' % lcformat, 'rb') as infd:
+            results = pickle.load(infd)
+
+    # case where we don't have an info pickle but do have an outfile
+    elif (outfile and os.path.exists('tfa-collected-lcfinfo-%s-%s' %
+                                     (lcformat, os.path.basename(outfile)))):
+
+        with open(
+                'tfa-collected-lcinfo-%s-%s' %
+                (lcformat, os.path.basename(outfile)),
+                'rb'
+        ) as infd:
+            results = pickle.load(infd)
+
+    # case where we have redo the LC info collection
+    else:
+
+        # first, we'll collect the light curve info
+        tasks = [(x, lcformat, lcformat,
+                  timecols, magcols, errcols,
+                  custom_bandpasses) for x in lclist]
+
+        pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
+        results = pool.map(_collect_tfa_stats, tasks)
+        pool.close()
+        pool.join()
+
+        # save these results so we don't have to redo if something breaks here
+        if not outfile:
+            with open('tfa-collected-lcinfo-%s.pkl' % lcformat,'wb') as outfd:
+                pickle.dump(results, outfd, pickle.HIGHEST_PROTOCOL)
+        else:
+            with open(
+                    'tfa-collected-lcinfo-%s-%s' %
+                    (lcformat, os.path.basename(outfile)),
+                    'wb'
+            ) as outfd:
+                pickle.dump(results, outfd, pickle.HIGHEST_PROTOCOL)
+
 
     # now, go through the light curves
 
