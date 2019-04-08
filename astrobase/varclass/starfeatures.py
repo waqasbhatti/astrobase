@@ -685,7 +685,7 @@ def color_features(in_objectinfo,
                 outdict['dered_%s' % mk] = np.nan
 
                 # get all the colors to generate for this bandpass
-                for colorspec in BANDPASSES_COLORS[mk]['colors']:
+                for colorspec in our_bandpasses_colors[mk]['colors']:
 
                     # only add this if the color's not there already
                     if colorspec[0] not in outdict:
