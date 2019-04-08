@@ -485,13 +485,19 @@ def tfa_templates_lclist(
         This can be used to provide any custom band name keys to the star
         feature collection function.
 
-    mag_bright_limit : float
+    mag_bright_limit : float or list of floats
         This sets the brightest mag (in the `mag_bandpass` filter) for a
-        potential member of the TFA template ensemble.
+        potential member of the TFA template ensemble. If this is a single
+        float, the value will be used for all magcols. If this is a list of
+        floats with len = len(magcols), the specific bright limits will be used
+        for each magcol individually.
 
-    mag_faint_limit : float
+    mag_faint_limit : float or list of floats
         This sets the faintest mag (in the `mag_bandpass` filter) for a
-        potential member of the TFA template ensemble.
+        potential member of the TFA template ensemble. If this is a single
+        float, the value will be used for all magcols. If this is a list of
+        floats with len = len(magcols), the specific faint limits will be used
+        for each magcol individually.
 
     template_sigclip : float or sequence of floats or None
         This sets the sigma-clip to be applied to the template light curves.
@@ -700,9 +706,24 @@ def tfa_templates_lclist(
                 outdict[mcol]['collection']['coord_xi'].append(this_coord_xi)
                 outdict[mcol]['collection']['coord_eta'].append(this_coord_eta)
 
+
+                # check if we have more than one bright or faint limit elem
+                if isinstance(mag_bright_limit, (list, tuple)):
+                    use_bright_maglim = mag_bright_limit[
+                        magcols.index(mcol)
+                    ]
+                else:
+                    use_bright_maglim = mag_bright_limit
+                if isinstance(mag_faint_limit, (list, tuple)):
+                    use_faint_maglim = mag_faint_limit[
+                        magcols.index(mcol)
+                    ]
+                else:
+                    use_faint_maglim = mag_faint_limit
+
                 # make sure the object lies in the mag limits and RMS limits we
                 # set before to try to accept it into the TFA ensemble
-                if ((mag_bright_limit < thismag < mag_faint_limit) and
+                if ((use_bright_maglim < thismag < use_faint_maglim) and
                     (1.4826*thismad < max_rms)):
 
                     lcmag.append(thismag)
