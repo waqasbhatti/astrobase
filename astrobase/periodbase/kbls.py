@@ -202,19 +202,22 @@ def _parallel_bls_worker(task):
 
 
 
-def bls_serial_pfind(times, mags, errs,
-                     magsarefluxes=False,
-                     startp=0.1,  # search from 0.1 d to...
-                     endp=100.0,  # ... 100.0 d -- don't search full timebase
-                     stepsize=5.0e-4,
-                     mintransitduration=0.01,  # minimum transit length in phase
-                     maxtransitduration=0.4,   # maximum transit length in phase
-                     nphasebins=200,
-                     autofreq=True,  # figure out f0, nf, and df automatically
-                     periodepsilon=0.1,
-                     nbestpeaks=5,
-                     sigclip=10.0,
-                     verbose=True):
+def bls_serial_pfind(
+        times, mags, errs,
+        magsarefluxes=False,
+        startp=0.1,  # search from 0.1 d to...
+        endp=100.0,  # ... 100.0 d -- don't search full timebase
+        stepsize=5.0e-4,
+        mintransitduration=0.01,  # minimum transit length in phase
+        maxtransitduration=0.4,   # maximum transit length in phase
+        nphasebins=200,
+        autofreq=True,  # figure out f0, nf, and df automatically
+        periodepsilon=0.1,
+        nbestpeaks=5,
+        sigclip=10.0,
+        verbose=True,
+        get_stats=True,
+):
     '''Runs the Box Least Squares Fitting Search for transit-shaped signals.
 
     Based on eebls.f from Kovacs et al. 2002 and python-bls from Foreman-Mackey
@@ -294,6 +297,11 @@ def bls_serial_pfind(times, mags, errs,
         If this is True, will indicate progress and details about the frequency
         grid used for the period search.
 
+    get_stats : bool
+        If True, runs :py:func:`.bls_stats_singleperiod` for each of the best
+        periods in the output and injects the output into the output dict so you
+        only have to run this function to get the periods and their stats.
+
     Returns
     -------
 
@@ -308,6 +316,7 @@ def bls_serial_pfind(times, mags, errs,
              'nbestpeaks': the input value of nbestpeaks,
              'nbestlspvals': nbestpeaks-size list of best period peak values,
              'nbestperiods': nbestpeaks-size list of best periods,
+             'stats': BLS stats for each best period,
              'lspvals': the full array of periodogram powers,
              'frequencies': the full array of frequencies considered,
              'periods': the full array of periods considered,
@@ -531,6 +540,26 @@ def bls_serial_pfind(times, mags, errs,
                           'magsarefluxes':magsarefluxes}
             }
 
+            # get stats if requested
+            if get_stats:
+                resultdict['stats'] = []
+                for bp in nbestperiods:
+
+                    if verbose:
+                        LOGINFO("Getting stats for best period: %.6f" % bp)
+
+                    this_pstats = bls_stats_singleperiod(
+                        times, mags, errs, bp,
+                        magsarefluxes=resultdict['kwargs']['magsarefluxes'],
+                        sigclip=resultdict['kwargs']['sigclip'],
+                        nphasebins=resultdict['nphasebins'],
+                        mintransitduration=resultdict['mintransitduration'],
+                        maxtransitduration=resultdict['maxtransitduration'],
+                        verbose=verbose,
+                    )
+                    resultdict['stats'].append(this_pstats)
+
+
             return resultdict
 
         except Exception as e:
@@ -607,6 +636,7 @@ def bls_parallel_pfind(
         sigclip=10.0,
         verbose=True,
         nworkers=None,
+        get_stats=True,
 ):
     '''Runs the Box Least Squares Fitting Search for transit-shaped signals.
 
@@ -699,6 +729,11 @@ def bls_parallel_pfind(
         The number of parallel workers to launch for period-search. If None,
         nworkers = NCPUS.
 
+    get_stats : bool
+        If True, runs :py:func:`.bls_stats_singleperiod` for each of the best
+        periods in the output and injects the output into the output dict so you
+        only have to run this function to get the periods and their stats.
+
     Returns
     -------
 
@@ -713,6 +748,7 @@ def bls_parallel_pfind(
              'nbestpeaks': the input value of nbestpeaks,
              'nbestlspvals': nbestpeaks-size list of best period peak values,
              'nbestperiods': nbestpeaks-size list of best periods,
+             'stats': list of stats dicts returned for each best period,
              'lspvals': the full array of periodogram powers,
              'frequencies': the full array of frequencies considered,
              'periods': the full array of periods considered,
@@ -957,6 +993,25 @@ def bls_parallel_pfind(
                       'magsarefluxes':magsarefluxes}
         }
 
+        # get stats if requested
+        if get_stats:
+            resultdict['stats'] = []
+            for bp in nbestperiods:
+
+                if verbose:
+                    LOGINFO("Getting stats for best period: %.6f" % bp)
+
+                this_pstats = bls_stats_singleperiod(
+                    times, mags, errs, bp,
+                    magsarefluxes=resultdict['kwargs']['magsarefluxes'],
+                    sigclip=resultdict['kwargs']['sigclip'],
+                    nphasebins=resultdict['nphasebins'],
+                    mintransitduration=resultdict['mintransitduration'],
+                    maxtransitduration=resultdict['maxtransitduration'],
+                    verbose=verbose,
+                )
+                resultdict['stats'].append(this_pstats)
+
         return resultdict
 
     else:
@@ -1134,6 +1189,7 @@ def _get_bls_stats(stimes,
                 'nphasebins':nphasebins,
                 'transingressbin':thistransingressbin,
                 'transegressbin':thistransegressbin,
+                'npoints_in_transit':npts_in_transit,
                 'blsmodel':modelmags,
                 'subtractedmags':subtractedmags,
                 'phasedmags':actualmags,
