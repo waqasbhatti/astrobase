@@ -1422,7 +1422,9 @@ def bls_stats_singleperiod(times, mags, errs, period,
                                   magsarefluxes=magsarefluxes,
                                   sigclip=None)
 
-        if not blsres or 'blsresult' not in blsres:
+        if (not blsres or
+            'blsresult' not in blsres or
+            blsres['blsresult'] is None):
             LOGERROR("BLS failed during a period-search "
                      "performed around the input best period: %.6f. "
                      "Can't continue. " % period)
