@@ -998,8 +998,10 @@ def bls_parallel_pfind(
 
         # get stats if requested
         if get_stats:
+
             resultdict['stats'] = []
-            for bp in nbestperiods:
+
+            for bp in nbestperiods.copy():
 
                 if verbose:
                     LOGINFO("Getting stats for best period: %.6f" % bp)
@@ -1420,6 +1422,7 @@ def bls_stats_singleperiod(times, mags, errs, period,
                                   mintransitduration=mintransitduration,
                                   maxtransitduration=maxtransitduration,
                                   magsarefluxes=magsarefluxes,
+                                  get_stats=False,
                                   sigclip=None)
 
         if (not blsres or
