@@ -572,6 +572,7 @@ def bls_serial_pfind(
                     'nbestperiods':None,
                     'lspvals':None,
                     'periods':None,
+                    'blsresult':None,
                     'stepsize':stepsize,
                     'nfreq':nfreq,
                     'nphasebins':nphasebins,
@@ -601,6 +602,7 @@ def bls_serial_pfind(
                 'nbestperiods':None,
                 'lspvals':None,
                 'periods':None,
+                'blsresult':None,
                 'stepsize':stepsize,
                 'nfreq':None,
                 'nphasebins':None,
@@ -917,6 +919,7 @@ def bls_parallel_pfind(
                     'nbestperiods':None,
                     'lspvals':None,
                     'periods':None,
+                    'blsresult':None,
                     'method':'bls',
                     'kwargs':{'startp':startp,
                               'endp':endp,
@@ -1418,6 +1421,12 @@ def bls_stats_singleperiod(times, mags, errs, period,
                                   maxtransitduration=maxtransitduration,
                                   magsarefluxes=magsarefluxes,
                                   sigclip=None)
+
+        if not blsres or 'blsresult' not in blsres:
+            LOGERROR("BLS failed during a period-search "
+                     "performed around the input best period: %.6f. "
+                     "Can't continue. " % period)
+            return None
 
         thistransdepth = blsres['blsresult']['transdepth']
         thistransduration = blsres['blsresult']['transduration']
