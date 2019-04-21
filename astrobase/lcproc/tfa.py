@@ -395,6 +395,7 @@ def tfa_templates_lclist(
         custom_bandpasses=None,
         mag_bright_limit=10.0,
         mag_faint_limit=12.0,
+        process_template_lcs=True,
         template_sigclip=5.0,
         template_interpolate='nearest',
         lcformat='hat-sql',
@@ -499,6 +500,12 @@ def tfa_templates_lclist(
         floats with len = len(magcols), the specific faint limits will be used
         for each magcol individually.
 
+    process_template_lcs : bool
+        If True, will reform the template light curves to the chosen
+        time-base. If False, will only select light curves for templates but not
+        process them. This is useful for initial exploration of how the template
+        LC are selected.
+
     template_sigclip : float or sequence of floats or None
         This sets the sigma-clip to be applied to the template light curves.
 
@@ -544,30 +551,8 @@ def tfa_templates_lclist(
         same dict, which can also be passed to that function.
 
     '''
-    try:
-        formatinfo = get_lcformat(lcformat,
-                                  use_lcformat_dir=lcformatdir)
-        if formatinfo:
-            (dfileglob, readerfunc,
-             dtimecols, dmagcols, derrcols,
-             magsarefluxes, normfunc) = formatinfo
-        else:
-            LOGERROR("can't figure out the light curve format")
-            return None
-    except Exception as e:
-        LOGEXCEPTION("can't figure out the light curve format")
-        return None
 
-    # override the default timecols, magcols, and errcols
-    # using the ones provided to the function
-    if timecols is None:
-        timecols = dtimecols
-    if magcols is None:
-        magcols = dmagcols
-    if errcols is None:
-        errcols = derrcols
-
-    LOGINFO('collecting light curve information for %s in list...' %
+    LOGINFO('collecting light curve information for %s objects in list...' %
             len(lclist))
 
     #
@@ -598,8 +583,31 @@ def tfa_templates_lclist(
         ) as infd:
             results = pickle.load(infd)
 
-    # case where we have redo the LC info collection
+    # case where we have to redo the LC info collection
     else:
+
+        try:
+            formatinfo = get_lcformat(lcformat,
+                                      use_lcformat_dir=lcformatdir)
+            if formatinfo:
+                (dfileglob, readerfunc,
+                 dtimecols, dmagcols, derrcols,
+                 magsarefluxes, normfunc) = formatinfo
+            else:
+                LOGERROR("can't figure out the light curve format")
+                return None
+        except Exception as e:
+            LOGEXCEPTION("can't figure out the light curve format")
+            return None
+
+        # override the default timecols, magcols, and errcols
+        # using the ones provided to the function
+        if timecols is None:
+            timecols = dtimecols
+        if magcols is None:
+            magcols = dmagcols
+        if errcols is None:
+            errcols = derrcols
 
         # first, we'll collect the light curve info
         tasks = [(x, lcformat, lcformat,
@@ -623,8 +631,9 @@ def tfa_templates_lclist(
             ) as outfd:
                 pickle.dump(results, outfd, pickle.HIGHEST_PROTOCOL)
 
-
-    # now, go through the light curves
+    #
+    # now, go through the light curve information
+    #
 
     # find the center RA and center DEC -> median of all LC RAs and DECs
     all_ras = np.array([res['ra'] for res in results])
@@ -824,7 +833,7 @@ def tfa_templates_lclist(
 
                 # now, check if we have no more than the required fraction of
                 # TFA templates
-                target_number_templates = int(target_template_frac*len(lclist))
+                target_number_templates = int(target_template_frac*len(results))
 
                 if target_number_templates > max_template_number:
                     target_number_templates = max_template_number
@@ -859,18 +868,24 @@ def tfa_templates_lclist(
                 maxndetind = templatendet == templatendet.max()
                 timebaselcf = templatelcf[maxndetind][0]
                 timebasendet = templatendet[maxndetind][0]
+
                 LOGINFO('magcol: %s, selected %s as template time '
                         'base LC with %s observations' %
                         (mcol, timebaselcf, timebasendet))
 
-                timebaselcdict = readerfunc(timebaselcf)
+                if process_template_lcs:
 
-                if ( (isinstance(timebaselcdict, (list, tuple))) and
-                     (isinstance(timebaselcdict[0], dict)) ):
-                    timebaselcdict = timebaselcdict[0]
+                    timebaselcdict = readerfunc(timebaselcf)
 
-                # this is the timebase to use for all of the templates
-                timebase = _dict_get(timebaselcdict, tcolget)
+                    if ( (isinstance(timebaselcdict, (list, tuple))) and
+                         (isinstance(timebaselcdict[0], dict)) ):
+                        timebaselcdict = timebaselcdict[0]
+
+                    # this is the timebase to use for all of the templates
+                    timebase = _dict_get(timebaselcdict, tcolget)
+
+                else:
+                    timebase = None
 
                 # also check if the number of templates is longer than the
                 # actual timebase of the observations. this will cause issues
@@ -929,40 +944,54 @@ def tfa_templates_lclist(
                                'base LC with %s observations' %
                                (mcol, timebaselcf, timebasendet))
 
-                    timebaselcdict = readerfunc(timebaselcf)
+                    if process_template_lcs:
 
-                    if ( (isinstance(timebaselcdict, (list, tuple))) and
-                         (isinstance(timebaselcdict[0], dict)) ):
-                        timebaselcdict = timebaselcdict[0]
+                        timebaselcdict = readerfunc(timebaselcf)
 
-                    # this is the timebase to use for all of the templates
-                    timebase = _dict_get(timebaselcdict, tcolget)
+                        if ( (isinstance(timebaselcdict, (list, tuple))) and
+                             (isinstance(timebaselcdict[0], dict)) ):
+                            timebaselcdict = timebaselcdict[0]
+
+                        # this is the timebase to use for all of the templates
+                        timebase = _dict_get(timebaselcdict, tcolget)
+
+                    else:
+
+                        timebase = None
 
                 #
                 # end of check for ntemplates > timebase ndet
                 #
 
-                LOGINFO('magcol: %s, reforming TFA template LCs to '
-                        ' chosen timebase...' % mcol)
+                if process_template_lcs:
 
-                # reform all template LCs to this time base, normalize to
-                # zero, and sigclip as requested. this is a parallel op
-                # first, we'll collect the light curve info
-                tasks = [(x, lcformat, lcformatdir,
-                          tcol, mcol, ecol,
-                          timebase, template_interpolate,
-                          template_sigclip) for x
-                         in templatelcf]
+                    LOGINFO('magcol: %s, reforming TFA template LCs to '
+                            ' chosen timebase...' % mcol)
 
-                pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
-                results = pool.map(_reform_templatelc_for_tfa, tasks)
-                pool.close()
-                pool.join()
+                    # reform all template LCs to this time base, normalize to
+                    # zero, and sigclip as requested. this is a parallel op
+                    # first, we'll collect the light curve info
+                    tasks = [(x, lcformat, lcformatdir,
+                              tcol, mcol, ecol,
+                              timebase, template_interpolate,
+                              template_sigclip) for x
+                             in templatelcf]
 
-                # generate a 2D array for the template magseries with dimensions
-                # = (n_objects, n_lcpoints)
-                template_magseries = np.array([x['mags'] for x in results])
-                template_errseries = np.array([x['errs'] for x in results])
+                    pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
+                    reform_results = pool.map(_reform_templatelc_for_tfa, tasks)
+                    pool.close()
+                    pool.join()
+
+                    # generate a 2D array for the template magseries with
+                    # dimensions = (n_objects, n_lcpoints)
+                    template_magseries = np.array([x['mags']
+                                                   for x in reform_results])
+                    template_errseries = np.array([x['errs']
+                                                   for x in reform_results])
+
+                else:
+                    template_magseries = None
+                    template_errseries = None
 
                 # put everything into a templateinfo dict for this magcol
                 outdict[mcol].update({
@@ -1000,6 +1029,7 @@ def tfa_templates_lclist(
 
             LOGERROR('nobjects: %s, not enough in requested mag range to '
                      'select templates for magcol: %s' % (len(lcobj),mcol))
+
             continue
 
         # make the plots for mag-MAD/mag-eta relation and fits used
