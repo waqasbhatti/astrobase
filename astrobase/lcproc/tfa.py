@@ -552,6 +552,29 @@ def tfa_templates_lclist(
 
     '''
 
+    try:
+        formatinfo = get_lcformat(lcformat,
+                                  use_lcformat_dir=lcformatdir)
+        if formatinfo:
+            (dfileglob, readerfunc,
+             dtimecols, dmagcols, derrcols,
+             magsarefluxes, normfunc) = formatinfo
+        else:
+            LOGERROR("can't figure out the light curve format")
+            return None
+    except Exception as e:
+        LOGEXCEPTION("can't figure out the light curve format")
+        return None
+
+    # override the default timecols, magcols, and errcols
+    # using the ones provided to the function
+    if timecols is None:
+        timecols = dtimecols
+    if magcols is None:
+        magcols = dmagcols
+    if errcols is None:
+        errcols = derrcols
+
     LOGINFO('collecting light curve information for %s objects in list...' %
             len(lclist))
 
@@ -585,29 +608,6 @@ def tfa_templates_lclist(
 
     # case where we have to redo the LC info collection
     else:
-
-        try:
-            formatinfo = get_lcformat(lcformat,
-                                      use_lcformat_dir=lcformatdir)
-            if formatinfo:
-                (dfileglob, readerfunc,
-                 dtimecols, dmagcols, derrcols,
-                 magsarefluxes, normfunc) = formatinfo
-            else:
-                LOGERROR("can't figure out the light curve format")
-                return None
-        except Exception as e:
-            LOGEXCEPTION("can't figure out the light curve format")
-            return None
-
-        # override the default timecols, magcols, and errcols
-        # using the ones provided to the function
-        if timecols is None:
-            timecols = dtimecols
-        if magcols is None:
-            magcols = dmagcols
-        if errcols is None:
-            errcols = derrcols
 
         # first, we'll collect the light curve info
         tasks = [(x, lcformat, lcformat,
