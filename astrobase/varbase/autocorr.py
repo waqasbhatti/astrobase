@@ -270,7 +270,8 @@ def autocorr_magseries(times, mags, errs,
         autocorr = _autocorr_func3(imags, lags[0], imags.size,
                                    0.0, series_stdev)
         # return only the maximum number of lags
-        autocorr = autocorr[:maxlags]
+        if maxlags is not None:
+            autocorr = autocorr[:maxlags]
 
     interpolated.update({'minitime':itimes.min(),
                          'lags':lags,
