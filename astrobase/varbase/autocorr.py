@@ -145,6 +145,7 @@ def _autocorr_func3(mags, lag, maglen, magmed, magstd):
     # from http://tinyurl.com/afz57c4
     result = npcorrelate(mags, mags, mode='full')
     result = result / npmax(result)
+
     return result[int(result.size / 2):]
 
 
@@ -268,6 +269,8 @@ def autocorr_magseries(times, mags, errs,
 
         autocorr = _autocorr_func3(imags, lags[0], imags.size,
                                    0.0, series_stdev)
+        # return only the maximum number of lags
+        autocorr = autocorr[:maxlags]
 
     interpolated.update({'minitime':itimes.min(),
                          'lags':lags,
