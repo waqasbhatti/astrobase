@@ -85,7 +85,7 @@ NCPUS = mp.cpu_count()
 ## LOCAL IMPORTS ##
 ###################
 
-from astrobase.coordutils import xieta_from_radecl
+from astrobase import coordutils
 from astrobase.varclass import starfeatures, varfeatures
 from astrobase.lcmath import (
     normalize_magseries,
@@ -640,17 +640,13 @@ def tfa_templates_lclist(
     all_decls = np.array([res['decl'] for res in results])
     center_ra = np.nanmedian(all_ras)
     center_decl = np.nanmedian(all_decls)
-    all_coord_xi, all_coord_eta = xieta_from_radecl(
-        all_ras,
-        all_decls,
-        center_ra,
-        center_decl,
-    )
 
     outdict = {
         'timecols':[],
         'magcols':[],
         'errcols':[],
+        'center_ra':center_ra,
+        'center_decl':center_decl,
     }
 
     # for each magcol, we'll generate a separate template list
@@ -665,7 +661,7 @@ def tfa_templates_lclist(
         # these are the containers for possible template collection LC info
         (lcmag, lcmad, lceta,
          lcndet, lcobj, lcfpaths,
-         lcra, lcdecl, lc_cxi, lc_ceta) = [], [], [], [], [], [], [], [], [], []
+         lcra, lcdecl) = [], [], [], [], [], [], [], []
 
         outdict['timecols'].append(tcol)
         outdict['magcols'].append(mcol)
@@ -679,9 +675,7 @@ def tfa_templates_lclist(
                                        'obj':[],
                                        'lcf':[],
                                        'ra':[],
-                                       'decl':[],
-                                       'coord_xi':[],
-                                       'coord_eta':[]}}
+                                       'decl':[]}}
 
         LOGINFO('magcol: %s, collecting prospective template LC info...' %
                 mcol)
@@ -701,8 +695,6 @@ def tfa_templates_lclist(
                 thislcf = result['lcfpath']
                 thisra = result['ra']
                 thisdecl = result['decl']
-                this_coord_xi = all_coord_xi[resind]
-                this_coord_eta = all_coord_eta[resind]
 
                 outdict[mcol]['collection']['mag'].append(thismag)
                 outdict[mcol]['collection']['mad'].append(thismad)
@@ -712,8 +704,6 @@ def tfa_templates_lclist(
                 outdict[mcol]['collection']['lcf'].append(thislcf)
                 outdict[mcol]['collection']['ra'].append(thisra)
                 outdict[mcol]['collection']['decl'].append(thisdecl)
-                outdict[mcol]['collection']['coord_xi'].append(this_coord_xi)
-                outdict[mcol]['collection']['coord_eta'].append(this_coord_eta)
 
 
                 # check if we have more than one bright or faint limit elem
@@ -743,8 +733,6 @@ def tfa_templates_lclist(
                     lcfpaths.append(thislcf)
                     lcra.append(thisra)
                     lcdecl.append(thisdecl)
-                    lc_cxi.append(this_coord_xi)
-                    lc_ceta.append(this_coord_eta)
 
             except Exception as e:
                 pass
@@ -766,8 +754,6 @@ def tfa_templates_lclist(
             lcfpaths = np.array(lcfpaths)
             lcra = np.array(lcra)
             lcdecl = np.array(lcdecl)
-            lc_cxi = np.array(lc_cxi)
-            lc_ceta = np.array(lc_ceta)
 
             sortind = np.argsort(lcmag)
             lcmag = lcmag[sortind]
@@ -778,8 +764,6 @@ def tfa_templates_lclist(
             lcfpaths = lcfpaths[sortind]
             lcra = lcra[sortind]
             lcdecl = lcdecl[sortind]
-            lc_cxi = lc_cxi[sortind]
-            lc_ceta = lc_ceta[sortind]
 
             # 1. get the mag-MAD relation
 
@@ -828,8 +812,6 @@ def tfa_templates_lclist(
                 templatelcf = lcfpaths[templateind]
                 templatera = lcra[templateind]
                 templatedecl = lcdecl[templateind]
-                template_cxi = lc_cxi[templateind]
-                template_ceta = lc_ceta[templateind]
 
                 # now, check if we have no more than the required fraction of
                 # TFA templates
@@ -841,7 +823,7 @@ def tfa_templates_lclist(
                 LOGINFO('magcol: %s, selecting %s TFA templates randomly' %
                         (mcol, target_number_templates))
 
-                # FIXME: how do we select uniformly in xi-eta?
+                # FIXME: how do we select uniformly in ra-decl?
                 # 1. 2D histogram the data into binsize (nx, ny)
                 # 2. random uniform select from 0 to nx-1, 0 to ny-1
                 # 3. pick object from selected bin
@@ -861,8 +843,6 @@ def tfa_templates_lclist(
                 templatelcf = templatelcf[targetind]
                 templatera = templatera[targetind]
                 templatedecl = templatedecl[targetind]
-                template_cxi = template_cxi[targetind]
-                template_ceta = template_ceta[targetind]
 
                 # get the max ndet so far to use that LC as the timebase
                 maxndetind = templatendet == templatendet.max()
@@ -913,7 +893,7 @@ def tfa_templates_lclist(
                                'templates randomly' %
                                (mcol, newmaxtemplates))
 
-                    # FIXME: how do we select uniformly in xi-eta?
+                    # FIXME: how do we select uniformly in ra-decl?
                     # 1. 2D histogram the data into binsize (nx, ny)
                     # 2. random uniform select from 0 to nx-1, 0 to ny-1
                     # 3. pick object from selected bin
@@ -933,8 +913,6 @@ def tfa_templates_lclist(
                     templatelcf = templatelcf[targetind]
                     templatera = templatera[targetind]
                     templatedecl = templatedecl[targetind]
-                    template_cxi = template_cxi[targetind]
-                    template_ceta = template_ceta[targetind]
 
                     # get the max ndet so far to use that LC as the timebase
                     maxndetind = templatendet == templatendet.max()
@@ -1002,8 +980,6 @@ def tfa_templates_lclist(
                     'template_objects':templateobj,
                     'template_ra':templatera,
                     'template_decl':templatedecl,
-                    'template_coord_xi':template_cxi,
-                    'template_coord_eta':template_ceta,
                     'template_mag':templatemag,
                     'template_mad':templatemad,
                     'template_eta':templateeta,
@@ -1012,10 +988,9 @@ def tfa_templates_lclist(
                     'template_errseries':template_errseries
                 })
 
-                # make a KDTree on the xi and eta coords so we can remove items
-                # from the TFA ensemble that are too close to a target object
-                outdict[mcol]['template_xieta_kdtree'] = cKDTree(
-                    np.column_stack((template_cxi, template_ceta))
+                # make a KDTree on the template coordinates
+                outdict[mcol]['template_radecl_kdtree'] = make_kdtree(
+                    templatera, templatedecl
                 )
 
             # if we don't have enough, return nothing for this magcol
@@ -1081,7 +1056,7 @@ def apply_tfa_magseries(lcfile,
                         magcol,
                         errcol,
                         templateinfo,
-                        mintemplatedist_arcmin=1.0,
+                        mintemplatedist_arcmin=10.0,
                         lcformat='hat-sql',
                         lcformatdir=None,
                         interp='nearest',
@@ -1103,7 +1078,7 @@ def apply_tfa_magseries(lcfile,
         produced by the same function.
 
     mintemplatedist_arcmin : float
-        TODO: This sets the minimum distance required from the target object for
+        This sets the minimum distance required from the target object for
         objects in the TFA template ensemble. Objects closer than this distance
         will be removed from the ensemble.
 
@@ -1165,11 +1140,12 @@ def apply_tfa_magseries(lcfile,
 
     objectid = lcdict['objectid']
 
+    # this is the initial template array
+    tmagseries = templateinfo[magcol][
+        'template_magseries'
+    ][::]
+
     # if the object itself is in the template ensemble, remove it
-
-    # TODO: also remove objects from the template that lie within some radius of
-    # the target object (let's make this 1 arcminute by default)
-
     if objectid in templateinfo[magcol]['template_objects']:
 
         LOGWARNING('object %s found in the TFA template ensemble, removing...' %
@@ -1177,17 +1153,35 @@ def apply_tfa_magseries(lcfile,
 
         templateind = templateinfo[magcol]['template_objects'] == objectid
 
-        # we need to copy over this template instance
-        tmagseries = templateinfo[magcol][
-            'template_magseries'
-        ][~templateind,:][::]
+        # get the objects in the tmagseries not corresponding to the current
+        # object's index
+        tmagseries = tmagseries[~templateind,:]
 
-    # otherwise, get the full ensemble
-    else:
+    # check if there are close matches to the current object in the templates
+    object_matches = coordutils.conesearch_kdtree(
+        templateinfo[magcol]['template_radecl_kdtree'],
+        lcdict['objectinfo']['ra'], lcdict['objectinfo']['decl'],
+        mintemplatedist_arcmin/60.0
+    )
 
-        tmagseries = templateinfo[magcol][
-            'template_magseries'
-        ][::]
+    if len(object_matches) > 0:
+
+        LOGWARNING(
+            "object %s is within %.1f arcminutes of %s "
+            "template objects. Will remove these objects "
+            "from the template applied to this object." %
+            (objectid, mintemplatedist_arcmin, len(object_matches))
+        )
+        removalind = np.full(
+            templateinfo[magcol]['template_objects'].size,
+            False, dtype=np.bool
+        )
+        removalind[object_matches] = True
+        tmagseries = tmagseries[~removalind,:]
+
+    #
+    # finally, proceed to TFA
+    #
 
     # this is the normal matrix
     normal_matrix = np.dot(tmagseries, tmagseries.T)
