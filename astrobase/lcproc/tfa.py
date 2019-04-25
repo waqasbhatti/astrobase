@@ -58,7 +58,6 @@ npr.seed(0xc0ffee)
 
 import scipy.interpolate as spi
 from scipy import linalg as spla
-from scipy.spatial import cKDTree
 
 import matplotlib
 matplotlib.use('Agg')
@@ -682,7 +681,7 @@ def tfa_templates_lclist(
 
 
         # collect the template LCs for this magcol
-        for resind, result in enumerate(results):
+        for result in results:
 
             # we'll only append objects that have all of these elements
             try:
@@ -989,8 +988,10 @@ def tfa_templates_lclist(
                 })
 
                 # make a KDTree on the template coordinates
-                outdict[mcol]['template_radecl_kdtree'] = make_kdtree(
-                    templatera, templatedecl
+                outdict[mcol]['template_radecl_kdtree'] = (
+                    coordutils.make_kdtree(
+                        templatera, templatedecl
+                    )
                 )
 
             # if we don't have enough, return nothing for this magcol
