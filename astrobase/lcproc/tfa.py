@@ -1269,16 +1269,19 @@ def _parallel_tfa_worker(task):
 
     (lcfile, timecol, magcol, errcol,
      templateinfo, lcformat, lcformatdir,
-     interp, sigclip) = task
+     interp, sigclip, mintemplatedist_arcmin) = task
 
     try:
 
-        res = apply_tfa_magseries(lcfile, timecol, magcol, errcol,
-                                  templateinfo,
-                                  lcformat=lcformat,
-                                  lcformatdir=lcformatdir,
-                                  interp=interp,
-                                  sigclip=sigclip)
+        res = apply_tfa_magseries(
+            lcfile, timecol, magcol, errcol,
+            templateinfo,
+            lcformat=lcformat,
+            lcformatdir=lcformatdir,
+            interp=interp,
+            sigclip=sigclip,
+            mintemplatedist_arcmin=mintemplatedist_arcmin
+        )
         if res:
             LOGINFO('%s -> %s TFA OK' % (lcfile, res))
         return res
@@ -1299,6 +1302,7 @@ def parallel_tfa_lclist(lclist,
                         lcformatdir=None,
                         interp='nearest',
                         sigclip=5.0,
+                        mintemplatedist_arcmin=10.0,
                         nworkers=NCPUS,
                         maxworkertasks=1000):
     '''This applies TFA in parallel to all LCs in the given list of file names.
@@ -1342,6 +1346,11 @@ def parallel_tfa_lclist(lclist,
     sigclip : float or sequence of two floats or None
         This is the sigma clip to apply to the light curves before running TFA
         on it.
+
+    mintemplatedist_arcmin : float
+        This sets the minimum distance required from the target object for
+        objects in the TFA template ensemble. Objects closer than this distance
+        will be removed from the ensemble.
 
     nworkers : int
         The number of parallel workers to launch
@@ -1419,6 +1428,7 @@ def parallel_tfa_lcdir(lcdir,
                        lcformatdir=None,
                        interp='nearest',
                        sigclip=5.0,
+                       mintemplatedist_arcmin=10.0,
                        nworkers=NCPUS,
                        maxworkertasks=1000):
     '''This applies TFA in parallel to all LCs in a directory.
@@ -1467,6 +1477,11 @@ def parallel_tfa_lcdir(lcdir,
     sigclip : float or sequence of two floats or None
         This is the sigma clip to apply to the light curves before running TFA
         on it.
+
+    mintemplatedist_arcmin : float
+        This sets the minimum distance required from the target object for
+        objects in the TFA template ensemble. Objects closer than this distance
+        will be removed from the ensemble.
 
     nworkers : int
         The number of parallel workers to launch
@@ -1519,6 +1534,7 @@ def parallel_tfa_lcdir(lcdir,
         lcformatdir=None,
         interp=interp,
         sigclip=sigclip,
+        mintemplatedist_arcmin=mintemplatedist_arcmin,
         nworkers=nworkers,
         maxworkertasks=maxworkertasks
     )
