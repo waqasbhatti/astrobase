@@ -390,6 +390,7 @@ def tfa_templates_lclist(
         max_rms=0.15,
         max_mult_above_magmad=1.5,
         max_mult_above_mageta=1.5,
+        xieta_bins=20,
         mag_bandpass='sdssr',
         custom_bandpasses=None,
         mag_bright_limit=10.0,
@@ -822,12 +823,50 @@ def tfa_templates_lclist(
                 LOGINFO('magcol: %s, selecting %s TFA templates randomly' %
                         (mcol, target_number_templates))
 
-                # FIXME: how do we select uniformly in ra-decl?
+                # FIXME: how do we select uniformly in xi-eta?
                 # 1. 2D histogram the data into binsize (nx, ny)
                 # 2. random uniform select from 0 to nx-1, 0 to ny-1
                 # 3. pick object from selected bin
                 # 4. continue until we have target_number_templates
                 # 5. make sure the same object isn't picked twice
+
+                # get the xi-eta
+                template_cxi, template_ceta = coordutils.xieta_from_radecl(
+                    templatera,
+                    templatedecl,
+                    center_ra,
+                    center_decl
+                )
+
+                cxi_bins = np.linspace(template_cxi.min(),
+                                       template_cxi.max(),
+                                       num=xieta_bins)
+                ceta_bins = np.linspace(template_ceta.min(),
+                                        template_ceta.max(),
+                                        num=xieta_bins)
+
+                digitized_cxi_inds = np.digitize(template_cxi, cxi_bins)
+                digitized_ceta_inds = np.digitize(template_ceta, ceta_bins)
+
+                # pick target_number_templates indexes out of the bins
+                targetind = npr.choice(xieta_bins,
+                                       target_number_templates,
+                                       replace=True)
+
+                # put together the template lists
+                selected_template_obj = []
+                selected_template_lcf = []
+                selected_template_ndet = []
+                selected_template_ra = []
+                selected_template_decl = []
+                selected_template_mag = []
+                selected_template_mad = []
+                selected_template_eta = []
+
+                for ind in targetind:
+
+                    #
+
 
                 # select random uniform objects from the template candidates
                 targetind = npr.choice(templateobj.size,
@@ -1177,7 +1216,7 @@ def apply_tfa_magseries(lcfile,
             templateinfo[magcol]['template_objects'].size,
             False, dtype=np.bool
         )
-        removalind[object_matches] = True
+        removalind[np.array(object_matches)] = True
         tmagseries = tmagseries[~removalind,:]
 
     #
