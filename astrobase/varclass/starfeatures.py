@@ -1408,7 +1408,7 @@ def neighbor_gaia_features(objectinfo,
                             gaia_mags, gaia_parallaxes
                         )
                         if ('kmag' in objectinfo and
-                            objectinfo['kmag'] is not None,
+                            objectinfo['kmag'] is not None and
                             np.isfinite(objectinfo['kmag'])):
                             gaiak_colors = gaia_mags - objectinfo['kmag']
                         else:

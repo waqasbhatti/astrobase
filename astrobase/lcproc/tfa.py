@@ -865,7 +865,7 @@ def tfa_templates_lclist(
 
                 for ind in targetind:
 
-                    #
+                    pass
 
 
                 # select random uniform objects from the template candidates
