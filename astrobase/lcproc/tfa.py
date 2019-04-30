@@ -390,7 +390,6 @@ def tfa_templates_lclist(
         max_rms=0.15,
         max_mult_above_magmad=1.5,
         max_mult_above_mageta=1.5,
-        xieta_bins=20,
         mag_bandpass='sdssr',
         custom_bandpasses=None,
         mag_bright_limit=10.0,
@@ -414,7 +413,8 @@ def tfa_templates_lclist(
       variability index to get nonvar objects
 
     - not more than 10% of the total number of objects in the field or
-      `max_tfa_templates` at most
+      `max_tfa_templates` at most and no more than `max_target_frac_obs x
+      template_ndet` objects.
 
     - allow shuffling of the templates if the target ends up in them
 
@@ -422,8 +422,10 @@ def tfa_templates_lclist(
 
     - sigma-clip the input time series observations
 
-    - TODO: uniform sampling in tangent plane coordinates (we'll need ra and
-      decl)
+    - TODO: select randomly in xi-eta space. This doesn't seem to make a huge
+      difference at the moment, so removed those bits for now. This function
+      makes plots of xi-eta for the selected template objects so the
+      distributions can be visualized.
 
     This also determines the effective cadence that all TFA LCs will be binned
     to as the template LC with the largest number of non-nan observations will
@@ -823,13 +825,6 @@ def tfa_templates_lclist(
                 LOGINFO('magcol: %s, selecting %s TFA templates randomly' %
                         (mcol, target_number_templates))
 
-                # FIXME: how do we select uniformly in xi-eta?
-                # 1. 2D histogram the data into binsize (nx, ny)
-                # 2. random uniform select from 0 to nx-1, 0 to ny-1
-                # 3. pick object from selected bin
-                # 4. continue until we have target_number_templates
-                # 5. make sure the same object isn't picked twice
-
                 # get the xi-eta
                 template_cxi, template_ceta = coordutils.xieta_from_radecl(
                     templatera,
@@ -837,36 +832,6 @@ def tfa_templates_lclist(
                     center_ra,
                     center_decl
                 )
-
-                cxi_bins = np.linspace(template_cxi.min(),
-                                       template_cxi.max(),
-                                       num=xieta_bins)
-                ceta_bins = np.linspace(template_ceta.min(),
-                                        template_ceta.max(),
-                                        num=xieta_bins)
-
-                digitized_cxi_inds = np.digitize(template_cxi, cxi_bins)
-                digitized_ceta_inds = np.digitize(template_ceta, ceta_bins)
-
-                # pick target_number_templates indexes out of the bins
-                targetind = npr.choice(xieta_bins,
-                                       target_number_templates,
-                                       replace=True)
-
-                # put together the template lists
-                selected_template_obj = []
-                selected_template_lcf = []
-                selected_template_ndet = []
-                selected_template_ra = []
-                selected_template_decl = []
-                selected_template_mag = []
-                selected_template_mad = []
-                selected_template_eta = []
-
-                for ind in targetind:
-
-                    pass
-
 
                 # select random uniform objects from the template candidates
                 targetind = npr.choice(templateobj.size,
@@ -881,6 +846,8 @@ def tfa_templates_lclist(
                 templatelcf = templatelcf[targetind]
                 templatera = templatera[targetind]
                 templatedecl = templatedecl[targetind]
+                template_cxi = template_cxi[targetind]
+                template_ceta = template_ceta[targetind]
 
                 # get the max ndet so far to use that LC as the timebase
                 maxndetind = templatendet == templatendet.max()
@@ -931,13 +898,6 @@ def tfa_templates_lclist(
                                'templates randomly' %
                                (mcol, newmaxtemplates))
 
-                    # FIXME: how do we select uniformly in ra-decl?
-                    # 1. 2D histogram the data into binsize (nx, ny)
-                    # 2. random uniform select from 0 to nx-1, 0 to ny-1
-                    # 3. pick object from selected bin
-                    # 4. continue until we have target_number_templates
-                    # 5. make sure the same object isn't picked twice
-
                     # select random uniform objects from the template candidates
                     targetind = npr.choice(templateobj.size,
                                            newmaxtemplates,
@@ -951,6 +911,19 @@ def tfa_templates_lclist(
                     templatelcf = templatelcf[targetind]
                     templatera = templatera[targetind]
                     templatedecl = templatedecl[targetind]
+                    template_cxi = template_cxi[targetind]
+                    template_ceta = template_ceta[targetind]
+
+                    plt.plot(template_cxi, template_ceta,
+                             marker='o', linestyle='none', ms=1.0)
+                    plt.xlabel('image plane-projected coordinate xi')
+                    plt.ylabel('image plane-projected coordinate eta')
+                    plt.title(
+                        'image plane-projected coords - selected template objs'
+                    )
+                    plt.savefig('template-cxi-ceta-%s.png' % mcol,
+                                bbox_inches='tight')
+                    plt.close('all')
 
                     # get the max ndet so far to use that LC as the timebase
                     maxndetind = templatendet == templatendet.max()
@@ -1018,6 +991,8 @@ def tfa_templates_lclist(
                     'template_objects':templateobj,
                     'template_ra':templatera,
                     'template_decl':templatedecl,
+                    'template_cxi':template_cxi,
+                    'template_ceta':template_ceta,
                     'template_mag':templatemag,
                     'template_mad':templatemad,
                     'template_eta':templateeta,
@@ -1069,7 +1044,6 @@ def tfa_templates_lclist(
         plt.savefig('catmag-%s-lceta-fit.png' % mcol,
                     bbox_inches='tight')
         plt.close('all')
-
 
     #
     # end of operating on each magcol
