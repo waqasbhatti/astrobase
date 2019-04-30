@@ -39,7 +39,10 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
+from functools import partial
+
 import numpy as np
+from scipy.optimize import least_squares
 
 import matplotlib
 matplotlib.use('Agg')
@@ -217,3 +220,161 @@ def make_fit_plot(phase, pmags, perrs, fitmags,
               (period, mintime, magseriesepoch))
     plt.savefig(plotfit)
     plt.close()
+
+
+#######################
+## ITERATIVE FITTING ##
+#######################
+
+def iterative_fit(data_x,
+                  data_y,
+                  init_coeffs,
+                  objective_func,
+                  objective_args=None,
+                  objective_kwargs=None,
+                  optimizer_func=least_squares,
+                  optimizer_kwargs=None,
+                  fit_iterations=5,
+                  fit_reject_sigma=2.0,
+                  verbose=True,
+                  full_output=False):
+    '''This is a function to run iterative fitting based on repeated
+    sigma-clipping of fit outliers.
+
+    Parameters
+    ----------
+
+    data_x : np.array
+        Array of the independent variable.
+
+    data_y : np.array
+        Array of the dependent variable.
+
+    init_coeffs:
+        The initial values of the fit function coefficients.
+
+    objective_func : Python function
+        A function that is used to calculate residuals between the model and the
+        `data_y` array. This should have a signature similar to::
+
+            def objective_func(fit_coeffs, data_x, data_y,
+                               *objective_args, **objective_kwargs)
+
+    objective_args : tuple or None
+        A tuple of arguments to pass into the `objective_func`.
+
+    objective_kwargs : dict or None
+        A dict of keyword arguments to pass into the `objective_func`.
+
+    optimizer_func : Python function
+        The function that minimizes the residual between the model and the
+        `data_y` array using the `objective_func`. This should have a
+        signature similar to one of the optimizer functions in `scipy.optimize
+        <https://docs.scipy.org/doc/scipy/reference/optimize.html>`_, i.e.::
+
+            def optimizer_func(objective_func,
+                               initial_coeffs,
+                               args=(),
+                               kwargs={},
+                               ...)
+
+        and return a `scipy.optimize.OptimizeResult
+        <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.OptimizeResult.html>`_. We'll
+        rely on the ``.success`` attribute to determine if the EPD fit was
+        successful, and the ``.x`` attribute to get the values of the fit
+        coefficients.
+
+    optimizer_kwargs : dict or None
+        A dict of kwargs to pass into the `optimizer_func` function.
+
+    fit_iterations : int
+        The number of iterations of the fit to perform while throwing out
+        outliers to the fit.
+
+    fit_reject_sigma : float
+        The maximum deviation allowed to consider a `data_y` item as an outlier
+        to the fit and to remove it from consideration in a successive iteration
+        of the fit.
+
+    verbose : bool
+        If True, reports per iteration on the cost function value and the number
+        of items remaining in `data_x` and `data_y` after sigma-clipping
+        outliers.
+
+    full_output : bool
+        If True, returns the full output from the `optimizer_func` along with
+        the resulting fit function coefficients.
+
+    Returns
+    -------
+
+    result : np.array or tuple
+        If `full_output` was True, will return the fit coefficients np.array as
+        the first element and the optimizer function fit output from the last
+        iteration as the second element of a tuple. If `full_output` was False,
+        will only return the final fit coefficients as an np.array.
+
+    '''
+
+
+    iteration_count = 0
+
+    coeffs = init_coeffs.copy()
+    fit_data_x = data_x.copy()
+    fit_data_y = data_y.copy()
+
+    while iteration_count < fit_iterations:
+
+        if not optimizer_kwargs:
+            optimizer_kwargs = {}
+
+        if not objective_args:
+            obj_args = (fit_data_x, fit_data_y)
+        else:
+            obj_args = (fit_data_x, fit_data_y, *objective_args)
+
+        if not objective_kwargs:
+            obj_func = objective_func
+        else:
+            obj_func = partial(objective_func, **objective_kwargs)
+
+        fit_info = optimizer_func(
+            obj_func,
+            coeffs,
+            args=obj_args,
+            **optimizer_kwargs
+        )
+
+        if fit_info.success:
+
+            residual = fit_info.fun
+            residual_median = np.nanmedian(residual)
+            residual_mad = np.nanmedian(np.abs(residual - residual_median))
+            residual_stdev = residual_mad*1.4826
+            keep_ind = np.abs(residual) < residual_stdev*fit_reject_sigma
+
+            fit_data_x = fit_data_x[keep_ind]
+            fit_data_y = fit_data_y[keep_ind]
+            coeffs = fit_info.x
+
+            if verbose:
+                LOGINFO(
+                    "Fit succeeded for iteration: %s, "
+                    "remaining items after sigma-clip: %s, "
+                    "cost function value: %s" % (iteration_count,
+                                                 keep_ind.sum(),
+                                                 fit_info.cost)
+                )
+
+        else:
+
+            LOGERROR("Fit did not succeed on iteration: %s" % iteration_count)
+
+        iteration_count = iteration_count + 1
+
+
+    # at the end, return the fit coeffs
+    if not full_output:
+        return fit_info.x
+    else:
+        return fit_info.x, fit_info
