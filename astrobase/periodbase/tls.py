@@ -61,7 +61,7 @@ except:
         'are you sure you have installed it correctly?\n'
         'see https://transitleastsquares.readthedocs.io/en/latest/Installation.html'
     )
-    raise AssertionError(errmsg)
+    raise ImportError(errmsg)
 
 
 ###################
@@ -82,12 +82,17 @@ NCPUS = cpu_count()
 ## UTILITY FUNCTIONS ##
 #######################
 
-def tls_parallel_pfind(times, mags, errs=None,
+def tls_parallel_pfind(times, mags, errs,
                        magsarefluxes=None,
                        startp=0.1,  # search from 0.1 d to...
                        endp=None,   # determine automatically from times
                        tlsoversample=5,
                        tlsmintransits=3,
+                       tls_transit_template='default',
+                       tls_R_star_min=0.13,
+                       tls_R_star_max=3.5,
+                       tls_M_star_min=0.1,
+                       tls_M_star_max=2.0,
                        periodepsilon=0.1,
                        nbestpeaks=5,
                        sigclip=10.0,
@@ -106,9 +111,9 @@ def tls_parallel_pfind(times, mags, errs=None,
     linear-in-frequency sampling (which is correct for sinusoidal signal
     detection) isn't optimal for a Keplerian box signal. He gave an equation
     for "optimal" sampling. `tlsoversample` is the factor by which to
-    oversample over that. The grid can be imported independently via
+    oversample over that. The grid can be imported independently via::
 
-        `from transitleastsquares import period_grid`
+        from transitleastsquares import period_grid
 
     The spacing equations are given here:
     https://transitleastsquares.readthedocs.io/en/latest/Python%20interface.html#period-grid
@@ -123,7 +128,9 @@ def tls_parallel_pfind(times, mags, errs=None,
         The magnitude/flux time-series to search for transits.
 
     magsarefluxes : bool
-        As-implemented, must be true.
+        `transitleastsquares` requires fluxes. Therefore if magsarefluxes is
+        set to false, the passed mags are converted to fluxes. All output
+        dictionary vectors include fluxes, not mags.
 
     startp,endp : float
         The minimum and maximum periods to consider for the transit search.
@@ -134,6 +141,12 @@ def tls_parallel_pfind(times, mags, errs=None,
     tlsmintransits : int
         Sets the `min_n_transits` kwarg for the `BoxLeastSquares.autoperiod()`
         function.
+
+    tls_transit_template: str
+        `default`, `grazing`, or `box`.
+
+    tls_R_star_min, tls_R_star_max, tls_M_star_min, tls_M_star_max : float
+        The range of stellar values used to create the frequency grid.
 
     periodepsilon : float
         The fractional difference between successive values of 'best' periods
@@ -184,7 +197,7 @@ def tls_parallel_pfind(times, mags, errs=None,
         Crucially, it also contains "tlsresult", which is a dictionary with
         transitleastsquares spectra (used to get the SDE as defined in the TLS
         paper), statistics, transit period, mid-time, duration, depth, SNR, and
-        the "odd_even_mismatch" statistic. The full key list is:
+        the "odd_even_mismatch" statistic. The full key list is::
 
             dict_keys(['SDE', 'SDE_raw', 'chi2_min', 'chi2red_min', 'period',
             'period_uncertainty', 'T0', 'duration', 'depth', 'depth_mean',
@@ -198,10 +211,11 @@ def tls_parallel_pfind(times, mags, errs=None,
             'model_folded_phase', 'folded_y', 'folded_dy', 'folded_phase',
             'model_folded_model'])
 
-        The descriptions are here:
-        https://transitleastsquares.readthedocs.io/en/latest/Python%20interface.html#return-values
+        The descriptions are here::
 
-        The remaining resultdict is:
+            https://transitleastsquares.readthedocs.io/en/latest/Python%20interface.html#return-values
+
+        The remaining resultdict is::
 
             resultdict = {
                 'tlsresult':tlsresult,
@@ -220,12 +234,21 @@ def tls_parallel_pfind(times, mags, errs=None,
     """
 
     if not magsarefluxes:
-        errmsg = ('IDK if transitleastsquares supports magnitudes. '
-                  'many of its utilities would probably break.')
-        raise NotImplementedError(errmsg)
+        LOGWARNING('transitleastsquares requires relative flux...')
+        LOGWARNING('converting input mags to relative flux...')
+        LOGWARNING('and forcing magsarefluxes=True...')
+        mag_0, f_0 = 12, 1e4
+        flux = f_0 * 10**( -0.4 * (mag - mag_0) )
+        flux /= np.nanmedian(flux)
+        mags = flux
+        magsarefluxes = True
 
     if nworkers is None:
         nworkers = NCPUS
+
+    if errs is None:
+        # uniform weights
+        errs = np.ones_like(flux)*1e-4
 
     # get rid of nans first and sigclip
     stimes, smags, serrs = sigclip_magseries(times, mags, errs,
@@ -261,17 +284,16 @@ def tls_parallel_pfind(times, mags, errs=None,
         # out to 99% of the baseline. (for two transits).
         endp = 0.99*(np.nanmax(stimes) - np.nanmin(stimes))
 
-    if isinstance(errs,np.ndarray):
-        model = transitleastsquares(stimes, smags, serrs)
-    else:
-        model = transitleastsquares(stimes, smags)
-
     # run periodogram
+    model = transitleastsquares(stimes, smags, serrs)
     tlsresult = model.power(use_threads=nworkers, show_progress_bar=False,
-                            R_star_min=0.13, R_star_max=3.5, M_star_min=0.1,
-                            M_star_max=2.0, period_min=startp, period_max=endp,
+                            R_star_min=tls_R_star_min,
+                            R_star_max=tls_R_star_min,
+                            M_star_min=tls_M_star_min,
+                            M_star_max=tls_M_star_max,
+                            period_min=startp, period_max=endp,
                             n_transits_min=tlsmintransits,
-                            transit_template='default',
+                            transit_template=tls_transit_template,
                             oversampling_factor=tlsoversample)
 
     # get the peak values

@@ -202,7 +202,11 @@ from .saov import aov_periodfind
 from .smav import aovhm_periodfind
 from .macf import macf_period_find
 from .kbls import bls_serial_pfind, bls_parallel_pfind
-from .tls import tls_parallel_pfind
+try:
+    from .tls import tls_parallel_pfind
+    HAVE_TLS=True
+except:
+    HAVE_TLS=False
 
 # used to figure out which function to run for bootstrap resampling
 LSPMETHODS = {
@@ -212,9 +216,10 @@ LSPMETHODS = {
     'mav':aovhm_periodfind,
     'pdm':stellingwerf_pdm,
     'acf':macf_period_find,
-    'win':specwindow_lsp,
-    'tls':tls_parallel_pfind
+    'win':specwindow_lsp
 }
+if HAVE_TLS:
+    LSPMETHODS['tls'] = tls_parallel_pfind
 
 
 # check if we have the astropy implementation of BLS available
