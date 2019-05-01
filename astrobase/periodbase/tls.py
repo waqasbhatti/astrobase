@@ -288,7 +288,7 @@ def tls_parallel_pfind(times, mags, errs,
     model = transitleastsquares(stimes, smags, serrs)
     tlsresult = model.power(use_threads=nworkers, show_progress_bar=False,
                             R_star_min=tls_R_star_min,
-                            R_star_max=tls_R_star_min,
+                            R_star_max=tls_R_star_max,
                             M_star_min=tls_M_star_min,
                             M_star_max=tls_M_star_max,
                             period_min=startp, period_max=endp,
