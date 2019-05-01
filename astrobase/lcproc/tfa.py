@@ -1277,6 +1277,7 @@ def _parallel_tfa_worker(task):
     task[6] = lcformatdir
     task[6] = interp
     task[7] = sigclip
+    task[8] = mintemplatedist_arcmin
 
     '''
 
@@ -1417,7 +1418,7 @@ def parallel_tfa_lclist(lclist,
 
         tasks = [(x, t, m, e, templateinfo,
                   lcformat, lcformatdir,
-                  interp, sigclip) for
+                  interp, sigclip, mintemplatedist_arcmin) for
                  x in lclist]
 
         pool = mp.Pool(nworkers, maxtasksperchild=maxworkertasks)
