@@ -15,6 +15,7 @@ try:
     from urllib import urlretrieve
 except Exception as e:
     from urllib.request import urlretrieve
+import numpy as np
 from numpy.testing import assert_allclose
 
 from astrobase.hatsurveys import hatlc
@@ -24,6 +25,7 @@ from astrobase import periodbase
 from astrobase.periodbase import kbls
 from astrobase.periodbase import abls
 
+from astrobase.periodbase import tls
 
 
 ############
@@ -213,3 +215,34 @@ def test_abls_parallel():
 
     assert isinstance(bls, dict)
     assert_allclose(bls['bestperiod'], EXPECTED_PERIOD, atol=1.0e-4)
+
+
+
+def test_tls_parallel():
+    '''
+    This tests periodbase.tls.tls_parallel_pfind.
+    '''
+
+    EXPECTED_PERIOD = 3.0848887
+
+    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
+
+    # convert mag column to a flux, as TLS needs.
+    mag = lcd['aep_000']
+    mag_0, f_0 = 12, 1e4
+    flux = f_0 * 10**( -0.4 * (mag - mag_0) )
+    flux /= np.nanmedian(flux)
+
+    # make up the errors for uniform weights.
+    err = np.ones_like(flux)*1e-4
+
+    tlsdict = tls.tls_parallel_pfind(lcd['rjd'], flux, err, startp=2.0,
+                                     endp=5., magsarefluxes=True)
+
+    tlsresult = tlsdict['tlsresult']
+
+    assert isinstance(tlsdict, dict)
+
+    # ensure period is within 2 sigma of what's expected.
+    assert_allclose(tlsdict['bestperiod'], EXPECTED_PERIOD,
+                    atol=2*tlsresult['period_uncertainty'])

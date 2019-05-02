@@ -64,6 +64,7 @@ EXTRAS_REQUIRE = {
         'h5py',
         'batman-package',
         'corner',
+        'transitleastsquares',
         'paramiko',
         'boto3',
         'awscli',
@@ -77,6 +78,10 @@ EXTRAS_REQUIRE = {
         'h5py',
         'batman-package',
         'corner',
+    ],
+    # for periodbase.tls
+    'tls':[
+        'transitleastsquares'
     ],
     # for lcproc_aws and awsutils
     'aws':[
