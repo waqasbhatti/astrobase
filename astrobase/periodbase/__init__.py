@@ -22,7 +22,7 @@
 - :py:mod:`astrobase.periodbase.abls`: -> Kovacs et al. (2002) BLS using
   Astropy's implementation.
 
-- :py:mod:`astrobase.periodbase.tls`: Hippke & Heller (2019) BLS, but with a
+- :py:mod:`astrobase.periodbase.htls`: Hippke & Heller (2019) BLS, but with a
   nicer template.
 
 - :py:mod:`astrobase.periodbase.macf`: -> McQuillan et al. (2013a, 2014) ACF

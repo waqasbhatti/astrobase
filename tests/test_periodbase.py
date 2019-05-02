@@ -25,7 +25,7 @@ from astrobase import periodbase
 from astrobase.periodbase import kbls
 from astrobase.periodbase import abls
 
-from astrobase.periodbase import tls
+from astrobase.periodbase import htls
 
 
 ############
@@ -236,8 +236,8 @@ def test_tls_parallel():
     # make up the errors for uniform weights.
     err = np.ones_like(flux)*1e-4
 
-    tlsdict = tls.tls_parallel_pfind(lcd['rjd'], flux, err, startp=2.0,
-                                     endp=5., magsarefluxes=True)
+    tlsdict = htls.tls_parallel_pfind(lcd['rjd'], flux, err, startp=2.0,
+                                      endp=5., magsarefluxes=True)
 
     tlsresult = tlsdict['tlsresult']
 
