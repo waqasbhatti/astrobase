@@ -133,7 +133,7 @@ Python 3.6: [![Python 3.6](https://ci.wbhatti.org/buildStatus/icon?job=astrobase
   **[periodbase.smav](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.smav.html)**), the BLS algorithm from
   Kovacs et al. ([2002](http://adsabs.harvard.edu/abs/2002A%26A...391..369K);
   **[periodbase.kbls](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.kbls.html)**
-  and **[periodbase.abls](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.abls.html)**), 
+  and **[periodbase.abls](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.abls.html)**),
   the similar TLS algorithm from Hippke & Heller
   ([2019](https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..39H/abstract);
   **[periodbase.tls](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.tls.html)**),
@@ -194,6 +194,7 @@ For optional functionality, some additional packages are required:
 - for `lcfit.transits.mandelagol_fit_magseries`, you'll need `batman-package`,
   `emcee`, `corner`, and `h5py`.
 - for `lcproc.awsrun`, you'll need `paramiko`, `boto3`, and `awscli`.
+- for `periodbase.tls`, you'll need `transitleastsquares`
 
 ## Installing with pip
 

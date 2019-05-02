@@ -44,16 +44,16 @@ def readme():
 
 INSTALL_REQUIRES = [
     'numpy>=1.4.0',
-    'scipy',
+    'scipy>=0.17.0',
     'astropy>=1.3',
-    'matplotlib',
+    'matplotlib>=2.0',
     'Pillow',
     'jplephem',
     'requests>=2.20',
     'tornado',
-    'pyeebls',
+    'pyeebls>=0.1.6',
     'tqdm',
-    'scikit-learn',
+    'scikit-learn>=0.19',
     'futures;python_version<"3.2"',
 ]
 
@@ -64,7 +64,7 @@ EXTRAS_REQUIRE = {
         'h5py',
         'batman-package',
         'corner',
-        'transitleastsquares',
+        'transitleastsquares>=1.0',
         'paramiko',
         'boto3',
         'awscli',
@@ -81,7 +81,7 @@ EXTRAS_REQUIRE = {
     ],
     # for periodbase.tls
     'tls':[
-        'transitleastsquares'
+        'transitleastsquares>=1.0'
     ],
     # for lcproc_aws and awsutils
     'aws':[
