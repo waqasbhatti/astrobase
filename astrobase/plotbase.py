@@ -1270,7 +1270,8 @@ PLOTYLABELS = {'gls':'Generalized Lomb-Scargle normalized power',
                'bls':'Box Least-squared Search SR',
                'acf':'Autocorrelation Function',
                'win':'Lomb-Scargle normalized power',
-               'ext':'External period-finder power'}
+               'ext':'External period-finder power',
+               'tls':'Transit Least-Squares SDE'}
 
 METHODLABELS = {'gls':'Generalized Lomb-Scargle periodogram',
                 'pdm':'Stellingwerf phase-dispersion minimization',
@@ -1279,7 +1280,8 @@ METHODLABELS = {'gls':'Generalized Lomb-Scargle periodogram',
                 'bls':'Box Least-squared Search',
                 'acf':'McQuillan+ ACF Period Search',
                 'win':'Timeseries Sampling Lomb-Scargle periodogram',
-                'ext':'External period-finder periodogram'}
+                'ext':'External period-finder periodogram',
+                'tls':'Transit Least-Squares periodogram'}
 
 METHODSHORTLABELS = {'gls':'Generalized L-S',
                      'pdm':'Stellingwerf PDM',
@@ -1288,7 +1290,8 @@ METHODSHORTLABELS = {'gls':'Generalized L-S',
                      'acf':'McQuillan+ ACF',
                      'bls':'BLS',
                      'win':'Sampling L-S',
-                     'ext':'External period-finder'}
+                     'ext':'External period-finder',
+                     'tls':'TLS'}
 
 
 def plot_periodbase_lsp(lspinfo, outfile=None, plotdpi=100):

@@ -133,9 +133,12 @@ Python 3.6: [![Python 3.6](https://ci.wbhatti.org/buildStatus/icon?job=astrobase
   **[periodbase.smav](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.smav.html)**), the BLS algorithm from
   Kovacs et al. ([2002](http://adsabs.harvard.edu/abs/2002A%26A...391..369K);
   **[periodbase.kbls](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.kbls.html)**
-  and **[periodbase.abls](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.abls.html)**), and the ACF
-  period-finding algorithm from McQuillan et
-  al. ([2013a](http://adsabs.harvard.edu/abs/2013MNRAS.432.1203M),
+  and **[periodbase.abls](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.abls.html)**), 
+  the similar TLS algorithm from Hippke & Heller
+  ([2019](https://ui.adsabs.harvard.edu/abs/2019A%26A...623A..39H/abstract);
+  **[periodbase.tls](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.tls.html)**),
+  and the ACF period-finding algorithm from McQuillan et al.
+  ([2013a](http://adsabs.harvard.edu/abs/2013MNRAS.432.1203M),
   [2014](http://adsabs.harvard.edu/abs/2014ApJS..211...24M);
   **[periodbase.macf](https://astrobase.readthedocs.io/en/latest/astrobase.periodbase.macf.html)**).
 

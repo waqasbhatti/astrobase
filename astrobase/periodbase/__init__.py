@@ -22,6 +22,9 @@
 - :py:mod:`astrobase.periodbase.abls`: -> Kovacs et al. (2002) BLS using
   Astropy's implementation.
 
+- :py:mod:`astrobase.periodbase.tls`: Hippke & Heller (2019) BLS, but with a
+  nicer template.
+
 - :py:mod:`astrobase.periodbase.macf`: -> McQuillan et al. (2013a, 2014) ACF
   period search.
 
@@ -199,6 +202,11 @@ from .saov import aov_periodfind
 from .smav import aovhm_periodfind
 from .macf import macf_period_find
 from .kbls import bls_serial_pfind, bls_parallel_pfind
+try:
+    from .tls import tls_parallel_pfind
+    HAVE_TLS=True
+except:
+    HAVE_TLS=False
 
 # used to figure out which function to run for bootstrap resampling
 LSPMETHODS = {
@@ -210,6 +218,8 @@ LSPMETHODS = {
     'acf':macf_period_find,
     'win':specwindow_lsp
 }
+if HAVE_TLS:
+    LSPMETHODS['tls'] = tls_parallel_pfind
 
 
 # check if we have the astropy implementation of BLS available
