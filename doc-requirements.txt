@@ -17,4 +17,3 @@ google-api-python-client
 google-cloud-storage
 google-cloud-pubsub
 psycopg2-binary
-transitleastsquares>=1.0
