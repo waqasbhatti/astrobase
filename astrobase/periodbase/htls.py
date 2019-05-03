@@ -121,8 +121,8 @@ def tls_parallel_pfind(times, mags, errs,
 
         from transitleastsquares import period_grid
 
-    The spacing equations are given here:
-    https://transitleastsquares.readthedocs.io/en/latest/Python%20interface.html#period-grid
+      The spacing equations are given here:
+      https://transitleastsquares.readthedocs.io/en/latest/Python%20interface.html#period-grid
 
     * The boundaries of the period search are by default 0.1 day to 99% the
       baseline of times.
