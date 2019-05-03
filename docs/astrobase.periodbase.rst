@@ -11,6 +11,8 @@ Submodules
 
 .. toctree::
 
+   astrobase.periodbase.utils
+   astrobase.periodbase.falsealarm
    astrobase.periodbase.abls
    astrobase.periodbase.kbls
    astrobase.periodbase.htls

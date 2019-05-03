@@ -54,7 +54,7 @@ from numpy import (
 ###################
 
 from ..lcmath import phase_magseries, sigclip_magseries
-from . import get_frequency_grid, independent_freq_count
+from .utils import get_frequency_grid, independent_freq_count
 
 
 ############
