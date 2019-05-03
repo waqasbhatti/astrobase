@@ -73,33 +73,43 @@ try:
 
 except Exception as e:
 
-    # this function is used to check progress of the download
-    def on_download_chunk(transferred,blocksize,totalsize):
-        progress = transferred*blocksize/float(totalsize)*100.0
-        print('{progress:.1f}%'.format(progress=progress),end='\r')
+    # this is so we don't download the JPL kernel when this module is imported
+    # as part of a docs build on RTD
+    import os
+    RTD_INVOCATION = os.environ.get('RTD_IGNORE_HTLS_FAIL')
 
-    # this is the URL to the SPK
-    spkurl = (
-        'https://naif.jpl.nasa.gov/'
-        'pub/naif/generic_kernels/spk/planets/de430.bsp'
-    )
+    if not RTD_INVOCATION:
 
-    LOGINFO('JPL kernel de430.bsp not found. Downloading from:\n\n%s\n' %
-            spkurl)
-    try:
-        from urllib import urlretrieve
-    except Exception as e:
-        from urllib.request import urlretrieve
+        # this function is used to check progress of the download
+        def on_download_chunk(transferred,blocksize,totalsize):
+            progress = transferred*blocksize/float(totalsize)*100.0
+            print('{progress:.1f}%'.format(progress=progress),end='\r')
 
-    localf, headerr = urlretrieve(
-        spkurl,planetdatafile,reporthook=on_download_chunk
-    )
-    if os.path.exists(localf):
-        print('\nDone.')
-        jplkernel = SPK.open(planetdatafile)
-        HAVEKERNEL = True
+        # this is the URL to the SPK
+        spkurl = (
+            'https://naif.jpl.nasa.gov/'
+            'pub/naif/generic_kernels/spk/planets/de430.bsp'
+        )
+
+        LOGINFO('JPL kernel de430.bsp not found. Downloading from:\n\n%s\n' %
+                spkurl)
+        try:
+            from urllib import urlretrieve
+        except Exception as e:
+            from urllib.request import urlretrieve
+
+        localf, headerr = urlretrieve(
+            spkurl,planetdatafile,reporthook=on_download_chunk
+        )
+        if os.path.exists(localf):
+            print('\nDone.')
+            jplkernel = SPK.open(planetdatafile)
+            HAVEKERNEL = True
+        else:
+            print('failed to download the JPL kernel!')
+            HAVEKERNEL = False
+
     else:
-        print('failed to download the JPL kernel!')
         HAVEKERNEL = False
 
 

@@ -2,31 +2,11 @@
 # -*- coding: utf-8 -*-
 # periodbase - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 
-'''Contains various useful tools for period finding.
+'''This top-level module hoists all period-finder functions up into the
+``astrobase.periodbase`` namespace, so you can do::
 
-- :py:mod:`astrobase.periodbase.spdm`: Stellingwerf (1978) phase-dispersion
-  minimization period search algorithm.
-
-- :py:mod:`astrobase.periodbase.saov`: Schwarzenberg-Czerny (1989) analysis of
-  variance period search algorithm.
-
-- :py:mod:`astrobase.periodbase.smav`: Schwarzenberg-Czerny (1996)
-  multi-harmonic AoV period search algorithm.
-
-- :py:mod:`astrobase.periodbase.zgls`: Zechmeister & Kurster (2009) generalized
-  Lomb-Scargle period search algorithm.
-
-- :py:mod:`astrobase.periodbase.kbls`: Kovacs et al. (2002) Box-Least-Squares
-  search using a wrapped `eebls.f` from G. Kovacs.
-
-- :py:mod:`astrobase.periodbase.abls`: -> Kovacs et al. (2002) BLS using
-  Astropy's implementation.
-
-- :py:mod:`astrobase.periodbase.htls`: Hippke & Heller (2019)
-  Transit-Least-Squares period search algorithm.
-
-- :py:mod:`astrobase.periodbase.macf`: -> McQuillan et al. (2013a, 2014) ACF
-  period search algorithm.
+    from astrobase import periodbase
+    periodbase.<name of period-finder function>
 
 '''
 
