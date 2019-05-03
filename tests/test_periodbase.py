@@ -232,12 +232,12 @@ def test_tls_parallel():
         lcd['aep_000'],
         lcd['aie_000'],
         startp=2.0,
-        endp=5.
+        endp=5.0
     )
 
     tlsresult = tlsdict['tlsresult']
 
-    assert isinstance(tlsdict, dict)
+    assert isinstance(tlsresult, dict)
 
     # ensure period is within 2 sigma of what's expected.
     assert_allclose(tlsdict['bestperiod'], EXPECTED_PERIOD,
