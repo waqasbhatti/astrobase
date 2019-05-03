@@ -227,17 +227,13 @@ def test_tls_parallel():
 
     lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
 
-    # convert mag column to a flux, as TLS needs.
-    mag = lcd['aep_000']
-    mag_0, f_0 = 12, 1e4
-    flux = f_0 * 10**( -0.4 * (mag - mag_0) )
-    flux /= np.nanmedian(flux)
-
-    # make up the errors for uniform weights.
-    err = np.ones_like(flux)*1e-4
-
-    tlsdict = htls.tls_parallel_pfind(lcd['rjd'], flux, err, startp=2.0,
-                                      endp=5., magsarefluxes=True)
+    tlsdict = htls.tls_parallel_pfind(
+        lcd['rjd'],
+        lcd['aep_000'],
+        lcd['aie_000'],
+        startp=2.0,
+        endp=5.
+    )
 
     tlsresult = tlsdict['tlsresult']
 
@@ -245,4 +241,4 @@ def test_tls_parallel():
 
     # ensure period is within 2 sigma of what's expected.
     assert_allclose(tlsdict['bestperiod'], EXPECTED_PERIOD,
-                    atol=2*tlsresult['period_uncertainty'])
+                    atol=2.0*tlsresult['period_uncertainty'])

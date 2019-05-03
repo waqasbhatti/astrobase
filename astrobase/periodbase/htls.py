@@ -93,8 +93,8 @@ def tls_parallel_pfind(times, mags, errs,
                        magsarefluxes=None,
                        startp=0.1,  # search from 0.1 d to...
                        endp=None,   # determine automatically from times
-                       tlsoversample=5,
-                       tlsmintransits=3,
+                       tls_oversample=5,
+                       tls_mintransits=3,
                        tls_transit_template='default',
                        tls_rstar_min=0.13,
                        tls_rstar_max=3.5,
@@ -141,18 +141,23 @@ def tls_parallel_pfind(times, mags, errs,
     startp,endp : float
         The minimum and maximum periods to consider for the transit search.
 
-    tlsoversample : int
+    tls_oversample : int
         Factor by which to oversample the frequency grid.
 
-    tlsmintransits : int
+    tls_mintransits : int
         Sets the `min_n_transits` kwarg for the `BoxLeastSquares.autoperiod()`
         function.
 
     tls_transit_template: str
         `default`, `grazing`, or `box`.
 
-    tls_R_star_min,tls_R_star_max,tls_M_star_min,tls_M_star_max : float
-        The range of stellar values used to create the frequency grid.
+    tls_rstar_min,tls_rstar_max : float
+        The range of stellar radii to consider when generating a frequency
+        grid. In uniits of Rsun.
+
+    tls_mstar_min,tls_mstar_max : float
+        The range of stellar masses to consider when generating a frequency
+        grid. In units of Msun.
 
     periodepsilon : float
         The fractional difference between successive values of 'best' periods
@@ -240,24 +245,36 @@ def tls_parallel_pfind(times, mags, errs,
             }
     """
 
+    # set NCPUS for HTLS
+    if nworkers is None:
+        nworkers = NCPUS
+
+    # convert mags to fluxes because this method requires them
     if not magsarefluxes:
 
         LOGWARNING('transitleastsquares requires relative flux...')
         LOGWARNING('converting input mags to relative flux...')
         LOGWARNING('and forcing magsarefluxes=True...')
 
-        mag_0, f_0 = 12, 1e4
-        flux = f_0 * 10**( -0.4 * (mags - mag_0) )
+        mag_0, f_0 = 12.0, 1.0e4
+        flux = f_0 * 10.0**( -0.4 * (mags - mag_0) )
         flux /= np.nanmedian(flux)
+
+        # if the errors are provided as mag errors, convert them to flux
+        if errs is not None:
+            flux_errs = flux * (errs/mags)
+        else:
+            flux_errs = None
+
         mags = flux
+        errs = flux_errs
+
         magsarefluxes = True
 
-    if nworkers is None:
-        nworkers = NCPUS
 
+    # uniform weights for errors if none given
     if errs is None:
-        # uniform weights
-        errs = np.ones_like(flux)*1e-4
+        errs = np.ones_like(mags)*1.0e-4
 
     # get rid of nans first and sigclip
     stimes, smags, serrs = sigclip_magseries(times, mags, errs,
@@ -266,6 +283,7 @@ def tls_parallel_pfind(times, mags, errs,
 
     # make sure there are enough points to calculate a spectrum
     if not (len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9):
+
         LOGERROR('no good detections for these times and mags, skipping...')
         resultdict = {
             'tlsresult':npnan,
@@ -280,8 +298,13 @@ def tls_parallel_pfind(times, mags, errs,
             'method':'tls',
             'kwargs':{'startp':startp,
                       'endp':endp,
-                      'tlsoversample':tlsoversample,
-                      'tlsntransits':tlsmintransits,
+                      'tls_oversample':tls_oversample,
+                      'tls_ntransits':tls_mintransits,
+                      'tls_transit_template':tls_transit_template,
+                      'tls_rstar_min':tls_rstar_min,
+                      'tls_rstar_max':tls_rstar_max,
+                      'tls_mstar_min':tls_mstar_min,
+                      'tls_mstar_max':tls_mstar_max,
                       'periodepsilon':periodepsilon,
                       'nbestpeaks':nbestpeaks,
                       'sigclip':sigclip,
@@ -289,21 +312,27 @@ def tls_parallel_pfind(times, mags, errs,
         }
         return resultdict
 
+
+    # if the end period is not provided, set it to
+    # 99% of the time baseline. (for two transits).
     if endp is None:
-        # out to 99% of the baseline. (for two transits).
         endp = 0.99*(np.nanmax(stimes) - np.nanmin(stimes))
 
     # run periodogram
     model = transitleastsquares(stimes, smags, serrs)
-    tlsresult = model.power(use_threads=nworkers, show_progress_bar=False,
-                            R_star_min=tls_rstar_min,
-                            R_star_max=tls_rstar_max,
-                            M_star_min=tls_mstar_min,
-                            M_star_max=tls_mstar_max,
-                            period_min=startp, period_max=endp,
-                            n_transits_min=tlsmintransits,
-                            transit_template=tls_transit_template,
-                            oversampling_factor=tlsoversample)
+    tlsresult = model.power(
+        use_threads=nworkers,
+        show_progress_bar=False,
+        R_star_min=tls_rstar_min,
+        R_star_max=tls_rstar_max,
+        M_star_min=tls_mstar_min,
+        M_star_max=tls_mstar_max,
+        period_min=startp,
+        period_max=endp,
+        n_transits_min=tls_mintransits,
+        transit_template=tls_transit_template,
+        oversampling_factor=tls_oversample
+    )
 
     # get the peak values
     lsp = nparray(tlsresult.power)
@@ -340,8 +369,13 @@ def tls_parallel_pfind(times, mags, errs,
             'method':'tls',
             'kwargs':{'startp':startp,
                       'endp':endp,
-                      'tlsoversample':tlsoversample,
-                      'tlsntransits':tlsmintransits,
+                      'tls_oversample':tls_oversample,
+                      'tls_ntransits':tls_mintransits,
+                      'tls_transit_template':tls_transit_template,
+                      'tls_rstar_min':tls_rstar_min,
+                      'tls_rstar_max':tls_rstar_max,
+                      'tls_mstar_min':tls_mstar_min,
+                      'tls_mstar_max':tls_mstar_max,
                       'periodepsilon':periodepsilon,
                       'nbestpeaks':nbestpeaks,
                       'sigclip':sigclip,
@@ -400,8 +434,13 @@ def tls_parallel_pfind(times, mags, errs,
         'method':'tls',
         'kwargs':{'startp':startp,
                   'endp':endp,
-                  'tlsoversample':tlsoversample,
-                  'tlsntransits':tlsmintransits,
+                  'tls_oversample':tls_oversample,
+                  'tls_ntransits':tls_mintransits,
+                  'tls_transit_template':tls_transit_template,
+                  'tls_rstar_min':tls_rstar_min,
+                  'tls_rstar_max':tls_rstar_max,
+                  'tls_mstar_min':tls_mstar_min,
+                  'tls_mstar_max':tls_mstar_max,
                   'periodepsilon':periodepsilon,
                   'nbestpeaks':nbestpeaks,
                   'sigclip':sigclip,
