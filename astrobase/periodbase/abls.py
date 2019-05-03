@@ -89,6 +89,7 @@ def bls_serial_pfind(times, mags, errs,
                      periodepsilon=0.1,
                      nbestpeaks=5,
                      sigclip=10.0,
+                     endp_timebase_check=True,
                      verbose=True,
                      raiseonfail=False):
     '''Runs the Box Least Squares Fitting Search for transit-shaped signals.
@@ -199,6 +200,12 @@ def bls_serial_pfind(times, mags, errs,
         time-series (with non-finite elems removed) will be passed through to
         the output.
 
+    endp_timebase_check : bool
+        If True, will check if the ``endp`` value is larger than the time-base
+        of the observations. If it is, will change the ``endp`` value such that
+        it is half of the time-base. If False, will allow an ``endp`` larger
+        than the time-base of the observations.
+
     verbose : bool
         If this is True, will indicate progress and details about the frequency
         grid used for the period search.
@@ -301,19 +308,17 @@ def bls_serial_pfind(times, mags, errs,
             LOGERROR("unknown autofreq kwarg encountered. can't continue...")
             return None
 
-        # check the time-base vs. endp value
-        if minfreq < (1.0/(stimes.max() - stimes.min())):
+        # check the minimum frequency
+        if ((minfreq < (1.0/(stimes.max() - stimes.min()))) and
+            endp_timebase_check):
 
-            if verbose:
-                LOGWARNING('the requested max P = %.3f is larger than '
-                           'the time base of the observations = %.3f, '
-                           ' will make minfreq = 2 x 1/timebase'
-                           % (endp, stimes.max() - stimes.min()))
+            LOGWARNING('the requested max P = %.3f is larger than '
+                       'the time base of the observations = %.3f, '
+                       ' will make minfreq = 2 x 1/timebase'
+                       % (endp, stimes.max() - stimes.min()))
             minfreq = 2.0/(stimes.max() - stimes.min())
-            if verbose:
-                LOGINFO('new minfreq: %s, maxfreq: %s' %
-                        (minfreq, maxfreq))
-
+            LOGWARNING('new minfreq: %s, maxfreq: %s' %
+                       (minfreq, maxfreq))
 
         # run BLS
         try:
@@ -710,6 +715,7 @@ def bls_parallel_pfind(
         nbestpeaks=5,
         periodepsilon=0.1,  # 0.1
         sigclip=10.0,
+        endp_timebase_check=True,
         verbose=True,
         nworkers=None,
 ):
@@ -837,6 +843,12 @@ def bls_parallel_pfind(
         time-series (with non-finite elems removed) will be passed through to
         the output.
 
+    endp_timebase_check : bool
+        If True, will check if the ``endp`` value is larger than the time-base
+        of the observations. If it is, will change the ``endp`` value such that
+        it is half of the time-base. If False, will allow an ``endp`` larger
+        than the time-base of the observations.
+
     verbose : bool
         If this is True, will indicate progress and details about the frequency
         grid used for the period search.
@@ -940,16 +952,16 @@ def bls_parallel_pfind(
             return None
 
         # check the minimum frequency
-        if minfreq < (1.0/(stimes.max() - stimes.min())):
+        if ((minfreq < (1.0/(stimes.max() - stimes.min()))) and
+            endp_timebase_check):
 
+            LOGWARNING('the requested max P = %.3f is larger than '
+                       'the time base of the observations = %.3f, '
+                       ' will make minfreq = 2 x 1/timebase'
+                       % (endp, stimes.max() - stimes.min()))
             minfreq = 2.0/(stimes.max() - stimes.min())
-            if verbose:
-                LOGWARNING('the requested max P = %.3f is larger than '
-                           'the time base of the observations = %.3f, '
-                           ' will make minfreq = 2 x 1/timebase'
-                           % (endp, stimes.max() - stimes.min()))
-                LOGINFO('new minfreq: %s, maxfreq: %s' %
-                        (minfreq, maxfreq))
+            LOGWARNING('new minfreq: %s, maxfreq: %s' %
+                       (minfreq, maxfreq))
 
 
         #############################
