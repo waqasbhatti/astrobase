@@ -50,14 +50,25 @@ from numpy import (
 )
 
 try:
+
     from transitleastsquares import transitleastsquares
+
 except Exception as e:
+
     errmsg = (
-        'tried importing transitleastsquares and failed.\n'
-        'are you sure you have installed it correctly?\n'
-        'see https://transitleastsquares.readthedocs.io/en/latest/Installation.html'
+        'The `transitleastsquares` package is required, '
+        'but could not be imported. '
+        'See https://transitleastsquares.readthedocs.io'
+        '/en/latest/Installation.html'
     )
-    raise ImportError(errmsg)
+
+    # this is required for readthedocs because some external packages won't
+    # install cleanly with pip install -r doc-requirements.txt
+    import os
+    IGNORE_HTLS_FAIL = os.environ.get('RTD_IGNORE_HTLS_FAIL')
+
+    if not IGNORE_HTLS_FAIL:
+        raise ImportError(errmsg)
 
 
 ###################
@@ -94,8 +105,7 @@ def tls_parallel_pfind(times, mags, errs,
                        sigclip=10.0,
                        verbose=True,
                        nworkers=None):
-    """
-    Wrapper to Hippke & Heller (2019)'s "transit least squares", which is BLS,
+    """Wrapper to Hippke & Heller (2019)'s "transit least squares", which is BLS,
     but with a slightly better template (and niceties in the implementation).
 
     A few comments:
@@ -103,11 +113,11 @@ def tls_parallel_pfind(times, mags, errs,
     * The time series must be in units of days.
 
     * The frequency sampling Hippke & Heller (2019) advocate for is cubic in
-    frequencies, instead of linear. Ofir (2014) found that the
-    linear-in-frequency sampling (which is correct for sinusoidal signal
-    detection) isn't optimal for a Keplerian box signal. He gave an equation
-    for "optimal" sampling. `tlsoversample` is the factor by which to
-    oversample over that. The grid can be imported independently via::
+      frequencies, instead of linear. Ofir (2014) found that the
+      linear-in-frequency sampling (which is correct for sinusoidal signal
+      detection) isn't optimal for a Keplerian box signal. He gave an equation
+      for "optimal" sampling. `tlsoversample` is the factor by which to
+      oversample over that. The grid can be imported independently via::
 
         from transitleastsquares import period_grid
 
@@ -115,7 +125,7 @@ def tls_parallel_pfind(times, mags, errs,
     https://transitleastsquares.readthedocs.io/en/latest/Python%20interface.html#period-grid
 
     * The boundaries of the period search are by default 0.1 day to 99% the
-    baseline of times.
+      baseline of times.
 
     Parameters
     ----------

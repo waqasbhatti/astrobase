@@ -74,6 +74,7 @@ Package contents
 
    Box-Least-Squares (Astropy) <astrobase.periodbase.abls>
    Box-Least-Squares (eebls.f) <astrobase.periodbase.kbls>
+   Transit-Least-Squares <astrobase.periodbase.htls>
    Phase dispersion minimization <astrobase.periodbase.spdm>
    Analysis-of-Variance <astrobase.periodbase.saov>
    Analysis-of-Variance multi-harmonic <astrobase.periodbase.smav>
