@@ -39,6 +39,7 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
+import copy
 from functools import partial
 
 import numpy as np
@@ -234,8 +235,10 @@ def iterative_fit(data_x,
                   objective_kwargs=None,
                   optimizer_func=least_squares,
                   optimizer_kwargs=None,
+                  optimizer_needs_scalar=False,
+                  objective_residualarr_func=None,
                   fit_iterations=5,
-                  fit_reject_sigma=2.0,
+                  fit_reject_sigma=3.0,
                   verbose=True,
                   full_output=False):
     '''This is a function to run iterative fitting based on repeated
@@ -259,6 +262,15 @@ def iterative_fit(data_x,
 
             def objective_func(fit_coeffs, data_x, data_y,
                                *objective_args, **objective_kwargs)
+
+        and return an array of residuals or a scalar value indicating some sort
+        of sum of residuals (depending on what the optimizer function
+        requires).
+
+        If this function returns a scalar value, you must set
+        `optimizer_needs_scalar` to True, and provide a Python function in
+        `objective_residualarr_func` that returns an array of residuals for each
+        value of `data_x` and `data_y` given an array of fit coefficients.
 
     objective_args : tuple or None
         A tuple of arguments to pass into the `objective_func`.
@@ -286,6 +298,22 @@ def iterative_fit(data_x,
 
     optimizer_kwargs : dict or None
         A dict of kwargs to pass into the `optimizer_func` function.
+
+    optimizer_needs_scalar : bool
+        If True, this indicates that the optimizer requires a scalar value to be
+        returned from the `objective_func`. This is the case for
+        `scipy.optimize.minimize`. If this is True, you must also provide a
+        function in `objective_residual_func`.
+
+    objective_residualarr_func : Python function
+        This is used in conjunction with `optimizer_needs_scalar`. The function
+        provided here must return an array of residuals for each value of
+        `data_x` and `data_y` given an array of fit coefficients. This is then
+        used to calculate which points are outliers after a fit iteration. The
+        function here must have the following signature::
+
+            def objective_residualarr_func(coeffs, data_x, data_y,
+                                           *objective_args, **objective_kwargs)
 
     fit_iterations : int
         The number of iterations of the fit to perform while throwing out
@@ -316,12 +344,12 @@ def iterative_fit(data_x,
 
     '''
 
-
     iteration_count = 0
 
-    coeffs = init_coeffs.copy()
-    fit_data_x = data_x.copy()
-    fit_data_y = data_y.copy()
+    # paranoid copying for the input --- probably unnecessary but just in case
+    coeffs = copy.deepcopy(init_coeffs)
+    fit_data_x = copy.deepcopy(data_x)
+    fit_data_y = copy.deepcopy(data_y)
 
     while iteration_count < fit_iterations:
 
@@ -338,6 +366,16 @@ def iterative_fit(data_x,
         else:
             obj_func = partial(objective_func, **objective_kwargs)
 
+
+        # set up the residualarr function if provided
+        if objective_residualarr_func is not None and optimizer_needs_scalar:
+
+            if not objective_kwargs:
+                objective_resarr_func = objective_residualarr_func
+            else:
+                objective_resarr_func = partial(objective_residualarr_func,
+                                                **objective_kwargs)
+
         fit_info = optimizer_func(
             obj_func,
             coeffs,
@@ -345,7 +383,9 @@ def iterative_fit(data_x,
             **optimizer_kwargs
         )
 
-        if fit_info.success:
+        # this handles the case where the optimizer is
+        # scipy.optimize.least_squares
+        if 'cost' in fit_info.keys():
 
             residual = fit_info.fun
             residual_median = np.nanmedian(residual)
@@ -359,12 +399,44 @@ def iterative_fit(data_x,
 
             if verbose:
                 LOGINFO(
-                    "Fit succeeded for iteration: %s, "
+                    "Fit success: %s for iteration: %s, "
                     "remaining items after sigma-clip: %s, "
-                    "cost function value: %s" % (iteration_count,
+                    "cost function value: %s" % (fit_info.success,
+                                                 iteration_count,
                                                  keep_ind.sum(),
                                                  fit_info.cost)
                 )
+
+
+        # this handles the case where the optimizer is scipy.optimize.minimize
+        # or similar
+        elif ('cost' not in fit_info.keys() and
+              (optimizer_needs_scalar and
+               objective_residualarr_func is not None)):
+
+            residual = objective_resarr_func(
+                fit_info.x,
+                *obj_args
+            )
+            residual_median = np.nanmedian(residual)
+            residual_mad = np.nanmedian(np.abs(residual - residual_median))
+            residual_stdev = residual_mad*1.4826
+            keep_ind = np.abs(residual) < residual_stdev*fit_reject_sigma
+
+            fit_data_x = fit_data_x[keep_ind]
+            fit_data_y = fit_data_y[keep_ind]
+            coeffs = fit_info.x
+
+            if verbose:
+                LOGINFO(
+                    "Fit success: %s, for iteration: %s, "
+                    "remaining items after sigma-clip: %s, "
+                    "residual scalar value: %s" % (fit_info.success,
+                                                   iteration_count,
+                                                   keep_ind.sum(),
+                                                   fit_info.fun)
+                )
+
 
         else:
 
