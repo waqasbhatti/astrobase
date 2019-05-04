@@ -126,7 +126,7 @@ https://github.com/waqasbhatti/astrobase-notebooks/blob/master/lightcurve-work.i
 from __future__ import print_function
 
 # put this in here because hatlc can be used as a standalone module
-__version__ = '0.4.0'
+__version__ = '0.4.1'
 
 
 #############

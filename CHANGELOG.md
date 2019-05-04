@@ -1,3 +1,46 @@
+# v0.4.1
+
+## New stuff
+
+- `periodbase.kbls`: now returns BLS stats along with the period finder results.
+
+- `varbase.trends`: added External Parameter Decorrelation with arbitrary
+  external parameters, optimizer function, and objective function.
+
+- `periodbase`: added a wrapper for the Transit Least Squares period-finder
+  (Hippke & Heller 2019; added by @lgbouma)
+
+- `periodbase.zgls`: added calculation of the analytic false-alarm probability.
+
+- `services.gaia`, `services.mast`: added single-object search-by-name
+  functions.
+
+- `lcfit.utils`: added an `iterative_fit` function.
+
+
+## Changes
+
+- `lcproc.tfa`: now removes template objects from consideration if they're too
+  close to the target object.
+
+- `periodbase`: broke out all of the functions in `periodbase/__init__.py` to
+  `periodbase/utils.py` and `periodbase/falsealarm.py` as appropriate.
+
+
+## Fixes
+
+- `periodbase`: fixed epsilon checking against values of previous best periods
+  when iterating through periodogram peaks (by @joshuawallace).
+
+- `periodbase.zgls`: now correctly uses `tau` in the calculation of the
+  periodogram value.
+
+- `varclass.starfeatures`: fixed missing `and` in an if-statement (by
+  @joshuawallace).
+
+- `lcproc.tfa`: various bug-fixes.
+
+
 # v0.4.0
 
 This is a new major release. Several modules have been moved around. Most public
