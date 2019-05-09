@@ -111,6 +111,7 @@ def _make_periodogram(axes,
                       findercmap,
                       finderconvolve,
                       verbose=True,
+                      circleoverlay=False,
                       findercachedir='~/.astrobase/stamp-cache'):
     '''Makes periodogram, objectinfo, and finder tile for `checkplot_png` and
     `twolsp_checkplot_png`.
@@ -139,6 +140,9 @@ def _make_periodogram(axes,
 
     findercachedir : str
         The directory where the FITS finder images are downloaded and cached.
+
+    circleoverlay : False or float
+        If float, give the radius in arcseconds of circle to overlay
 
     Returns
     -------
@@ -245,8 +249,14 @@ def _make_periodogram(axes,
             inset.set_frame_on(False)
 
             # grid lines pointing to the center of the frame
-            inset.axvline(x=150,ymin=0.375,ymax=0.45,linewidth=2.0,color='b')
-            inset.axhline(y=150,xmin=0.375,xmax=0.45,linewidth=2.0,color='b')
+            if not circleoverlay:
+                inset.axvline(x=150,ymin=0.375,ymax=0.45,linewidth=2.0,color='b')
+                inset.axhline(y=150,xmin=0.375,xmax=0.45,linewidth=2.0,color='b')
+            else:
+                # DSS is ~1 arcsecond per pixel
+                radius_px = circleoverlay
+                circle2 = plt.Circle((150, 150), radius_px, color='orange', fill=False)
+                inset.add_artist(circle2)
 
         except OSError as e:
 
@@ -338,11 +348,17 @@ def _make_periodogram(axes,
             objectinfo['teff'] and objectinfo['gmag']):
 
             # gaia data available
-            axes.text(0.05,0.87,
-                      r'$G$ = %.1f, $T_\mathrm{eff}$ = %d' % (
-                          gmag, int(teff_val)),
-                      ha='left',va='center',transform=axes.transAxes,
-                      fontsize=18.0)
+            try:
+                axes.text(0.05,0.87,
+                          r'$G$ = %.1f, $T_\mathrm{eff}$ = %d' % (
+                              gmag, int(teff_val)),
+                          ha='left',va='center',transform=axes.transAxes,
+                          fontsize=18.0)
+            except:
+                axes.text(0.05,0.87,
+                          'G and Teff failed',
+                          ha='left',va='center',transform=axes.transAxes,
+                          fontsize=18.0)
 
         # add in proper motion stuff if available in objectinfo
         if ('pmra' in objectinfo and objectinfo['pmra'] and
@@ -452,7 +468,10 @@ def _make_phased_magseries_plot(axes,
                                 magsarefluxes=False,
                                 verbose=True,
                                 phasems=2.0,
-                                phasebinms=4.0):
+                                phasebinms=4.0,
+                                xticksize=None,
+                                yticksize=None,
+                                makegrid=True):
     '''Makes the phased magseries plot tile for the `checkplot_png` and
     `twolsp_checkplot_png` functions.
 
@@ -539,6 +558,9 @@ def _make_phased_magseries_plot(axes,
 
     phasebinms : float
         The marker size to use for the binned phased light curve plot symbols.
+
+    xticksize, yticksize : int or None
+        Fontsize for x and y ticklabels
 
     Returns
     -------
@@ -675,11 +697,12 @@ def _make_phased_magseries_plot(axes,
         axes.set_xlim((plotxlim[0],plotxlim[1]))
 
     # make a grid
-    axes.grid(color='#a9a9a9',
-              alpha=0.9,
-              zorder=0,
-              linewidth=1.0,
-              linestyle=':')
+    if makegrid:
+        axes.grid(color='#a9a9a9',
+                  alpha=0.9,
+                  zorder=0,
+                  linewidth=1.0,
+                  linestyle=':')
 
     # make the x and y axis labels
     plot_xlabel = 'phase'
@@ -695,6 +718,11 @@ def _make_phased_magseries_plot(axes,
     # value of the yaxis tick)
     axes.get_yaxis().get_major_formatter().set_useOffset(False)
     axes.get_xaxis().get_major_formatter().set_useOffset(False)
+
+    if isinstance(xticksize,int):
+        axes.xaxis.set_tick_params(labelsize=xticksize)
+    if isinstance(yticksize,int):
+        axes.yaxis.set_tick_params(labelsize=yticksize)
 
     # make the plot title
     if periodind == 0:
@@ -811,8 +839,11 @@ def checkplot_png(lspinfo,
                   plotxlim=(-0.8,0.8),
                   xliminsetmode=False,
                   bestperiodhighlight=None,
+                  circleoverlay=False,
                   plotdpi=100,
                   outfile=None,
+                  xticksize=None,
+                  yticksize=None,
                   verbose=True):
     '''This makes a checkplot PNG using the output from a period-finder routine.
 
@@ -988,6 +1019,9 @@ def checkplot_png(lspinfo,
         'best' period and epoch combination. If None, no highlight will be
         applied.
 
+    circleoverlay : False or float
+        If float, give the radius in arcseconds of circle to overlay
+
     outfile : str or None
         The file name of the file to save the checkplot to. If this is None,
         will write to a file called 'checkplot.png' in the current working
@@ -999,6 +1033,9 @@ def checkplot_png(lspinfo,
     verbose : bool
         If False, turns off many of the informational messages. Useful for
         when an external function is driving lots of `checkplot_png` calls.
+
+    xticksize, yticksize : int or None
+        Fontsize for x and y ticklabels
 
     Returns
     -------
@@ -1067,7 +1104,8 @@ def checkplot_png(lspinfo,
     _make_periodogram(axes[0],lspinfo,objectinfo,
                       findercmap, finderconvolve,
                       verbose=verbose,
-                      findercachedir=findercachedir)
+                      findercachedir=findercachedir,
+                      circleoverlay=circleoverlay)
 
     ######################################
     ## NOW MAKE THE PHASED LIGHT CURVES ##
@@ -1127,7 +1165,9 @@ def checkplot_png(lspinfo,
                                         plotxlim, lspmethod,
                                         xliminsetmode=xliminsetmode,
                                         magsarefluxes=magsarefluxes,
-                                        verbose=verbose)
+                                        verbose=verbose,
+                                        xticksize=xticksize,
+                                        yticksize=yticksize)
 
         # end of plotting for each ax
 
@@ -1197,8 +1237,13 @@ def twolsp_checkplot_png(lspinfo1,
                          phasebinms=4.0,
                          xliminsetmode=False,
                          bestperiodhighlight=None,
+                         circleoverlay=False,
                          plotdpi=100,
                          outfile=None,
+                         figsize=(30,24),
+                         returnfigure=False,
+                         xticksize=None,
+                         yticksize=None,
                          verbose=True):
     '''This makes a checkplot using results from two independent period-finders.
 
@@ -1394,6 +1439,9 @@ def twolsp_checkplot_png(lspinfo1,
         'best' period and epoch combination. If None, no highlight will be
         applied.
 
+    circleoverlay : False or float
+        If float, give the radius in arcseconds of circle to overlay
+
     outfile : str or None
         The file name of the file to save the checkplot to. If this is None,
         will write to a file called 'checkplot.png' in the current working
@@ -1405,6 +1453,9 @@ def twolsp_checkplot_png(lspinfo1,
     verbose : bool
         If False, turns off many of the informational messages. Useful for
         when an external function is driving lots of `checkplot_png` calls.
+
+    xticksize, yticksize : int or None
+        Fontsize for x and y ticklabels
 
     Returns
     -------
@@ -1483,7 +1534,7 @@ def twolsp_checkplot_png(lspinfo1,
     axes = npravel(axes)
 
     # this is a full page plot
-    fig.set_size_inches(30,24)
+    fig.set_size_inches(figsize)
 
     ######################################################################
     ## PLOT 1 is the LSP from lspinfo1, including objectinfo and finder ##
@@ -1492,7 +1543,8 @@ def twolsp_checkplot_png(lspinfo1,
     _make_periodogram(axes[0], lspinfo1, objectinfo,
                       findercmap, finderconvolve,
                       verbose=verbose,
-                      findercachedir=findercachedir)
+                      findercachedir=findercachedir,
+                      circleoverlay=circleoverlay)
 
     #####################################
     ## PLOT 2 is the LSP from lspinfo2 ##
@@ -1563,7 +1615,9 @@ def twolsp_checkplot_png(lspinfo1,
                                         xliminsetmode=xliminsetmode,
                                         verbose=verbose,
                                         phasems=phasems,
-                                        phasebinms=phasebinms)
+                                        phasebinms=phasebinms,
+                                        xticksize=xticksize,
+                                        yticksize=yticksize)
 
         ##########################################################
         ### NOW PLOT PHASED LCS FOR 3 BEST PERIODS IN LSPINFO2 ###
@@ -1593,17 +1647,22 @@ def twolsp_checkplot_png(lspinfo1,
                                         xliminsetmode=xliminsetmode,
                                         verbose=verbose,
                                         phasems=phasems,
-                                        phasebinms=phasebinms)
+                                        phasebinms=phasebinms,
+                                        xticksize=xticksize,
+                                        yticksize=yticksize)
 
         # end of plotting for each ax
 
         # save the plot to disk
         fig.set_tight_layout(True)
-        if plotfpath.endswith('.png'):
-            fig.savefig(plotfpath,dpi=plotdpi)
+        if not returnfigure:
+            if plotfpath.endswith('.png'):
+                fig.savefig(plotfpath,dpi=plotdpi)
+            else:
+                fig.savefig(plotfpath)
+            plt.close()
         else:
-            fig.savefig(plotfpath)
-        plt.close()
+            return fig
 
         if verbose:
             LOGINFO('checkplot done -> %s' % plotfpath)
