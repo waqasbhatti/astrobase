@@ -721,8 +721,11 @@ def total_proper_motion(pmra, pmdecl, decl):
 
     '''
 
-    pm = np.sqrt( pmdecl*pmdecl + pmra*pmra*np.cos(np.radians(decl)) *
-                  np.cos(np.radians(decl)) )
+    try:
+        pm = np.sqrt( pmdecl*pmdecl + pmra*pmra*np.cos(np.radians(decl)) *
+                      np.cos(np.radians(decl)) )
+    except:
+        pm = 0.
     return pm
 
 
