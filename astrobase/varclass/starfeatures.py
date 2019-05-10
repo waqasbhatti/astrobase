@@ -164,6 +164,8 @@ def coord_features(objectinfo):
     if ('jmag' in objectinfo and
         objectinfo['jmag'] is not None and
         np.isfinite(objectinfo['jmag']) and
+        'propermotion' in retdict and
+        retdict['propermotion'] is not None and
         np.isfinite(retdict['propermotion'])):
 
         retdict['rpmj'] = coordutils.reduced_proper_motion(

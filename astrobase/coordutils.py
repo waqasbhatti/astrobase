@@ -753,18 +753,8 @@ def total_proper_motion(pmra, pmdecl, decl):
 
     '''
 
-    try:
-
-        pm = np.sqrt( pmdecl*pmdecl + pmra*pmra*np.cos(np.radians(decl)) *
-                      np.cos(np.radians(decl)) )
-
-    except Exception as e:
-
-        LOGEXCEPTION("Failed to calculate total proper motion.")
-        if isinstance(pmra, np.array):
-            pm = np.full_like(pmra, 0.0, dtype=np.float64)
-        else:
-            pm = 0.0
+    pm = np.sqrt( pmdecl*pmdecl + pmra*pmra*np.cos(np.radians(decl)) *
+                  np.cos(np.radians(decl)) )
 
     return pm
 

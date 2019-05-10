@@ -72,7 +72,7 @@ except Exception as e:
     import pickle
 
 from numpy import isfinite as npisfinite, \
-    min as npmin, max as npmax, abs as npabs, ravel as npravel
+    min as npmin, max as npmax, abs as npabs, ravel as npravel, nan as npnan
 
 # we're going to plot using Agg only
 import matplotlib
@@ -367,20 +367,25 @@ def _make_periodogram(axes,
         if ('pmra' in objectinfo and objectinfo['pmra'] and
             'pmdecl' in objectinfo and objectinfo['pmdecl']):
 
-            pm = total_proper_motion(objectinfo['pmra'],
-                                     objectinfo['pmdecl'],
-                                     objectinfo['decl'])
+            try:
+                pm = total_proper_motion(objectinfo['pmra'],
+                                         objectinfo['pmdecl'],
+                                         objectinfo['decl'])
+            except Exception as e:
+                pm = npnan
 
             axes.text(0.05,0.67,r'$\mu$ = %.2f mas yr$^{-1}$' % pm,
                       ha='left',va='center',transform=axes.transAxes,
                       fontsize=18.0)
 
-            if 'jmag' in objectinfo and objectinfo['jmag']:
+            if 'jmag' in objectinfo and objectinfo['jmag'] and npisfinite(pm):
+                rpm = reduced_proper_motion(objectinfo['jmag'], pm)
+            else:
+                rpm = npnan
 
-                rpm = reduced_proper_motion(objectinfo['jmag'],pm)
-                axes.text(0.05,0.63,'$H_J$ = %.2f' % rpm,
-                          ha='left',va='center',transform=axes.transAxes,
-                          fontsize=18.0)
+            axes.text(0.05,0.63,'$H_J$ = %.2f' % rpm,
+                      ha='left',va='center',transform=axes.transAxes,
+                      fontsize=18.0)
 
 
 
