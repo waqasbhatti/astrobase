@@ -250,12 +250,15 @@ def _make_periodogram(axes,
 
             # grid lines pointing to the center of the frame
             if not circleoverlay:
-                inset.axvline(x=150,ymin=0.375,ymax=0.45,linewidth=2.0,color='b')
-                inset.axhline(y=150,xmin=0.375,xmax=0.45,linewidth=2.0,color='b')
+                inset.axvline(x=150,ymin=0.375,
+                              ymax=0.45,linewidth=2.0,color='b')
+                inset.axhline(y=150,xmin=0.375,
+                              xmax=0.45,linewidth=2.0,color='b')
             else:
                 # DSS is ~1 arcsecond per pixel
                 radius_px = circleoverlay
-                circle2 = plt.Circle((150, 150), radius_px, color='orange', fill=False)
+                circle2 = plt.Circle((150, 150), radius_px,
+                                     color='orange', fill=False)
                 inset.add_artist(circle2)
 
         except OSError as e:
@@ -354,7 +357,7 @@ def _make_periodogram(axes,
                               gmag, int(teff_val)),
                           ha='left',va='center',transform=axes.transAxes,
                           fontsize=18.0)
-            except:
+            except Exception as e:
                 axes.text(0.05,0.87,
                           'G and Teff failed',
                           ha='left',va='center',transform=axes.transAxes,
@@ -559,7 +562,7 @@ def _make_phased_magseries_plot(axes,
     phasebinms : float
         The marker size to use for the binned phased light curve plot symbols.
 
-    xticksize, yticksize : int or None
+    xticksize,yticksize : int or None
         Fontsize for x and y ticklabels
 
     Returns
@@ -719,9 +722,9 @@ def _make_phased_magseries_plot(axes,
     axes.get_yaxis().get_major_formatter().set_useOffset(False)
     axes.get_xaxis().get_major_formatter().set_useOffset(False)
 
-    if isinstance(xticksize,int):
+    if isinstance(xticksize, (int, float)):
         axes.xaxis.set_tick_params(labelsize=xticksize)
-    if isinstance(yticksize,int):
+    if isinstance(yticksize, (int, float)):
         axes.yaxis.set_tick_params(labelsize=yticksize)
 
     # make the plot title
@@ -794,7 +797,6 @@ def _make_phased_magseries_plot(axes,
                        color='#1c1e57',
                        rasterized=True)
 
-        # show the full phase coverage
         # show the full phase coverage
         if phasewrap:
             inset.set_xlim(-0.2,0.8)
@@ -1034,7 +1036,7 @@ def checkplot_png(lspinfo,
         If False, turns off many of the informational messages. Useful for
         when an external function is driving lots of `checkplot_png` calls.
 
-    xticksize, yticksize : int or None
+    xticksize,yticksize : int or None
         Fontsize for x and y ticklabels
 
     Returns
@@ -1442,26 +1444,34 @@ def twolsp_checkplot_png(lspinfo1,
     circleoverlay : False or float
         If float, give the radius in arcseconds of circle to overlay
 
+    plotdpi : int
+        Sets the resolution in DPI for PNG plots (default = 100).
+
     outfile : str or None
         The file name of the file to save the checkplot to. If this is None,
         will write to a file called 'checkplot.png' in the current working
         directory.
 
-    plotdpi : int
-        Sets the resolution in DPI for PNG plots (default = 100).
+    figsize : tuple of two int
+        The output figure size in inches.
+
+    returnfigure : bool
+        If True, will return the figure directly as a ``matplotlib.Figure``
+        object.
+
+    xticksize,yticksize : int or None
+        Fontsize for x and y ticklabels
 
     verbose : bool
         If False, turns off many of the informational messages. Useful for
         when an external function is driving lots of `checkplot_png` calls.
 
-    xticksize, yticksize : int or None
-        Fontsize for x and y ticklabels
-
     Returns
     -------
 
-    str
-        The file path to the generated checkplot PNG file.
+    figure : str or matplotlib.Figure
+        The file path to the generated checkplot PNG file if ``returnfigure`` is
+        False. A ``matplotlib.Figure`` if ``returnfigure`` is True.
 
     '''
 

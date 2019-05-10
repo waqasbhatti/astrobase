@@ -8,6 +8,37 @@ Contains various useful tools for coordinate conversion, etc.
 
 '''
 
+#############
+## LOGGING ##
+#############
+
+import logging
+from astrobase import log_sub, log_fmt, log_date_fmt
+
+DEBUG = False
+if DEBUG:
+    level = logging.DEBUG
+else:
+    level = logging.INFO
+LOGGER = logging.getLogger(__name__)
+logging.basicConfig(
+    level=level,
+    style=log_sub,
+    format=log_fmt,
+    datefmt=log_date_fmt,
+)
+
+LOGDEBUG = LOGGER.debug
+LOGINFO = LOGGER.info
+LOGWARNING = LOGGER.warning
+LOGERROR = LOGGER.error
+LOGEXCEPTION = LOGGER.exception
+
+
+#############
+## IMPORTS ##
+#############
+
 from math import trunc, fabs, pi as pi_value
 
 import numpy as np
@@ -16,6 +47,7 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 
 import scipy.spatial as sps
+
 
 #######################
 ## ANGLE CONVERSIONS ##
@@ -722,10 +754,18 @@ def total_proper_motion(pmra, pmdecl, decl):
     '''
 
     try:
+
         pm = np.sqrt( pmdecl*pmdecl + pmra*pmra*np.cos(np.radians(decl)) *
                       np.cos(np.radians(decl)) )
-    except:
-        pm = 0.
+
+    except Exception as e:
+
+        LOGEXCEPTION("Failed to calculate total proper motion.")
+        if isinstance(pmra, np.array):
+            pm = np.full_like(pmra, 0.0, dtype=np.float64)
+        else:
+            pm = 0.0
+
     return pm
 
 
