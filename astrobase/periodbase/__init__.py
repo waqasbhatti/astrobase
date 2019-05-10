@@ -49,7 +49,7 @@ from .macf import macf_period_find
 from .kbls import bls_serial_pfind, bls_parallel_pfind
 
 try:
-    from .tls import tls_parallel_pfind
+    from .htls import tls_parallel_pfind
     HAVE_TLS = True
 except Exception as e:
     HAVE_TLS = False
