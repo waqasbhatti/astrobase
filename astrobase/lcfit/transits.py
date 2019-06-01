@@ -318,9 +318,6 @@ def traptransit_fit_magseries(
     # finally, do the fit
     try:
 
-        curvefit_func = partial(transits.trapezoid_transit_curvefit_func,
-                                zerolevel=np.median(smags))
-
         # set up the fit parameter bounds
         if param_bounds is None:
 
@@ -340,18 +337,18 @@ def traptransit_fit_magseries(
 
                 # handle fixed parameters
                 if (key in param_bounds and
-                    isinstance(key, str) and
+                    isinstance(param_bounds[key], str) and
                     param_bounds[key] == 'fixed'):
 
-                    lower_bounds.append(transitparams[ind])
-                    upper_bounds.append(transitparams[ind])
+                    lower_bounds.append(transitparams[ind]-1.0e-9)
+                    upper_bounds.append(transitparams[ind]+1.0e-9)
 
                 # handle parameters with lower and upper bounds
                 elif key in param_bounds and isinstance(param_bounds[key],
                                                         (tuple,list)):
 
                     lower_bounds.append(param_bounds[key][0])
-                    upper_bounds.append(param_bounds[key][0])
+                    upper_bounds.append(param_bounds[key][1])
 
                 # handle no parameter bounds
                 else:
@@ -364,6 +361,12 @@ def traptransit_fit_magseries(
                 np.array(lower_bounds),
                 np.array(upper_bounds)
             )
+
+        #
+        # set up the curve fit function
+        #
+        curvefit_func = partial(transits.trapezoid_transit_curvefit_func,
+                                zerolevel=np.median(smags))
 
         #
         # run the fit

@@ -308,8 +308,6 @@ def gaussianeb_fit_magseries(
 
     # finally, do the fit
     try:
-        curvefit_func = partial(eclipses.invgauss_eclipses_curvefit_func,
-                                zerolevel=npmedian(smags))
 
         # set up the fit parameter bounds
         if param_bounds is None:
@@ -325,24 +323,27 @@ def gaussianeb_fit_magseries(
             lower_bounds = []
             upper_bounds = []
 
-            for ind, key in enumerate(('period','epoch','pdepth',
-                                       'pduration','psdepthratio',
+            for ind, key in enumerate(('period',
+                                       'epoch',
+                                       'pdepth',
+                                       'pduration',
+                                       'psdepthratio',
                                        'secondaryphase')):
 
                 # handle fixed parameters
                 if (key in param_bounds and
                     isinstance(param_bounds[key], str) and
-                    key == 'fixed'):
+                    param_bounds[key] == 'fixed'):
 
-                    lower_bounds.append(ebparams[ind])
-                    upper_bounds.append(ebparams[ind])
+                    lower_bounds.append(ebparams[ind]-1.0e-9)
+                    upper_bounds.append(ebparams[ind]+1.0e-9)
 
                 # handle parameters with lower and upper bounds
                 elif key in param_bounds and isinstance(param_bounds[key],
                                                         (tuple,list)):
 
                     lower_bounds.append(param_bounds[key][0])
-                    upper_bounds.append(param_bounds[key][0])
+                    upper_bounds.append(param_bounds[key][1])
 
                 # handle no parameter bounds
                 else:
@@ -355,6 +356,12 @@ def gaussianeb_fit_magseries(
                 nparray(lower_bounds),
                 nparray(upper_bounds)
             )
+
+        #
+        # set up the curve fit function
+        #
+        curvefit_func = partial(eclipses.invgauss_eclipses_curvefit_func,
+                                zerolevel=npmedian(smags))
 
         #
         # run the fit
