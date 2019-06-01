@@ -1143,13 +1143,19 @@ def _get_bls_stats(stimes,
                        % repr(thisminepoch))
         thisminepoch = thisminepoch[0]
 
+    # make sure the ingress duration isn't more than half of the total duration
+    # of the transit
+    model_ingressduration = ingressdurationfraction*thistransduration
+    if model_ingressduration > 0.5:
+        model_ingressduration = 0.5
+
     # set up trapezoid transit model to fit for this LC
     transitparams = [
         thisbestperiod,
         thisminepoch,
         thistransdepth,
         thistransduration,
-        ingressdurationfraction*thistransduration
+        model_ingressduration
     ]
 
     modelfit = traptransit_fit_magseries(
