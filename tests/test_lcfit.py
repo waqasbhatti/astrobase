@@ -11,9 +11,11 @@ This tests the following:
 from __future__ import print_function
 import os
 import os.path
+import sys
+
 try:
     from urllib import urlretrieve
-except Exception as e:
+except Exception:
     from urllib.request import urlretrieve
 
 import numpy as np
@@ -31,11 +33,13 @@ from astrobase import lcfit
 LCURL = ("https://github.com/waqasbhatti/astrobase-notebooks/raw/master/"
          "nb-data/HAT-772-0554686-V0-DR0-hatlc.sqlite.gz")
 
+
 # this function is used to check progress of the download
 def on_download_chunk(transferred,blocksize,totalsize):
     progress = transferred*blocksize/float(totalsize)*100.0
     print('downloading test LC: {progress:.1f}%'.format(progress=progress),
           end='\r')
+
 
 # get the light curve if it's not there
 modpath = os.path.abspath(__file__)
@@ -48,6 +52,7 @@ if not os.path.exists(LCPATH):
 
 PERIOD = 3.08578956
 
+
 ###########
 ## TESTS ##
 ###########
@@ -58,12 +63,36 @@ def test_fourierfit():
 
     '''
 
-    # for Linux, fails on MacOS probably because of Accelerate vs. OpenBLAS
-    FOURIERPARAMS = np.array(
-        [-0.204268, -0.0326, 0.067648, 0.033922, 0.061098, -0.037141,
-         -0.049252, 1.683534, -5.279181, -0.239711, -3.235095, -0.242122,
-         -0.209607, -3.368441]
-    )
+    # differences probably because of Accelerate vs. OpenBLAS
+    if sys.platform == 'darwin':
+
+        EXPECTED_FOURIERPARAMS = np.array(
+            [-0.15680457,
+             -0.02936829,
+             0.0609173,
+             0.02692699,
+             0.05093689,
+             -0.02880862,
+             -0.0418917,
+             1.64850372,
+             -5.02156053,
+             -0.26441503,
+             -3.15644339,
+             -0.28243494,
+             -0.23831426,
+             -3.35074058]
+        )
+
+        EXPECTED_REDCHISQ = 2.756479193621726
+
+    else:
+
+        EXPECTED_FOURIERPARAMS = np.array(
+            [-0.204268, -0.0326, 0.067648, 0.033922, 0.061098, -0.037141,
+             -0.049252, 1.683534, -5.279181, -0.239711, -3.235095, -0.242122,
+             -0.209607, -3.368441]
+        )
+        EXPECTED_REDCHISQ = 2.0546127119739284
 
     lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
 
@@ -79,16 +108,15 @@ def test_fourierfit():
     assert os.path.exists('test-fourierfit.png')
 
     assert_allclose(fit['fitredchisq'],
-                    2.892135304465803,
+                    EXPECTED_REDCHISQ,
                     rtol=1.0e-3)
     assert_allclose(fit['fitinfo']['fitepoch'],
                     np.array([56092.640558]),
                     rtol=1.0e-5)
     assert_allclose(fit['fitinfo']['finalparams'],
-                    FOURIERPARAMS,
+                    EXPECTED_FOURIERPARAMS,
                     rtol=1.0e-5,
                     atol=0.01)
-
 
 
 def test_splinefit():
@@ -113,7 +141,6 @@ def test_splinefit():
     assert_allclose(fit['fitinfo']['fitepoch'], np.array([56794.6838758]))
 
 
-
 def test_savgolfit():
     '''
     Tests lcfit.savgol_fit_magseries.
@@ -136,7 +163,6 @@ def test_savgolfit():
     assert_allclose(fit['fitinfo']['fitepoch'], np.array([56856.3795333]))
 
 
-
 def test_legendrefit():
     '''
     Tests lcfit.legendre_fit_magseries.
@@ -144,9 +170,9 @@ def test_legendrefit():
     '''
 
     LEGCOEFFS = np.array([
-        1.51913612e+01, -3.76241414e-02, -4.75784157e-03,  6.41476816e-03,
-        1.24890424e-01,  1.50597767e-02, -7.58171649e-02, -2.21526213e-02,
-        1.23594509e-01,  2.95992178e-02, -1.33913179e-01
+        1.51913612e+01, -3.76241414e-02, -4.75784157e-03, 6.41476816e-03,
+        1.24890424e-01, 1.50597767e-02, -7.58171649e-02, -2.21526213e-02,
+        1.23594509e-01, 2.95992178e-02, -1.33913179e-01
     ])
 
     lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
@@ -166,18 +192,17 @@ def test_legendrefit():
     assert_allclose(fit['fitinfo']['finalparams'], LEGCOEFFS, rtol=1.0e-6)
 
 
-
 def test_transitfit():
     '''
     Tests lcfit.traptransit_fit_magseries.
 
     '''
 
-    FITPARAMS = np.array([3.08578957e+00,
-                          5.67946843e+04,
-                          -4.32689876e-01,
-                          1.00188320e-01,
-                          4.99058419e-02])
+    FITPARAMS = np.array([3.08554939e+00,
+                          5.67946743e+04,
+                          -3.48312233e-01,
+                          8.94843762e-02,
+                          2.36164894e-02])
 
     lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
 
@@ -192,10 +217,9 @@ def test_transitfit():
     assert isinstance(fit, dict)
     assert os.path.exists('test-transitfit.png')
 
-    assert_allclose(fit['fitredchisq'], 3.145980551134323)
-    assert_allclose(fit['fitinfo']['fitepoch'], np.array([56794.68428345605]))
+    assert_allclose(fit['fitredchisq'], 2.9804742789196497)
+    assert_allclose(fit['fitinfo']['fitepoch'], np.array([56794.67427438755]))
     assert_allclose(fit['fitinfo']['finalparams'], FITPARAMS, rtol=1.0e-6)
-
 
 
 def test_gaussianebfit():
@@ -205,9 +229,12 @@ def test_gaussianebfit():
     '''
 
     FITPARAMS = np.array([
-        3.08578957e+00,  5.67946843e+04,
-        -3.76719042e-01,  1.30328332e-01,
-        3.27081266e-01,  5.09789096e-01
+        3.08556129e+00,
+        5.67946748e+04,
+        -4.11857480e-01,
+        1.13484014e-01,
+        3.35893325e-01,
+        5.11450964e-01
     ])
 
     lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
@@ -222,6 +249,6 @@ def test_gaussianebfit():
     assert isinstance(fit, dict)
     assert os.path.exists('test-ebfit.png')
 
-    assert_allclose(fit['fitredchisq'], 2.7854070457947366)
-    assert_allclose(fit['fitinfo']['fitepoch'], np.array([56794.68429695685,]))
+    assert_allclose(fit['fitredchisq'], 2.6358311084545702)
+    assert_allclose(fit['fitinfo']['fitepoch'], np.array([56794.67481399149]))
     assert_allclose(fit['fitinfo']['finalparams'], FITPARAMS, rtol=1.0e-6)
