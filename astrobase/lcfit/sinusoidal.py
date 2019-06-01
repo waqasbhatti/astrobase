@@ -42,18 +42,24 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
+from functools import partial
+
 from numpy import (
     nan as npnan, sum as npsum, median as npmedian, max as npmax,
     min as npmin, pi as pi_value, cos as npcos, where as npwhere,
-    nonzero as npnonzero
+    nonzero as npnonzero, array as nparray, concatenate as npconcatenate,
+    diag as npdiag, sqrt as npsqrt, inf as npinf
 )
 
-from scipy.optimize import leastsq as spleastsq, minimize as spminimize
-
+from scipy.optimize import (
+    minimize as spminimize,
+    curve_fit
+)
 
 from ..lcmath import sigclip_magseries
-from .utils import get_phased_quantities, make_fit_plot
+from ..lcmodels import sinusoidal
 
+from .utils import get_phased_quantities, make_fit_plot
 
 
 #####################################################
@@ -111,7 +117,6 @@ def _fourier_func(fourierparams, phase, mags):
     return total_f
 
 
-
 def _fourier_chisq(fourierparams,
                    phase,
                    mags,
@@ -127,7 +132,6 @@ def _fourier_chisq(fourierparams,
     chisq = npsum(((mags - f)*(mags - f))/(errs*errs))
 
     return chisq
-
 
 
 def _fourier_residual(fourierparams,
@@ -146,15 +150,18 @@ def _fourier_residual(fourierparams,
     return residual
 
 
-
-def fourier_fit_magseries(times, mags, errs, period,
-                          fourierorder=None,
-                          fourierparams=None,
-                          sigclip=3.0,
-                          magsarefluxes=False,
-                          plotfit=False,
-                          ignoreinitfail=True,
-                          verbose=True):
+def fourier_fit_magseries(
+        times, mags, errs, period,
+        fourierorder=None,
+        fourierparams=None,
+        fix_period=False,
+        sigclip=3.0,
+        magsarefluxes=False,
+        plotfit=False,
+        ignoreinitfail=True,
+        verbose=True,
+        curve_fit_kwargs=None,
+):
     '''This fits a Fourier series to a mag/flux time series.
 
     Parameters
@@ -185,6 +192,10 @@ def fourier_fit_magseries(times, mags, errs, period,
         used to construct the Fourier cosine series used to fit the input
         mag/flux time-series. If both are None, this function will try to fit a
         Fourier cosine series of order 3 to the input mag/flux time-series.
+
+    fix_period : bool
+        If True, will fix the period with fitting the sinusoidal function to the
+        phased light curve.
 
     sigclip : float or int or sequence of two floats/ints or None
         If a single float or int, a symmetric sigma-clip will be performed using
@@ -220,6 +231,10 @@ def fourier_fit_magseries(times, mags, errs, period,
     verbose : bool
         If True, will indicate progress and warn of any problems.
 
+    curve_fit_kwargs : dict or None
+        If not None, this should be a dict containing extra kwargs to pass to
+        the scipy.optimize.curve_fit function.
+
     Returns
     -------
 
@@ -232,7 +247,7 @@ def fourier_fit_magseries(times, mags, errs, period,
                 'fittype':'fourier',
                 'fitinfo':{
                     'finalparams': the list of final model fit params,
-                    'leastsqfit':the full tuple returned by scipy.leastsq,
+                    'finalparamerrs': list of errs for each model fit param,
                     'fitmags': the model fit mags,
                     'fitepoch': the epoch of minimum light for the fit,
                     ... other fit function specific keys ...
@@ -268,7 +283,6 @@ def fourier_fit_magseries(times, mags, errs, period,
     phase, pmags, perrs, ptimes, mintime = (
         get_phased_quantities(stimes, smags, serrs, period)
     )
-
 
     # get the fourier order either from the scalar order kwarg...
     if fourierorder and fourierorder > 0 and not fourierparams:
@@ -312,25 +326,87 @@ def fourier_fit_magseries(times, mags, errs, period,
         leastsqparams = initialfit.x
 
         try:
-            leastsqfit = spleastsq(_fourier_residual,
-                                   leastsqparams,
-                                   args=(phase, pmags))
-        except Exception as e:
-            leastsqfit = None
+
+            curvefit_params = npconcatenate((
+                nparray([period]),
+                leastsqparams
+            ))
+
+            # set up the bounds for the fit parameters
+            if fix_period:
+                curvefit_bounds = (
+                    [period - 1.0e-7] +
+                    [-npinf]*fourierorder +
+                    [-npinf]*fourierorder,
+                    [period + 1.0e-7] +
+                    [npinf]*fourierorder +
+                    [npinf]*fourierorder
+                )
+            else:
+                curvefit_bounds = (
+                    [0.0] +
+                    [-npinf]*fourierorder +
+                    [-npinf]*fourierorder,
+                    [npinf] +
+                    [npinf]*fourierorder +
+                    [npinf]*fourierorder
+                )
+
+            curvefit_func = partial(
+                sinusoidal.fourier_curvefit_func,
+                zerolevel=npmedian(smags),
+                epoch=mintime,
+                fixed_period=period if fix_period else None,
+            )
+
+            if curve_fit_kwargs is not None:
+
+                finalparams, covmatrix = curve_fit(
+                    curvefit_func,
+                    stimes, smags,
+                    p0=curvefit_params,
+                    sigma=serrs,
+                    bounds=curvefit_bounds,
+                    **curve_fit_kwargs
+                )
+
+            else:
+
+                finalparams, covmatrix = curve_fit(
+                    curvefit_func,
+                    stimes, smags,
+                    p0=curvefit_params,
+                    sigma=serrs,
+                    bounds=curvefit_bounds,
+                )
+
+        except Exception:
+            LOGEXCEPTION("curve_fit returned an exception")
+            finalparams, covmatrix = None, None
 
         # if the fit succeeded, then we can return the final parameters
-        if leastsqfit and leastsqfit[-1] in (1,2,3,4):
+        if finalparams is not None and covmatrix is not None:
 
-            finalparams = leastsqfit[0]
+            # this is the fit period
+            fperiod = finalparams[0]
+
+            phase, pmags, perrs, ptimes, mintime = (
+                get_phased_quantities(stimes, smags, serrs, fperiod)
+            )
 
             # calculate the chisq and reduced chisq
-            fitmags = _fourier_func(finalparams, phase, pmags)
+            fitmags = _fourier_func(finalparams[1:], phase, pmags)
 
             fitchisq = npsum(
                 ((fitmags - pmags)*(fitmags - pmags)) / (perrs*perrs)
             )
 
-            fitredchisq = fitchisq/(len(pmags) - len(finalparams) - 1)
+            n_free_params = len(pmags) - len(finalparams)
+            if fix_period:
+                n_free_params -= 1
+
+            fitredchisq = fitchisq/n_free_params
+            stderrs = npsqrt(npdiag(covmatrix))
 
             if verbose:
                 LOGINFO(
@@ -354,8 +430,8 @@ def fourier_fit_magseries(times, mags, errs, period,
                 'fitinfo':{
                     'fourierorder':fourierorder,
                     'finalparams':finalparams,
+                    'finalparamerrs':stderrs,
                     'initialfit':initialfit,
-                    'leastsqfit':leastsqfit,
                     'fitmags':fitmags,
                     'fitepoch':mintime,
                     'actual_fitepoch':ptimes[fitmagminind]
@@ -376,7 +452,7 @@ def fourier_fit_magseries(times, mags, errs, period,
             if plotfit and isinstance(plotfit, str):
 
                 make_fit_plot(phase, pmags, perrs, fitmags,
-                              period, mintime, mintime,
+                              fperiod, mintime, mintime,
                               plotfit,
                               magsarefluxes=magsarefluxes)
 
@@ -392,10 +468,11 @@ def fourier_fit_magseries(times, mags, errs, period,
                 'fitinfo':{
                     'fourierorder':fourierorder,
                     'finalparams':None,
+                    'finalparamerrs':None,
                     'initialfit':initialfit,
-                    'leastsqfit':None,
                     'fitmags':None,
-                    'fitepoch':None
+                    'fitepoch':None,
+                    'actual_fitepoch':None,
                 },
                 'fitchisq':npnan,
                 'fitredchisq':npnan,
@@ -408,7 +485,6 @@ def fourier_fit_magseries(times, mags, errs, period,
                     'magsarefluxes':magsarefluxes
                 }
             }
-
 
     # if the fit didn't succeed, we can't proceed
     else:
@@ -423,9 +499,9 @@ def fourier_fit_magseries(times, mags, errs, period,
                 'fourierorder':fourierorder,
                 'finalparams':None,
                 'initialfit':initialfit,
-                'leastsqfit':None,
                 'fitmags':None,
-                'fitepoch':None
+                'fitepoch':None,
+                'actual_fitepoch':None,
             },
             'fitchisq':npnan,
             'fitredchisq':npnan,

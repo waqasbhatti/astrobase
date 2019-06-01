@@ -260,6 +260,13 @@ def invgauss_eclipses_curvefit_func(
                                     sigma=errs,
                                     ...)
 
+    Returns
+    -------
+
+    model : np.array
+        Returns the transit model as an np.array. This is in the same order as
+        the times input array.
+
     '''
 
     if fixed_params is not None and len(fixed_params) > 0:

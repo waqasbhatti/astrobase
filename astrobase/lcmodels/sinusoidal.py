@@ -9,6 +9,7 @@ expansion.
 
 import numpy as np
 
+
 ##################################
 ## MODEL AND RESIDUAL FUNCTIONS ##
 ##################################
@@ -73,6 +74,79 @@ def fourier_sinusoidal_func(fourierparams, times, mags, errs):
     return modelmags, phase, ptimes, pmags, perrs
 
 
+def fourier_curvefit_func(times,
+                          period,
+                          *fourier_coeffs,
+                          zerolevel=0.0,
+                          epoch=None,
+                          fixed_period=None):
+    '''
+    This is a function to be used with scipy.optimize.curve_fit.
+
+    Parameters
+    ----------
+
+    times : np.array
+        An array of times at which the model will be evaluated.
+
+    period : float
+        The period of the sinusoidal variability.
+
+    fourier_coeffs : float
+        These should be the amplitudes and phases of the sinusoidal series
+        sum. 2N coefficients are required for Fourier order = N. The first N
+        coefficients will be used as the amplitudes and the second N
+        coefficients will be used as the phases.
+
+    zerolevel : float
+        The base level of the model.
+
+    epoch : float or None
+        The epoch to use to generate the phased light curve. If None, the
+        minimum value of the times array will be used.
+
+    fixed_period : float or None
+        If not None, will indicate that the period is to be held fixed at the
+        provided value.
+
+    Returns
+    -------
+
+    model : np.array
+        Returns the sinusodial series sum model evaluated at each value of
+        times.
+
+    '''
+
+    if epoch is None:
+        epoch = times.min()
+
+    if fixed_period is not None:
+        period = fixed_period
+
+    fourier_order = int(len(fourier_coeffs)/2.0)
+
+    fourier_amplitudes, fourier_phases = (
+        fourier_coeffs[:fourier_order],
+        fourier_coeffs[fourier_order:]
+    )
+
+    # phase the times with this period
+    phase = (times - epoch)/period
+    phase = phase - np.floor(phase)
+
+    # calculate all the individual terms of the series
+    fseries = [
+        fourier_amplitudes[x]*np.cos(2.0*np.pi*x*phase + fourier_phases[x])
+        for x in range(fourier_order)
+    ]
+
+    model = zerolevel
+    for fo in fseries:
+        model += fo
+
+    return model
+
 
 def fourier_sinusoidal_residual(fourierparams, times, mags, errs):
     '''
@@ -112,7 +186,6 @@ def fourier_sinusoidal_residual(fourierparams, times, mags, errs):
 
     # this is now a weighted residual taking into account the measurement err
     return (pmags - modelmags)/perrs
-
 
 
 def sine_series_sum(fourierparams, times, mags, errs):
