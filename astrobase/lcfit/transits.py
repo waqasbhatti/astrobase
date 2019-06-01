@@ -78,17 +78,20 @@ from .utils import make_fit_plot
 from .nonphysical import savgol_fit_magseries, spline_fit_magseries
 
 
-
 ###############################################
 ## TRAPEZOID TRANSIT MODEL FIT TO MAG SERIES ##
 ###############################################
 
-def traptransit_fit_magseries(times, mags, errs,
-                              transitparams,
-                              sigclip=10.0,
-                              plotfit=False,
-                              magsarefluxes=False,
-                              verbose=True):
+def traptransit_fit_magseries(
+        times, mags, errs,
+        transitparams,
+        param_bounds=None,
+        sigclip=10.0,
+        plotfit=False,
+        magsarefluxes=False,
+        verbose=True,
+        curve_fit_kwargs=None,
+):
     '''This fits a trapezoid transit model to a magnitude time series.
 
     Parameters
@@ -105,11 +108,11 @@ def traptransit_fit_magseries(times, mags, errs,
         These are initial parameters for the transit model fit. A list of the
         following form is required::
 
-            transitparams = [transitperiod (time),
-                             transitepoch (time),
-                             transitdepth (flux or mags),
-                             transitduration (phase),
-                             ingressduration (phase)]
+            transitparams = [transit_period (time),
+                             transit_epoch (time),
+                             transi_tdepth (flux or mags),
+                             transit_duration (phase),
+                             ingress_duration (phase)]
 
         - for magnitudes -> `transitdepth` should be < 0
         - for fluxes     -> `transitdepth` should be > 0
@@ -122,6 +125,32 @@ def traptransit_fit_magseries(times, mags, errs,
         `magsarefluxes`. if `magsarefluxes = True`, the `transitdepth` is forced
         to be > 0; if `magsarefluxes` = False, the `transitdepth` is forced to
         be < 0.
+
+    param_bounds : dict or None
+        This is a dict of the upper and lower bounds on each fit
+        parameter. Should be of the form::
+
+            {'period':          (lower_bound_period, upper_bound_period),
+             'epoch':           (lower_bound_epoch, upper_bound_epoch),
+             'depth':           (lower_bound_depth, upper_bound_depth),
+             'duration':        (lower_bound_duration, upper_bound_duration),
+             'ingressduration': (lower_bound_ingressduration,
+                                 upper_bound_ingressduration)}
+
+        - To indicate that a parameter is fixed, use 'fixed' instead of a tuple
+          providing its lower and upper bounds as tuple.
+
+        - To indicate that a parameter has no bounds, don't include it in the
+          param_bounds dict.
+
+        If this is None, the default value of this kwarg will be::
+
+            {'period':(0.0,np.inf),       # period is between 0 and inf
+             'epoch':(0.0, np.inf),       # epoch is between 0 and inf
+             'depth':(-np.inf,np.inf),    # depth is between -np.inf and np.inf
+             'duration':(0.0,1.0),        # duration is between 0.0 and 1.0
+             'ingressduration':(0.0,0.5)} # ingress duration between 0.0 and 0.5
+
 
     sigclip : float or int or sequence of two floats/ints or None
         If a single float or int, a symmetric sigma-clip will be performed using
@@ -156,6 +185,10 @@ def traptransit_fit_magseries(times, mags, errs,
 
     verbose : bool
         If True, will indicate progress and warn of any problems.
+
+    curve_fit_kwargs : dict or None
+        If not None, this should be a dict containing extra kwargs to pass to
+        the scipy.optimize.curve_fit function.
 
     Returns
     -------
@@ -289,12 +322,75 @@ def traptransit_fit_magseries(times, mags, errs,
         curvefit_func = partial(transits.trapezoid_transit_curvefit_func,
                                 zerolevel=np.median(smags))
 
-        finalparams, covmatrix = curve_fit(curvefit_func,
-                                           stimes, smags,
-                                           p0=transitparams,
-                                           sigma=serrs)
+        # set up the fit parameter bounds
+        if param_bounds is None:
+
+            curvefit_bounds = (
+                np.array([0.0, 0.0, -np.inf, 0.0, 0.0]),
+                np.array([np.inf, np.inf, np.inf, 1.0, 0.5])
+            )
+
+        else:
+
+            # figure out the bounds
+            lower_bounds = []
+            upper_bounds = []
+
+            for ind, key in enumerate(('period','epoch','depth',
+                                       'duration','ingressduration')):
+
+                # handle fixed parameters
+                if (key in param_bounds and
+                    isinstance(key, str) and
+                    key == 'fixed'):
+
+                    lower_bounds.append(transitparams[ind])
+                    upper_bounds.append(transitparams[ind])
+
+                # handle parameters with lower and upper bounds
+                elif key in param_bounds and isinstance(key, (tuple,list)):
+
+                    lower_bounds.append(param_bounds[key][0])
+                    upper_bounds.append(param_bounds[key][0])
+
+                # handle no parameter bounds
+                else:
+
+                    lower_bounds.append(-np.inf)
+                    upper_bounds.append(np.inf)
+
+            # generate the bounds sequence in the required format
+            curvefit_bounds = (
+                np.array(lower_bounds),
+                np.array(upper_bounds)
+            )
+
+        #
+        # run the fit
+        #
+        if curve_fit_kwargs is not None:
+
+            finalparams, covmatrix = curve_fit(
+                curvefit_func,
+                stimes, smags,
+                p0=transitparams,
+                sigma=serrs,
+                bounds=curvefit_bounds,
+                **curve_fit_kwargs
+            )
+
+        else:
+
+            finalparams, covmatrix = curve_fit(
+                curvefit_func,
+                stimes, smags,
+                p0=transitparams,
+                sigma=serrs,
+                bounds=curvefit_bounds,
+            )
 
     except Exception:
+        LOGEXCEPTION("curve_fit returned an exception")
         finalparams, covmatrix = None, None
 
     # if the fit succeeded, then we can return the final parameters
@@ -388,7 +484,6 @@ def traptransit_fit_magseries(times, mags, errs,
         }
 
         return returndict
-
 
 
 ###########################################################
@@ -1499,7 +1594,6 @@ def mandelagol_and_line_fit_magseries(
                 a.scatter(scatterxdata, scatteryaxes, c='r', alpha=0.9,
                           zorder=2, s=10, rasterized=True, linewidths=0,
                           marker="^", transform=transform)
-
 
         a1.set_xlabel('time-t0 [days]')
         a0.set_ylabel('relative flux')
