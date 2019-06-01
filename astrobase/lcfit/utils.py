@@ -117,7 +117,7 @@ def make_fit_plot(phase, pmags, perrs, fitmags,
                   plotfit,
                   magsarefluxes=False,
                   wrap=False,
-                  model_over_lc=False):
+                  model_over_lc=True):
     '''This makes a plot of the LC model fit.
 
     Parameters

@@ -49,9 +49,10 @@ LOGEXCEPTION = LOGGER.exception
 #############
 
 import os.path
+from functools import partial
 
 import numpy as np
-from scipy.optimize import leastsq as spleastsq, minimize as spminimize
+from scipy.optimize import minimize as spminimize, curve_fit
 
 import matplotlib
 matplotlib.use('Agg')
@@ -67,7 +68,7 @@ try:
     else:
         mandel_agol_dependencies = False
 
-except Exception as e:
+except Exception:
     mandel_agol_dependencies = False
 
 
@@ -170,7 +171,6 @@ def traptransit_fit_magseries(times, mags, errs,
                     'initialparams':the initial transit params provided,
                     'finalparams':the final model fit transit params ,
                     'finalparamerrs':formal errors in the params,
-                    'leastsqfit':the full tuple returned by scipy.leastsq,
                     'fitmags': the model fit mags,
                     'fitepoch': the epoch of minimum light for the fit,
                     'ntransitpoints': the number of LC points in transit phase
@@ -215,7 +215,7 @@ def traptransit_fit_magseries(times, mags, errs,
             transitepoch = spfit['fitinfo']['fitepoch']
 
         # if the spline-fit fails, try a savgol fit instead
-        except Exception as e:
+        except Exception:
             sgfit = savgol_fit_magseries(times, mags, errs, transitperiod,
                                          sigclip=sigclip,
                                          magsarefluxes=magsarefluxes,
@@ -235,7 +235,7 @@ def traptransit_fit_magseries(times, mags, errs,
                     'fitinfo':{
                         'initialparams':transitparams,
                         'finalparams':None,
-                        'leastsqfit':None,
+                        'finalparamerrs':None,
                         'fitmags':None,
                         'fitepoch':None,
                     },
@@ -285,18 +285,20 @@ def traptransit_fit_magseries(times, mags, errs,
 
     # finally, do the fit
     try:
-        leastsqfit = spleastsq(transits.trapezoid_transit_residual,
-                               transitparams,
-                               args=(stimes, smags, serrs),
-                               full_output=True)
-    except Exception as e:
-        leastsqfit = None
+
+        curvefit_func = partial(transits.trapezoid_transit_curvefit_func,
+                                zerolevel=np.median(smags))
+
+        finalparams, covmatrix = curve_fit(curvefit_func,
+                                           stimes, smags,
+                                           p0=transitparams,
+                                           sigma=serrs)
+
+    except Exception:
+        finalparams, covmatrix = None, None
 
     # if the fit succeeded, then we can return the final parameters
-    if leastsqfit and leastsqfit[-1] in (1,2,3,4):
-
-        finalparams = leastsqfit[0]
-        covxmatrix = leastsqfit[1]
+    if finalparams is not None and covmatrix is not None:
 
         # calculate the chisq and reduced chisq
         fitmags, phase, ptimes, pmags, perrs, n_transitpoints = (
@@ -309,20 +311,9 @@ def traptransit_fit_magseries(times, mags, errs,
         fitchisq = np.sum(
             ((fitmags - pmags)*(fitmags - pmags)) / (perrs*perrs)
         )
-        fitredchisq = fitchisq/(len(pmags) - len(finalparams) - 1)
+        fitredchisq = fitchisq/(len(pmags) - len(finalparams))
 
-        # get the residual variance and calculate the formal 1-sigma errs on the
-        # final parameters
-        residuals = leastsqfit[2]['fvec']
-        residualvariance = (
-            np.sum(residuals*residuals)/(pmags.size - finalparams.size)
-        )
-        if covxmatrix is not None:
-            covmatrix = residualvariance*covxmatrix
-            stderrs = np.sqrt(np.diag(covmatrix))
-        else:
-            LOGERROR('covxmatrix not available, fit probably failed!')
-            stderrs = None
+        stderrs = np.sqrt(np.diag(covmatrix))
 
         if verbose:
             LOGINFO(
@@ -340,7 +331,6 @@ def traptransit_fit_magseries(times, mags, errs,
                 'initialparams':transitparams,
                 'finalparams':finalparams,
                 'finalparamerrs':stderrs,
-                'leastsqfit':leastsqfit,
                 'fitmags':fitmags,
                 'fitepoch':fepoch,
                 'ntransitpoints':n_transitpoints
@@ -381,7 +371,6 @@ def traptransit_fit_magseries(times, mags, errs,
                 'initialparams':transitparams,
                 'finalparams':None,
                 'finalparamerrs':None,
-                'leastsqfit':leastsqfit,
                 'fitmags':None,
                 'fitepoch':None,
                 'ntransitpoints':0
@@ -607,7 +596,7 @@ def _log_likelihood_transit_plus_line(theta, params, model, t, data_flux,
 
     try:
         poly_order0
-    except Exception as e:
+    except Exception:
         poly_order0 = 0
     else:
         pass
@@ -985,7 +974,7 @@ def mandelagol_fit_magseries(
     limb_dark = _get_value('limb_dark', medianparams, fixedparams)
     try:
         u = fixedparams['u']
-    except Exception as e:
+    except Exception:
         u = [medianparams['u_linear'], medianparams['u_quad']]
 
     fit_params, fit_m = _transit_model(stimes, t0, per, rp, sma, incl, ecc,
@@ -1422,7 +1411,7 @@ def mandelagol_and_line_fit_magseries(
     limb_dark = _get_value('limb_dark', medianparams, fixedparams)
     try:
         u = fixedparams['u']
-    except Exception as e:
+    except Exception:
         u = [medianparams['u_linear'], medianparams['u_quad']]
 
     poly_order0 = _get_value('poly_order0', medianparams, fixedparams)

@@ -109,6 +109,89 @@ def trapezoid_transit_func(transitparams, times, mags, errs,
         return modelmags, phase, ptimes, pmags, perrs
 
 
+def trapezoid_transit_curvefit_func(
+        times,
+        period,
+        epoch,
+        depth,
+        duration,
+        ingressduration,
+        zerolevel=0.0,
+):
+    '''
+    This is the function used for scipy.optimize.curve_fit.
+
+    Parameters
+    ----------
+
+    times : np.array
+        The array of times used to construct the transit model.
+
+    period : float
+        The period of the transit.
+
+    epoch : float
+        The time of mid-transit (phase 0.0). Must be in the same units as times.
+
+    depth : float
+        The depth of the transit.
+
+    duration : float
+        The duration of the transit in phase units.
+
+    ingressduration : float
+        The ingress duration of the transit in phase units.
+
+    zerolevel : float
+        The level of the measurements outside transit.
+
+    Returns
+    -------
+
+    model : np.array
+        Returns the transit model as an np.array. This is in the same order as
+        the times input array.
+
+    '''
+
+    # generate the phases
+    phase = (times - epoch)/period
+    phase = phase - np.floor(phase)
+
+    transitmodel = np.full_like(phase, zerolevel)
+
+    halftransitduration = duration/2.0
+    bottomlevel = zerolevel - depth
+    slope = depth/ingressduration
+
+    # the four contact points of the eclipse
+    firstcontact = 1.0 - halftransitduration
+    secondcontact = firstcontact + ingressduration
+    thirdcontact = halftransitduration - ingressduration
+    fourthcontact = halftransitduration
+
+    ## the phase indices ##
+
+    # during ingress
+    ingressind = (phase > firstcontact) & (phase < secondcontact)
+
+    # at transit bottom
+    bottomind = (phase > secondcontact) | (phase < thirdcontact)
+
+    # during egress
+    egressind = (phase > thirdcontact) & (phase < fourthcontact)
+
+    # set the transit model
+    transitmodel[ingressind] = (
+        zerolevel - slope*(phase[ingressind] - firstcontact)
+    )
+    transitmodel[bottomind] = bottomlevel
+    transitmodel[egressind] = (
+        bottomlevel + slope*(phase[egressind] - thirdcontact)
+    )
+
+    return transitmodel
+
 
 def trapezoid_transit_residual(transitparams, times, mags, errs):
     '''
