@@ -143,7 +143,6 @@ def _bls_runner(times,
             'transegressbin':blsresult[6]}
 
 
-
 def _parallel_bls_worker(task):
     '''
     This wraps the BLS function for the parallel driver below.
@@ -185,7 +184,7 @@ def _parallel_bls_worker(task):
 
         return _bls_runner(*task)
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('BLS failed for task %s' % repr(task[2:]))
 
@@ -198,8 +197,6 @@ def _parallel_bls_worker(task):
             'transingressbin':npnan,
             'transegressbin':npnan
         }
-
-
 
 
 def bls_serial_pfind(
@@ -309,6 +306,14 @@ def bls_serial_pfind(
         periods in the output and injects the output into the output dict so you
         only have to run this function to get the periods and their stats.
 
+        The output dict from this function will then contain a 'stats' key
+        containing a list of dicts with statistics for each period in
+        ``resultdict['nbestperiods']``. These dicts will contain fit values of
+        transit parameters after a trapezoid transit model is fit to the phased
+        light curve at each period in ``resultdict['nbestperiods']``, i.e. fit
+        values for period, epoch, transit depth, duration, ingress duration, and
+        the SNR of the transit.
+
     Returns
     -------
 
@@ -392,7 +397,6 @@ def bls_serial_pfind(
                         (stepsize, nphasebins,
                          mintransitduration, maxtransitduration))
 
-
         if nfreq > 5.0e5:
 
             if verbose:
@@ -412,8 +416,9 @@ def bls_serial_pfind(
             LOGWARNING('new minfreq: %s, maxfreq: %s' %
                        (minfreq, maxfreq))
 
-
+        #
         # run BLS
+        #
         try:
 
             blsresult = _bls_runner(stimes,
@@ -424,16 +429,6 @@ def bls_serial_pfind(
                                     nphasebins,
                                     mintransitduration,
                                     maxtransitduration)
-
-            # find the peaks in the BLS. this uses wavelet transforms to
-            # smooth the spectrum and find peaks. a similar thing would be
-            # to do a convolution with a gaussian kernel or a tophat
-            # function, calculate d/dx(result), then get indices where this
-            # is zero
-            # blspeakinds = find_peaks_cwt(blsresults['power'],
-            #                              nparray([2.0,3.0,4.0,5.0]))
-
-
 
             frequencies = minfreq + nparange(nfreq)*stepsize
             periods = 1.0/frequencies
@@ -498,10 +493,6 @@ def bls_serial_pfind(
                 perioddiff = abs(period - prevperiod)
                 bestperiodsdiff = [abs(period - x) for x in nbestperiods]
 
-                # print('prevperiod = %s, thisperiod = %s, '
-                #       'perioddiff = %s, peakcount = %s' %
-                #       (prevperiod, period, perioddiff, peakcount))
-
                 # this ensures that this period is different from the last
                 # period and from all the other existing best periods by
                 # periodepsilon to make sure we jump to an entire different
@@ -514,7 +505,6 @@ def bls_serial_pfind(
                     peakcount = peakcount + 1
 
                 prevperiod = period
-
 
             # generate the return dict
             resultdict = {
@@ -565,10 +555,9 @@ def bls_serial_pfind(
                     )
                     resultdict['stats'].append(this_pstats)
 
-
             return resultdict
 
-        except Exception as e:
+        except Exception:
 
             LOGEXCEPTION('BLS failed!')
             return {'bestperiod':npnan,
@@ -596,7 +585,6 @@ def bls_serial_pfind(
                               'nbestpeaks':nbestpeaks,
                               'sigclip':sigclip,
                               'magsarefluxes':magsarefluxes}}
-
 
     else:
 
@@ -626,7 +614,6 @@ def bls_serial_pfind(
                           'nbestpeaks':nbestpeaks,
                           'sigclip':sigclip,
                           'magsarefluxes':magsarefluxes}}
-
 
 
 def bls_parallel_pfind(
@@ -748,6 +735,14 @@ def bls_parallel_pfind(
         If True, runs :py:func:`.bls_stats_singleperiod` for each of the best
         periods in the output and injects the output into the output dict so you
         only have to run this function to get the periods and their stats.
+
+        The output dict from this function will then contain a 'stats' key
+        containing a list of dicts with statistics for each period in
+        ``resultdict['nbestperiods']``. These dicts will contain fit values of
+        transit parameters after a trapezoid transit model is fit to the phased
+        light curve at each period in ``resultdict['nbestperiods']``, i.e. fit
+        values for period, epoch, transit depth, duration, ingress duration, and
+        the SNR of the transit.
 
     Returns
     -------
@@ -875,7 +870,6 @@ def bls_parallel_pfind(
             chunk_minfreqs.append(this_minfreqs)
             chunk_nfreqs.append(this_nfreqs)
 
-
         # populate the tasks list
         tasks = [(stimes, smags,
                   chunk_minf, chunk_nf,
@@ -977,7 +971,6 @@ def bls_parallel_pfind(
 
             prevperiod = period
 
-
         # generate the return dict
         resultdict = {
             'bestperiod':finperiods[bestperiodind],
@@ -1061,7 +1054,6 @@ def bls_parallel_pfind(
                           'magsarefluxes':magsarefluxes}}
 
 
-
 def _get_bls_stats(stimes,
                    smags,
                    serrs,
@@ -1117,7 +1109,7 @@ def _get_bls_stats(stimes,
 
         thisminepoch = me_centertransit_time[0]
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION(
             'could not determine the center time of transit for '
@@ -1130,7 +1122,6 @@ def _get_bls_stats(stimes,
                                       verbose=verbose,
                                       sigclip=None)
         thisminepoch = savfit['fitinfo']['fitepoch']
-
 
     if isinstance(thisminepoch, npndarray):
         if verbose:
@@ -1221,7 +1212,6 @@ def _get_bls_stats(stimes,
                 'fiterrs':fiterrs,
                 'fitinfo':modelfit}
 
-
     # if the model fit doesn't work, then do the SNR calculation the old way
     else:
 
@@ -1308,7 +1298,6 @@ def _get_bls_stats(stimes,
                 'subtractedmags':subtractedmags,
                 'phasedmags':tmags,
                 'phases':tphase}
-
 
 
 def bls_stats_singleperiod(times, mags, errs, period,
@@ -1418,7 +1407,6 @@ def bls_stats_singleperiod(times, mags, errs, period,
                                              magsarefluxes=magsarefluxes,
                                              sigclip=sigclip)
 
-
     # make sure there are enough points to calculate a spectrum
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
 
@@ -1474,13 +1462,11 @@ def bls_stats_singleperiod(times, mags, errs, period,
 
         return stats
 
-
     # if there aren't enough points in the mag series, bail out
     else:
 
         LOGERROR('no good detections for these times and mags, skipping...')
         return None
-
 
 
 def bls_snr(blsdict,
@@ -1606,7 +1592,6 @@ def bls_snr(blsdict,
                                              magsarefluxes=magsarefluxes,
                                              sigclip=sigclip)
 
-
     # make sure there are enough points to calculate a spectrum
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
 
@@ -1674,7 +1659,6 @@ def bls_snr(blsdict,
                                    thisnphasebins,
                                    magsarefluxes=magsarefluxes,
                                    verbose=verbose)
-
 
             # update the lists with results from this peak
             nbestsnrs.append(stats['snr'])

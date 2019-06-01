@@ -13,9 +13,9 @@ import os
 import os.path
 try:
     from urllib import urlretrieve
-except Exception as e:
+except Exception:
     from urllib.request import urlretrieve
-import numpy as np
+
 from numpy.testing import assert_allclose
 
 from astrobase.hatsurveys import hatlc
@@ -36,11 +36,13 @@ from astrobase.periodbase import htls
 LCURL = ("https://github.com/waqasbhatti/astrobase-notebooks/raw/master/"
          "nb-data/HAT-772-0554686-V0-DR0-hatlc.sqlite.gz")
 
+
 # this function is used to check progress of the download
 def on_download_chunk(transferred,blocksize,totalsize):
     progress = transferred*blocksize/float(totalsize)*100.0
     print('downloading test LC: {progress:.1f}%'.format(progress=progress),
           end='\r')
+
 
 # get the light curve if it's not there
 modpath = os.path.abspath(__file__)
@@ -69,7 +71,6 @@ def test_gls():
     assert_allclose(gls['bestperiod'], 1.54289477)
 
 
-
 def test_win():
     '''
     Tests periodbase.specwindow_lsp
@@ -81,7 +82,6 @@ def test_win():
 
     assert isinstance(win, dict)
     assert_allclose(win['bestperiod'], 592.0307682142864)
-
 
 
 def test_pdm():
@@ -98,7 +98,6 @@ def test_pdm():
     assert_allclose(pdm['bestperiod'], 3.08578956)
 
 
-
 def test_aov():
     '''
     Tests periodbase.aov_periodfind.
@@ -113,7 +112,6 @@ def test_aov():
     assert_allclose(aov['bestperiod'], 3.08578956)
 
 
-
 def test_aovhm():
     '''
     Tests periodbase.aov_periodfind.
@@ -126,7 +124,6 @@ def test_aovhm():
 
     assert isinstance(mav, dict)
     assert_allclose(mav['bestperiod'], 3.08578956)
-
 
 
 def test_acf():
@@ -144,7 +141,6 @@ def test_acf():
     assert_allclose(acf['bestperiod'], 3.0750854011348565)
 
 
-
 def test_kbls_serial():
     '''
     Tests periodbase.kbls.bls_serial_pfind.
@@ -160,7 +156,6 @@ def test_kbls_serial():
     assert_allclose(bls['bestperiod'], 3.08560655)
 
 
-
 def test_kbls_parallel():
     '''
     Tests periodbase.kbls.bls_parallel_pfind.
@@ -174,7 +169,6 @@ def test_kbls_parallel():
 
     assert isinstance(bls, dict)
     assert_allclose(bls['bestperiod'], 3.08560655)
-
 
 
 def test_abls_serial():
@@ -196,8 +190,6 @@ def test_abls_serial():
     assert_allclose(bls['bestperiod'], EXPECTED_PERIOD)
 
 
-
-
 def test_abls_parallel():
     '''
     This tests periodbase.abls.bls_parallel_pfind.
@@ -217,10 +209,9 @@ def test_abls_parallel():
     assert_allclose(bls['bestperiod'], EXPECTED_PERIOD, atol=1.0e-4)
 
 
-
 def test_tls_parallel():
     '''
-    This tests periodbase.tls.tls_parallel_pfind.
+    This tests periodbase.htls.tls_parallel_pfind.
     '''
 
     EXPECTED_PERIOD = 3.0848887

@@ -34,7 +34,7 @@ import os
 import os.path
 try:
     from urllib import urlretrieve
-except Exception as e:
+except Exception:
     from urllib.request import urlretrieve
 from numpy.testing import assert_allclose, assert_almost_equal, assert_equal
 import numpy as np
@@ -52,11 +52,13 @@ from astrobase.checkplot.pkl_io import _read_checkplot_picklefile
 LCURL = ("https://github.com/waqasbhatti/astrobase-notebooks/raw/master/"
          "nb-data/HAT-772-0554686-V0-DR0-hatlc.sqlite.gz")
 
+
 # this function is used to check progress of the download
 def on_download_chunk(transferred,blocksize,totalsize):
     progress = transferred*blocksize/float(totalsize)*100.0
     print('downloading test LC: {progress:.1f}%'.format(progress=progress),
           end='\r')
+
 
 # get the light curve if it's not there
 modpath = os.path.abspath(__file__)
@@ -84,7 +86,6 @@ def test_hatlc():
     assert msg == 'no SQL filters, LC OK'
 
 
-
 def test_checkplot_png():
     '''
     Tests if a checkplot PNG can be made.
@@ -106,7 +107,6 @@ def test_checkplot_png():
                                   objectinfo=lcd['objectinfo'])
 
     assert os.path.exists(outpath)
-
 
 
 def test_checkplot_twolsp_png():
@@ -141,7 +141,6 @@ def test_checkplot_twolsp_png():
     assert os.path.exists(outpath)
 
 
-
 def test_checkplot_pickle_make():
     '''
     Tests if a checkplot pickle can be made.
@@ -172,7 +171,6 @@ def test_checkplot_pickle_make():
     )
 
     assert os.path.exists(outpath)
-
 
 
 def test_checkplot_pickle_read():
@@ -220,7 +218,6 @@ def test_checkplot_pickle_read():
 
     assert_allclose(cpd['0-gls']['bestperiod'], 1.54289477)
     assert_allclose(cpd['1-pdm']['bestperiod'], 3.08578956)
-
 
 
 def test_checkplot_pickle_update():
@@ -278,7 +275,6 @@ def test_checkplot_pickle_update():
     cpdupdated = _read_checkplot_picklefile(cpfupdated)
 
     assert cpdupdated['comments'] == cpd['comments']
-
 
 
 def test_checkplot_pickle_topng():
@@ -340,9 +336,9 @@ def test_checkplot_pickle_topng():
     cpd['varinfo']['objectisvar'] = "1"
     cpd['varinfo']['varperiod'] = cpd['1-pdm']['bestperiod']
 
-    exportedpng = checkplot.checkplot_pickle_to_png(cpd, 'exported-checkplot.png')
+    exportedpng = checkplot.checkplot_pickle_to_png(cpd,
+                                                    'exported-checkplot.png')
     assert (exportedpng and os.path.exists(exportedpng))
-
 
 
 def test_checkplot_with_multiple_same_pfmethods():
@@ -412,7 +408,6 @@ def test_checkplot_png_varepoch_handling(capsys):
     assert isinstance(gls, dict)
     assert_allclose(gls['bestperiod'], 1.54289477)
 
-
     # 1. usual handling where epoch is None
     # should use min(times) as epoch all the time
     cpf = checkplot.checkplot_png(gls,
@@ -444,7 +439,6 @@ def test_checkplot_png_varepoch_handling(capsys):
     for expected, plotline in zip(lookfor,plotoutlines):
         assert expected in plotline
 
-
     # 2. handle varepoch = 'min'
     cpf = checkplot.checkplot_png(gls,
                                   lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
@@ -475,7 +469,6 @@ def test_checkplot_png_varepoch_handling(capsys):
     for expected, plotline in zip(lookfor,plotoutlines):
         assert expected in plotline
 
-
     # 3. handle varepoch = some float
     cpf = checkplot.checkplot_png(gls,
                                   lcd['rjd'], lcd['aep_000'], lcd['aie_000'],
@@ -505,7 +498,6 @@ def test_checkplot_png_varepoch_handling(capsys):
 
     for expected, plotline in zip(lookfor,plotoutlines):
         assert expected in plotline
-
 
     # 4. handle varepoch = list of floats
     cpf = checkplot.checkplot_png(gls,
@@ -539,7 +531,6 @@ def test_checkplot_png_varepoch_handling(capsys):
 
     for expected, plotline in zip(lookfor,plotoutlines):
         assert expected in plotline
-
 
 
 def test_twolsp_checkplot_png_varepoch_handling(capsys):
@@ -595,7 +586,6 @@ def test_twolsp_checkplot_png_varepoch_handling(capsys):
     for expected, plotline in zip(lookfor,plotoutlines):
         assert expected in plotline
 
-
     # 2. handle varepoch = 'min'
     cpf = checkplot.twolsp_checkplot_png(
         gls, pdm,
@@ -626,7 +616,6 @@ def test_twolsp_checkplot_png_varepoch_handling(capsys):
 
     for expected, plotline in zip(lookfor,plotoutlines):
         assert expected in plotline
-
 
     # 3. handle varepoch = some float
     cpf = checkplot.twolsp_checkplot_png(
@@ -659,7 +648,6 @@ def test_twolsp_checkplot_png_varepoch_handling(capsys):
     for expected, plotline in zip(lookfor,plotoutlines):
         assert expected in plotline
 
-
     # 4. handle varepoch = list of floats
     cpf = checkplot.twolsp_checkplot_png(
         gls, pdm,
@@ -691,7 +679,6 @@ def test_twolsp_checkplot_png_varepoch_handling(capsys):
 
     for expected, plotline in zip(lookfor,plotoutlines):
         assert expected in plotline
-
 
 
 def test_checkplot_pickle_varepoch_handling(capsys):
@@ -747,7 +734,6 @@ def test_checkplot_pickle_varepoch_handling(capsys):
     for expected, plotline in zip(lookfor,plotoutlines):
         assert expected in plotline
 
-
     # 2. handle varepoch = 'min'
     cpf = checkplot.checkplot_pickle(
         [gls, pdm],
@@ -779,7 +765,6 @@ def test_checkplot_pickle_varepoch_handling(capsys):
     for expected, plotline in zip(lookfor,plotoutlines):
         assert expected in plotline
 
-
     # 3. handle varepoch = some float
     cpf = checkplot.checkplot_pickle(
         [gls, pdm],
@@ -810,7 +795,6 @@ def test_checkplot_pickle_varepoch_handling(capsys):
 
     for expected, plotline in zip(lookfor,plotoutlines):
         assert expected in plotline
-
 
     # 4. handle varepoch = list of floats
     cpf = checkplot.checkplot_pickle(
@@ -845,22 +829,17 @@ def test_checkplot_pickle_varepoch_handling(capsys):
         assert expected in plotline
 
 
-
 def test_checkplot_pickle_missing_objectinfo():
     '''This tests if checkplot_pickle can handle various
     missing information in the input objectinfo dict.
 
     '''
 
-    outpath = os.path.join(os.path.dirname(LCPATH),
-                           'test-checkplot.pkl')
-
     lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
     gls = periodbase.pgen_lsp(lcd['rjd'], lcd['aep_000'], lcd['aie_000'])
 
     assert isinstance(gls, dict)
     assert_allclose(gls['bestperiod'], 1.54289477)
-
 
     # 1. handle case of no information whatsoever
     # should auto-generate the objectid in this case
@@ -870,7 +849,6 @@ def test_checkplot_pickle_missing_objectinfo():
     )
 
     assert 'objectid' in cpd and cpd['objectid'] == '3f935'
-
 
     # 2. handle case of g, r, i mags with no ra, dec provided
     # should have sdssg, sdssr, sdssi, and g-r, r-i, g-i available
@@ -911,7 +889,6 @@ def test_checkplot_pickle_missing_objectinfo():
             cpd['objectinfo']['sdssg-sdssi'] is not None and
             np.isfinite(cpd['objectinfo']['sdssg-sdssi']))
     assert_almost_equal(0.4, cpd['objectinfo']['sdssg-sdssi'])
-
 
     # 3. handle case of J, H, K, objectid provided with no ra, dec
     # we should now have BVugriz auto-generated from JHK and the various colors
@@ -958,7 +935,6 @@ def test_checkplot_pickle_missing_objectinfo():
 
     for c in expected_colors:
         assert c in cpd['objectinfo']['available_colors']
-
 
     # 4. handle class of J, H, K, no objectid, ra, dec
     # should have everything with dereddening, GAIA neighbors, finder chart,
