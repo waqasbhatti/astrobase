@@ -249,7 +249,9 @@ def fourier_fit_magseries(
                     'finalparams': the list of final model fit params,
                     'finalparamerrs': list of errs for each model fit param,
                     'fitmags': the model fit mags,
-                    'fitepoch': the epoch of minimum light for the fit,
+                    'fitperiod': the fit period if this wasn't set to fixed,
+                    'fitepoch': this is times.min() for this fit type,
+                    'actual_fitepoch': time of minimum light from fit model
                     ... other fit function specific keys ...
                 },
                 'fitchisq': the minimized value of the fit's chi-sq,
@@ -429,11 +431,18 @@ def fourier_fit_magseries(
                 'fittype':'fourier',
                 'fitinfo':{
                     'fourierorder':fourierorder,
-                    'finalparams':finalparams,
+                    # return coeffs only for backwards compatibility with
+                    # existing functions that use the returned value of
+                    # fourier_fit_magseries
+                    'finalparams':finalparams[1:],
                     'finalparamerrs':stderrs,
                     'initialfit':initialfit,
                     'fitmags':fitmags,
+                    'fitperiod':finalparams[0],
+                    # the 'fitepoch' is just the minimum time here
                     'fitepoch':mintime,
+                    # the actual fit epoch is calculated as the time of minimum
+                    # light OF the fit model light curve
                     'actual_fitepoch':ptimes[fitmagminind]
                 },
                 'fitchisq':fitchisq,
@@ -471,6 +480,7 @@ def fourier_fit_magseries(
                     'finalparamerrs':None,
                     'initialfit':initialfit,
                     'fitmags':None,
+                    'fitperiod':None,
                     'fitepoch':None,
                     'actual_fitepoch':None,
                 },
@@ -498,8 +508,10 @@ def fourier_fit_magseries(
             'fitinfo':{
                 'fourierorder':fourierorder,
                 'finalparams':None,
+                'finalparamerrs':None,
                 'initialfit':initialfit,
                 'fitmags':None,
+                'fitperiod':None,
                 'fitepoch':None,
                 'actual_fitepoch':None,
             },
