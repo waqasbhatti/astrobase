@@ -151,7 +151,6 @@ def traptransit_fit_magseries(
              'duration':(0.0,1.0),        # duration is between 0.0 and 1.0
              'ingressduration':(0.0,0.5)} # ingress duration between 0.0 and 0.5
 
-
     sigclip : float or int or sequence of two floats/ints or None
         If a single float or int, a symmetric sigma-clip will be performed using
         the number provided as the sigma-multiplier to cut out from the input

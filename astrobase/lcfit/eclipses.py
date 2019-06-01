@@ -42,12 +42,15 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
+from functools import partial
+
 from numpy import (
     nan as npnan, sum as npsum, sqrt as npsqrt,
-    nonzero as npnonzero, diag as npdiag
+    nonzero as npnonzero, diag as npdiag, median as npmedian,
+    inf as npinf, array as nparray
 )
 
-from scipy.optimize import leastsq as spleastsq
+from scipy.optimize import curve_fit
 
 from ..lcmath import sigclip_magseries
 from ..lcmodels import eclipses
@@ -60,12 +63,16 @@ from .nonphysical import spline_fit_magseries, savgol_fit_magseries
 ## DOUBLE INVERTED GAUSSIAN ECLIPSE MODEL ##
 ############################################
 
-def gaussianeb_fit_magseries(times, mags, errs,
-                             ebparams,
-                             sigclip=10.0,
-                             plotfit=False,
-                             magsarefluxes=False,
-                             verbose=True):
+def gaussianeb_fit_magseries(
+        times, mags, errs,
+        ebparams,
+        param_bounds=None,
+        sigclip=10.0,
+        plotfit=False,
+        magsarefluxes=False,
+        verbose=True,
+        curve_fit_kwargs=None,
+):
     '''This fits a double inverted gaussian EB model to a magnitude time series.
 
     Parameters
@@ -111,6 +118,34 @@ def gaussianeb_fit_magseries(times, mags, errs,
         `magsarefluxes`. if `magsarefluxes = True`, the `ebdepth` is forced to
         be > 0; if `magsarefluxes = False`, the `ebdepth` is forced to be < 0.
 
+    param_bounds : dict or None
+        This is a dict of the upper and lower bounds on each fit
+        parameter. Should be of the form::
+
+            {'period':         (lower_bound_period, upper_bound_period),
+             'epoch':          (lower_bound_epoch, upper_bound_epoch),
+             'pdepth':         (lower_bound_pdepth, upper_bound_pdepth),
+             'pduration':      (lower_bound_pduration, upper_bound_pduration),
+             'psdepthratio':   (lower_bound_psdepthratio,
+                                upper_bound_psdepthratio),
+             'secondaryphase': (lower_bound_secondaryphase,
+                                upper_bound_secondaryphase)}
+
+        - To indicate that a parameter is fixed, use 'fixed' instead of a tuple
+          providing its lower and upper bounds as tuple.
+
+        - To indicate that a parameter has no bounds, don't include it in the
+          param_bounds dict.
+
+        If this is None, the default value of this kwarg will be::
+
+            {'period':(0.0,np.inf),      # period is between 0 and inf
+             'epoch':(0.0, np.inf),      # epoch is between 0 and inf
+             'pdepth':(-np.inf,np.inf),  # pdepth is between -np.inf and np.inf
+             'pduration':(0.0,1.0),      # pduration is between 0.0 and 1.0
+             'psdepthratio':(0.0,1.0),   # psdepthratio is between 0.0 and 1.0
+             'secondaryphase':(0.0,1.0), # secondaryphase is between 0.0 and 1.0
+
     sigclip : float or int or sequence of two floats/ints or None
         If a single float or int, a symmetric sigma-clip will be performed using
         the number provided as the sigma-multiplier to cut out from the input
@@ -145,6 +180,10 @@ def gaussianeb_fit_magseries(times, mags, errs,
     verbose : bool
         If True, will indicate progress and warn of any problems.
 
+    curve_fit_kwargs : dict or None
+        If not None, this should be a dict containing extra kwargs to pass to
+        the scipy.optimize.curve_fit function.
+
     Returns
     -------
 
@@ -159,7 +198,6 @@ def gaussianeb_fit_magseries(times, mags, errs,
                     'initialparams':the initial EB params provided,
                     'finalparams':the final model fit EB params,
                     'finalparamerrs':formal errors in the params,
-                    'leastsqfit':the full tuple returned by scipy.leastsq,
                     'fitmags': the model fit mags,
                     'fitepoch': the epoch of minimum light for the fit,
                 },
@@ -186,7 +224,6 @@ def gaussianeb_fit_magseries(times, mags, errs,
     nzind = npnonzero(serrs)
     stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
 
-
     # check the ebparams
     ebperiod, ebepoch, ebdepth = ebparams[0:3]
 
@@ -205,7 +242,7 @@ def gaussianeb_fit_magseries(times, mags, errs,
             ebepoch = spfit['fitinfo']['fitepoch']
 
         # if the spline-fit fails, try a savgol fit instead
-        except Exception as e:
+        except Exception:
             sgfit = savgol_fit_magseries(times, mags, errs, ebperiod,
                                          sigclip=sigclip,
                                          magsarefluxes=magsarefluxes,
@@ -225,7 +262,7 @@ def gaussianeb_fit_magseries(times, mags, errs,
                     'fitinfo':{
                         'initialparams':ebparams,
                         'finalparams':None,
-                        'leastsqfit':None,
+                        'finalparamerrs':None,
                         'fitmags':None,
                         'fitepoch':None,
                     },
@@ -271,18 +308,83 @@ def gaussianeb_fit_magseries(times, mags, errs,
 
     # finally, do the fit
     try:
-        leastsqfit = spleastsq(eclipses.invgauss_eclipses_residual,
-                               ebparams,
-                               args=(stimes, smags, serrs),
-                               full_output=True)
-    except Exception as e:
-        leastsqfit = None
+        curvefit_func = partial(eclipses.invgauss_eclipses_curvefit_func,
+                                zerolevel=npmedian(smags))
+
+        # set up the fit parameter bounds
+        if param_bounds is None:
+
+            curvefit_bounds = (
+                nparray([0.0, 0.0, -npinf, 0.0, 0.0, 0.0]),
+                nparray([npinf, npinf, npinf, 1.0, 1.0, 1.0])
+            )
+
+        else:
+
+            # figure out the bounds
+            lower_bounds = []
+            upper_bounds = []
+
+            for ind, key in enumerate(('period','epoch','pdepth',
+                                       'pduration','psdepthratio',
+                                       'secondaryphase')):
+
+                # handle fixed parameters
+                if (key in param_bounds and
+                    isinstance(key, str) and
+                    key == 'fixed'):
+
+                    lower_bounds.append(ebparams[ind])
+                    upper_bounds.append(ebparams[ind])
+
+                # handle parameters with lower and upper bounds
+                elif key in param_bounds and isinstance(key, (tuple,list)):
+
+                    lower_bounds.append(param_bounds[key][0])
+                    upper_bounds.append(param_bounds[key][0])
+
+                # handle no parameter bounds
+                else:
+
+                    lower_bounds.append(-npinf)
+                    upper_bounds.append(npinf)
+
+            # generate the bounds sequence in the required format
+            curvefit_bounds = (
+                nparray(lower_bounds),
+                nparray(upper_bounds)
+            )
+
+        #
+        # run the fit
+        #
+        if curve_fit_kwargs is not None:
+
+            finalparams, covmatrix = curve_fit(
+                curvefit_func,
+                stimes, smags,
+                p0=ebparams,
+                sigma=serrs,
+                bounds=curvefit_bounds,
+                **curve_fit_kwargs
+            )
+
+        else:
+
+            finalparams, covmatrix = curve_fit(
+                curvefit_func,
+                stimes, smags,
+                p0=ebparams,
+                sigma=serrs,
+                bounds=curvefit_bounds,
+            )
+
+    except Exception:
+        LOGEXCEPTION("curve_fit returned an exception")
+        finalparams, covmatrix = None, None
 
     # if the fit succeeded, then we can return the final parameters
-    if leastsqfit and leastsqfit[-1] in (1,2,3,4):
-
-        finalparams = leastsqfit[0]
-        covxmatrix = leastsqfit[1]
+    if finalparams is not None and covmatrix is not None:
 
         # calculate the chisq and reduced chisq
         fitmags, phase, ptimes, pmags, perrs = eclipses.invgauss_eclipses_func(
@@ -292,20 +394,9 @@ def gaussianeb_fit_magseries(times, mags, errs,
         fitchisq = npsum(
             ((fitmags - pmags)*(fitmags - pmags)) / (perrs*perrs)
         )
-        fitredchisq = fitchisq/(len(pmags) - len(finalparams) - 1)
+        fitredchisq = fitchisq/(len(pmags) - len(finalparams))
 
-        # get the residual variance and calculate the formal 1-sigma errs on the
-        # final parameters
-        residuals = leastsqfit[2]['fvec']
-        residualvariance = (
-            npsum(residuals*residuals)/(pmags.size - finalparams.size)
-        )
-        if covxmatrix is not None:
-            covmatrix = residualvariance*covxmatrix
-            stderrs = npsqrt(npdiag(covmatrix))
-        else:
-            LOGERROR('covxmatrix not available, fit probably failed!')
-            stderrs = None
+        stderrs = npsqrt(npdiag(covmatrix))
 
         if verbose:
             LOGINFO(
@@ -323,7 +414,6 @@ def gaussianeb_fit_magseries(times, mags, errs,
                 'initialparams':ebparams,
                 'finalparams':finalparams,
                 'finalparamerrs':stderrs,
-                'leastsqfit':leastsqfit,
                 'fitmags':fitmags,
                 'fitepoch':fepoch,
             },
@@ -363,7 +453,6 @@ def gaussianeb_fit_magseries(times, mags, errs,
                 'initialparams':ebparams,
                 'finalparams':None,
                 'finalparamerrs':None,
-                'leastsqfit':leastsqfit,
                 'fitmags':None,
                 'fitepoch':None,
             },

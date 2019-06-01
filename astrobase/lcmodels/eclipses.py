@@ -196,6 +196,96 @@ def invgauss_eclipses_func(ebparams, times, mags, errs):
     return modelmags, phase, ptimes, pmags, perrs
 
 
+def invgauss_eclipses_curvefit_func(
+        times,
+        period,
+        epoch,
+        pdepth,
+        pduration,
+        psdepthratio,
+        secondaryphase,
+        zerolevel=0.0
+):
+    '''
+    This is the inv-gauss eclipses function used with scipy.optimize.curve_fit.
+
+    Parameters
+    ----------
+
+    times : np.array
+        The array of times at which the model will be evaluated.
+
+    period : float
+        The period of the eclipsing binary.
+
+    epoch : float
+        The mid eclipse time of the primary eclipse. In the same units as times.
+
+    pdepth : float
+        The depth of the primary eclipse.
+
+    pduration : float
+        The duration of the primary eclipse. In units of phase.
+
+    psdepthratio : float
+        The ratio between the depths of the primary and secondary eclipse.
+
+    secondaryphase : float
+        The phase of the secondary eclipse.
+
+    zerolevel : float
+        The out of eclipse value of the model.
+    '''
+
+    # generate the phases
+    phase = (times - epoch)/period
+    phase = phase - np.floor(phase)
+
+    eclipsemodel = np.full_like(phase, zerolevel)
+
+    primaryecl_amp = -pdepth
+    secondaryecl_amp = -pdepth * psdepthratio
+
+    primaryecl_std = pduration/5.0    # we use 5-sigma as full-width -> duration
+    secondaryecl_std = pduration/5.0  # secondary eclipse has the same duration
+
+    halfduration = pduration/2.0
+
+    # phase indices
+    primary_eclipse_ingress = (
+        (phase >= (1.0 - halfduration)) & (phase <= 1.0)
+    )
+    primary_eclipse_egress = (
+        (phase >= 0.0) & (phase <= halfduration)
+    )
+
+    secondary_eclipse_phase = (
+        (phase >= (secondaryphase - halfduration)) &
+        (phase <= (secondaryphase + halfduration))
+    )
+
+    # put in the eclipses
+    eclipsemodel[primary_eclipse_ingress] = (
+        zerolevel + _gaussian(phase[primary_eclipse_ingress],
+                              primaryecl_amp,
+                              1.0,
+                              primaryecl_std)
+    )
+    eclipsemodel[primary_eclipse_egress] = (
+        zerolevel + _gaussian(phase[primary_eclipse_egress],
+                              primaryecl_amp,
+                              0.0,
+                              primaryecl_std)
+    )
+    eclipsemodel[secondary_eclipse_phase] = (
+        zerolevel + _gaussian(phase[secondary_eclipse_phase],
+                              secondaryecl_amp,
+                              secondaryphase,
+                              secondaryecl_std)
+    )
+
+    return eclipsemodel
+
 
 def invgauss_eclipses_residual(ebparams, times, mags, errs):
     '''This returns the residual between the modelmags and the actual mags.
