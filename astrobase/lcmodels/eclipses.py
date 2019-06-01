@@ -11,7 +11,6 @@ binaries.
 import numpy as np
 
 
-
 ##################################
 ## MODEL AND RESIDUAL FUNCTIONS ##
 ##################################
@@ -44,7 +43,6 @@ def _gaussian(x, amp, loc, std):
     '''
 
     return amp * np.exp(-((x - loc)*(x - loc))/(2.0*std*std))
-
 
 
 def _double_inverted_gaussian(x,
@@ -80,7 +78,6 @@ def _double_inverted_gaussian(x,
     gaussian1 = -_gaussian(x,amp1,loc1,std1)
     gaussian2 = -_gaussian(x,amp2,loc2,std2)
     return gaussian1 + gaussian2
-
 
 
 def invgauss_eclipses_func(ebparams, times, mags, errs):
@@ -159,7 +156,6 @@ def invgauss_eclipses_func(ebparams, times, mags, errs):
 
     halfduration = pduration/2.0
 
-
     # phase indices
     primary_eclipse_ingress = (
         (phase >= (1.0 - halfduration)) & (phase <= 1.0)
@@ -204,10 +200,10 @@ def invgauss_eclipses_curvefit_func(
         pduration,
         psdepthratio,
         secondaryphase,
-        zerolevel=0.0
+        zerolevel=0.0,
+        fixed_params=None,
 ):
-    '''
-    This is the inv-gauss eclipses function used with scipy.optimize.curve_fit.
+    '''This is the inv-gauss eclipses function used with scipy.optimize.curve_fit.
 
     Parameters
     ----------
@@ -235,7 +231,51 @@ def invgauss_eclipses_curvefit_func(
 
     zerolevel : float
         The out of eclipse value of the model.
+
+    fixed_params : dict or None
+        If this is provided, must be a dict containing the parameters to fix and
+        their values. Should be of the form below::
+
+            {'period': fixed value,
+             'epoch': fixed value,
+             'pdepth': fixed value,
+             'pduration': fixed value,
+             'psdepthratio': fixed value,
+             'secondaryphase': fixed value}
+
+        Any parameter in the dict provided will have its parameter fixed to the
+        provided value. This is best done with an application of
+        functools.partial before passing the function to the
+        scipy.optimize.curve_fit function, e.g.::
+
+            curvefit_func = functools.partial(
+                                eclipses.invgauss_eclipses_curvefit_func,
+                                zerolevel=np.median(mags),
+                                fixed_params={'secondaryphase':0.5})
+
+            fit_params, fit_cov = scipy.optimize.curve_fit(
+                                    curvefit_func,
+                                    times, mags,
+                                    p0=initial_params,
+                                    sigma=errs,
+                                    ...)
+
     '''
+
+    if fixed_params is not None and len(fixed_params) > 0:
+
+        if 'period' in fixed_params:
+            period = fixed_params['period']
+        if 'epoch' in fixed_params:
+            epoch = fixed_params['epoch']
+        if 'pdepth' in fixed_params:
+            pdepth = fixed_params['pdepth']
+        if 'pduration' in fixed_params:
+            pduration = fixed_params['pduration']
+        if 'psdepthratio' in fixed_params:
+            psdepthratio = fixed_params['psdepthratio']
+        if 'secondaryphase' in fixed_params:
+            secondaryphase = fixed_params['secondaryphase']
 
     # generate the phases
     phase = (times - epoch)/period

@@ -325,12 +325,14 @@ def traptransit_fit_magseries(
                 np.array([0.0, 0.0, -np.inf, 0.0, 0.0]),
                 np.array([np.inf, np.inf, np.inf, 1.0, 0.5])
             )
+            fitfunc_fixed = {}
 
         else:
 
             # figure out the bounds
             lower_bounds = []
             upper_bounds = []
+            fitfunc_fixed = {}
 
             for ind, key in enumerate(('period','epoch','depth',
                                        'duration','ingressduration')):
@@ -340,8 +342,9 @@ def traptransit_fit_magseries(
                     isinstance(param_bounds[key], str) and
                     param_bounds[key] == 'fixed'):
 
-                    lower_bounds.append(transitparams[ind]-1.0e-9)
-                    upper_bounds.append(transitparams[ind]+1.0e-9)
+                    lower_bounds.append(transitparams[ind]-1.0e-7)
+                    upper_bounds.append(transitparams[ind]+1.0e-7)
+                    fitfunc_fixed[key] = transitparams[ind]
 
                 # handle parameters with lower and upper bounds
                 elif key in param_bounds and isinstance(param_bounds[key],
@@ -366,7 +369,8 @@ def traptransit_fit_magseries(
         # set up the curve fit function
         #
         curvefit_func = partial(transits.trapezoid_transit_curvefit_func,
-                                zerolevel=np.median(smags))
+                                zerolevel=np.median(smags),
+                                fixed_params=fitfunc_fixed)
 
         #
         # run the fit
@@ -410,7 +414,8 @@ def traptransit_fit_magseries(
         fitchisq = np.sum(
             ((fitmags - pmags)*(fitmags - pmags)) / (perrs*perrs)
         )
-        fitredchisq = fitchisq/(len(pmags) - len(finalparams))
+        fitredchisq = fitchisq/(len(pmags) -
+                                len(finalparams) - len(fitfunc_fixed))
 
         stderrs = np.sqrt(np.diag(covmatrix))
 

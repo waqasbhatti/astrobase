@@ -117,6 +117,7 @@ def trapezoid_transit_curvefit_func(
         duration,
         ingressduration,
         zerolevel=0.0,
+        fixed_params=None,
 ):
     '''
     This is the function used for scipy.optimize.curve_fit.
@@ -145,6 +146,33 @@ def trapezoid_transit_curvefit_func(
     zerolevel : float
         The level of the measurements outside transit.
 
+    fixed_params : dict or None
+        If this is provided, must be a dict containing the parameters to fix and
+        their values. Should be of the form below::
+
+            {'period': fixed value,
+             'epoch': fixed value,
+             'depth': fixed value,
+             'duration': fixed value,
+             'ingressduration': fixed value}
+
+        Any parameter in the dict provided will have its parameter fixed to the
+        provided value. This is best done with an application of
+        functools.partial before passing the function to the
+        scipy.optimize.curve_fit function, e.g.::
+
+            curvefit_func = functools.partial(
+                                transits.trapezoid_transit_curvefit_func,
+                                zerolevel=np.median(mags),
+                                fixed_params={'ingressduration':0.05})
+
+            fit_params, fit_cov = scipy.optimize.curve_fit(
+                                    curvefit_func,
+                                    times, mags,
+                                    p0=initial_params,
+                                    sigma=errs,
+                                    ...)
+
     Returns
     -------
 
@@ -153,6 +181,19 @@ def trapezoid_transit_curvefit_func(
         the times input array.
 
     '''
+
+    if fixed_params is not None and len(fixed_params) > 0:
+
+        if 'period' in fixed_params:
+            period = fixed_params['period']
+        if 'epoch' in fixed_params:
+            epoch = fixed_params['epoch']
+        if 'pdepth' in fixed_params:
+            depth = fixed_params['depth']
+        if 'duration' in fixed_params:
+            duration = fixed_params['duration']
+        if 'ingressduration' in fixed_params:
+            ingressduration = fixed_params['ingressduration']
 
     # generate the phases
     phase = (times - epoch)/period

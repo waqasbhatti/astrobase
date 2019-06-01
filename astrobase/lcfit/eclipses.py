@@ -316,12 +316,14 @@ def gaussianeb_fit_magseries(
                 nparray([0.0, 0.0, -npinf, 0.0, 0.0, 0.0]),
                 nparray([npinf, npinf, npinf, 1.0, 1.0, 1.0])
             )
+            fitfunc_fixed = {}
 
         else:
 
             # figure out the bounds
             lower_bounds = []
             upper_bounds = []
+            fitfunc_fixed = {}
 
             for ind, key in enumerate(('period',
                                        'epoch',
@@ -335,8 +337,9 @@ def gaussianeb_fit_magseries(
                     isinstance(param_bounds[key], str) and
                     param_bounds[key] == 'fixed'):
 
-                    lower_bounds.append(ebparams[ind]-1.0e-9)
-                    upper_bounds.append(ebparams[ind]+1.0e-9)
+                    lower_bounds.append(ebparams[ind]-1.0e-7)
+                    upper_bounds.append(ebparams[ind]+1.0e-7)
+                    fitfunc_fixed[key] = ebparams[ind]
 
                 # handle parameters with lower and upper bounds
                 elif key in param_bounds and isinstance(param_bounds[key],
@@ -361,7 +364,8 @@ def gaussianeb_fit_magseries(
         # set up the curve fit function
         #
         curvefit_func = partial(eclipses.invgauss_eclipses_curvefit_func,
-                                zerolevel=npmedian(smags))
+                                zerolevel=npmedian(smags),
+                                fixed_params=fitfunc_fixed)
 
         #
         # run the fit
@@ -402,7 +406,9 @@ def gaussianeb_fit_magseries(
         fitchisq = npsum(
             ((fitmags - pmags)*(fitmags - pmags)) / (perrs*perrs)
         )
-        fitredchisq = fitchisq/(len(pmags) - len(finalparams))
+        fitredchisq = fitchisq/(len(pmags) -
+                                len(finalparams) -
+                                len(fitfunc_fixed))
 
         stderrs = npsqrt(npdiag(covmatrix))
 
