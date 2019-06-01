@@ -110,12 +110,12 @@ def traptransit_fit_magseries(
 
             transitparams = [transit_period (time),
                              transit_epoch (time),
-                             transi_tdepth (flux or mags),
+                             transit_depth (flux or mags),
                              transit_duration (phase),
                              ingress_duration (phase)]
 
-        - for magnitudes -> `transitdepth` should be < 0
-        - for fluxes     -> `transitdepth` should be > 0
+        - for magnitudes -> `transit_depth` should be < 0
+        - for fluxes     -> `transit_depth` should be > 0
 
         If `transitepoch` is None, this function will do an initial spline fit
         to find an approximate minimum of the phased light curve using the given
@@ -341,13 +341,14 @@ def traptransit_fit_magseries(
                 # handle fixed parameters
                 if (key in param_bounds and
                     isinstance(key, str) and
-                    key == 'fixed'):
+                    param_bounds[key] == 'fixed'):
 
                     lower_bounds.append(transitparams[ind])
                     upper_bounds.append(transitparams[ind])
 
                 # handle parameters with lower and upper bounds
-                elif key in param_bounds and isinstance(key, (tuple,list)):
+                elif key in param_bounds and isinstance(param_bounds[key],
+                                                        (tuple,list)):
 
                     lower_bounds.append(param_bounds[key][0])
                     upper_bounds.append(param_bounds[key][0])

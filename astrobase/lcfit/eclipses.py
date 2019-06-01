@@ -331,14 +331,15 @@ def gaussianeb_fit_magseries(
 
                 # handle fixed parameters
                 if (key in param_bounds and
-                    isinstance(key, str) and
+                    isinstance(param_bounds[key], str) and
                     key == 'fixed'):
 
                     lower_bounds.append(ebparams[ind])
                     upper_bounds.append(ebparams[ind])
 
                 # handle parameters with lower and upper bounds
-                elif key in param_bounds and isinstance(key, (tuple,list)):
+                elif key in param_bounds and isinstance(param_bounds[key],
+                                                        (tuple,list)):
 
                     lower_bounds.append(param_bounds[key][0])
                     upper_bounds.append(param_bounds[key][0])

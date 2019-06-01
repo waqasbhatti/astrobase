@@ -301,7 +301,6 @@ def fourier_fit_magseries(times, mags, errs, period,
     # initial minimize call to find global minimum in chi-sq
     initialfit = spminimize(_fourier_chisq,
                             fourierparams,
-                            method='BFGS',
                             args=(phase, pmags, perrs))
 
     # make sure this initial fit succeeds before proceeding
