@@ -139,6 +139,7 @@ def fourier_fit_magseries(
         fourierorder=None,
         fourierparams=None,
         fix_period=True,
+        scale_errs_redchisq_unity=True,
         sigclip=3.0,
         magsarefluxes=False,
         plotfit=False,
@@ -180,6 +181,11 @@ def fourier_fit_magseries(
     fix_period : bool
         If True, will fix the period with fitting the sinusoidal function to the
         phased light curve.
+
+    scale_errs_redchisq_unity : bool
+        If True, the standard errors on the fit parameters will be scaled to
+        make the reduced chi-sq = 1.0. This sets the ``absolute_sigma`` kwarg
+        for the ``scipy.optimize.curve_fit`` function to False.
 
     sigclip : float or int or sequence of two floats/ints or None
         If a single float or int, a symmetric sigma-clip will be performed using
@@ -353,6 +359,7 @@ def fourier_fit_magseries(
                     p0=curvefit_params,
                     sigma=serrs,
                     bounds=curvefit_bounds,
+                    absolute_sigma=(not scale_errs_redchisq_unity),
                     **curve_fit_kwargs
                 )
 
@@ -364,6 +371,7 @@ def fourier_fit_magseries(
                     p0=curvefit_params,
                     sigma=serrs,
                     bounds=curvefit_bounds,
+                    absolute_sigma=(not scale_errs_redchisq_unity),
                 )
 
         except Exception:

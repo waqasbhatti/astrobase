@@ -86,6 +86,7 @@ def traptransit_fit_magseries(
         times, mags, errs,
         transitparams,
         param_bounds=None,
+        scale_errs_redchisq_unity=True,
         sigclip=10.0,
         plotfit=False,
         magsarefluxes=False,
@@ -150,6 +151,11 @@ def traptransit_fit_magseries(
              'depth':(-np.inf,np.inf),    # depth is between -np.inf and np.inf
              'duration':(0.0,1.0),        # duration is between 0.0 and 1.0
              'ingressduration':(0.0,0.5)} # ingress duration between 0.0 and 0.5
+
+    scale_errs_redchisq_unity : bool
+        If True, the standard errors on the fit parameters will be scaled to
+        make the reduced chi-sq = 1.0. This sets the ``absolute_sigma`` kwarg
+        for the ``scipy.optimize.curve_fit`` function to False.
 
     sigclip : float or int or sequence of two floats/ints or None
         If a single float or int, a symmetric sigma-clip will be performed using
@@ -383,6 +389,7 @@ def traptransit_fit_magseries(
                 p0=transitparams,
                 sigma=serrs,
                 bounds=curvefit_bounds,
+                absolute_sigma=(not scale_errs_redchisq_unity),
                 **curve_fit_kwargs
             )
 
@@ -393,6 +400,7 @@ def traptransit_fit_magseries(
                 stimes, smags,
                 p0=transitparams,
                 sigma=serrs,
+                absolute_sigma=(not scale_errs_redchisq_unity),
                 bounds=curvefit_bounds,
             )
 

@@ -67,6 +67,7 @@ def gaussianeb_fit_magseries(
         times, mags, errs,
         ebparams,
         param_bounds=None,
+        scale_errs_redchisq_unity=True,
         sigclip=10.0,
         plotfit=False,
         magsarefluxes=False,
@@ -145,6 +146,11 @@ def gaussianeb_fit_magseries(
              'pduration':(0.0,1.0),      # pduration is between 0.0 and 1.0
              'psdepthratio':(0.0,1.0),   # psdepthratio is between 0.0 and 1.0
              'secondaryphase':(0.0,1.0), # secondaryphase is between 0.0 and 1.0
+
+    scale_errs_redchisq_unity : bool
+        If True, the standard errors on the fit parameters will be scaled to
+        make the reduced chi-sq = 1.0. This sets the ``absolute_sigma`` kwarg
+        for the ``scipy.optimize.curve_fit`` function to False.
 
     sigclip : float or int or sequence of two floats/ints or None
         If a single float or int, a symmetric sigma-clip will be performed using
@@ -378,6 +384,7 @@ def gaussianeb_fit_magseries(
                 p0=ebparams,
                 sigma=serrs,
                 bounds=curvefit_bounds,
+                absolute_sigma=(not scale_errs_redchisq_unity),
                 **curve_fit_kwargs
             )
 
@@ -389,6 +396,7 @@ def gaussianeb_fit_magseries(
                 p0=ebparams,
                 sigma=serrs,
                 bounds=curvefit_bounds,
+                absolute_sigma=(not scale_errs_redchisq_unity),
             )
 
     except Exception:
