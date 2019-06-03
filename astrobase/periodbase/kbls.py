@@ -48,7 +48,7 @@ from numpy import (
     linspace as nplinspace, digitize as npdigitize, where as npwhere,
     abs as npabs, min as npmin, full_like as npfull_like, median as npmedian,
     std as npstd, sqrt as npsqrt, ceil as npceil, argsort as npargsort,
-    concatenate as npconcatenate, ndarray as npndarray
+    concatenate as npconcatenate, ndarray as npndarray, inf as npinf
 )
 
 ###################
@@ -1137,8 +1137,20 @@ def _get_bls_stats(stimes,
     # make sure the ingress duration isn't more than half of the total duration
     # of the transit
     model_ingressduration = ingressdurationfraction*thistransduration
-    if model_ingressduration > 0.5:
-        model_ingressduration = 0.5
+    if model_ingressduration > (0.5*thistransduration):
+        model_ingressduration = 0.5*thistransduration
+
+    #
+    # set the depth bounds appropriately for the type of mag input
+    #
+
+    # require positive depth for fluxes
+    if magsarefluxes:
+        transit_depth_bounds = (0.0, npinf)
+
+    # require negative depth for mags
+    else:
+        transit_depth_bounds = (-npinf, 0.0)
 
     # set up trapezoid transit model to fit for this LC
     transitparams = [
@@ -1149,6 +1161,9 @@ def _get_bls_stats(stimes,
         model_ingressduration
     ]
 
+    #
+    # run the model fit
+    #
     modelfit = traptransit_fit_magseries(
         stimes,
         smags,
@@ -1156,6 +1171,13 @@ def _get_bls_stats(stimes,
         transitparams,
         sigclip=None,
         magsarefluxes=magsarefluxes,
+        param_bounds={
+            'period':(0.0, npinf),
+            'epoch':(0.0, npinf),
+            'depth':transit_depth_bounds,
+            'duration':(0.0,1.0),
+            'ingressduration':(0.0,0.5*thistransduration),
+        },
         verbose=verbose
     )
 
@@ -1200,16 +1222,17 @@ def _get_bls_stats(stimes,
                 'snr':transit_snr,
                 'transitdepth':fit_depth,
                 'transitduration':fit_duration,
+                'ingressduration':fit_ingress_dur,
+                'npoints_in_transit':npts_in_transit,
+                'fitparams':fitparams,
+                'fiterrs':fiterrs,
                 'nphasebins':nphasebins,
                 'transingressbin':thistransingressbin,
                 'transegressbin':thistransegressbin,
-                'npoints_in_transit':npts_in_transit,
                 'blsmodel':modelmags,
                 'subtractedmags':subtractedmags,
                 'phasedmags':actualmags,
                 'phases':modelphase,
-                'fitparams':fitparams,
-                'fiterrs':fiterrs,
                 'fitinfo':modelfit}
 
     # if the model fit doesn't work, then do the SNR calculation the old way
