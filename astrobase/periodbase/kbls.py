@@ -1142,8 +1142,8 @@ def _get_bls_stats(stimes,
                        % repr(thisminepoch))
         thisminepoch = thisminepoch[0]
 
-    # make sure the ingress duration isn't more than half of the total duration
-    # of the transit
+    # make sure the INITIAL value of the ingress duration isn't more than half
+    # of the total duration of the transit
     model_ingressduration = ingressdurationfraction*thistransduration
     if model_ingressduration > (0.5*thistransduration):
         model_ingressduration = 0.5*thistransduration
@@ -1184,7 +1184,11 @@ def _get_bls_stats(stimes,
             'epoch':(0.0, npinf),
             'depth':transit_depth_bounds,
             'duration':(0.0,1.0),
-            'ingressduration':(0.0,0.5*thistransduration),
+            # allow ingress duration during fitting to float up to 0.5
+            # FIXME: this should technically always be a fn of duration but
+            # curve_fit doesn't support this kind of constraint
+            # use scipy.optimize.minimize instead?
+            'ingressduration':(0.0,0.5),
         },
         verbose=verbose
     )
