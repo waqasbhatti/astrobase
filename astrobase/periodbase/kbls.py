@@ -314,6 +314,10 @@ def bls_serial_pfind(
         values for period, epoch, transit depth, duration, ingress duration, and
         the SNR of the transit.
 
+        NOTE: make sure to check the 'fit_status' key for each
+        ``resultdict['stats']`` item to confirm that the trapezoid transit model
+        fit succeeded and that the stats calculated are valid.
+
     Returns
     -------
 
@@ -743,6 +747,10 @@ def bls_parallel_pfind(
         light curve at each period in ``resultdict['nbestperiods']``, i.e. fit
         values for period, epoch, transit depth, duration, ingress duration, and
         the SNR of the transit.
+
+        NOTE: make sure to check the 'fit_status' key for each
+        ``resultdict['stats']`` item to confirm that the trapezoid transit model
+        fit succeeded and that the stats calculated are valid.
 
     Returns
     -------
@@ -1226,6 +1234,7 @@ def _get_bls_stats(stimes,
                 'npoints_in_transit':npts_in_transit,
                 'fitparams':fitparams,
                 'fiterrs':fiterrs,
+                'fit_status':'ok',
                 'nphasebins':nphasebins,
                 'transingressbin':thistransingressbin,
                 'transegressbin':thistransegressbin,
@@ -1314,6 +1323,8 @@ def _get_bls_stats(stimes,
                 'snr':thissnr,
                 'transitdepth':thistransdepth,
                 'transitduration':thistransduration,
+                'npoints_in_transit':npts_in_transit,
+                'fit_status':'trapezoid model fit failed, using box model',
                 'nphasebins':nphasebins,
                 'transingressbin':thistransingressbin,
                 'transegressbin':thistransegressbin,
@@ -1413,6 +1424,9 @@ def bls_stats_singleperiod(times, mags, errs, period,
              'snr':the SNR of the transit,
              'transitdepth':the depth of the transit,
              'transitduration':the duration of the transit,
+             'ingressduration':if trapezoid fit OK, is the ingress duration,
+             'npoints_in_transit':the number of LC points in transit,
+             'fit_status': 'ok' or 'trapezoid model fit failed,...',
              'nphasebins':the input value of nphasebins,
              'transingressbin':the phase bin containing transit ingress,
              'transegressbin':the phase bin containing transit egress,
@@ -1420,6 +1434,10 @@ def bls_stats_singleperiod(times, mags, errs, period,
              'subtractedmags':BLS model - phased light curve,
              'phasedmags':the phase light curve,
              'phases': the phase values}
+
+        You should check the 'fit_status' key in this returned dict for a value
+        of 'ok'. If it is 'trapezoid model fit failed, using box model', you may
+        not want to trust the transit period and epoch found.
 
     '''
 
@@ -1620,6 +1638,7 @@ def bls_snr(blsdict,
 
         nbestsnrs = []
         transitdepth, transitduration = [], []
+        ingressduration, points_in_transit, fit_status = [], [], []
         nphasebins, transingressbin, transegressbin = [], [], []
 
         # keep these around for diagnostics
@@ -1687,6 +1706,10 @@ def bls_snr(blsdict,
             nbestsnrs.append(stats['snr'])
             transitdepth.append(stats['transitdepth'])
             transitduration.append(stats['transitduration'])
+            ingressduration.append(stats['ingressduration'])
+            points_in_transit.append(stats['npoints_in_transit'])
+            fit_status.append(stats['fit_status'])
+
             transingressbin.append(stats['transingressbin'])
             transegressbin.append(stats['transegressbin'])
             nphasebins.append(stats['nphasebins'])
@@ -1701,7 +1724,9 @@ def bls_snr(blsdict,
             allphases.append(stats['phases'])
             allblsmodels.append(stats['blsmodel'])
 
+        #
         # done with working on each peak
+        #
 
     # if there aren't enough points in the mag series, bail out
     else:
@@ -1709,6 +1734,7 @@ def bls_snr(blsdict,
         LOGERROR('no good detections for these times and mags, skipping...')
         nbestsnrs = None
         transitdepth, transitduration = None, None
+        ingressduration, points_in_transit, fit_status = None, None, None
         nphasebins, transingressbin, transegressbin = None, None, None
         allsubtractedmags, allphases, allphasedmags = None, None, None
 
@@ -1718,6 +1744,9 @@ def bls_snr(blsdict,
             'snr':nbestsnrs,
             'transitdepth':transitdepth,
             'transitduration':transitduration,
+            'ingressduration':ingressduration,
+            'npoints_in_transit':points_in_transit,
+            'fit_status':fit_status,
             'nphasebins':nphasebins,
             'transingressbin':transingressbin,
             'transegressbin':transegressbin,
