@@ -50,7 +50,11 @@ from numpy import (
     ceil as npceil, argsort as npargsort, concatenate as npconcatenate
 )
 
-from astropy.stats import BoxLeastSquares
+try:
+    from astropy.stats import BoxLeastSquares
+except ImportError:
+    from astropy.timeseries import BoxLeastSquares
+
 from astropy import units as u
 
 
