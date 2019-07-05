@@ -381,8 +381,8 @@ def _reform_templatelc_for_tfa(task):
 
 def tfa_templates_lclist(
         lclist,
+        outfile,
         lcinfo_pkl=None,
-        outfile=None,
         target_template_frac=0.1,
         max_target_frac_obs=0.25,
         min_template_number=10,
@@ -438,14 +438,15 @@ def tfa_templates_lclist(
         This is a list of light curves to use as input to generate the template
         set.
 
+    outfile : str
+        This is the pickle filename to which the TFA template list will be
+        written to.
+
     lcinfo_pkl : str or None
         If provided, is a file path to a pickle file created by this function on
         a previous run containing the LC information. This will be loaded
-        directly instead of having to re-run LC info collection.
-
-    outfile : str or None
-        This is the pickle filename to which the TFA template list will be
-        written to. If None, a default file name will be used for this.
+        directly instead of having to re-run LC info collection. If None, will
+        be placed in the same directory as outfile.
 
     target_template_frac : float
         This is the fraction of total objects in lclist to use for the number of
@@ -584,31 +585,24 @@ def tfa_templates_lclist(
     # check if we have cached results for this run
     #
 
+    check_lcinfo_path = os.path.join(
+        os.path.dirname(outfile),
+        'tfa-collected-lcinfo-%s.pkl' % lcformat
+    )
+
     # case where we provide a cache info pkl directly
     if lcinfo_pkl and os.path.exists(lcinfo_pkl):
 
         with open(lcinfo_pkl,'rb') as infd:
             results = pickle.load(infd)
 
-    # case where we don't have an info pickle or an outfile
-    elif ((not outfile) and
-          os.path.exists('tfa-collected-lcfinfo-%s.pkl' % lcformat)):
+    # if we don't provide an lcinfo pkl
+    elif not lcinfo_pkl and os.path.exists(check_lcinfo_path):
 
-        with open('tfa-collected-lcfinfo-%s.pkl' % lcformat, 'rb') as infd:
+        with open(check_lcinfo_path, 'rb') as infd:
             results = pickle.load(infd)
 
-    # case where we don't have an info pickle but do have an outfile
-    elif (outfile and os.path.exists('tfa-collected-lcfinfo-%s-%s' %
-                                     (lcformat, os.path.basename(outfile)))):
-
-        with open(
-                'tfa-collected-lcinfo-%s-%s' %
-                (lcformat, os.path.basename(outfile)),
-                'rb'
-        ) as infd:
-            results = pickle.load(infd)
-
-    # case where we have to redo the LC info collection
+    # otherwise, we have to redo the LC info collection
     else:
 
         # first, we'll collect the light curve info
@@ -622,16 +616,13 @@ def tfa_templates_lclist(
         pool.join()
 
         # save these results so we don't have to redo if something breaks here
-        if not outfile:
-            with open('tfa-collected-lcinfo-%s.pkl' % lcformat,'wb') as outfd:
+        if lcinfo_pkl:
+            with open(lcinfo_pkl,'wb') as outfd:
                 pickle.dump(results, outfd, pickle.HIGHEST_PROTOCOL)
+
         else:
-            with open(
-                    'tfa-collected-lcinfo-%s-%s' %
-                    (lcformat, os.path.basename(outfile)),
-                    'wb'
-            ) as outfd:
-                pickle.dump(results, outfd, pickle.HIGHEST_PROTOCOL)
+            with open(check_lcinfo_path,'wb') as outfd:
+                pickle.dump(results, outfd, pickle.HIGHEST_PROTCOL)
 
     #
     # now, go through the light curve information
@@ -1058,16 +1049,13 @@ def tfa_templates_lclist(
     # end of operating on each magcol
     #
 
-    # save the templateinfo dict to a pickle if requested
-    if outfile:
+    if outfile.endswith('.gz'):
+        outfd = gzip.open(outfile,'wb')
+    else:
+        outfd = open(outfile,'wb')
 
-        if outfile.endswith('.gz'):
-            outfd = gzip.open(outfile,'wb')
-        else:
-            outfd = open(outfile,'wb')
-
-        with outfd:
-            pickle.dump(outdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
+    with outfd:
+        pickle.dump(outdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
 
     # return the templateinfo dict
     return outdict
