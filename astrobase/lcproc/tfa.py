@@ -921,8 +921,11 @@ def tfa_templates_lclist(
                     plt.title(
                         'image plane-projected coords - selected template objs'
                     )
-                    plt.savefig('template-cxi-ceta-%s.png' % mcol,
-                                bbox_inches='tight')
+                    plt.savefig(
+                        os.path.join(os.path.dirname(outfile),
+                                     'template-cxi-ceta-%s.png' % mcol),
+                        bbox_inches='tight'
+                    )
                     plt.close('all')
 
                     # get the max ndet so far to use that LC as the timebase
@@ -1030,8 +1033,11 @@ def tfa_templates_lclist(
         plt.xlabel('catalog magnitude')
         plt.ylabel('light curve MAD')
         plt.title('catalog mag vs. light curve MAD and fit')
-        plt.savefig('catmag-%s-lcmad-fit.png' % mcol,
-                    bbox_inches='tight')
+        plt.savefig(
+            os.path.join(os.path.dirname(outfile),
+                         'catmag-%s-lcmad-fit.png' % mcol),
+            bbox_inches='tight'
+        )
         plt.close('all')
 
         plt.plot(lcmag, lceta, marker='o', linestyle='none', ms=1.0)
@@ -1041,8 +1047,11 @@ def tfa_templates_lclist(
         plt.xlabel('catalog magnitude')
         plt.ylabel('light curve eta variable index')
         plt.title('catalog mag vs. light curve eta and fit')
-        plt.savefig('catmag-%s-lceta-fit.png' % mcol,
-                    bbox_inches='tight')
+        plt.savefig(
+            os.path.join(os.path.dirname(outfile),
+                         'catmag-%s-lceta-fit.png' % mcol),
+            bbox_inches='tight'
+        )
         plt.close('all')
 
     #
