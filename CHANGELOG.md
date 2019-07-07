@@ -1,3 +1,32 @@
+# v0.4.2
+
+## Changes
+
+- All `lcfit` functions now use `scipy.optimize.curve_fit` instead of
+  `scipy.optimize.leastsq` previously. This appears to produce much more
+  reasonable fit parameter error estimates.
+- `periodbase.kbls`: The BLS stats functions now check for a sensible transit
+  model when calculating stats (transit depth, duration, SNR, refit period and
+  epoch).
+- `checkplot.png`: Added option to overplot circle on DSS
+  finder-charts. `checkplot.png.twolsp_checkplot_png` can now return a
+  `matplotlib.Figure`. Added by @lgbouma in #86.
+
+## Fixes
+
+- `lcproc.tfa`: Fixed caching of collected LC info when generating a TFA
+  template.
+- `checkplotserver`: Fixed column errors in exported CSV from the interface
+  (#85).
+
+## Removed
+
+- Removed deprecated function
+  `astrotess.get_time_flux_errs_from_Ames_lightcurve`. Use
+  `astrotess.read_tess_fitslc` instead.
+- Removed deprecated module `services/tic.py`. Use `services/mast.py` instead.
+
+
 # v0.4.1
 
 ## New stuff
