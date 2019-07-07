@@ -18,6 +18,4 @@ Submodules
    astrobase.services.mast
    astrobase.services.simbad
    astrobase.services.skyview
-   astrobase.services.tic
    astrobase.services.trilegal
-
