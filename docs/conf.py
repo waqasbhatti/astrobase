@@ -23,7 +23,7 @@ project = 'Astrobase'
 copyright = '2019, Waqas Bhatti, and contributors'
 author = 'Waqas Bhatti, and contributors'
 
-__version__ = '0.4.1'
+__version__ = '0.4.2'
 
 # The short X.Y version
 version = ''
