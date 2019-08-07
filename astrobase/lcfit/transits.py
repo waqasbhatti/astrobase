@@ -769,6 +769,7 @@ def mandelagol_fit_magseries(
         samplesavpath=False,
         n_walkers=50,
         n_mcmc_steps=400,
+        exp_time_minutes=2,
         eps=1e-4,
         skipsampling=False,
         overwriteexistingsamples=False,
@@ -851,6 +852,10 @@ def mandelagol_fit_magseries(
     n_mcmc_steps : int
         The number of MCMC steps to take.
 
+    exp_time_minutes : int
+        Exposure time, in minutes, passed to transit model to smear
+        observations.
+
     eps : float
         The radius of the `n_walkers-dimensional` Gaussian ball used to
         initialize the MCMC.
@@ -915,6 +920,8 @@ def mandelagol_fit_magseries(
                     'finalparamerrs':formal errors in the params,
                     'fitmags': the model fit mags,
                     'fitepoch': the epoch of minimum light for the fit,
+                    'acceptancefraction': fraction of MCMC ensemble. low=bad.
+                    'autocorrtime': if autocorrtime ~= n_mcmc_steps, not good.
                 },
                 'fitplotfile': the output fit plot if fitplot is not None,
                 'magseries':{
@@ -967,7 +974,8 @@ def mandelagol_fit_magseries(
     # initialize the model and calculate the initial model light-curve
     init_params, init_m = _transit_model(stimes, init_epoch, init_period,
                                          init_rp, init_sma, init_incl, init_ecc,
-                                         init_omega, init_u, limb_dark)
+                                         init_omega, init_u, limb_dark,
+                                         exp_time_minutes=exp_time_minutes)
     init_flux = init_m.light_curve(init_params)
 
     # guessed initial params. give nice guesses, or else emcee struggles.
@@ -1089,11 +1097,16 @@ def mandelagol_fit_magseries(
         u = [medianparams['u_linear'], medianparams['u_quad']]
 
     fit_params, fit_m = _transit_model(stimes, t0, per, rp, sma, incl, ecc,
-                                       omega, u, limb_dark)
+                                       omega, u, limb_dark,
+                                       exp_time_minutes=exp_time_minutes)
     fitmags = fit_m.light_curve(fit_params)
     fepoch = t0
 
-    # assemble the return dictionary
+    # assemble the return dictionary. for the autocorrelation time, the "c"
+    # input parameter indicates the number of auto-correlation lengths (ACLs)
+    # needed to "reliably" calculate the ACL itself. set it to 1 because
+    # oftentimes, the sampler has not collected enough samples to satsify the
+    # default value of 10.
     returndict = {
         'fittype':fittype,
         'fitinfo':{
@@ -1104,6 +1117,8 @@ def mandelagol_fit_magseries(
             'finalparamerrs':stderrs,
             'fitmags':fitmags,
             'fitepoch':fepoch,
+            'acceptancefraction':np.mean(sampler.acceptance_fraction),
+            'autocorrtime':np.mean(sampler.get_autocorr_time(c=1, quiet=True))
         },
         'fitplotfile':None,
         'magseries':{
@@ -1172,6 +1187,7 @@ def mandelagol_and_line_fit_magseries(
         samplesavpath=False,
         n_walkers=50,
         n_mcmc_steps=400,
+        exp_time_minutes=2,
         eps=1e-4,
         skipsampling=False,
         overwriteexistingsamples=False,
@@ -1264,6 +1280,10 @@ def mandelagol_and_line_fit_magseries(
     n_mcmc_steps : int
         The number of MCMC steps to take.
 
+    exp_time_minutes : int
+        Exposure time, in minutes, passed to transit model to smear
+        observations.
+
     eps : float
         The radius of the `n_walkers-dimensional` Gaussian ball used to
         initialize the MCMC.
@@ -1337,6 +1357,8 @@ def mandelagol_and_line_fit_magseries(
                     'finalparamerrs':formal errors in the params,
                     'fitmags': the model fit mags,
                     'fitepoch': the epoch of minimum light for the fit,
+                    'acceptancefraction': fraction of MCMC ensemble. low=bad.
+                    'autocorrtime': if autocorrtime ~= n_mcmc_steps, not good.
                 },
                 'fitplotfile': the output fit plot if fitplot is not None,
                 'magseries':{
@@ -1347,7 +1369,6 @@ def mandelagol_and_line_fit_magseries(
                     'magsarefluxes':input value of magsarefluxes kwarg
                 }
             }
-
     '''
 
     from multiprocessing import Pool
@@ -1392,7 +1413,8 @@ def mandelagol_and_line_fit_magseries(
     # initialize the model and calculate the initial model light-curve
     init_params, init_m = _transit_model(
         stimes, init_epoch, init_period, init_rp, init_sma, init_incl,
-        init_ecc, init_omega, init_u, limb_dark)
+        init_ecc, init_omega, init_u, limb_dark,
+        exp_time_minutes=exp_time_minutes)
 
     init_flux = (
         init_m.light_curve(init_params) +
@@ -1445,7 +1467,8 @@ def mandelagol_and_line_fit_magseries(
         ml_params, ml_m = _transit_model(stimes, ml_t0, init_period,
                                          ml_rp, init_sma, init_incl,
                                          init_ecc, init_omega, init_u,
-                                         limb_dark)
+                                         limb_dark,
+                                         exp_time_minutes=exp_time_minutes)
         ml_mags = (
             ml_m.light_curve(ml_params) +
             ml_poly_order0 + ml_poly_order1*stimes
@@ -1530,14 +1553,20 @@ def mandelagol_and_line_fit_magseries(
 
     # initialize the model and calculate the initial model light-curve
     fit_params, fit_m = _transit_model(stimes, t0, per, rp, sma, incl, ecc,
-                                       omega, u, limb_dark)
+                                       omega, u, limb_dark,
+                                       exp_time_minutes=exp_time_minutes)
+
     fitmags = (
         fit_m.light_curve(fit_params) +
         poly_order0 + poly_order1*stimes
     )
     fepoch = t0
 
-    # assemble the return dictionary
+    # assemble the return dictionary. for the autocorrelation time, the "c"
+    # input parameter indicates the number of auto-correlation lengths (ACLs)
+    # needed to "reliably" calculate the ACL itself. set it to 1 because
+    # oftentimes, the sampler has not collected enough samples to satsify the
+    # default value of 10.
     medianparams['t0'] += timeoffset
     returndict = {
         'fittype':fittype,
@@ -1549,6 +1578,8 @@ def mandelagol_and_line_fit_magseries(
             'finalparamerrs':stderrs,
             'fitmags':fitmags,
             'fitepoch':fepoch+timeoffset,
+            'acceptancefraction':np.mean(sampler.acceptance_fraction),
+            'autocorrtime':np.mean(sampler.get_autocorr_time(c=1, quiet=True))
         },
         'fitplotfile':None,
         'magseries':{
