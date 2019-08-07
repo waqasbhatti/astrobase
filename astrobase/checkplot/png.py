@@ -479,7 +479,9 @@ def _make_phased_magseries_plot(axes,
                                 phasebinms=4.0,
                                 xticksize=None,
                                 yticksize=None,
-                                makegrid=True):
+                                makegrid=True,
+                                lowerleftstr=None,
+                                lowerleftfontsize=None):
     '''Makes the phased magseries plot tile for the `checkplot_png` and
     `twolsp_checkplot_png` functions.
 
@@ -569,6 +571,12 @@ def _make_phased_magseries_plot(axes,
 
     xticksize,yticksize : int or None
         Fontsize for x and y ticklabels
+
+    lowerleftstr : str or None
+        Optional text to overplot in lower left of plot
+
+    lowerleftfontsize : int or str or None
+        Font size of optional text to overplot in lower left of plot
 
     Returns
     -------
@@ -767,6 +775,13 @@ def _make_phased_magseries_plot(axes,
         )
 
     axes.set_title(plottitle)
+
+    if isinstance(lowerleftstr, str):
+        axes.text(
+            0.02, 0.02, lowerleftstr, fontsize=lowerleftfontsize,
+            transform=axes.transAxes
+        )
+
 
     # if we're making an inset plot showing the full range
     if (plotxlim and isinstance(plotxlim, (list,tuple)) and
