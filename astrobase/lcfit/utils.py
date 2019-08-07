@@ -117,7 +117,8 @@ def make_fit_plot(phase, pmags, perrs, fitmags,
                   plotfit,
                   magsarefluxes=False,
                   wrap=False,
-                  model_over_lc=True):
+                  model_over_lc=True,
+                  fitphase=None):
     '''This makes a plot of the LC model fit.
 
     Parameters
@@ -155,6 +156,9 @@ def make_fit_plot(phase, pmags, perrs, fitmags,
         when you have a very dense light curve and want to be able to see how it
         follows the model.
 
+    fitphase : optional np.array
+        If passed, use this as x values for fitmags
+
     Returns
     -------
 
@@ -176,7 +180,11 @@ def make_fit_plot(phase, pmags, perrs, fitmags,
 
     if not wrap:
 
-        plt.plot(phase, fitmags, linewidth=3.0, color='red',zorder=model_z)
+        if isinstance(fitphase,np.ndarray):
+            plt.plot(fitphase, fitmags, linewidth=3.0,
+                     color='red',zorder=model_z)
+        else:
+            plt.plot(phase, fitmags, linewidth=3.0, color='red',zorder=model_z)
         plt.plot(phase,pmags,
                  marker='o',
                  markersize=1.0,
