@@ -760,7 +760,7 @@ def plot_phased_magseries(times,
 
         if xtimenotphase:
             modelplotphase *= period
-        ax.plot(modelplotphase, modelplotmags, zorder=5, linewidth=2,
+        ax.plot(modelplotphase, modelplotmags, zorder=5, linewidth=0.5,
                 alpha=0.9, color='#181c19')
 
     # make a grid
@@ -869,6 +869,7 @@ def plot_phased_magseries(times,
 def skyview_stamp(ra, decl,
                   survey='DSS2 Red',
                   scaling='Linear',
+                  sizepix=300,
                   flip=True,
                   convolvewith=None,
                   forcefetch=False,
@@ -900,7 +901,11 @@ def skyview_stamp(ra, decl,
         this kwarg, but the other ones should work in principle.
 
     scaling : str
-        This is the pixel value scaling function to use.
+        This is the pixel value scaling function to use. Can be any of the
+        strings ("Log", "Linear", "Sqrt", "HistEq").
+
+    sizepix : int
+        Size of the requested stamp, in pixels. (DSS scale is ~1arcsec/px).
 
     flip : bool
         Will flip the downloaded image top to bottom. This should usually be
@@ -963,6 +968,7 @@ def skyview_stamp(ra, decl,
     stampdict = get_stamp(ra, decl,
                           survey=survey,
                           scaling=scaling,
+                          sizepix=sizepix,
                           forcefetch=forcefetch,
                           cachedir=cachedir,
                           timeout=timeout,
