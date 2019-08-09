@@ -4,9 +4,10 @@
 # Waqas Bhatti and Luke Bouma - Aug 2019
 # (wbhatti@astro.princeton.edu and luke@astro.princeton.edu)
 
-'''Utilities for operating on images. For the time being, this sub-package
-only contains functions to shorten patterns used when reading headers,
-comments, and data from FITS files.
+'''Utilities for operating on FITS images.
+
+For the time being, this sub-package only contains functions to shorten patterns
+used when reading headers, comments, and data from FITS files.
 
 - :py:func:`astrobase.imageutils.get_header_keyword`: get value of a header
   keyword.
@@ -22,20 +23,23 @@ comments, and data from FITS files.
 
 - :py:func:`astrobase.imageutils.get_data_keyword_list`: get values of a list
   of data entries. (E.g., ['FLUX','TMID_BJD'] for a light curve file).
+
 '''
 
 import astropy.io.fits as pyfits
 
+
 def get_header_keyword(fits_file,
                        keyword,
                        ext=0):
-    '''
+    '''This gets a single header keyword out of the FITS header.
+
     Parameters
     ----------
-    fits_file : string
+    fits_file : str
         Path to fits file to open.
 
-    keyword : string
+    keyword : str
         Keyword to access in the header.
 
     ext : int
@@ -43,9 +47,11 @@ def get_header_keyword(fits_file,
 
     Returns
     -------
-    val : float, string
-        The value in the extension's header.
+    val : int, float, or str
+        The value from the header key requested.
+
     '''
+
     hdulist = pyfits.open(fits_file)
 
     if keyword in hdulist[ext].header:
@@ -60,13 +66,14 @@ def get_header_keyword(fits_file,
 def get_data_keyword(fits_file,
                      keyword,
                      ext=1):
-    '''
+    '''This gets a single data array out of a FITS binary table.
+
     Parameters
     ----------
-    fits_file : string
+    fits_file : str
         Path to fits file to open.
 
-    keyword : string
+    keyword : str
         Keyword to access in the header.
 
     ext : int
@@ -74,8 +81,9 @@ def get_data_keyword(fits_file,
 
     Returns
     -------
-    val : float, string
-        The value in the FITS data file.
+    val : ndarray
+        The value in the FITS data table header.
+
     '''
 
     hdulist = pyfits.open(fits_file)
@@ -92,13 +100,14 @@ def get_data_keyword(fits_file,
 def get_header_keyword_list(fits_file,
                             keyword_list,
                             ext=0):
-    '''
+    '''This gets a list of FITS header keywords out of a FITS header.
+
     Parameters
     ----------
-    fits_file : string
+    fits_file : str
         Path to fits file to open.
 
-    keyword_list : string
+    keyword_list : str
         List of keywords to return.
 
     ext : int
@@ -106,9 +115,10 @@ def get_header_keyword_list(fits_file,
 
     Returns
     -------
-    out_dict : dictionary
-        Dictionary with keys `keyword_list` and values whatever was in the
+    out_dict : dict
+        Dict with keys from ``keyword_list`` and values whatever was in the
         header.
+
     '''
 
     hdulist = pyfits.open(fits_file)
@@ -129,13 +139,14 @@ def get_header_keyword_list(fits_file,
 def get_header_comment_list(fits_file,
                             keyword_list,
                             ext=0):
-    '''
+    ''' This gets a list of comment keys from the FITS header.
+
     Parameters
     ----------
-    fits_file : string
+    fits_file : str
         Path to fits file to open.
 
-    keyword_list : string
+    keyword_list : str
         List of keywords to return.
 
     ext : int
@@ -143,9 +154,10 @@ def get_header_comment_list(fits_file,
 
     Returns
     -------
-    out_dict : dictionary
-        Dictionary with keys `keyword_list` and values whatever was in the
+    out_dict : dict
+        Dict with keys from ``keyword_list`` and values whatever was in the
         header comments.
+
     '''
 
     hdulist = pyfits.open(fits_file)
@@ -166,13 +178,14 @@ def get_header_comment_list(fits_file,
 def get_data_keyword_list(fits_file,
                           keyword_list,
                           ext=1):
-    '''
+    '''This gets FITS binary table data arrays from a list of header keys.
+
     Parameters
     ----------
-    fits_file : string
+    fits_file : str
         Path to fits file to open.
 
-    keyword_list : string
+    keyword_list : str
         List of keywords to return.
 
     ext : int
@@ -180,8 +193,8 @@ def get_data_keyword_list(fits_file,
 
     Returns
     -------
-    out_dict : dictionary
-        Dictionary with keys `keyword_list` and values whatever is in the FITS
+    out_dict : dict
+        Dict with keys from ``keyword_list`` and values whatever is in the FITS
         data extension.
     '''
 
@@ -192,7 +205,7 @@ def get_data_keyword_list(fits_file,
     for keyword in keyword_list:
 
         if keyword in hdulist[ext].data.names:
-            out_dict[keyword]  = hdulist[ext].data[keyword]
+            out_dict[keyword] = hdulist[ext].data[keyword]
         else:
             out_dict[keyword] = None
 
