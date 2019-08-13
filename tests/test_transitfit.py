@@ -17,8 +17,12 @@ This tests the following:
 ###########
 # imports #
 ###########
-import os
+import os, multiprocessing
 from glob import glob
+try:
+    from urllib import urlretrieve
+except Exception:
+    from urllib.request import urlretrieve
 
 import numpy as np
 from numpy.testing import assert_allclose
@@ -27,6 +31,43 @@ from astropy.io import fits
 import astrobase.imageutils as iu
 
 from astrobase.lcfit.transits import fivetransitparam_fit_magseries
+from test_periodbase import on_download_chunk
+
+##########
+# config #
+##########
+
+# download the light curves used for tests if they do not exist. first is a
+# nice easy hot jupiter, 6 transits.  second is a tricky two-transit warm
+# jupiter.
+LCURLS = [
+    (
+    "https://github.com/waqasbhatti/astrobase-notebooks/raw/master/nb-data/"
+    "hlsp_cdips_tess_ffi_gaiatwo0003007171311355035136-0006_tess_v01_llc.fits"
+    ),
+    (
+    "https://github.com/waqasbhatti/astrobase-notebooks/raw/master/nb-data/"
+    "hlsp_cdips_tess_ffi_gaiatwo0004827527233363019776-0006_tess_v01_llc.fits"
+    )
+]
+
+modpath = os.path.abspath(__file__)
+LCPATHS = [
+    os.path.abspath(os.path.join(
+        os.getcwd(),
+        'hlsp_cdips_tess_ffi_gaiatwo0003007171311355035136-0006_tess_v01_llc.fits')
+    ),
+    os.path.abspath(os.path.join(
+        os.getcwd(),
+        'hlsp_cdips_tess_ffi_gaiatwo0004827527233363019776-0006_tess_v01_llc.fits')
+    )
+]
+
+for LCPATH, LCURL in zip(LCPATHS, LCURLS):
+    if not os.path.exists(LCPATH):
+        localf, headerr = urlretrieve(
+            LCURL,LCPATH,reporthook=on_download_chunk)
+
 
 #########
 # tests #
@@ -38,10 +79,9 @@ def test_fivetransitparam_fit_magseries_easy():
     model (t0, period, incl, sma, rp/star) with believable error bars.
     """
 
-    identifier = '0003007171311355035136'
-    lcpath = (
-        'hlsp_cdips_tess_ffi_gaiatwo{}-0006_tess_v01_llc.fits'.format(identifier)
-    )
+    # path and identifier for GaiaDR2 3007171311355035136
+    lcpath = LCPATHS[0]
+    identifier = str(lcpath.split('gaiatwo')[1].split('-')[0].lstrip('0'))
 
     hdul = fits.open(lcpath)
     hdr, lc = hdul[0].header, hdul[1].data
@@ -74,7 +114,7 @@ def test_fivetransitparam_fit_magseries_easy():
                 exp_time_minutes=30,
                 bandpass='tess',
                 magsarefluxes=True,
-                nworkers=16
+                nworkers=multiprocessing.cpu_count()
     )
 
     assert is_converged
