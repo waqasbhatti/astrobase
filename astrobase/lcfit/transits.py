@@ -1767,14 +1767,14 @@ def fivetransitparam_fit_magseries(
     '''
 
     if bandpass != 'tess':
-        LOGERROR(
-            'NotImplementedError: currently only call Claret coefficients for '
+        raise NotImplementedError(
+            'currently only call Claret coefficients for '
             'tess bandpass. the others exist, just need to implement'
         )
 
     if not magsarefluxes:
-        LOGERROR(
-            'ValueError: batman & TLS require mags to be fluxes'
+        raise ValueError(
+            'batman & TLS require mags to be fluxes'
         )
 
     #
@@ -1868,6 +1868,12 @@ def _fivetransitparam_fit_magseries(
         5. Fit for (t0, period, a/Rstar, Rp/Rstar, inclination). Fixes e to 0,
         and uses theoretical quadratic limb darkening coefficients in the
         bandpass given by the user, as found with the stellar parameters.
+        6. Fit happens in two stages. First, it is done with the error bars
+        passed to the function in `err`. The best-fit model is then subtracted,
+        and the errors are set to equal the RMS of the OOT points in the
+        subtracted light curve. Then the fit is redone.
+        7. Fit outputs: corner plots, phase-folded light curve, light curve
+        with fit overplotted.
     '''
     # import inside function to avoid circular imports
     from astrobase.varbase.transits import get_snr_of_dip
@@ -2018,7 +2024,11 @@ def _fivetransitparam_fit_magseries(
     sel_flux = np.concatenate(out_fluxs)
     fit_flux = np.concatenate(fit_fluxs)
     sel_err = np.concatenate(err_list)
-    assert len(sel_flux) == len(sel_time) == len(sel_err)
+    if not len(sel_flux) == len(sel_time) == len(sel_err):
+        raise AssertionError(
+            'failed to properly concatenate light curve after rectifying each '
+            'transit window'
+        )
 
     # model = transit only (no line). "transit" as defined by BATMAN has flux=1
     # out of transit.
@@ -2289,9 +2299,9 @@ def get_tess_limb_darkening_guesses(teff, logg):
     # TODO: should probably determine these coefficients by INTERPOLATING.
     # (especially in cases when you're FIXING them, rather than letting them
     # float).
-    LOGWARNING('WRN! skipping interpolation for Claret coefficients.')
-    LOGWARNING('WRN! data logg={:.3f}, teff={:.1f}'.format(logg, teff))
-    LOGWARNING('WRN! Claret logg={:.3f}, teff={:.1f}'.
+    LOGWARNING('skipping interpolation for Claret coefficients.')
+    LOGWARNING('data logg={:.3f}, teff={:.1f}'.format(logg, teff))
+    LOGWARNING('Claret logg={:.3f}, teff={:.1f}'.
                format(bar['logg'],bar['Teff']))
 
     u_linear = bar['aLSM']

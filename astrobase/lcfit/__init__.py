@@ -81,6 +81,7 @@ try:
     import batman
     import emcee
     import corner
+    import h5py
 
     if int(emcee.__version__[0]) >= 3:
         from .transits import (
