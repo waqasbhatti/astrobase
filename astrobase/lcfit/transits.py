@@ -1687,6 +1687,7 @@ def fivetransitparam_fit_magseries(
         chain_savdir,
         n_mcmc_steps=1,
         overwriteexistingsamples=False,
+        burninpercent=0.3,
         n_transit_durations=5,
         make_tlsfit_plot=True,
         exp_time_minutes=30,
@@ -1735,10 +1736,6 @@ def fivetransitparam_fit_magseries(
         overwriteexistingsamples : bool
             If False, and finds pickle file with saved parameters (in
             `fit_savdir`), no additoinal MCMC sampling is done.
-
-        tlsfit_savfile : bool
-            If true, a plot of the TLS fit will be created and saved in
-            `fit_savdir`.
 
         exp_time_minutes : int
             Exposure time in minutes. Used for the model fitting.
@@ -1833,6 +1830,7 @@ def fivetransitparam_fit_magseries(
         n_transit_durations=n_transit_durations,
         nworkers=nworkers,
         n_mcmc_steps=n_mcmc_steps,
+        burninpercent=burninpercent,
         overwriteexistingsamples=overwriteexistingsamples,
         mcmcprogressbar=True)
     )
@@ -1852,6 +1850,7 @@ def _fivetransitparam_fit_magseries(
     n_transit_durations=5,
     nworkers=40,
     n_mcmc_steps=1,
+    burninpercent=0.3,
     overwriteexistingsamples=True,
     mcmcprogressbar=True):
     '''
@@ -2046,7 +2045,7 @@ def _fivetransitparam_fit_magseries(
     priorbounds = {'t0':(t0 - period/10, t0 + period/10),
                    'period':(period-1e-1, period+1e-1),
                    'sma':(a_by_rstar/5, 5*a_by_rstar),
-                   'rp':(rp_by_rstar/3, 3*rp_by_rstar),
+                   'rp':(rp_by_rstar/3, np.min([3*rp_by_rstar,0.5])),
                    'incl':(65, 90)
                    }
     cornerparams = {'t0':t0,
@@ -2106,7 +2105,9 @@ def _fivetransitparam_fit_magseries(
                         sigclip=None, plotfit=phasedlcsavpath,
                         plotcorner=cornersavpath,
                         samplesavpath=samplesavpath, nworkers=nworkers,
-                        n_mcmc_steps=n_mcmc_steps, exp_time_minutes=30,
+                        n_mcmc_steps=n_mcmc_steps,
+                        exp_time_minutes=exp_time_minutes,
+                        burninpercent=burninpercent,
                         eps=1e-6, n_walkers=500, skipsampling=False,
                         overwriteexistingsamples=overwriteexistingsamples,
                         mcmcprogressbar=mcmcprogressbar)
@@ -2219,14 +2220,18 @@ def _fivetransitparam_fit_magseries(
         format(identifier, fittype)
     )
 
-    plot_phased_magseries(sel_time, sel_flux, fitperiod, magsarefluxes=True,
-                          errs=None, normto=False, epoch=fitepoch,
-                          outfile=outfile, sigclip=False, phasebin=0.01,
-                          phasewrap=True, phasesort=True,
-                          plotphaselim=[-.4,.4], plotdpi=400,
-                          modelmags=fitfluxs, modeltimes=fittimes,
-                          xaxlabel='Time from mid-transit [days]',
-                          yaxlabel='Relative flux', xtimenotphase=True)
+    tdur_phase = t_dur_day/fitperiod
+
+    plot_phased_magseries(
+        sel_time, sel_flux, fitperiod, magsarefluxes=True, errs=None,
+        normto=False, epoch=fitepoch, outfile=outfile, sigclip=False,
+        phasebin=0.01, phasewrap=True, phasesort=True,
+        plotphaselim=[-n_transit_durations*tdur_phase,
+                      n_transit_durations*tdur_phase],
+        plotdpi=400, modelmags=fitfluxs, modeltimes=fittimes,
+        xaxlabel='Time from mid-transit [days]', yaxlabel='Relative flux',
+        xtimenotphase=True)
+
     LOGINFO('made {}'.format(outfile))
 
     #
