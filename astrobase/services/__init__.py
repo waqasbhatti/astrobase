@@ -25,6 +25,9 @@ exhaustive and are meant to support other astrobase modules.
 - :py:mod:`astrobase.services.trilegal`: interface to the Girardi TRILEGAL
   galaxy model forms and service.
 
+- :py:mod:`astrobase.services.limbdarkening`: utilities to get stellar limb
+  darkening coefficients for use during transit fitting.
+
 For a much broader interface to online data services, use the astroquery package
 by A. Ginsburg, B. Sipocz, et al.:
 
