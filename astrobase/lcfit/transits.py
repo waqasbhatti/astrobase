@@ -10,11 +10,20 @@
   trapezoid-shaped transit signal to the magnitude/flux time series
 
 - :py:func:`astrobase.lcfit.transits.mandelagol_fit_magseries`: fit a Mandel &
-  Agol (2002) planet transit model to the flux time series.
+  Agol (2002) planet transit model to the flux time series, fixing some
+  parameters (e.g., eccentricity) and varying other parameters (e.g., t0,
+  period, a/Rstar). Priors must be passed by user.
 
 - :py:func:`astrobase.lcfit.transits.mandelagol_and_line_fit_magseries`: fit a
-  Mandel & Agol 2002 model, + a local line to the flux time series.
+  Mandel & Agol 2002 model, + a local line to the flux time series. Priors must
+  be passed by user.
 
+- :py:func:`astrobase.lcfit.transits.fivetransitparam_fit_magseries`: fit out a
+  line around each transit window in the given light curve, and then fit all the
+  transits in the light curve for t0, period, a/Rstar, Rp/Rstar, and
+  inclination. Fixes e to 0, and uses theoretical quadratic limb darkening
+  coefficients in the bandpass given by the user. Figures out the priors, user
+  only needs to pass stellar parameters instead.
 '''
 
 #############
@@ -49,10 +58,14 @@ LOGEXCEPTION = LOGGER.exception
 #############
 
 import os.path
+import os, pickle
 from functools import partial
 
 import numpy as np
 from scipy.optimize import minimize as spminimize, curve_fit
+
+from astropy import units as units, constants as const
+from numpy.polynomial.legendre import Legendre
 
 import matplotlib
 matplotlib.use('Agg')
@@ -62,6 +75,7 @@ try:
     import batman
     import emcee
     import corner
+    import h5py
 
     if int(emcee.__version__[0]) >= 3:
         mandel_agol_dependencies = True
@@ -71,12 +85,17 @@ try:
 except Exception:
     mandel_agol_dependencies = False
 
+try:
+    from astroquery.vizier import Vizier
+    vizier_dependency = True
+except Exception:
+    vizier_dependency = False
 
 from ..lcmodels import transits
 from ..lcmath import sigclip_magseries
 from .utils import make_fit_plot
 from .nonphysical import savgol_fit_magseries, spline_fit_magseries
-
+from astrobase.services.limbdarkening import get_tess_limb_darkening_guesses
 
 ###############################################
 ## TRAPEZOID TRANSIT MODEL FIT TO MAG SERIES ##
@@ -779,8 +798,9 @@ def mandelagol_fit_magseries(
         sigclip=10.0,
         verbose=True,
         nworkers=4
-):
-    '''This fits a Mandel & Agol (2002) planetary transit model to a flux time
+    ):
+    '''
+    This fits a Mandel & Agol (2002) planetary transit model to a flux time
     series. You can fit and fix whatever parameters you want.
 
     It relies on Kreidberg (2015)'s BATMAN implementation for the transit model,
@@ -1199,11 +1219,11 @@ def mandelagol_and_line_fit_magseries(
         sigclip=10.0,
         verbose=True,
         nworkers=4
-):
+    ):
     '''The model fit by this function is: a Mandel & Agol (2002) transit, PLUS a
     line. You can fit and fix whatever parameters you want.
 
-    A typical use case: you want to measure transit times of individual SNR >~
+    Typical use case: you want to measure transit times of individual SNR >~
     50 transits. You fix all the transit parameters except for the mid-time,
     and also fit for a line locally.
 
@@ -1658,3 +1678,580 @@ def mandelagol_and_line_fit_magseries(
         returndict['fitplotfile'] = plotfit
 
     return returndict
+
+
+def fivetransitparam_fit_magseries(
+        times, mags, errs,
+        teff, rstar, logg,
+        identifier,
+        fit_savdir,
+        chain_savdir,
+        n_mcmc_steps=1,
+        overwriteexistingsamples=False,
+        burninpercent=0.3,
+        n_transit_durations=5,
+        make_tlsfit_plot=True,
+        exp_time_minutes=30,
+        bandpass='tess',
+        magsarefluxes=True,
+        nworkers=32,
+    ):
+    '''
+    Wrapper to `mandelagol_fit_magseries` that fits out a line around each
+    transit window in the given light curve, and then fits the entire light
+    curve for (t0, period, a/Rstar, Rp/Rstar, inclination). Fixes e to 0, and
+    uses theoretical quadratic limb darkening coefficients in the bandpass
+    given by the user, as found with the stellar parameters. Figures out the
+    priors for you.
+
+    Typical use case: you have a light curve with >=2 transits in it.  You want
+    to fit the entire light curve for the parameters noted above, but you don't
+    want to need to manually determine all the priors.
+
+    Parameters
+    ----------
+
+        times,mags,errs : np.array
+            The input flux time-series to fit.
+
+        teff, rstar, logg : float
+            Stellar parameters [K, Rsun, cgs] used to get limb darkening
+            coefficients.
+
+        identifier : str
+            String that goes into file names to identify the object being fit.
+            E.g., fit CSV file will be at
+            `{fit_savdir}/{identifier}_fivetransitparam_fitresults.csv`
+
+        fit_savdir : str
+            Path to directory where CSV results of fits, fit status files, and
+            diagnostic plots are saved. If it doesn't exist, this function
+            tries to make it.
+
+        chain_savdir : str
+            Path to directory where MCMC chains are saved.
+
+        n_mcmc_steps : int
+            Number of steps to run MCMC. (Note: convergence not guaranteed).
+
+        overwriteexistingsamples : bool
+            If False, and finds pickle file with saved parameters (in
+            `fit_savdir`), no additoinal MCMC sampling is done.
+
+        exp_time_minutes : int
+            Exposure time in minutes. Used for the model fitting.
+
+        n_transit_durations : int
+            The points used in the fit are only those within +/- N transit
+            durations of each transit mid-point. This is to prevent excessive
+            out-of-transit data being used in the fit (these points do not
+            inform the model's parameters).
+
+    Returns
+    -------
+        tuple of (mafr, tlsr, is_converged) :
+
+            `mafr` is the Mandel-Agol fit result dictionary, which contains the
+            same information as from `mandelagol_and_line_fit_magseries`.  Fit
+            parameters are accessed like
+            `maf_empc_errs['fitinfo']['finalparams']['sma']`,
+
+
+            `tlsr` is the TLS result dictionary, containing keys documented in
+            `periodbase/htls.tls_parallel_pfind`.
+
+            is_converged : boolean for whether the fitting converged, according
+            to the chain autocorrelation time.
+    '''
+
+    if bandpass != 'tess':
+        raise NotImplementedError(
+            'currently only call Claret coefficients for '
+            'tess bandpass. the others exist, just need to implement'
+        )
+
+    if not magsarefluxes:
+        raise ValueError(
+            'batman & TLS require mags to be fluxes'
+        )
+
+    #
+    # Run TLS to get parameters that will be fed into transit model priors.
+    # Note: the htls import needs to be in this function, not in the header, to
+    # avoid recursive module imports upon initialization.
+    #
+    from astrobase.periodbase import htls
+
+    tlsp = htls.tls_parallel_pfind(times, mags, errs,
+                                   magsarefluxes=magsarefluxes,
+                                   tls_rstar_min=0.1, tls_rstar_max=10,
+                                   tls_mstar_min=0.1, tls_mstar_max=5.0,
+                                   tls_oversample=8, tls_mintransits=1,
+                                   tls_transit_template='default',
+                                   nbestpeaks=5, sigclip=None,
+                                   nworkers=nworkers)
+
+    tlsr = tlsp['tlsresult']
+    t0, per = tlsr.T0, tlsr.period
+
+    #
+    # Optionally make plot of TLS fit.
+    #
+    if make_tlsfit_plot:
+
+        if not os.path.exists(fit_savdir):
+            os.mkdir(fit_savdir)
+
+        tlsfit_savfile = os.path.join(
+            fit_savdir, 'tlsfit_{}_quickplot.png'.format(identifier)
+        )
+
+        make_fit_plot(tlsr['folded_phase'], tlsr['folded_y'], None,
+                      tlsr['model_folded_model'], per, t0, t0, tlsfit_savfile,
+                      model_over_lc=False, magsarefluxes=True,
+                      fitphase=tlsr['model_folded_phase'])
+
+        LOGINFO('made {}'.format(tlsfit_savfile))
+
+    #
+    # Fit the phased transit, within N durations of the transit itself, to
+    # determine (t0, period, a/Rstar, Rp/Rstar, inclination). Most of the work
+    # happens in this helper function. Returns Mandel-Agol fit results dict,
+    # and whether we converged.
+    #
+    mafr, is_converged = (
+        _fivetransitparam_fit_magseries(
+        times, mags, errs,
+        tlsr,
+        teff, rstar, logg,
+        identifier,
+        fit_savdir,
+        chain_savdir,
+        exp_time_minutes=exp_time_minutes,
+        n_transit_durations=n_transit_durations,
+        nworkers=nworkers,
+        n_mcmc_steps=n_mcmc_steps,
+        burninpercent=burninpercent,
+        overwriteexistingsamples=overwriteexistingsamples,
+        mcmcprogressbar=True)
+    )
+
+    return mafr, tlsr, is_converged
+
+
+
+def _fivetransitparam_fit_magseries(
+    time, flux, err,
+    tlsr,
+    teff, rstar, logg,
+    identifier,
+    fit_savdir,
+    chain_savdir,
+    exp_time_minutes=30,
+    n_transit_durations=5,
+    nworkers=40,
+    n_mcmc_steps=1,
+    burninpercent=0.3,
+    overwriteexistingsamples=True,
+    mcmcprogressbar=True):
+    '''
+    Helper to `lcfit.transits.fivetransitparam_fit_magseries`.
+
+    Procedure implemented does the following.
+
+        1. Defines initial parameter guesses to fit light curve.
+        2. Isolate each transit to within +/- n_transit_durations.
+        3. Fit out a line within each transit window (having masked out the
+        transit), to get a clean phase-folded light curve.
+        4. Make plots, in fit_savdir, showing the result of the above fitting
+        procedure.
+        5. Fit for (t0, period, a/Rstar, Rp/Rstar, inclination). Fixes e to 0,
+        and uses theoretical quadratic limb darkening coefficients in the
+        bandpass given by the user, as found with the stellar parameters.
+        6. Fit happens in two stages. First, it is done with the error bars
+        passed to the function in `err`. The best-fit model is then subtracted,
+        and the errors are set to equal the RMS of the OOT points in the
+        subtracted light curve. Then the fit is redone.
+        7. Fit outputs: corner plots, phase-folded light curve, light curve
+        with fit overplotted.
+    '''
+    # import inside function to avoid circular imports
+    from astrobase.varbase.transits import get_snr_of_dip
+    from astrobase.varbase.transits import estimate_achievable_tmid_precision
+    from astrobase.plotbase import plot_phased_magseries
+
+    csvparampath = os.path.join(
+        fit_savdir,
+        '{}_fivetransitparam_fitresults.csv'.format(identifier)
+    )
+
+    #
+    # Define initial parameter guesses from TLS results. Inclination and impact
+    # parameter guesses don't really matter.
+    #
+    incl = 85
+    b = 0.2
+    period = tlsr['period']
+    T_dur = tlsr['duration']
+    rp_by_rstar = tlsr['rp_rs']
+    a_by_rstar = (
+        (period*units.day)/(np.pi*T_dur*units.day) * (1-b**2)**(1/2)
+    ).cgs.value
+    t0 = tlsr['T0']
+    u_linear, u_quad = get_tess_limb_darkening_guesses(teff, logg)
+
+    #
+    # Isolate each transit to within +/- n_transit_durations.  Then fit only
+    # +/- n_transit_durations near the transit data. Don't try to fit OOT or
+    # occultation data.
+    #
+    tmids_obsd = tlsr['transit_times']
+
+    t_Is = tmids_obsd - T_dur/2
+    t_IVs = tmids_obsd + T_dur/2
+
+    t_starts = t_Is - n_transit_durations*T_dur
+    t_ends = t_IVs + n_transit_durations*T_dur
+
+    sel_inds = np.zeros_like(time).astype(bool)
+    for t_start,t_end in zip(t_starts, t_ends):
+        these_inds = (time > t_start) & (time < t_end)
+        if np.any(these_inds):
+            sel_inds |= these_inds
+
+    #
+    # To construct the phase-folded light curve, fit a line to the OOT flux
+    # data, and use the parameters of the best-fitting line to "rectify" each
+    # lightcurve. Note that an order 1 legendre polynomial == a line, so we'll
+    # use that implementation.
+    #
+    out_fluxs, in_fluxs, fit_fluxs, time_list, intra_inds_list, err_list = (
+        [], [], [], [], [], []
+    )
+    for t_start,t_end in zip(t_starts, t_ends):
+        this_window_inds = (time > t_start) & (time < t_end)
+        tmid = t_start + (t_end-t_start)/2
+        # flag out slightly more than expected "in transit" points
+        prefactor = 1.05
+        transit_start = tmid - prefactor*T_dur/2
+        transit_end = tmid + prefactor*T_dur/2
+
+        this_window_intra = (
+            (time[this_window_inds] > transit_start) &
+            (time[this_window_inds] < transit_end)
+        )
+        this_window_oot = ~this_window_intra
+
+        this_oot_time = time[this_window_inds][this_window_oot]
+        this_oot_flux = flux[this_window_inds][this_window_oot]
+
+        if len(this_oot_flux) == len(this_oot_time) == 0:
+            continue
+        try:
+            p = Legendre.fit(this_oot_time, this_oot_flux, 1)
+            coeffs = p.coef
+            this_window_fit_flux = p(time[this_window_inds])
+
+            time_list.append( time[this_window_inds] )
+            out_fluxs.append( flux[this_window_inds] / this_window_fit_flux )
+            fit_fluxs.append( this_window_fit_flux )
+            in_fluxs.append( flux[this_window_inds] )
+            intra_inds_list.append( (time[this_window_inds]>transit_start) &
+                                    (time[this_window_inds]<transit_end) )
+            err_list.append( err[this_window_inds] )
+        except np.linalg.LinAlgError:
+            LOGWARNING('Legendre.fit failed, b/c bad data for this transit. '
+                       'Continue.')
+            continue
+
+    #
+    # Make plots to verify that this line-rectifying procedure is working.
+    #
+    ix = 0
+    for _time, _flux, _fit_flux, _out_flux, _intra in zip(
+        time_list, in_fluxs, fit_fluxs, out_fluxs, intra_inds_list
+    ):
+
+        savpath = os.path.join(
+            fit_savdir,
+            '{}_transitnum{}.png'.format(identifier, str(ix).zfill(3))
+        )
+
+        if os.path.exists(savpath):
+            LOGINFO('found & skipped making {}'.format(savpath))
+            ix += 1
+            continue
+
+        plt.close('all')
+        fig, (a0,a1) = plt.subplots(nrows=2, sharex=True, figsize=(6,6))
+
+        a0.scatter(_time, _flux, c='k', alpha=0.9, label='data', zorder=1,
+                   s=10, rasterized=True, linewidths=0)
+        a0.scatter(_time[_intra], _flux[_intra], c='r', alpha=1,
+                   label='in-transit (for fit)', zorder=2, s=10, rasterized=True,
+                   linewidths=0)
+
+        a0.plot(_time, _fit_flux, c='b', zorder=0, rasterized=True, lw=2,
+                alpha=0.4, label='linear fit to OOT')
+
+        a1.scatter(_time, _out_flux, c='k', alpha=0.9, rasterized=True,
+                   s=10, linewidths=0)
+        a1.plot(_time, _fit_flux/_fit_flux, c='b', zorder=0, rasterized=True,
+                lw=2, alpha=0.4, label='linear fit to OOT')
+
+        xlim = a1.get_xlim()
+
+        for a in [a0,a1]:
+            a.hlines(1, np.min(_time)-10, np.max(_time)+10, color='gray',
+                     zorder=-2, rasterized=True, alpha=0.2, lw=1,
+                     label='flux=1')
+
+        a1.set_xlabel('time-t0 [days]')
+        a0.set_ylabel('relative flux')
+        a1.set_ylabel('residual')
+        a0.legend(loc='best', fontsize='x-small')
+        for a in [a0, a1]:
+            a.get_yaxis().set_tick_params(which='both', direction='in')
+            a.get_xaxis().set_tick_params(which='both', direction='in')
+            a.set_xlim(xlim)
+
+        fig.tight_layout(h_pad=0, w_pad=0)
+        fig.savefig(savpath, dpi=300, bbox_inches='tight')
+        LOGINFO('saved {:s}'.format(savpath))
+        ix += 1
+
+    sel_time = np.concatenate(time_list)
+    sel_flux = np.concatenate(out_fluxs)
+    fit_flux = np.concatenate(fit_fluxs)
+    sel_err = np.concatenate(err_list)
+    if not len(sel_flux) == len(sel_time) == len(sel_err):
+        raise AssertionError(
+            'failed to properly concatenate light curve after rectifying each '
+            'transit window'
+        )
+
+    # model = transit only (no line). "transit" as defined by BATMAN has flux=1
+    # out of transit.
+    fittype = 'fivetransitparam'
+    initfitparams = {'t0':t0,
+                     'period':period,
+                     'sma':a_by_rstar,
+                     'rp':rp_by_rstar,
+                     'incl':incl
+                    }
+    fixedparams = {'ecc':0.,
+                   'omega':90.,
+                   'limb_dark':'quadratic',
+                   'u':[u_linear,u_quad]}
+    priorbounds = {'t0':(t0 - period/10, t0 + period/10),
+                   'period':(period-1e-1, period+1e-1),
+                   'sma':(a_by_rstar/5, 5*a_by_rstar),
+                   'rp':(rp_by_rstar/3, np.min([3*rp_by_rstar,0.5])),
+                   'incl':(65, 90)
+                   }
+    cornerparams = {'t0':t0,
+                    'period':period,
+                    'sma':a_by_rstar,
+                    'rp':rp_by_rstar,
+                    'incl':incl}
+
+    ndims = len(initfitparams)
+
+    ##########################################################
+    # FIRST: run the fit using the errors given in the data. #
+    ##########################################################
+    phasedlcsavpath = os.path.join(
+        fit_savdir,
+        '{}_phased_{}_fit_{}d_dataerrs.png'.
+        format(identifier, fittype, ndims)
+    )
+    cornersavpath = os.path.join(
+        fit_savdir,
+        '{}_phased_corner_{}_fit_{}d_dataerrs.png'.
+        format(identifier, fittype, ndims)
+    )
+    samplesavpath = os.path.join(
+        chain_savdir,
+        '{}_phased_{}_fit_samples_{}d_dataerrs.h5'.
+        format(identifier, fittype, ndims)
+    )
+
+    if not os.path.exists(chain_savdir):
+        try:
+            os.mkdir(chain_savdir)
+        except:
+            raise AssertionError('you need to save chains')
+
+    LOGINFO('beginning {:s}'.format(samplesavpath))
+
+    plt.close('all')
+
+    fitparamdir = fit_savdir
+    if not os.path.exists(fitparamdir):
+        os.mkdir(fitparamdir)
+    fitpklsavpath = os.path.join(
+        fitparamdir,
+        '{}_phased_{}_fit_dataerrs.pickle'.
+        format(identifier, fittype)
+    )
+
+    if os.path.exists(fitpklsavpath) and not overwriteexistingsamples:
+        maf_data_errs = pickle.load(open(fitpklsavpath, 'rb'))
+
+    else:
+        maf_data_errs = mandelagol_fit_magseries(
+                        sel_time, sel_flux, sel_err,
+                        initfitparams, priorbounds, fixedparams,
+                        trueparams=cornerparams, magsarefluxes=True,
+                        sigclip=None, plotfit=phasedlcsavpath,
+                        plotcorner=cornersavpath,
+                        samplesavpath=samplesavpath, nworkers=nworkers,
+                        n_mcmc_steps=n_mcmc_steps,
+                        exp_time_minutes=exp_time_minutes,
+                        burninpercent=burninpercent,
+                        eps=1e-6, n_walkers=500, skipsampling=False,
+                        overwriteexistingsamples=overwriteexistingsamples,
+                        mcmcprogressbar=mcmcprogressbar)
+        with open(fitpklsavpath, 'wb') as f:
+            pickle.dump(maf_data_errs, f, pickle.HIGHEST_PROTOCOL)
+            LOGINFO('saved {:s}'.format(fitpklsavpath))
+
+    fitfluxs = maf_data_errs['fitinfo']['fitmags']
+    fitepoch = maf_data_errs['fitinfo']['fitepoch']
+    fiterrors = maf_data_errs['fitinfo']['finalparamerrs']
+    fitepoch_perr = fiterrors['std_perrs']['t0']
+    fitepoch_merr = fiterrors['std_merrs']['t0']
+
+    # Winn (2010) eq 14 gives the transit duration
+    k = maf_data_errs['fitinfo']['finalparams']['rp']
+    t_dur_day = (
+        (period*units.day)/np.pi * np.arcsin(
+            1/a_by_rstar * np.sqrt(
+                (1 + k)**2 - b**2
+            ) / np.sin((incl*units.deg))
+        )
+    ).to(units.day*units.rad).value
+
+    per_point_cadence = exp_time_minutes*units.min
+    npoints_in_transit = (
+        int(np.floor(((t_dur_day*units.day)/per_point_cadence).cgs.value))
+    )
+
+    # use the whole LC's RMS as the "noise". check how precisely you are
+    # determining the ephemeris vs. what is theoretically expected.
+    snr, _, empirical_errs = get_snr_of_dip(
+        sel_time, sel_flux, sel_time, fitfluxs,
+        magsarefluxes=True, atol_normalization=1e-2,
+        transitdepth=k**2, npoints_in_transit=npoints_in_transit)
+
+    sigma_tc_theory = estimate_achievable_tmid_precision(
+        snr, t_ingress_min=0.05*t_dur_day*24*60,
+        t_duration_hr=t_dur_day*24)
+
+    LOGINFO('mean fitepoch err: {:.2e}'.format(
+          np.mean([fitepoch_merr, fitepoch_perr])))
+    LOGINFO('mean fitepoch err / theory err = {:.2e}'.format(
+          np.mean([fitepoch_merr, fitepoch_perr]) / sigma_tc_theory))
+    LOGINFO('mean error from data lightcurve ='+
+          '{:.2e}'.format(np.mean(sel_err))+
+          '\nmeasured empirical RMS = {:.2e}'.format(empirical_errs))
+
+    empirical_err = np.ones_like(sel_err)*empirical_errs
+
+    ###################################################################
+    # THEN: rerun the fit using the empirically determined errors     #
+    # (measured from RMS of the transit-model subtracted lightcurve). #
+    ###################################################################
+    phasedlcsavpath = os.path.join(
+        fit_savdir,
+        '{}_phased_{}_fit_{}d_empiricalerrs.png'.
+        format(identifier, fittype, ndims)
+    )
+    cornersavpath = os.path.join(
+        fit_savdir,
+        '{}_phased_corner_{}_fit_{}d_empiricalerrs.png'.
+        format(identifier, fittype, ndims)
+    )
+    samplesavpath = os.path.join(
+        chain_savdir,
+        '{}_phased_{}_fit_samples_{}d_empiricalerrs.h5'.
+        format(identifier, fittype, ndims)
+    )
+
+    plt.close('all')
+
+    LOGINFO('beginning {}'.format(samplesavpath))
+
+    fitpklsavpath = os.path.join(
+        fitparamdir,
+        '{}_phased_{}_fit_empiricalerrs.pickle'.
+        format(identifier, fittype)
+    )
+
+    if os.path.exists(fitpklsavpath) and not overwriteexistingsamples:
+        maf_empc_errs = pickle.load(open(fitpklsavpath, 'rb'))
+
+    else:
+        maf_empc_errs = mandelagol_fit_magseries(
+                        sel_time, sel_flux, empirical_err,
+                        initfitparams, priorbounds, fixedparams,
+                        trueparams=cornerparams, magsarefluxes=True,
+                        sigclip=None, plotfit=phasedlcsavpath,
+                        plotcorner=cornersavpath,
+                        samplesavpath=samplesavpath, nworkers=nworkers,
+                        n_mcmc_steps=n_mcmc_steps, exp_time_minutes=30,
+                        eps=1e-6, n_walkers=500, skipsampling=False,
+                        overwriteexistingsamples=overwriteexistingsamples,
+                        mcmcprogressbar=mcmcprogressbar)
+
+        with open(fitpklsavpath, 'wb') as f:
+            pickle.dump(maf_empc_errs, f, pickle.HIGHEST_PROTOCOL)
+            LOGINFO('saved {:s}'.format(fitpklsavpath))
+
+    # fitfluxs, fittimes = _get_interp_fitfluxs(maf_empc_errs, sel_time)
+    # now plot the phased lightcurve
+    fitfluxs = maf_empc_errs['fitinfo']['fitmags']
+    fittimes = maf_empc_errs['magseries']['times']
+    fitperiod = maf_empc_errs['fitinfo']['finalparams']['period']
+    fitepoch = maf_empc_errs['fitinfo']['finalparams']['t0']
+
+    outfile = os.path.join(
+        fit_savdir,
+         "fancy_{}_phased_{}_fit_empiricalerrs.png".
+        format(identifier, fittype)
+    )
+
+    tdur_phase = t_dur_day/fitperiod
+
+    plot_phased_magseries(
+        sel_time, sel_flux, fitperiod, magsarefluxes=True, errs=None,
+        normto=False, epoch=fitepoch, outfile=outfile, sigclip=False,
+        phasebin=0.01, phasewrap=True, phasesort=True,
+        plotphaselim=[-n_transit_durations*tdur_phase,
+                      n_transit_durations*tdur_phase],
+        plotdpi=400, modelmags=fitfluxs, modeltimes=fittimes,
+        xaxlabel='Time from mid-transit [days]', yaxlabel='Relative flux',
+        xtimenotphase=True)
+
+    LOGINFO('made {}'.format(outfile))
+
+    #
+    # check if we have converged chains.
+    #
+    autocorrtime = maf_empc_errs['fitinfo']['autocorrtime']
+
+    if n_mcmc_steps < autocorrtime*50:
+        # autocorrtime estimate can't be trusted if above condition isn't true.
+        # past that condition, you're probably "converged" (though really each
+        # parameter takes different lengths of time to converge).  see
+        # https://dfm.io/posts/autocorr/, or the emcee docs.  might actually be
+        # converged if shorter, but to be safe, say it is not.
+        is_converged = False
+
+    else:
+        is_converged = True
+
+    return maf_empc_errs, is_converged
+
+
+

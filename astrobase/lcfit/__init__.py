@@ -32,6 +32,9 @@
 - :py:func:`astrobase.lcfit.transits.mandelagol_and_line_fit_magseries`: fit a
   Mandel & Agol 2002 model, + a local line to the flux time series.
 
+- :py:func:`astrobase.lcfit.transits.fivetransitparam_fit_magseries`: fit out a
+  line around each transit window in the given light curve, and then fit the
+  light curve for t0, period, a/Rstar, Rp/Rstar, and inclination.
 '''
 
 #############
@@ -78,6 +81,7 @@ try:
     import batman
     import emcee
     import corner
+    import h5py
 
     if int(emcee.__version__[0]) >= 3:
         from .transits import (
