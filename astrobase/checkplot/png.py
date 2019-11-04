@@ -64,6 +64,7 @@ LOGEXCEPTION = LOGGER.exception
 
 import os
 import os.path
+import re
 import gzip
 
 try:
@@ -72,11 +73,24 @@ except Exception as e:
     import pickle
 
 from numpy import isfinite as npisfinite, \
-    min as npmin, max as npmax, abs as npabs, ravel as npravel, nan as npnan
+    min as npmin, max as npmax, abs as npabs, ravel as npravel, nan as npnan, \
+    percentile as nppercentile
 
 # we're going to plot using Agg only
 import matplotlib
-MPLVERSION = tuple([int(x) for x in matplotlib.__version__.split('.')])
+
+mpl_regex = re.findall('rc[0-9]', matplotlib.__version__)
+
+if len(mpl_regex) == 1:
+    # some matplotlib versions are e.g., "3.1.0rc1", which we resolve to
+    # "(3,1,0)".
+    MPLVERSION = tuple([
+        int(x) for x in
+        matplotlib.__version__.replace(mpl_regex[0],'').split('.')]
+    )
+else:
+    MPLVERSION = tuple([int(x) for x in matplotlib.__version__.split('.')])
+
 matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
