@@ -54,6 +54,7 @@ import time
 import pickle
 
 import numpy as np
+import pandas as pd
 
 import random
 
@@ -818,16 +819,9 @@ def tap_query(querystr,
 
         # try to open the cached file to make sure it's OK
         try:
-            infd = gzip.open(cachefname,'rb')
-            simbad_objectnames = np.genfromtxt(
-                infd,
-                names=True,
-                delimiter=',',
-                dtype='U20,f8,f8,U20,U20,U20,i8,U600,f8',
-                usecols=(0,1,2,3,4,5,6,7,8),
-                comments='?',  # object names can have '#' in them
-            )
-            infd.close()
+
+            df = pd.read_csv(cachefname)
+            assert len(df) >= 1
 
         except Exception as e:
 
