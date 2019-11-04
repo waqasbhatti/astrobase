@@ -493,6 +493,7 @@ def _make_phased_magseries_plot(axes,
                                 phasebinms=4.0,
                                 xticksize=None,
                                 yticksize=None,
+                                titlefontsize='medium',
                                 makegrid=True,
                                 lowerleftstr=None,
                                 lowerleftfontsize=None):
@@ -521,12 +522,14 @@ def _make_phased_magseries_plot(axes,
         The epoch to use for this phased light curve plot tile. If this is a
         float, will use the provided value directly. If this is 'min', will
         automatically figure out the time-of-minimum of the phased light
-        curve. If this is None, will use the mimimum value of `stimes` as the
-        epoch of the phased light curve plot. If this is a list of lists, will
-        use the provided value of `lspmethodind` to look up the current
-        period-finder method and the provided value of `periodind` to look up
-        the epoch associated with that method and the current period. This is
-        mostly only useful when `twolspmode` is True.
+        curve. If it is "percentile_N", for N an integer, it will be phased to
+        that percentile of the flux (less noisy than the minimum). If this is
+        None, will use the mimimum value of `stimes` as the epoch of the phased
+        light curve plot. If this is a list of lists, will use the provided
+        value of `lspmethodind` to look up the current period-finder method and
+        the provided value of `periodind` to look up the epoch associated with
+        that method and the current period. This is mostly only useful when
+        `twolspmode` is True.
 
     phasewrap : bool
         If this is True, the phased time-series will be wrapped around
@@ -585,6 +588,9 @@ def _make_phased_magseries_plot(axes,
 
     xticksize,yticksize : int or None
         Fontsize for x and y ticklabels
+
+    titlefontsize: str or float
+        Fontsize for the panel title. Default: 'medium'
 
     lowerleftstr : str or None
         Optional text to overplot in lower left of plot
@@ -646,6 +652,23 @@ def _make_phased_magseries_plot(axes,
                          'the phase-folded LC')
 
                 plotvarepoch = npmin(stimes)
+
+
+    elif isinstance(varepoch, str) and 'percentile' in varepoch:
+
+        # assume format of "percentile_N"
+        percentile_int = int(varepoch.split('_')[-1])
+
+        nearest_index = (
+            abs(
+                smags
+                -
+                nppercentile(smags, percentile_int, interpolation='nearest')
+            ).argmin()
+        )
+
+        plotvarepoch = stimes[nearest_index]
+
 
     elif isinstance(varepoch, list):
 
@@ -788,7 +811,7 @@ def _make_phased_magseries_plot(axes,
             plotvarepoch
         )
 
-    axes.set_title(plottitle)
+    axes.set_title(plottitle, fontsize=titlefontsize)
 
     if isinstance(lowerleftstr, str):
         axes.text(
