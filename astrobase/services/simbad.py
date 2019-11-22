@@ -820,7 +820,6 @@ def tap_query(querystr,
         try:
 
             df = Table.read(cachefname, format='csv')
-            assert len(df) >= 1
 
         except Exception as e:
 
