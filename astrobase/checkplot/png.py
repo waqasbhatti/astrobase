@@ -84,12 +84,12 @@ mpl_regex = re.findall('rc[0-9]', matplotlib.__version__)
 if len(mpl_regex) == 1:
     # some matplotlib versions are e.g., "3.1.0rc1", which we resolve to
     # "(3,1,0)".
-    MPLVERSION = tuple([
+    MPLVERSION = tuple(
         int(x) for x in
-        matplotlib.__version__.replace(mpl_regex[0],'').split('.')]
+        matplotlib.__version__.replace(mpl_regex[0],'').split('.')
     )
 else:
-    MPLVERSION = tuple([int(x) for x in matplotlib.__version__.split('.')])
+    MPLVERSION = tuple(int(x) for x in matplotlib.__version__.split('.'))
 
 matplotlib.use('Agg')
 
@@ -519,17 +519,25 @@ def _make_phased_magseries_plot(axes,
         The period to use for this phased light curve plot tile.
 
     varepoch : 'min' or float or list of lists or None
-        The epoch to use for this phased light curve plot tile. If this is a
-        float, will use the provided value directly. If this is 'min', will
-        automatically figure out the time-of-minimum of the phased light
-        curve. If it is "percentile_N", for N an integer, it will be phased to
-        that percentile of the flux (less noisy than the minimum). If this is
-        None, will use the mimimum value of `stimes` as the epoch of the phased
-        light curve plot. If this is a list of lists, will use the provided
-        value of `lspmethodind` to look up the current period-finder method and
-        the provided value of `periodind` to look up the epoch associated with
-        that method and the current period. This is mostly only useful when
-        `twolspmode` is True.
+        The epoch to use for this phased light curve plot tile.
+
+        - If this is a float, will use the provided value directly.
+
+        - If this is 'min', will automatically figure out the time-of-minimum of
+          the phased light curve by fitting a spline or Savitsky-Golay smoothing
+          curve to it.
+
+        - If it is "t_fluxpercentile_N", for N an integer, it will be phased to
+          that time at the specified percentile of the flux.
+
+        - If this is None, will use the mimimum value of `stimes` as the epoch
+          of the phased light curve plot.
+
+        - If this is a list of lists, will use the provided value of
+          `lspmethodind` to look up the current period-finder method and the
+          provided value of `periodind` to look up the epoch associated with
+          that method and the current period. This is mostly only useful when
+          `twolspmode` is True.
 
     phasewrap : bool
         If this is True, the phased time-series will be wrapped around
@@ -654,7 +662,7 @@ def _make_phased_magseries_plot(axes,
                 plotvarepoch = npmin(stimes)
 
 
-    elif isinstance(varepoch, str) and 'percentile' in varepoch:
+    elif isinstance(varepoch, str) and 't_fluxpercentile' in varepoch:
 
         # assume format of "percentile_N"
         percentile_int = int(varepoch.split('_')[-1])
