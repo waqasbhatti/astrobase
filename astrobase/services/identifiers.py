@@ -221,12 +221,11 @@ def gaiadr2_to_tic(
     # now, select the appropriate row in the returned matches
     #
     gaia_ids = np.array([
-        (int(tic_info['data'][x]['GAIA']) if
-         tic_info['data'][x]['GAIA'] is not None else -1)
+        (int(x['GAIA']) if x['GAIA'] is not None else -1)
         for x in tic_info['data']
     ])
     tic_ids = np.array([
-        tic_info['data']['ID'] for x in tic_info['data']
+        x['ID'] for x in tic_info['data']
     ])
 
     matched_tic_id = tic_ids[gaia_ids == int(source_id)]
@@ -235,7 +234,7 @@ def gaiadr2_to_tic(
     else:
         LOGERROR("Could not find TIC ID for "
                  "source ID: %s in TIC (version: %s)" %
-                 (source_id, tic_info['data']['version']))
+                 (source_id, tic_info['data'][0]['version']))
         return None
 
 
