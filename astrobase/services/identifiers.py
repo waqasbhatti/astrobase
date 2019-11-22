@@ -204,7 +204,7 @@ def gaiadr2_to_tic(
         with open(tic_res['cachefname'],'r') as infd:
             tic_info = json.load(infd)
 
-            if len(tic_info['data']) == 0 or len(tic_info['data']) > 0:
+            if len(tic_info['data']) == 0:
                 errmsg = (
                     'Expected 1 TIC result from source_id {}; got {} results.'.
                     format(source_id, len(tic_info['data']))
