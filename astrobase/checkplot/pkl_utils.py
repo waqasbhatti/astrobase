@@ -64,12 +64,12 @@ mpl_regex = re.findall('rc[0-9]', matplotlib.__version__)
 if len(mpl_regex) == 1:
     # some matplotlib versions are e.g., "3.1.0rc1", which we resolve to
     # "(3,1,0)".
-    MPLVERSION = tuple([
+    MPLVERSION = tuple(
         int(x) for x in
-        matplotlib.__version__.replace(mpl_regex[0],'').split('.')]
+        matplotlib.__version__.replace(mpl_regex[0],'').split('.')
     )
 else:
-    MPLVERSION = tuple([int(x) for x in matplotlib.__version__.split('.')])
+    MPLVERSION = tuple(int(x) for x in matplotlib.__version__.split('.'))
 
 matplotlib.use('Agg')
 
