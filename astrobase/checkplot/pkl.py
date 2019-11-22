@@ -76,7 +76,6 @@ except Exception as e:
 
 # we're going to plot using Agg only
 import matplotlib
-MPLVERSION = tuple([int(x) for x in matplotlib.__version__.split('.')])
 matplotlib.use('Agg')
 
 # import this to check if stimes, smags, serrs are Column objects

@@ -44,6 +44,7 @@ import os.path
 import gzip
 import base64
 import json
+import re
 
 try:
     import cPickle as pickle
@@ -57,7 +58,19 @@ from numpy import min as npmin, max as npmax, abs as npabs
 
 # we're going to plot using Agg only
 import matplotlib
-MPLVERSION = tuple([int(x) for x in matplotlib.__version__.split('.')])
+
+mpl_regex = re.findall('rc[0-9]', matplotlib.__version__)
+
+if len(mpl_regex) == 1:
+    # some matplotlib versions are e.g., "3.1.0rc1", which we resolve to
+    # "(3,1,0)".
+    MPLVERSION = tuple(
+        int(x) for x in
+        matplotlib.__version__.replace(mpl_regex[0],'').split('.')
+    )
+else:
+    MPLVERSION = tuple(int(x) for x in matplotlib.__version__.split('.'))
+
 matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
