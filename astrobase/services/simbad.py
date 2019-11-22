@@ -53,8 +53,7 @@ import hashlib
 import time
 import pickle
 
-import numpy as np
-import pandas as pd
+from astropy.table import Table
 
 import random
 
@@ -820,7 +819,7 @@ def tap_query(querystr,
         # try to open the cached file to make sure it's OK
         try:
 
-            df = pd.read_csv(cachefname)
+            df = Table.read(cachefname, format='csv')
             assert len(df) >= 1
 
         except Exception as e:
