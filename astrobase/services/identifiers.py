@@ -7,13 +7,12 @@
 Easy conversion between survey identifiers. Works best on bright and/or famous
 objects, particularly when SIMBAD is involved.
 
-given simbad name, attempt to get DR2 source_id
+``simbad_to_gaiadr2()``: given simbad name, attempt to get GAIA DR2 source_id
 
-given DR2 source_id, attempt to get TIC ID
+``gaiadr2_to_tic()``: given GAIA DR2 source_id, attempt to get TIC ID
 
-given simbad name, get TIC ID
+``simbad_to_tic()``: given simbad name, get TIC ID
 
-given TIC ID, get simbad name
 '''
 
 #############
@@ -47,27 +46,33 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
-import pandas as pd, numpy as np
-from astropy.coordinates import SkyCoord
-from astropy import units as u, constants as const
+import json
+
+import numpy as np
+from astropy.table import Table
 
 from astrobase.services.simbad import tap_query as simbad_tap_query
 from astrobase.services.gaia import objectid_search as gaia_objectid_search
+from astrobase.services.mast import tic_conesearch
 
 
-try:
-    from astroquery.mast import Catalogs
-    from astroquery.simbad import Simbad
-    astroquery_dependencies = True
-except ImportError:
-    astroquery_dependencies = False
+###############
+## FUNCTIONS ##
+###############
 
-
-def simbad2gaiadrtwo(simbad_name,
-                     simbad_mirror='simbad', returnformat='csv',
-                     forcefetch=False, cachedir='~/.astrobase/simbad-cache',
-                     verbose=True, timeout=10.0, refresh=2.0, maxtimeout=90.0,
-                     maxtries=1, complete_query_later=True):
+def simbad_to_gaiadr2(
+        simbad_name,
+        simbad_mirror='simbad',
+        returnformat='csv',
+        forcefetch=False,
+        cachedir='~/.astrobase/simbad-cache',
+        verbose=True,
+        timeout=10.0,
+        refresh=2.0,
+        maxtimeout=90.0,
+        maxtries=1,
+        complete_query_later=True
+):
     """
     Convenience function that, given a SIMBAD object name, returns string of
     the Gaia-DR2 identifier.
@@ -75,47 +80,64 @@ def simbad2gaiadrtwo(simbad_name,
     simbad_name: string as you would search on SIMBAD.
     """
 
-    assert isinstance(simbad_name, str)
+    if not isinstance(simbad_name, str):
+        LOGWARNING("The given simbad_name must be a string, "
+                   "converting automatically...")
+        use_simbad_name = str(simbad_name)
+    else:
+        use_simbad_name = simbad_name
 
     # TAP table list is here:
     # http://simbad.u-strasbg.fr/simbad/tap/tapsearch.html
     query = (
-    "SELECT basic.OID, basic.RA, basic.DEC, ident.id, ident.oidref, ids.ids "
-    "FROM basic "
-    "LEFT OUTER JOIN ident ON ident.oidref = basic.oid "
-    "LEFT OUTER JOIN ids ON ids.oidref = ident.oidref "
-    "WHERE ident.id = '{simbad_name}'; "
+        "SELECT basic.OID, basic.RA, basic.DEC, "
+        "ident.id, ident.oidref, ids.ids "
+        "FROM basic "
+        "LEFT OUTER JOIN ident ON ident.oidref = basic.oid "
+        "LEFT OUTER JOIN ids ON ids.oidref = ident.oidref "
+        "WHERE ident.id = '{use_simbad_name}'; "
     )
 
-    formatted_query = query.format(simbad_name=simbad_name)
+    formatted_query = query.format(use_simbad_name=use_simbad_name)
 
     # astroquery.simbad would have been fine here too. Sometimes pure astrobase
     # solutions are nice though ;-).
-    r =  simbad_tap_query(formatted_query, simbad_mirror=simbad_mirror,
-                          returnformat=returnformat, forcefetch=forcefetch,
-                          cachedir=cachedir, verbose=verbose, timeout=timeout,
-                          refresh=refresh, maxtimeout=maxtimeout,
-                          maxtries=maxtries,
-                          complete_query_later=complete_query_later)
+    r = simbad_tap_query(
+        formatted_query,
+        simbad_mirror=simbad_mirror,
+        returnformat=returnformat,
+        forcefetch=forcefetch,
+        cachedir=cachedir,
+        verbose=verbose,
+        timeout=timeout,
+        refresh=refresh,
+        maxtimeout=maxtimeout,
+        maxtries=maxtries,
+        complete_query_later=complete_query_later
+    )
 
-    df = pd.read_csv(r['result'])
+    df = Table.read(r['result'],format='csv')
 
     if len(df) != 1:
         errmsg = (
-            'Expected 1 result from name {}; got {} results.'.
-            format(simbad_name, len(df))
+            'Expected 1 result from name {}; got {} results.'.format(
+                use_simbad_name, len(df)
+            )
         )
-        raise ValueError(errmsg)
+        LOGERROR(errmsg)
+        return None
 
-    if 'Gaia DR2' not in df['ids'].iloc[0]:
+    if 'Gaia DR2' not in df['ids'][0]:
         errmsg = (
-            'Failed to retrieve Gaia DR2 identifier for {}'.
-            format(simbad_name)
+            'Failed to retrieve Gaia DR2 identifier for {}'.format(
+                use_simbad_name
+            )
         )
-        raise NameError(errmsg)
+        LOGERROR(errmsg)
+        return None
 
     # simbad returns a "|"-separated list of cross-matched names
-    names = df['ids'].iloc[0].split('|')
+    names = df['ids'][0].split('|')
 
     gaia_name = [n for n in names if 'Gaia DR2' in n]
 
@@ -124,10 +146,19 @@ def simbad2gaiadrtwo(simbad_name,
     return gaia_id
 
 
-def gaiadrtwo2tic(source_id, returnformat='csv', gaia_mirror='gaia',
-                  forcefetch=False, cachedir='~/.astrobase/simbad-cache',
-                  verbose=True, timeout=10.0, refresh=2.0, maxtimeout=90.0,
-                  maxtries=1, complete_query_later=True):
+def gaiadr2_to_tic(
+        source_id,
+        returnformat='csv',
+        gaia_mirror='gaia',
+        forcefetch=False,
+        cachedir='~/.astrobase/simbad-cache',
+        verbose=True,
+        timeout=10.0,
+        refresh=2.0,
+        maxtimeout=90.0,
+        maxtries=1,
+        complete_query_later=True
+):
     """
     First, gets RA/dec from Gaia DR2, given source_id. Then searches TICv8
     spatially, and returns matches with the correct DR2 source_id.
@@ -139,11 +170,6 @@ def gaiadrtwo2tic(source_id, returnformat='csv', gaia_mirror='gaia',
     Remainder are described in `astrobase.services.gaia.objectid_search`
     """
 
-    if not astroquery_dependencies:
-        raise ImportError(
-            'This function depends on astroquery.'
-        )
-
     r = gaia_objectid_search(source_id, gaia_mirror=gaia_mirror,
                              returnformat=returnformat, forcefetch=forcefetch,
                              cachedir=cachedir, verbose=verbose,
@@ -152,67 +178,77 @@ def gaiadrtwo2tic(source_id, returnformat='csv', gaia_mirror='gaia',
                              complete_query_later=complete_query_later)
 
     try:
-        df = pd.read_csv(r['result'])
-    except pd.errors.EmptyDataError:
-        errmsg = (
-            'Expected 1 Gaia result from source_id {}; got no results.'.
-            format(source_id)
-        )
-        raise pd.errors.EmptyDataError(errmsg)
+        df = Table.read(r['result'], format='csv')
 
-    ra, dec = df['ra'].iloc[0], df['dec'].iloc[0]
-
-    coord = SkyCoord(ra=ra, dec=dec, unit=(u.degree, u.degree), frame='icrs')
-    radius = 0.5*u.arcminute
-    try:
-        stars = Catalogs.query_region(
-            "{} {}".format(float(coord.ra.value), float(coord.dec.value)),
-            catalog="TIC", radius=radius
-        )
-    except requests.exceptions.ConnectionError:
-        LOGWARNING('WRN! TIC query failed. trying again...')
-        time.sleep(60)
-        stars = Catalogs.query_region(
-            "{} {}".format(float(coord.ra.value), float(coord.dec.value)),
-            catalog="TIC", radius=radius
-        )
-
-    sel = ~stars['GAIA'].mask
-    selstars = stars[sel]
-
-    if len(selstars)>=1:
-
-        # TICv8 was based on Gaia DR2: enforce that the TICv8 TICID match that's
-        # returned has a Gaia source_id listed in the TIC that is the same as
-        # the source_id passed to this function.
-        if np.any(
-            np.in1d(np.array(selstars['GAIA']).astype(np.int64),
-                    np.array(np.int64(source_id)))
-        ):
-
-            ind = (
-                int(np.where(
-                        np.in1d(
-                            np.array(selstars['GAIA']).astype(np.int64),
-                            np.array(np.int64(source_id))))[0]
-                )
+        if len(df) == 0 or len(df) > 1:
+            errmsg = (
+                'Expected 1 Gaia result from source_id {}; got {} results.'.
+                format(source_id, len(df))
             )
+            LOGERROR(errmsg)
+            return None
 
-            mrow = selstars[ind]
+    except Exception:
+        LOGEXCEPTION("Could not fetch GAIA info for source_id = %s" % source_id)
+        return None
 
-    if len(mrow) == 0:
-        errmsg = (
-            'Failed to retrieve TIC identifier for Gaia DR2 {}'.
-            format(source_id)
-        )
-        raise NameError(errmsg)
+    ra, dec = df['ra'][0], df['dec'][0]
 
-    ticid = mrow['ID']
-    return ticid
+    # use mast.tic_conesearch to find the closest match to the GAIA object
+    tic_res = tic_conesearch(ra, dec, radius_arcmin=0.5,
+                             timeout=timeout,refresh=refresh,
+                             maxtimeout=maxtimeout,maxtries=maxtries)
+
+    try:
+
+        with open(tic_res['cachefname'],'r') as infd:
+            tic_info = json.load(infd)
+
+            if len(tic_info['data']) == 0 or len(tic_info['data']) > 0:
+                errmsg = (
+                    'Expected 1 TIC result from source_id {}; got {} results.'.
+                    format(source_id, len(tic_info['data']))
+                )
+                LOGERROR(errmsg)
+                return None
+
+    except Exception:
+
+        LOGEXCEPTION("Could not fetch TIC info for source_id = %s" % source_id)
+        return None
+
+    #
+    # now, select the appropriate row in the returned matches
+    #
+    gaia_ids = np.array([
+        (int(tic_info['data'][x]['GAIA']) if
+         tic_info['data'][x]['GAIA'] is not None else -1)
+        for x in tic_info['data']
+    ])
+    tic_ids = np.array([
+        tic_info['data']['ID'] for x in tic_info['data']
+    ])
+
+    matched_tic_id = tic_ids[gaia_ids == int(source_id)]
+    if matched_tic_id.size > 0:
+        return matched_tic_id
+    else:
+        LOGERROR("Could not find TIC ID for "
+                 "source ID: %s in TIC (version: %s)" %
+                 (source_id, tic_info['data']['version']))
+        return None
 
 
-def simbad2tic(simbad_name):
+def simbad_to_tic(simbad_name):
+    """
+    This goes from a SIMBAD name to a TIC name.
 
-    source_id = simbad2gaiadrtwo(simbad_name)
+    """
 
-    return gaiadrtwo2tic(source_id)
+    source_id = simbad_to_gaiadr2(simbad_name)
+
+    if source_id is not None:
+        return gaiadr2_to_tic(source_id)
+    else:
+        LOGERROR("Could not find TIC ID for SIMBAD name: %s" % simbad_name)
+        return None
