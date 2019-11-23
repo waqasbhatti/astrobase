@@ -1,3 +1,22 @@
+# v0.4.3
+
+## New stuff
+
+- New `services.limbdarkening` module to retrieve limb-darkening Claret+ 2017
+  coefficients from Vizier (just for the TESS band for now). Added by @lgbouma.
+- New `services.identifiers` module to convert between SIMBAD, GAIA DR2, and TIC
+  identifiers for objects. Added by @lgbouma.
+- New `imageutils` module for some simple FITS operations.
+- Added the `fivetransitparam_fit_magseries` function to `lcfit.transits` for
+  fitting a line plus a Mandel-Agol transit model with everything fixed leaving
+  the t0, period, a/Rstar, Rp/Rstar, and inclination as free parameters. Added
+  by @lgbouma.
+
+## Fixes
+
+- Minor fixes to the `checkplot` and `services` subpackages.
+
+
 # v0.4.2
 
 ## Changes
