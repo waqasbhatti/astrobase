@@ -87,6 +87,7 @@ EXTRAS_REQUIRE = {
         'h5py',
         'batman-package',
         'transitleastsquares>=1.0',
+        'corner',
     ],
     # for lcproc_aws and awsutils
     'aws':[
