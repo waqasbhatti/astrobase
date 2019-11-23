@@ -1678,166 +1678,6 @@ def mandelagol_and_line_fit_magseries(
     return returndict
 
 
-def fivetransitparam_fit_magseries(
-        times, mags, errs,
-        teff, rstar, logg,
-        identifier,
-        fit_savdir,
-        chain_savdir,
-        n_mcmc_steps=1,
-        overwriteexistingsamples=False,
-        burninpercent=0.3,
-        n_transit_durations=5,
-        make_tlsfit_plot=True,
-        exp_time_minutes=30,
-        bandpass='tess',
-        magsarefluxes=True,
-        nworkers=32,
-):
-    '''
-    Wrapper to `mandelagol_fit_magseries` that fits out a line around each
-    transit window in the given light curve, and then fits the entire light
-    curve for (t0, period, a/Rstar, Rp/Rstar, inclination). Fixes e to 0, and
-    uses theoretical quadratic limb darkening coefficients in the bandpass
-    given by the user, as found with the stellar parameters. Figures out the
-    priors for you.
-
-    Typical use case: you have a light curve with >=2 transits in it.  You want
-    to fit the entire light curve for the parameters noted above, but you don't
-    want to need to manually determine all the priors.
-
-    Parameters
-    ----------
-
-        times,mags,errs : np.array
-            The input flux time-series to fit.
-
-        teff, rstar, logg : float
-            Stellar parameters [K, Rsun, cgs] used to get limb darkening
-            coefficients.
-
-        identifier : str
-            String that goes into file names to identify the object being fit.
-            E.g., fit CSV file will be at
-            `{fit_savdir}/{identifier}_fivetransitparam_fitresults.csv`
-
-        fit_savdir : str
-            Path to directory where CSV results of fits, fit status files, and
-            diagnostic plots are saved. If it doesn't exist, this function
-            tries to make it.
-
-        chain_savdir : str
-            Path to directory where MCMC chains are saved.
-
-        n_mcmc_steps : int
-            Number of steps to run MCMC. (Note: convergence not guaranteed).
-
-        overwriteexistingsamples : bool
-            If False, and finds pickle file with saved parameters (in
-            `fit_savdir`), no additoinal MCMC sampling is done.
-
-        exp_time_minutes : int
-            Exposure time in minutes. Used for the model fitting.
-
-        n_transit_durations : int
-            The points used in the fit are only those within +/- N transit
-            durations of each transit mid-point. This is to prevent excessive
-            out-of-transit data being used in the fit (these points do not
-            inform the model's parameters).
-
-    Returns
-    -------
-        tuple of (mafr, tlsr, is_converged) :
-
-            `mafr` is the Mandel-Agol fit result dictionary, which contains the
-            same information as from `mandelagol_and_line_fit_magseries`.  Fit
-            parameters are accessed like
-            `maf_empc_errs['fitinfo']['finalparams']['sma']`,
-
-
-            `tlsr` is the TLS result dictionary, containing keys documented in
-            `periodbase/htls.tls_parallel_pfind`.
-
-            is_converged : boolean for whether the fitting converged, according
-            to the chain autocorrelation time.
-    '''
-
-    if bandpass != 'tess':
-        raise NotImplementedError(
-            'currently only call Claret coefficients for '
-            'tess bandpass. the others exist, just need to implement'
-        )
-
-    if not magsarefluxes:
-        raise ValueError(
-            'batman & TLS require mags to be fluxes'
-        )
-
-    #
-    # Run TLS to get parameters that will be fed into transit model priors.
-    # Note: the htls import needs to be in this function, not in the header, to
-    # avoid recursive module imports upon initialization.
-    #
-    from astrobase.periodbase import htls
-
-    tlsp = htls.tls_parallel_pfind(times, mags, errs,
-                                   magsarefluxes=magsarefluxes,
-                                   tls_rstar_min=0.1, tls_rstar_max=10,
-                                   tls_mstar_min=0.1, tls_mstar_max=5.0,
-                                   tls_oversample=8, tls_mintransits=1,
-                                   tls_transit_template='default',
-                                   nbestpeaks=5, sigclip=None,
-                                   nworkers=nworkers)
-
-    tlsr = tlsp['tlsresult']
-    t0, per = tlsr.T0, tlsr.period
-
-    #
-    # Optionally make plot of TLS fit.
-    #
-    if make_tlsfit_plot:
-
-        if not os.path.exists(fit_savdir):
-            os.mkdir(fit_savdir)
-
-        tlsfit_savfile = os.path.join(
-            fit_savdir, 'tlsfit_{}_quickplot.png'.format(identifier)
-        )
-
-        make_fit_plot(tlsr['folded_phase'], tlsr['folded_y'], None,
-                      tlsr['model_folded_model'], per, t0, t0, tlsfit_savfile,
-                      model_over_lc=False, magsarefluxes=True,
-                      fitphase=tlsr['model_folded_phase'])
-
-        LOGINFO('made {}'.format(tlsfit_savfile))
-
-    #
-    # Fit the phased transit, within N durations of the transit itself, to
-    # determine (t0, period, a/Rstar, Rp/Rstar, inclination). Most of the work
-    # happens in this helper function. Returns Mandel-Agol fit results dict,
-    # and whether we converged.
-    #
-    mafr, is_converged = (
-        _fivetransitparam_fit_magseries(
-            times, mags, errs,
-            tlsr,
-            teff, rstar, logg,
-            identifier,
-            fit_savdir,
-            chain_savdir,
-            exp_time_minutes=exp_time_minutes,
-            n_transit_durations=n_transit_durations,
-            nworkers=nworkers,
-            n_mcmc_steps=n_mcmc_steps,
-            burninpercent=burninpercent,
-            overwriteexistingsamples=overwriteexistingsamples,
-            mcmcprogressbar=True
-        )
-    )
-
-    return mafr, tlsr, is_converged
-
-
 if vizier_dependency:
 
     def _fivetransitparam_fit_magseries(
@@ -1855,7 +1695,7 @@ if vizier_dependency:
             overwriteexistingsamples=True,
             mcmcprogressbar=True
     ):
-        '''Helper to `lcfit.transits.fivetransitparam_fit_magseries`.
+        '''Helper to ``lcfit.transits.fivetransitparam_fit_magseries``.
 
         Procedure implemented does the following.
 
@@ -1873,7 +1713,7 @@ if vizier_dependency:
                0, and uses theoretical quadratic limb darkening coefficients in
                the bandpass given by the user, as found with the stellar
                parameters.  6. Fit happens in two stages. First, it is done with
-               the error bars passed to the function in `err`. The best-fit
+               the error bars passed to the function in ``err``. The best-fit
                model is then subtracted, and the errors are set to equal the RMS
                of the OOT points in the subtracted light curve. Then the fit is
                redone.  7. Fit outputs: corner plots, phase-folded light curve,
@@ -2285,3 +2125,163 @@ if vizier_dependency:
             is_converged = True
 
         return maf_empc_errs, is_converged
+
+
+def fivetransitparam_fit_magseries(
+        times, mags, errs,
+        teff, rstar, logg,
+        identifier,
+        fit_savdir,
+        chain_savdir,
+        n_mcmc_steps=1,
+        overwriteexistingsamples=False,
+        burninpercent=0.3,
+        n_transit_durations=5,
+        make_tlsfit_plot=True,
+        exp_time_minutes=30,
+        bandpass='tess',
+        magsarefluxes=True,
+        nworkers=32,
+):
+    '''
+    Wrapper to `mandelagol_fit_magseries` that fits out a line around each
+    transit window in the given light curve, and then fits the entire light
+    curve for (t0, period, a/Rstar, Rp/Rstar, inclination). Fixes e to 0, and
+    uses theoretical quadratic limb darkening coefficients in the bandpass
+    given by the user, as found with the stellar parameters. Figures out the
+    priors for you.
+
+    Typical use case: you have a light curve with >=2 transits in it.  You want
+    to fit the entire light curve for the parameters noted above, but you don't
+    want to need to manually determine all the priors.
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.array
+        The input flux time-series to fit.
+
+    teff,rstar,logg : float
+        Stellar parameters [K, Rsun, cgs] used to get limb darkening
+        coefficients.
+
+    identifier : str
+        String that goes into file names to identify the object being fit.
+        E.g., fit CSV file will be at
+        `{fit_savdir}/{identifier}_fivetransitparam_fitresults.csv`
+
+    fit_savdir : str
+        Path to directory where CSV results of fits, fit status files, and
+        diagnostic plots are saved. If it doesn't exist, this function
+        tries to make it.
+
+    chain_savdir : str
+        Path to directory where MCMC chains are saved.
+
+    n_mcmc_steps : int
+        Number of steps to run MCMC. (Note: convergence not guaranteed).
+
+    overwriteexistingsamples : bool
+        If False, and finds pickle file with saved parameters (in
+        `fit_savdir`), no additoinal MCMC sampling is done.
+
+    exp_time_minutes : int
+        Exposure time in minutes. Used for the model fitting.
+
+    n_transit_durations : int
+        The points used in the fit are only those within +/- N transit
+        durations of each transit mid-point. This is to prevent excessive
+        out-of-transit data being used in the fit (these points do not
+        inform the model's parameters).
+
+    Returns
+    -------
+
+    (mafr, tlsr, is_converged) : tuple
+        ``mafr`` is the Mandel-Agol fit result dictionary, which contains the
+        same information as from ``mandelagol_and_line_fit_magseries``.  Fit
+        parameters are accessed like
+        ``maf_empc_errs['fitinfo']['finalparams']['sma']``,
+
+        ``tlsr`` is the TLS result dictionary, containing keys documented in
+        ``periodbase/htls.tls_parallel_pfind``.
+
+        is_converged : boolean for whether the fitting converged, according
+        to the chain autocorrelation time.
+
+    '''
+
+    if bandpass != 'tess':
+        raise NotImplementedError(
+            'currently only call Claret coefficients for '
+            'tess bandpass. the others exist, just need to implement'
+        )
+
+    if not magsarefluxes:
+        raise ValueError(
+            'batman & TLS require mags to be fluxes'
+        )
+
+    #
+    # Run TLS to get parameters that will be fed into transit model priors.
+    # Note: the htls import needs to be in this function, not in the header, to
+    # avoid recursive module imports upon initialization.
+    #
+    from astrobase.periodbase import htls
+
+    tlsp = htls.tls_parallel_pfind(times, mags, errs,
+                                   magsarefluxes=magsarefluxes,
+                                   tls_rstar_min=0.1, tls_rstar_max=10,
+                                   tls_mstar_min=0.1, tls_mstar_max=5.0,
+                                   tls_oversample=8, tls_mintransits=1,
+                                   tls_transit_template='default',
+                                   nbestpeaks=5, sigclip=None,
+                                   nworkers=nworkers)
+
+    tlsr = tlsp['tlsresult']
+    t0, per = tlsr.T0, tlsr.period
+
+    #
+    # Optionally make plot of TLS fit.
+    #
+    if make_tlsfit_plot:
+
+        if not os.path.exists(fit_savdir):
+            os.mkdir(fit_savdir)
+
+        tlsfit_savfile = os.path.join(
+            fit_savdir, 'tlsfit_{}_quickplot.png'.format(identifier)
+        )
+
+        make_fit_plot(tlsr['folded_phase'], tlsr['folded_y'], None,
+                      tlsr['model_folded_model'], per, t0, t0, tlsfit_savfile,
+                      model_over_lc=False, magsarefluxes=True,
+                      fitphase=tlsr['model_folded_phase'])
+
+        LOGINFO('made {}'.format(tlsfit_savfile))
+
+    #
+    # Fit the phased transit, within N durations of the transit itself, to
+    # determine (t0, period, a/Rstar, Rp/Rstar, inclination). Most of the work
+    # happens in this helper function. Returns Mandel-Agol fit results dict,
+    # and whether we converged.
+    #
+    mafr, is_converged = (
+        _fivetransitparam_fit_magseries(
+            times, mags, errs,
+            tlsr,
+            teff, rstar, logg,
+            identifier,
+            fit_savdir,
+            chain_savdir,
+            exp_time_minutes=exp_time_minutes,
+            n_transit_durations=n_transit_durations,
+            nworkers=nworkers,
+            n_mcmc_steps=n_mcmc_steps,
+            burninpercent=burninpercent,
+            overwriteexistingsamples=overwriteexistingsamples,
+            mcmcprogressbar=True
+        )
+    )
+
+    return mafr, tlsr, is_converged

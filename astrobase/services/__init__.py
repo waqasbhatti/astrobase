@@ -28,6 +28,9 @@ exhaustive and are meant to support other astrobase modules.
 - :py:mod:`astrobase.services.limbdarkening`: utilities to get stellar limb
   darkening coefficients for use during transit fitting.
 
+- :py:mod:`astrobase.services.identifiers`: utilities to convert from SIMBAD
+  object names to GAIA DR2 source identifiers and TESS Input Catalogs IDs.
+
 For a much broader interface to online data services, use the astroquery package
 by A. Ginsburg, B. Sipocz, et al.:
 

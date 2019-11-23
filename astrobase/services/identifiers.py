@@ -77,7 +77,66 @@ def simbad_to_gaiadr2(
     Convenience function that, given a SIMBAD object name, returns string of
     the Gaia-DR2 identifier.
 
-    simbad_name: string as you would search on SIMBAD.
+    Parameters
+    ----------
+
+    simbad_name : str
+        The SIMBAD object name to search for.
+
+    simbad_mirror : str
+        This is the key used to select a SIMBAD mirror from the
+        `SIMBAD_URLS` dict above. If set, the specified mirror will be used. If
+        None, a random mirror chosen from that dict will be used.
+
+    returnformat : {'csv','votable','json'}
+        The returned file format to request from the GAIA catalog service.
+
+    forcefetch : bool
+        If this is True, the query will be retried even if cached results for
+        it exist.
+
+    cachedir : str
+        This points to the directory where results will be downloaded.
+
+    verbose : bool
+        If True, will indicate progress and warn of any issues.
+
+    timeout : float
+        This sets the amount of time in seconds to wait for the service to
+        respond to our initial request.
+
+    refresh : float
+        This sets the amount of time in seconds to wait before checking if the
+        result file is available. If the results file isn't available after
+        `refresh` seconds have elapsed, the function will wait for `refresh`
+        seconds continuously, until `maxtimeout` is reached or the results file
+        becomes available.
+
+    maxtimeout : float
+        The maximum amount of time in seconds to wait for a result to become
+        available after submitting our query request.
+
+    maxtries : int
+        The maximum number of tries (across all mirrors tried) to make to either
+        submit the request or download the results, before giving up.
+
+    complete_query_later : bool
+        If set to True, a submitted query that does not return a result before
+        `maxtimeout` has passed will be cancelled but its input request
+        parameters and the result URL provided by the service will be saved. If
+        this function is then called later with these same input request
+        parameters, it will check if the query finally finished and a result is
+        available. If so, will download the results instead of submitting a new
+        query. If it's not done yet, will start waiting for results again. To
+        force launch a new query with the same request parameters, set the
+        `forcefetch` kwarg to True.
+
+    Returns
+    -------
+
+    gaiadr2_id : str
+        Returns the GAIA DR2 ID as a string.
+
     """
 
     if not isinstance(simbad_name, str):
@@ -148,8 +207,8 @@ def simbad_to_gaiadr2(
 
 def gaiadr2_to_tic(
         source_id,
-        returnformat='csv',
         gaia_mirror='gaia',
+        returnformat='csv',
         forcefetch=False,
         cachedir='~/.astrobase/simbad-cache',
         verbose=True,
@@ -165,9 +224,64 @@ def gaiadr2_to_tic(
 
     Parameters
     ----------
-    source_id: Gaia DR2 source identifier.
 
-    Remainder are described in `astrobase.services.gaia.objectid_search`
+    source_id : str
+        The GAIA DR2 source identifier.
+
+    gaia_mirror : {'gaia','heidelberg','vizier'} or None
+        This is the key used to select a GAIA catalog mirror from the
+        `GAIA_URLS` dict above. If set, the specified mirror will be used. If
+        None, a random mirror chosen from that dict will be used.
+
+    returnformat : {'csv','votable','json'}
+        The returned file format to request from the GAIA catalog service.
+
+    forcefetch : bool
+        If this is True, the query will be retried even if cached results for
+        it exist.
+
+    cachedir : str
+        This points to the directory where results will be downloaded.
+
+    verbose : bool
+        If True, will indicate progress and warn of any issues.
+
+    timeout : float
+        This sets the amount of time in seconds to wait for the service to
+        respond to our initial request.
+
+    refresh : float
+        This sets the amount of time in seconds to wait before checking if the
+        result file is available. If the results file isn't available after
+        `refresh` seconds have elapsed, the function will wait for `refresh`
+        seconds continuously, until `maxtimeout` is reached or the results file
+        becomes available.
+
+    maxtimeout : float
+        The maximum amount of time in seconds to wait for a result to become
+        available after submitting our query request.
+
+    maxtries : int
+        The maximum number of tries (across all mirrors tried) to make to either
+        submit the request or download the results, before giving up.
+
+    completequerylater : bool
+        If set to True, a submitted query that does not return a result before
+        `maxtimeout` has passed will be cancelled but its input request
+        parameters and the result URL provided by the service will be saved. If
+        this function is then called later with these same input request
+        parameters, it will check if the query finally finished and a result is
+        available. If so, will download the results instead of submitting a new
+        query. If it's not done yet, will start waiting for results again. To
+        force launch a new query with the same request parameters, set the
+        `forcefetch` kwarg to True.
+
+    Returns
+    -------
+
+    tic_id : str
+        Returns the TIC ID of the object as a string.
+
     """
 
     r = gaia_objectid_search(source_id, gaia_mirror=gaia_mirror,
@@ -241,6 +355,18 @@ def gaiadr2_to_tic(
 def simbad_to_tic(simbad_name):
     """
     This goes from a SIMBAD name to a TIC name.
+
+    Parameters
+    ----------
+
+    simbad_name : str
+        The SIMBAD name of the object to look up the TIC ID for.
+
+    Returns
+    -------
+
+    tic_id : str
+        Returns the TIC ID of the object as a string.
 
     """
 

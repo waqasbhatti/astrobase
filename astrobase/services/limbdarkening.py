@@ -56,6 +56,23 @@ def get_tess_limb_darkening_guesses(teff, logg):
 
     TODO: interpolate instead of doing the nearest match. Nearest match is
     good to maybe only ~200 K and ~0.3 in log(g).
+
+    Parameters
+    ----------
+
+    teff : float
+        The stellar effective temperature to use.
+
+    logg : float
+        The stellar log g value to use.
+
+    Returns
+    -------
+
+    (linear_coeff, quadratic_coeff) : tuple
+        Returns a tuple containing the linear and quadratic limb-darkening
+        coefficients for the given effective temperature and log g.
+
     '''
 
     if not vizier_dependency:
