@@ -38,7 +38,7 @@ The functions below support various auxiliary LCC services::
 from __future__ import print_function
 
 # put this in here because lccs can be used as a standalone module
-__version__ = '0.4.2'
+__version__ = '0.4.3'
 
 
 #############
