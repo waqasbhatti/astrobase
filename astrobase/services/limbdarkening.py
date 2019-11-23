@@ -61,7 +61,7 @@ def get_tess_limb_darkening_guesses(teff, logg):
     if not vizier_dependency:
         raise ImportError(
             'This function requires astroquery.'
-            'Try: `conda install -c astropy astroquery`'
+            'Try: `pip [or conda -c] install astropy astroquery`'
         )
 
     # Get the Claret quadratic priors for TESS bandpass.  The table below is
@@ -87,13 +87,18 @@ def get_tess_limb_darkening_guesses(teff, logg):
     catalog_list = Vizier.find_catalogs('J/A+A/600/A30')
     catalogs = Vizier.get_catalogs(catalog_list.keys())
     t = catalogs[1]
-    sel = (t['Type'] == 'r')
-    df = t[sel].to_pandas()
+    sel = t['Type'] == 'r'
+    df = t[sel]
 
     # Each Teff has 8 tabulated logg values. First, find the best teff match.
-    foo = df.iloc[(df['Teff']-teff).abs().argsort()[:8]]
+    best_teff_match_inds = (np.abs(df['Teff'] - teff)).argsort()[:8]
+    teff_matching_rows = df[best_teff_match_inds]
+
     # Then, among those best 8, get the best logg match.
-    bar = foo.iloc[(foo['logg']-logg).abs().argsort()].iloc[0]
+    best_logg_match_ind = (
+        np.abs(teff_matching_rows['logg'] - logg)
+    ).argsort()[0]
+    teff_logg_matching_row = teff_matching_rows[best_logg_match_ind]
 
     # TODO: should probably determine these coefficients by INTERPOLATING.
     # (especially in cases when you're FIXING them, rather than letting them
@@ -101,9 +106,10 @@ def get_tess_limb_darkening_guesses(teff, logg):
     LOGWARNING('skipping interpolation for Claret coefficients.')
     LOGWARNING('data logg={:.3f}, teff={:.1f}'.format(logg, teff))
     LOGWARNING('Claret logg={:.3f}, teff={:.1f}'.
-               format(bar['logg'],bar['Teff']))
+               format(teff_logg_matching_row['logg'],
+                      teff_logg_matching_row['Teff']))
 
-    u_linear = bar['aLSM']
-    u_quad = bar['bLSM']
+    u_linear = teff_logg_matching_row['aLSM']
+    u_quad = teff_logg_matching_row['bLSM']
 
     return float(u_linear), float(u_quad)

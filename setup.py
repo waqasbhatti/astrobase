@@ -83,7 +83,10 @@ EXTRAS_REQUIRE = {
     ],
     # for periodbase.tls
     'tls':[
-        'transitleastsquares>=1.0'
+        'emcee==3.0rc1',
+        'h5py',
+        'batman-package',
+        'transitleastsquares>=1.0',
     ],
     # for lcproc_aws and awsutils
     'aws':[
