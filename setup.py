@@ -18,6 +18,7 @@ from setuptools import setup
 # https://docs.pytest.org/en/latest/goodpractices.html#test-discovery
 from setuptools.command.test import test as TestCommand
 
+
 class PyTest(TestCommand):
     user_options = [('pytest-args=', 'a', "Arguments to pass to pytest")]
 
@@ -41,6 +42,7 @@ class PyTest(TestCommand):
 def readme():
     with open('README.md') as f:
         return f.read()
+
 
 INSTALL_REQUIRES = [
     'numpy>=1.4.0',
@@ -97,7 +99,6 @@ EXTRAS_REQUIRE = {
         'google-cloud-pubsub',
     ]
 }
-
 
 
 #############################

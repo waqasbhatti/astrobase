@@ -39,7 +39,7 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
-import numpy as np, pandas as pd
+import numpy as np
 
 from astropy import units as units, constants as const
 try:
@@ -63,9 +63,6 @@ def get_tess_limb_darkening_guesses(teff, logg):
             'This function requires astroquery.'
             'Try: `conda install -c astropy astroquery`'
         )
-
-    # Assume solar metallicity.
-    metallicity = 0
 
     # Get the Claret quadratic priors for TESS bandpass.  The table below is
     # good from Teff = 1500 - 12000K, logg = 2.5 to 6. We choose values

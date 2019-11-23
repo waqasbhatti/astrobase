@@ -25,7 +25,12 @@ from astrobase import periodbase
 from astrobase.periodbase import kbls
 from astrobase.periodbase import abls
 
-from astrobase.periodbase import htls
+try:
+    import transitleastsquares
+    from astrobase.periodbase import htls
+    htls_ok = True
+except Exception:
+    htls_ok = False
 
 
 ############
@@ -209,27 +214,29 @@ def test_abls_parallel():
     assert_allclose(bls['bestperiod'], EXPECTED_PERIOD, atol=1.0e-4)
 
 
-def test_tls_parallel():
-    '''
-    This tests periodbase.htls.tls_parallel_pfind.
-    '''
+if htls_ok:
 
-    EXPECTED_PERIOD = 3.0848887
+    def test_tls_parallel():
+        '''
+        This tests periodbase.htls.tls_parallel_pfind.
+        '''
 
-    lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
+        EXPECTED_PERIOD = 3.0848887
 
-    tlsdict = htls.tls_parallel_pfind(
-        lcd['rjd'],
-        lcd['aep_000'],
-        lcd['aie_000'],
-        startp=2.0,
-        endp=5.0
-    )
+        lcd, msg = hatlc.read_and_filter_sqlitecurve(LCPATH)
 
-    tlsresult = tlsdict['tlsresult']
+        tlsdict = htls.tls_parallel_pfind(
+            lcd['rjd'],
+            lcd['aep_000'],
+            lcd['aie_000'],
+            startp=2.0,
+            endp=5.0
+        )
 
-    assert isinstance(tlsresult, dict)
+        tlsresult = tlsdict['tlsresult']
 
-    # ensure period is within 2 sigma of what's expected.
-    assert_allclose(tlsdict['bestperiod'], EXPECTED_PERIOD,
-                    atol=2.0*tlsresult['period_uncertainty'])
+        assert isinstance(tlsresult, dict)
+
+        # ensure period is within 2 sigma of what's expected.
+        assert_allclose(tlsdict['bestperiod'], EXPECTED_PERIOD,
+                        atol=2.0*tlsresult['period_uncertainty'])
