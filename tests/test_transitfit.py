@@ -1,6 +1,10 @@
-"""
-test_transitfit.py - Luke Bouma (luke@astro.princeton.edu) - Aug 2019
+"""test_transitfit.py - Luke Bouma (luke@astro.princeton.edu) - Aug 2019
 License: MIT - see the LICENSE file for details.
+
+NOTE: the tests in this module take a very long time. To enable and actually run
+them, you must set the environmental variable RUN_LONG_TESTS=1 before running
+pytest, like so: ``RUN_LONG_TESTS=1 pytest test_transitfit.py``, or set this
+environmental variable in your CI runner.
 
 When run, this file downloads two TESS light curves from the
 astrobase-notebooks/nb-data directory.
@@ -15,6 +19,7 @@ theoretical predictions.
 
 - test_multithread_speed: ensure that increasing nworkers speeds up the MCMC
 sampling. 2019/08/15: this test fails.
+
 """
 
 ###########
@@ -82,6 +87,10 @@ for LCPATH, LCURL in zip(LCPATHS, LCURLS):
     if not os.path.exists(LCPATH):
         localf, headerr = urlretrieve(
             LCURL,LCPATH,reporthook=on_download_chunk)
+
+
+if not os.environ.get('RUN_LONG_TESTS'):
+    test_ok = False
 
 
 #########
