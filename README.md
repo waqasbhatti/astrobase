@@ -32,7 +32,11 @@ This package should work with Python >= 3.4 and Python 2.7. Using the newest
 Python 3 version available is recommended and support for Python 2.7 will be
 dropped at the end of [2019](https://pythonclock.org/).
 
-Python 3.6: [![Python 3.6](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py3)](https://ci.wbhatti.org/job/astrobase-py3) Python 3.7: [![Python 3.7](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py37)](https://ci.wbhatti.org/job/astrobase-py37)
+Python 3.6: [![Python
+3.6](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py3)](https://ci.wbhatti.org/job/astrobase-py3)
+Python 3.7: [![Python
+3.7](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py37)](https://ci.wbhatti.org/job/astrobase-py37)
+Python 3.8: [![Python 3.8](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py38)](https://ci.wbhatti.org/job/astrobase-py38)
 
 # Contents
 
