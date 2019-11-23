@@ -230,7 +230,7 @@ def gaiadr2_to_tic(
 
     matched_tic_id = tic_ids[gaia_ids == int(source_id)]
     if matched_tic_id.size > 0:
-        return matched_tic_id
+        return str(matched_tic_id.item())
     else:
         LOGERROR("Could not find TIC ID for "
                  "source ID: %s in TIC (version: %s)" %
