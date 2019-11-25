@@ -72,7 +72,7 @@ LOGEXCEPTION = LOGGER.exception
 try:
     from datetime import datetime, timezone
     utc = timezone.utc
-except Exception as e:
+except Exception:
     from datetime import datetime, timedelta, tzinfo
 
     # we'll need to instantiate a tzinfo object because py2.7's datetime
@@ -108,7 +108,7 @@ import time
 
 try:
     import cPickle as pickle
-except Exception as e:
+except Exception:
     import pickle
 
 
@@ -121,7 +121,7 @@ try:
     from urlparse import urlparse
     from urllib2 import urlopen, Request, HTTPError
 # Python 3
-except Exception as e:
+except Exception:
     from urllib.request import urlopen, Request
     from urllib.error import HTTPError
     from urllib.parse import urlencode, urlparse
@@ -212,7 +212,6 @@ def check_existing_apikey(lcc_server):
         return False, None, None
 
 
-
 def get_new_apikey(lcc_server):
     '''This gets a new API key from the specified LCC-Server.
 
@@ -288,11 +287,10 @@ def get_new_apikey(lcc_server):
     return apikey, expires
 
 
-
-def import_apikey(lcc_server, apikey_text_json):
+def import_apikey(lcc_server, apikey_json):
     '''This imports an API key from text and writes it to the cache dir.
 
-    Use this with the JSON text copied from the API key text box on your
+    Use this with the JSON file downloaded from API key download link on your
     LCC-Server user home page. The API key will thus be tied to the privileges
     of that user account and can then access objects, datasets, and collections
     marked as private for the user only or shared with that user.
@@ -326,7 +324,9 @@ def import_apikey(lcc_server, apikey_text_json):
                                   'http-'
                               ))
 
-    respdict = json.loads(apikey_text_json)
+    # get the JSON
+    with open(apikey_json,'r') as infd:
+        respdict = json.load(infd)
 
     #
     # now that we have an API key dict, get the API key out of it and write it
@@ -351,7 +351,6 @@ def import_apikey(lcc_server, apikey_text_json):
     LOGINFO('written to: %s' % APIKEYFILE)
 
     return apikey, expires
-
 
 
 ##############################
@@ -465,7 +464,6 @@ def submit_post_searchquery(url, data, apikey):
                     # we're done at this point, return
                     return status, data, None
 
-
         # if the response was not OK, then we probably failed
         else:
 
@@ -476,7 +474,7 @@ def submit_post_searchquery(url, data, apikey):
                 LOGERROR(msg)
                 return 'failed', None, None
 
-            except Exception as e:
+            except Exception:
 
                 LOGEXCEPTION('failed to submit query to %s' % url)
                 return 'failed', None, None
@@ -486,7 +484,6 @@ def submit_post_searchquery(url, data, apikey):
         LOGERROR('could not submit query to LCC API at: %s' % url)
         LOGERROR('HTTP status code was %s, reason: %s' % (e.code, e.reason))
         return 'failed', None, None
-
 
 
 def retrieve_dataset_files(searchresult,
@@ -625,7 +622,6 @@ def retrieve_dataset_files(searchresult,
     else:
         local_dataset_pickle = None
 
-
     # get the dataset CSV
     LOGINFO('getting %s...' % dataset_csv_link)
     try:
@@ -667,7 +663,6 @@ def retrieve_dataset_files(searchresult,
         LOGERROR('could not download %s, HTTP status code was: %s, reason: %s' %
                  (dataset_csv_link, e.code, e.reason))
         local_dataset_csv = None
-
 
     # get the dataset LC zip
     LOGINFO('getting %s...' % dataset_lczip_link)
@@ -711,9 +706,7 @@ def retrieve_dataset_files(searchresult,
                  (dataset_lczip_link, e.code, e.reason))
         local_dataset_lczip = None
 
-
     return local_dataset_csv, local_dataset_lczip, local_dataset_pickle
-
 
 
 ###########################
@@ -980,7 +973,6 @@ def cone_search(lcc_server,
         return searchresult[1], None, None
 
 
-
 def fulltext_search(lcc_server,
                     searchterm,
                     sesame_lookup=False,
@@ -1241,7 +1233,6 @@ def fulltext_search(lcc_server,
         return searchresult[1], None, None
 
 
-
 def column_search(lcc_server,
                   filters,
                   result_visibility='unlisted',
@@ -1480,7 +1471,6 @@ def column_search(lcc_server,
     else:
 
         return searchresult[1], None, None
-
 
 
 def xmatch_search(lcc_server,
@@ -1762,7 +1752,6 @@ def xmatch_search(lcc_server,
         return searchresult[1], None, None
 
 
-
 #######################################
 ## DATASET AND OBJECT INFO FUNCTIONS ##
 #######################################
@@ -1847,11 +1836,10 @@ def get_dataset(lcc_server,
         dataset = json.loads(resp.read())
         return dataset
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('could not retrieve the dataset JSON!')
         return None
-
 
 
 def object_info(lcc_server, objectid, db_collection_id):
@@ -1981,9 +1969,7 @@ def object_info(lcc_server, objectid, db_collection_id):
                      'URL used: %s, error code: %s, reason: %s' %
                      (url, e.code, e.reason))
 
-
         return None
-
 
 
 def list_recent_datasets(lcc_server, nrecent=25):
@@ -2052,7 +2038,6 @@ def list_recent_datasets(lcc_server, nrecent=25):
                  (url, e.code, e.reason))
 
         return None
-
 
 
 def list_lc_collections(lcc_server):
