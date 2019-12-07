@@ -53,7 +53,7 @@ from astropy.table import Table
 
 from astrobase.services.simbad import tap_query as simbad_tap_query
 from astrobase.services.gaia import objectid_search as gaia_objectid_search
-from astrobase.services.mast import tic_conesearch
+from astrobase.services.mast import tic_conesearch, tic_objectsearch
 
 
 ###############
@@ -377,3 +377,43 @@ def simbad_to_tic(simbad_name):
     else:
         LOGERROR("Could not find TIC ID for SIMBAD name: %s" % simbad_name)
         return None
+
+
+def tic_to_gaiadr2(tic_id, raiseonfail=False):
+    """
+    This goes from a TIC name to a GAIA DR2 source_id.
+
+    Parameters
+    ----------
+
+    tic_id : str
+        The TIC ID to look for.
+
+    Returns
+    -------
+
+    source_id : str
+        Returns the GAIA DR2 ID of the object as a string.
+
+    """
+
+    tic_res = tic_objectsearch(tic_id, raiseonfail=raiseonfail)
+
+    with open(tic_res['cachefname'],'r') as infd:
+        tic_info = json.load(infd)
+
+        if len(tic_info['data']) != 1:
+            errmsg = (
+                'Expected exactly 1 TIC result from tic_id {}; got {}.'.
+                format(source_id, len(df))
+            )
+
+            if raiseonfail:
+                raise Exception(errmsg)
+            else:
+                LOGEXCEPTION(errmsg)
+                return None
+
+    gaia_id = str(tic_info['data'][0]['GAIA'])
+
+    return gaia_id
