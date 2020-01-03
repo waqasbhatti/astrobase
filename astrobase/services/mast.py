@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # mast - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2018
 # License: MIT. See the LICENSE file for more details.

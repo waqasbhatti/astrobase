@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # pkl_postproc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Feb 2019
 # License: MIT.

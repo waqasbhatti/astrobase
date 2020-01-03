@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # lccs.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Aug 2018
 # License: MIT - see LICENSE for the full text.

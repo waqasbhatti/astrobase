@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # tls.py - Luke Bouma (luke@astro.princeton.edu) - Apr 2019
 

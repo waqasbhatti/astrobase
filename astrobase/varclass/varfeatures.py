@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # features.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 # License: MIT. See the LICENSE file for more details.

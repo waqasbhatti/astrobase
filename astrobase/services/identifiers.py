@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # convert_identifiers.py - Luke Bouma (bouma.luke@gmail.com) - Oct 2019
 # License: MIT - see the LICENSE file for the full text.

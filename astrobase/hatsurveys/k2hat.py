@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # k2hat.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - 07/15
 # License: MIT. See the LICENCE file for license text.

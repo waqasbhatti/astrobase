@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # emailutils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jun 2013
 # License: MIT. See LICENSE.txt for complete text.

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # {{ name }}.py - {{ author }} ({{ email }}) - {{ month }} {{ year }}
 # License: MIT - see the LICENSE file for the full text.

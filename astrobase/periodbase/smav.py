@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # smav.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2017
 

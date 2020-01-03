@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # coordutils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - 07/13
 # License: MIT - see LICENSE for the full text.

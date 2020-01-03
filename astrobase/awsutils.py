@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # awsutils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Oct 2018
 # License: MIT - see the LICENSE file for the full text.

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # timeutils.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Sept 2013
 

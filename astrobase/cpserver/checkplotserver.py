@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # checkplotserver.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Nov 2016
 

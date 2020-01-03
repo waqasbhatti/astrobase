@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # eclipses.py
 # Waqas Bhatti and Luke Bouma - Feb 2017

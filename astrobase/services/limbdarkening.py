@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # limbdarkening.py - Luke Bouma (luke@astro.princeton.edu) - Aug 2019
 # License: MIT - see the LICENSE file for the full text.

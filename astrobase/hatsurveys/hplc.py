@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # hplc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - May 2017
 # License: MIT. See LICENSE for full text.

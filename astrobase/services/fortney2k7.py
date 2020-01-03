@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # fortney2k7.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - 04/2016
 # MIT License - data from tables in Fortney et al. 2007, ApJ, 2659, 1661
