@@ -7,8 +7,6 @@ Contains various useful tools for dealing with time in astronomical contexts.
 
 '''
 
-from __future__ import print_function
-
 #############
 ## LOGGING ##
 #############

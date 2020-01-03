@@ -36,7 +36,6 @@ LOGERROR = LOGGER.error
 LOGEXCEPTION = LOGGER.exception
 
 
-
 #############
 ## IMPORTS ##
 #############
@@ -46,17 +45,12 @@ import os.path
 import gzip
 import sys
 import json
-
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
+import pickle
 
 import numpy as np
 
 # import sps.cKDTree for external catalog xmatches
 from scipy.spatial import cKDTree
-
 
 
 ###################
@@ -65,7 +59,6 @@ from scipy.spatial import cKDTree
 
 from .pkl_utils import _xyzdist_to_distarcsec
 from .pkl_io import _write_checkplot_picklefile
-
 
 
 #########################################
@@ -149,10 +142,8 @@ def _parse_xmatch_catalog_header(xc, xk):
             catcolnames.append(catdefnames[xkcolind])
             catcolunits.append(catdefunits[xkcolind])
 
-
     return (infd, catdefdict,
             catcolinds, catcoldtypes, catcolnames, catcolunits)
-
 
 
 def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
@@ -301,7 +292,6 @@ def load_xmatch_external_catalogs(xmatchto, xmatchkeys, outfile=None):
         return outdict
 
 
-
 def xmatch_external_catalogs(checkplotdict,
                              xmatchinfo,
                              xmatchradiusarcsec=2.0,
@@ -418,7 +408,7 @@ def xmatch_external_catalogs(checkplotdict,
 
     xmatchresults = {}
 
-    extcats = sorted(list(xmatchdict.keys()))
+    extcats = sorted(xmatchdict.keys())
 
     for ecat in extcats:
 
@@ -488,7 +478,6 @@ def xmatch_external_catalogs(checkplotdict,
             checkplotdict['xmatch'].update(xmatchresults)
         else:
             checkplotdict['xmatch'] = xmatchresults
-
 
         if savepickle:
 

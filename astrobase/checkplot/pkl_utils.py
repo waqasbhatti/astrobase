@@ -34,7 +34,6 @@ LOGERROR = LOGGER.error
 LOGEXCEPTION = LOGGER.exception
 
 
-
 #############
 ## IMPORTS ##
 #############
@@ -46,12 +45,8 @@ import base64
 import json
 import re
 
-try:
-    import cPickle as pickle
-    from cStringIO import StringIO as StrIO
-except Exception as e:
-    import pickle
-    from io import BytesIO as StrIO
+import pickle
+from io import BytesIO as StrIO
 
 import numpy as np
 from numpy import min as npmin, max as npmax, abs as npabs
@@ -80,7 +75,6 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from astropy.wcs import WCS
 
 
-
 ###################
 ## LOCAL IMPORTS ##
 ###################
@@ -101,7 +95,6 @@ from ..plotbase import (
 
 from ..services.mast import tic_conesearch
 from .. import magnitudes
-
 
 
 ########################################
@@ -127,7 +120,6 @@ def _xyzdist_to_distarcsec(xyzdist):
     '''
 
     return np.degrees(2.0*np.arcsin(xyzdist/2.0))*3600.0
-
 
 
 def _pkl_finder_objectinfo(
@@ -407,7 +399,6 @@ def _pkl_finder_objectinfo(
         dust_timeout = 10.0
         search_simbad = True
 
-
     if (isinstance(objectinfo, dict) and
         ('objectid' in objectinfo or 'hatid' in objectinfo) and
         'ra' in objectinfo and 'decl' in objectinfo and
@@ -447,7 +438,7 @@ def _pkl_finder_objectinfo(
                         retry_failed=skyview_retry_failed,
                     )
 
-                except OSError as e:
+                except OSError:
 
                     if not fast_mode:
 
@@ -467,7 +458,6 @@ def _pkl_finder_objectinfo(
                             timeout=skyview_timeout,
                             retry_failed=False  # do not start an infinite loop
                         )
-
 
                 finderfig = plt.figure(figsize=(3,3),dpi=plotdpi)
 
@@ -701,7 +691,7 @@ def _pkl_finder_objectinfo(
 
                 finderb64 = None
 
-        except Exception as e:
+        except Exception:
 
             LOGEXCEPTION('could not fetch a DSS stamp for this '
                          'object %s using coords (%.3f,%.3f)' %
@@ -738,7 +728,6 @@ def _pkl_finder_objectinfo(
             objectinfo['objectid'] = objectid
             LOGWARNING('no objectid found in objectinfo dict, '
                        'making up a random one: %s')
-
 
         # get the neighbor features and GAIA info
         nbrfeat = neighbor_gaia_features(
@@ -1113,7 +1102,7 @@ def _pkl_finder_objectinfo(
                               objectinfo['ra'],
                               objectinfo['decl']))
 
-            except Exception as e:
+            except Exception:
 
                 LOGEXCEPTION('could not look up TIC '
                              'information for object: %s '
@@ -1121,7 +1110,6 @@ def _pkl_finder_objectinfo(
                              (objectinfo['objectid'],
                               objectinfo['ra'],
                               objectinfo['decl']))
-
 
         # try to get the object's coord features
         coordfeat = coord_features(objectinfo)
@@ -1214,7 +1202,6 @@ def _pkl_finder_objectinfo(
         }
 
     return checkplotdict
-
 
 
 def _pkl_periodogram(lspinfo,
@@ -1368,7 +1355,6 @@ def _pkl_periodogram(lspinfo,
     return checkplotdict
 
 
-
 def _pkl_magseries_plot(stimes, smags, serrs,
                         plotdpi=100,
                         magsarefluxes=False):
@@ -1473,7 +1459,6 @@ def _pkl_magseries_plot(stimes, smags, serrs,
     }
 
     return checkplotdict
-
 
 
 def _pkl_phased_magseries_plot(
@@ -1675,8 +1660,7 @@ def _pkl_phased_magseries_plot(
             if len(plotvarepoch) != 1:
                 plotvarepoch = plotvarepoch[0]
 
-
-        except Exception as e:
+        except Exception:
 
             LOGERROR('spline fit failed, trying SavGol fit')
 
@@ -1707,7 +1691,7 @@ def _pkl_phased_magseries_plot(
         try:
             thisvarepochlist = varepoch[lspmethodind]
             plotvarepoch = thisvarepochlist[periodind]
-        except Exception as e:
+        except Exception:
             LOGEXCEPTION(
                 "varepoch provided in list form either doesn't match "
                 "the length of nbestperiods from the period-finder "
@@ -1719,7 +1703,6 @@ def _pkl_phased_magseries_plot(
     # the final case is to use the provided varepoch directly
     else:
         plotvarepoch = varepoch
-
 
     if verbose:
         LOGINFO('plotting %s phased LC with period %s: %.6f, epoch: %.5f' %
@@ -1748,7 +1731,6 @@ def _pkl_phased_magseries_plot(
             plotvarepoch
         )
 
-
     # phase the magseries
     phasedlc = phase_magseries(stimes,
                                smags,
@@ -1773,7 +1755,6 @@ def _pkl_phased_magseries_plot(
         binplotphase = None
         binplotmags = None
 
-
     # finally, make the phased LC plot
     plt.plot(plotphase,
              plotmags,
@@ -1790,7 +1771,6 @@ def _pkl_phased_magseries_plot(
                  ms=4.0, ls='None',mew=0,
                  color='#1c1e57',
                  rasterized=True)
-
 
     # if we're making a overplotfit, then plot the fit over the other stuff
     if overplotfit and isinstance(overplotfit, dict):
@@ -1842,7 +1822,6 @@ def _pkl_phased_magseries_plot(
              zorder=0,
              linewidth=1.0,
              linestyle=':')
-
 
     # make the x and y axis labels
     plot_xlabel = 'phase'

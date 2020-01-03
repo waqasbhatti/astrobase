@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # hatlc.py - Waqas Bhatti (wbhatti@astro.princeton.edu) - Jan 2016
 # License: MIT - see LICENSE for the full text.
@@ -123,8 +123,6 @@ https://github.com/waqasbhatti/astrobase-notebooks/blob/master/lightcurve-work.i
 
 '''
 
-from __future__ import print_function
-
 # put this in here because hatlc can be used as a standalone module
 __version__ = '0.4.3'
 
@@ -168,7 +166,6 @@ import os.path
 import os
 import gzip
 import shutil
-import subprocess
 import re
 import sqlite3 as sql
 import json
@@ -421,7 +418,6 @@ def _squeeze(value):
     return re.sub(r"[\x00-\x20]+", " ", value).strip()
 
 
-
 ########################################
 ## SQLITECURVE COMPRESSIION FUNCTIONS ##
 ########################################
@@ -449,7 +445,7 @@ def _pycompress_sqlitecurve(sqlitecurve, force=False):
                 os.remove(sqlitecurve)
                 return outfile
 
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -475,82 +471,9 @@ def _pyuncompress_sqlitecurve(sqlitecurve, force=False):
             if os.path.exists(outfile):
                 return outfile
 
-    except Exception as e:
+    except Exception:
         return None
 
-
-def _gzip_sqlitecurve(sqlitecurve, force=False):
-    '''This just compresses the sqlitecurve in gzip format.
-
-    FIXME: this doesn't work with gzip < 1.6 or non-GNU gzip (probably).
-
-    '''
-
-    # -k to keep the input file just in case something explodes
-    if force:
-        cmd = 'gzip -k -f %s' % sqlitecurve
-    else:
-        cmd = 'gzip -k %s' % sqlitecurve
-
-    try:
-
-        outfile = '%s.gz' % sqlitecurve
-
-        if os.path.exists(outfile) and not force:
-            # get rid of the .sqlite file only
-            os.remove(sqlitecurve)
-            return outfile
-
-        else:
-            subprocess.check_output(cmd, shell=True)
-
-            # check if the output file was successfully created
-            if os.path.exists(outfile):
-                return outfile
-            else:
-                return None
-
-    except subprocess.CalledProcessError:
-        return None
-
-
-
-def _gunzip_sqlitecurve(sqlitecurve):
-    '''This just uncompresses the sqlitecurve in gzip format.
-
-    FIXME: this doesn't work with gzip < 1.6 or non-GNU gzip (probably).
-
-    '''
-
-    # -k to keep the input .gz just in case something explodes
-    cmd = 'gunzip -k %s' % sqlitecurve
-
-    try:
-        subprocess.check_output(cmd, shell=True)
-        return sqlitecurve.replace('.gz','')
-    except subprocess.CalledProcessError:
-        return None
-
-
-
-###############################################
-## DECIDE WHICH COMPRESSION FUNCTIONS TO USE ##
-###############################################
-
-# disable these because they're super loud and annoying
-# try:
-#     GZIPTEST = subprocess.check_output(
-#         'gzip --version',
-#         shell=True
-#     ).decode().split('\n')[0].split()[-1]
-#     GZIPTEST = float(GZIPTEST)
-#     if GZIPTEST and GZIPTEST > 1.5:
-#         compress_sqlitecurve = gzip_sqlitecurve
-#         uncompress_sqlitecurve = gunzip_sqlitecurve
-#     else:
-#         compress_sqlitecurve = pycompress_sqlitecurve
-#         uncompress_sqlitecurve = pyuncompress_sqlitecurve
-# except:
 
 _compress_sqlitecurve = _pycompress_sqlitecurve
 _uncompress_sqlitecurve = _pyuncompress_sqlitecurve
@@ -589,7 +512,7 @@ def _validate_sqlitecurve_filters(filterstring, lccolumns):
     for x in stringelems:
         try:
             float(x)
-        except ValueError as e:
+        except ValueError:
             stringwords.append(x)
 
     # get rid of everything within quotes
@@ -618,7 +541,6 @@ def _validate_sqlitecurve_filters(filterstring, lccolumns):
 
     else:
         return filterstring
-
 
 
 def read_and_filter_sqlitecurve(lcfile,
@@ -720,7 +642,7 @@ def read_and_filter_sqlitecurve(lcfile,
         filterinfo = cur.fetchall()
 
         # validate the requested columns
-        if columns and all([x in lccols.split(',') for x in columns]):
+        if columns and all(x in lccols.split(',') for x in columns):
             LOGINFO('retrieving columns %s' % columns)
             proceed = True
         elif columns is None:
@@ -753,9 +675,7 @@ def read_and_filter_sqlitecurve(lcfile,
                   'filters':filterinfo}
 
         # validate the SQL filters for this LC
-        if ((sqlfilters is not None) and
-            (isinstance(sqlfilters,str) or
-             isinstance(sqlfilters, unicode))):
+        if ((sqlfilters is not None) and isinstance(sqlfilters,str)):
 
             # give the validator the sqlfilters string and a list of lccols in
             # the lightcurve
@@ -829,14 +749,13 @@ def read_and_filter_sqlitecurve(lcfile,
         if '.gz' in lcfile[-4:] and lcf:
             _compress_sqlitecurve(lcf, force=forcerecompress)
 
-
         # return ndarrays if that's set
         if returnarrays:
             for column in lcdict['columns']:
                 lcdict[column] = np.array([x if x is not None else np.nan
                                            for x in lcdict[column]])
 
-    except Exception as e:
+    except Exception:
 
         if not quiet:
             LOGEXCEPTION('could not open sqlitecurve %s' % lcfile)
@@ -946,7 +865,6 @@ def describe(lcdict, returndesc=False, offsetwith=None):
     if 'lcformat' in lcdict and 'lcc-csv' in lcdict['lcformat'].lower():
         return describe_lcc_csv(lcdict, returndesc=returndesc)
 
-
     # figure out the columndefs part of the header string
     columndefs = []
 
@@ -977,7 +895,6 @@ def describe(lcdict, returndesc=False, offsetwith=None):
         filterdefs.append(filterdefstr)
 
     filterdefs = '\n'.join(filterdefs)
-
 
     # figure out the apertures
     aperturedefs = []
@@ -1037,7 +954,6 @@ def describe(lcdict, returndesc=False, offsetwith=None):
         return description
 
 
-
 ######################################
 ## READING CSV LIGHTCURVES HATLC V2 ##
 ######################################
@@ -1052,14 +968,13 @@ def _smartcast(castee, caster, subval=None):
 
     try:
         return caster(castee)
-    except Exception as e:
+    except Exception:
         if caster is float or caster is int:
             return nan
         elif caster is str:
             return ''
         else:
             return subval
-
 
 
 # these are the keys used in the metadata section of the CSV LC
@@ -1084,7 +999,6 @@ METAKEYS = {'objectid':str,
             'sdssg':float,
             'sdssr':float,
             'sdssi':float}
-
 
 
 def _parse_csv_header(header):
@@ -1156,11 +1070,10 @@ def _parse_csv_header(header):
                 # put the key-val into the dict
                 metadict[key.strip()] = val
 
-            except Exception as e:
+            except Exception:
 
                 LOGWARNING('could not understand header element "%s",'
                            ' skipped.' % kvelem)
-
 
     # get the camera filters
     metadict['filters'] = []
@@ -1185,7 +1098,6 @@ def _parse_csv_header(header):
         metadict['columns'].append(colname)
 
     return metadict
-
 
 
 ##################################
@@ -1215,7 +1127,6 @@ def _parse_csv_header_lcc_csv_v1(headerlines):
     columns = json.loads(columns)
 
     return metadata, columns, separator
-
 
 
 def read_lcc_csvlc(lcfile):
@@ -1299,7 +1210,6 @@ def read_lcc_csvlc(lcfile):
     return lcdict
 
 
-
 def describe_lcc_csv(lcdict, returndesc=False):
     '''
     This describes the LCC CSV format light curve file.
@@ -1349,9 +1259,6 @@ def describe_lcc_csv(lcdict, returndesc=False):
                                    coldefs[ck]['dtype'],
                                    coldefs[ck]['desc']))
 
-
-
-
         desc = LCC_CSVLC_DESCTEMPLATE.format(
             objectid=lcdict['objectid'],
             metadata_desc='\n'.join(metadata_lines),
@@ -1367,7 +1274,6 @@ def describe_lcc_csv(lcdict, returndesc=False):
     else:
         LOGERROR("this lcdict is not from an LCC CSV, can't figure it out...")
         return None
-
 
 
 #####################################
@@ -1410,7 +1316,6 @@ def read_csvlc(lcfile):
     else:
         LOGINFO('reading HATLC: %s' % lcfile)
         infd = open(lcfile,'rb')
-
 
     # this transparently reads LCC CSVLCs
     lcformat_check = infd.read(12).decode()
@@ -1457,7 +1362,6 @@ def read_csvlc(lcfile):
             continue
 
     return lcdict
-
 
 
 ##########################
@@ -1507,7 +1411,6 @@ def find_lc_timegroups(lctimes, mingap=4.0):
             else:
                 group_indices.append(slice(group_start_indices[i-1]+1,gindex+1))
 
-
         # at the end, add the slice for the last group to the end of the times
         # array
         group_indices.append(slice(group_start_indices[-1]+1,len(lctimes)))
@@ -1517,9 +1420,7 @@ def find_lc_timegroups(lctimes, mingap=4.0):
     else:
         group_indices = [slice(0,len(lctimes))]
 
-
     return len(group_indices), group_indices
-
 
 
 def normalize_lcdict(lcdict,
@@ -1602,7 +1503,6 @@ def normalize_lcdict(lcdict,
     elif 'objectinfo' in lcdict and 'lcapertures' in lcdict['objectinfo']:
         apertures = sorted(lcdict['objectinfo']['lcapertures'].keys())
 
-
     aimcols = [('aim_%s' % x) for x in apertures if ('aim_%s' % x) in lcdict]
     armcols = [('arm_%s' % x) for x in apertures if ('arm_%s' % x) in lcdict]
     aepcols = [('aep_%s' % x)for x in apertures if ('aep_%s' % x) in lcdict]
@@ -1678,7 +1578,6 @@ def normalize_lcdict(lcdict,
                 LOGWARNING('column %s is all nan, skipping...' % col)
                 continue
 
-
             # now that everything is normalized to 0.0, add the global median
             # offset back to all the mags and write the result back to the dict
             if normto == 'globalmedian':
@@ -1716,7 +1615,6 @@ def normalize_lcdict(lcdict,
     lcdict['lcnormcols'] = lcnormcols
 
     return lcdict
-
 
 
 def normalize_lcdict_byinst(
@@ -1925,7 +1823,6 @@ def normalize_lcdict_byinst(
     return lcdict
 
 
-
 def main():
     '''
     This is called when we're executed from the commandline.
@@ -2029,7 +1926,6 @@ def main():
 
         LOGERROR('unrecognized HATLC file: %s' % filetoread)
         sys.exit(1)
-
 
 
 # we use this to enable command-line cat-like dumping of a HAT light curve

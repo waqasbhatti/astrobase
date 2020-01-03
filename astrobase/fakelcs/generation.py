@@ -104,8 +104,11 @@ from hashlib import md5, sha512
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
+
+
 def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
+
 
 import numpy as np
 import numpy.random as npr
@@ -131,7 +134,6 @@ from ..magnitudes import jhk_to_sdssr
 
 # get the lcformat functions
 from ..lcproc import get_lcformat, _read_pklc
-
 
 
 #############################################
@@ -269,7 +271,6 @@ def generate_transit_lightcurve(
     return modeldict
 
 
-
 def generate_eb_lightcurve(
         times,
         mags=None,
@@ -396,7 +397,6 @@ def generate_eb_lightcurve(
     return modeldict
 
 
-
 def generate_flare_lightcurve(
         times,
         mags=None,
@@ -519,7 +519,6 @@ def generate_flare_lightcurve(
                             'risestdev':risestdev,
                             'decayconst':decayconst}
 
-
     #
     # done with all flares
     #
@@ -539,7 +538,6 @@ def generate_flare_lightcurve(
     }
 
     return modeldict
-
 
 
 def generate_sinusoidal_lightcurve(
@@ -698,7 +696,6 @@ def generate_sinusoidal_lightcurve(
     return modeldict
 
 
-
 def generate_rrab_lightcurve(
         times,
         mags=None,
@@ -773,7 +770,6 @@ def generate_rrab_lightcurve(
                                                magsarefluxes=magsarefluxes)
     modeldict['vartype'] = 'RRab'
     return modeldict
-
 
 
 def generate_rrc_lightcurve(
@@ -1080,7 +1076,6 @@ def generate_lpv_lightcurve(
     return modeldict
 
 
-
 def generate_cepheid_lightcurve(
         times,
         mags=None,
@@ -1157,7 +1152,6 @@ def generate_cepheid_lightcurve(
     return modeldict
 
 
-
 # this maps functions to generate light curves to their vartype codes as put
 # into the make_fakelc_collection function.
 VARTYPE_LCGEN_MAP = {
@@ -1171,7 +1165,6 @@ VARTYPE_LCGEN_MAP = {
     'LPV': generate_lpv_lightcurve,
     'cepheid':generate_cepheid_lightcurve,
 }
-
 
 
 ###############################################
@@ -1273,7 +1266,7 @@ def make_fakelc(lcfile,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -1300,7 +1293,6 @@ def make_fakelc(lcfile,
         'moments':{},
         'origformat':lcformat,
     }
-
 
     # now, get the actual mag of this object and other info and use that to
     # populate the corresponding entries of the fakelcdict objectinfo
@@ -1405,7 +1397,6 @@ def make_fakelc(lcfile,
         fakelcdict['objectinfo']['decl'] = npr.random()*180.0 - 90.0
         fakelcdict['objectinfo']['sdssr'] = npr.random()*8.0 + 8.0
 
-
     #
     # NOW FILL IN THE TIMES, MAGS, ERRS
     #
@@ -1427,7 +1418,6 @@ def make_fakelc(lcfile,
             # be weird and we won't deal with it for now
             if tcind == 0:
                 fakelcdict['objectinfo']['ndet'] = fakelcdict[tcol].size
-
 
     # get the mag columns
     for mcol in magcols:
@@ -1517,7 +1507,6 @@ def make_fakelc(lcfile,
             fakelcdict[mcol] = np.full_like(_dict_get(lcdict, mcolget), 0.0)
             fakelcdict['columns'].append(mcol)
 
-
     # get the err columns
     for mcol, ecol in zip(magcols, errcols):
 
@@ -1600,8 +1589,6 @@ def make_fakelc(lcfile,
             fakelcdict[ecol] = np.full_like(_dict_get(lcdict, ecolget), 0.0)
             fakelcdict['columns'].append(ecol)
 
-
-
     # add the timecols, magcols, errcols to the lcdict
     fakelcdict['timecols'] = timecols
     fakelcdict['magcols'] = magcols
@@ -1623,12 +1610,9 @@ def make_fakelc(lcfile,
             fakelcdict['objectinfo'], fakelcdict['moments'])
 
 
-
-
 ##########################
 ## COLLECTION FUNCTIONS ##
 ##########################
-
 
 def collection_worker(task):
     '''
@@ -1670,11 +1654,10 @@ def collection_worker(task):
 
         return fakelcresults
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('could not process %s into a fakelc' % lcfile)
         return None
-
 
 
 def make_fakelc_collection(lclist,
@@ -1816,7 +1799,7 @@ def make_fakelc_collection(lclist,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -1837,7 +1820,6 @@ def make_fakelc_collection(lclist,
     fakelcdir = os.path.join(simbasedir, 'lightcurves')
     if not os.path.exists(fakelcdir):
         os.makedirs(fakelcdir)
-
 
     # get the magrms relation needed from the pickle or input dict
     if isinstance(magrmsfrom, str) and os.path.exists(magrmsfrom):
@@ -1878,7 +1860,6 @@ def make_fakelc_collection(lclist,
 
             # generate the probability distribution in magbins. this is needed
             # to correctly sample the objects in this population
-            magbins = np.array(xmagrms[magcol]['binned_sdssr_median'])
             bincounts = np.array(xmagrms[magcol]['binned_count'])
             binprobs = bincounts/np.sum(bincounts)
 
@@ -1924,8 +1905,6 @@ def make_fakelc_collection(lclist,
     fmags, fmagmads = [], []
     ferrmeds, ferrmads = [], []
 
-    totalvars = 0
-
     # these are the indices for the variable objects chosen randomly
     isvariableind = npr.randint(0,high=len(fakeresults), size=maxvars)
     isvariable = np.full(len(fakeresults), False, dtype=np.bool)
@@ -1967,7 +1946,6 @@ def make_fakelc_collection(lclist,
             ferrmeds.append([fmoments[x]['median'] for x in errcols])
             ferrmads.append([fmoments[x]['mad'] for x in errcols])
 
-
     # convert to nparrays
     fobjects = np.array(fobjects)
     fpaths = np.array(fpaths)
@@ -2006,7 +1984,6 @@ def make_fakelc_collection(lclist,
     LOGINFO('fake LC info written to: %s' % dboutfname)
 
     return dboutfname
-
 
 
 ########################################################
@@ -2096,7 +2073,6 @@ def add_fakelc_variability(fakelcfile,
                                   lcdict['magcols'],
                                   lcdict['errcols'])
 
-
     # get the correct function to apply variability
     if vartype in VARTYPE_LCGEN_MAP:
         vargenfunc = VARTYPE_LCGEN_MAP[vartype]
@@ -2106,7 +2082,6 @@ def add_fakelc_variability(fakelcfile,
         LOGERROR('unknown variability type: %s, choose from: %s' %
                  (vartype, repr(list(VARTYPE_LCGEN_MAP.keys()))))
         return None
-
 
     # 1. generate the variability, including the overrides if provided we do
     # this outside the loop below to get the period, etc. distributions once
@@ -2135,11 +2110,8 @@ def add_fakelc_variability(fakelcfile,
                       'mags':np.full_like(lcdict[timecols[0]], 0.0),
                       'errs':np.full_like(lcdict[timecols[0]], 0.0)}
 
-
     # now iterate over the time, mag, err columns
-    for tcol, mcol, ecol in zip(timecols, magcols, errcols):
-
-        times, mags, errs = lcdict[tcol], lcdict[mcol], lcdict[ecol]
+    for mcol, ecol in zip(magcols, errcols):
 
         # 2. get the moments for this magcol
         mag_median = lcdict['moments'][mcol]['median']
@@ -2180,7 +2152,6 @@ def add_fakelc_variability(fakelcfile,
         lcdict['actual_varperiod'] = np.nan
         lcdict['actual_varamplitude'] = np.nan
 
-
     # 6. write back, making sure to do it safely
     tempoutf = '%s.%s' % (fakelcfile, md5(npr.bytes(4)).hexdigest()[-8:])
     with open(tempoutf, 'wb') as outfd:
@@ -2205,7 +2176,6 @@ def add_fakelc_variability(fakelcfile,
             'lcfname':fakelcfile,
             'actual_vartype':vartype,
             'actual_varparams':lcdict['actual_varparams']}
-
 
 
 def add_variability_to_fakelc_collection(simbasedir,
@@ -2260,7 +2230,6 @@ def add_variability_to_fakelc_collection(simbasedir,
     with open(infof, 'rb') as infd:
         lcinfo = pickle.load(infd)
 
-
     lclist = lcinfo['lcfpath']
     varflag = lcinfo['isvariable']
     vartypes = lcinfo['vartype']
@@ -2286,7 +2255,6 @@ def add_variability_to_fakelc_collection(simbasedir,
             else:
                 thisoverride_paramdists = None
 
-
             varlc = add_fakelc_variability(
                 lc, thisvartype,
                 override_paramdists=thisoverride_paramdists,
@@ -2306,8 +2274,6 @@ def add_variability_to_fakelc_collection(simbasedir,
             )
             varinfo[varlc['objectid']] = {'params': varlc['actual_varparams'],
                                           'vartype': varlc['actual_vartype']}
-
-
     #
     # done with all objects
     #

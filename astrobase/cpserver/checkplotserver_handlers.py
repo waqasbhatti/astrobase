@@ -14,18 +14,11 @@ These are Tornado handlers for serving checkplots and operating on them.
 
 import os
 import os.path
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
+import pickle
 import base64
 import logging
 import time as utime
-
-try:
-    from cStringIO import StringIO as StrIO
-except Exception as e:
-    from io import BytesIO as StrIO
+from io import BytesIO as StrIO
 
 import numpy as np
 from numpy import ndarray
@@ -38,6 +31,7 @@ from numpy import ndarray
 # - bytes
 # - ndarray
 import json
+
 
 class FrontendEncoder(json.JSONEncoder):
     '''This overrides Python's default JSONEncoder so we can serialize custom
@@ -83,6 +77,7 @@ class FrontendEncoder(json.JSONEncoder):
             return int(obj)
         else:
             return json.JSONEncoder.default(self, obj)
+
 
 # this replaces the default encoder and makes it so Tornado will do the right
 # thing when it converts dicts to JSON when a
@@ -130,7 +125,6 @@ from ..periodbase import smav
 from ..periodbase import spdm
 from ..periodbase import kbls
 from ..periodbase import macf
-
 
 
 #######################
@@ -420,7 +414,6 @@ class IndexHandler(tornado.web.RequestHandler):
         self.readonly = readonly
         self.baseurl = baseurl
 
-
     def get(self):
         '''This handles GET requests to the index page.
 
@@ -457,7 +450,6 @@ class IndexHandler(tornado.web.RequestHandler):
                     baseurl=self.baseurl)
 
 
-
 class CheckplotHandler(tornado.web.RequestHandler):
     '''This handles loading and saving checkplots.
 
@@ -479,7 +471,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
         self.cplistfile = cplistfile
         self.executor = executor
         self.readonly = readonly
-
 
     @gen.coroutine
     def get(self, checkplotfname):
@@ -583,7 +574,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                             nbr_magseries = nbr['magseries']['plot']
                             thisnbrdict['magseries'] = nbr_magseries
 
-                        except Exception as e:
+                        except Exception:
 
                             LOGGER.error(
                                 "could not load magseries plot for "
@@ -602,7 +593,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                                         'epoch':nbr[pfm][0]['epoch']
                                     }
 
-                        except Exception as e:
+                        except Exception:
 
                             LOGGER.error(
                                 "could not load phased LC plots for "
@@ -612,7 +603,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
                             )
 
                         neighbors.append(thisnbrdict)
-
 
                 # load object comments
                 if 'comments' in cpdict:
@@ -679,10 +669,8 @@ class CheckplotHandler(tornado.web.RequestHandler):
                                  'psearch_sigclip':None,
                                  'psearch_timefilters':None}
 
-
                 # FIXME: add in other stuff required by the frontend
                 # - signals
-
 
                 # FIXME: the frontend should load these other things as well
                 # into the various elems on the period-search-tools and
@@ -763,7 +751,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
                             thisval
                         )
 
-
                 # remove nans from varinfo['features']
                 if ('features' in resultdict['result']['varinfo'] and
                     isinstance(resultdict['result']['varinfo']['features'],
@@ -803,7 +790,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
                             resultdict['result']['varinfo']['features'][key] = (
                                 thisval
                             )
-
 
                 # now get the periodograms and phased LCs
                 for key in pfmethods:
@@ -848,7 +834,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
                     else:
                         phasedlc0fit = None
 
-
                     # get the phased LC with 2nd best period
                     if 1 in cpdict[key] and isinstance(cpdict[key][1], dict):
                         phasedlc1plot = cpdict[key][1]['plot']
@@ -885,7 +870,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
                         }
                     else:
                         phasedlc1fit = None
-
 
                     # get the phased LC with 3rd best period
                     if 2 in cpdict[key] and isinstance(cpdict[key][2], dict):
@@ -965,10 +949,8 @@ class CheckplotHandler(tornado.web.RequestHandler):
                               'readonly':self.readonly,
                               'result':None}
 
-
                 self.write(resultdict)
                 self.finish()
-
 
         else:
 
@@ -978,7 +960,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
                           'result':None}
 
             self.write(resultdict)
-
 
     @gen.coroutine
     def post(self, cpfile):
@@ -1092,7 +1073,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
                     else:
                         resultdict['result']['cpfpng'] = ''
 
-
                 self.write(resultdict)
                 self.finish()
 
@@ -1108,7 +1088,7 @@ class CheckplotHandler(tornado.web.RequestHandler):
                 self.finish()
 
         # if something goes wrong, inform the user
-        except Exception as e:
+        except Exception:
 
             LOGGER.exception('could not handle checkplot update for %s: %s' %
                              (self.cpfile, cpcontents))
@@ -1119,7 +1099,6 @@ class CheckplotHandler(tornado.web.RequestHandler):
                           'result':None}
             self.write(resultdict)
             self.finish()
-
 
 
 class CheckplotListHandler(tornado.web.RequestHandler):
@@ -1145,8 +1124,6 @@ class CheckplotListHandler(tornado.web.RequestHandler):
         self.executor = executor
         self.readonly = readonly
 
-
-
     def get(self):
         '''
         This handles GET requests for the current checkplot-list.json file.
@@ -1162,8 +1139,6 @@ class CheckplotListHandler(tornado.web.RequestHandler):
 
         # just returns the current project as JSON
         self.write(self.currentproject)
-
-
 
     def post(self):
         '''This handles POST requests.
@@ -1186,7 +1161,6 @@ class CheckplotListHandler(tornado.web.RequestHandler):
             self.write(resultdict)
             raise tornado.web.Finish()
 
-
         objectid = self.get_argument('objectid', None)
         changes = self.get_argument('changes',None)
 
@@ -1203,7 +1177,6 @@ class CheckplotListHandler(tornado.web.RequestHandler):
 
             self.write(resultdict)
             raise tornado.web.Finish()
-
 
         # otherwise, update the checkplot list JSON
         objectid = xhtml_escape(objectid)
@@ -1233,7 +1206,6 @@ class CheckplotListHandler(tornado.web.RequestHandler):
         self.finish()
 
 
-
 class LCToolHandler(tornado.web.RequestHandler):
     '''This handles dispatching light curve analysis tasks.
 
@@ -1258,7 +1230,6 @@ class LCToolHandler(tornado.web.RequestHandler):
         self.cplistfile = cplistfile
         self.executor = executor
         self.readonly = readonly
-
 
     @gen.coroutine
     def get(self, cpfile):
@@ -1465,7 +1436,7 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                                 lctoolkwargs.update({xkwarg:wbkwarg})
 
-                        except Exception as e:
+                        except Exception:
 
                             LOGGER.exception('lctool %s, kwarg %s '
                                              'will not work' %
@@ -1506,7 +1477,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                     self.write(resultdict)
                     raise tornado.web.Finish()
 
-
                 ##############################################
                 ## NOW WE'RE READY TO ACTUALLY DO SOMETHING ##
                 ##############################################
@@ -1543,7 +1513,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                         }
                     }
 
-
                 # if we're not forcing a rerun from the original checkplot dict
                 if not forcereload:
 
@@ -1561,7 +1530,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                                                cpdict['magseries']['mags'],
                                                cpdict['magseries']['errs'])
                     LOGGER.info('forcereload = True')
-
 
                 # collect the args
                 for xarg, xargtype in zip(CPTOOLMAP[lctool]['args'],
@@ -1603,7 +1571,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                             elif xargtype is float and xarg == 'varepoch':
                                 try:
                                     wbarg = xargtype(wbarg)
-                                except Exception as e:
+                                except Exception:
                                     wbarg = None
                             # usual casting for other types
                             else:
@@ -1611,7 +1579,7 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                             lctoolargs.append(wbarg)
 
-                        except Exception as e:
+                        except Exception:
 
                             LOGGER.exception('lctool %s, arg %s '
                                              'will not work' %
@@ -1626,7 +1594,6 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                             self.write(resultdict)
                             raise tornado.web.Finish()
-
 
                 LOGGER.info(lctool)
                 LOGGER.info(lctoolargs)
@@ -1656,7 +1623,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                 # - if the above scheme actually yields so we remain async
                 # - if the Future object supports cancellation
                 # - if the Future object that isn't resolved actually works
-
 
                 # get the objectid. we'll send this along with every
                 # result. this should handle the case of the current objectid
@@ -1805,7 +1771,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     elif (len(thisfilt) == 3 and
                                           thisfilt[0].strip() == 'not'):
 
-
                                         filt_lo = float(thisfilt[1])
                                         filt_hi = float(thisfilt[2])
 
@@ -1819,7 +1784,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     else:
                                         continue
 
-                                except Exception as e:
+                                except Exception:
                                     continue
 
                             # finally, apply the filters if applicable
@@ -1832,7 +1797,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 lctoolargs[0] = wtimes[filterind]
                                 lctoolargs[1] = wmags[filterind]
                                 lctoolargs[2] = werrs[filterind]
-
 
                         # see if the lcmagfilters are set
                         if lctoolkwargs['lcmagfilters']:
@@ -1871,7 +1835,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     elif (len(thisfilt) == 3 and
                                           thisfilt[0].strip() == 'not'):
 
-
                                         filt_lo = float(thisfilt[1])
                                         filt_hi = float(thisfilt[2])
 
@@ -1883,7 +1846,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     else:
                                         continue
 
-                                except Exception as e:
+                                except Exception:
                                     continue
 
                             # finally, apply the filters if applicable
@@ -1929,8 +1892,6 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                         # generate the phased LCs. we show these in the frontend
                         # along with the periodogram.
-
-
                         phasedlcargs0 = (None,
                                          lspmethod,
                                          -1,
@@ -1951,7 +1912,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                                              'min')
                         else:
                             phasedlcargs1 = None
-
 
                         if len(nbestperiods) > 2:
                             phasedlcargs2 = (None,
@@ -1998,7 +1958,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                         else:
                             phasedlc2 = None
 
-
                         # save these to the tempcpdict
                         # save the pickle only if readonly is not true
                         if not self.readonly:
@@ -2020,7 +1979,6 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                             if phasedlc2 is not None:
                                 tempcpdict[lspmethod][2] = phasedlc2
-
 
                             savekwargs = {
                                 'outfile':tempfpath,
@@ -2103,11 +2061,9 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 'epoch':phasedlc2epoch,
                             }
 
-
                         # return to frontend
                         self.write(resultdict)
                         self.finish()
-
 
                 # if the lctool is a call to the phased LC plot itself
                 # this requires lots of parameters
@@ -2181,7 +2137,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                                                     lctoolargs[4],
                                                     lctoolargs[5])
 
-
                         #
                         # process the LC filters now
                         #
@@ -2224,7 +2179,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     elif (len(thisfilt) == 3 and
                                           thisfilt[0].strip() == 'not'):
 
-
                                         filt_lo = float(thisfilt[1])
                                         filt_hi = float(thisfilt[2])
 
@@ -2238,7 +2192,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     else:
                                         continue
 
-                                except Exception as e:
+                                except Exception:
                                     continue
 
                             # finally, apply the filters if applicable
@@ -2251,7 +2205,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 stimes = wtimes[filterind]
                                 smags = wmags[filterind]
                                 serrs = werrs[filterind]
-
 
                         # see if the lcmagfilters are set
                         if lctoolkwargs['lcmagfilters']:
@@ -2288,7 +2241,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     elif (len(thisfilt) == 3 and
                                           thisfilt[0].strip() == 'not'):
 
-
                                         filt_lo = float(thisfilt[1])
                                         filt_hi = float(thisfilt[2])
 
@@ -2300,7 +2252,7 @@ class LCToolHandler(tornado.web.RequestHandler):
                                     else:
                                         continue
 
-                                except Exception as e:
+                                except Exception:
                                     continue
 
                             # finally, apply the filters if applicable
@@ -2318,7 +2270,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                         # since the pfmethod doesn't know about this
                         del lctoolkwargs['lctimefilters']
                         del lctoolkwargs['lcmagfilters']
-
 
                         # if the varepoch is set to None, try to get the
                         # minimum-light epoch using a spline fit
@@ -2346,9 +2297,9 @@ class LCToolHandler(tornado.web.RequestHandler):
                                         spfit['fitinfo']['fitepoch'][0]
                                     )
 
-                        # if the spline fit fails, use the minimum of times as
-                        # epoch as usual
-                            except Exception as e:
+                            # if the spline fit fails, use the minimum of times
+                            # as epoch as usual
+                            except Exception:
 
                                 LOGGER.exception(
                                     'spline fit failed, '
@@ -2400,7 +2351,6 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                                 tempcpdict[lspmethod] = {periodind: funcresults}
 
-
                             savekwargs = {
                                 'outfile':tempfpath,
                                 'protocol':pickle.HIGHEST_PROTOCOL
@@ -2442,7 +2392,6 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                         self.write(resultdict)
                         self.finish()
-
 
                 # if the lctool is var-varfeatures
                 elif lctool == 'var-varfeatures':
@@ -2517,7 +2466,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 tempcpdict['varinfo'] = {'varfeatures':
                                                          funcresults}
 
-
                             savekwargs = {
                                 'outfile':tempfpath,
                                 'protocol':pickle.HIGHEST_PROTOCOL
@@ -2558,7 +2506,6 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                         self.write(resultdict)
                         self.finish()
-
 
                 # if the lctool is var-prewhiten or var-masksig
                 elif lctool in ('var-prewhiten','var-masksig'):
@@ -2646,7 +2593,6 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                                 tempcpdict[key1] = {key2: funcresults}
 
-
                             savekwargs = {
                                 'outfile':tempfpath,
                                 'protocol':pickle.HIGHEST_PROTOCOL
@@ -2691,7 +2637,6 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                         self.write(resultdict)
                         self.finish()
-
 
                 # if the lctool is a lcfit method
                 elif lctool in ('lcfit-fourier',
@@ -2823,7 +2768,6 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                                 tempcpdict[key1] = {key2: phasedlc}
 
-
                             savekwargs = {
                                 'outfile':tempfpath,
                                 'protocol':pickle.HIGHEST_PROTOCOL
@@ -2866,7 +2810,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                                 funcresults['fitinfo']['finalparams']
                             )
 
-
                         resultdict['status'] = 'success'
                         resultdict['message'] = (
                             'new results for %s' %
@@ -2881,7 +2824,6 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                         self.write(resultdict)
                         self.finish()
-
 
                 # if this is the special lcfit subtract tool
                 elif lctool == 'lcfit-subtract':
@@ -2898,7 +2840,6 @@ class LCToolHandler(tornado.web.RequestHandler):
                     # these new cptimes, cpmags, cperrs
 
                     # return this plot
-
 
                 # if this is the special full reset tool
                 elif lctool == 'lctool-reset':
@@ -2923,7 +2864,6 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                     self.write(resultdict)
                     self.finish()
-
 
                 # if this is the special load results tool
                 elif lctool == 'lctool-results':
@@ -2966,7 +2906,6 @@ class LCToolHandler(tornado.web.RequestHandler):
 
                         pass
 
-
                 # otherwise, this is an unrecognized lctool
                 else:
 
@@ -3004,8 +2943,6 @@ class LCToolHandler(tornado.web.RequestHandler):
             self.write(resultdict)
             raise tornado.web.Finish()
 
-
-
     def post(self, cpfile):
         '''This handles a POST request.
 
@@ -3022,7 +2959,6 @@ class LCToolHandler(tornado.web.RequestHandler):
         actual checkplot pickle and then remove that file.
 
         '''
-
 
 
 ###########################################################
@@ -3051,7 +2987,6 @@ def _time_independent_equals(a, b):
     return result == 0
 
 
-
 class StandaloneHandler(tornado.web.RequestHandler):
     '''This handles loading checkplots into JSON and sending that back.
 
@@ -3069,8 +3004,6 @@ class StandaloneHandler(tornado.web.RequestHandler):
 
         self.executor = executor
         self.secret = secret
-
-
 
     @gen.coroutine
     def get(self):
@@ -3114,7 +3047,6 @@ class StandaloneHandler(tornado.web.RequestHandler):
                 self.write(retdict)
                 raise tornado.web.Finish()
 
-
         #
         # actually start work here
         #
@@ -3129,7 +3061,7 @@ class StandaloneHandler(tornado.web.RequestHandler):
                     base64.b64decode(url_unescape(checkplotfname))
                 )
 
-            except Exception as e:
+            except Exception:
                 msg = 'could not decode the incoming payload'
                 LOGGER.error(msg)
                 resultdict = {'status':'error',
@@ -3139,7 +3071,6 @@ class StandaloneHandler(tornado.web.RequestHandler):
                 self.set_status(400)
                 self.write(resultdict)
                 raise tornado.web.Finish()
-
 
             LOGGER.info('loading %s...' % cpfpath)
 
@@ -3224,7 +3155,7 @@ class StandaloneHandler(tornado.web.RequestHandler):
                         nbr_magseries = nbr['magseries']['plot']
                         thisnbrdict['magseries'] = nbr_magseries
 
-                    except Exception as e:
+                    except Exception:
 
                         LOGGER.error(
                             "could not load magseries plot for "
@@ -3243,7 +3174,7 @@ class StandaloneHandler(tornado.web.RequestHandler):
                                     'epoch':nbr[pfm][0]['epoch']
                                 }
 
-                    except Exception as e:
+                    except Exception:
 
                         LOGGER.error(
                             "could not load phased LC plots for "
@@ -3253,7 +3184,6 @@ class StandaloneHandler(tornado.web.RequestHandler):
                         )
 
                     neighbors.append(thisnbrdict)
-
 
             # load object comments
             if 'comments' in cpdict:
@@ -3310,7 +3240,6 @@ class StandaloneHandler(tornado.web.RequestHandler):
                 uifilters = {'psearch_magfilters':None,
                              'psearch_sigclip':None,
                              'psearch_timefilters':None}
-
 
             # this is the initial dict
             resultdict = {
@@ -3379,7 +3308,6 @@ class StandaloneHandler(tornado.web.RequestHandler):
                 else:
                     phasedlc0fit = None
 
-
                 # get the phased LC with 2nd best period
                 if 1 in cpdict[key] and isinstance(cpdict[key][1], dict):
                     phasedlc1plot = cpdict[key][1]['plot']
@@ -3416,7 +3344,6 @@ class StandaloneHandler(tornado.web.RequestHandler):
                     }
                 else:
                     phasedlc1fit = None
-
 
                 # get the phased LC with 3rd best period
                 if 2 in cpdict[key] and isinstance(cpdict[key][2], dict):

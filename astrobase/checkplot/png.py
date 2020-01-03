@@ -57,7 +57,6 @@ LOGERROR = LOGGER.error
 LOGEXCEPTION = LOGGER.exception
 
 
-
 #############
 ## IMPORTS ##
 #############
@@ -67,14 +66,14 @@ import os.path
 import re
 import gzip
 
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
+import pickle
 
-from numpy import isfinite as npisfinite, \
-    min as npmin, max as npmax, abs as npabs, ravel as npravel, nan as npnan, \
+from numpy import (
+    isfinite as npisfinite,
+    min as npmin, max as npmax,
+    abs as npabs, ravel as npravel, nan as npnan,
     percentile as nppercentile
+)
 
 # we're going to plot using Agg only
 import matplotlib
@@ -97,7 +96,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
-
 ###################
 ## LOCAL IMPORTS ##
 ###################
@@ -112,7 +110,6 @@ from ..plotbase import (
     skyview_stamp, PLOTYLABELS, METHODLABELS, METHODSHORTLABELS
 )
 from ..coordutils import total_proper_motion, reduced_proper_motion
-
 
 
 #######################
@@ -200,7 +197,6 @@ def _make_periodogram(axes,
               linewidth=1.0,
               linestyle=':')
 
-
     # if objectinfo is present, get things from it
     if (objectinfo and isinstance(objectinfo, dict) and
         ('objectid' in objectinfo or 'hatid' in objectinfo) and
@@ -216,7 +212,6 @@ def _make_periodogram(axes,
             LOGINFO('adding in object information and '
                     'finder chart for %s at RA: %.3f, DEC: %.3f' %
                     (objectid, objectinfo['ra'], objectinfo['decl']))
-
 
         # calculate colors
         if ('bmag' in objectinfo and 'vmag' in objectinfo and
@@ -238,7 +233,6 @@ def _make_periodogram(axes,
             # Gaia data input
             teff_val = objectinfo['teff']
             gmag = objectinfo['gmag']
-
 
         # bump the ylim of the LSP plot so that the overplotted finder and
         # objectinfo can fit in this axes plot
@@ -275,7 +269,7 @@ def _make_periodogram(axes,
                                      color='orange', fill=False)
                 inset.add_artist(circle2)
 
-        except OSError as e:
+        except OSError:
 
             LOGERROR('downloaded FITS appears to be corrupt, retrying...')
 
@@ -299,8 +293,7 @@ def _make_periodogram(axes,
             inset.axvline(x=150,ymin=0.375,ymax=0.45,linewidth=2.0,color='b')
             inset.axhline(y=150,xmin=0.375,xmax=0.45,linewidth=2.0,color='b')
 
-
-        except Exception as e:
+        except Exception:
             LOGEXCEPTION('could not fetch a DSS stamp for this '
                          'object %s using coords (%.3f,%.3f)' %
                          (objectid, objectinfo['ra'], objectinfo['decl']))
@@ -371,7 +364,7 @@ def _make_periodogram(axes,
                               gmag, int(teff_val)),
                           ha='left',va='center',transform=axes.transAxes,
                           fontsize=18.0)
-            except Exception as e:
+            except Exception:
                 axes.text(0.05,0.87,
                           'G and Teff failed',
                           ha='left',va='center',transform=axes.transAxes,
@@ -385,7 +378,7 @@ def _make_periodogram(axes,
                 pm = total_proper_motion(objectinfo['pmra'],
                                          objectinfo['pmdecl'],
                                          objectinfo['decl'])
-            except Exception as e:
+            except Exception:
                 pm = npnan
 
             axes.text(0.05,0.67,r'$\mu$ = %.2f mas yr$^{-1}$' % pm,
@@ -400,7 +393,6 @@ def _make_periodogram(axes,
             axes.text(0.05,0.63,'$H_J$ = %.2f' % rpm,
                       ha='left',va='center',transform=axes.transAxes,
                       fontsize=18.0)
-
 
 
 def _make_magseries_plot(axes,
@@ -473,7 +465,6 @@ def _make_magseries_plot(axes,
     # value of the yaxis tick)
     axes.get_yaxis().get_major_formatter().set_useOffset(False)
     axes.get_xaxis().get_major_formatter().set_useOffset(False)
-
 
 
 def _make_phased_magseries_plot(axes,
@@ -636,7 +627,7 @@ def _make_phased_magseries_plot(axes,
             if len(plotvarepoch) != 1:
                 plotvarepoch = varepoch[0]
 
-        except Exception as e:
+        except Exception:
 
             LOGERROR('spline fit failed, trying SavGol fit')
 
@@ -661,7 +652,6 @@ def _make_phased_magseries_plot(axes,
 
                 plotvarepoch = npmin(stimes)
 
-
     elif isinstance(varepoch, str) and 't_fluxpercentile' in varepoch:
 
         # assume format of "percentile_N"
@@ -677,7 +667,6 @@ def _make_phased_magseries_plot(axes,
 
         plotvarepoch = stimes[nearest_index]
 
-
     elif isinstance(varepoch, list):
 
         try:
@@ -690,7 +679,7 @@ def _make_phased_magseries_plot(axes,
             else:
                 plotvarepoch = varepoch[periodind]
 
-        except Exception as e:
+        except Exception:
             LOGEXCEPTION(
                 "varepoch provided in list form either doesn't match "
                 "the length of nbestperiods from the period-finder "
@@ -726,7 +715,6 @@ def _make_phased_magseries_plot(axes,
                                           minbinelems=minbinelems)
         binplotphase = binphasedlc['binnedphases']
         binplotmags = binphasedlc['binnedmags']
-
 
     # finally, make the phased LC plot
     axes.plot(plotphase,
@@ -827,7 +815,6 @@ def _make_phased_magseries_plot(axes,
             transform=axes.transAxes
         )
 
-
     # if we're making an inset plot showing the full range
     if (plotxlim and isinstance(plotxlim, (list,tuple)) and
         len(plotxlim) == 2 and xliminsetmode is True):
@@ -879,7 +866,6 @@ def _make_phased_magseries_plot(axes,
         # don't show axes labels or ticks
         inset.set_xticks([])
         inset.set_yticks([])
-
 
 
 ############################################
@@ -1151,7 +1137,6 @@ def checkplot_png(lspinfo,
         LOGERROR('could not understand lspinfo for this object, skipping...')
         return None
 
-
     if not npisfinite(bestperiod):
 
         LOGWARNING('no best period found for this object, skipping...')
@@ -1191,7 +1176,6 @@ def checkplot_png(lspinfo,
                                             magsarefluxes=magsarefluxes,
                                             mingap=normmingap)
 
-
     # make sure we have some lightcurve points to plot after sigclip
     if len(stimes) >= 50:
 
@@ -1201,7 +1185,6 @@ def checkplot_png(lspinfo,
 
         _make_magseries_plot(axes[1], stimes, smags, serrs,
                              magsarefluxes=magsarefluxes)
-
 
         ###########################
         ### NOW PLOT PHASED LCS ###
@@ -1277,7 +1260,6 @@ def checkplot_png(lspinfo,
         if verbose:
             LOGINFO('checkplot done -> %s' % plotfpath)
         return plotfpath
-
 
 
 def twolsp_checkplot_png(lspinfo1,
@@ -1565,7 +1547,6 @@ def twolsp_checkplot_png(lspinfo1,
             with open(lspinfo1,'rb') as infd:
                 lspinfo1 = pickle.load(infd)
 
-
     # get the second LSP from a pickle file transparently
     if isinstance(lspinfo2,str) and os.path.exists(lspinfo2):
         if verbose:
@@ -1577,7 +1558,6 @@ def twolsp_checkplot_png(lspinfo1,
         else:
             with open(lspinfo2,'rb') as infd:
                 lspinfo2 = pickle.load(infd)
-
 
     # get the things to plot out of the data
     if ('periods' in lspinfo1 and 'periods' in lspinfo2 and
@@ -1597,7 +1577,6 @@ def twolsp_checkplot_png(lspinfo1,
         LOGERROR('could not understand lspinfo1 or lspinfo2 '
                  'for this object, skipping...')
         return None
-
 
     if (not npisfinite(bestperiod1)) or (not npisfinite(bestperiod2)):
 
@@ -1646,7 +1625,6 @@ def twolsp_checkplot_png(lspinfo1,
                                             magsarefluxes=magsarefluxes,
                                             mingap=normmingap)
 
-
     # make sure we have some lightcurve points to plot after sigclip
     if len(stimes) >= 50:
 
@@ -1668,7 +1646,6 @@ def twolsp_checkplot_png(lspinfo1,
         for periodind, varperiod, plotaxes in zip([0,1,2],
                                                   lspbestperiods1[:3],
                                                   [axes[3], axes[4], axes[5]]):
-
 
             # make sure the best period phased LC plot stands out
             if periodind == 0 and bestperiodhighlight:
@@ -1700,7 +1677,6 @@ def twolsp_checkplot_png(lspinfo1,
         for periodind, varperiod, plotaxes in zip([0,1,2],
                                                   lspbestperiods2[:3],
                                                   [axes[6], axes[7], axes[8]]):
-
 
             # make sure the best period phased LC plot stands out
             if periodind == 0 and bestperiodhighlight:

@@ -54,8 +54,11 @@ from math import sqrt as msqrt
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
+
+
 def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
+
 
 import numpy as np
 import numpy.random as npr
@@ -107,7 +110,6 @@ def read_fakelc(fakelcfile):
             lcdict = pickle.load(infd, encoding='latin1')
 
     return lcdict
-
 
 
 #######################
@@ -186,7 +188,6 @@ def get_varfeatures(simbasedir,
     return os.path.join(simbasedir,'fakelc-varfeatures.pkl')
 
 
-
 def precision(ntp, nfp):
     '''
     This calculates precision.
@@ -216,7 +217,6 @@ def precision(ntp, nfp):
         return np.nan
 
 
-
 def recall(ntp, nfn):
     '''
     This calculates recall.
@@ -244,7 +244,6 @@ def recall(ntp, nfn):
         return ntp/(ntp+nfn)
     else:
         return np.nan
-
 
 
 def matthews_correl_coeff(ntp, ntn, nfp, nfn):
@@ -283,7 +282,6 @@ def matthews_correl_coeff(ntp, ntn, nfp, nfn):
         return mcc_top/mcc_bot
     else:
         return np.nan
-
 
 
 #######################################
@@ -338,7 +336,6 @@ def get_recovered_variables_for_magbin(simbasedir,
         the full arrays used to calculate the statistics.
 
     '''
-
 
     # get the info from the simbasedir
     with open(os.path.join(simbasedir, 'fakelcs-info.pkl'),'rb') as infd:
@@ -418,7 +415,6 @@ def get_recovered_variables_for_magbin(simbasedir,
         binned_actualvars.append(thisbin_actualvars)
         binned_actualnotvars.append(thisbin_actualnotvars)
 
-
     # this is the output dict
     recdict = {
         'simbasedir':simbasedir,
@@ -431,7 +427,6 @@ def get_recovered_variables_for_magbin(simbasedir,
         'iqr_min_stdev':iqr_stdev_min,
         'magbinmedian':magbinmedian,
     }
-
 
     # now, for each magcol, find the magbin corresponding to magbinmedian, and
     # get its stats
@@ -480,7 +475,6 @@ def get_recovered_variables_for_magbin(simbasedir,
                                          stet_falsepositives.size,
                                          stet_falsenegatives.size)
 
-
         # inveta recovered variables in this magbin
         inveta_recoveredvars = varthresh[magcol][
             'binned_objectids_thresh_inveta'
@@ -509,7 +503,6 @@ def get_recovered_variables_for_magbin(simbasedir,
                                            inveta_falsepositives.size,
                                            inveta_falsenegatives.size)
 
-
         # iqr recovered variables in this magbin
         iqr_recoveredvars = varthresh[magcol][
             'binned_objectids_thresh_iqr'
@@ -537,7 +530,6 @@ def get_recovered_variables_for_magbin(simbasedir,
                                         iqr_truenegatives.size,
                                         iqr_falsepositives.size,
                                         iqr_falsenegatives.size)
-
 
         # calculate the items missed by one method but found by the other
         # methods
@@ -649,13 +641,11 @@ def get_recovered_variables_for_magbin(simbasedir,
                 'magbinind':magbinind,
             }
 
-
     #
     # done with per magcol
     #
 
     return recdict
-
 
 
 def magbin_varind_gridsearch_worker(task):
@@ -674,10 +664,9 @@ def magbin_varind_gridsearch_worker(task):
                                                  iqr_stdev_min=gridpoint[2],
                                                  statsonly=True)
         return res
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION('failed to get info for %s' % gridpoint)
         return None
-
 
 
 def variable_index_gridsearch_magbin(simbasedir,
@@ -805,7 +794,6 @@ def variable_index_gridsearch_magbin(simbasedir,
                     'simbasedir':os.path.abspath(simbasedir),
                     'recovery':[]}
 
-
     # set up the pool
     pool = mp.Pool(ngridworkers)
 
@@ -822,14 +810,12 @@ def variable_index_gridsearch_magbin(simbasedir,
     pool.close()
     pool.join()
 
-
     LOGINFO('done.')
     with open(os.path.join(simbasedir,
                            'fakevar-recovery-per-magbin.pkl'),'wb') as outfd:
         pickle.dump(grid_results,outfd,pickle.HIGHEST_PROTOCOL)
 
     return grid_results
-
 
 
 def plot_varind_gridsearch_magbin_results(gridsearch_results):
@@ -868,8 +854,6 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
         LOGERROR('could not understand the input '
                  'variable index grid-search result dict/pickle')
         return None
-
-
 
     plotres = {'simbasedir':gridresults['simbasedir']}
 
@@ -987,8 +971,7 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
                     :gridresults['inveta_grid'].size
                 ]
 
-
-            fig = plt.figure(figsize=(6.4*5, 4.8*3))
+            plt.figure(figsize=(6.4*5, 4.8*3))
 
             # FIRST ROW: stetson J plot
 
@@ -1164,7 +1147,6 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
                 plt.xticks([])
                 plt.yticks([])
 
-
             # THIRD ROW: inveta plots
 
             plt.subplot(3,5,11)
@@ -1252,7 +1234,6 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
                 plt.xticks([])
                 plt.yticks([])
 
-
             plt.subplots_adjust(hspace=0.25,wspace=0.25)
 
             plt.suptitle('magcol: %s, magbin: %.3f' % (magcol, magbinmedian))
@@ -1270,7 +1251,6 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
 
             plt.savefig(gridplotf,dpi=100,bbox_inches='tight')
             plt.close('all')
-
 
             # get the best values of MCC, recall, precision and their associated
             # stet, inveta
@@ -1292,7 +1272,6 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
                 gridresults['stetson_grid'][stet_recall_maxind]
             )
 
-
             inveta_mcc_maxind = np.where(inveta_mcc == np.max(inveta_mcc))
             inveta_precision_maxind = np.where(
                 inveta_precision == np.max(inveta_precision)
@@ -1313,7 +1292,6 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
                 inveta_recall_maxind
             ]
 
-
             iqr_mcc_maxind = np.where(iqr_mcc == np.max(iqr_mcc))
             iqr_precision_maxind = np.where(
                 iqr_precision == np.max(iqr_precision)
@@ -1333,7 +1311,6 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
             iqr_with_best_recall = gridresults['iqr_grid'][
                 iqr_recall_maxind
             ]
-
 
             plotres[magcol][magbinmedian] = {
                 # stetson
@@ -1402,13 +1379,11 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
             else:
                 plotres[magcol]['best_iqr'].append(np.nan)
 
-
     # write the plotresults to a pickle
     plotrespicklef = os.path.join(simbasedir,
                                   'varindex-gridsearch-magbin-results.pkl')
     with open(plotrespicklef, 'wb') as outfd:
         pickle.dump(plotres, outfd, pickle.HIGHEST_PROTOCOL)
-
 
     # recommend the values of stetson J and inveta to use
     for magcol in gridresults['magcols']:
@@ -1425,10 +1400,7 @@ def plot_varind_gridsearch_magbin_results(gridsearch_results):
                                                       inveta,
                                                       stet,
                                                       iqr))
-
-
     return plotres
-
 
 
 ################################
@@ -1565,14 +1537,13 @@ def run_periodfinding(simbasedir,
                                       getblssnr=getblssnr,
                                       sigclip=sigclip,
                                       nperiodworkers=nperiodworkers,
-                                       ncontrolworkers=ncontrolworkers)
+                                      ncontrolworkers=ncontrolworkers)
 
     with open(os.path.join(simbasedir,
                            'fakelc-periodsearch.pkl'),'wb') as outfd:
         pickle.dump(pfinfo, outfd, pickle.HIGHEST_PROTOCOL)
 
     return os.path.join(simbasedir,'fakelc-periodsearch.pkl')
-
 
 
 def check_periodrec_alias(actualperiod,
@@ -1673,7 +1644,6 @@ def check_periodrec_alias(actualperiod,
         else:
 
             return 'other'
-
 
 
 def periodicvar_recovery(fakepfpkl,
@@ -1823,7 +1793,6 @@ def periodicvar_recovery(fakepfpkl,
                         # not variables
                         pfres['recovery_lspvals'].append(this_lspval)
 
-
     # convert the recovery_* lists to arrays
     pfres['recovery_periods'] = np.array(pfres['recovery_periods'])
     pfres['recovery_lspvals'] = np.array(pfres['recovery_lspvals'])
@@ -1911,7 +1880,6 @@ def periodicvar_recovery(fakepfpkl,
     return pfres
 
 
-
 def periodrec_worker(task):
     '''This is a parallel worker for running period-recovery.
 
@@ -1941,10 +1909,9 @@ def periodrec_worker(task):
                                     simbasedir,
                                     period_tolerance=period_tolerance)
 
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION('periodic var recovery failed for %s' % repr(task))
         return None
-
 
 
 def parallel_periodicvar_recovery(simbasedir,
@@ -2064,11 +2031,11 @@ def parallel_periodicvar_recovery(simbasedir,
         return None
 
 
-
 PERIODREC_DEFAULT_MAGBINS = np.arange(8.0,16.25,0.25)
 PERIODREC_DEFAULT_PERIODBINS = np.arange(0.0,500.0,0.5)
 PERIODREC_DEFAULT_AMPBINS = np.arange(0.0,2.0,0.05)
 PERIODREC_DEFAULT_NDETBINS = np.arange(0.0,60000.0,1000.0)
+
 
 def plot_periodicvar_recovery_results(
         precvar_results,
@@ -2217,7 +2184,6 @@ def plot_periodicvar_recovery_results(
         periodicvar_sdssr.append(sdssr[pobjind])
         periodicvar_ndet.append(ndet[pobjind])
 
-
     periodicvar_sdssr = np.array(periodicvar_sdssr)
     periodicvar_objectids = np.array(periodicvar_objectids)
     periodicvar_ndet = np.array(periodicvar_ndet)
@@ -2233,9 +2199,6 @@ def plot_periodicvar_recovery_results(
     periodicvar_amplitudes = [
         np.asscalar(precvar['details'][x]['actual_varamplitude'])
         for x in periodicvar_objectids
-    ]
-    periodicvar_vartypes = [
-        precvar['details'][x]['actual_vartype'] for x in periodicvar_objectids
     ]
 
     #
@@ -2262,7 +2225,6 @@ def plot_periodicvar_recovery_results(
             magbinned_sdssr.append((magbins[magi] + magbins[magi+1])/2.0)
             magbinned_periodicvars.append(thisbin_periodicvars)
 
-
     # bin by period
     LOGINFO('binning actual periodic vars by period...')
 
@@ -2283,7 +2245,6 @@ def plot_periodicvar_recovery_results(
             periodbinned_periods.append((periodbins[peri] +
                                          periodbins[peri+1])/2.0)
             periodbinned_periodicvars.append(thisbin_periodicvars)
-
 
     # bin by amplitude of variability
     LOGINFO('binning actual periodic vars by variability amplitude...')
@@ -2311,7 +2272,6 @@ def plot_periodicvar_recovery_results(
             )
             amplitudebinned_periodicvars.append(thisbin_periodicvars)
 
-
     # bin by ndet
     LOGINFO('binning actual periodic vars by ndet...')
 
@@ -2334,7 +2294,6 @@ def plot_periodicvar_recovery_results(
                  ndetbins[ndeti+1])/2.0
             )
             ndetbinned_periodicvars.append(thisbin_periodicvars)
-
 
     # now figure out what 'recovered' means using the provided
     # aliases_count_as_recovered kwarg
@@ -2367,7 +2326,6 @@ def plot_periodicvar_recovery_results(
              actual_periodicvars.size,
              float(recovered_periodicvars.size/actual_periodicvars.size),
              ', '.join(recovered_status)))
-
 
     # get the objects recovered per bin and overall recovery fractions per bin
     magbinned_recovered_objects = [
@@ -2403,7 +2361,6 @@ def plot_periodicvar_recovery_results(
     ndetbinned_recfrac = np.array([float(x.size/y.size) for x,y
                                    in zip(ndetbinned_recovered_objects,
                                           ndetbinned_periodicvars)])
-
 
     # convert the bin medians to arrays
     magbinned_sdssr = np.array(magbinned_sdssr)
@@ -2452,7 +2409,6 @@ def plot_periodicvar_recovery_results(
         'ndetbinned_recfrac':ndetbinned_recfrac,
     }
 
-
     # figure out which pfmethods were used
     all_pfmethods = np.unique(
         np.concatenate(
@@ -2475,7 +2431,6 @@ def plot_periodicvar_recovery_results(
     outdict['aliastypes'] = all_aliastypes
     outdict['pfmethods'] = all_pfmethods
     outdict['vartypes'] = all_vartypes
-
 
     # these are recfracs per-magcol, -vartype, -periodfinder, -aliastype
     # binned appropriately by mags, periods, amplitudes, and ndet
@@ -2502,7 +2457,6 @@ def plot_periodicvar_recovery_results(
     ndetbinned_per_pfmethod_recfracs = []
     ndetbinned_per_aliastype_recfracs = []
 
-
     #
     # finally, we do stuff for the plots!
     #
@@ -2527,7 +2481,6 @@ def plot_periodicvar_recovery_results(
         bbox_inches='tight'
     )
     plt.close('all')
-
 
     # 1b. plot of recovery rate per magbin per magcol
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
@@ -2574,7 +2527,6 @@ def plot_periodicvar_recovery_results(
         bbox_inches='tight'
     )
     plt.close('all')
-
 
     # 1c. plot of recovery rate per magbin per periodfinder
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
@@ -2630,7 +2582,6 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
-
     # 1d. plot of recovery rate per magbin per variable type
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
@@ -2684,7 +2635,6 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
-
     # 1e. plot of recovery rate per magbin per alias type
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
@@ -2733,7 +2683,6 @@ def plot_periodicvar_recovery_results(
         bbox_inches='tight'
     )
     plt.close('all')
-
 
     # 2. recovery-rate by periodbin
 
@@ -2800,7 +2749,6 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
-
     # 2c. plot of recovery rate per periodbin per periodfinder
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
@@ -2855,7 +2803,6 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
-
     # 2d. plot of recovery rate per periodbin per variable type
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
@@ -2909,7 +2856,6 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
-
     # 2e. plot of recovery rate per periodbin per alias type
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
@@ -2960,7 +2906,6 @@ def plot_periodicvar_recovery_results(
         bbox_inches='tight'
     )
     plt.close('all')
-
 
     # 3. recovery-rate by amplitude bin
 
@@ -3031,7 +2976,6 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
-
     # 3c. plot of recovery rate per amplitude bin per periodfinder
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
@@ -3090,7 +3034,6 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
-
     # 3d. plot of recovery rate per amplitude bin per variable type
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
@@ -3132,7 +3075,6 @@ def plot_periodicvar_recovery_results(
             np.array(thisvt_recfracs)
         )
 
-
     # finish up the plot
     plt.plot(amplitudebinned_amplitudes, amplitudebinned_recfrac,
              marker='.',ms=0.0, label='overall', color='k')
@@ -3148,7 +3090,6 @@ def plot_periodicvar_recovery_results(
         bbox_inches='tight'
     )
     plt.close('all')
-
 
     # 3e. plot of recovery rate per amplitude bin per alias type
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
@@ -3187,7 +3128,6 @@ def plot_periodicvar_recovery_results(
             np.array(thisat_recfracs)
         )
 
-
     # finish up the plot
     plt.plot(amplitudebinned_amplitudes, amplitudebinned_recfrac,
              marker='.',ms=0.0, label='overall', color='k')
@@ -3203,7 +3143,6 @@ def plot_periodicvar_recovery_results(
         bbox_inches='tight'
     )
     plt.close('all')
-
 
     # 4. recovery-rate by ndet bin
 
@@ -3272,7 +3211,6 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
-
     # 4c. plot of recovery rate per ndet bin per periodfinder
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
@@ -3328,7 +3266,6 @@ def plot_periodicvar_recovery_results(
         bbox_inches='tight'
     )
     plt.close('all')
-
 
     # 4d. plot of recovery rate per ndet bin per variable type
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
@@ -3489,7 +3426,6 @@ def plot_periodicvar_recovery_results(
         ndetbinned_per_aliastype_recfracs
     )
 
-
     # get the overall recovered vars per pfmethod
     overall_recvars_per_pfmethod = []
 
@@ -3501,7 +3437,6 @@ def plot_periodicvar_recovery_results(
              (precvar['details'][x]['best_recovered_pfmethod'] == pfm))
         ])
         overall_recvars_per_pfmethod.append(thispfm_recvars)
-
 
     # get the overall recovered vars per vartype
     overall_recvars_per_vartype = []
@@ -3515,7 +3450,6 @@ def plot_periodicvar_recovery_results(
         ])
         overall_recvars_per_vartype.append(thisvt_recvars)
 
-
     # get the overall recovered vars per magcol
     overall_recvars_per_magcol = []
 
@@ -3527,7 +3461,6 @@ def plot_periodicvar_recovery_results(
              (precvar['details'][x]['best_recovered_magcol'] == mc))
         ])
         overall_recvars_per_magcol.append(thismc_recvars)
-
 
     # get the overall recovered vars per aliastype
     overall_recvars_per_aliastype = []
@@ -3555,7 +3488,6 @@ def plot_periodicvar_recovery_results(
         x.size/actual_periodicvars.size for x in overall_recvars_per_aliastype
     ])
 
-
     # 5. bar plot of overall recovery rate per pfmethod
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
@@ -3574,7 +3506,6 @@ def plot_periodicvar_recovery_results(
         bbox_inches='tight'
     )
     plt.close('all')
-
 
     # 6. bar plot of overall recovery rate per magcol
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
@@ -3595,7 +3526,6 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
-
     # 7. bar plot of overall recovery rate per aliastype
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
@@ -3615,7 +3545,6 @@ def plot_periodicvar_recovery_results(
     )
     plt.close('all')
 
-
     # 8. bar plot of overall recovery rate per vartype
     fig = plt.figure(figsize=(6.4*1.5,4.8*1.5))
 
@@ -3634,7 +3563,6 @@ def plot_periodicvar_recovery_results(
         bbox_inches='tight'
     )
     plt.close('all')
-
 
     # 9. overall recovered period periodogram for objects that aren't actual
     # periodic variables. this effectively should give us the window function of
@@ -3690,7 +3618,6 @@ def plot_periodicvar_recovery_results(
         bbox_inches='tight'
     )
     plt.close('all')
-
 
     # at the end, write the outdict to a pickle and return it
     outfile = os.path.join(simbasedir, 'periodicvar-recovery-plotresults.pkl')

@@ -133,7 +133,6 @@ CPU_COUNT = mp.cpu_count()
 from astrobase.checkplot.pkl_io import _read_checkplot_picklefile
 
 
-
 ######################
 ## HELPER FUNCTIONS ##
 ######################
@@ -163,7 +162,6 @@ def _dict_get(datadict, keylist):
 
     '''
     return reduce(getitem, keylist, datadict)
-
 
 
 def checkplot_infokey_worker(task):
@@ -197,7 +195,7 @@ def checkplot_infokey_worker(task):
 
         try:
             resultkeys.append(_dict_get(cpd, k))
-        except Exception as e:
+        except Exception:
             resultkeys.append(np.nan)
 
     return resultkeys
@@ -217,7 +215,6 @@ FILTEROPS = {
     'cb':'closed-interval-between',
     'ob':'open-interval-between',
 }
-
 
 
 ##########
@@ -413,7 +410,6 @@ def main():
               % args.cptype)
         sys.exit(1)
 
-
     #######################
     ## NOW START WORKING ##
     #######################
@@ -496,7 +492,6 @@ def main():
                                  for x in fdictkeys]
 
                     keystoget.append(fdictkeys)
-
 
             print('retrieving checkplot info using %s workers...'
                   % args.maxkeyworkers)
@@ -661,7 +656,6 @@ def main():
             print('WRN! more than %s checkplots in final list, '
                   'splitting into %s chunks' % (splitout, nchunks))
 
-
         # if the filter failed, zero out filterkey
         if (filterkeys and filterconditions) and not filterok:
             filterstatements = []
@@ -686,24 +680,13 @@ def main():
             # ask if the checkplot list JSON should be updated
             if os.path.exists(outjson):
 
-                if sys.version_info[:2] < (3,0):
-
-                    answer = raw_input(
-                        'There is an existing '
-                        'checkplot list file in this '
-                        'directory:\n    %s\nDo you want to '
-                        'overwrite it completely? (default: no) [y/n] ' %
-                        outjson
-                    )
-                else:
-
-                    answer = input(
-                        'There is an existing '
-                        'checkplot list file in this '
-                        'directory:\n    %s\nDo you want to '
-                        'overwrite it completely? (default: no) [y/n] ' %
-                        outjson
-                    )
+                answer = input(
+                    'There is an existing '
+                    'checkplot list file in this '
+                    'directory:\n    %s\nDo you want to '
+                    'overwrite it completely? (default: no) [y/n] ' %
+                    outjson
+                )
 
                 # if it's OK to overwrite, then do so
                 if answer and answer == 'y':

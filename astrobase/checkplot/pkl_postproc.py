@@ -36,7 +36,6 @@ LOGERROR = LOGGER.error
 LOGEXCEPTION = LOGGER.exception
 
 
-
 #############
 ## IMPORTS ##
 #############
@@ -45,14 +44,12 @@ from copy import deepcopy
 import numpy as np
 
 
-
 ###################
 ## LOCAL IMPORTS ##
 ###################
 
 from .pkl_io import _read_checkplot_picklefile, _write_checkplot_picklefile
 from .pkl_utils import _pkl_finder_objectinfo
-
 
 
 ################################
@@ -413,7 +410,6 @@ def update_checkplot_objectinfo(cpf,
             cpd['objectinfo']['simbad_best_distarcsec']
         )
 
-
     #
     # update the objectinfo dict
     #
@@ -424,7 +420,6 @@ def update_checkplot_objectinfo(cpf,
     newcpf = _write_checkplot_picklefile(cpd, outfile=cpf)
 
     return newcpf
-
 
 
 ########################################################
@@ -499,7 +494,6 @@ def finalize_checkplot(cpx,
     '''
 
 
-
 def parallel_finalize_cplist(cplist,
                              outdir,
                              objfits=None):
@@ -531,7 +525,6 @@ def parallel_finalize_cplist(cplist,
         finalize operations for each checkplot pickle provided in `cplist`.
 
     '''
-
 
 
 def parallel_finalize_cpdir(cpdir,

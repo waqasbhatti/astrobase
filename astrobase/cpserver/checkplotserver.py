@@ -28,6 +28,7 @@ import stat
 # responsive
 from concurrent.futures import ProcessPoolExecutor
 
+
 # setup signal trapping on SIGINT
 def _recv_sigint(signum, stack):
     '''
@@ -41,12 +42,12 @@ def _recv_sigint(signum, stack):
 ## TORNADO IMPORTS ##
 #####################
 
-# experimental, probably will remove at some point
+# significant speedup if uvloop is available
 try:
     import asyncio
     import uvloop
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-except Exception as e:
+except Exception:
     pass
 
 import tornado.ioloop
@@ -145,7 +146,6 @@ define('sharedsecret',
        type=str)
 
 
-
 ############
 ### MAIN ###
 ############
@@ -159,9 +159,6 @@ def main():
       Options:
 
         --help                           show this help information
-
-      checkplotserver.py options:
-
         --assetpath                      Sets the asset (server images, css, js, DB)
                                          path for checkplotserver.
                                          (default <astrobase install dir>
@@ -199,31 +196,6 @@ def main():
         --standalone                     This starts the server in standalone mode.
                                          (default 0)
 
-      tornado/log.py options:
-
-        --log-file-max-size              max size of log files before rollover
-                                         (default 100000000)
-        --log-file-num-backups           number of log files to keep (default 10)
-        --log-file-prefix=PATH           Path prefix for log files. Note that if you
-                                         are running multiple tornado processes,
-                                         log_file_prefix must be different for each
-                                         of them (e.g. include the port number)
-        --log-rotate-interval            The interval value of timed rotating
-                                         (default 1)
-        --log-rotate-mode                The mode of rotating files(time or size)
-                                         (default size)
-        --log-rotate-when                specify the type of TimedRotatingFileHandler
-                                         interval other options:('S', 'M', 'H', 'D',
-                                         'W0'-'W6') (default midnight)
-        --log-to-stderr                  Send log output to stderr (colorized if
-                                         possible). By default use stderr if
-                                         --log_file_prefix is not set and no other
-                                         logging is configured.
-        --logging=debug|info|warning|error|none
-                                         Set the Python log level. If 'none', tornado
-                                         won't touch the logging configuration.
-                                         (default info)
-
     '''
     # parse the command line
     tornado.options.parse_command_line()
@@ -237,7 +209,6 @@ def main():
     else:
         LOGGER.setLevel(logging.INFO)
 
-
     ###################
     ## SET UP CONFIG ##
     ###################
@@ -246,13 +217,11 @@ def main():
     ASSETPATH = options.assetpath
     BASEURL = options.baseurl
 
-
     ###################################
     ## PERSISTENT CHECKPLOT EXECUTOR ##
     ###################################
 
     EXECUTOR = ProcessPoolExecutor(MAXPROCS)
-
 
     #######################################
     ## CHECK IF WE'RE IN STANDALONE MODE ##
@@ -296,15 +265,13 @@ def main():
                 sys.exit(1)
 
         else:
-                LOGGER.error('could not find the specified '
-                             'shared secret file: %s' %
-                             options.sharedsecret)
-                sys.exit(1)
-
+            LOGGER.error('could not find the specified '
+                         'shared secret file: %s' %
+                         options.sharedsecret)
+            sys.exit(1)
 
         # only one handler in standalone mode
         HANDLERS = [standalonespec]
-
 
     # if we're not in standalone mode, proceed normally
     else:
@@ -435,7 +402,6 @@ def main():
              tornado.web.StaticFileHandler, {'path': CURRENTDIR})
         ]
 
-
     #######################
     ## APPLICATION SETUP ##
     #######################
@@ -467,7 +433,7 @@ def main():
         try:
             http_server.listen(serverport, options.serve)
             portok = True
-        except socket.error as e:
+        except socket.error:
             LOGGER.warning('%s:%s is already in use, trying port %s' %
                            (options.serve, serverport, serverport + 1))
             serverport = serverport + 1
@@ -496,6 +462,7 @@ def main():
 
     EXECUTOR.shutdown()
     time.sleep(3)
+
 
 # run the server
 if __name__ == '__main__':
