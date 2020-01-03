@@ -36,20 +36,14 @@ LOGERROR = LOGGER.error
 LOGEXCEPTION = LOGGER.exception
 
 
-
 #############
 ## IMPORTS ##
 #############
 
 import os
 import os.path
-import sys
 
-try:
-    import cStringIO
-    from cStringIO import StringIO as StrIO
-except Exception as e:
-    from io import BytesIO as StrIO
+from io import BytesIO as StrIO
 
 import numpy as np
 from numpy import nan as npnan
@@ -58,14 +52,12 @@ from numpy import nan as npnan
 from PIL import Image, ImageDraw, ImageFont
 
 
-
 ###################
 ## LOCAL IMPORTS ##
 ###################
 
 from ..plotbase import METHODSHORTLABELS
 from .pkl_io import _read_checkplot_picklefile, _base64_to_file
-
 
 
 ###################
@@ -162,35 +154,15 @@ def checkplot_pickle_to_png(
 
     '''
 
-    # figure out if the checkplotpickle is a filename
-    # python 3
-    if sys.version_info[:2] > (3,2):
-
-        if (isinstance(checkplotin, str) and os.path.exists(checkplotin)):
-            cpd = _read_checkplot_picklefile(checkplotin)
-        elif isinstance(checkplotin, dict):
-            cpd = checkplotin
-        else:
-            LOGERROR('checkplotin: %s of type %s is not a '
-                     'valid checkplot filename (or does not exist), or a dict' %
-                     (os.path.abspath(checkplotin), type(checkplotin)))
-            return None
-
-    # check for unicode in python 2.7
+    if (isinstance(checkplotin, str) and os.path.exists(checkplotin)):
+        cpd = _read_checkplot_picklefile(checkplotin)
+    elif isinstance(checkplotin, dict):
+        cpd = checkplotin
     else:
-
-        # get the current checkplotdict
-        if ((isinstance(checkplotin, str) or
-             isinstance(checkplotin, unicode)) and
-            os.path.exists(checkplotin)):
-            cpd = _read_checkplot_picklefile(checkplotin)
-        elif isinstance(checkplotin,dict):
-            cpd = checkplotin
-        else:
-            LOGERROR('checkplotin: %s of type %s is not a '
-                     'valid checkplot filename (or does not exist), or a dict' %
-                     (os.path.abspath(checkplotin), type(checkplotin)))
-            return None
+        LOGERROR('checkplotin: %s of type %s is not a '
+                 'valid checkplot filename (or does not exist), or a dict' %
+                 (os.path.abspath(checkplotin), type(checkplotin)))
+        return None
 
     # figure out the dimensions of the output png
     # each cell is 750 x 480 pixels
@@ -205,7 +177,6 @@ def checkplot_pickle_to_png(
         for pfm in METHODSHORTLABELS:
             if pfm in cpd:
                 cplspmethods.append(pfm)
-
 
     cprows = len(cplspmethods)
 
@@ -439,7 +410,6 @@ def checkplot_pickle_to_png(
                         font=cpfontnormal,
                         fill=(0,0,0,255)
                     )
-
 
         #
         # next, deal with the colors
@@ -699,8 +669,6 @@ def checkplot_pickle_to_png(
                 fill=(135, 54, 0, 255)
             )
 
-
-
     ################################################
     # row 1, cell 3: variability info and comments #
     ################################################
@@ -829,7 +797,6 @@ def checkplot_pickle_to_png(
         )
         outimg.paste(magseries,(750*3,0))
 
-
     ###############################
     # the rest of the rows in cpd #
     ###############################
@@ -913,7 +880,6 @@ def checkplot_pickle_to_png(
             )
             outimg.paste(plc3,(750*3,480 + 480*lspmethodind))
 
-
     ################################
     ## ALL DONE WITH BUILDING PNG ##
     ################################
@@ -949,7 +915,6 @@ def checkplot_pickle_to_png(
                 outimg.paste(cpdeplotresized,
                              (750*cpdecolind,
                               (cprows+1)*480 + (erows*480) + 480*cpderowind))
-
 
     # from neighbors:
     if nbrrows > 0:
@@ -1045,7 +1010,7 @@ def checkplot_pickle_to_png(
                               (cprows+1)*480 + (erows*480) + (cpderows*480) +
                               480*nbrind))
 
-            except Exception as e:
+            except Exception:
 
                 LOGERROR('neighbor %s does not have a magseries plot, '
                          'measurements are probably all nan' % nbr['objectid'])
@@ -1089,20 +1054,11 @@ def checkplot_pickle_to_png(
                         fill=(0,0,255,255)
                     )
 
-
     #####################
     ## WRITE FINAL PNG ##
     #####################
 
-    # check if the output filename is actually an instance of StringIO
-    if sys.version_info[:2] < (3,0):
-
-        is_strio = isinstance(outfile, cStringIO.InputType)
-
-    else:
-
-        is_strio = isinstance(outfile, StrIO)
-
+    is_strio = isinstance(outfile, StrIO)
 
     if not is_strio:
 
@@ -1115,7 +1071,6 @@ def checkplot_pickle_to_png(
 
     outimg.save(outfile, format='PNG', optimize=True)
 
-
     if not is_strio:
         if os.path.exists(outfile):
             LOGINFO('checkplot pickle -> checkplot PNG: %s OK' % outfile)
@@ -1127,7 +1082,6 @@ def checkplot_pickle_to_png(
     else:
         LOGINFO('checkplot pickle -> StringIO instance OK')
         return outfile
-
 
 
 def cp2png(checkplotin, extrarows=None):
