@@ -58,7 +58,6 @@ LOGERROR = LOGGER.error
 LOGEXCEPTION = LOGGER.exception
 
 
-
 #############
 ## IMPORTS ##
 #############
@@ -68,11 +67,7 @@ import os.path
 import gzip
 import sys
 import hashlib
-
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
+import pickle
 
 # we're going to plot using Agg only
 import matplotlib
@@ -80,7 +75,6 @@ matplotlib.use('Agg')
 
 # import this to check if stimes, smags, serrs are Column objects
 from astropy.table import Column as AstColumn
-
 
 
 ###################
@@ -108,7 +102,6 @@ from .pkl_utils import (
 )
 
 from .pkl_xmatch import xmatch_external_catalogs
-
 
 
 #############################
@@ -588,7 +581,7 @@ def checkplot_dict(
     try:
         objuuid = hashlib.sha512(times[5:10].tostring() +
                                  mags[5:10].tostring()).hexdigest()[:5]
-    except Exception as e:
+    except Exception:
         if verbose:
             LOGWARNING('times, mags, and errs may have too few items')
             objuuid = hashlib.sha512(times.tostring() +
@@ -612,8 +605,6 @@ def checkplot_dict(
             LOGWARNING('adding a randomly generated objectid '
                        'since none was provided in objectinfo dict')
         objectinfo['objectid'] = objuuid
-
-
 
     # 0. get the objectinfo and finder chart and initialize the checkplotdict
     checkplotdict = _pkl_finder_objectinfo(
@@ -664,7 +655,6 @@ def checkplot_dict(
         checkplotdict['status'] = 'failed: LC points appear to be all nan'
         return checkplotdict
 
-
     # this may fix some unpickling issues for astropy.table.Column objects
     # we convert them back to ndarrays
     if isinstance(stimes, AstColumn):
@@ -683,13 +673,11 @@ def checkplot_dict(
                    'changing to numpy array because of '
                    'potential unpickling issues')
 
-
     # report on how sigclip went
     if verbose:
         LOGINFO('sigclip = %s: before = %s observations, '
                 'after = %s observations' %
                 (sigclip, len(times), len(stimes)))
-
 
     # take care of the normalization
     if normto is not False:
@@ -758,14 +746,13 @@ def checkplot_dict(
                                                 serrs,
                                                 nbperiod,
                                                 **lcfitparams)
-                    except Exception as e:
+                    except Exception:
                         LOGEXCEPTION('the light curve fitting function '
                                      'failed, not plotting a fit over the '
                                      'phased light curve')
                         overplotfit = None
                 else:
                     overplotfit = None
-
 
                 # get the varepoch from a run of bls_snr if available. this
                 # allows us to use the correct transit center epochs if
@@ -880,14 +867,13 @@ def checkplot_dict(
             )
 
         # the checkplotdict now contains everything we need
-        contents = sorted(list(checkplotdict.keys()))
+        contents = sorted(checkplotdict.keys())
         checkplotdict['status'] = 'ok: contents are %s' % contents
 
         if verbose:
             LOGINFO('checkplot dict complete for %s' %
                     checkplotdict['objectid'])
             LOGINFO('checkplot dict contents: %s' % contents)
-
 
         # 8. update the pfmethods key
         checkplotdict['pfmethods'] = checkplot_pfmethods
@@ -902,7 +888,6 @@ def checkplot_dict(
 
     # at the end, return the dict
     return checkplotdict
-
 
 
 ################################
@@ -1470,7 +1455,6 @@ def checkplot_pickle(
     elif not pickleprotocol:
         pickleprotocol = 0
 
-
     # generate the output file path
     if outgzip:
 
@@ -1500,7 +1484,6 @@ def checkplot_pickle(
         else:
             plotfpath = 'checkplot.pkl'
 
-
     # write the completed checkplotdict to a gzipped pickle
     picklefname = _write_checkplot_picklefile(checkplotdict,
                                               outfile=plotfpath,
@@ -1520,7 +1503,6 @@ def checkplot_pickle(
         if verbose:
             LOGINFO('checkplot done -> %s' % picklefname)
         return picklefname
-
 
 
 def checkplot_pickle_update(
@@ -1587,84 +1569,39 @@ def checkplot_pickle_update(
 
     '''
 
-    # break out python 2.7 and > 3 nonsense
-    if sys.version_info[:2] > (3,2):
-
-        # generate the outfile filename
-        if not outfile and isinstance(currentcp,str):
-            plotfpath = currentcp
-        elif outfile:
-            plotfpath = outfile
-        elif isinstance(currentcp, dict) and currentcp['objectid']:
-            if outgzip:
-                plotfpath = 'checkplot-%s.pkl.gz' % currentcp['objectid']
-            else:
-                plotfpath = 'checkplot-%s.pkl' % currentcp['objectid']
+    # generate the outfile filename
+    if not outfile and isinstance(currentcp,str):
+        plotfpath = currentcp
+    elif outfile:
+        plotfpath = outfile
+    elif isinstance(currentcp, dict) and currentcp['objectid']:
+        if outgzip:
+            plotfpath = 'checkplot-%s.pkl.gz' % currentcp['objectid']
         else:
-            # we'll get this later below
-            plotfpath = None
-
-        if (isinstance(currentcp, str) and os.path.exists(currentcp)):
-            cp_current = _read_checkplot_picklefile(currentcp)
-        elif isinstance(currentcp, dict):
-            cp_current = currentcp
-        else:
-            LOGERROR('currentcp: %s of type %s is not a '
-                     'valid checkplot filename (or does not exist), or a dict' %
-                     (os.path.abspath(currentcp), type(currentcp)))
-            return None
-
-        if (isinstance(updatedcp, str) and os.path.exists(updatedcp)):
-            cp_updated = _read_checkplot_picklefile(updatedcp)
-        elif isinstance(updatedcp, dict):
-            cp_updated = updatedcp
-        else:
-            LOGERROR('updatedcp: %s of type %s is not a '
-                     'valid checkplot filename (or does not exist), or a dict' %
-                     (os.path.abspath(updatedcp), type(updatedcp)))
-            return None
-
-    # check for unicode in python 2.7
+            plotfpath = 'checkplot-%s.pkl' % currentcp['objectid']
     else:
+        # we'll get this later below
+        plotfpath = None
 
-        # generate the outfile filename
-        if (not outfile and
-            (isinstance(currentcp, str) or isinstance(currentcp, unicode))):
-            plotfpath = currentcp
-        elif outfile:
-            plotfpath = outfile
-        elif isinstance(currentcp, dict) and currentcp['objectid']:
-            if outgzip:
-                plotfpath = 'checkplot-%s.pkl.gz' % currentcp['objectid']
-            else:
-                plotfpath = 'checkplot-%s.pkl' % currentcp['objectid']
-        else:
-            # we'll get this later below
-            plotfpath = None
+    if (isinstance(currentcp, str) and os.path.exists(currentcp)):
+        cp_current = _read_checkplot_picklefile(currentcp)
+    elif isinstance(currentcp, dict):
+        cp_current = currentcp
+    else:
+        LOGERROR('currentcp: %s of type %s is not a '
+                 'valid checkplot filename (or does not exist), or a dict' %
+                 (os.path.abspath(currentcp), type(currentcp)))
+        return None
 
-        # get the current checkplotdict
-        if ((isinstance(currentcp, str) or isinstance(currentcp, unicode)) and
-            os.path.exists(currentcp)):
-            cp_current = _read_checkplot_picklefile(currentcp)
-        elif isinstance(currentcp,dict):
-            cp_current = currentcp
-        else:
-            LOGERROR('currentcp: %s of type %s is not a '
-                     'valid checkplot filename (or does not exist), or a dict' %
-                     (os.path.abspath(currentcp), type(currentcp)))
-            return None
-
-        # get the updated checkplotdict
-        if ((isinstance(updatedcp, str) or isinstance(updatedcp, unicode)) and
-            os.path.exists(updatedcp)):
-            cp_updated = _read_checkplot_picklefile(updatedcp)
-        elif isinstance(updatedcp, dict):
-            cp_updated = updatedcp
-        else:
-            LOGERROR('updatedcp: %s of type %s is not a '
-                     'valid checkplot filename (or does not exist), or a dict' %
-                     (os.path.abspath(updatedcp), type(updatedcp)))
-            return None
+    if (isinstance(updatedcp, str) and os.path.exists(updatedcp)):
+        cp_updated = _read_checkplot_picklefile(updatedcp)
+    elif isinstance(updatedcp, dict):
+        cp_updated = updatedcp
+    else:
+        LOGERROR('updatedcp: %s of type %s is not a '
+                 'valid checkplot filename (or does not exist), or a dict' %
+                 (os.path.abspath(updatedcp), type(updatedcp)))
+        return None
 
     # do the update using python's dict update mechanism
     # this requires updated to be in the same checkplotdict format as current

@@ -36,7 +36,6 @@ LOGERROR = LOGGER.error
 LOGEXCEPTION = LOGGER.exception
 
 
-
 #############
 ## IMPORTS ##
 #############
@@ -47,15 +46,10 @@ import gzip
 import base64
 import sys
 
-try:
-    import cPickle as pickle
-    from cStringIO import StringIO as StrIO
-except Exception as e:
-    import pickle
-    from io import BytesIO as StrIO
+import pickle
+from io import BytesIO as StrIO
 
 from tornado.escape import squeeze
-
 
 
 #######################
@@ -115,12 +109,11 @@ def _base64_to_file(b64str, outfpath, writetostrio=False):
                 LOGERROR('could not write output file: %s' % outfpath)
                 return None
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('failed while trying to convert '
                      'b64 string to file %s' % outfpath)
         return None
-
 
 
 ########################
@@ -179,7 +172,6 @@ def _read_checkplot_picklefile(checkplotpickle):
     return cpdict
 
 
-
 def _write_checkplot_picklefile(checkplotdict,
                                 outfile=None,
                                 protocol=None,
@@ -234,19 +226,10 @@ def _write_checkplot_picklefile(checkplotdict,
         (protocol > 2)):
         protocol = 4
 
-    elif ((sys.version_info[0:2] >= (3,0) and not protocol) or
-          (protocol > 2)):
-        protocol = 3
-
-    # for Python == 2.7; use v2
-    elif sys.version_info[0:2] == (2,7) and not protocol:
-        protocol = 2
-
     # otherwise, if left unspecified, use the slowest but most compatible
     # protocol. this will be readable by all (most?) Pythons
     elif not protocol:
         protocol = 0
-
 
     if outgzip:
 
