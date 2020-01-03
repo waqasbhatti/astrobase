@@ -36,7 +36,6 @@ LOGERROR = LOGGER.error
 LOGEXCEPTION = LOGGER.exception
 
 
-
 #############
 ## IMPORTS ##
 #############
@@ -146,6 +145,7 @@ GCE_INSTANCE_TEMPLATE = {
     ]
 }
 
+
 def make_gce_instances():
     """This makes new GCE worker nodes.
 
@@ -155,7 +155,6 @@ def make_gce_instances():
     TODO: finish this
 
     """
-
 
 
 def delete_gce_instances():

@@ -89,7 +89,6 @@ def angle_wrap(angle, radians=False):
     return wrapped
 
 
-
 def decimal_to_dms(decimal_value):
     '''Converts from decimal degrees (for declination coords) to DD:MM:SS.
 
@@ -127,7 +126,6 @@ def decimal_to_dms(decimal_value):
         return '-', degrees, minutes_out, seconds
     else:
         return '+', degrees, minutes_out, seconds
-
 
 
 def decimal_to_hms(decimal_value):
@@ -178,7 +176,6 @@ def decimal_to_hms(decimal_value):
         return hours, minutes_out, seconds
 
 
-
 def hms_str_to_tuple(hms_string):
     '''Converts a string of the form HH:MM:SS or HH MM SS to a tuple of the form
     (HH, MM, SS).
@@ -205,7 +202,6 @@ def hms_str_to_tuple(hms_string):
     hh, mm, ss = hms_string.split(separator)
 
     return int(hh), int(mm), float(ss)
-
 
 
 def dms_str_to_tuple(dms_string):
@@ -242,7 +238,6 @@ def dms_str_to_tuple(dms_string):
     return sign, int(dd), int(mm), float(ss)
 
 
-
 def hms_str_to_decimal(hms_string):
     '''Converts a HH:MM:SS string to decimal degrees.
 
@@ -263,7 +258,6 @@ def hms_str_to_decimal(hms_string):
     return hms_to_decimal(*hms_str_to_tuple(hms_string))
 
 
-
 def dms_str_to_decimal(dms_string):
     '''Converts a DD:MM:SS string to decimal degrees.
 
@@ -282,7 +276,6 @@ def dms_str_to_decimal(dms_string):
 
     '''
     return dms_to_decimal(*dms_str_to_tuple(dms_string))
-
 
 
 def hms_to_decimal(hours, minutes, seconds, returndeg=True):
@@ -334,7 +327,6 @@ def hms_to_decimal(hours, minutes, seconds, returndeg=True):
             return dec_hours
 
 
-
 def dms_to_decimal(sign, degrees, minutes, seconds):
     '''Converts from DD:MM:SS to a decimal value.
 
@@ -367,7 +359,6 @@ def dms_to_decimal(sign, degrees, minutes, seconds):
         return -dec_deg
     else:
         return dec_deg
-
 
 
 ############################
@@ -441,7 +432,6 @@ def great_circle_dist(ra1, dec1, ra2, dec2):
     return np.rad2deg(dist_rad)*3600.0
 
 
-
 def xmatch_basic(ra1, dec1, ra2, dec2, match_radius=5.0):
     '''Finds the closest object in (`ra2`, `dec2`) to scalar coordinate pair
     (`ra1`, `dec1`) and returns the distance in arcseconds.
@@ -480,7 +470,6 @@ def xmatch_basic(ra1, dec1, ra2, dec2, match_radius=5.0):
         return (True,min_dist_arcsec)
     else:
         return (False,min_dist_arcsec)
-
 
 
 def xmatch_neighbors(ra1, dec1,
@@ -553,7 +542,6 @@ def xmatch_neighbors(ra1, dec1,
         return (False,)
 
 
-
 ######################
 ## KDTREE FUNCTIONS ##
 ######################
@@ -589,7 +577,6 @@ def make_kdtree(ra, decl):
     kdt = sps.cKDTree(xyz,copy_data=True)
 
     return kdt
-
 
 
 def conesearch_kdtree(kdtree,
@@ -644,7 +631,6 @@ def conesearch_kdtree(kdtree,
                                          n_jobs=conesearchworkers)
 
     return kdtindices
-
 
 
 def xmatch_kdtree(kdtree,
@@ -724,7 +710,6 @@ def xmatch_kdtree(kdtree,
     return kdt_matchinds, ext_matchinds
 
 
-
 ###################
 ## PROPER MOTION ##
 ###################
@@ -759,7 +744,6 @@ def total_proper_motion(pmra, pmdecl, decl):
     return pm
 
 
-
 def reduced_proper_motion(mag, propermotion):
     '''This calculates the reduced proper motion using the mag measurement
     provided.
@@ -786,7 +770,6 @@ def reduced_proper_motion(mag, propermotion):
 
     rpm = mag + 5.0*np.log10(propermotion/1000.0)
     return rpm
-
 
 
 ###########################
@@ -827,7 +810,6 @@ def equatorial_to_galactic(ra, decl, equinox='J2000'):
     return gl, gb
 
 
-
 def galactic_to_equatorial(gl, gb):
     '''This converts from galactic coords to equatorial coordinates.
 
@@ -854,7 +836,6 @@ def galactic_to_equatorial(gl, gb):
     transformed = gal.transform_to('icrs')
 
     return transformed.ra.degree, transformed.dec.degree
-
 
 
 ########################

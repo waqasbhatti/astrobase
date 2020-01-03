@@ -344,7 +344,6 @@ def read_tess_fitslc(lcfits,
         else:
             hdrinfo[key.lower()] = None
 
-
     # if we're appending to another lcdict
     if appendto and isinstance(appendto, dict):
 
@@ -374,7 +373,6 @@ def read_tess_fitslc(lcfits,
         lcdict['lcinfo']['origin'].append(hdrinfo['origin'])
         lcdict['lcinfo']['datarelease'].append(hdrinfo['data_rel'])
         lcdict['lcinfo']['procversion'].append(hdrinfo['procver'])
-
 
         lcdict['lcinfo']['tic_version'].append(hdrinfo['ticver'])
         lcdict['lcinfo']['cr_mitigation'].append(hdrinfo['crmiten'])
@@ -442,7 +440,6 @@ def read_tess_fitslc(lcfits,
                     np.concatenate((lcdict['pdc'][key.lower()], thislcdata))
                 )
 
-
         # append some of the light curve information into existing numpy arrays
         # so we can sort on them later
         lcdict['exptime'] = np.concatenate(
@@ -506,7 +503,6 @@ def read_tess_fitslc(lcfits,
                           hdrinfo['data_rel'],
                           dtype=np.int64))
         )
-
 
     # otherwise, this is a new lcdict
     else:
@@ -622,7 +618,6 @@ def read_tess_fitslc(lcfits,
             dtype=np.int64,
         )
 
-
         # normalize the SAP and PDCSAP fluxes, errs, and backgrounds if needed
         if normalize:
 
@@ -682,7 +677,6 @@ def read_tess_fitslc(lcfits,
 
     # return the lcdict at the end
     return lcdict
-
 
 
 def consolidate_tess_fitslc(lclist,
@@ -796,7 +790,6 @@ def consolidate_tess_fitslc(lclist,
                                                      os.path.join(root,sdir))
                         )
 
-
         if len(matching) == 0:
             LOGERROR('could not find any TESS LC files matching glob: %s' %
                      lclist)
@@ -832,7 +825,6 @@ def consolidate_tess_fitslc(lclist,
                                             topkeys=LCTOPKEYS,
                                             apkeys=LCAPERTUREKEYS)
 
-
     # get the sort indices. we use time for the columns and sectors for the
     # bits in lcinfo and varinfo
     LOGINFO('sorting by time...')
@@ -857,7 +849,6 @@ def consolidate_tess_fitslc(lclist,
         else:
             consolidated[col] = consolidated[col][column_sort_ind]
 
-
     info_sort_ind = np.argsort(consolidated['lcinfo']['sector'])
 
     # sort the keys in lcinfo
@@ -872,7 +863,6 @@ def consolidate_tess_fitslc(lclist,
             np.array(consolidated['varinfo'][key])[info_sort_ind].tolist()
         )
 
-
     # filter the LC dict if requested
     # we do this at the end
     if (filterqualityflags is not False or
@@ -884,7 +874,6 @@ def consolidate_tess_fitslc(lclist,
                                           timestoignore=timestoignore)
 
     return consolidated
-
 
 
 ##################
@@ -923,7 +912,6 @@ def tess_lcdict_to_pkl(lcdict,
         pickle.dump(lcdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
 
     return os.path.abspath(outfile)
-
 
 
 def read_tess_pklc(picklefile):
@@ -965,7 +953,6 @@ def read_tess_pklc(picklefile):
                    'http://stackoverflow.com/q/11305790' % picklefile)
 
     return lcdict
-
 
 
 ################################
@@ -1037,7 +1024,6 @@ def filter_tess_lcdict(lcdict,
                     'ndet before = %s, ndet after = %s'
                     % (nbefore, nafter))
 
-
     if nanfilter and nanfilter == 'sap,pdc,time':
         notnanind = (
             np.isfinite(lcdict['sap']['sap_flux']) &
@@ -1079,7 +1065,6 @@ def filter_tess_lcdict(lcdict,
         if not quiet:
             LOGINFO('removed nans, ndet before = %s, ndet after = %s'
                     % (nbefore, nafter))
-
 
     # exclude all times in timestoignore
     if (timestoignore and

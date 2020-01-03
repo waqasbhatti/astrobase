@@ -36,10 +36,7 @@ from datetime import datetime
 ## EMAIL SETTINGS ##
 
 # get config from the astrobase.conf file
-try:
-    import ConfigParser
-except Exception as e:
-    import configparser as ConfigParser
+import configparser
 
 # parse the configuration file to get the default database credentials
 CONF_FILE = os.path.abspath(os.path.expanduser('~/.astrobase/astrobase.conf'))
@@ -64,7 +61,7 @@ if not os.path.exists(CONF_FILE):
 CONF_FILE = os.path.abspath(
     os.path.expanduser('~/.astrobase/astrobase.conf')
 )
-CONF = ConfigParser.ConfigParser()
+CONF = configparser.ConfigParser()
 CONF.read(CONF_FILE)
 
 #
@@ -178,7 +175,6 @@ def send_email(sender,
         raise ValueError("no email server address and "
                          "credentials available, can't continue")
 
-
     msg_text = EMAIL_TEMPLATE.format(
         sender=sender,
         hostname=socket.gethostname(),
@@ -187,7 +183,6 @@ def send_email(sender,
     )
 
     email_sender = '%s <%s>' % (sender, EMAIL_USER)
-
 
     # put together the recipient and email lists
     email_recipients = [('%s <%s>' % (x,y))
@@ -210,16 +205,16 @@ def send_email(sender,
 
     try:
         server = smtplib.SMTP(EMAIL_SERVER, 587)
-        server_ehlo_response = server.ehlo()
+        server.ehlo()
 
         if server.has_extn('STARTTLS'):
 
             try:
 
-                tls_start_response = server.starttls()
-                tls_ehlo_response = server.ehlo()
+                server.starttls()
+                server.ehlo()
 
-                login_response = server.login(EMAIL_USER, EMAIL_PASSWORD)
+                server.login(EMAIL_USER, EMAIL_PASSWORD)
 
                 send_response = (
                     server.sendmail(email_sender,
@@ -236,25 +231,24 @@ def send_email(sender,
             if send_response is not None:
 
                 print('script email sent successfully')
-                quit_response = server.quit()
+                server.quit()
                 return True
 
             else:
 
-                quit_response = server.quit()
+                server.quit()
                 return False
 
         else:
 
             print('email server does not support STARTTLS,'
                   ' bailing out...')
-            quit_response = server.quit()
+            server.quit()
             return False
 
     except Exception as e:
         print('sending email failed with error: %s' % e)
         returnval = False
 
-
-    quit_response = server.quit()
+    server.quit()
     return returnval

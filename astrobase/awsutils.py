@@ -36,7 +36,6 @@ LOGERROR = LOGGER.error
 LOGEXCEPTION = LOGGER.exception
 
 
-
 #############
 ## IMPORTS ##
 #############
@@ -62,7 +61,6 @@ except ImportError:
         "You'll also need the awscli package to set up the "
         "AWS secret key config for this module."
     )
-
 
 
 #############################
@@ -122,7 +120,7 @@ def ec2_ssh(ip_address,
 
         return c
 
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION('could not connect to EC2 instance at %s '
                      'using keyfile: %s and user: %s' %
                      (ip_address, keypem_file, username))
@@ -130,7 +128,6 @@ def ec2_ssh(ip_address,
             raise
 
         return None
-
 
 
 ########
@@ -190,7 +187,7 @@ def s3_get_file(bucket,
         client.download_file(bucket, filename, local_file)
         return local_file
 
-    except Exception as e:
+    except Exception:
 
         if altexts is not None:
 
@@ -207,7 +204,7 @@ def s3_get_file(bucket,
                     )
                     return local_file.replace(split_ext[-1],
                                               alt_extension)
-                except Exception as e:
+                except Exception:
                     pass
 
         else:
@@ -218,7 +215,6 @@ def s3_get_file(bucket,
                 raise
 
             return None
-
 
 
 def s3_get_url(url,
@@ -271,7 +267,6 @@ def s3_get_url(url,
                        raiseonfail=raiseonfail)
 
 
-
 def s3_put_file(local_file, bucket, client=None, raiseonfail=False):
     """This uploads a file to S3.
 
@@ -308,7 +303,7 @@ def s3_put_file(local_file, bucket, client=None, raiseonfail=False):
     try:
         client.upload_file(local_file, bucket, os.path.basename(local_file))
         return 's3://%s/%s' % (bucket, os.path.basename(local_file))
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION('could not upload %s to bucket: %s' % (local_file,
                                                             bucket))
 
@@ -316,7 +311,6 @@ def s3_put_file(local_file, bucket, client=None, raiseonfail=False):
             raise
 
         return None
-
 
 
 def s3_delete_file(bucket, filename, client=None, raiseonfail=False):
@@ -360,14 +354,13 @@ def s3_delete_file(bucket, filename, client=None, raiseonfail=False):
                                                                   bucket))
         else:
             return resp['DeleteMarker']
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION('could not delete file %s from bucket %s' % (filename,
                                                                   bucket))
         if raiseonfail:
             raise
 
         return None
-
 
 
 #########
@@ -423,12 +416,10 @@ def sqs_create_queue(queue_name, options=None, client=None):
                      % (queue_name, options))
             return None
 
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION('could not create the specified queue: %s with options: %s'
                      % (queue_name, options))
         return None
-
-
 
 
 def sqs_delete_queue(queue_url, client=None):
@@ -461,11 +452,10 @@ def sqs_delete_queue(queue_url, client=None):
         client.delete_queue(QueueUrl=queue_url)
         return True
 
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION('could not delete the specified queue: %s'
                      % (queue_url,))
         return False
-
 
 
 def sqs_put_item(queue_url,
@@ -524,7 +514,7 @@ def sqs_put_item(queue_url,
         else:
             return resp
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('could not send item to queue: %s' % queue_url)
 
@@ -532,7 +522,6 @@ def sqs_put_item(queue_url,
             raise
 
         return None
-
 
 
 def sqs_get_item(queue_url,
@@ -635,7 +624,7 @@ def sqs_get_item(queue_url,
                         'attributes':msg['Attributes'],
                         'item':json.loads(msg['Body']),
                     })
-                except Exception as e:
+                except Exception:
                     LOGEXCEPTION(
                         'could not deserialize message ID: %s, body: %s' %
                         (msg['MessageId'], msg['Body'])
@@ -644,14 +633,13 @@ def sqs_get_item(queue_url,
 
             return messages
 
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION('could not get items from queue: %s' % queue_url)
 
         if raiseonfail:
             raise
 
         return None
-
 
 
 def sqs_delete_item(queue_url,
@@ -703,7 +691,7 @@ def sqs_delete_item(queue_url,
             ReceiptHandle=receipt_handle
         )
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION(
             'could not delete message with receipt handle: '
@@ -712,7 +700,6 @@ def sqs_delete_item(queue_url,
 
         if raiseonfail:
             raise
-
 
 
 #########
@@ -725,7 +712,6 @@ SUPPORTED_AMIS = [
     # Amazon Linux 2
     'ami-04681a1dbd79675a5',
 ]
-
 
 
 def make_ec2_nodes(
@@ -833,7 +819,6 @@ def make_ec2_nodes(
             'Launched instance at: %s UTC"' % datetime.utcnow().isoformat()
         )
 
-
     # fire the request
     try:
         resp = client.run_instances(
@@ -932,10 +917,9 @@ def make_ec2_nodes(
                         'not all instances may be up.'
                     )
 
-
             return instance_dict
 
-    except ClientError as e:
+    except ClientError:
 
         LOGEXCEPTION('could not launch requested instance')
         if raiseonfail:
@@ -943,14 +927,13 @@ def make_ec2_nodes(
 
         return None
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('could not launch requested instance')
         if raiseonfail:
             raise
 
         return None
-
 
 
 def delete_ec2_nodes(
@@ -985,7 +968,6 @@ def delete_ec2_nodes(
     )
 
     return resp
-
 
 
 #########################
@@ -1031,7 +1013,6 @@ SPOT_PERINSTANCE_CONFIG = {
     "UserData":"base64-encoded-userdata",
     "EbsOptimized":True,
 }
-
 
 
 def make_spot_fleet_cluster(
@@ -1182,7 +1163,6 @@ def make_spot_fleet_cluster(
         )
         udata = base64.b64encode(udata.encode()).decode()
 
-
     for ind, itype in enumerate(instance_types):
 
         thisinstance = SPOT_PERINSTANCE_CONFIG.copy()
@@ -1261,16 +1241,7 @@ def make_spot_fleet_cluster(
 
                 return spot_fleet_reqid
 
-
-    except ClientError as e:
-
-        LOGEXCEPTION('could not launch spot fleet')
-        if raiseonfail:
-            raise
-
-        return None
-
-    except Exception as e:
+    except ClientError:
 
         LOGEXCEPTION('could not launch spot fleet')
         if raiseonfail:
@@ -1278,6 +1249,13 @@ def make_spot_fleet_cluster(
 
         return None
 
+    except Exception:
+
+        LOGEXCEPTION('could not launch spot fleet')
+        if raiseonfail:
+            raise
+
+        return None
 
 
 def delete_spot_fleet_cluster(
