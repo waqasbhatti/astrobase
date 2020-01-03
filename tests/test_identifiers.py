@@ -11,7 +11,8 @@ Test easy conversion between survey identifiers.
 from astrobase.services.identifiers import (
     simbad_to_gaiadr2,
     gaiadr2_to_tic,
-    simbad_to_tic
+    simbad_to_tic,
+    tic_to_gaiadr2
 )
 
 
@@ -41,3 +42,8 @@ def test_simbad2tic():
     # Orion Nebula is an open cluster; doesn't have Gaia DR2 identifier.
     #
     assert simbad_to_tic('M 42') is None
+
+
+def test_tic2gaiadrtwo():
+
+    assert tic_to_gaiadr2('402026209') == '6535499658122055552'
