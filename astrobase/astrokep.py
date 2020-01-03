@@ -41,27 +41,25 @@ LOGEXCEPTION = LOGGER.exception
 import glob
 import sys
 import os.path
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
+import pickle
 import gzip
 import os
 
 import numpy as np
 
-from numpy import nan as npnan, sum as npsum, abs as npabs, \
-    roll as nproll, isfinite as npisfinite, std as npstd, \
-    sign as npsign, sqrt as npsqrt, median as npmedian, \
-    array as nparray, percentile as nppercentile, \
-    polyfit as nppolyfit, var as npvar, max as npmax, min as npmin, \
-    log10 as nplog10, arange as nparange, pi as MPI, floor as npfloor, \
-    argsort as npargsort, cos as npcos, sin as npsin, tan as nptan, \
-    where as npwhere, linspace as nplinspace, \
-    zeros_like as npzeros_like, full_like as npfull_like, all as npall, \
-    correlate as npcorrelate, zeros as npzeros, ones as npones, \
-    column_stack as npcolumn_stack, in1d as npin1d, append as npappend, \
-    unique as npunique, argwhere as npargwhere, concatenate as npconcatenate
+from numpy import (
+    nan as npnan, sum as npsum, abs as npabs,
+    isfinite as npisfinite,
+    median as npmedian,
+    array as nparray,
+    max as npmax, min as npmin,
+    log10 as nplog10, pi as MPI, floor as npfloor,
+    argsort as npargsort, cos as npcos, sin as npsin,
+    zeros_like as npzeros_like, full_like as npfull_like,
+    ones as npones,
+    column_stack as npcolumn_stack, in1d as npin1d, append as npappend,
+    unique as npunique, concatenate as npconcatenate
+)
 
 from numpy.polynomial.legendre import Legendre
 from scipy.optimize import leastsq
@@ -71,7 +69,6 @@ from sklearn.ensemble import RandomForestRegressor
 SKLEARN = True
 
 from .lcmath import sigclip_magseries, find_lc_timegroups
-
 
 
 ###########################################
@@ -108,7 +105,6 @@ def keplerflux_to_keplermag(keplerflux, f12=1.74e5):
     return kepmag
 
 
-
 def keplermag_to_keplerflux(keplermag, f12=1.74e5):
     '''This converts the Kepler mag back to Kepler flux.
 
@@ -132,7 +128,6 @@ def keplermag_to_keplerflux(keplermag, f12=1.74e5):
 
     kepflux = (10.0**(-0.4*(keplermag - 12.0)))*f12
     return kepflux
-
 
 
 def keplermag_to_sdssr(keplermag, kic_sdssg, kic_sdssr):
@@ -165,7 +160,6 @@ def keplermag_to_sdssr(keplermag, kic_sdssg, kic_sdssr):
     return kepsdssr
 
 
-
 def flux_ppm_to_magnitudes(ppm):
     '''This converts Kepler's flux parts-per-million to magnitudes.
 
@@ -187,7 +181,6 @@ def flux_ppm_to_magnitudes(ppm):
     '''
 
     return -2.5*nplog10(1.0 - ppm/1.0e6)
-
 
 
 ######################################################
@@ -238,7 +231,6 @@ LCTOPKEYS = ['CHANNEL','SKYGROUP','MODULE','OUTPUT',
 # we use CDELT1 and CDELT2 below to get the pixel scale in arcsec/px
 # it should be about 3.96 arcsec/pixel in most cases
 LCAPERTUREKEYS = ['NPIXSAP','NPIXMISS','CDELT1','CDELT2']
-
 
 
 def read_kepler_fitslc(
@@ -345,7 +337,6 @@ def read_kepler_fitslc(
         else:
             hdrinfo[key.lower()] = None
 
-
     # if we're appending to another lcdict
     if appendto and isinstance(appendto, dict):
 
@@ -436,7 +427,6 @@ def read_kepler_fitslc(
                     np.concatenate((lcdict['pdc'][key.lower()], thislcdata))
                 )
 
-
         # append some of the light curve information into existing numpy arrays
         # so we can sort on them later
         lcdict['lc_channel'] = npconcatenate(
@@ -474,7 +464,6 @@ def read_kepler_fitslc(
              npfull_like(lcdata['TIME'],
                          hdrinfo['campaign']))
         )
-
 
     # otherwise, this is a new lcdict
     else:
@@ -595,7 +584,6 @@ def read_kepler_fitslc(
                 pdcsap_flux_median
             )
 
-
     ## END OF LIGHT CURVE CONSTRUCTION ##
 
     # update the lcdict columns with the actual columns
@@ -609,7 +597,6 @@ def read_kepler_fitslc(
 
     # return the lcdict at the end
     return lcdict
-
 
 
 def consolidate_kepler_fitslc(keplerid,
@@ -730,7 +717,6 @@ def consolidate_kepler_fitslc(keplerid,
                                           apkeys=apkeys,
                                           normalize=normalize)
 
-
         # get the rest of the files
         for lcf in matching:
             consolidated = read_kepler_fitslc(lcf,
@@ -802,7 +788,6 @@ def consolidate_kepler_fitslc(keplerid,
         return None
 
 
-
 ########################
 ## READING K2 SFF LCs ##
 ########################
@@ -810,7 +795,6 @@ def consolidate_kepler_fitslc(keplerid,
 SFFTOPKEYS = LCTOPKEYS
 SFFHEADERKEYS = LCHEADERKEYS + ['MASKTYPE','MASKINDE','NPIXSAP']
 SFFDATAKEYS = ['T','FRAW','FCOR','ARCLENGTH','MOVING','CADENCENO']
-
 
 
 def read_k2sff_lightcurve(lcfits):
@@ -945,7 +929,6 @@ def read_k2sff_lightcurve(lcfits):
     return lcdict
 
 
-
 ##################
 ## INPUT/OUTPUT ##
 ##################
@@ -981,7 +964,6 @@ def kepler_lcdict_to_pkl(lcdict, outfile=None):
         pickle.dump(lcdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
 
     return os.path.abspath(outfile)
-
 
 
 def read_kepler_pklc(picklefile):
@@ -1025,7 +1007,6 @@ def read_kepler_pklc(picklefile):
     return lcdict
 
 
-
 ##########################
 ## KEPLER LC PROCESSING ##
 ##########################
@@ -1052,7 +1033,6 @@ def stitch_kepler_lcdict(lcdict):
         investigation.
 
     '''
-
 
 
 def filter_kepler_lcdict(lcdict,
@@ -1117,7 +1097,6 @@ def filter_kepler_lcdict(lcdict,
         LOGINFO('applied quality flag filter, ndet before = %s, ndet after = %s'
                 % (nbefore, nafter))
 
-
     if nanfilter and nanfilter == 'sap,pdc':
         notnanind = (
             npisfinite(lcdict['sap']['sap_flux']) &
@@ -1135,7 +1114,6 @@ def filter_kepler_lcdict(lcdict,
             npisfinite(lcdict['time'])
         )
 
-
     # remove nans from all columns
     if nanfilter:
 
@@ -1151,7 +1129,6 @@ def filter_kepler_lcdict(lcdict,
 
         LOGINFO('removed nans, ndet before = %s, ndet after = %s'
                 % (nbefore, nafter))
-
 
     # exclude all times in timestoignore
     if (timestoignore and
@@ -1180,7 +1157,6 @@ def filter_kepler_lcdict(lcdict,
                 % (nbefore, nafter))
 
     return lcdict
-
 
 
 ###################
@@ -1229,7 +1205,6 @@ def _epd_function(coeffs, fluxes, xcc, ycc, bgv, bge):
     return epdf
 
 
-
 def _epd_residual(coeffs, fluxes, xcc, ycc, bgv, bge):
     '''This is the residual function to minimize using scipy.optimize.leastsq.
 
@@ -1263,7 +1238,6 @@ def _epd_residual(coeffs, fluxes, xcc, ycc, bgv, bge):
     f = _epd_function(coeffs, fluxes, xcc, ycc, bgv, bge)
     residual = fluxes - f
     return residual
-
 
 
 def epd_kepler_lightcurve(lcdict,
@@ -1365,7 +1339,6 @@ def epd_kepler_lightcurve(lcdict,
         LOGINFO('applied quality flag filter, ndet before = %s, ndet after = %s'
                 % (nbefore, nafter))
 
-
     # remove nans
     find = (npisfinite(xcc) & npisfinite(ycc) &
             npisfinite(times) & npisfinite(fluxes) &
@@ -1384,7 +1357,6 @@ def epd_kepler_lightcurve(lcdict,
     nafter = times.size
     LOGINFO('removed nans, ndet before = %s, ndet after = %s'
             % (nbefore, nafter))
-
 
     # exclude all times in timestoignore
     if (timestoignore and
@@ -1412,7 +1384,6 @@ def epd_kepler_lightcurve(lcdict,
         nafter = times.size
         LOGINFO('removed timestoignore, ndet before = %s, ndet after = %s'
                 % (nbefore, nafter))
-
 
     # now that we're all done, we can do EPD
     # first, smooth the light curve
@@ -1470,7 +1441,6 @@ def epd_kepler_lightcurve(lcdict,
 
         LOGERROR('could not fit EPD function to light curve')
         return None, None, None, None
-
 
 
 def rfepd_kepler_lightcurve(
@@ -1583,7 +1553,6 @@ def rfepd_kepler_lightcurve(
                 'ndet after = %s'
                 % (nbefore, nafter))
 
-
     # remove nans
     find = (npisfinite(xcc) & npisfinite(ycc) &
             npisfinite(times) & npisfinite(fluxes) &
@@ -1602,7 +1571,6 @@ def rfepd_kepler_lightcurve(
     nafter = times.size
     LOGINFO('removed nans, ndet before = %s, ndet after = %s'
             % (nbefore, nafter))
-
 
     # exclude all times in timestoignore
     if (timestoignore and
@@ -1631,7 +1599,6 @@ def rfepd_kepler_lightcurve(
         nafter = times.size
         LOGINFO('removed timestoignore, ndet before = %s, ndet after = %s'
                 % (nbefore, nafter))
-
 
     # now that we're all done, we can do EPD
 
@@ -1691,7 +1658,6 @@ def rfepd_kepler_lightcurve(
     return times, corrected_fluxes, flux_corrections
 
 
-
 #######################
 ## CENTROID ANALYSIS ##
 #######################
@@ -1743,12 +1709,9 @@ def detrend_centroid(lcd, detrend='legendre', sigclip=None, mingap=0.5):
     '''
 
     qnum = npunique(lcd['quarter'])
-    try:
-        assert qnum.size == 1, 'lcd should be for a unique quarter'
-        assert detrend == 'legendre'
-        qnum = int(qnum)
-    except Exception as e:
-        errflag = True
+    assert qnum.size == 1, 'light curve dict should be for a unique quarter'
+    assert detrend == 'legendre', 'only legendre is supported for detrend kwarg'
+    qnum = int(qnum)
 
     # Get finite, QUALITY_FLAG != 0 times, centroids, and their errors.
     # Fraquelli & Thompson (2012), or perhaps also newer papers, give the list
@@ -1860,7 +1823,7 @@ def detrend_centroid(lcd, detrend='legendre', sigclip=None, mingap=0.5):
         s_ctd_x = s_ctd_x[(s_times > (npmin(s_times)+mingap)) &
                           (s_times < (npmax(s_times)-mingap))]
 
-    except Exception as e:
+    except Exception:
         # Case: s_times is wonky, all across this quarter. (Implemented because
         # of a rare bug with a singleton s_times array).
         LOGERROR('DETREND FAILED, qnum {:d}'.format(qnum))
@@ -1933,7 +1896,6 @@ def detrend_centroid(lcd, detrend='legendre', sigclip=None, mingap=0.5):
     lcd['ctd_dtr'] = ctd_dtr
 
     return lcd, False
-
 
 
 def get_centroid_offsets(lcd, t_ing_egr, oot_buffer_time=0.1, sample_factor=3):
@@ -2055,7 +2017,6 @@ def get_centroid_offsets(lcd, t_ing_egr, oot_buffer_time=0.1, sample_factor=3):
     return cd
 
 
-
 ############################################
 # UTILITY FUNCTION FOR CENTROID DETRENDING #
 ############################################
@@ -2075,7 +2036,6 @@ def _get_legendre_deg_ctd(npts):
     legendredeg = int(npfloor(fn(npts)))
 
     return legendredeg
-
 
 
 #######################################
@@ -2112,7 +2072,7 @@ def _legendre_dtr(x, y, y_err, legendredeg=10):
     try:
         p = Legendre.fit(x, y, legendredeg)
         fit_y = p(x)
-    except Exception as e:
+    except Exception:
         fit_y = npzeros_like(y)
 
     fitchisq = npsum(
