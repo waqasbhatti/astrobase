@@ -50,7 +50,6 @@ from scipy.signal import savgol_filter
 import scipy.stats
 
 
-
 ############################
 ## NORMALIZING MAG SERIES ##
 ############################
@@ -100,7 +99,6 @@ def find_lc_timegroups(lctimes, mingap=4.0):
             else:
                 group_indices.append(slice(group_start_indices[i-1]+1,gindex+1))
 
-
         # at the end, add the slice for the last group to the end of the times
         # array
         group_indices.append(slice(group_start_indices[-1]+1,len(lctimes)))
@@ -110,9 +108,7 @@ def find_lc_timegroups(lctimes, mingap=4.0):
     else:
         group_indices = [slice(0,len(lctimes))]
 
-
     return len(group_indices), group_indices
-
 
 
 def normalize_magseries(times,
@@ -233,7 +229,6 @@ def normalize_magseries(times,
     else:
         LOGERROR('measurements are all nan!')
         return None, None
-
 
 
 ####################
@@ -437,7 +432,6 @@ def sigclip_magseries(times, mags, errs,
             # final sigclipped versions
             stimes, smags, serrs = this_times, this_mags, this_errs
 
-
     # this handles sigclipping for asymmetric +ve and -ve clip values
     elif sigclip and isinstance(sigclip, (list,tuple)) and len(sigclip) == 2:
 
@@ -589,7 +583,6 @@ def sigclip_magseries(times, mags, errs,
         return stimes, smags, None
 
 
-
 def sigclip_magseries_with_extparams(times, mags, errs, extparams,
                                      sigclip=None,
                                      iterative=False,
@@ -732,7 +725,6 @@ def sigclip_magseries_with_extparams(times, mags, errs, extparams,
             # final sigclipped versions
             stimes, smags, serrs = this_times, this_mags, this_errs
 
-
     # this handles sigclipping for asymmetric +ve and -ve clip values
     elif sigclip and isinstance(sigclip, (list, tuple)) and len(sigclip) == 2:
 
@@ -830,7 +822,6 @@ def sigclip_magseries_with_extparams(times, mags, errs, extparams,
         return stimes, smags, None, extparams
 
 
-
 #################
 ## PHASING LCS ##
 #################
@@ -913,7 +904,6 @@ def phase_magseries(times, mags, period, epoch, wrap=True, sort=True):
                                           outdict['mags']))
 
     return outdict
-
 
 
 def phase_magseries_with_errs(times, mags, errs, period, epoch,
@@ -1001,7 +991,6 @@ def phase_magseries_with_errs(times, mags, errs, period, epoch,
                                           outdict['errs']))
 
     return outdict
-
 
 
 #################
@@ -1110,7 +1099,6 @@ def time_bin_magseries(times, mags,
     )
 
     return collected_binned_mags
-
 
 
 def time_bin_magseries_with_errs(times, mags, errs,
@@ -1225,9 +1213,7 @@ def time_bin_magseries_with_errs(times, mags, errs,
                   for x in binned_finite_timeseries_indices])
     )
 
-
     return collected_binned_mags
-
 
 
 def phase_bin_magseries(phases, mags,
@@ -1332,7 +1318,6 @@ def phase_bin_magseries(phases, mags,
     )
 
     return collected_binned_mags
-
 
 
 def phase_bin_magseries_with_errs(phases, mags, errs,
@@ -1443,9 +1428,7 @@ def phase_bin_magseries_with_errs(phases, mags, errs,
                   for x in binned_finite_phaseseries_indices])
     )
 
-
     return collected_binned_mags
-
 
 
 #############################
@@ -1637,7 +1620,6 @@ def fill_magseries_gaps(times, mags, errs,
 
             interpolated_mags[ind] = smags[itimeind[0]]
             interpolated_errs[ind] = serrs[itimeind[0]]
-
 
     return {'itimes':interpolated_times,
             'imags':interpolated_mags,

@@ -54,7 +54,6 @@ import astropy.time as astime
 from jplephem.spk import SPK
 
 
-
 #################
 ## JPL KERNELS ##
 #################
@@ -71,7 +70,7 @@ try:
     jplkernel = SPK.open(planetdatafile)
     HAVEKERNEL = True
 
-except Exception as e:
+except Exception:
 
     # this is so we don't download the JPL kernel when this module is imported
     # as part of a docs build on RTD
@@ -93,10 +92,7 @@ except Exception as e:
 
         LOGINFO('JPL kernel de430.bsp not found. Downloading from:\n\n%s\n' %
                 spkurl)
-        try:
-            from urllib import urlretrieve
-        except Exception as e:
-            from urllib.request import urlretrieve
+        from urllib.request import urlretrieve
 
         localf, headerr = urlretrieve(
             spkurl,planetdatafile,reporthook=on_download_chunk
@@ -111,7 +107,6 @@ except Exception as e:
 
     else:
         HAVEKERNEL = False
-
 
 
 ######################
@@ -246,7 +241,6 @@ def precess_coordinates(ra, dec,
         outra = np.arctan2(x2[1],x2[0])
         outdec = np.arcsin(x2[2])
 
-
         outradeg = np.rad2deg(outra)
         outdecdeg = np.rad2deg(outdec)
 
@@ -265,7 +259,6 @@ def precess_coordinates(ra, dec,
         # motion (and a given JD), then these will be perturbed from the input
         # values of ra, dec by the appropriate amount of motion
         return np.degrees(raproc), np.degrees(decproc)
-
 
 
 ############################
@@ -298,7 +291,6 @@ def _single_true(iterable):
     has_another_true = any(iterator)
 
     return has_true and not has_another_true
-
 
 
 def get_epochs_given_midtimes_and_period(
@@ -398,7 +390,6 @@ def get_epochs_given_midtimes_and_period(
     return int_epoch, t0
 
 
-
 ###########################
 ## JULIAN DATE FUNCTIONS ##
 ###########################
@@ -425,7 +416,6 @@ def unixtime_to_jd(unix_time):
     return jdutc.jd
 
 
-
 def datetime_to_jd(dt):
     '''This converts a Python datetime object (naive, time in UT) to JD_UTC.
 
@@ -446,7 +436,6 @@ def datetime_to_jd(dt):
 
     jdutc = astime.Time(dt, format='datetime',scale='utc')
     return jdutc.jd
-
 
 
 def jd_to_datetime(jd, returniso=False):
@@ -479,7 +468,6 @@ def jd_to_datetime(jd, returniso=False):
         return tt.datetime
 
 
-
 def jd_now():
     '''
     Gets the Julian date at the current time.
@@ -492,7 +480,6 @@ def jd_now():
 
     '''
     return astime.Time.now().jd
-
 
 
 def jd_to_mjd(jd):
@@ -514,7 +501,6 @@ def jd_to_mjd(jd):
     '''
 
     return jd - 2400000.5
-
 
 
 def mjd_to_jd(mjd):

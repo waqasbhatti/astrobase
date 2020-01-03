@@ -44,10 +44,7 @@ import os.path
 import os
 import stat
 import hashlib
-try:
-    import ConfigParser as configparser
-except Exception as e:
-    import configparser
+import configparser
 
 
 #############################
@@ -58,7 +55,7 @@ try:
     import psycopg2 as pg
     import psycopg2.extras
 
-except Exception as e:
+except Exception:
 
     LOGEXCEPTION('psycopg2 is not available for import. '
                  'Please install it to use this module.\n'
@@ -137,7 +134,7 @@ try:
     else:
         HAVECONF = False
 
-except Exception as e:
+except Exception:
 
     LOGEXCEPTION("no configuration file "
                  "found for this module in %s, "
@@ -215,8 +212,6 @@ class LCDB(object):
         if database and user and password and host:
             self.open(database, user, password, host)
 
-
-
     def open(self, database, user, password, host):
         '''This opens a new database connection.
 
@@ -251,7 +246,7 @@ class LCDB(object):
             self.database = database
             self.user = user
 
-        except Exception as e:
+        except Exception:
 
             LOGEXCEPTION('postgres connection failed, '
                          'using DB %s, user %s' % (database,
@@ -259,8 +254,6 @@ class LCDB(object):
 
             self.database = None
             self.user = None
-
-
 
     def open_default(self):
         '''
@@ -275,7 +268,6 @@ class LCDB(object):
             LOGERROR("no default DB connection config found in lcdb.conf, "
                      "this function won't work otherwise")
 
-
     def autocommit(self):
         '''
         This sets the database connection to autocommit. Must be called before
@@ -288,7 +280,6 @@ class LCDB(object):
         else:
             raise AttributeError('database cursors are already active, '
                                  'cannot switch to autocommit now')
-
 
     def cursor(self, handle, dictcursor=False):
         '''This gets or creates a DB cursor for the current DB connection.
@@ -325,7 +316,6 @@ class LCDB(object):
 
             return self.cursors[handle]
 
-
     def newcursor(self, dictcursor=False):
         '''
         This creates a DB cursor for the current DB connection using a
@@ -357,8 +347,6 @@ class LCDB(object):
 
             return (self.cursors[handle], handle)
 
-
-
     def commit(self):
         '''
         This just calls the connection's commit method.
@@ -369,7 +357,6 @@ class LCDB(object):
         else:
             raise AttributeError('postgres connection to %s is closed' %
                                  self.database)
-
 
     def rollback(self):
         '''
@@ -382,8 +369,6 @@ class LCDB(object):
             raise AttributeError('postgres connection to %s is closed' %
                                  self.database)
 
-
-
     def close_cursor(self, handle):
         '''
         Closes the cursor specified and removes it from the `self.cursors`
@@ -395,8 +380,6 @@ class LCDB(object):
             self.cursors[handle].close()
         else:
             raise KeyError('cursor with handle %s was not found' % handle)
-
-
 
     def close_connection(self):
         '''

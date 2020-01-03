@@ -193,7 +193,6 @@ def jhk_to_bmag(jmag, hmag, kmag):
                              BJ, BH, BK)
 
 
-
 def jhk_to_vmag(jmag,hmag,kmag):
     '''Converts given J, H, Ks mags to a V magnitude value.
 
@@ -217,7 +216,6 @@ def jhk_to_vmag(jmag,hmag,kmag):
                              VJ, VH, VK)
 
 
-
 def jhk_to_rmag(jmag,hmag,kmag):
     '''Converts given J, H, Ks mags to an R magnitude value.
 
@@ -239,7 +237,6 @@ def jhk_to_rmag(jmag,hmag,kmag):
                              RJHK,
                              RJH, RJK, RHK,
                              RJ, RH, RK)
-
 
 
 def jhk_to_imag(jmag,hmag,kmag):
@@ -292,7 +289,6 @@ def jhk_to_sdssu(jmag,hmag,kmag):
                              SDSSU_J, SDSSU_H, SDSSU_K)
 
 
-
 def jhk_to_sdssg(jmag,hmag,kmag):
     '''Converts given J, H, Ks mags to an SDSS g magnitude value.
 
@@ -314,7 +310,6 @@ def jhk_to_sdssg(jmag,hmag,kmag):
                              SDSSG_JHK,
                              SDSSG_JH, SDSSG_JK, SDSSG_HK,
                              SDSSG_J, SDSSG_H, SDSSG_K)
-
 
 
 def jhk_to_sdssr(jmag,hmag,kmag):
@@ -340,7 +335,6 @@ def jhk_to_sdssr(jmag,hmag,kmag):
                              SDSSR_J, SDSSR_H, SDSSR_K)
 
 
-
 def jhk_to_sdssi(jmag,hmag,kmag):
     '''Converts given J, H, Ks mags to an SDSS i magnitude value.
 
@@ -364,7 +358,6 @@ def jhk_to_sdssi(jmag,hmag,kmag):
                              SDSSI_J, SDSSI_H, SDSSI_K)
 
 
-
 def jhk_to_sdssz(jmag,hmag,kmag):
     '''Converts given J, H, Ks mags to an SDSS z magnitude value.
 
@@ -386,7 +379,6 @@ def jhk_to_sdssz(jmag,hmag,kmag):
                              SDSSZ_JHK,
                              SDSSZ_JH, SDSSZ_JK, SDSSZ_HK,
                              SDSSZ_J, SDSSZ_H, SDSSZ_K)
-
 
 
 #########################################
@@ -430,9 +422,6 @@ def jhk_to_sdssz(jmag,hmag,kmag):
 
 # R-I for r-i < 0.95 = 1.00(r-i) + 0.21
 # R-I for r-i > 0.95 = 0.70(r-i) + 0.49
-
-
-
 
 def absolute_gaia_magnitude(gaia_mag,
                             gaia_parallax_mas,
@@ -503,7 +492,6 @@ def absolute_gaia_magnitude(gaia_mag,
         )
     else:
         M_G_err = None
-
 
     if M_G_err is not None:
         return M_G, M_G_err

@@ -41,12 +41,8 @@ LOGEXCEPTION = LOGGER.exception
 
 import os
 import os.path
-import sys
-
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
+import pickle
+from io import BytesIO as Strio
 
 import numpy as np
 from numpy import min as npmin, max as npmax
@@ -70,12 +66,6 @@ from astropy.visualization import (
     LinearStretch
 )
 
-try:
-    import cStringIO
-    from cStringIO import StringIO as Strio
-except Exception as e:
-    from io import BytesIO as Strio
-
 
 ###################
 ## LOCAL IMPORTS ##
@@ -89,6 +79,7 @@ from .lcmath import phase_magseries, phase_magseries_with_errs, \
 from .lcfit.nonphysical import spline_fit_magseries
 
 from .services.skyview import get_stamp
+
 
 #########################
 ## SIMPLE LIGHT CURVES ##
@@ -234,7 +225,6 @@ def plot_magseries(times,
 
         btimes, bmags, berrs = stimes, smags, serrs
 
-
     # check if we need to normalize
     if normto is not False:
         btimes, bmags = normalize_magseries(btimes, bmags,
@@ -370,7 +360,6 @@ def plot_magseries(times,
         else:
             fig.text(0.02, 0.5, 'flux', va='center', rotation='vertical')
 
-
     # make normal figure otherwise
     else:
 
@@ -402,15 +391,7 @@ def plot_magseries(times,
             plt.ylim(ymin, ymax)
             plt.ylabel('flux')
 
-    # check if the output filename is actually an instance of StringIO
-    if sys.version_info[:2] < (3,0):
-
-        is_Strio = isinstance(out, cStringIO.InputType)
-
-    else:
-
-        is_Strio = isinstance(out, Strio)
-
+    is_Strio = isinstance(out, Strio)
 
     # write the plot out to a file if requested
     if out and not is_Strio:
@@ -441,7 +422,6 @@ def plot_magseries(times,
         plt.savefig(outfile,bbox_inches='tight',dpi=plotdpi)
         plt.close()
         return os.path.abspath(outfile)
-
 
 
 #########################
@@ -623,7 +603,6 @@ def plot_phased_magseries(times,
                                              magsarefluxes=magsarefluxes,
                                              sigclip=sigclip)
 
-
     # check if we need to normalize
     if normto is not False:
         stimes, smags = normalize_magseries(stimes, smags,
@@ -654,10 +633,9 @@ def plot_phased_magseries(times,
             epoch = spfit['fitinfo']['fitepoch']
             if len(epoch) != 1:
                 epoch = epoch[0]
-        except Exception as e:
+        except Exception:
             LOGEXCEPTION('spline fit failed, using min(times) as epoch')
             epoch = npmin(stimes)
-
 
     # now phase the data light curve (and optionally, phase bin the light curve)
     if errs is not None:
@@ -816,13 +794,7 @@ def plot_phased_magseries(times,
     LOGINFO('using period: %.6f d and epoch: %.6f' % (period, epoch))
 
     # check if the output filename is actually an instance of StringIO
-    if sys.version_info[:2] < (3,0):
-
-        is_Strio = isinstance(outfile, cStringIO.InputType)
-
-    else:
-
-        is_Strio = isinstance(outfile, Strio)
+    is_Strio = isinstance(outfile, Strio)
 
     # make the figure
     if (outfile and
@@ -859,7 +831,6 @@ def plot_phased_magseries(times,
         plt.savefig(outfile, bbox_inches='tight', dpi=plotdpi)
         plt.close()
         return period, epoch, os.path.abspath(outfile)
-
 
 
 ##########################
@@ -993,7 +964,6 @@ def skyview_stamp(ra, decl,
             LOGINFO('fetched stamp successfully for (%.3f, %.3f)'
                     % (ra, decl))
 
-
         if convolvewith:
 
             convolved = aconv.convolve(frame, convolvewith)
@@ -1014,7 +984,6 @@ def skyview_stamp(ra, decl,
                  'coords: (%.3f, %.3f) from survey: %s and scaling: %s'
                  % (ra, decl, survey, scaling))
         return None
-
 
 
 def fits_finder_chart(
@@ -1152,7 +1121,6 @@ def fits_finder_chart(
     else:
         fig = plt.figure(figsize=findersize)
 
-
     # set the coord limits if zoomcontain is True
     # we'll leave 30 arcseconds of padding on each side
     if (overlay_zoomcontain and
@@ -1163,7 +1131,6 @@ def fits_finder_chart(
                               overlay_ra.max()+30.0/3600.0,
                               overlay_decl.min()-30.0/3600.0,
                               overlay_decl.max()+30.0/3600.0]
-
 
     # set the coordinate limits if provided
     if finder_coordlimits and isinstance(finder_coordlimits, (list,tuple)):
@@ -1220,7 +1187,6 @@ def fits_finder_chart(
                    origin='lower',
                    cmap=colormap)
 
-
     # handle additional options
     if grid:
         plt.grid(color=gridcolor,ls='solid',lw=1.0)
@@ -1242,7 +1208,6 @@ def fits_finder_chart(
                                                       dict):
             our_pltopts.update(overlay_pltopts)
 
-
         plt.gca().set_autoscale_on(False)
         plt.gca().plot(overlay_ra, overlay_decl,
                        **our_pltopts)
@@ -1262,7 +1227,6 @@ def fits_finder_chart(
     plt.close('all')
 
     return outfile
-
 
 
 ##################
@@ -1382,7 +1346,8 @@ def plot_periodbase_lsp(lspinfo, outfile=None, plotdpi=100):
             plt.annotate('%.6f' % bestperiod,
                          xy=(bestperiod, bestpeak), xycoords='data',
                          xytext=(0.0,25.0), textcoords='offset points',
-                         arrowprops=dict(arrowstyle="->"),fontsize='x-small')
+                         arrowprops=dict(arrowstyle="->"),
+                         fontsize='x-small')
 
         # make a grid
         plt.grid(color='#a9a9a9',
@@ -1417,7 +1382,7 @@ def plot_periodbase_lsp(lspinfo, outfile=None, plotdpi=100):
             plt.close()
             return os.path.abspath(outfile)
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('could not plot this LSP, appears to be empty')
         return

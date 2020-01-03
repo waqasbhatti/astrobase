@@ -237,7 +237,7 @@ def gcs_get_file(bucketname,
         blob.download_to_filename(local_file)
         return local_file
 
-    except Exception as e:
+    except Exception:
 
         for alt_extension in altexts:
 
@@ -252,7 +252,7 @@ def gcs_get_file(bucketname,
                 )
                 return local_file.replace(split_ext[-1],
                                           alt_extension)
-            except Exception as e:
+            except Exception:
                 pass
 
     else:
@@ -263,7 +263,6 @@ def gcs_get_file(bucketname,
             raise
 
         return None
-
 
 
 def gcs_get_url(url,
@@ -323,7 +322,6 @@ def gcs_get_url(url,
                         raiseonfail=raiseonfail)
 
 
-
 def gcs_put_file(local_file,
                  bucketname,
                  service_account_json=None,
@@ -380,7 +378,7 @@ def gcs_put_file(local_file,
         remote_blob.upload_from_filename(local_file)
         return 'gs://%s/%s' % (bucketname, local_file.lstrip('/'))
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('could not upload %s to bucket %s' % (local_file,
                                                            bucket))
@@ -389,7 +387,6 @@ def gcs_put_file(local_file,
             raise
 
         return None
-
 
 
 ###################
@@ -405,7 +402,6 @@ def gps_create_topic():
     """
 
 
-
 def gps_delete_topic():
     """
     This deletes a Google Pub/Sub topic.
@@ -415,7 +411,6 @@ def gps_delete_topic():
     """
 
 
-
 def gps_topic_pull():
     """
     This synchronously pulls a single message from a pubsub topic.
@@ -423,7 +418,6 @@ def gps_topic_pull():
     TODO: finish this
 
     """
-
 
 
 def gps_topic_publish():
