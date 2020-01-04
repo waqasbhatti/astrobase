@@ -44,7 +44,6 @@ LOGERROR = LOGGER.error
 LOGEXCEPTION = LOGGER.exception
 
 
-
 #############
 ## IMPORTS ##
 #############
@@ -106,7 +105,6 @@ def independent_freq_count(frequencies, times, conservative=True):
     return M_eff
 
 
-
 def get_frequency_grid(times,
                        samplesperpeak=5,
                        nyquistfactor=5,
@@ -162,12 +160,10 @@ def get_frequency_grid(times,
     else:
         Nf = int(0.5 * samplesperpeak * nyquistfactor * nsamples)
 
-
     if returnf0dfnf:
         return f0, df, Nf, f0 + df * np.arange(Nf)
     else:
         return f0 + df * np.arange(Nf)
-
 
 
 ############################################
@@ -243,7 +239,6 @@ def make_combined_periodogram(pflist, outfile, addmethods=False):
                      pf['lspvals']/np.max(pf['lspvals']),
                      label='%s P=%.5f' % (pf['method'], pf['bestperiod']),
                      alpha=0.5)
-
 
     plt.xlabel('period [days]')
     plt.ylabel('normalized periodogram power')

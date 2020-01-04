@@ -119,26 +119,16 @@ def generalized_lsp_value(times, mags, errs, omega):
     sin_omegat = npsin(omega*times)
     cos_omegat = npcos(omega*times)
 
-    sin2_omegat = sin_omegat*sin_omegat
     cos2_omegat = cos_omegat*cos_omegat
-    sincos_omegat = sin_omegat*cos_omegat
 
     # calculate some more sums and terms
     Y = npsum( wi*mags )
     C = npsum( wi*cos_omegat )
     S = npsum( wi*sin_omegat )
 
-    CpS = npsum( wi*sincos_omegat )
     CpC = npsum( wi*cos2_omegat )
-    CS = CpS - C*S
     CC = CpC - C*C
     SS = 1 - CpC - S*S  # use SpS = 1 - CpC
-
-    # calculate tau
-    tan_omega_tau_top = 2.0*CS
-    tan_omega_tau_bottom = CC - SS
-    tan_omega_tau = tan_omega_tau_top/tan_omega_tau_bottom
-    tau = nparctan(tan_omega_tau)/(2.0*omega)
 
     YpY = npsum( wi*mags*mags)
 
@@ -155,7 +145,6 @@ def generalized_lsp_value(times, mags, errs, omega):
     periodogramvalue = (YC*YC/CC + YS*YS/SS)/YY
 
     return periodogramvalue
-
 
 
 def generalized_lsp_value_withtau(times, mags, errs, omega):
@@ -211,7 +200,6 @@ def generalized_lsp_value_withtau(times, mags, errs, omega):
     sin_omegat = npsin(omega*times)
     cos_omegat = npcos(omega*times)
 
-    sin2_omegat = sin_omegat*sin_omegat
     cos2_omegat = cos_omegat*cos_omegat
     sincos_omegat = sin_omegat*cos_omegat
 
@@ -235,16 +223,12 @@ def generalized_lsp_value_withtau(times, mags, errs, omega):
     # now we need to calculate all the bits at tau
     sin_omega_tau = npsin(omega*(times - tau))
     cos_omega_tau = npcos(omega*(times - tau))
-    sin2_omega_tau = sin_omega_tau*sin_omega_tau
     cos2_omega_tau = cos_omega_tau*cos_omega_tau
-    sincos_omega_tau = sin_omega_tau*cos_omega_tau
 
     C_tau = npsum(wi*cos_omega_tau)
     S_tau = npsum(wi*sin_omega_tau)
 
-    CpS_tau = npsum( wi*sincos_omega_tau )
     CpC_tau = npsum( wi*cos2_omega_tau )
-    CS_tau = CpS_tau - C_tau*S_tau
     CC_tau = CpC_tau - C_tau*C_tau
     SS_tau = 1 - CpC_tau - S_tau*S_tau  # use SpS = 1 - CpC
 
@@ -263,7 +247,6 @@ def generalized_lsp_value_withtau(times, mags, errs, omega):
     periodogramvalue = (YC_tau*YC_tau/CC_tau + YS_tau*YS_tau/SS_tau)/YY
 
     return periodogramvalue
-
 
 
 def generalized_lsp_value_notau(times, mags, errs, omega):
@@ -316,7 +299,6 @@ def generalized_lsp_value_notau(times, mags, errs, omega):
     sin_omegat = npsin(omega*times)
     cos_omegat = npcos(omega*times)
 
-    sin2_omegat = sin_omegat*sin_omegat
     cos2_omegat = cos_omegat*cos_omegat
     sincos_omegat = sin_omegat*cos_omegat
 
@@ -349,7 +331,6 @@ def generalized_lsp_value_notau(times, mags, errs, omega):
     lspval = (SS*YC*YC + CC*YS*YS - 2.0*CS*YC*YS)/(YY*Domega)
 
     return lspval
-
 
 
 def specwindow_lsp_value(times, mags, errs, omega):
@@ -415,7 +396,7 @@ def _glsp_worker(task):
 
     try:
         return generalized_lsp_value(*task)
-    except Exception as e:
+    except Exception:
         return npnan
 
 
@@ -427,9 +408,8 @@ def _glsp_worker_withtau(task):
 
     try:
         return generalized_lsp_value_withtau(*task)
-    except Exception as e:
+    except Exception:
         return npnan
-
 
 
 def _glsp_worker_specwindow(task):
@@ -440,9 +420,8 @@ def _glsp_worker_specwindow(task):
 
     try:
         return specwindow_lsp_value(*task)
-    except Exception as e:
+    except Exception:
         return npnan
-
 
 
 def _glsp_worker_notau(task):
@@ -454,9 +433,8 @@ def _glsp_worker_notau(task):
 
     try:
         return generalized_lsp_value_notau(*task)
-    except Exception as e:
+    except Exception:
         return npnan
-
 
 
 def pgen_lsp(
@@ -583,7 +561,6 @@ def pgen_lsp(
     # get rid of zero errs
     nzind = npnonzero(serrs)
     stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
-
 
     # make sure there are enough points to calculate a spectrum
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
@@ -715,7 +692,6 @@ def pgen_lsp(
 
             prevperiod = period
 
-
         return {'bestperiod':finperiods[bestperiodind],
                 'bestlspval':finlsp[bestperiodind],
                 'nbestpeaks':nbestpeaks,
@@ -752,7 +728,6 @@ def pgen_lsp(
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
                           'sigclip':sigclip}}
-
 
 
 def specwindow_lsp(
@@ -902,7 +877,6 @@ def specwindow_lsp(
     return lspres
 
 
-
 ##########################################
 ## FALSE ALARM PROBABILITY CALCULATIONS ##
 ##########################################
@@ -942,7 +916,6 @@ def probability_peak_exceeds_value(times, peakval):
     '''
 
     return (1.0 - peakval)**((times.size - 3.0)/2.0)
-
 
 
 def analytic_false_alarm_probability(lspinfo,

@@ -37,7 +37,6 @@ LOGERROR = LOGGER.error
 LOGEXCEPTION = LOGGER.exception
 
 
-
 #############
 ## IMPORTS ##
 #############
@@ -47,7 +46,6 @@ import numpy.random as npr
 npr.seed(0xdecaff)
 
 from ..lcmath import sigclip_magseries
-
 
 
 #############################################################
@@ -231,7 +229,6 @@ def bootstrap_falsealarmprob(lspinfo,
                                      high=mags.size,
                                      size=mags.size)
 
-
                 # get the kwargs dict out of the lspinfo
                 if 'kwargs' in lspinfo:
 
@@ -245,7 +242,6 @@ def bootstrap_falsealarmprob(lspinfo,
                     kwargs = {'magsarefluxes':magsarefluxes,
                               'sigclip':sigclip,
                               'verbose':False}
-
 
                 # run the periodogram with scrambled mags and errs
                 # and the appropriate keyword arguments

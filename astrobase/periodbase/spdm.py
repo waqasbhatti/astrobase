@@ -141,7 +141,6 @@ def stellingwerf_pdm_theta(times, mags, errs, frequency,
     return theta
 
 
-
 def _stellingwerf_pdm_worker(task):
     '''
     This is a parallel worker for the function below.
@@ -177,10 +176,9 @@ def _stellingwerf_pdm_worker(task):
 
         return theta
 
-    except Exception as e:
+    except Exception:
 
         return npnan
-
 
 
 def stellingwerf_pdm(times,
@@ -444,7 +442,6 @@ def stellingwerf_pdm(times,
 
             prevperiod = period
 
-
         return {'bestperiod':finperiods[bestperiodind],
                 'bestlspval':finlsp[bestperiodind],
                 'nbestpeaks':nbestpeaks,
@@ -485,7 +482,6 @@ def stellingwerf_pdm(times,
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
                           'sigclip':sigclip}}
-
 
 
 def analytic_false_alarm_probability(lspinfo,
@@ -595,8 +591,6 @@ def analytic_false_alarm_probability(lspinfo,
         prob_exceeds_val = beta.cdf(prob_xval,
                                     (ndet-nphasebins)/2.0,
                                     (nphasebins-1.0)/2.0)
-        import ipdb; ipdb.set_trace()
-
         false_alarm_probs.append(1.0 - (1.0 - prob_exceeds_val)**M)
 
     if inplace:

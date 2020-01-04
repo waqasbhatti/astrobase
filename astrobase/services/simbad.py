@@ -65,7 +65,6 @@ import requests.exceptions
 from xml.dom.minidom import parseString
 
 
-
 ###################
 ## FORM SETTINGS ##
 ###################
@@ -100,7 +99,6 @@ RETURN_FORMATS = {
 #####################
 ## QUERY FUNCTIONS ##
 #####################
-
 
 def tap_query(querystr,
               simbad_mirror='simbad',
@@ -310,7 +308,7 @@ def tap_query(querystr,
 
                     return None
 
-            except requests.exceptions.Timeout as e:
+            except requests.exceptions.Timeout:
 
                 LOGEXCEPTION(
                     'SIMBAD query timed out while waiting for status '
@@ -322,8 +320,7 @@ def tap_query(querystr,
 
                 return None
 
-
-            except Exception as e:
+            except Exception:
 
                 LOGEXCEPTION(
                     'SIMBAD query failed while waiting for status\n'
@@ -385,7 +382,7 @@ def tap_query(querystr,
 
             return resdict
 
-        except requests.exceptions.Timeout as e:
+        except requests.exceptions.Timeout:
 
             LOGEXCEPTION(
                 'SIMBAD query timed out while trying to '
@@ -396,7 +393,7 @@ def tap_query(querystr,
             )
             return None
 
-        except Exception as e:
+        except Exception:
 
             LOGEXCEPTION(
                 'SIMBAD query failed because of an error '
@@ -415,7 +412,6 @@ def tap_query(querystr,
             os.remove(incomplete_qpklf)
 
             return None
-
 
     #####################
     ## RUN A NEW QUERY ##
@@ -480,7 +476,6 @@ def tap_query(querystr,
                     % repr(inputparams)
                 )
 
-
             # here, we'll make sure the SIMBAD mirror works before doing
             # anything else
             mirrorok = False
@@ -506,7 +501,7 @@ def tap_query(querystr,
                     mirrorok = True
 
                 # this handles immediate 503s
-                except requests.exceptions.HTTPError as e:
+                except requests.exceptions.HTTPError:
 
                     LOGWARNING(
                         'SIMBAD TAP server: %s not responding, '
@@ -533,7 +528,7 @@ def tap_query(querystr,
                         )
 
                 # this handles initial query submission timeouts
-                except requests.exceptions.Timeout as e:
+                except requests.exceptions.Timeout:
 
                     LOGWARNING(
                         'SIMBAD TAP query submission timed out, '
@@ -561,8 +556,6 @@ def tap_query(querystr,
                 # update the number of submission tries
                 ntries = ntries + 1
 
-
-
             # NOTE: python-requests follows the "303 See Other" redirect
             # automatically, so we get the XML status doc immediately. We don't
             # need to look up the location of it in the initial response's
@@ -571,8 +564,6 @@ def tap_query(querystr,
 
             # parse the response XML and get the job status
             resxml = parseString(req.text)
-
-
             jobstatuselem = resxml.getElementsByTagName(phasekeyword)
 
             if jobstatuselem:
@@ -703,7 +694,7 @@ def tap_query(querystr,
                                         % (timeelapsed, jobstatus, status_url))
                             continue
 
-                    except requests.exceptions.Timeout as e:
+                    except requests.exceptions.Timeout:
 
                         LOGEXCEPTION(
                             'SIMBAD query timed out while waiting for results '
@@ -714,8 +705,7 @@ def tap_query(querystr,
                         )
                         return None
 
-
-                    except Exception as e:
+                    except Exception:
 
                         LOGEXCEPTION(
                             'SIMBAD query failed while waiting for results\n'
@@ -756,7 +746,7 @@ def tap_query(querystr,
                     LOGINFO('done. rows in result: %s' % result_nrows)
                 tablefname = cachefname
 
-            except requests.exceptions.Timeout as e:
+            except requests.exceptions.Timeout:
 
                 LOGEXCEPTION(
                     'SIMBAD query timed out while trying to '
@@ -767,7 +757,7 @@ def tap_query(querystr,
                 )
                 return None
 
-            except Exception as e:
+            except Exception:
 
                 LOGEXCEPTION(
                     'SIMBAD query failed because of an error '
@@ -781,20 +771,19 @@ def tap_query(querystr,
                 )
                 return None
 
-        except requests.exceptions.HTTPError as e:
+        except requests.exceptions.HTTPError:
             LOGEXCEPTION('SIMBAD TAP query failed.\nrequest status was: '
                          '%s.\nquery was: %s' % (resp_status,
                                                  repr(inputparams)))
             return None
 
-
-        except requests.exceptions.Timeout as e:
+        except requests.exceptions.Timeout:
             LOGERROR('SIMBAD TAP query submission timed out, '
                      'site is probably down. Request was: '
                      '%s' % repr(inputparams))
             return None
 
-        except Exception as e:
+        except Exception:
             LOGEXCEPTION('SIMBAD TAP query request failed for '
                          '%s' % repr(inputparams))
 
@@ -821,7 +810,7 @@ def tap_query(querystr,
 
             df = Table.read(cachefname, format='csv')
 
-        except Exception as e:
+        except Exception:
 
             LOGEXCEPTION('could not read cached SIMBAD result file: %s, '
                          'fetching from server again' % cachefname)
@@ -847,7 +836,6 @@ def tap_query(querystr,
                'result':tablefname}
 
     return resdict
-
 
 
 def objectnames_conesearch(racenter,

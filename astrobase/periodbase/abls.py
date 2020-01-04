@@ -491,7 +491,6 @@ def bls_serial_pfind(times, mags, errs,
 
                 prevperiod = period
 
-
             # generate the return dict
             resultdict = {
                 'bestperiod':finperiods[bestperiodind],
@@ -531,7 +530,7 @@ def bls_serial_pfind(times, mags, errs,
 
             return resultdict
 
-        except Exception as e:
+        except Exception:
 
             LOGEXCEPTION('BLS failed!')
 
@@ -571,7 +570,6 @@ def bls_serial_pfind(times, mags, errs,
                               'sigclip':sigclip,
                               'magsarefluxes':magsarefluxes}}
 
-
     else:
 
         LOGERROR('no good detections for these times and mags, skipping...')
@@ -608,7 +606,6 @@ def bls_serial_pfind(times, mags, errs,
                           'nbestpeaks':nbestpeaks,
                           'sigclip':sigclip,
                           'magsarefluxes':magsarefluxes}}
-
 
 
 def _parallel_bls_worker(task):
@@ -687,7 +684,7 @@ def _parallel_bls_worker(task):
             'power': nparray(blsresult.power)
         }
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('BLS for frequency chunk: (%.6f, %.6f) failed.' %
                      (frequencies[0], frequencies[-1]))
@@ -698,7 +695,6 @@ def _parallel_bls_worker(task):
             'durations': durations,
             'power': nparray([npnan for x in range(nfreq)]),
         }
-
 
 
 def bls_parallel_pfind(
@@ -967,7 +963,6 @@ def bls_parallel_pfind(
             LOGWARNING('new minfreq: %s, maxfreq: %s' %
                        (minfreq, maxfreq))
 
-
         #############################
         ## NOW RUN BLS IN PARALLEL ##
         #############################
@@ -1039,7 +1034,6 @@ def bls_parallel_pfind(
 
             frequencies = minfreq + nparange(nfreq)*stepsize
 
-
         # break up the tasks into chunks
         csrem = int(fmod(nfreq, nworkers))
         csint = int(float(nfreq/nworkers))
@@ -1057,7 +1051,6 @@ def bls_parallel_pfind(
 
             chunk_minfreqs.append(this_minfreqs)
             chunk_nfreqs.append(this_nfreqs)
-
 
         # populate the tasks list
         #
@@ -1190,7 +1183,6 @@ def bls_parallel_pfind(
 
             prevperiod = period
 
-
         # generate the return dict
         resultdict = {
             'bestperiod':finperiods[bestperiodind],
@@ -1227,7 +1219,6 @@ def bls_parallel_pfind(
         }
 
         return resultdict
-
 
     else:
 

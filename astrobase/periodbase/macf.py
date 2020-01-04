@@ -56,7 +56,6 @@ from astropy.convolution import convolve, Gaussian1DKernel
 from ..varbase.autocorr import autocorr_magseries
 
 
-
 ######################
 ## HELPER FUNCTIONS ##
 ######################
@@ -122,7 +121,6 @@ def _smooth_acf_savgol(acf, windowsize=21, polyorder=2):
     smoothed = savgol_filter(acf, windowsize, polyorder)
 
     return smoothed
-
 
 
 def _get_acf_peakheights(lags, acf, npeaks=20, searchinterval=1):
@@ -290,7 +288,6 @@ def plot_acf_results(acfp, outfile, maxlags=5000, yrange=(-0.4,0.4)):
     plt.close('all')
 
     return outfile
-
 
 
 ############################
@@ -466,7 +463,6 @@ def macf_period_find(
 
         xacf = acfres['acf']
 
-
     # get the relative peak heights and fit best lag
     peakres = _get_acf_peakheights(xlags, xacf, npeaks=maxacfpeaks,
                                    searchinterval=int(smoothacf/2))
@@ -491,7 +487,7 @@ def macf_period_find(
         fitbestperiod = fitcoeffs[0]
         bestperiodrms = npsqrt(fitcovar[0,0])  # from the covariance matrix
 
-    except Exception as e:
+    except Exception:
 
         LOGWARNING('linear fit to time at each peak lag '
                    'value vs. peak number failed, '
@@ -514,7 +510,6 @@ def macf_period_find(
         bestperiod = fitbestperiod
     else:
         bestperiod = naivebestperiod
-
 
     return {'bestperiod':bestperiod,
             'bestlspval':bestlspval,

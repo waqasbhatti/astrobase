@@ -18,7 +18,7 @@ that makes them handle flux light curves correctly.
   repository.
 - A [overview](#contents) of the modules and subpackages is provided below.
 
-To install **[astrobase](https://pypi.org/project/astrobase/)** from the
+Install **[astrobase](https://pypi.org/project/astrobase/)** from the
 Python Package Index (PyPI):
 
 ```bash
@@ -26,9 +26,8 @@ $ pip install numpy # needed to set up Fortran wrappers
 $ pip install astrobase
 ```
 
-See the [installation instructions](#installation) below for details.
-
-This package requires Python >= 3.5 as of version 0.5.0. Use `pip install
+See the [installation instructions](#installation) below for details. This
+package requires Python >= 3.5 as of version 0.5.0. Use `pip install
 astrobase<0.5.0` for older Python versions.
 
 Python 3.6: [![Python

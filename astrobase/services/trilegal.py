@@ -93,7 +93,7 @@ TRILEGAL_POSTURL = 'http://stev.oapd.inaf.it/cgi-bin/trilegal_{formversion}'
 TRILEGAL_BASEURL = 'http://stev.oapd.inaf.it'
 
 # regex to get the result file name
-TRILEGAL_REGEX = re.compile('a href\S*.dat')
+TRILEGAL_REGEX = re.compile(r'a href\S*.dat')
 
 # these are the params that the user will probably interact with the most
 TRILEGAL_INPUT_PARAMS = {
@@ -470,7 +470,6 @@ TRILEGAL_FILTER_SYSTEMS = {
 }
 
 
-
 ##############################
 ## TRILEGAL QUERY FUNCTIONS ##
 ##############################
@@ -485,7 +484,6 @@ def list_trilegal_filtersystems():
     print('%-40s %s' % ('------------------','-----------'))
     for key in sorted(TRILEGAL_FILTER_SYSTEMS.keys()):
         print('%-40s %s' % (key, TRILEGAL_FILTER_SYSTEMS[key]['desc']))
-
 
 
 def query_galcoords(gal_lon,
@@ -617,14 +615,13 @@ def query_galcoords(gal_lon,
     try:
         Av_infinity = extinction_info['Amag']['CTIO V']['sf11']
         inputparams['extinction_infty'] = '%.5f' % Av_infinity
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION(
             'could not get A_V_SF11 from 2MASS DUST '
             'for Galactic coords: (%.3f, %.3f), '
             'using default value of %s' % (gal_lon, gal_lat,
                                            inputparams['extinction_infty'])
         )
-
 
     # get the filter system table
     if filtersystem in TRILEGAL_FILTER_SYSTEMS:
@@ -745,7 +742,7 @@ def query_galcoords(gal_lon,
                         if verbose:
                             LOGINFO('done.')
 
-                    except Exception as e:
+                    except Exception:
 
                         if verbose:
                             LOGINFO('elapsed time: %.1f, result file: %s '
@@ -764,14 +761,13 @@ def query_galcoords(gal_lon,
                     os.remove(lockfile)
                 return None
 
-
-        except requests.exceptions.Timeout as e:
+        except requests.exceptions.Timeout:
             LOGERROR('TRILEGAL submission timed out, '
                      'site is probably down. Request was: '
                      '%s' % repr(inputparams))
             return None
 
-        except Exception as e:
+        except Exception:
             LOGEXCEPTION('TRILEGAL request failed for '
                          '%s' % repr(inputparams))
             return None
@@ -781,7 +777,6 @@ def query_galcoords(gal_lon,
             # remove the lock file
             if os.path.exists(lockfile):
                 os.remove(lockfile)
-
 
     # otherwise, get the file from the cache
     else:
@@ -793,7 +788,6 @@ def query_galcoords(gal_lon,
 
         tablefname = cachefname
 
-
     # return a dict pointing to the result file
     # we'll parse this later
     resdict = {'params':inputparams,
@@ -802,7 +796,6 @@ def query_galcoords(gal_lon,
                'tablefile':tablefname}
 
     return resdict
-
 
 
 def query_radecl(ra,
@@ -926,7 +919,6 @@ def query_radecl(ra,
                            timeout=timeout,
                            refresh=refresh,
                            maxtimeout=maxtimeout)
-
 
 
 def read_model_table(modelfile):

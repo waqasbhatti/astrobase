@@ -53,7 +53,7 @@ try:
 
     from transitleastsquares import transitleastsquares
 
-except Exception as e:
+except Exception:
 
     errmsg = (
         'The `transitleastsquares` package is required, '
@@ -271,7 +271,6 @@ def tls_parallel_pfind(times, mags, errs,
 
         magsarefluxes = True
 
-
     # uniform weights for errors if none given
     if errs is None:
         errs = np.ones_like(mags)*1.0e-4
@@ -311,7 +310,6 @@ def tls_parallel_pfind(times, mags, errs,
                       'magsarefluxes':magsarefluxes}
         }
         return resultdict
-
 
     # if the end period is not provided, set it to
     # 99% of the time baseline. (for two transits).

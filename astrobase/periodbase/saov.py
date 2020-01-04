@@ -145,7 +145,6 @@ def aov_theta(times, mags, errs, frequency,
             binndets.append(thisbin_ndet)
             goodbins = goodbins + 1
 
-
     # turn the quantities into arrays
     bin_s1_tops = nparray(bin_s1_tops)
     bin_s2_tops = nparray(bin_s2_tops)
@@ -160,7 +159,6 @@ def aov_theta(times, mags, errs, frequency,
     theta_aov = s1/s2
 
     return theta_aov
-
 
 
 def _aov_worker(task):
@@ -197,10 +195,9 @@ def _aov_worker(task):
 
         return theta
 
-    except Exception as e:
+    except Exception:
 
         return npnan
-
 
 
 def aov_periodfind(times,
@@ -464,7 +461,6 @@ def aov_periodfind(times,
 
             prevperiod = period
 
-
         return {'bestperiod':finperiods[bestperiodind],
                 'bestlspval':finlsp[bestperiodind],
                 'nbestpeaks':nbestpeaks,
@@ -505,7 +501,6 @@ def aov_periodfind(times,
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
                           'sigclip':sigclip}}
-
 
 
 def analytic_false_alarm_probability(lspinfo,

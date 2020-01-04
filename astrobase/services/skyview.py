@@ -52,10 +52,7 @@ import copy
 # to do the queries
 import requests
 import requests.exceptions
-try:
-    from urllib.parse import urljoin
-except Exception as e:
-    from urlparse import urljoin
+from urllib.parse import urljoin
 
 import astropy.io.fits as pyfits
 
@@ -85,6 +82,7 @@ SKYVIEW_PARAMS = {
 
 FITS_REGEX = re.compile(r'(tempspace\/fits\/skv\d{8,20}\.fits)')
 FITS_BASEURL = 'https://skyview.gsfc.nasa.gov'
+
 
 #####################
 ## QUERY FUNCTIONS ##
@@ -244,18 +242,18 @@ def get_stamp(ra, decl,
                          formposition)
                 return None
 
-        except requests.exceptions.HTTPError as e:
+        except requests.exceptions.HTTPError:
             LOGEXCEPTION('SkyView stamp request for '
                          'coordinates %s failed' % repr(formposition))
             return None
 
-        except requests.exceptions.Timeout as e:
+        except requests.exceptions.Timeout:
             LOGERROR('SkyView stamp request for '
                      'coordinates %s did not complete within %s seconds' %
                      (repr(formposition), timeout))
             return None
 
-        except Exception as e:
+        except Exception:
             LOGEXCEPTION('SkyView stamp request for '
                          'coordinates %s failed' % repr(formposition))
             return None
@@ -282,7 +280,7 @@ def get_stamp(ra, decl,
 
         return retdict
 
-    except Exception as e:
+    except Exception:
 
         LOGERROR('could not open cached FITS from Skyview download: %r' %
                  {'ra':ra,

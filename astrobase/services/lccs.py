@@ -35,8 +35,6 @@ The functions below support various auxiliary LCC services::
 
 '''
 
-from __future__ import print_function
-
 # put this in here because lccs can be used as a standalone module
 __version__ = '0.4.3'
 
@@ -118,17 +116,9 @@ except Exception:
 
 # import url methods here.  we use built-ins because we want this module to be
 # usable as a single file. otherwise, we'd use something sane like Requests.
-
-# Python 2
-try:
-    from urllib import urlencode
-    from urlparse import urlparse
-    from urllib2 import urlopen, Request, HTTPError
-# Python 3
-except Exception:
-    from urllib.request import urlopen, Request
-    from urllib.error import HTTPError
-    from urllib.parse import urlencode, urlparse
+from urllib.request import urlopen, Request
+from urllib.error import HTTPError
+from urllib.parse import urlencode, urlparse
 
 
 ####################

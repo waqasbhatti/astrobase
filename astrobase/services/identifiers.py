@@ -405,11 +405,11 @@ def tic_to_gaiadr2(tic_id, raiseonfail=False):
         if len(tic_info['data']) != 1:
             errmsg = (
                 'Expected exactly 1 TIC result from tic_id {}; got {}.'.
-                format(source_id, len(df))
+                format(tic_id, len(tic_info['data']))
             )
 
             if raiseonfail:
-                raise Exception(errmsg)
+                raise ValueError(errmsg)
             else:
                 LOGEXCEPTION(errmsg)
                 return None

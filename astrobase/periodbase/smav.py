@@ -188,7 +188,6 @@ def aovhm_theta(times, mags, errs, frequency,
         # update z^n
         zn = zn * z
 
-
     # done with all harmonics, calculate the theta_aov for this freq
     # the max below makes sure that magvariance - theta_aov > zero
     theta_aov = ( (ndet - two_nharmonics - 1.0) * theta_aov /
@@ -196,7 +195,6 @@ def aovhm_theta(times, mags, errs, frequency,
                                            1.0e-9])) )
 
     return theta_aov
-
 
 
 def _aovhm_theta_worker(task):
@@ -234,10 +232,9 @@ def _aovhm_theta_worker(task):
 
         return theta
 
-    except Exception as e:
+    except Exception:
 
         return npnan
-
 
 
 def aovhm_periodfind(times,
@@ -502,7 +499,6 @@ def aovhm_periodfind(times,
 
             prevperiod = period
 
-
         return {'bestperiod':finperiods[bestperiodind],
                 'bestlspval':finlsp[bestperiodind],
                 'nbestpeaks':nbestpeaks,
@@ -541,7 +537,6 @@ def aovhm_periodfind(times,
                           'periodepsilon':periodepsilon,
                           'nbestpeaks':nbestpeaks,
                           'sigclip':sigclip}}
-
 
 
 def analytic_false_alarm_probability(lspinfo,

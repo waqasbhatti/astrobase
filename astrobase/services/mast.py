@@ -61,7 +61,6 @@ import requests
 import requests.exceptions
 
 
-
 ###################
 ## FORM SETTINGS ##
 ###################
@@ -276,7 +275,7 @@ def mast_query(service,
                     waitdone = True
                     break
 
-            except requests.exceptions.Timeout as e:
+            except requests.exceptions.Timeout:
 
                 if verbose:
                     LOGWARNING('MAST query try timed out, '
@@ -288,13 +287,13 @@ def mast_query(service,
                 timeelapsed = timeelapsed + refresh
                 retdict = None
 
-            except KeyboardInterrupt as e:
+            except KeyboardInterrupt:
 
                 LOGERROR('MAST request wait aborted for '
                          '%s' % repr(inputparams))
                 return None
 
-            except Exception as e:
+            except Exception:
 
                 LOGEXCEPTION('MAST query failed!')
 
@@ -336,7 +335,6 @@ def mast_query(service,
         }
 
         return retdict
-
 
 
 def tic_conesearch(
@@ -448,7 +446,6 @@ def tic_conesearch(
                       raiseonfail=raiseonfail)
 
 
-
 def tic_xmatch(
         ra,
         decl,
@@ -552,7 +549,6 @@ def tic_xmatch(
                       maxtimeout=maxtimeout,
                       maxtries=maxtries,
                       raiseonfail=raiseonfail)
-
 
 
 def tic_objectsearch(

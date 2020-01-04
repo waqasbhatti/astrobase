@@ -80,7 +80,6 @@ DUST_PARAMS = {'locstr':'',
 DUST_REGEX = re.compile(r'http[s|]://\S*extinction\.tbl')
 
 
-
 ################################
 ## 2MASS DUST QUERY FUNCTIONS ##
 ################################
@@ -211,13 +210,13 @@ def extinction_query(lon, lat,
                 LOGERROR('error from DUST service follows:\n%s' % resp)
                 return None
 
-        except requests.exceptions.Timeout as e:
+        except requests.exceptions.Timeout:
             LOGERROR('DUST request timed out for '
                      '%s (%.3f, %.3f) with size = %.1f' % (coordtype,
                                                            lon,lat,sizedeg))
             return None
 
-        except Exception as e:
+        except Exception:
             LOGEXCEPTION('DUST request failed for '
                          '%s (%.3f, %.3f) with size = %.1f' % (coordtype,
                                                                lon,lat,sizedeg))
