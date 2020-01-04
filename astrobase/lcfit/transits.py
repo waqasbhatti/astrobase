@@ -1051,26 +1051,12 @@ def mandelagol_fit_magseries(
                 '{:d} threads'.format(nworkers)
             )
 
-        import sys
-
-        if sys.version_info >= (3, 3):
-            with Pool(nworkers) as pool:
-                sampler = emcee.EnsembleSampler(
-                    n_walkers, n_dim, log_posterior_transit,
-                    args=(init_params, init_m, stimes,
-                          smags, serrs, priorbounds),
-                    pool=pool,
-                    backend=backend
-                )
-                sampler.run_mcmc(starting_positions, n_mcmc_steps,
-                                 progress=mcmcprogressbar)
-
-        elif sys.version_info < (3, 3):
-
+        with Pool(nworkers) as pool:
             sampler = emcee.EnsembleSampler(
                 n_walkers, n_dim, log_posterior_transit,
-                args=(init_params, init_m, stimes, smags, serrs, priorbounds),
-                threads=nworkers,
+                args=(init_params, init_m, stimes,
+                      smags, serrs, priorbounds),
+                pool=pool,
                 backend=backend
             )
             sampler.run_mcmc(starting_positions, n_mcmc_steps,

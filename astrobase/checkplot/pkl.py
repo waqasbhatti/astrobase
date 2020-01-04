@@ -65,7 +65,6 @@ LOGEXCEPTION = LOGGER.exception
 import os
 import os.path
 import gzip
-import sys
 import hashlib
 import pickle
 
@@ -1437,23 +1436,9 @@ def checkplot_pickle(
         fast_mode=fast_mode
     )
 
-    # for Python >= 3.4, use v4
-    if ((sys.version_info[0:2] >= (3,4) and not pickleprotocol) or
-        (pickleprotocol > 2)):
+    # if no pickle protocol is specified, use v4
+    if not pickleprotocol:
         pickleprotocol = 4
-
-    elif ((sys.version_info[0:2] >= (3,0) and not pickleprotocol) or
-          (pickleprotocol > 2)):
-        pickleprotocol = 3
-
-    # for Python == 2.7; use v2
-    elif sys.version_info[0:2] == (2,7) and not pickleprotocol:
-        pickleprotocol = 2
-
-    # otherwise, if left unspecified, use the slowest but most compatible
-    # protocol. this will be readable by all (most?) Pythons
-    elif not pickleprotocol:
-        pickleprotocol = 0
 
     # generate the output file path
     if outgzip:

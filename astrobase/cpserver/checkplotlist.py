@@ -467,13 +467,8 @@ def main():
                 # these to mean actual integer indexes of lists or integer keys
                 # for dicts this allows us to move into arrays easily by
                 # indexing them
-
-                if sys.version_info[:2] < (3,4):
-                    sortkeys = [(int(x) if x.isdigit() else x)
-                                for x in sortkeys]
-                else:
-                    sortkeys = [(int(x) if x.isdecimal() else x)
-                                for x in sortkeys]
+                sortkeys = [(int(x) if x.isdecimal() else x)
+                            for x in sortkeys]
 
                 keystoget.append(sortkeys)
 

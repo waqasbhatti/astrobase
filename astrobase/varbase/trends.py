@@ -59,6 +59,7 @@ from sklearn.ensemble import RandomForestRegressor
 
 from ..lcmath import sigclip_magseries_with_extparams
 
+
 #########################
 ## SMOOTHING FUNCTIONS ##
 #########################
@@ -211,7 +212,6 @@ def _old_epd_diffmags(coeff, fsv, fdv, fkv, xcc, ycc, bgv, bge, mag):
              mag)
 
 
-
 def _old_epd_magseries(times, mags, errs,
                        fsv, fdv, fkv, xcc, ycc, bgv, bge,
                        epdsmooth_windowsize=21,
@@ -283,7 +283,6 @@ def _old_epd_magseries(times, mags, errs,
         if DEBUG:
             print('coeffs = %s, residuals = %s' % (coeffs, residuals))
 
-
         retdict = {'times':times,
                    'mags':(mags_median +
                            _old_epd_diffmags(coeffs, fsv, fdv,
@@ -295,7 +294,7 @@ def _old_epd_magseries(times, mags, errs,
         return retdict
 
     # if the solution fails, return nothing
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('EPD solution did not converge')
 
@@ -306,7 +305,6 @@ def _old_epd_magseries(times, mags, errs,
                    'residuals':residuals}
 
         return retdict
-
 
 
 ###################################################
@@ -343,7 +341,6 @@ def _epd_function(coeffs, fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd):
             coeffs[21]*izd)
 
 
-
 def _epd_residual(coeffs, mags, fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd):
     '''
     This is the residual function to minimize using scipy.optimize.leastsq.
@@ -353,7 +350,6 @@ def _epd_residual(coeffs, mags, fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd):
     f = _epd_function(coeffs, fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd)
     residual = mags - f
     return residual
-
 
 
 def _epd_residual2(coeffs,
@@ -369,7 +365,6 @@ def _epd_residual2(coeffs,
     f = _epd_function(coeffs, fsv, fdv, fkv, xcc, ycc, bgv, bge, iha, izd)
     residual = mags - f
     return residual
-
 
 
 def epd_magseries(times, mags, errs,
@@ -781,7 +776,6 @@ def epd_magseries_extparams(
         return None
 
 
-
 #######################
 ## RANDOM FOREST EPD ##
 #######################
@@ -907,7 +901,6 @@ def rfepd_magseries(times, mags, errs,
     else:
 
         smoothedmags = smags
-
 
     # set up the regressor
     if isinstance(rf_extraparams, dict):

@@ -41,11 +41,7 @@ LOGEXCEPTION = LOGGER.exception
 
 import os.path
 import os
-
-try:
-    from cStringIO import StringIO as Strio
-except Exception as e:
-    from io import BytesIO as Strio
+from io import BytesIO as Strio
 
 
 import numpy as np
@@ -155,7 +151,6 @@ def prewhiten_magseries(times, mags, errs,
 
     median_mag = np.median(smags)
 
-
     # phase the mag series using the given period and epoch = min(stimes)
     mintime = np.min(stimes)
 
@@ -196,7 +191,6 @@ def prewhiten_magseries(times, mags, errs,
                   'werrs':werrs,
                   'whitenparams':whitenparams,
                   'whitenperiod':whitenperiod}
-
 
     # make the fit plot if required
     if plotfit and (isinstance(plotfit, str) or isinstance(plotfit, Strio)):
@@ -326,7 +320,6 @@ def prewhiten_magseries(times, mags, errs,
             returndict['fitplotfile'] = plotfit
 
     return returndict
-
 
 
 def gls_prewhiten(times, mags, errs,
@@ -490,7 +483,6 @@ def gls_prewhiten(times, mags, errs,
         plt.xlabel('phase')
         plt.title('phased LC before whitening: P = %.6f' % gls['bestperiod'])
 
-
     # set up the initial times, mags, errs, period
     wtimes, wmags, werrs = stimes, smags, serrs
     wperiod = gls['bestperiod']
@@ -514,7 +506,6 @@ def gls_prewhiten(times, mags, errs,
                                       wffitparams,
                                       magsarefluxes=magsarefluxes,
                                       sigclip=sigclip)
-
 
         LOGINFO('round %s: period = %.6f' % (fitind+1, wperiod))
         bestperiods.append(wperiod)
@@ -575,8 +566,6 @@ def gls_prewhiten(times, mags, errs,
             plt.xlabel('phase')
             plt.title('phased LC after whitening: P = %.6f' % wperiod)
 
-
-
     # in the end, write out the plot
     if plotfits and isinstance(plotfits, str):
 
@@ -588,7 +577,6 @@ def gls_prewhiten(times, mags, errs,
     else:
 
         return bestperiods
-
 
 
 def mask_signal(times, mags, errs,
@@ -664,7 +652,6 @@ def mask_signal(times, mags, errs,
     stimes, smags, serrs = sigclip_magseries(times, mags, errs,
                                              sigclip=sigclip,
                                              magsarefluxes=magsarefluxes)
-
 
     # now phase the light curve using the period and epoch provided
     phases = (
@@ -816,6 +803,5 @@ def mask_signal(times, mags, errs,
 
         if isinstance(plotfit, str) or isinstance(plotfit, Strio):
             returndict['fitplotfile'] = plotfit
-
 
     return returndict

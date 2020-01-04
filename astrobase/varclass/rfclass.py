@@ -55,16 +55,12 @@ import glob
 import os.path
 import os
 import itertools
-
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
+import pickle
 
 try:
     from tqdm import tqdm
     TQDM = True
-except Exception as e:
+except Exception:
     TQDM = False
     pass
 
@@ -109,7 +105,6 @@ def _gridsearch_report(results, n_top=3):
             LOGINFO("Parameters: {0}".format(results['params'][candidate]))
 
 
-
 ###################################
 ## NON-PERIODIC VAR FEATURE LIST ##
 ###################################
@@ -137,7 +132,6 @@ NONPERIODIC_FEATURES_TO_COLLECT = [
     'gkcolor',
     'propermotion',
 ]
-
 
 
 ########################
@@ -225,7 +219,6 @@ def collect_nonperiodic_features(
     if maxobjects:
         pklist = pklist[:maxobjects]
 
-
     # fancy progress bar with tqdm if present
     if TQDM:
         listiterator = tqdm(pklist)
@@ -282,7 +275,6 @@ def collect_nonperiodic_features(
                                      feature_dict['availablefeatures']])
     feature_dict['features_array'] = feature_array
 
-
     # if there's a labeldict available, use it to generate a label array. this
     # feature collection is now a training set.
     if isinstance(labeldict, dict):
@@ -307,7 +299,6 @@ def collect_nonperiodic_features(
 
         feature_dict['labels_array'] = labelarray
 
-
     feature_dict['kwargs'] = {'pklglob':pklglob,
                               'featurestouse':featurestouse,
                               'maxobjects':maxobjects,
@@ -319,7 +310,6 @@ def collect_nonperiodic_features(
 
     # return the feature_dict
     return feature_dict
-
 
 
 #################################
@@ -411,7 +401,6 @@ def train_rf_classifier(
     tmagcol = fdict['magcol']
     tobjectids = fdict['objectids']
 
-
     # split the training set into training/test samples using stratification
     # to keep the same fraction of variable/nonvariables in each
     training_features, testing_features, training_labels, testing_labels = (
@@ -427,7 +416,6 @@ def train_rf_classifier(
     # get a random forest classifier
     clf = RandomForestClassifier(n_jobs=nworkers,
                                  random_state=RANDSEED)
-
 
     # this is the grid def for hyperparam optimization
     rf_hyperparams = {
@@ -450,7 +438,6 @@ def train_rf_classifier(
                            random_state=RANDSEED),
         random_state=RANDSEED
     )
-
 
     LOGINFO('running grid-search CV to optimize RF hyperparameters...')
     cvsearch_classifiers = cvsearch.fit(training_features,
@@ -497,16 +484,13 @@ def train_rf_classifier(
                'best_f1':f1score,
                'best_confmatrix':confmatrix}
 
-
     if classifier_to_pickle:
 
         with open(classifier_to_pickle,'wb') as outfd:
             pickle.dump(outdict, outfd, pickle.HIGHEST_PROTOCOL)
 
-
     # return this classifier and accompanying info
     return outdict
-
 
 
 def apply_rf_classifier(classifier,
@@ -555,7 +539,6 @@ def apply_rf_classifier(classifier,
         LOGERROR("can't figure out the input classifier arg")
         return None
 
-
     # get the features to extract from clfdict
     if 'feature_names' not in clfdict:
         LOGERROR("feature_names not present in classifier input, "
@@ -568,7 +551,6 @@ def apply_rf_classifier(classifier,
     featurestouse = clfdict['feature_names']
     pklglob = clfdict['collect_kwargs']['pklglob']
     magcol = clfdict['magcol']
-
 
     # extract the features used by the classifier from the varfeatures pickles
     # in varfeaturesdir using the pklglob provided
@@ -609,7 +591,6 @@ def apply_rf_classifier(classifier,
         pickle.dump(outdict, outfd, pickle.HIGHEST_PROTOCOL)
 
     return outdict
-
 
 
 ######################

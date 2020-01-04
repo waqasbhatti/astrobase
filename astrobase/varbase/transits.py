@@ -99,7 +99,6 @@ def transit_duration_range(period,
     )
 
 
-
 ##############################
 ## TRANSIT MODEL ASSESSMENT ##
 ##############################
@@ -245,7 +244,6 @@ def get_snr_of_dip(times,
     return snr, transitdepth, subtractedrms
 
 
-
 def estimate_achievable_tmid_precision(snr, t_ingress_min=10,
                                        t_duration_hr=2.14):
     '''Using Carter et al. 2009's estimate, calculate the theoretical optimal
@@ -301,7 +299,6 @@ def estimate_achievable_tmid_precision(snr, t_ingress_min=10,
                 sigma_tc.to(u.minute), sigma_tc.to(u.hour), sigma_tc.to(u.day)))
 
     return sigma_tc.to(u.day).value
-
 
 
 def get_transit_times(
@@ -393,7 +390,6 @@ def get_transit_times(
     t_ends = t_IVs + extra_maskfrac * tdur
 
     return tmids_obsd, t_starts, t_ends
-
 
 
 def given_lc_get_transit_tmids_tstarts_tends(
@@ -521,7 +517,6 @@ def given_lc_get_transit_tmids_tstarts_tends(
     return tmids, t_starts, t_ends
 
 
-
 def _in_out_transit_plot(time, flux, intransit, ootransit, savpath):
 
     import matplotlib.pyplot as plt
@@ -549,7 +544,6 @@ def _in_out_transit_plot(time, flux, intransit, ootransit, savpath):
     ax.set_xlabel('time [days]')
     f.tight_layout(h_pad=0, w_pad=0)
     f.savefig(savpath, dpi=400, bbox_inches='tight')
-
 
 
 def given_lc_get_out_of_transit_points(

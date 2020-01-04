@@ -199,7 +199,6 @@ def lcfit_features(times, mags, errs, period,
         fourier_residual_mad = np.median(np.abs(fourier_residuals -
                                                 fourier_residual_median))
 
-
         # break them out into amps and phases
         famplitudes = fourier_fitcoeffs[:fourierorder]
         fphases = fourier_fitcoeffs[fourierorder:]
@@ -242,7 +241,6 @@ def lcfit_features(times, mags, errs, period,
 
         fpha_combos = combinations(fphases,2)
         fpha_cinds = combinations(range(len(fphases)),2)
-
 
     fampratios = {}
     fphadiffs = {}
@@ -342,7 +340,6 @@ def lcfit_features(times, mags, errs, period,
                                                planet_residual_median))
         planet_residual_mad_over_lcmad = planet_residual_mad/lightcurve_mad
 
-
     eb_fit = lcfit.gaussianeb_fit_magseries(ftimes, fmags, ferrs,
                                             ebfitparams,
                                             sigclip=sigclip,
@@ -392,7 +389,6 @@ def lcfit_features(times, mags, errs, period,
         eb_residual_median = np.median(eb_residuals)
         eb_residual_mad = np.median(np.abs(eb_residuals - eb_residual_median))
         eb_residual_mad_over_lcmad = eb_residual_mad/lightcurve_mad
-
 
     # do the EB fit with 2 x period
     ebfitparams[0] = ebfitparams[0]*2.0
@@ -452,7 +448,6 @@ def lcfit_features(times, mags, errs, period,
 
         ebx2_residual_mad_over_lcmad = ebx2_residual_mad/lightcurve_mad
 
-
     # update the outdict
     outdict.update({
         'planet_fitparams':planetfit_finalparams,
@@ -482,7 +477,6 @@ def lcfit_features(times, mags, errs, period,
     })
 
     return outdict
-
 
 
 def periodogram_features(pgramlist, times, mags, errs,
@@ -600,7 +594,6 @@ def periodogram_features(pgramlist, times, mags, errs,
     else:
         sampling_lsp = pgramlist[pfmethodlist.index('win')]
 
-
     # get the normalized sampling periodogram peaks
     normalized_sampling_lspvals = (
         sampling_lsp['lspvals']/(np.nanmax(sampling_lsp['lspvals']) -
@@ -678,8 +671,6 @@ def periodogram_features(pgramlist, times, mags, errs,
 
                         close_to_sidereal_flag.append(False)
 
-
-
                 else:
                     LOGERROR('period is nan')
                     best_peak_sampling_ratios.append(np.nan)
@@ -688,7 +679,6 @@ def periodogram_features(pgramlist, times, mags, errs,
             # update the pgram with these
             pgram['nbestpeakratios'] = best_peak_sampling_ratios
             pgram['siderealflags'] = close_to_sidereal_flag
-
 
         elif pfm != 'win':
 
@@ -753,7 +743,6 @@ def periodogram_features(pgramlist, times, mags, errs,
 
                         close_to_sidereal_flag.append(False)
 
-
                 else:
                     LOGERROR('period is nan')
                     best_peak_sampling_ratios.append(np.nan)
@@ -814,7 +803,6 @@ def periodogram_features(pgramlist, times, mags, errs,
     }
 
     return resdict
-
 
 
 def phasedlc_features(times,
@@ -898,7 +886,6 @@ def phasedlc_features(times,
         pmagsx2 = phasedlc['mags']
         perrsx2 = phasedlc['errs']
 
-
         # get ptp measures for best periodx2
         ptp_bestperiodx2 = lightcurve_ptp_measures(phasex2,pmagsx2,perrsx2)
 
@@ -910,7 +897,6 @@ def phasedlc_features(times,
         #                             period x 2
         inveta_bestperiodx2 = 1.0/ptp_bestperiodx2['eta_normal']
 
-
         # eta_phased_ratio_eta_raw - eta for best period phased LC / eta for raw
         # LC
         inveta_ratio_phased_unphased = inveta_bestperiod/inveta_unphasedlc
@@ -918,7 +904,6 @@ def phasedlc_features(times,
         # eta_phasedx2_ratio_eta_raw - eta for best periodx2 phased LC/eta for
         # raw LC
         inveta_ratio_phasedx2_unphased = inveta_bestperiodx2/inveta_unphasedlc
-
 
         # freq_model_max_delta_mags - absval of magdiff btw model phased LC
         #                             maxima using period x 2. look at points
@@ -1030,7 +1015,7 @@ def phasedlc_features(times,
                         if absmagdiff.size > 0:
                             absdiffs.append(absmagdiff.min())
 
-                    except Exception as e:
+                    except Exception:
                         continue
 
                 # sum of absdiff between the normalized to 0.0 phased LC of this

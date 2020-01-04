@@ -13,6 +13,7 @@ from numpy import (
 )
 from ..lcmath import fill_magseries_gaps
 
+
 #####################
 ## AUTOCORRELATION ##
 #####################
@@ -55,7 +56,6 @@ def _autocorr_func1(mags, lag, maglen, magmed, magstd):
     acorr = (1.0/((maglen - lag)*magstd)) * npsum(products)
 
     return acorr
-
 
 
 def _autocorr_func2(mags, lag, maglen, magmed, magstd):
@@ -106,7 +106,6 @@ def _autocorr_func2(mags, lag, maglen, magmed, magstd):
     return acorr
 
 
-
 def _autocorr_func3(mags, lag, maglen, magmed, magstd):
     '''
     This is yet another alternative to calculate the autocorrelation.
@@ -147,7 +146,6 @@ def _autocorr_func3(mags, lag, maglen, magmed, magstd):
     result = result / npmax(result)
 
     return result[int(result.size / 2):]
-
 
 
 def autocorr_magseries(times, mags, errs,

@@ -46,6 +46,7 @@ from scipy.signal import savgol_filter
 
 from astrobase.lcmodels import flares
 
+
 ###########################
 ## FLARE MODEL FUNCTIONS ##
 ###########################
@@ -113,7 +114,6 @@ def add_flare_model(flareparams,
             'mags':mags + modelmags,
             'errs':errs,
             'flareparams':flareparams}
-
 
 
 ###################
@@ -217,7 +217,6 @@ def simple_flare_find(times, mags, errs,
         for ind, extrema_index in enumerate(extrema_indices):
             # FIXME: finish this
             pass
-
 
 
 ############################

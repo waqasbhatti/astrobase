@@ -44,7 +44,6 @@ import os
 import os.path
 import gzip
 import base64
-import sys
 
 import pickle
 from io import BytesIO as StrIO
@@ -220,16 +219,9 @@ def _write_checkplot_picklefile(checkplotdict,
 
     '''
 
-    # figure out which protocol to use
     # for Python >= 3.4; use v4 by default
-    if ((sys.version_info[0:2] >= (3,4) and not protocol) or
-        (protocol > 2)):
+    if not protocol:
         protocol = 4
-
-    # otherwise, if left unspecified, use the slowest but most compatible
-    # protocol. this will be readable by all (most?) Pythons
-    elif not protocol:
-        protocol = 0
 
     if outgzip:
 
