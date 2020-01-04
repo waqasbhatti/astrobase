@@ -103,7 +103,6 @@ def read_original_textlc(lcpath):
                                                         ncols=N_cols))
         return None
 
-
     # deal with pre-2012 column format
     if colformat == 'pre2012-epdlc':
 

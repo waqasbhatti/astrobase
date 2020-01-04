@@ -39,13 +39,8 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
-
+import pickle
 import os
-import sys
 import os.path
 import glob
 import multiprocessing as mp
@@ -57,8 +52,11 @@ from tornado.escape import squeeze
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
+
+
 def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
+
 
 import numpy as np
 
@@ -71,7 +69,6 @@ from astrobase import periodbase
 from astrobase.periodbase.kbls import bls_snr
 
 from astrobase.lcproc import get_lcformat
-
 
 
 ############
@@ -98,7 +95,6 @@ PFMETHOD_NAMES = {
     'acf':'McQuillan+ ACF Period Search',
     'win':'Timeseries Sampling Lomb-Scargle periodogram'
 }
-
 
 
 #############################
@@ -228,7 +224,7 @@ def runpf(lcfile,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -280,7 +276,6 @@ def runpf(lcfile,
                 )
                 return outfile+'.gz'
 
-
         # this is the final returndict
         resultdict = {
             'objectid':lcdict['objectid'],
@@ -321,7 +316,6 @@ def runpf(lcfile,
                 ecolget = [ecol]
             errs = _dict_get(lcdict, ecolget)
 
-
             # normalize here if not using special normalization
             if normfunc is None:
                 ntimes, nmags = normalize_magseries(
@@ -330,7 +324,6 @@ def runpf(lcfile,
                 )
 
                 times, mags, errs = ntimes, nmags, errs
-
 
             # run each of the requested period-finder functions
             resultdict[mcol] = {}
@@ -373,7 +366,6 @@ def runpf(lcfile,
                     **pf_kwargs
                 )
 
-
             #
             # done with running the period finders
             #
@@ -411,7 +403,7 @@ def runpf(lcfile,
                                 'epochs':blssnr['epoch']
                             })
 
-                        except Exception as e:
+                        except Exception:
 
                             LOGEXCEPTION('could not calculate BLS SNR for %s' %
                                          lcfile)
@@ -440,7 +432,6 @@ def runpf(lcfile,
                                                np.nan,np.nan],
                         })
 
-
         # once all mag cols have been processed, write out the pickle
         with open(outfile, 'wb') as outfd:
             pickle.dump(resultdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
@@ -455,7 +446,6 @@ def runpf(lcfile,
             raise
 
         return None
-
 
 
 def _runpf_worker(task):
@@ -487,7 +477,6 @@ def _runpf_worker(task):
     else:
         LOGERROR('LC does not exist for requested file %s' % lcfile)
         return None
-
 
 
 def parallel_pf(lclist,
@@ -642,9 +631,8 @@ def parallel_pf(lclist,
     with ProcessPoolExecutor(max_workers=ncontrolworkers) as executor:
         resultfutures = executor.map(_runpf_worker, tasklist)
 
-    results = [x for x in resultfutures]
+    results = list(resultfutures)
     return results
-
 
 
 def parallel_pf_lcdir(lcdir,
@@ -792,7 +780,7 @@ def parallel_pf_lcdir(lcdir,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -806,30 +794,9 @@ def parallel_pf_lcdir(lcdir,
         matching = glob.glob(os.path.join(lcdir, fileglob))
 
     else:
-        # use recursive glob for Python 3.5+
-        if sys.version_info[:2] > (3,4):
-
-            matching = glob.glob(os.path.join(lcdir,
-                                              '**',
-                                              fileglob),recursive=True)
-
-        # otherwise, use os.walk and glob
-        else:
-
-            # use os.walk to go through the directories
-            walker = os.walk(lcdir)
-            matching = []
-
-            for root, dirs, _files in walker:
-                for sdir in dirs:
-                    searchpath = os.path.join(root,
-                                              sdir,
-                                              fileglob)
-                    foundfiles = glob.glob(searchpath)
-
-                    if foundfiles:
-                        matching.extend(foundfiles)
-
+        matching = glob.glob(os.path.join(lcdir,
+                                          '**',
+                                          fileglob),recursive=True)
 
     # now that we have all the files, process them
     if matching and len(matching) > 0:

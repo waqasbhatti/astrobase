@@ -674,33 +674,11 @@ def consolidate_kepler_fitslc(keplerid,
     LOGINFO('looking for Kepler light curve FITS in %s for %s...' % (lcfitsdir,
                                                                      keplerid))
 
-    # for Python 3.5 and up, use recursive glob, it appears to be absurdly
-    # faster than os.walk
-    if sys.version_info[:2] > (3,4):
-
-        matching = glob.glob(os.path.join(lcfitsdir,
-                                          '**',
-                                          'kplr%09i-*_llc.fits' % keplerid),
-                             recursive=True)
-        LOGINFO('found %s files: %s' % (len(matching), repr(matching)))
-
-    # for Python < 3.5, use os.walk and glob
-    else:
-
-        # use the os.walk function to start looking for files in lcfitsdir
-        walker = os.walk(lcfitsdir)
-        matching = []
-        for root, dirs, _files in walker:
-            for sdir in dirs:
-                searchpath = os.path.join(root,
-                                          sdir,
-                                          'kplr%09i-*_llc.fits' % keplerid)
-                foundfiles = glob.glob(searchpath)
-
-                if foundfiles:
-                    matching.extend(foundfiles)
-                    LOGINFO('found %s in dir: %s' % (repr(foundfiles),
-                                                     os.path.join(root,sdir)))
+    matching = glob.glob(os.path.join(lcfitsdir,
+                                      '**',
+                                      'kplr%09i-*_llc.fits' % keplerid),
+                         recursive=True)
+    LOGINFO('found %s files: %s' % (len(matching), repr(matching)))
 
     # now that we've found everything, read them all in
     if len(matching) > 0:

@@ -263,7 +263,6 @@ def spline_fit_magseries(times, mags, errs, period,
     return returndict
 
 
-
 #####################################################
 ## SAVITZKY-GOLAY FITTING TO MAGNITUDE TIME SERIES ##
 #####################################################
@@ -592,7 +591,6 @@ def legendre_fit_magseries(times, mags, errs, period,
     # get rid of zero errs
     nzind = npnonzero(serrs)
     stimes, smags, serrs = stimes[nzind], smags[nzind], serrs[nzind]
-
 
     phase, pmags, perrs, ptimes, mintime = (
         get_phased_quantities(stimes, smags, serrs, period)

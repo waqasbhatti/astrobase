@@ -764,31 +764,9 @@ def consolidate_tess_fitslc(lclist,
     # if the lclist is a string, assume that we're passing in a fileglob
     if isinstance(lclist, str):
 
-        if sys.version_info[:2] > (3,4):
-
-            matching = glob.glob(lclist,
-                                 recursive=True)
-            LOGINFO('found %s LCs: %r' % (len(matching), matching))
-
-        else:
-
-            lcfitsdir = os.path.dirname(lclist)
-            lcfitsfile = os.path.basename(lclist)
-            walker = os.walk(lcfitsdir)
-            matching = []
-            for root, dirs, _files in walker:
-                for sdir in dirs:
-                    searchpath = os.path.join(root,
-                                              sdir,
-                                              lcfitsfile)
-                    foundfiles = glob.glob(searchpath)
-
-                    if foundfiles:
-                        matching.extend(foundfiles)
-                        LOGINFO(
-                            'found %s in dir: %s' % (repr(foundfiles),
-                                                     os.path.join(root,sdir))
-                        )
+        matching = glob.glob(lclist,
+                             recursive=True)
+        LOGINFO('found %s LCs: %r' % (len(matching), matching))
 
         if len(matching) == 0:
             LOGERROR('could not find any TESS LC files matching glob: %s' %

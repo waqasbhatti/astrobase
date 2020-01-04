@@ -38,13 +38,8 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
-try:
-    import cPickle as pickle
-    from cStringIO import StringIO as StrIO
-except Exception as e:
-    import pickle
-    from io import BytesIO as StrIO
-
+import pickle
+from io import BytesIO as StrIO
 import sys
 import os
 import os.path
@@ -57,8 +52,11 @@ from concurrent.futures import ProcessPoolExecutor
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
+
+
 def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
+
 
 import numpy as np
 
@@ -73,7 +71,6 @@ import matplotlib.pyplot as plt
 NCPUS = mp.cpu_count()
 
 
-
 ###################
 ## LOCAL IMPORTS ##
 ###################
@@ -85,7 +82,6 @@ from astrobase.checkplot.pkl_io import (
 )
 from astrobase.checkplot.pkl_xmatch import xmatch_external_catalogs
 from astrobase.checkplot.pkl_postproc import update_checkplot_objectinfo
-
 
 
 ###############################
@@ -173,13 +169,12 @@ def xmatch_cplist_external_catalogs(cplist,
 
             status_dict[cpf] = outcpf
 
-        except Exception as e:
+        except Exception:
 
             LOGEXCEPTION('failed to match objects for %s' % cpf)
             status_dict[cpf] = None
 
     return status_dict
-
 
 
 def xmatch_cpdir_external_catalogs(cpdir,
@@ -238,7 +233,6 @@ def xmatch_cpdir_external_catalogs(cpdir,
     )
 
 
-
 CMD_LABELS = {
     'umag':'U',
     'bmag':'B',
@@ -255,16 +249,15 @@ CMD_LABELS = {
     'sdssz':'z',
     'gaiamag':'G',
     'gaia_absmag':'M_G',
-    'rpmj':'\mathrm{RPM}_{J}',
+    'rpmj':r'\mathrm{RPM}_{J}',
 }
-
 
 
 def colormagdiagram_cplist(cplist,
                            outpkl,
-                           color_mag1=['gaiamag','sdssg'],
-                           color_mag2=['kmag','kmag'],
-                           yaxis_mag=['gaia_absmag','rpmj']):
+                           color_mag1=('gaiamag','sdssg'),
+                           color_mag2=('kmag','kmag'),
+                           yaxis_mag=('gaia_absmag','rpmj')):
     '''This makes color-mag diagrams for all checkplot pickles in the provided
     list.
 
@@ -350,7 +343,6 @@ def colormagdiagram_cplist(cplist,
         cplist_mags.append(thiscp_mags)
         cplist_colors.append(thiscp_colors)
 
-
     # convert these to arrays
     cplist_objectids = np.array(cplist_objectids)
     cplist_mags = np.array(cplist_mags)
@@ -373,14 +365,13 @@ def colormagdiagram_cplist(cplist,
     return cmddict
 
 
-
 def colormagdiagram_cpdir(
         cpdir,
         outpkl,
         cpfileglob='checkplot*.pkl*',
-        color_mag1=['gaiamag','sdssg'],
-        color_mag2=['kmag','kmag'],
-        yaxis_mag=['gaia_absmag','rpmj']
+        color_mag1=('gaiamag','sdssg'),
+        color_mag2=('kmag','kmag'),
+        yaxis_mag=('gaia_absmag','rpmj')
 ):
     '''This makes CMDs for all checkplot pickles in the provided directory.
 
@@ -445,7 +436,6 @@ def colormagdiagram_cpdir(
                                   yaxis_mag=yaxis_mag)
 
 
-
 def add_cmd_to_checkplot(
         cpx,
         cmdpkl,
@@ -507,7 +497,6 @@ def add_cmd_to_checkplot(
             cmd = pickle.load(infd)
     elif isinstance(cmdpkl, dict):
         cmd = cmdpkl
-
 
     cpdict['colormagdiagram'] = {}
 
@@ -607,11 +596,10 @@ def add_cmd_to_checkplot(
 
                 _base64_to_file(cmdb64, outpng)
 
-        except Exception as e:
+        except Exception:
             LOGEXCEPTION('CMD for %s-%s/%s does not exist in %s, skipping...' %
                          (c1, c2, ym, cmdpkl))
             continue
-
 
     #
     # end of making CMDs
@@ -622,7 +610,6 @@ def add_cmd_to_checkplot(
         return cpf
     elif isinstance(cpx, dict):
         return cpdict
-
 
 
 def add_cmds_cplist(cplist, cmdpkl,
@@ -666,7 +653,6 @@ def add_cmds_cplist(cplist, cmdpkl,
         add_cmd_to_checkplot(cpf, cmd,
                              require_cmd_magcolor=require_cmd_magcolor,
                              save_cmd_pngs=save_cmd_pngs)
-
 
 
 def add_cmds_cpdir(cpdir,
@@ -714,7 +700,6 @@ def add_cmds_cpdir(cpdir,
                            save_cmd_pngs=save_cmd_pngs)
 
 
-
 #######################################
 ## UPDATING OBJECTINFO IN CHECKPLOTS ##
 #######################################
@@ -745,10 +730,9 @@ def cp_objectinfo_worker(task):
         newcpf = update_checkplot_objectinfo(cpf, **cpkwargs)
         return newcpf
 
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION('failed to update objectinfo for %s' % cpf)
         return None
-
 
 
 def parallel_update_objectinfo_cplist(
@@ -942,11 +926,10 @@ def parallel_update_objectinfo_cplist(
     with ProcessPoolExecutor(max_workers=nworkers) as executor:
         resultfutures = executor.map(cp_objectinfo_worker, tasks)
 
-    results = [x for x in resultfutures]
+    results = list(resultfutures)
 
     executor.shutdown()
     return results
-
 
 
 def parallel_update_objectinfo_cpdir(cpdir,

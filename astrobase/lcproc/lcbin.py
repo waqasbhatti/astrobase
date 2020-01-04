@@ -39,11 +39,7 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
-
+import pickle
 import os
 import os.path
 import glob
@@ -55,9 +51,10 @@ from tornado.escape import squeeze
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
+
+
 def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
-
 
 
 ############
@@ -65,7 +62,6 @@ def _dict_get(datadict, keylist):
 ############
 
 NCPUS = mp.cpu_count()
-
 
 
 ###################
@@ -77,7 +73,6 @@ from astrobase.lcmath import (
     normalize_magseries,
     time_bin_magseries_with_errs,
 )
-
 
 
 ###################################
@@ -157,7 +152,7 @@ def timebinlc(lcfile,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -232,7 +227,6 @@ def timebinlc(lcfile,
                                   'timebins':binned['jdbins'],
                                   'binsizesec':binsizesec}
 
-
     # done with binning for all magcols, now generate the output file
     # this will always be a pickle
 
@@ -247,7 +241,6 @@ def timebinlc(lcfile,
         pickle.dump(lcdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
 
     return outfile
-
 
 
 def timebinlc_worker(task):
@@ -280,11 +273,10 @@ def timebinlc_worker(task):
         LOGINFO('%s binned using %s sec -> %s OK' %
                 (lcfile, binsizesec, binnedlc))
         return binnedlc
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION('failed to bin %s using binsizesec = %s' % (lcfile,
                                                                  binsizesec))
         return None
-
 
 
 def parallel_timebin(lclist,
@@ -379,7 +371,6 @@ def parallel_timebin(lclist,
     return resdict
 
 
-
 def parallel_timebin_lcdir(lcdir,
                            binsizesec,
                            maxobjects=None,
@@ -458,7 +449,7 @@ def parallel_timebin_lcdir(lcdir,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 

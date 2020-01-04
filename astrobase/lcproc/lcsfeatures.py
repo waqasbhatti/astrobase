@@ -38,14 +38,9 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
-
+import pickle
 import os
 import os.path
-import sys
 import glob
 import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
@@ -56,18 +51,20 @@ from tornado.escape import squeeze
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
+
+
 def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
+
 
 import numpy as np
 
 try:
     from tqdm import tqdm
     TQDM = True
-except Exception as e:
+except Exception:
     TQDM = False
     pass
-
 
 
 ############
@@ -77,14 +74,12 @@ except Exception as e:
 NCPUS = mp.cpu_count()
 
 
-
 ###################
 ## LOCAL IMPORTS ##
 ###################
 
 from astrobase.varclass import starfeatures
 from astrobase.lcproc import get_lcformat
-
 
 
 ###################
@@ -230,7 +225,7 @@ def get_starfeatures(lcfile,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -306,7 +301,6 @@ def get_starfeatures(lcfile,
         return None
 
 
-
 def _starfeatures_worker(task):
     '''
     This wraps starfeatures.
@@ -325,7 +319,7 @@ def _starfeatures_worker(task):
                                 custom_bandpasses=custom_bandpasses,
                                 lcformat=lcformat,
                                 lcformatdir=lcformatdir)
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -483,7 +477,6 @@ def serial_starfeatures(lclist,
     return result
 
 
-
 def parallel_starfeatures(lclist,
                           outdir,
                           lc_catalog_pickle,
@@ -628,7 +621,7 @@ def parallel_starfeatures(lclist,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -654,11 +647,10 @@ def parallel_starfeatures(lclist,
     with ProcessPoolExecutor(max_workers=nworkers) as executor:
         resultfutures = executor.map(_starfeatures_worker, tasks)
 
-    results = [x for x in resultfutures]
+    results = list(resultfutures)
     resdict = {os.path.basename(x):y for (x,y) in zip(lclist, results)}
 
     return resdict
-
 
 
 def parallel_starfeatures_lcdir(lcdir,
@@ -812,7 +804,7 @@ def parallel_starfeatures_lcdir(lcdir,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -826,30 +818,10 @@ def parallel_starfeatures_lcdir(lcdir,
         matching = glob.glob(os.path.join(lcdir, fileglob))
 
     else:
-        # use recursive glob for Python 3.5+
-        if sys.version_info[:2] > (3,4):
-
-            matching = glob.glob(os.path.join(lcdir,
-                                              '**',
-                                              fileglob),recursive=True)
-
-        # otherwise, use os.walk and glob
-        else:
-
-            # use os.walk to go through the directories
-            walker = os.walk(lcdir)
-            matching = []
-
-            for root, dirs, _files in walker:
-                for sdir in dirs:
-                    searchpath = os.path.join(root,
-                                              sdir,
-                                              fileglob)
-                    foundfiles = glob.glob(searchpath)
-
-                    if foundfiles:
-                        matching.extend(foundfiles)
-
+        matching = glob.glob(os.path.join(lcdir,
+                                          '**',
+                                          fileglob),
+                             recursive=True)
 
     # now that we have all the files, process them
     if matching and len(matching) > 0:

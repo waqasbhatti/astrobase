@@ -98,7 +98,7 @@ LOGEXCEPTION = LOGGER.exception
 
 try:
     import cPickle as pickle
-except Exception as e:
+except Exception:
     import pickle
 import gzip
 import os.path
@@ -112,6 +112,8 @@ import json
 # from https://stackoverflow.com/a/14692747
 from functools import reduce, partial
 from operator import getitem
+
+
 def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
 
@@ -157,7 +159,6 @@ def _read_pklc(lcfile):
                 lcdict = pickle.load(infd, encoding='latin1')
 
     return lcdict
-
 
 
 #################################
@@ -212,7 +213,7 @@ def _check_extmodule(module, formatkey):
         else:
             importedok = importlib.import_module(module)
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('could not import the module: %s for LC format: %s. '
                      'check the file path or fully qualified module name?'
@@ -220,7 +221,6 @@ def _check_extmodule(module, formatkey):
         importedok = False
 
     return importedok
-
 
 
 def register_lcformat(formatkey,
@@ -426,7 +426,6 @@ def register_lcformat(formatkey,
     else:
         normfunc_in = None
 
-
     # if we made it to here, then everything's good. generate the JSON
     # structure
     formatdict = {'fileglob':fileglob,
@@ -446,7 +445,6 @@ def register_lcformat(formatkey,
         json.dump(formatdict, outfd, indent=4)
 
     return lcformat_jsonpath
-
 
 
 def get_lcformat(formatkey, use_lcformat_dir=None):
@@ -614,7 +612,6 @@ def get_lcformat(formatkey, use_lcformat_dir=None):
 
     else:
         normfunc_in = None
-
 
     # add in any optional kwargs that need to be there for readerfunc
     if isinstance(readerfunc_kwargs, dict):

@@ -39,11 +39,7 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
-
+import pickle
 import os
 import os.path
 import glob
@@ -53,8 +49,11 @@ import multiprocessing as mp
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
+
+
 def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
+
 
 import numpy as np
 
@@ -65,7 +64,7 @@ import matplotlib.pyplot as plt
 try:
     from tqdm import tqdm
     TQDM = True
-except Exception as e:
+except Exception:
     TQDM = False
     pass
 
@@ -77,7 +76,6 @@ except Exception as e:
 NCPUS = mp.cpu_count()
 
 
-
 ###################
 ## LOCAL IMPORTS ##
 ###################
@@ -86,12 +84,12 @@ from astrobase.magnitudes import jhk_to_sdssr
 from astrobase.lcproc import get_lcformat
 
 
-
 ###########################
 ## VARIABILITY THRESHOLD ##
 ###########################
 
 DEFAULT_MAGBINS = np.arange(8.0,16.25,0.25)
+
 
 def variability_threshold(featuresdir,
                           outfile,
@@ -189,7 +187,7 @@ def variability_threshold(featuresdir,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -231,7 +229,6 @@ def variability_threshold(featuresdir,
             magcol_min_inveta_stdev = min_inveta_stdev[::]
         else:
             magcol_min_inveta_stdev = min_inveta_stdev
-
 
         LOGINFO('getting all object sdssr, LC MAD, stet J, IQR, eta...')
 
@@ -406,7 +403,6 @@ def variability_threshold(featuresdir,
         binned_iqr_median = []
         binned_iqr_stdev = []
 
-
         # go through all the mag bins and get the thresholds for J, inveta, IQR
         for mbinind, magi in zip(np.unique(magbininds),
                                  range(len(magbins)-1)):
@@ -464,14 +460,12 @@ def variability_threshold(featuresdir,
                         # variability thresholds
                         magcol_min_stetj_stdev[magi] = 2.0
 
-
                     thisbin_objectids_thresh_stetsonj = thisbin_objectids[
                         thisbin_stetsonj > (
                             thisbin_stetsonj_median +
                             thisbin_min_stetj_stdev*thisbin_stetsonj_stdev
                         )
                     ]
-
 
                 thisbin_iqr_median = np.median(thisbin_iqr)
                 thisbin_iqr_stdev = np.median(
@@ -507,7 +501,6 @@ def variability_threshold(featuresdir,
                         thisbin_iqr > (thisbin_iqr_median +
                                        thisbin_min_iqr_stdev*thisbin_iqr_stdev)
                     ]
-
 
                 thisbin_inveta_median = np.median(thisbin_inveta)
                 thisbin_inveta_stdev = np.median(
@@ -548,7 +541,6 @@ def variability_threshold(featuresdir,
                         )
                     ]
 
-
             else:
 
                 thisbin_objectids_thresh_stetsonj = (
@@ -560,7 +552,6 @@ def variability_threshold(featuresdir,
                 thisbin_objectids_thresh_inveta = (
                     np.array([],dtype=np.unicode_)
                 )
-
 
             #
             # done with check for enough objects in the bin
@@ -686,7 +677,6 @@ def variability_threshold(featuresdir,
         # this one doesn't get touched (for now)
         allobjects[magcol]['min_lcmad_stdev'] = min_lcmad_stdev
 
-
     #
     # done with all magcols
     #
@@ -697,7 +687,6 @@ def variability_threshold(featuresdir,
         pickle.dump(allobjects, outfd, protocol=pickle.HIGHEST_PROTOCOL)
 
     return allobjects
-
 
 
 def plot_variability_thresholds(varthreshpkl,
@@ -754,7 +743,7 @@ def plot_variability_thresholds(varthreshpkl,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 

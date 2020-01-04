@@ -39,13 +39,8 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
-
+import pickle
 import os
-import sys
 import os.path
 import glob
 import multiprocessing as mp
@@ -57,15 +52,18 @@ from tornado.escape import squeeze
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
+
+
 def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
+
 
 import numpy as np
 
 try:
     from tqdm import tqdm
     TQDM = True
-except Exception as e:
+except Exception:
     TQDM = False
     pass
 
@@ -77,7 +75,6 @@ except Exception as e:
 NCPUS = mp.cpu_count()
 
 
-
 ###################
 ## LOCAL IMPORTS ##
 ###################
@@ -86,7 +83,6 @@ from astrobase.lcmath import normalize_magseries
 from astrobase.varclass import varfeatures
 
 from astrobase.lcproc import get_lcformat
-
 
 
 ##########################
@@ -159,7 +155,7 @@ def get_varfeatures(lcfile,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -187,7 +183,6 @@ def get_varfeatures(lcfile,
         resultdict = {'objectid':lcdict['objectid'],
                       'info':lcdict['objectinfo'],
                       'lcfbasename':os.path.basename(lcfile)}
-
 
         # normalize using the special function if specified
         if normfunc is not None:
@@ -222,7 +217,6 @@ def get_varfeatures(lcfile,
                 )
 
                 times, mags, errs = ntimes, nmags, errs
-
 
             # make sure we have finite values
             finind = np.isfinite(times) & np.isfinite(mags) & np.isfinite(errs)
@@ -260,7 +254,7 @@ def get_varfeatures(lcfile,
             bestmagcolind = np.where(magmads == np.min(magmads))[0]
             resultdict['bestmagcol'] = magcols[bestmagcolind]
 
-        except Exception as e:
+        except Exception:
             resultdict['bestmagcol'] = None
 
         outfile = os.path.join(outdir,
@@ -277,7 +271,6 @@ def get_varfeatures(lcfile,
         LOGEXCEPTION('failed to get LC features for %s because: %s' %
                      (os.path.basename(lcfile), e))
         return None
-
 
 
 def _varfeatures_worker(task):
@@ -297,7 +290,7 @@ def _varfeatures_worker(task):
                                lcformat=lcformat,
                                lcformatdir=lcformatdir)
 
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -370,7 +363,6 @@ def serial_varfeatures(lclist,
         result = _varfeatures_worker(task)
 
     return result
-
 
 
 def parallel_varfeatures(lclist,
@@ -446,13 +438,12 @@ def parallel_varfeatures(lclist,
               lcformat, lcformatdir) for x in lclist]
 
     with ProcessPoolExecutor(max_workers=nworkers) as executor:
-        resultfutures = executor.map(varfeatures_worker, tasks)
+        resultfutures = executor.map(_varfeatures_worker, tasks)
 
-    results = [x for x in resultfutures]
+    results = list(resultfutures)
     resdict = {os.path.basename(x):y for (x,y) in zip(lclist, results)}
 
     return resdict
-
 
 
 def parallel_varfeatures_lcdir(lcdir,
@@ -534,7 +525,7 @@ def parallel_varfeatures_lcdir(lcdir,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -548,31 +539,10 @@ def parallel_varfeatures_lcdir(lcdir,
         matching = glob.glob(os.path.join(lcdir, fileglob))
 
     else:
-        # use recursive glob for Python 3.5+
-        if sys.version_info[:2] > (3,4):
-
-            matching = glob.glob(os.path.join(lcdir,
-                                              '**',
-                                              fileglob),
-                                 recursive=True)
-
-        # otherwise, use os.walk and glob
-        else:
-
-            # use os.walk to go through the directories
-            walker = os.walk(lcdir)
-            matching = []
-
-            for root, dirs, _files in walker:
-                for sdir in dirs:
-                    searchpath = os.path.join(root,
-                                              sdir,
-                                              fileglob)
-                    foundfiles = glob.glob(searchpath)
-
-                    if foundfiles:
-                        matching.extend(foundfiles)
-
+        matching = glob.glob(os.path.join(lcdir,
+                                          '**',
+                                          fileglob),
+                             recursive=True)
 
     # now that we have all the files, process them
     if matching and len(matching) > 0:

@@ -9,7 +9,7 @@ This contains lcproc worker loops useful for AWS processing of light curves.
 
 The basic workflow is::
 
-    LCs from S3 -> SQS -> worker loop -> products back to S3 | result JSON to SQS
+   LCs from S3 -> SQS -> worker loop -> products back to S3 | result JSON to SQS
 
 All functions here assume AWS credentials have been loaded already using awscli
 as described at:
@@ -190,7 +190,6 @@ def kill_handler(sig, frame):
     raise KeyboardInterrupt
 
 
-
 def cache_clean_handler(min_age_hours=1):
     """This periodically cleans up the ~/.astrobase cache to save us from
     disk-space doom.
@@ -211,7 +210,7 @@ def cache_clean_handler(min_age_hours=1):
 
     # find the files to delete
     cmd = (
-        "find ~ec2-user/.astrobase -type f -mmin +{mmin} -exec rm -v '{{}}' \;"
+        r"find ~ec2-user/.astrobase -type f -mmin +{mmin} -exec rm -v '{{}}' \;"
     )
     mmin = '%.1f' % (min_age_hours*60.0)
     cmd = cmd.format(mmin=mmin)
@@ -221,9 +220,8 @@ def cache_clean_handler(min_age_hours=1):
         ndeleted = len(proc.stdout.decode().split('\n'))
         LOGWARNING('cache clean: %s files older than %s hours deleted' %
                    (ndeleted, min_age_hours))
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION('cache clean: could not delete old files')
-
 
 
 def shutdown_check_handler():
@@ -263,14 +261,13 @@ def shutdown_check_handler():
             resp.close()
             return False
 
-    except HTTPError as e:
+    except HTTPError:
         resp.close()
         return False
 
-    except Exception as e:
+    except Exception:
         resp.close()
         return False
-
 
 
 ############################
@@ -424,7 +421,7 @@ def runcp_producer_loop(
         inq = sqs_client.get_queue_url(QueueName=input_queue)
         inq_url = inq['QueueUrl']
         LOGINFO('input queue already exists, skipping creation...')
-    except ClientError as e:
+    except ClientError:
         inq = awsutils.sqs_create_queue(input_queue, client=sqs_client)
         inq_url = inq['url']
 
@@ -432,7 +429,7 @@ def runcp_producer_loop(
         outq = sqs_client.get_queue_url(QueueName=result_queue)
         outq_url = outq['QueueUrl']
         LOGINFO('result queue already exists, skipping creation...')
-    except ClientError as e:
+    except ClientError:
         outq = awsutils.sqs_create_queue(result_queue, client=sqs_client)
         outq_url = outq['url']
 
@@ -516,11 +513,10 @@ def runcp_producer_loop(
 
                 awsutils.sqs_delete_item(outq_url, receipt)
 
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
 
             LOGWARNING('breaking out of producer wait-loop')
             break
-
 
     # delete the input and output queues when we're done
     LOGINFO('done with processing.')
@@ -562,7 +558,6 @@ def runcp_producer_loop(
     # at the end, return the done_objects dict
     # also return the list of unprocessed items if any
     return work_state
-
 
 
 def runcp_producer_loop_savedstate(
@@ -720,7 +715,6 @@ def runcp_producer_loop_savedstate(
             s3_client=s3_client,
             sqs_client=sqs_client
         )
-
 
 
 def runcp_consumer_loop(
@@ -1027,16 +1021,14 @@ def runcp_consumer_loop(
                              (os.path.exists(lc_filename)) ):
                             os.remove(lc_filename)
 
-
-                except ClientError as e:
+                except ClientError:
 
                     LOGWARNING('queues have disappeared. stopping worker loop')
                     break
 
-
                 # if there's any other exception, put a failed response into the
                 # output bucket and queue
-                except Exception as e:
+                except Exception:
 
                     LOGEXCEPTION('could not process input from queue')
 
@@ -1060,7 +1052,6 @@ def runcp_consumer_loop(
                             outbucket,
                             client=s3_client
                         )
-
 
                         # put the S3 URL of the output into the output
                         # queue if requested
@@ -1086,27 +1077,24 @@ def runcp_consumer_loop(
                                              receipt,
                                              raiseonfail=True)
 
-
         # a keyboard interrupt kills the loop
         except KeyboardInterrupt:
 
             LOGWARNING('breaking out of the processing loop.')
             break
 
-
         # if the queues disappear, then the producer loop is done and we should
         # exit
-        except ClientError as e:
+        except ClientError:
 
             LOGWARNING('queues have disappeared. stopping worker loop')
             break
-
 
         # any other exception continues the loop we'll write the output file to
         # the output S3 bucket (and any optional output queue), but add a
         # failed-* prefix to it to indicate that processing failed. FIXME: could
         # use a dead-letter queue for this instead
-        except Exception as e:
+        except Exception:
 
             LOGEXCEPTION('could not process input from queue')
 
@@ -1130,7 +1118,6 @@ def runcp_consumer_loop(
                     client=s3_client
                 )
 
-
                 # put the S3 URL of the output into the output
                 # queue if requested
                 if out_queue_url is not None:
@@ -1151,7 +1138,6 @@ def runcp_consumer_loop(
             # acknowledge its receipt and indicate that
             # processing is done
             awsutils.sqs_delete_item(in_queue_url, receipt, raiseonfail=True)
-
 
 
 #########################
@@ -1299,7 +1285,6 @@ def runpf_producer_loop(
     elif isinstance(lightcurve_list, list):
         lclist = lightcurve_list
 
-
     # set up the input and output queues
 
     # check if the queues by the input and output names given exist already
@@ -1309,7 +1294,7 @@ def runpf_producer_loop(
         inq = sqs_client.get_queue_url(QueueName=input_queue)
         inq_url = inq['QueueUrl']
         LOGINFO('input queue already exists, skipping creation...')
-    except ClientError as e:
+    except ClientError:
         inq = awsutils.sqs_create_queue(input_queue, client=sqs_client)
         inq_url = inq['url']
 
@@ -1317,7 +1302,7 @@ def runpf_producer_loop(
         outq = sqs_client.get_queue_url(QueueName=result_queue)
         outq_url = outq['QueueUrl']
         LOGINFO('result queue already exists, skipping creation...')
-    except ClientError as e:
+    except ClientError:
         outq = awsutils.sqs_create_queue(result_queue, client=sqs_client)
         outq_url = outq['url']
 
@@ -1401,11 +1386,10 @@ def runpf_producer_loop(
 
                 awsutils.sqs_delete_item(outq_url, receipt)
 
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
 
             LOGWARNING('breaking out of runpf producer wait-loop')
             break
-
 
     # delete the input and output queues when we're done
     LOGINFO('done with processing.')
@@ -1448,7 +1432,6 @@ def runpf_producer_loop(
     # at the end, return the done_objects dict
     # also return the list of unprocessed items if any
     return work_state
-
 
 
 def runpf_consumer_loop(
@@ -1518,7 +1501,6 @@ def runpf_consumer_loop(
         sqs_client = boto3.client('sqs')
     if not s3_client:
         s3_client = boto3.client('s3')
-
 
     # listen to the kill and term signals and raise KeyboardInterrupt when
     # called
@@ -1700,16 +1682,14 @@ def runpf_consumer_loop(
                              (os.path.exists(lc_filename)) ):
                             os.remove(lc_filename)
 
-
-                except ClientError as e:
+                except ClientError:
 
                     LOGWARNING('queues have disappeared. stopping worker loop')
                     break
 
-
                 # if there's any other exception, put a failed response into the
                 # output bucket and queue
-                except Exception as e:
+                except Exception:
 
                     LOGEXCEPTION('could not process input from queue')
 
@@ -1732,7 +1712,6 @@ def runpf_consumer_loop(
                             outbucket,
                             client=s3_client
                         )
-
 
                         # put the S3 URL of the output into the output
                         # queue if requested
@@ -1758,27 +1737,24 @@ def runpf_consumer_loop(
                                              receipt,
                                              raiseonfail=True)
 
-
         # a keyboard interrupt kills the loop
         except KeyboardInterrupt:
 
             LOGWARNING('breaking out of the processing loop.')
             break
 
-
         # if the queues disappear, then the producer loop is done and we should
         # exit
-        except ClientError as e:
+        except ClientError:
 
             LOGWARNING('queues have disappeared. stopping worker loop')
             break
-
 
         # any other exception continues the loop we'll write the output file to
         # the output S3 bucket (and any optional output queue), but add a
         # failed-* prefix to it to indicate that processing failed. FIXME: could
         # use a dead-letter queue for this instead
-        except Exception as e:
+        except Exception:
 
             LOGEXCEPTION('could not process input from queue')
 

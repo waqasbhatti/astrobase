@@ -39,11 +39,7 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
-
+import pickle
 import sys
 import os
 import os.path
@@ -59,11 +55,13 @@ from tornado.escape import squeeze
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
+
+
 def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
 
-import numpy as np
 
+import numpy as np
 
 
 ############
@@ -71,7 +69,6 @@ import numpy as np
 ############
 
 NCPUS = mp.cpu_count()
-
 
 
 ###################
@@ -156,7 +153,7 @@ def update_checkplotdict_nbrlcs(
         else:
             LOGERROR("can't figure out the light curve format")
             return checkplotdict
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return checkplotdict
 
@@ -185,7 +182,6 @@ def update_checkplotdict_nbrlcs(
 
             objmagkeys[mc] = checkplotdict['objectinfo'][mc]
 
-
     # if there are actually neighbors, go through them in order
     for nbr in checkplotdict['neighbors']:
 
@@ -207,7 +203,6 @@ def update_checkplotdict_nbrlcs(
         if ( (isinstance(lcdict, (list, tuple))) and
              (isinstance(lcdict[0], dict)) ):
             lcdict = lcdict[0]
-
 
         # 0. get this neighbor's magcols and get the magdiff and colordiff
         # between it and the object
@@ -314,7 +309,6 @@ def update_checkplotdict_nbrlcs(
         else:
             xtimes, xmags, xerrs = stimes, smags, serrs
 
-
         # check if this neighbor has enough finite points in its LC
         # fail early if not enough light curve points
         if ((xtimes is None) or (xmags is None) or (xerrs is None) or
@@ -392,7 +386,6 @@ def update_checkplotdict_nbrlcs(
     # info, magseries plot, and all phased LC plots
     # return the updated checkplotdict
     return checkplotdict
-
 
 
 ########################
@@ -628,7 +621,7 @@ def runcp(
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -642,7 +635,6 @@ def runcp(
         pfresults = pickle.load(infd)
 
         infd.close()
-
 
     # override the default timecols, magcols, and errcols
     # using the ones provided to the function
@@ -899,12 +891,11 @@ def runcp(
         try:
             done_callback(*done_callback_args, **done_callback_kwargs)
             LOGINFO('callback fired successfully for %r' % cpfs)
-        except Exception as e:
+        except Exception:
             LOGEXCEPTION('callback function failed for %r' % cpfs)
 
     # at the end, return the list of checkplot files generated
     return cpfs
-
 
 
 def runcp_worker(task):
@@ -935,7 +926,6 @@ def runcp_worker(task):
 
         LOGEXCEPTION(' could not make checkplots for %s: %s' % (pfpickle, e))
         return None
-
 
 
 def parallel_cp(
@@ -1229,11 +1219,10 @@ def parallel_cp(
     with ProcessPoolExecutor(max_workers=nworkers) as executor:
         resultfutures = executor.map(runcp_worker, tasklist)
 
-    results = [x for x in resultfutures]
+    results = list(resultfutures)
 
     executor.shutdown()
     return results
-
 
 
 def parallel_cp_pfdir(pfpickledir,

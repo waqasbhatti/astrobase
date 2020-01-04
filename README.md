@@ -28,8 +28,8 @@ $ pip install astrobase
 
 See the [installation instructions](#installation) below for details.
 
-This package should work with Python >= 3.4. Using the newest Python 3 version
-available is recommended.
+This package requires Python >= 3.5 as of version 0.5.0. Use `pip install
+astrobase<0.5.0` for older Python versions.
 
 Python 3.6: [![Python
 3.6](https://ci.wbhatti.org/buildStatus/icon?job=astrobase-py3)](https://ci.wbhatti.org/job/astrobase-py3)

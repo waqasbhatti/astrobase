@@ -11,6 +11,7 @@ http://adsabs.harvard.edu/abs/2014MNRAS.445.2268P
 
 import numpy as np
 
+
 ##################################
 ## MODEL AND RESIDUAL FUNCTIONS ##
 ##################################
@@ -88,7 +89,6 @@ def flare_model(flareparams, times, mags, errs):
     )
 
     return modelmags, times, mags, errs
-
 
 
 def flare_model_residual(flareparams, times, mags, errs):

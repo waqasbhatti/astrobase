@@ -450,7 +450,7 @@ def _parse_csv_header(header):
                                            float(bjdoffset.split(' = ')[-1]),
                                            int(napertures.split(' = ')[-1]))
         kernelspec = None
-    except Exception as e:
+    except Exception:
         qualflag, bjdoffset, napertures, kernelspec = metainfo[3]
         qualflag, bjdoffset, napertures, kernelspec = (
             int(qualflag.split(' = ')[-1]),
@@ -487,7 +487,6 @@ def _parse_csv_header(header):
                 'columns':columns}
 
     return metadict
-
 
 
 def read_csv_lightcurve(lcfile):

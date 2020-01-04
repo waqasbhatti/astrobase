@@ -53,14 +53,9 @@ import os.path
 import gzip
 import re
 import glob
-import sys
 import shutil
 import multiprocessing as mp
-
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
+import pickle
 
 import numpy as np
 
@@ -140,7 +135,6 @@ def read_hatpi_textlc(lcfile):
     else:
         infd = open(lcfile,'r')
 
-
     with infd:
 
         lclines = infd.read().decode().split('\n')
@@ -199,9 +193,7 @@ def read_hatpi_textlc(lcfile):
             'HP%s' % x for x in np.unique(lcdict['stf']).tolist()
         ]
 
-
     return lcdict
-
 
 
 def lcdict_to_pickle(lcdict, outfile=None):
@@ -228,7 +220,6 @@ def lcdict_to_pickle(lcdict, outfile=None):
     else:
         LOGERROR('could not make a pickle for this lcdict!')
         return None
-
 
 
 def read_hatpi_pklc(lcfile):
@@ -264,7 +255,6 @@ def read_hatpi_pklc(lcfile):
         infd.close()
 
         return lcdict
-
 
 
 ################################
@@ -384,7 +374,7 @@ def concatenate_textlcs(lclist,
     lcdict['nconcatenated'] = lccounter + 1
 
     # if we're supposed to sort by a column, do so
-    if sortby and sortby in [x[0] for x in COLDEFS]:
+    if sortby and sortby in (x[0] for x in COLDEFS):
 
         LOGINFO('sorting concatenated light curve by %s...' % sortby)
         sortind = np.argsort(lcdict[sortby])
@@ -399,7 +389,6 @@ def concatenate_textlcs(lclist,
     LOGINFO('done. concatenated light curve has %s detections' %
             lcdict['objectinfo']['ndet'])
     return lcdict
-
 
 
 def concatenate_textlcs_for_objectid(lcbasedir,
@@ -455,39 +444,14 @@ def concatenate_textlcs_for_objectid(lcbasedir,
                                                          aperture,
                                                          postfix)))
     else:
-        # use recursive glob for Python 3.5+
-        if sys.version_info[:2] > (3,4):
 
-            matching = glob.glob(os.path.join(lcbasedir,
-                                              '**',
-                                              '*%s*%s*%s' % (objectid,
-                                                             aperture,
-                                                             postfix)),
-                                 recursive=True)
-            LOGINFO('found %s files: %s' % (len(matching), repr(matching)))
-
-        # otherwise, use os.walk and glob
-        else:
-
-            # use os.walk to go through the directories
-            walker = os.walk(lcbasedir)
-            matching = []
-
-            for root, dirs, _files in walker:
-                for sdir in dirs:
-                    searchpath = os.path.join(root,
-                                              sdir,
-                                              '*%s*%s*%s' % (objectid,
-                                                             aperture,
-                                                             postfix))
-                    foundfiles = glob.glob(searchpath)
-
-                    if foundfiles:
-                        matching.extend(foundfiles)
-                        LOGINFO(
-                            'found %s in dir: %s' % (repr(foundfiles),
-                                                     os.path.join(root,sdir))
-                        )
+        matching = glob.glob(os.path.join(lcbasedir,
+                                          '**',
+                                          '*%s*%s*%s' % (objectid,
+                                                         aperture,
+                                                         postfix)),
+                             recursive=True)
+        LOGINFO('found %s files: %s' % (len(matching), repr(matching)))
 
     # now that we have all the files, concatenate them
     # a single file will be returned as normalized
@@ -500,7 +464,6 @@ def concatenate_textlcs_for_objectid(lcbasedir,
         LOGERROR('did not find any light curves for %s and aperture %s' %
                  (objectid, aperture))
         return None
-
 
 
 def concat_write_pklc(lcbasedir,
@@ -537,7 +500,6 @@ def concat_write_pklc(lcbasedir,
     return pklc
 
 
-
 def parallel_concat_worker(task):
     '''
     This is a worker for the function below.
@@ -552,11 +514,10 @@ def parallel_concat_worker(task):
 
     try:
         return concat_write_pklc(lcbasedir, objectid, **kwargs)
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION('failed LC concatenation for %s in %s'
                      % (objectid, lcbasedir))
         return None
-
 
 
 def parallel_concat_lcdir(lcbasedir,
@@ -596,7 +557,6 @@ def parallel_concat_lcdir(lcbasedir,
     return {x:y for (x,y) in zip(objectidlist, results)}
 
 
-
 ##############################################
 ## MERGING APERTURES FOR HATPI LIGHT CURVES ##
 ##############################################
@@ -629,10 +589,9 @@ def merge_hatpi_textlc_apertures(lclist):
         framekeys.extend(thisframekeys)
 
     # uniqify the framekeys
-    framekeys = sorted(list(set(framekeys)))
+    framekeys = sorted(set(framekeys))
 
     # FIXME: finish this
-
 
 
 #######################################
@@ -662,10 +621,9 @@ def read_hatpi_binnedlc(binnedpklf, textlcf, timebinsec):
     else:
         infd = open(binnedpklf,'rb')
 
-
     try:
         binned = pickle.load(infd)
-    except Exception as e:
+    except Exception:
         infd.seek(0)
         binned = pickle.load(infd, encoding='latin1')
     infd.close()
@@ -692,7 +650,6 @@ def read_hatpi_binnedlc(binnedpklf, textlcf, timebinsec):
                                          np.nanmedian(binned[key]['AP1'])))
             ap2mad = np.nanmedian(np.abs(binned[key]['AP2'] -
                                          np.nanmedian(binned[key]['AP2'])))
-
 
             lcdict['binned']['iep1'] = {'times':binned[key]['RJD'],
                                         'mags':binned[key]['AP0'],
@@ -726,7 +683,6 @@ def read_hatpi_binnedlc(binnedpklf, textlcf, timebinsec):
             ap0mad = np.nanmedian(np.abs(binned[key]['AP0'] -
                                          np.nanmedian(binned[key]['AP0'])))
 
-
             lcdict['binned']['itf1'] = {'times':binned[key]['RJD'],
                                         'mags':binned[key]['AP0'],
                                         'errs':np.full_like(binned[key]['AP0'],
@@ -744,7 +700,6 @@ def read_hatpi_binnedlc(binnedpklf, textlcf, timebinsec):
 
             ap0mad = np.nanmedian(np.abs(binned[key]['AP0'] -
                                          np.nanmedian(binned[key]['AP0'])))
-
 
             lcdict['binned']['itf2'] = {'times':binned[key]['RJD'],
                                         'mags':binned[key]['AP0'],
@@ -764,7 +719,6 @@ def read_hatpi_binnedlc(binnedpklf, textlcf, timebinsec):
             ap0mad = np.nanmedian(np.abs(binned[key]['AP0'] -
                                          np.nanmedian(binned[key]['AP0'])))
 
-
             lcdict['binned']['itf3'] = {'times':binned[key]['RJD'],
                                         'mags':binned[key]['AP0'],
                                         'errs':np.full_like(binned[key]['AP0'],
@@ -782,7 +736,6 @@ def read_hatpi_binnedlc(binnedpklf, textlcf, timebinsec):
 
         LOGERROR('no binned measurements found in %s!' % binnedpklf)
         return None
-
 
 
 def generate_hatpi_binnedlc_pkl(binnedpklf, textlcf, timebinsec,
@@ -807,7 +760,6 @@ def generate_hatpi_binnedlc_pkl(binnedpklf, textlcf, timebinsec,
     else:
         LOGERROR('could not read binned HATPI LC: %s' % binnedpklf)
         return None
-
 
 
 def parallel_gen_binnedlc_pkls(binnedpkldir,
@@ -841,8 +793,6 @@ def parallel_gen_binnedlc_pkls(binnedpkldir,
             textlcs.append(None)
 
 
-
-
 #####################
 ## POST-PROCESSING ##
 #####################
@@ -850,20 +800,20 @@ def parallel_gen_binnedlc_pkls(binnedpkldir,
 def pklc_fovcatalog_objectinfo(
         pklcdir,
         fovcatalog,
-        fovcatalog_columns=[0,1,2,
+        fovcatalog_columns=(0,1,2,
                             6,7,
                             8,9,
                             10,11,
                             13,14,15,16,
                             17,18,19,
-                            20,21],
-        fovcatalog_colnames=['objectid','ra','decl',
+                            20,21),
+        fovcatalog_colnames=('objectid','ra','decl',
                              'jmag','jmag_err',
                              'hmag','hmag_err',
                              'kmag','kmag_err',
                              'bmag','vmag','rmag','imag',
                              'sdssu','sdssg','sdssr',
-                             'sdssi','sdssz'],
+                             'sdssi','sdssz'),
         fovcatalog_colformats=('U20,f8,f8,'
                                'f8,f8,'
                                'f8,f8,'

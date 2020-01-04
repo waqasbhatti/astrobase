@@ -39,14 +39,9 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
-
+import pickle
 import os
 import os.path
-import sys
 import glob
 import gzip
 import multiprocessing as mp
@@ -58,15 +53,18 @@ from tornado.escape import squeeze
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
+
+
 def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
+
 
 import numpy as np
 
 try:
     from tqdm import tqdm
     TQDM = True
-except Exception as e:
+except Exception:
     TQDM = False
     pass
 
@@ -75,7 +73,6 @@ except Exception as e:
 ############
 
 NCPUS = mp.cpu_count()
-
 
 
 ###################
@@ -87,7 +84,6 @@ from astrobase.varclass import periodicfeatures
 
 from astrobase.lcproc import get_lcformat
 from astrobase.lcproc.periodsearch import PFMETHODS
-
 
 
 #######################
@@ -240,7 +236,7 @@ def get_periodicfeatures(
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -283,7 +279,6 @@ def get_periodicfeatures(
         LOGERROR("can't find LC %s for object %s" % (lcfile, objectid))
         return None
 
-
     # check if we have neighbors we can get the LCs for
     if starfeatures is not None and os.path.exists(starfeatures):
 
@@ -317,7 +312,6 @@ def get_periodicfeatures(
 
     else:
         nbrlcf = None
-
 
     # now, start processing for periodic feature extraction
     try:
@@ -355,7 +349,6 @@ def get_periodicfeatures(
             if nbrlcf:
                 nbrlcdict = normfunc(nbrlcdict)
 
-
         resultdict = {}
 
         for tcol, mcol, ecol in zip(timecols, magcols, errcols):
@@ -372,7 +365,6 @@ def get_periodicfeatures(
             else:
                 nbrtimes = None
 
-
             if '.' in mcol:
                 mcolget = mcol.split('.')
             else:
@@ -384,7 +376,6 @@ def get_periodicfeatures(
                 nbrmags = _dict_get(nbrlcdict, mcolget)
             else:
                 nbrmags = None
-
 
             if '.' in ecol:
                 ecolget = ecol.split('.')
@@ -447,7 +438,6 @@ def get_periodicfeatures(
 
             else:
                 times, mags, errs = ftimes, fmags, ferrs
-
 
             if times.size > 999:
 
@@ -517,7 +507,6 @@ def get_periodicfeatures(
 
                     resultdict[featkey][pfm].update(phasedlcfeat)
 
-
             else:
 
                 LOGERROR('not enough finite measurements in magcol: %s, for '
@@ -537,7 +526,7 @@ def get_periodicfeatures(
 
         return outfile
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('failed to run for pf: %s, lcfile: %s' %
                      (pfpickle, lcfile))
@@ -545,7 +534,6 @@ def get_periodicfeatures(
             raise
         else:
             return None
-
 
 
 def _periodicfeatures_worker(task):
@@ -564,10 +552,9 @@ def _periodicfeatures_worker(task):
                                     starfeatures=starfeatures,
                                     **kwargs)
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('failed to get periodicfeatures for %s' % pfpickle)
-
 
 
 def serial_periodicfeatures(pfpkl_list,
@@ -709,7 +696,7 @@ def serial_periodicfeatures(pfpkl_list,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -774,7 +761,6 @@ def serial_periodicfeatures(pfpkl_list,
 
     for task in tqdm(tasks):
         _periodicfeatures_worker(task)
-
 
 
 def parallel_periodicfeatures(pfpkl_list,
@@ -973,11 +959,10 @@ def parallel_periodicfeatures(pfpkl_list,
     with ProcessPoolExecutor(max_workers=nworkers) as executor:
         resultfutures = executor.map(_periodicfeatures_worker, tasks)
 
-    results = [x for x in resultfutures]
+    results = list(resultfutures)
     resdict = {os.path.basename(x):y for (x,y) in zip(pfpkl_list, results)}
 
     return resdict
-
 
 
 def parallel_periodicfeatures_lcdir(
@@ -1133,7 +1118,7 @@ def parallel_periodicfeatures_lcdir(
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -1146,30 +1131,10 @@ def parallel_periodicfeatures_lcdir(
         matching = glob.glob(os.path.join(pfpkl_dir, fileglob))
 
     else:
-        # use recursive glob for Python 3.5+
-        if sys.version_info[:2] > (3,4):
-
-            matching = glob.glob(os.path.join(pfpkl_dir,
-                                              '**',
-                                              fileglob),recursive=True)
-
-        # otherwise, use os.walk and glob
-        else:
-
-            # use os.walk to go through the directories
-            walker = os.walk(pfpkl_dir)
-            matching = []
-
-            for root, dirs, _files in walker:
-                for sdir in dirs:
-                    searchpath = os.path.join(root,
-                                              sdir,
-                                              fileglob)
-                    foundfiles = glob.glob(searchpath)
-
-                    if foundfiles:
-                        matching.extend(foundfiles)
-
+        matching = glob.glob(os.path.join(pfpkl_dir,
+                                          '**',
+                                          fileglob),
+                             recursive=True)
 
     # now that we have all the files, process them
     if matching and len(matching) > 0:

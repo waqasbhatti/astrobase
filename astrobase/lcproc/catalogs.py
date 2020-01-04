@@ -40,14 +40,9 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
-
+import pickle
 import os
 import os.path
-import sys
 import glob
 import shutil
 import multiprocessing as mp
@@ -70,7 +65,7 @@ import matplotlib.pyplot as plt
 try:
     from tqdm import tqdm
     TQDM = True
-except Exception as e:
+except Exception:
     TQDM = False
     pass
 
@@ -78,9 +73,10 @@ except Exception as e:
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
+
+
 def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
-
 
 
 ############
@@ -98,7 +94,6 @@ FILTEROPS = {'eq':'==',
              'ne':'!='}
 
 
-
 ###################
 ## LOCAL IMPORTS ##
 ###################
@@ -106,7 +101,6 @@ FILTEROPS = {'eq':'==',
 from astrobase.plotbase import fits_finder_chart
 from astrobase.cpserver.checkplotlist import checkplot_infokey_worker
 from astrobase.lcproc import get_lcformat
-
 
 
 #####################################################
@@ -153,7 +147,7 @@ def _lclist_parallel_worker(task):
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -182,7 +176,7 @@ def _lclist_parallel_worker(task):
 
             try:
                 thiscolval = _dict_get(lcdict, getkey)
-            except Exception as e:
+            except Exception:
                 LOGWARNING('column %s does not exist for %s' %
                            (colkey, lcf))
                 thiscolval = np.nan
@@ -190,7 +184,7 @@ def _lclist_parallel_worker(task):
             # update the lcobjdict with this value
             lcobjdict[getkey[-1]] = thiscolval
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('could not figure out columns for %s' % lcf)
 
@@ -221,12 +215,10 @@ def _lclist_parallel_worker(task):
             actualndets = ndetcol[np.isfinite(ndetcol)].size
             lcobjdict['%s.ndet' % getdk[-1]] = actualndets
 
-        except Exception as e:
+        except Exception:
             lcobjdict['%s.ndet' % getdk[-1]] = np.nan
 
-
     return lcobjdict
-
 
 
 def make_lclist(basedir,
@@ -236,10 +228,10 @@ def make_lclist(basedir,
                 lcformatdir=None,
                 fileglob=None,
                 recursive=True,
-                columns=['objectid',
+                columns=('objectid',
                          'objectinfo.ra',
                          'objectinfo.decl',
-                         'objectinfo.ndet'],
+                         'objectinfo.ndet'),
                 makecoordindex=('objectinfo.ra','objectinfo.decl'),
                 field_fitsfile=None,
                 field_wcsfrom=None,
@@ -433,7 +425,7 @@ def make_lclist(basedir,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -465,30 +457,10 @@ def make_lclist(basedir,
                     matching.extend(glob.glob(os.path.join(bdir, fileglob)))
 
                 else:
-                    # use recursive glob for Python 3.5+
-                    if sys.version_info[:2] > (3,4):
-
-                        matching.extend(glob.glob(os.path.join(bdir,
-                                                               '**',
-                                                               fileglob),
-                                                  recursive=True))
-
-                    # otherwise, use os.walk and glob
-                    else:
-
-                        # use os.walk to go through the directories
-                        walker = os.walk(bdir)
-
-                        for root, dirs, _files in walker:
-                            for sdir in dirs:
-                                searchpath = os.path.join(root,
-                                                          sdir,
-                                                          fileglob)
-                                foundfiles = glob.glob(searchpath)
-
-                                if foundfiles:
-                                    matching.extend(foundfiles)
-
+                    matching.extend(glob.glob(os.path.join(bdir,
+                                                           '**',
+                                                           fileglob),
+                                              recursive=True))
 
         # otherwise, handle the usual case of one basedir to search in
         else:
@@ -501,29 +473,9 @@ def make_lclist(basedir,
                 matching = glob.glob(os.path.join(basedir, fileglob))
 
             else:
-                # use recursive glob for Python 3.5+
-                if sys.version_info[:2] > (3,4):
-
-                    matching = glob.glob(os.path.join(basedir,
-                                                      '**',
-                                                      fileglob),recursive=True)
-
-                # otherwise, use os.walk and glob
-                else:
-
-                    # use os.walk to go through the directories
-                    walker = os.walk(basedir)
-                    matching = []
-
-                    for root, dirs, _files in walker:
-                        for sdir in dirs:
-                            searchpath = os.path.join(root,
-                                                      sdir,
-                                                      fileglob)
-                            foundfiles = glob.glob(searchpath)
-
-                            if foundfiles:
-                                matching.extend(foundfiles)
+                matching = glob.glob(os.path.join(basedir,
+                                                  '**',
+                                                  fileglob),recursive=True)
 
     #
     # now that we have all the files, process them
@@ -574,7 +526,7 @@ def make_lclist(basedir,
         with ProcessPoolExecutor(max_workers=nworkers) as executor:
             results = executor.map(_lclist_parallel_worker, tasks)
 
-        results = [x for x in results]
+        results = list(results)
 
         # update the columns in the overall dict from the results of the
         # parallel map
@@ -590,7 +542,6 @@ def make_lclist(basedir,
             lclistdict['objects'][col] = np.array(lclistdict['objects'][col])
 
         # handle duplicate objectids with different light curves
-
         uniques, counts = np.unique(lclistdict['objects']['objectid'],
                                     return_counts=True)
 
@@ -663,7 +614,7 @@ def make_lclist(basedir,
                 LOGINFO('kdtree generated for (ra, decl): (%s, %s)' %
                         (makecoordindex[0], makecoordindex[1]))
 
-            except Exception as e:
+            except Exception:
                 LOGEXCEPTION('could not make kdtree for (ra, decl): (%s, %s)' %
                              (makecoordindex[0], makecoordindex[1]))
                 raise
@@ -729,7 +680,6 @@ def make_lclist(basedir,
                             'with an object position overlay '
                             'for this LC list: %s' % finder_png)
 
-
         # write the pickle
         with open(outfile,'wb') as outfd:
             pickle.dump(lclistdict, outfd, protocol=pickle.HIGHEST_PROTOCOL)
@@ -743,7 +693,6 @@ def make_lclist(basedir,
         return None
 
 
-
 def filter_lclist(lc_catalog,
                   objectidcol='objectid',
                   racol='ra',
@@ -751,7 +700,7 @@ def filter_lclist(lc_catalog,
                   xmatchexternal=None,
                   xmatchdistarcsec=3.0,
                   externalcolnums=(0,1,2),
-                  externalcolnames=['objectid','ra','decl'],
+                  externalcolnames=('objectid','ra','decl'),
                   externalcoldtypes='U20,f8,f8',
                   externalcolsep=None,
                   externalcommentchar='#',
@@ -1007,13 +956,11 @@ def filter_lclist(lc_catalog,
                          "catalog spec: %s, can't continue" % xmatchexternal)
                 return None, None, None
 
-
-        except Exception as e:
+        except Exception:
 
             LOGEXCEPTION('could not match to external catalog spec: %s' %
                          repr(xmatchexternal))
             raise
-
 
     # do the cone search next
     if (conesearch and
@@ -1060,13 +1007,11 @@ def filter_lclist(lc_catalog,
                          (searchradius, racenter, declcenter, len(kdtindices)))
                 return None, None
 
-
-        except Exception as e:
+        except Exception:
 
             LOGEXCEPTION('cone-search: could not run a cone-search, '
                          'is there a kdtree present in %s?' % lc_catalog)
             raise
-
 
     # now that we're done with cone-search, do the column filtering
     allfilterinds = []
@@ -1092,12 +1037,11 @@ def filter_lclist(lc_catalog,
 
                 allfilterinds.append(filterind)
 
-            except Exception as e:
+            except Exception:
 
                 LOGEXCEPTION('filter: could not understand filter spec: %s'
                              % cfilt)
                 LOGWARNING('filter: not applying this broken filter')
-
 
     # now that we have all the filter indices good to go
     # logical-AND all the things
@@ -1124,7 +1068,6 @@ def filter_lclist(lc_catalog,
 
         filteredobjectids = lclist['objects'][objectidcol]
         filteredlcfnames = lclist['objects']['lcfname']
-
 
     # if we're told to make a finder chart with the selected objects
     if field_fitsfile is not None and os.path.exists(field_fitsfile):
@@ -1187,8 +1130,6 @@ def filter_lclist(lc_catalog,
                     'with an object position overlay '
                     'for this filtered LC list: %s' % finder_png)
 
-
-
     # if copylcsto is not None, copy LCs over to it
     if copylcsto is not None:
 
@@ -1205,14 +1146,12 @@ def filter_lclist(lc_catalog,
         for lc in lciter:
             shutil.copy(lc, copylcsto)
 
-
     LOGINFO('done. objects matching all filters: %s' % filteredobjectids.size)
 
     if xmatchexternal and len(ext_matching_objects) > 0:
         return filteredlcfnames, filteredobjectids, ext_matching_objects
     else:
         return filteredlcfnames, filteredobjectids
-
 
 
 ############################################################
@@ -1250,10 +1189,7 @@ def _cpinfo_key_worker(task):
     for i, k in enumerate(keystoget):
 
         thisk = k.split('.')
-        if sys.version_info[:2] < (3,4):
-            thisk = [(int(x) if x.isdigit() else x) for x in thisk]
-        else:
-            thisk = [(int(x) if x.isdecimal() else x) for x in thisk]
+        thisk = [(int(x) if x.isdecimal() else x) for x in thisk]
 
         keystoget[i] = thisk
 
@@ -1281,7 +1217,6 @@ def _cpinfo_key_worker(task):
         vals[valind] = outval
 
     return vals
-
 
 
 CPINFO_DEFAULTKEYS = [
@@ -1447,7 +1382,6 @@ CPINFO_DEFAULTKEYS = [
 ]
 
 
-
 def add_cpinfo_to_lclist(
         checkplots,  # list or a directory path
         initial_lc_catalog,
@@ -1540,7 +1474,7 @@ def add_cpinfo_to_lclist(
     with ProcessPoolExecutor(max_workers=nworkers) as executor:
         resultfutures = executor.map(_cpinfo_key_worker, tasklist)
 
-    results = [x for x in resultfutures]
+    results = list(resultfutures)
     executor.shutdown()
 
     # now that we have all the checkplot info, we need to match to the
@@ -1603,7 +1537,6 @@ def add_cpinfo_to_lclist(
 
         # we'll overwrite earlier existing columns in any case
         lc_catalog['objects'][eactual] = []
-
 
     # now go through each objectid in the catalog and add the extra keys to
     # their respective arrays

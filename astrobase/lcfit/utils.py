@@ -177,7 +177,6 @@ def make_fit_plot(phase, pmags, perrs, fitmags,
         model_z = 0
         lc_z = 100
 
-
     if not wrap:
 
         if isinstance(fitphase,np.ndarray):
@@ -222,7 +221,6 @@ def make_fit_plot(phase, pmags, perrs, fitmags,
         plt.ylabel('magnitude')
     else:
         plt.ylabel('flux')
-
 
     plt.xlabel('phase')
     plt.title('period: %.6f, folded at %.6f, fit epoch: %.6f' %
@@ -374,7 +372,6 @@ def iterative_fit(data_x,
         else:
             obj_func = partial(objective_func, **objective_kwargs)
 
-
         # set up the residualarr function if provided
         if objective_residualarr_func is not None and optimizer_needs_scalar:
 
@@ -415,7 +412,6 @@ def iterative_fit(data_x,
                                                  fit_info.cost)
                 )
 
-
         # this handles the case where the optimizer is scipy.optimize.minimize
         # or similar
         elif ('cost' not in fit_info.keys() and
@@ -445,13 +441,11 @@ def iterative_fit(data_x,
                                                    fit_info.fun)
                 )
 
-
         else:
 
             LOGERROR("Fit did not succeed on iteration: %s" % iteration_count)
 
         iteration_count = iteration_count + 1
-
 
     # at the end, return the fit coeffs
     if not full_output:

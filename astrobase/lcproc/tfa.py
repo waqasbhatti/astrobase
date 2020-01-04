@@ -39,11 +39,7 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
-
+import pickle
 import os
 import os.path
 import glob
@@ -67,9 +63,10 @@ import matplotlib.pyplot as plt
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
+
+
 def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
-
 
 
 ############
@@ -77,7 +74,6 @@ def _dict_get(datadict, keylist):
 ############
 
 NCPUS = mp.cpu_count()
-
 
 
 ###################
@@ -92,7 +88,6 @@ from astrobase.lcmath import (
 )
 
 from astrobase.lcproc import get_lcformat
-
 
 
 ##################################
@@ -129,7 +124,7 @@ def _collect_tfa_stats(task):
             else:
                 LOGERROR("can't figure out the light curve format")
                 return None
-        except Exception as e:
+        except Exception:
             LOGEXCEPTION("can't figure out the light curve format")
             return None
 
@@ -189,7 +184,6 @@ def _collect_tfa_stats(task):
                      lcfile)
             return None
 
-
         # this is the initial dict
         resultdict = {'objectid':objectid,
                       'ra':lcdict['objectinfo']['ra'],
@@ -241,7 +235,7 @@ def _collect_tfa_stats(task):
 
                 resultdict[mcol] = varfeat
 
-            except Exception as e:
+            except Exception:
 
                 LOGEXCEPTION('%s, magcol: %s, probably ran into all-nans' %
                              (lcfile, mcol))
@@ -249,15 +243,13 @@ def _collect_tfa_stats(task):
                                     'mad':np.nan,
                                     'eta_normal':np.nan}
 
-
         return resultdict
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('could not execute get_tfa_stats for task: %s' %
                      repr(task))
         return None
-
 
 
 def _reform_templatelc_for_tfa(task):
@@ -292,7 +284,7 @@ def _reform_templatelc_for_tfa(task):
             else:
                 LOGERROR("can't figure out the light curve format")
                 return None
-        except Exception as e:
+        except Exception:
             LOGEXCEPTION("can't figure out the light curve format")
             return None
 
@@ -372,11 +364,10 @@ def _reform_templatelc_for_tfa(task):
         #
         return outdict
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('reform LC task failed: %s' % repr(task))
         return None
-
 
 
 def tfa_templates_lclist(
@@ -565,7 +556,7 @@ def tfa_templates_lclist(
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -650,7 +641,6 @@ def tfa_templates_lclist(
         else:
             tcolget = [tcol]
 
-
         # these are the containers for possible template collection LC info
         (lcmag, lcmad, lceta,
          lcndet, lcobj, lcfpaths,
@@ -672,7 +662,6 @@ def tfa_templates_lclist(
 
         LOGINFO('magcol: %s, collecting prospective template LC info...' %
                 mcol)
-
 
         # collect the template LCs for this magcol
         for result in results:
@@ -697,7 +686,6 @@ def tfa_templates_lclist(
                 outdict[mcol]['collection']['lcf'].append(thislcf)
                 outdict[mcol]['collection']['ra'].append(thisra)
                 outdict[mcol]['collection']['decl'].append(thisdecl)
-
 
                 # check if we have more than one bright or faint limit elem
                 if isinstance(mag_bright_limit, (list, tuple)):
@@ -727,7 +715,7 @@ def tfa_templates_lclist(
                     lcra.append(thisra)
                     lcdecl.append(thisdecl)
 
-            except Exception as e:
+            except Exception:
                 pass
 
         # make sure we have enough LCs to work on
@@ -1061,7 +1049,6 @@ def tfa_templates_lclist(
     return outdict
 
 
-
 def apply_tfa_magseries(lcfile,
                         timecol,
                         magcol,
@@ -1135,7 +1122,7 @@ def apply_tfa_magseries(lcfile,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -1244,7 +1231,6 @@ def apply_tfa_magseries(lcfile,
                 'reformed_targetlc':reformed_targetlc},
     }
 
-
     # we'll write back the tfa times and mags to the lcdict
     lcdict['tfa'] = outdict
     outfile = os.path.join(
@@ -1258,7 +1244,6 @@ def apply_tfa_magseries(lcfile,
         pickle.dump(lcdict, outfd, pickle.HIGHEST_PROTOCOL)
 
     return outfile
-
 
 
 def _parallel_tfa_worker(task):
@@ -1297,11 +1282,10 @@ def _parallel_tfa_worker(task):
             LOGINFO('%s -> %s TFA OK' % (lcfile, res))
         return res
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('TFA failed for %s' % lcfile)
         return None
-
 
 
 def parallel_tfa_lclist(lclist,
@@ -1394,7 +1378,7 @@ def parallel_tfa_lclist(lclist,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -1426,7 +1410,6 @@ def parallel_tfa_lclist(lclist,
         outdict[m] = results
 
     return outdict
-
 
 
 def parallel_tfa_lcdir(lcdir,
@@ -1525,7 +1508,7 @@ def parallel_tfa_lcdir(lcdir,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 

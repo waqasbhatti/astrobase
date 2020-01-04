@@ -39,11 +39,7 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
-try:
-    import cPickle as pickle
-except Exception as e:
-    import pickle
-
+import pickle
 import os
 import os.path
 import glob
@@ -55,9 +51,10 @@ from tornado.escape import squeeze
 # from https://stackoverflow.com/a/14692747
 from functools import reduce
 from operator import getitem
+
+
 def _dict_get(datadict, keylist):
     return reduce(getitem, keylist, datadict)
-
 
 
 ############
@@ -67,14 +64,12 @@ def _dict_get(datadict, keylist):
 NCPUS = mp.cpu_count()
 
 
-
 ###################
 ## LOCAL IMPORTS ##
 ###################
 
 from astrobase.lcproc import get_lcformat
 from astrobase.varbase.trends import epd_magseries, smooth_magseries_savgol
-
 
 
 ##################################
@@ -209,7 +204,7 @@ def apply_epd_magseries(lcfile,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -280,7 +275,6 @@ def apply_epd_magseries(lcfile,
     return outfile
 
 
-
 def parallel_epd_worker(task):
     '''This is a parallel worker for the function below.
 
@@ -334,11 +328,10 @@ def parallel_epd_worker(task):
             LOGERROR('EPD failed for %s' % lcfile)
             return None
 
-    except Exception as e:
+    except Exception:
 
         LOGEXCEPTION('EPD failed for %s' % lcfile)
         return None
-
 
 
 def parallel_epd_lclist(lclist,
@@ -477,7 +470,7 @@ def parallel_epd_lclist(lclist,
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 
@@ -508,7 +501,6 @@ def parallel_epd_lclist(lclist,
         outdict[m] = results
 
     return outdict
-
 
 
 def parallel_epd_lcdir(
@@ -652,7 +644,7 @@ def parallel_epd_lcdir(
         else:
             LOGERROR("can't figure out the light curve format")
             return None
-    except Exception as e:
+    except Exception:
         LOGEXCEPTION("can't figure out the light curve format")
         return None
 

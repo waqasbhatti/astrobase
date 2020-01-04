@@ -32,7 +32,7 @@ try:
     import pyfits
     HAVEPYFITS = True
 
-except Exception as e:
+except Exception:
     from astropy.io import fits as pyfits
     HAVEPYFITS = True
 
@@ -176,8 +176,6 @@ TEXTLC_OUTPUT_COLUMNS = {
     'ITF3':['image-subtraction TFA lightcurve magnitude (aperture 3)',
             '%12.5f','D',float],
 }
-
-
 
 
 ##############################
