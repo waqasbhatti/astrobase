@@ -61,7 +61,10 @@ from tornado.options import define, options
 ## DEFINING URL HANDLERS ##
 ###########################
 
-from . import checkplotserver_handlers as cphandlers
+from . import checkplotserver_handlers as basehandlers
+from . import checkplotserver_cphandlers as cphandlers
+from . import checkplotserver_toolhandlers as toolhandlers
+from . import checkplotserver_standalone as standalone
 
 
 ###############################
@@ -255,7 +258,7 @@ def main():
                     # this is the URLSpec for the standalone Handler
                     standalonespec = (
                         r'/standalone',
-                        cphandlers.StandaloneHandler,
+                        standalone.StandaloneHandler,
                         {'executor':EXECUTOR,
                          'secret':SHAREDSECRET}
                     )
@@ -361,7 +364,7 @@ def main():
         HANDLERS = [
             # index page
             (r'{baseurl}'.format(baseurl=BASEURL),
-             cphandlers.IndexHandler,
+             basehandlers.IndexHandler,
              {'currentdir':CURRENTDIR,
               'assetpath':ASSETPATH,
               'cplist':CHECKPLOTLIST,
@@ -389,7 +392,7 @@ def main():
               'readonly':READONLY}),
             # light curve variability and period-finding tool endpoints
             (r'{baseurl}tools/?(.*)'.format(baseurl=BASEURL),
-             cphandlers.LCToolHandler,
+             toolhandlers.LCToolHandler,
              {'currentdir':CURRENTDIR,
               'assetpath':ASSETPATH,
               'cplist':CHECKPLOTLIST,
