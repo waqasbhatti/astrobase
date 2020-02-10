@@ -215,14 +215,14 @@ def get_eleanor_lightcurves(tic_id, download_dir=None):
         FITS, by this function.
     """
 
-    stars = eleanor.multi_sectors(tic=np.int64(tic_id), sectors='all', tc=True)
+    stars = eleanor.multi_sectors(tic=np.int64(tic_id), sectors='all', tc=False)
 
     data = []
 
     for star in stars:
 
         d = eleanor.TargetData(star, height=15, width=15, bkg_size=31,
-                               do_psf=False, do_pca=True)
+                               do_psf=False, do_pca=False)
 
         d.save(directory=download_dir)
 
