@@ -76,7 +76,7 @@ except Exception:
 ###################
 
 from ..lcmath import sigclip_magseries
-
+from .utils import resort_by_time
 
 ############
 ## CONFIG ##
@@ -279,6 +279,8 @@ def tls_parallel_pfind(times, mags, errs,
     stimes, smags, serrs = sigclip_magseries(times, mags, errs,
                                              magsarefluxes=magsarefluxes,
                                              sigclip=sigclip)
+
+    stimes, smags, serrs = resort_by_time(stimes, smags, serrs)
 
     # make sure there are enough points to calculate a spectrum
     if not (len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9):

@@ -55,6 +55,33 @@ import numpy as np
 ## UTILITY FUNCTIONS ##
 #######################
 
+def resort_by_time(times, mags, errs):
+    '''
+    Resorts the input arrays so they're in time order.
+
+    NOTE: the input arrays must not have nans in them.
+
+    Parameters
+    ----------
+
+    times,mags,errs : np.arrays
+        The times, mags, and errs arrays to resort by time. The times array is
+        assumed to be the first one in the input args.
+
+    Returns
+    -------
+
+    times,mags,errs : np.arrays
+        The resorted times, mags, errs arrays.
+
+    '''
+
+    sort_order = np.argsort(times)
+    times, mags, errs = times[sort_order], mags[sort_order], errs[sort_order]
+
+    return times, mags, errs
+
+
 def independent_freq_count(frequencies, times, conservative=True):
     '''This estimates the number of independent frequencies in a periodogram.
 

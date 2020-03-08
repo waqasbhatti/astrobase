@@ -63,7 +63,7 @@ from astropy import units as u
 ###################
 
 from ..lcmath import sigclip_magseries
-
+from .utils import resort_by_time
 
 ############
 ## CONFIG ##
@@ -254,6 +254,9 @@ def bls_serial_pfind(times, mags, errs,
                                              errs,
                                              magsarefluxes=magsarefluxes,
                                              sigclip=sigclip)
+
+    # resort by time
+    stimes, smags, errs = resort_by_time(stimes, smags, serrs)
 
     # make sure there are enough points to calculate a spectrum
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
@@ -893,6 +896,9 @@ def bls_parallel_pfind(
                                              errs,
                                              magsarefluxes=magsarefluxes,
                                              sigclip=sigclip)
+
+    # resort by time
+    stimes, smags, errs = resort_by_time(stimes, smags, serrs)
 
     # make sure there are enough points to calculate a spectrum
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:

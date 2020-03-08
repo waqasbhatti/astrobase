@@ -54,7 +54,7 @@ from numpy import (
 ###################
 
 from ..lcmath import sigclip_magseries
-from .utils import get_frequency_grid, independent_freq_count
+from .utils import get_frequency_grid, independent_freq_count, resort_by_time
 
 
 ############
@@ -557,6 +557,7 @@ def pgen_lsp(
                                              errs,
                                              magsarefluxes=magsarefluxes,
                                              sigclip=sigclip)
+    stimes, smags, serrs = resort_by_time(stimes, smags, serrs)
 
     # get rid of zero errs
     nzind = npnonzero(serrs)

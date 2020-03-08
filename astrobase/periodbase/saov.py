@@ -53,7 +53,7 @@ from numpy import (
 ###################
 
 from ..lcmath import phase_magseries, sigclip_magseries
-from .utils import get_frequency_grid, independent_freq_count
+from .utils import get_frequency_grid, independent_freq_count, resort_by_time
 
 
 ############
@@ -322,6 +322,7 @@ def aov_periodfind(times,
                                              errs,
                                              magsarefluxes=magsarefluxes,
                                              sigclip=sigclip)
+    stimes, smags, serrs = resort_by_time(stimes, smags, serrs)
 
     # make sure there are enough points to calculate a spectrum
     if len(stimes) > 9 and len(smags) > 9 and len(serrs) > 9:
