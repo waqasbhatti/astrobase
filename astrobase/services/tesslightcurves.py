@@ -7,18 +7,22 @@
 Useful tools for acquiring TESS light-curves.  This module contains a number of
 non-standard dependencies, including lightkurve, eleanor, and astroquery.
 
-Light-curve retrieval: get light-curves from all sectors for a tic_id.
+Light-curve retrieval: get light-curves from all sectors for a tic_id::
+
     get_two_minute_spoc_lightcurves
     get_hlsp_lightcurves
     get_eleanor_lightcurves
 
-Visibility queries: check if an ra/dec was observed.
+Visibility queries: check if an ra/dec was observed::
+
     is_two_minute_spoc_lightcurve_available
     get_tess_visibility_given_ticid
     get_tess_visibility_given_ticids
 
-TODO:
+Still TODO::
+
     get_cpm_lightcurve
+
 '''
 
 #############
@@ -52,9 +56,12 @@ LOGEXCEPTION = LOGGER.exception
 ## IMPORTS ##
 #############
 
+from glob import glob
+import os
+import numpy as np
+import json
+
 from astropy.coordinates import SkyCoord
-from astrobase.services.identifiers import simbad_to_tic
-from astrobase.services.mast import tic_objectsearch
 
 # This module contains a number of non-standard dependencies, including
 # lightkurve, astroquery, and eleanor.
@@ -97,16 +104,16 @@ for k,v in deps.items():
         )
         LOGWARNING(wrn)
 
-from glob import glob
-import os
-import numpy as np, pandas as pd
+from astrobase.services.mast import tic_objectsearch
+
 
 ##########
 ## WORK ##
 ##########
 
 def get_two_minute_spoc_lightcurves(tic_id, download_dir=None):
-    """
+    """This downloads 2-minute TESS SPOC light curves.
+
     Parameters
     ----------
     tic_id : str
@@ -116,7 +123,14 @@ def get_two_minute_spoc_lightcurves(tic_id, download_dir=None):
     -------
     lcfiles : list or None
         List of light-curve file paths. None if none are found and downloaded.
+
     """
+
+    if not lightkurve_dependency:
+        LOGERROR(
+            "The lightkurve package is required for this function to work."
+        )
+        return None
 
     if not isinstance(download_dir, str):
         errmsg = (
@@ -125,10 +139,10 @@ def get_two_minute_spoc_lightcurves(tic_id, download_dir=None):
         LOGERROR(errmsg)
         return None
 
-    search_str = 'TIC '+tic_id
+    search_str = 'TIC ' + tic_id
     res = search_lightcurvefile(search_str, cadence='short', mission='TESS')
 
-    if len(res.table)==0:
+    if len(res.table) == 0:
         errmsg = (
             'failed to get any SC data for TIC{}. need other LC source.'.
             format(tic_id)
@@ -136,26 +150,26 @@ def get_two_minute_spoc_lightcurves(tic_id, download_dir=None):
         LOGERROR(errmsg)
         return None
 
-    available_sectors = list(res.table['sequence_number'])
-
     res.download_all(download_dir=download_dir)
-
     lcfiles = glob(os.path.join(download_dir, 'mastDownload', 'TESS',
-                                '*{}*'.format(tic_id) ,
+                                '*{}*'.format(tic_id),
                                 '*{}*.fits'.format(tic_id) ))
 
     return lcfiles
 
 
-def get_hlsp_lightcurves(tic_id, hlsp_products=['CDIPS', 'TASOC'],
-                         download_dir=None, verbose=True):
-    """
+def get_hlsp_lightcurves(tic_id,
+                         hlsp_products=('CDIPS', 'TASOC'),
+                         download_dir=None,
+                         verbose=True):
+    """This downloads TESS HLSP light curves for a given TIC ID.
+
     Parameters
     ----------
     tic_id : str
         The TIC ID of the object as a string.
 
-    hlsp_products : list
+    hlsp_products : sequence of str
         List of desired HLSP products to search. For instance, ["CDIPS"].
 
     download_dir : str
@@ -165,7 +179,14 @@ def get_hlsp_lightcurves(tic_id, hlsp_products=['CDIPS', 'TASOC'],
     -------
     lcfiles : list or None
         List of light-curve file paths. None if none are found and downloaded.
+
     """
+
+    if not astroquery_dependency:
+        LOGERROR(
+            "The astroquery package is required for this function to work."
+        )
+        return None
 
     lcfiles = []
 
@@ -202,7 +223,8 @@ def get_hlsp_lightcurves(tic_id, hlsp_products=['CDIPS', 'TASOC'],
 
 
 def get_eleanor_lightcurves(tic_id, download_dir=None):
-    """
+    """This downloads light curves from the Eleanor project for a given TIC ID.
+
     Parameters
     ----------
     tic_id : str
@@ -213,11 +235,16 @@ def get_eleanor_lightcurves(tic_id, download_dir=None):
     lcfiles : list or None
         List of light-curve file paths. These are saved as CSV, rather than
         FITS, by this function.
+
     """
 
-    stars = eleanor.multi_sectors(tic=np.int64(tic_id), sectors='all', tc=False)
+    if not eleanor_dependency:
+        LOGERROR(
+            "The eleanor package is required for this function to work."
+        )
+        return None
 
-    data = []
+    stars = eleanor.multi_sectors(tic=np.int64(tic_id), sectors='all', tc=False)
 
     for star in stars:
 
@@ -235,6 +262,8 @@ def get_eleanor_lightcurves(tic_id, download_dir=None):
 
 def is_two_minute_spoc_lightcurve_available(tic_id):
     """
+    This checks if a 2-minute TESS SPOC light curve is available for the TIC ID.
+
     Parameters
     ----------
     tic_id : str
@@ -242,13 +271,21 @@ def is_two_minute_spoc_lightcurve_available(tic_id):
 
     Returns
     -------
-    True if a 2 minute SPOC light-curve is available, else False.
+    result : bool
+        True if a 2 minute SPOC light-curve is available, else False.
+
     """
 
-    search_str = 'TIC '+tic_id
+    if not lightkurve_dependency:
+        LOGERROR(
+            "The lightkurve package is required for this function to work."
+        )
+        return False
+
+    search_str = 'TIC ' + tic_id
     res = search_lightcurvefile(search_str, cadence='short', mission='TESS')
 
-    if len(res.table)==0:
+    if len(res.table) == 0:
         return False
     else:
         return True
@@ -256,20 +293,33 @@ def is_two_minute_spoc_lightcurve_available(tic_id):
 
 def get_tess_visibility_given_ticid(tic_id):
     """
+    This checks if a given TIC ID is visible in a TESS sector.
+
     Parameters
     ----------
     tic_id : str
         The TIC ID of the object as a string.
 
-
     Returns
     -------
-    sector_str, full_sector_str : tuple of strings
+    sector_str,full_sector_str : tuple of strings
+        The first element of the tuple contains a string list of the sector
+        numbers where the object is visible. The second element of the tuple
+        contains a string list of the full sector names where the object is
+        visible.
+
         For example, "[16, 17]" and "[tess-s0016-1-4, tess-s0017-2-3]". If
         empty, will return "[]" and "[]".
     """
 
-    ticres = tic_objectsearch(ticid)
+    if not astroquery_dependency:
+        LOGERROR(
+            "The astroquery package is required for this function to work."
+        )
+        return None, None
+
+    ticres = tic_objectsearch(tic_id)
+
     with open(ticres['cachefname'], 'r') as json_file:
         data = json.load(json_file)
 
@@ -286,10 +336,28 @@ def get_tess_visibility_given_ticid(tic_id):
 
 
 def get_tess_visibility_given_ticids(ticids):
+    """This gets TESS visibility info for an iterable container of TIC IDs.
+
+    Parameters
+    ----------
+
+    ticids : iterable of str
+        The TIC IDs to look up.
+
+    Returns
+    -------
+
+    tuple
+        Returns a two-element tuple containing lists of the sector numbers and
+        the full names of the sectors containing the requested TIC IDs.
+
     """
-    Wrapper to get_tess_visibility_given_ticid for an iterable container of
-    ticids.
-    """
+
+    if not astroquery_dependency:
+        LOGERROR(
+            "The astroquery package is required for this function to work."
+        )
+        return None, None
 
     sector_strs, full_sector_strs = [], []
 

@@ -21,3 +21,4 @@ Submodules
    astrobase.services.trilegal
    astrobase.services.limbdarkening
    astrobase.services.identifiers
+   astrobase.services.tesslightcurves

@@ -31,6 +31,9 @@ exhaustive and are meant to support other astrobase modules.
 - :py:mod:`astrobase.services.identifiers`: utilities to convert from SIMBAD
   object names to GAIA DR2 source identifiers and TESS Input Catalogs IDs.
 
+- :py:mod:`astrobase.services.tesslightcurves`: utilities to download various
+  TESS light curve products from MAST.
+
 For a much broader interface to online data services, use the astroquery package
 by A. Ginsburg, B. Sipocz, et al.:
 
