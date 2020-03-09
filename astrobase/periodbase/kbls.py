@@ -553,7 +553,7 @@ def bls_serial_pfind(
                         LOGINFO("Getting stats for best period: %.6f" % bp)
 
                     this_pstats = bls_stats_singleperiod(
-                        times, mags, errs, bp,
+                        stimes, smags, serrs, bp,
                         magsarefluxes=resultdict['kwargs']['magsarefluxes'],
                         sigclip=resultdict['kwargs']['sigclip'],
                         nphasebins=resultdict['nphasebins'],
@@ -1027,7 +1027,7 @@ def bls_parallel_pfind(
                     LOGINFO("Getting stats for best period: %.6f" % bp)
 
                 this_pstats = bls_stats_singleperiod(
-                    times, mags, errs, bp,
+                    stimes, smags, serrs, bp,
                     magsarefluxes=resultdict['kwargs']['magsarefluxes'],
                     sigclip=resultdict['kwargs']['sigclip'],
                     nphasebins=resultdict['nphasebins'],
