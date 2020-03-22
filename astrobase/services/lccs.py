@@ -36,7 +36,7 @@ The functions below support various auxiliary LCC services::
 '''
 
 # put this in here because lccs can be used as a standalone module
-__version__ = '0.4.3'
+__version__ = '0.5.0'
 
 
 #############

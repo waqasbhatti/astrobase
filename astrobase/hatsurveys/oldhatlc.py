@@ -18,7 +18,7 @@ curve format description.
 
 '''
 # put this in here because oldhatlc can be used as a standalone module
-__version__ = '0.4.3'
+__version__ = '0.5.0'
 
 import os.path
 import gzip
