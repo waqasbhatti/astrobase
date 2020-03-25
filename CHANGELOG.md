@@ -1,23 +1,30 @@
+# v0.5.1
+
+## Fixes
+
+- `lcproc.catalogs.add_cpinfo_to_lclist`: make sure the catalog dict's 'columns'
+  key's value is a list so it can be appended to.
+
 # v0.5.0
 
 This is a new major release. Support for Python 2.7 has been dropped. Astrobase
 now requires Python 3.5+.
 
-# New stuff
+## New stuff
 
 - New `services.tesslightcurves` module to retrieve TESS HLSP light curves from
   MAST. This requires the astroquery, eleanor, and lightkurve packages. By
   @lgbouma.
 - `services.identifiers`: new `tic_to_gaiadr2` function. By @lgbouma.
 
-# Fixes
+## Fixes
 
 - `periodbase.kbls`: now resorts the input times, mags, errs by time to avoid a
   segfault in the wrapped `eebls` Fortran code. Should fix #94.
 - `services.lccs`: now includes the logging bits to make it an actually
   standalone module.
 
-# Changes
+## Changes
 
 - `periodbase`: all period-finder functions now resort their input times, mags,
   errs arrays by time before operating on them.
@@ -25,7 +32,7 @@ now requires Python 3.5+.
 - various `flake8` formatting fixes all over the package
 - removed Python 2 specific code all over the package
 
-# Removed
+## Removed
 
 - The deprecated `astrobase.varbase.lcfit` module has been removed. Use the
   top-level `astrobase.lcfit` subpackage instead.
