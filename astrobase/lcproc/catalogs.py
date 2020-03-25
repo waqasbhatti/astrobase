@@ -1484,6 +1484,10 @@ def add_cpinfo_to_lclist(
     with open(initial_lc_catalog,'rb') as infd:
         lc_catalog = pickle.load(infd)
 
+    # convert the lc_catalog['columns'] item to a list if it's not
+    # this is so we can append columns to it later
+    lc_catalog['columns'] = list(lc_catalog['columns'])
+
     catalog_objectids = np.array(lc_catalog['objects']['objectid'])
     checkplot_objectids = np.array([x[0] for x in results])
 
