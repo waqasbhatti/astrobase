@@ -62,9 +62,11 @@ if len(mpl_regex) == 1:
     MPLVERSION = tuple(
         int(x) for x in
         matplotlib.__version__.replace(mpl_regex[0],'').split('.')
+        if x.isdigit()
     )
 else:
-    MPLVERSION = tuple(int(x) for x in matplotlib.__version__.split('.'))
+    MPLVERSION = tuple(int(x) for x in matplotlib.__version__.split('.')
+                       if x.isdigit())
 
 matplotlib.use('Agg')
 

@@ -72,7 +72,7 @@ if HAVE_TLS:
 import astropy
 apversion = astropy.__version__
 apversion = apversion.split('.')
-apversion = [int(x) for x in apversion]
+apversion = [int(x) for x in apversion if x.isdigit()]
 
 if len(apversion) == 2:
     apversion.append(0)

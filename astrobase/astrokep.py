@@ -39,7 +39,6 @@ LOGEXCEPTION = LOGGER.exception
 #############
 
 import glob
-import sys
 import os.path
 import pickle
 import gzip
