@@ -1,3 +1,11 @@
+# v0.5.2
+
+## Fixes
+
+- `periodbase`: fix check for Astropy version tags so the import doesn't fail
+  when the version contains letters.
+
+
 # v0.5.1
 
 ## Fixes
