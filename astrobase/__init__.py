@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '0.5.1'
+__version__ = '0.5.2'
 
 
 # the basic logging styles common to all astrobase modules
