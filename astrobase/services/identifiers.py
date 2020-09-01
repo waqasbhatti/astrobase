@@ -13,6 +13,8 @@ objects, particularly when SIMBAD is involved.
 
 ``simbad_to_tic()``: given simbad name, get TIC ID
 
+``tic_to_gaiadr2()``: given TIC ID, get GAIA DR2 source_id
+
 '''
 
 #############

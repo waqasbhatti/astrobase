@@ -1322,7 +1322,8 @@ def phase_bin_magseries(phases, mags,
 
 def phase_bin_magseries_with_errs(phases, mags, errs,
                                   binsize=0.005,
-                                  minbinelems=7):
+                                  minbinelems=7,
+                                  weights=None):
     '''Bins a phased magnitude/flux time-series using the bin size provided.
 
     Parameters
@@ -1371,6 +1372,8 @@ def phase_bin_magseries_with_errs(phases, mags, errs,
     finite_phases = phases[finiteind]
     finite_mags = mags[finiteind]
     finite_errs = errs[finiteind]
+    if len(weights) > 10:
+        finite_weights = weights[finiteind]
 
     nbins = int(np.ceil((np.nanmax(finite_phases) -
                          np.nanmin(finite_phases))/binsize) + 1)
@@ -1419,10 +1422,17 @@ def phase_bin_magseries_with_errs(phases, mags, errs,
     collected_binned_mags['binsize'] = binsize
 
     # median bin the magnitudes according to the calculated indices
-    collected_binned_mags['binnedmags'] = (
-        np.array([np.median(finite_mags[x])
-                  for x in binned_finite_phaseseries_indices])
-    )
+    if finite_weights is None:
+        collected_binned_mags['binnedmags'] = (
+            np.array([np.median(finite_mags[x])
+                      for x in binned_finite_phaseseries_indices])
+        )
+    else:
+        collected_binned_mags['binnedmags'] = (
+            np.array([np.average(finite_mags[x], weights=finite_weights[x])
+                      for x in binned_finite_phaseseries_indices])
+        )
+
     collected_binned_mags['binnederrs'] = (
         np.array([np.median(finite_errs[x])
                   for x in binned_finite_phaseseries_indices])
