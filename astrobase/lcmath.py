@@ -1377,7 +1377,7 @@ def phase_bin_magseries_with_errs(phases, mags, errs,
     finite_phases = phases[finiteind]
     finite_mags = mags[finiteind]
     finite_errs = errs[finiteind]
-    if len(weights) > 10:
+    if weights is not None and len(weights) > 10:
         finite_weights = weights[finiteind]
 
     nbins = int(np.ceil((np.nanmax(finite_phases) -
