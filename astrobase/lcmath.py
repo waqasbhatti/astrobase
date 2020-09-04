@@ -1322,7 +1322,8 @@ def phase_bin_magseries(phases, mags,
 
 def phase_bin_magseries_with_errs(phases, mags, errs,
                                   binsize=0.005,
-                                  minbinelems=7):
+                                  minbinelems=7,
+                                  weights=None):
     '''Bins a phased magnitude/flux time-series using the bin size provided.
 
     Parameters
@@ -1340,6 +1341,11 @@ def phase_bin_magseries_with_errs(phases, mags, errs,
     minbinelems : int
         The minimum number of elements required per bin to include it in the
         output.
+
+    weights : np.array or None
+        Optional weight vector to be applied during binning. If if is passed,
+        `np.average` is used to bin, rather than `np.median`. A good choice
+        would be to pass ``weights=1/errs**2``, to weight by the inverse variance.
 
     Returns
     -------
@@ -1371,6 +1377,10 @@ def phase_bin_magseries_with_errs(phases, mags, errs,
     finite_phases = phases[finiteind]
     finite_mags = mags[finiteind]
     finite_errs = errs[finiteind]
+    if weights is not None and len(weights) > 10:
+        finite_weights = weights[finiteind]
+    else:
+        finite_weights = None
 
     nbins = int(np.ceil((np.nanmax(finite_phases) -
                          np.nanmin(finite_phases))/binsize) + 1)
@@ -1419,10 +1429,17 @@ def phase_bin_magseries_with_errs(phases, mags, errs,
     collected_binned_mags['binsize'] = binsize
 
     # median bin the magnitudes according to the calculated indices
-    collected_binned_mags['binnedmags'] = (
-        np.array([np.median(finite_mags[x])
-                  for x in binned_finite_phaseseries_indices])
-    )
+    if finite_weights is None:
+        collected_binned_mags['binnedmags'] = (
+            np.array([np.median(finite_mags[x])
+                      for x in binned_finite_phaseseries_indices])
+        )
+    else:
+        collected_binned_mags['binnedmags'] = (
+            np.array([np.average(finite_mags[x], weights=finite_weights[x])
+                      for x in binned_finite_phaseseries_indices])
+        )
+
     collected_binned_mags['binnederrs'] = (
         np.array([np.median(finite_errs[x])
                   for x in binned_finite_phaseseries_indices])
