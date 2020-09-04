@@ -1345,7 +1345,7 @@ def phase_bin_magseries_with_errs(phases, mags, errs,
     weights : np.array or None
         Optional weight vector to be applied during binning. If if is passed,
         `np.average` is used to bin, rather than `np.median`. A good choice
-        would be to pass weights=1/errs**2, to weight by the inverse variance.
+        would be to pass ``weights=1/errs**2``, to weight by the inverse variance.
 
     Returns
     -------
