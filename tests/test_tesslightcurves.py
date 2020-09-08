@@ -77,11 +77,35 @@ if test_ok:
 
         assert len(lcfile) == 1
 
+        tic_id = 460205581 # TOI 837. two sectors, two HLSPs.
+
+        lcfile = tesslightcurves.get_hlsp_lightcurves(
+            tic_id,
+            hlsp_products=['CDIPS', 'PATHOS'],
+            download_dir=tempdir,
+            verbose=True
+        )
+
+        fitsfiles = [l for l in lcfile if l.endswiths('.fits')]
+        assert len(fitsfiles) == 4
+
     def test_get_eleanor_lightcurves():
         """NOTE: This test takes a while, because eleanor downloads lots of
         metadata onto your system for any new sector.
 
         """
+
+        tic_id = '402026209'  # WASP-4
+
+        tempdir = init_tempdir()
+
+        lcfile = tesslightcurves.get_eleanor_lightcurves(
+            tic_id,
+            download_dir=tempdir,
+            targetdata_kwargs={'height':13, 'width':13, 'do_pca':True}
+        )
+
+        assert len(lcfile) == 1
 
         tic_id = '308538095'  # CDIPS PC
 
