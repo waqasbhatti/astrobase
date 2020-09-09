@@ -64,6 +64,19 @@ if test_ok:
 
     def test_get_hlsp_lightcurves():
 
+        tic_id = '38846515' # 51 peg
+
+        tempdir = init_tempdir()
+
+        lcfile = tesslightcurves.get_hlsp_lightcurves(
+            tic_id,
+            hlsp_products=['CDIPS', 'PATHOS'],
+            download_dir=tempdir,
+            verbose=True
+        )
+
+        assert lcfile is None
+
         tic_id = '220314428'  # "V684 Mon"
 
         tempdir = init_tempdir()
@@ -86,7 +99,7 @@ if test_ok:
             verbose=True
         )
 
-        fitsfiles = [l for l in lcfile if l.endswiths('.fits')]
+        fitsfiles = [l for l in lcfile if l.endswith('.fits')]
         assert len(fitsfiles) == 4
 
     def test_get_eleanor_lightcurves():
@@ -116,7 +129,7 @@ if test_ok:
             download_dir=tempdir
         )
 
-        assert len(lcfile) == 5
+        assert len(lcfile) >= 5
 
     if __name__ == "__main__":
         test_get_eleanor_lightcurves()

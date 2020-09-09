@@ -159,7 +159,7 @@ def get_two_minute_spoc_lightcurves(tic_id, download_dir=None):
 
 
 def get_hlsp_lightcurves(tic_id,
-                         hlsp_products=('CDIPS', 'TASOC'),
+                         hlsp_products=('CDIPS', 'TASOC', 'PATHOS'),
                          download_dir=None,
                          verbose=True):
     """This downloads TESS HLSP light curves for a given TIC ID.
@@ -197,7 +197,12 @@ def get_hlsp_lightcurves(tic_id,
         )
 
         if verbose:
-            LOGINFO('Found {} {} light-curves.'.format(len(obs_table), hlsp))
+            LOGINFO(f'Found {len(obs_table)} {hlsp} light-curves.')
+
+        if len(obs_table) == 0:
+            if verbose:
+                LOGINFO("Did not find light-curves. Escaping.")
+            return None
 
         # Get list of available products for this Observation.
         cdips_products = Observations.get_product_list(obs_table)
@@ -275,7 +280,7 @@ def get_eleanor_lightcurves(tic_id, download_dir=None, targetdata_kwargs=None):
                                    save_postcard=True, do_pca=False,
                                    do_psf=False, bkg_size=31,
                                    crowded_field=True, cal_cadences=None,
-                                   try_load=True, regressors=None)
+                                   try_load=True)
         else:
             d = eleanor.TargetData(star, **targetdata_kwargs)
 
