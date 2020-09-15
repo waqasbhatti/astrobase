@@ -159,7 +159,7 @@ def get_two_minute_spoc_lightcurves(tic_id, download_dir=None):
 
 
 def get_hlsp_lightcurves(tic_id,
-                         hlsp_products=('CDIPS', 'TASOC'),
+                         hlsp_products=('CDIPS', 'TASOC', 'PATHOS'),
                          download_dir=None,
                          verbose=True):
     """This downloads TESS HLSP light curves for a given TIC ID.
@@ -197,7 +197,12 @@ def get_hlsp_lightcurves(tic_id,
         )
 
         if verbose:
-            LOGINFO('Found {} {} light-curves.'.format(len(obs_table), hlsp))
+            LOGINFO(f'Found {len(obs_table)} {hlsp} light-curves.')
+
+        if len(obs_table) == 0:
+            if verbose:
+                LOGINFO("Did not find light-curves. Escaping.")
+            return None
 
         # Get list of available products for this Observation.
         cdips_products = Observations.get_product_list(obs_table)
@@ -222,13 +227,35 @@ def get_hlsp_lightcurves(tic_id,
     return return_lcfiles
 
 
-def get_eleanor_lightcurves(tic_id, download_dir=None):
+def get_eleanor_lightcurves(tic_id, download_dir=None, targetdata_kwargs=None):
     """This downloads light curves from the Eleanor project for a given TIC ID.
 
     Parameters
     ----------
     tic_id : str
         The TIC ID of the object as a string.
+
+    download_dir : str
+        The light curve FITS files will be downloaded here.
+
+    targetdata_kwargs : dict
+        Optional dictionary of keys and values to be passed eleanor.TargetData (see
+        https://adina.feinste.in/eleanor/api.html). For instance, you might
+        pass `{'height':8, 'width':8, 'do_pca':True, 'do_psf':True,
+        'crowded_field':False}` to run these settings through to eleanor.
+        The default options used if targetdata_kwargs is None are as follows:
+            {
+                height=15,
+                width=15,
+                save_postcard=True,
+                do_pca=False,
+                do_psf=False,
+                bkg_size=31,
+                crowded_field=True,
+                cal_cadences=None,
+                try_load=True,
+                regressors=None
+            }
 
     Returns
     -------
@@ -248,8 +275,14 @@ def get_eleanor_lightcurves(tic_id, download_dir=None):
 
     for star in stars:
 
-        d = eleanor.TargetData(star, height=15, width=15, bkg_size=31,
-                               do_psf=False, do_pca=False)
+        if targetdata_kwargs is None:
+            d = eleanor.TargetData(star, height=15, width=15,
+                                   save_postcard=True, do_pca=False,
+                                   do_psf=False, bkg_size=31,
+                                   crowded_field=True, cal_cadences=None,
+                                   try_load=True)
+        else:
+            d = eleanor.TargetData(star, **targetdata_kwargs)
 
         d.save(directory=download_dir)
 
