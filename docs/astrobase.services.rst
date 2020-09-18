@@ -11,6 +11,7 @@ Submodules
 
 .. toctree::
 
+   astrobase.services.alltesslightcurves
    astrobase.services.dust
    astrobase.services.fortney2k7
    astrobase.services.gaia

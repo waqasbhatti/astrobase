@@ -239,11 +239,13 @@ def get_eleanor_lightcurves(tic_id, download_dir=None, targetdata_kwargs=None):
         The light curve FITS files will be downloaded here.
 
     targetdata_kwargs : dict
-        Optional dictionary of keys and values to be passed eleanor.TargetData (see
-        https://adina.feinste.in/eleanor/api.html). For instance, you might
-        pass `{'height':8, 'width':8, 'do_pca':True, 'do_psf':True,
-        'crowded_field':False}` to run these settings through to eleanor.
-        The default options used if targetdata_kwargs is None are as follows:
+        Optional dictionary of keys and values to be passed
+        ``eleanor.TargetData`` (see
+        https://adina.feinste.in/eleanor/api.html). For instance, you might pass
+        ``{'height':8, 'width':8, 'do_pca':True, 'do_psf':True,
+        'crowded_field':False}`` to run these settings through to eleanor. The
+        default options used if targetdata_kwargs is None are as follows::
+
             {
                 height=15,
                 width=15,
