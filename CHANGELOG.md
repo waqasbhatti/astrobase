@@ -1,3 +1,46 @@
+# v0.5.3
+
+## New stuff
+
+- `lcmath`: The `phase_bin_magseries_with_errs` function can now accept
+  per-measurement weights to allow different errors for each measurement. Added
+  by @lgbouma.
+
+- `services.tesslightcurves`: The `get_eleanor_lightcurves` function now accepts
+  an optional `targetdata_kwargs` dict to pass in custom target info parameters
+  to the underlying `eleanor.TargetData` constructor. Added by @lgbouma.
+
+- `services`: A new `alltesslightcurves` module to get all available TESS light
+  curves for an object was added by @mchris42.
+
+- `checkplot.png`: The `_make_phased_magseries_plot` function now accepts a
+  `trimylim` kwarg to remove large outliers.
+
+- Gaia EDR3 support is now available in all functions in the `services.gaia`
+  module and the dependent functions in the `checkplot`, `identifiers`, and
+  `varclass.starfeatures` modules. Set the `data_release` kwarg to 'dr2' for
+  using DR2, and 'edr3' to get data from EDR3.
+
+  The Vizier TAP service mirror for EDR3 (currently) uses column names that are
+  different from the Gaia main EDR3 and Heidelberg EDR3 mirrors. The
+  `services.gaia.objectlist_conesearch`, `services.gaia.objectlist_radeclbox`,
+  and `services.gaia.objectid_search` functions will fall back to DR2 if the
+  Vizier mirror is used. To avoid this, use another mirror, setting the
+  `gaia_mirror` kwarg to either 'gaia' or 'heidelberg'.
+
+## Changes
+
+- The default timeout for the SkyView service clients in `plotbase` and
+  `services.skyview` has been changed to 45 seconds.
+
+- Minor fixes for deprecated methods in `matplotlib` and `numpy`.
+
+## Fixes
+
+- `services.gaia`: The Heidelberg mirror URL now uses HTTPS and should no longer
+  fail all the time.
+
+
 # v0.5.2
 
 ## Fixes
