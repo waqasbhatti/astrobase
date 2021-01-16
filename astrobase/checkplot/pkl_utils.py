@@ -144,6 +144,7 @@ def _pkl_finder_objectinfo(
         gaia_submit_tries=3,
         gaia_max_timeout=180.0,
         gaia_mirror=None,
+        gaia_data_release='dr2',
         fast_mode=False,
         complete_query_later=True
 ):
@@ -322,6 +323,10 @@ def _pkl_finder_objectinfo(
         This sets the GAIA mirror to use. This is a key in the
         `services.gaia.GAIA_URLS` dict which defines the URLs to hit for each
         mirror.
+
+    gaia_data_release: {'dr2', 'edr3'}
+        The Gaia data release to use for the query. This provides hints for
+        which table to use for the GAIA mirror being queried.
 
     fast_mode : bool or float
         This runs the external catalog operations in a "fast" mode, with short
@@ -741,6 +746,7 @@ def _pkl_finder_objectinfo(
             gaia_submit_tries=gaia_submit_tries,
             gaia_max_timeout=gaia_max_timeout,
             gaia_mirror=gaia_mirror,
+            gaia_data_release=gaia_data_release,
             complete_query_later=complete_query_later,
             search_simbad=search_simbad
         )

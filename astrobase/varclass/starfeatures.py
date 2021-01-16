@@ -1122,6 +1122,7 @@ def neighbor_gaia_features(objectinfo,
                            gaia_submit_tries=3,
                            gaia_max_timeout=180.0,
                            gaia_mirror=None,
+                           gaia_data_release='dr2',
                            complete_query_later=True,
                            search_simbad=False):
     '''Gets several neighbor, GAIA, and SIMBAD features:
@@ -1194,6 +1195,10 @@ def neighbor_gaia_features(objectinfo,
         This sets the GAIA mirror to use. This is a key in the
         `services.gaia.GAIA_URLS` dict which defines the URLs to hit for each
         mirror.
+
+    gaia_data_release: {'dr2', 'edr3'}
+        The Gaia data release to use for the query. This provides hints for
+        which table to use for the GAIA mirror being queried.
 
     search_simbad : bool
         If this is True, searches for objects in SIMBAD at this object's
@@ -1298,6 +1303,7 @@ def neighbor_gaia_features(objectinfo,
             maxtimeout=gaia_max_timeout,
             maxtries=gaia_submit_tries,
             gaia_mirror=gaia_mirror,
+            data_release=gaia_data_release,
             complete_query_later=complete_query_later
         )
 

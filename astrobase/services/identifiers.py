@@ -210,6 +210,7 @@ def simbad_to_gaiadr2(
 def gaiadr2_to_tic(
         source_id,
         gaia_mirror='gaia',
+        gaia_data_release='dr2',
         returnformat='csv',
         forcefetch=False,
         cachedir='~/.astrobase/simbad-cache',
@@ -234,6 +235,10 @@ def gaiadr2_to_tic(
         This is the key used to select a GAIA catalog mirror from the
         `GAIA_URLS` dict above. If set, the specified mirror will be used. If
         None, a random mirror chosen from that dict will be used.
+
+    gaia_data_release: {'dr2', 'edr3'}
+        The Gaia data release to use for the query. This provides hints for
+        which table to use for the GAIA mirror being queried.
 
     returnformat : {'csv','votable','json'}
         The returned file format to request from the GAIA catalog service.
@@ -287,6 +292,7 @@ def gaiadr2_to_tic(
     """
 
     r = gaia_objectid_search(source_id, gaia_mirror=gaia_mirror,
+                             data_release=gaia_data_release,
                              returnformat=returnformat, forcefetch=forcefetch,
                              cachedir=cachedir, verbose=verbose,
                              timeout=timeout, refresh=refresh,
