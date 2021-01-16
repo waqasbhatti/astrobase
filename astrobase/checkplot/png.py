@@ -175,7 +175,7 @@ def _make_periodogram(axes,
     # make the LSP plot on the first subplot
     axes.plot(periods,lspvals)
 
-    axes.set_xscale('log',basex=10)
+    axes.set_xscale('log',base=10)
     axes.set_xlabel('Period [days]')
     axes.set_ylabel(pgramylabel)
     plottitle = '%s - %.6f d' % (METHODLABELS[lspinfo['method']],

@@ -213,7 +213,7 @@ def checkplot_dict(
         will then become::
 
                 skyview_lookup = False
-                skyview_timeout = 10.0
+                skyview_timeout = 45.0
                 skyview_retry_failed = False
                 dust_timeout = 10.0
                 gaia_submit_timeout = 7.0
@@ -578,13 +578,13 @@ def checkplot_dict(
     # times/mags array inputs). this is all done so we can still save checkplots
     # correctly to pickles after reviewing them using checkplotserver
     try:
-        objuuid = hashlib.sha512(times[5:10].tostring() +
-                                 mags[5:10].tostring()).hexdigest()[:5]
+        objuuid = hashlib.sha512(times[5:10].tobytes() +
+                                 mags[5:10].tobytes()).hexdigest()[:5]
     except Exception:
         if verbose:
             LOGWARNING('times, mags, and errs may have too few items')
-            objuuid = hashlib.sha512(times.tostring() +
-                                     mags.tostring()).hexdigest()[:5]
+            objuuid = hashlib.sha512(times.tobytes() +
+                                     mags.tobytes()).hexdigest()[:5]
 
     if (objectinfo is None):
         if verbose:
@@ -1003,7 +1003,7 @@ def checkplot_pickle(
         will then become::
 
             skyview_lookup = False
-            skyview_timeout = 10.0
+            skyview_timeout = 45.0
             skyview_retry_failed = False
             dust_timeout = 10.0
             gaia_submit_timeout = 7.0

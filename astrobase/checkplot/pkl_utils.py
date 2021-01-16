@@ -337,7 +337,7 @@ def _pkl_finder_objectinfo(
         will then become::
 
             skyview_lookup = False
-            skyview_timeout = 10.0
+            skyview_timeout = 45.0
             skyview_retry_failed = False
             dust_timeout = 10.0
             gaia_submit_timeout = 7.0
@@ -401,7 +401,7 @@ def _pkl_finder_objectinfo(
 
     else:
         skyview_lookup = True
-        skyview_timeout = 10.0
+        skyview_timeout = 45.0
         skyview_retry_failed = True
         dust_timeout = 10.0
         search_simbad = True
@@ -1296,7 +1296,7 @@ def _pkl_periodogram(lspinfo,
     # make the plot
     plt.plot(periods,lspvals)
 
-    plt.xscale('log',basex=10)
+    plt.xscale('log',base=10)
     plt.xlabel('Period [days]')
     plt.ylabel(pgramylabel)
     plottitle = '%s - %.6f d' % (METHODLABELS[lspinfo['method']],
