@@ -72,7 +72,8 @@ from numpy import (
     isfinite as npisfinite,
     min as npmin, max as npmax,
     abs as npabs, ravel as npravel, nan as npnan,
-    percentile as nppercentile
+    percentile as nppercentile, nanmedian as npnanmedian,
+    nanpercentile as npnanpercentile
 )
 
 # we're going to plot using Agg only
@@ -487,7 +488,8 @@ def _make_phased_magseries_plot(axes,
                                 titlefontsize='medium',
                                 makegrid=True,
                                 lowerleftstr=None,
-                                lowerleftfontsize=None):
+                                lowerleftfontsize=None,
+                                trimylim=False):
     '''Makes the phased magseries plot tile for the `checkplot_png` and
     `twolsp_checkplot_png` functions.
 
@@ -596,6 +598,13 @@ def _make_phased_magseries_plot(axes,
 
     lowerleftfontsize : int or str or None
         Font size of optional text to overplot in lower left of plot
+
+    trimylim : bool
+        Default False. If True, sets the y limits on the phase-folded light
+        curves as
+            [median - 1.2*(median-5th percentile),
+             median + 1.2*(95th percentile-median)]
+        which can help clip flares or other outliers.
 
     Returns
     -------
@@ -732,6 +741,16 @@ def _make_phased_magseries_plot(axes,
                   ms=phasebinms, ls='None',mew=0,
                   color='#1c1e57',
                   rasterized=True)
+
+    # trim outliers on y axis
+    if trimylim:
+        median = npnanmedian(plotmags)
+        lo = npnanpercentile(plotmags, 5)
+        hi = npnanpercentile(plotmags, 95)
+        prefactor = 1.2
+        ylim = (median - prefactor*(median-lo),
+                median + prefactor*(hi-median))
+        axes.set_ylim(ylim)
 
     # flip y axis for mags
     if not magsarefluxes:
@@ -1281,6 +1300,7 @@ def twolsp_checkplot_png(lspinfo1,
                          phasebin=0.002,
                          minbinelems=7,
                          plotxlim=(-0.8,0.8),
+                         trimylim=False,
                          unphasedms=2.0,
                          phasems=2.0,
                          phasebinms=4.0,
@@ -1465,6 +1485,13 @@ def twolsp_checkplot_png(lspinfo1,
         default, this is (-0.8, 0.8), which places phase 0.0 at the center of
         the plot and covers approximately two cycles in phase to make any trends
         clear.
+
+    trimylim : bool
+        Default False. If True, sets the y limits on the phase-folded light
+        curves as
+            [median - 1.2*(median-5th percentile),
+             median + 1.2*(95th percentile-median)]
+        which can help clip flares or other outliers.
 
     unphasedms : float
         The marker size to use for the main unphased light curve plot symbols.
@@ -1669,7 +1696,8 @@ def twolsp_checkplot_png(lspinfo1,
                                         phasems=phasems,
                                         phasebinms=phasebinms,
                                         xticksize=xticksize,
-                                        yticksize=yticksize)
+                                        yticksize=yticksize,
+                                        trimylim=trimylim)
 
         ##########################################################
         ### NOW PLOT PHASED LCS FOR 3 BEST PERIODS IN LSPINFO2 ###
@@ -1700,7 +1728,8 @@ def twolsp_checkplot_png(lspinfo1,
                                         phasems=phasems,
                                         phasebinms=phasebinms,
                                         xticksize=xticksize,
-                                        yticksize=yticksize)
+                                        yticksize=yticksize,
+                                        trimylim=trimylim)
 
         # end of plotting for each ax
 
