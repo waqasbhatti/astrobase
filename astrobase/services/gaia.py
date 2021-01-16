@@ -78,14 +78,30 @@ from xml.dom.minidom import parseString
 GAIA_URLS = {
     'gaia':{'url':"https://gea.esac.esa.int/tap-server/tap/async",
             'table':'gaiadr2.gaia_source',
+            'available_tables': {
+                'dr2': 'gaiadr2.gaia_source',
+                'edr3': 'gaiaedr3.gaia_source'
+            },
             'phasekeyword':'uws:phase',
             'resultkeyword':'uws:result'},
-    'heidelberg':{'url':"http://gaia.ari.uni-heidelberg.de/tap/async",
+    'heidelberg':{'url':"https://gaia.ari.uni-heidelberg.de/tap/async",
                   'table':'gaiadr2.gaia_source',
+                  'available_tables': {
+                      'dr2': 'gaiadr2.gaia_source',
+                      'edr3': 'gaiaedr3.gaia_source'
+                  },
                   'phasekeyword':'phase',
                   'resultkeyword':'result'},
     'vizier':{'url':"http://tapvizier.u-strasbg.fr/TAPVizieR/tap/async",
               'table':'"I/345/gaia2"',
+              'available_tables': {
+                  'dr2': '"I/345/gaia2"',
+                  # NOTE: Vizier uses different column names so this is disabled
+                  # for auto-table selection, otherwise the objectlist_search,
+                  # cone_search functions below will fail if this mirror is
+                  # selected with EDR3.
+                  # 'edr3': '"I/350/gaiaedr3"'
+              },
               'phasekeyword':'phase',
               'resultkeyword':'result'},
 }
@@ -115,6 +131,7 @@ RETURN_FORMATS = {
 
 def tap_query(querystr,
               gaia_mirror=None,
+              data_release="dr2",
               returnformat='csv',
               forcefetch=False,
               cachedir='~/.astrobase/gaia-cache',
@@ -139,6 +156,10 @@ def tap_query(querystr,
         This is the key used to select a GAIA catalog mirror from the
         `GAIA_URLS` dict above. If set, the specified mirror will be used. If
         None, a random mirror chosen from that dict will be used.
+
+    data_release: {'dr2', 'edr3'}
+        The Gaia data release to use for the query. This provides hints for
+        which table to use for the GAIA mirror being queried.
 
     returnformat : {'csv','votable','json'}
         The returned file format to request from the GAIA catalog service.
@@ -251,6 +272,7 @@ def tap_query(querystr,
         timeelapsed = 0.0
 
         gaia_mirror = incomplete_qinfo['gaia_mirror']
+        data_release = incomplete_qinfo.get('data_release', 'dr2')
         status_url = incomplete_qinfo['status_url']
         phasekeyword = incomplete_qinfo['phase_keyword']
         resultkeyword = incomplete_qinfo['result_keyword']
@@ -263,7 +285,6 @@ def tap_query(querystr,
                          'after waiting %s seconds for results.\n'
                          'status URL is: %s' %
                          (maxtimeout,
-                          repr(inputparams),
                           status_url))
 
                 return None
@@ -453,12 +474,35 @@ def tap_query(querystr,
                 # sub in a table name if this is left unresolved in the input
                 # query
                 if '{table}' in querystr:
-                    inputparams['QUERY'] = (
-                        querystr.format(
-                            table=GAIA_URLS[gaia_mirror]['table']
+
+                    # sub in the appropriate data-release
+                    data_release_table = (
+                        GAIA_URLS[randkey]['available_tables'].get(
+                            data_release,
+                            None
                         )
                     )
 
+                    if data_release_table is None:
+                        LOGERROR(
+                            "Could not automatically select the "
+                            "appropriate data table for "
+                            "mirror: %s and data release: %s. "
+                            "It may not have been enabled "
+                            "for this mirror yet. Will fall back to the "
+                            "default table: %s" %
+                            (gaia_mirror, data_release,
+                             GAIA_URLS[randkey]['table'])
+                        )
+                        data_release_table = GAIA_URLS[randkey]['table']
+
+                    inputparams['QUERY'] = (
+                        querystr.format(
+                            table=data_release_table
+                        )
+                    )
+
+            # if no gaia mirror is selected, pick a random one
             else:
 
                 randkey = random.choice(list(GAIA_URLS.keys()))
@@ -469,16 +513,43 @@ def tap_query(querystr,
                 # sub in a table name if this is left unresolved in the input
                 # query
                 if '{table}' in querystr:
-                    inputparams['QUERY'] = (
-                        querystr.format(
-                            table=GAIA_URLS[randkey]['table']
+
+                    # sub in the appropriate data-release
+                    data_release_table = (
+                        GAIA_URLS[randkey]['available_tables'].get(
+                            data_release,
+                            None
                         )
                     )
 
-                if verbose:
-                    LOGINFO('using GAIA mirror TAP URL: %s' % tapurl)
+                    if data_release_table is None:
+                        LOGERROR(
+                            "Could not automatically select the "
+                            "appropriate data table for "
+                            "mirror: %s and data release: %s. "
+                            "It may not have been enabled "
+                            "for this mirror yet. Will fall back to the "
+                            "default table: %s" %
+                            (gaia_mirror, data_release,
+                             GAIA_URLS[randkey]['table'])
+                        )
+                        data_release_table = GAIA_URLS[randkey]['table']
 
+                    inputparams['QUERY'] = (
+                        querystr.format(
+                            table=data_release_table
+                        )
+                    )
+
+            #
             # send the query and get status
+            #
+            if verbose:
+                LOGINFO(
+                    'using GAIA mirror TAP URL: %s, with table: %s' %
+                    (tapurl, data_release_table)
+                )
+
             if verbose:
                 LOGINFO('submitting GAIA TAP query request for input params: %s'
                         % repr(inputparams))
@@ -508,11 +579,60 @@ def tap_query(querystr,
                     mirrorok = True
 
                 # this handles immediate 503s
-                except requests.exceptions.HTTPError:
+                except requests.exceptions.HTTPError as e:
 
                     LOGWARNING(
-                        'GAIA TAP server: %s not responding, '
+                        'GAIA TAP server: %s raised an exception: %r, '
                         'trying another mirror...'
+                        % (tapurl, e)
+                    )
+                    mirrorok = False
+
+                    # make sure not to hit current mirror again if it's down
+                    remainingmirrors = list(GAIA_URLS.keys())
+                    remainingmirrors.remove(randkey)
+
+                    randkey = random.choice(remainingmirrors)
+                    tapurl = GAIA_URLS[randkey]['url']
+                    resultkeyword = GAIA_URLS[randkey]['resultkeyword']
+                    phasekeyword = GAIA_URLS[randkey]['phasekeyword']
+
+                    # handle an unresolved table item in the query string
+                    if '{table}' in querystr:
+
+                        # sub in the appropriate data-release
+                        data_release_table = (
+                            GAIA_URLS[randkey]['available_tables'].get(
+                                data_release,
+                                None
+                            )
+                        )
+
+                        if data_release_table is None:
+                            LOGERROR(
+                                "Could not automatically select the "
+                                "appropriate data table for "
+                                "mirror: %s and data release: %s. "
+                                "It may not have been enabled "
+                                "for this mirror yet. Will fall back to the "
+                                "default table: %s" %
+                                (gaia_mirror, data_release,
+                                 GAIA_URLS[randkey]['table'])
+                            )
+                            data_release_table = GAIA_URLS[randkey]['table']
+
+                        inputparams['QUERY'] = (
+                            querystr.format(
+                                table=data_release_table
+                            )
+                        )
+
+                # this handles initial query submission timeouts
+                except requests.exceptions.Timeout:
+
+                    LOGWARNING(
+                        'GAIA TAP query submission timed out, '
+                        'mirror: %s is probably down. Trying another mirror...'
                         % tapurl
                     )
                     mirrorok = False
@@ -525,34 +645,34 @@ def tap_query(querystr,
                     tapurl = GAIA_URLS[randkey]['url']
                     resultkeyword = GAIA_URLS[randkey]['resultkeyword']
                     phasekeyword = GAIA_URLS[randkey]['phasekeyword']
+
+                    # handle an unresolved table item in the query string
                     if '{table}' in querystr:
-                        inputparams['QUERY'] = (
-                            querystr.format(
-                                table=GAIA_URLS[randkey]['table']
+
+                        # sub in the appropriate data-release
+                        data_release_table = (
+                            GAIA_URLS[randkey]['available_tables'].get(
+                                data_release,
+                                None
                             )
                         )
 
-                # this handles initial query submission timeouts
-                except requests.exceptions.Timeout:
+                        if data_release_table is None:
+                            LOGERROR(
+                                "Could not automatically select the "
+                                "appropriate data table for "
+                                "mirror: %s and data release: %s. "
+                                "It may not have been enabled "
+                                "for this mirror yet. Will fall back to the "
+                                "default table: %s" %
+                                (gaia_mirror, data_release,
+                                 GAIA_URLS[randkey]['table'])
+                            )
+                            data_release_table = GAIA_URLS[randkey]['table']
 
-                    LOGWARNING(
-                        'GAIA TAP query submission timed out, '
-                        'mirror is probably down. Trying another mirror...'
-                    )
-                    mirrorok = False
-
-                    # make sure not to hit current mirror again if it's down
-                    remainingmirrors = list(GAIA_URLS.keys())
-                    remainingmirrors.remove(randkey)
-
-                    randkey = random.choice(remainingmirrors)
-                    tapurl = GAIA_URLS[randkey]['url']
-                    resultkeyword = GAIA_URLS[randkey]['resultkeyword']
-                    phasekeyword = GAIA_URLS[randkey]['phasekeyword']
-                    if '{table}' in querystr:
                         inputparams['QUERY'] = (
                             querystr.format(
-                                table=GAIA_URLS[randkey]['table']
+                                table=data_release_table
                             )
                         )
 
@@ -576,7 +696,7 @@ def tap_query(querystr,
             else:
                 LOGERROR('could not parse job phase using '
                          'keyword %s in result XML' % phasekeyword)
-                LOGERROR('%s' % req.txt)
+                LOGERROR(req.text)
 
                 req.close()
                 return None
@@ -650,6 +770,7 @@ def tap_query(querystr,
                                 savedict['status_url'] = status_url
                                 savedict['last_status'] = jobstatus
                                 savedict['gaia_mirror'] = gaia_mirror
+                                savedict['data_release'] = data_release
                                 savedict['phase_keyword'] = phasekeyword
                                 savedict['result_keyword'] = resultkeyword
 
@@ -665,7 +786,7 @@ def tap_query(querystr,
 
                         return None
 
-                    time.sleep(refresh)
+                    time.sleep(refresh + random.random())
                     timeelapsed = timeelapsed + refresh
 
                     try:
@@ -825,6 +946,7 @@ def objectlist_conesearch(racenter,
                           declcenter,
                           searchradiusarcsec,
                           gaia_mirror=None,
+                          data_release="dr2",
                           columns=('source_id',
                                    'ra','dec',
                                    'phot_g_mean_mag',
@@ -860,6 +982,9 @@ def objectlist_conesearch(racenter,
         This is the key used to select a GAIA catalog mirror from the
         `GAIA_URLS` dict above. If set, the specified mirror will be used. If
         None, a random mirror chosen from that dict will be used.
+
+    data_release: {'dr2', 'edr3'}
+        The Gaia data release to use for the query.
 
     columns : sequence of str
         This indicates which columns from the GAIA table to request for the
@@ -958,6 +1083,7 @@ def objectlist_conesearch(racenter,
 
     return tap_query(formatted_query,
                      gaia_mirror=gaia_mirror,
+                     data_release=data_release,
                      returnformat=returnformat,
                      forcefetch=forcefetch,
                      cachedir=cachedir,
@@ -971,6 +1097,7 @@ def objectlist_conesearch(racenter,
 
 def objectlist_radeclbox(radeclbox,
                          gaia_mirror=None,
+                         data_release='dr2',
                          columns=('source_id',
                                   'ra','dec',
                                   'phot_g_mean_mag',
@@ -1004,6 +1131,9 @@ def objectlist_radeclbox(radeclbox,
         This is the key used to select a GAIA catalog mirror from the
         `GAIA_URLS` dict above. If set, the specified mirror will be used. If
         None, a random mirror chosen from that dict will be used.
+
+    data_release: {'dr2', 'edr3'}
+        The Gaia data release to use for the query.
 
     columns : sequence of str
         This indicates which columns from the GAIA table to request for the
@@ -1103,6 +1233,7 @@ def objectlist_radeclbox(radeclbox,
 
     return tap_query(formatted_query,
                      gaia_mirror=gaia_mirror,
+                     data_release=data_release,
                      returnformat=returnformat,
                      forcefetch=forcefetch,
                      cachedir=cachedir,
@@ -1116,6 +1247,7 @@ def objectlist_radeclbox(radeclbox,
 
 def objectid_search(gaiaid,
                     gaia_mirror=None,
+                    data_release='dr2',
                     columns=('source_id',
                              'ra','dec',
                              'phot_g_mean_mag',
@@ -1147,6 +1279,9 @@ def objectid_search(gaiaid,
         This is the key used to select a GAIA catalog mirror from the
         `GAIA_URLS` dict above. If set, the specified mirror will be used. If
         None, a random mirror chosen from that dict will be used.
+
+    data_release: {'dr2', 'edr3'}
+        The Gaia data release to use for the query.
 
     columns : sequence of str
         This indicates which columns from the GAIA table to request for the
@@ -1221,6 +1356,7 @@ def objectid_search(gaiaid,
 
     return tap_query(formatted_query,
                      gaia_mirror=gaia_mirror,
+                     data_release=data_release,
                      returnformat=returnformat,
                      forcefetch=forcefetch,
                      cachedir=cachedir,
