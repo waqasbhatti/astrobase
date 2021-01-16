@@ -14,7 +14,7 @@
   curves for an object was added by @mchris42.
 
 - `checkplot.png`: The `_make_phased_magseries_plot` function now accepts a
-  `trimylim` kwarg to remove large outliers.
+  `trimylim` kwarg to remove large outliers. Added by @lgbouma.
 
 - Gaia EDR3 support is now available in all functions in the `services.gaia`
   module and the dependent functions in the `checkplot`, `identifiers`, and
