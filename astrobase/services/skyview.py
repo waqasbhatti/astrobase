@@ -94,7 +94,7 @@ def get_stamp(ra, decl,
               sizepix=300,
               forcefetch=False,
               cachedir='~/.astrobase/stamp-cache',
-              timeout=10.0,
+              timeout=45.0,
               retry_failed=True,
               verbose=True,
               jitter=5.0):

@@ -845,7 +845,7 @@ def skyview_stamp(ra, decl,
                   convolvewith=None,
                   forcefetch=False,
                   cachedir='~/.astrobase/stamp-cache',
-                  timeout=10.0,
+                  timeout=45.0,
                   retry_failed=False,
                   savewcsheader=True,
                   verbose=False):
@@ -1332,7 +1332,7 @@ def plot_periodbase_lsp(lspinfo, outfile=None, plotdpi=100):
 
         # make the LSP plot on the first subplot
         plt.plot(periods, lspvals)
-        plt.xscale('log',basex=10)
+        plt.xscale('log',base=10)
         plt.xlabel('Period [days]')
         plt.ylabel(PLOTYLABELS[lspmethod])
         plottitle = '%s best period: %.6f d' % (METHODSHORTLABELS[lspmethod],
