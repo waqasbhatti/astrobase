@@ -972,6 +972,9 @@ def test_checkplot_pickle_missing_objectinfo():
                        'sdssi-sdssz',
                        'sdssg-sdssz']
 
+    #
+    # NOTE: all from GAIA DR2 -- update to DR3 when that's out and default
+    #
     expected_gaia_id = '5891733852050596480'
     expected_gaia_dist = 0.12319158
     expected_gaia_closest_nbrdist = 6.4526230016634329
@@ -993,10 +996,13 @@ def test_checkplot_pickle_missing_objectinfo():
                         expected_gaia_dist, decimal=2)
     assert_almost_equal(cpd['objectinfo']['gaia_closest_distarcsec'],
                         expected_gaia_closest_nbrdist, decimal=2)
-    assert_almost_equal(cpd['objectinfo']['gaia_mags'][0], expected_gaia_mag)
+    assert_almost_equal(cpd['objectinfo']['gaia_mags'][0],
+                        expected_gaia_mag, decimal=3)
 
-    assert_almost_equal(cpd['objectinfo']['gb'],expected_gb)
-    assert_almost_equal(cpd['objectinfo']['gl'], expected_gl)
+    assert_almost_equal(cpd['objectinfo']['gb'],
+                        expected_gb, decimal=3)
+    assert_almost_equal(cpd['objectinfo']['gl'],
+                        expected_gl, decimal=3)
 
     # FIXME: disabling this assertion since SkyView appears to be timing out
     # often as of 2021-01-16
