@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Bhatti
+    given-names: Waqas
+  - family-names: Bouma
+    given-names: Luke G.
+  - family-names: Wallace
+    given-names: Joshua
+  - name: "et al."
+title: "Astrobase"
+license: MIT
+doi: 10.5281/zenodo.1011188
