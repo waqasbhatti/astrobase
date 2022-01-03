@@ -7,7 +7,6 @@ authors:
     given-names: Luke G.
   - family-names: Wallace
     given-names: Joshua
-  - name: "et al."
 title: "Astrobase"
 license: MIT
 doi: 10.5281/zenodo.1011188
