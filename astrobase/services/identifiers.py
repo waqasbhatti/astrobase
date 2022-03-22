@@ -209,7 +209,7 @@ def simbad_to_gaiadr2(
 
 def gaiadr2_to_tic(
         source_id,
-        gaia_mirror='gaia',
+        gaia_mirror='heidelberg',
         gaia_data_release='dr2',
         returnformat='csv',
         forcefetch=False,
@@ -349,10 +349,29 @@ def gaiadr2_to_tic(
     tic_ids = np.array([
         x['ID'] for x in tic_info['data']
     ])
+    dispositions = np.array([
+        x['disposition'] for x in tic_info['data']
+    ])
 
     matched_tic_id = tic_ids[gaia_ids == int(source_id)]
+
+    # see https://outerspace.stsci.edu/display/TESS/TIC+v8.2+and+CTL+v8.xx+Data+Release+Notes
+    # NULL, DUPLICATE (6), ARTIFACT (7), or SPLIT (8)
+    matched_dispositions = dispositions[gaia_ids == int(source_id)]
+
     if matched_tic_id.size > 0:
-        return str(matched_tic_id.item())
+
+        if matched_tic_id.size == 1:
+            return str(matched_tic_id.item())
+
+        elif matched_tic_id.size == 2:
+            tic_id = matched_tic_id[matched_dispositions != 'DUPLICATE'].item()
+            return str(tic_id)
+
+        else:
+            LOGERROR("Got multiple unresolved matches in TIC IDs for "
+                     "source ID: %s in TIC (version: %s)" %
+                     (source_id, tic_info['data'][0]['version']))
     else:
         LOGERROR("Could not find TIC ID for "
                  "source ID: %s in TIC (version: %s)" %
@@ -395,7 +414,7 @@ def tic_to_gaiadr2(tic_id, raiseonfail=False):
     ----------
 
     tic_id : str
-        The TIC ID to look for.
+        The TIC ID to look for, e.g., "260265964".
 
     Returns
     -------
