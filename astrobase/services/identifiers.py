@@ -13,6 +13,8 @@ objects, particularly when SIMBAD is involved.
 
 ``simbad_to_tic()``: given simbad name, get TIC ID
 
+``tic_to_simbad()``: given TIC ID, get default simbad name
+
 ``tic_to_gaiadr2()``: given TIC ID, get GAIA DR2 source_id
 
 '''
@@ -52,6 +54,25 @@ import json
 
 import numpy as np
 from astropy.table import Table
+
+import re
+try:
+    from astroquery.simbad import Simbad
+    astroquery_dependency = True
+except ImportError:
+    astroquery_dependency = False
+
+deps = {
+    'astroquery': astroquery_dependency,
+}
+
+for k,v in deps.items():
+    if not v:
+        wrn = (
+            'Failed to import {:s} dependency. Trying anyway.'.
+            format(k)
+        )
+        LOGWARNING(wrn)
 
 from astrobase.services.simbad import tap_query as simbad_tap_query
 from astrobase.services.gaia import objectid_search as gaia_objectid_search
@@ -379,31 +400,88 @@ def gaiadr2_to_tic(
         return None
 
 
-def simbad_to_tic(simbad_name):
+def simbad_to_tic(simbad_name_string: str) -> str:
     """
-    This goes from a SIMBAD name to a TIC name.
+    Query SIMBAD for all available names for a given source and return the TIC
+    identifier.
 
-    Parameters
-    ----------
+    This function takes a SIMBAD name as input, queries the SIMBAD database for
+    all available names for the source, and returns the TIC identifier if
+    found.
 
-    simbad_name : str
-        The SIMBAD name of the object to look up the TIC ID for.
+    Args:
+        simbad_name_string (str): The SIMBAD name of the astronomical object.
 
-    Returns
-    -------
+    Returns:
+        str: The TIC identifier of the object, if found. Returns an empty
+            string if not found.
 
-    tic_id : str
-        Returns the TIC ID of the object as a string.
+    Raises:
+        TypeError: If the input is not a string.
+        ValueError: If no object is found in SIMBAD for the given name.
 
+    Example:
+        >>> simbad_to_tic("Proxima Centauri")
+		"388857263"
     """
 
-    source_id = simbad_to_gaiadr2(simbad_name)
-
-    if source_id is not None:
-        return gaiadr2_to_tic(source_id)
-    else:
-        LOGERROR("Could not find TIC ID for SIMBAD name: %s" % simbad_name)
+    if not astroquery_dependency:
+        LOGERROR(
+            "The astroquery package is required for this function to work."
+        )
         return None
+
+    if not isinstance(simbad_name_string, str):
+        raise TypeError("Input must be a string")
+
+    # Query SIMBAD for all names
+    simbad = Simbad()
+    simbad.add_votable_fields('ids')
+    result = simbad.query_object(simbad_name_string)
+
+    if result is None:
+        raise ValueError(f"No object found in SIMBAD for '{simbad_name_string}'")
+
+    # Extract all identifiers
+    identifiers = result['IDS'][0].split('|')
+
+    # Search for TIC identifier
+    tic_pattern = r'TIC\s+(\d+)'
+    for identifier in identifiers:
+        match = re.search(tic_pattern, identifier)
+        if match:
+            return match.group(1)
+
+    return None
+
+
+def tic_to_simbad(tic_id: str) -> str:
+    """
+    Given a TIC identifier, search SIMBAD and return the default SIMBAD name.
+
+    Args:
+        tic_id (str): The TIC identifier of the target star.
+
+    Returns:
+        str: The default SIMBAD name of the target star.
+
+    Example:
+        >>> tic_to_simbad("388857263")
+		"Proxima Centauri"
+    """
+    custom_simbad = Simbad()
+    custom_simbad.add_votable_fields('ids')
+    result = custom_simbad.query_object(f"TIC {tic_id}")
+
+    if result is None:
+        return None
+
+    simbad_name = result['MAIN_ID'][0]
+    if len(simbad_name) > 0:
+        return simbad_name.lstrip("NAME ")
+
+    return None
+
 
 
 def tic_to_gaiadr2(tic_id, raiseonfail=False):
